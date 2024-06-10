@@ -25,6 +25,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
@@ -41,6 +46,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -49,6 +55,7 @@ type testCase struct {
 	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server)
 	expectedNotifications map[string]int
 	expectedWakeUps       map[string]int
+	expectedSpans         tracetest.SpanStubs
 }
 
 func TestAppProxyRouter(t *testing.T) {
@@ -119,6 +126,94 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
+			expectedSpans: []tracetest.SpanStub{
+				{
+					Name:     "keboola.go.common.dependencies.NewBaseScope",
+					SpanKind: 1,
+					SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+						TraceID: [16]byte{
+							171,
+							206,
+						},
+						SpanID: [8]byte{
+							16,
+							1,
+						},
+						TraceFlags: 1,
+					}),
+				},
+				{
+					Name:     "keboola.go.common.dependencies.NewPublicScope",
+					SpanKind: 1,
+					SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+						TraceID: [16]byte{
+							171,
+							207,
+						},
+						SpanID: [8]byte{
+							16,
+							2,
+						},
+						TraceFlags: 1,
+					}),
+					Status: tracesdk.Status{
+						Code: codes.Ok,
+					},
+					ChildSpanCount: 1,
+				},
+				{
+					Name:     "keboola.go.api.client.request",
+					SpanKind: 3,
+					SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+						TraceID: [16]byte{
+							171,
+							207,
+						},
+						SpanID: [8]byte{
+							16,
+							3,
+						},
+						TraceFlags: 1,
+					}),
+					Parent: trace.NewSpanContext(trace.SpanContextConfig{
+						TraceID: [16]byte{
+							171,
+							207,
+						},
+						SpanID: [8]byte{
+							16,
+							2,
+						},
+						TraceFlags: 1,
+					}),
+					Attributes: []attribute.KeyValue{
+						attribute.String("span.kind", "client"),
+						attribute.String("span.type", "http"),
+						attribute.Int("api.requests_count", 1),
+						attribute.String("http.result_type", "*keboola.IndexComponents"),
+						attribute.String("resource.name", "keboola.(*PublicAPI).IndexComponentsRequest"),
+						attribute.String("api.request_defined_in", "keboola.(*PublicAPI).IndexComponentsRequest"),
+					},
+				},
+				{
+					Name:     "keboola.go.appsproxy.dependencies.newServiceScope",
+					SpanKind: 1,
+					SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+						TraceID: [16]byte{
+							171,
+							208,
+						},
+						SpanID: [8]byte{
+							16,
+							4,
+						},
+						TraceFlags: 1,
+					}),
+					Status: tracesdk.Status{
+						Code: codes.Ok,
+					},
+				},
+			},
 		},
 		{
 			name: "no-rule-app",
@@ -2042,6 +2137,13 @@ func TestAppProxyRouter(t *testing.T) {
 
 			// Create dependencies
 			d, mocked := createDependencies(t, appsAPI.URL)
+
+			// Test generated spans
+			if tc.expectedSpans != nil {
+				var opts []telemetry.TestSpanOption
+				mocked.TestTelemetry().AssertSpans(t, tc.expectedSpans, opts...)
+			}
+
 			dnsServer := mocked.TestDNSServer()
 
 			// Create test OIDC providers

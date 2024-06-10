@@ -13,6 +13,7 @@ import (
 
 const (
 	RequestIDHeader  = "X-Request-Id"
+	RequestCtxKey    = ctxKey("request")
 	RequestIDCtxKey  = ctxKey("request-id")
 	RequestURLCtxKey = ctxKey("request-url")
 )
@@ -26,6 +27,7 @@ func RequestInfo() Middleware {
 
 			// Update context
 			ctx := req.Context()
+			ctx = context.WithValue(ctx, RequestCtxKey, req)
 			ctx = context.WithValue(ctx, goaMiddleware.RequestIDKey, requestID) // nolint:staticcheck // intentionally used the ctx key from external package
 			ctx = context.WithValue(ctx, RequestIDCtxKey, requestID)
 			ctx = context.WithValue(ctx, RequestURLCtxKey, req.URL)
@@ -43,4 +45,9 @@ func RequestInfo() Middleware {
 
 func RequestIDFromContext(ctx context.Context) string {
 	return ctx.Value(RequestIDCtxKey).(string)
+}
+
+func RequestValue(ctx context.Context) (*http.Request, bool) {
+	v, ok := ctx.Value(RequestCtxKey).(*http.Request)
+	return v, ok
 }
