@@ -2042,6 +2042,10 @@ func TestAppProxyRouter(t *testing.T) {
 
 			// Create dependencies
 			d, mocked := createDependencies(t, appsAPI.URL)
+
+			// TODO add assert for broken APP, span.Status should be Ok or Unset, not Error
+			// mocked.TestTelemetry().AssertSpans()
+
 			dnsServer := mocked.TestDNSServer()
 
 			// Create test OIDC providers

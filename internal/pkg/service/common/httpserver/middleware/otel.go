@@ -14,6 +14,7 @@ import (
 
 const (
 	SpanName           = "http.server.request"
+	RequestCtxKey      = ctxKey("request")
 	RequestSpanCtxKey  = ctxKey("request-span")
 	attrRequestID      = "http.request_id"
 	attrQuery          = "http.query."
@@ -39,6 +40,7 @@ func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, cfg Config)
 
 			// Set additional request attributes
 			span.SetAttributes(spanRequestAttrs(&cfg, req)...)
+			ctx = context.WithValue(ctx, RequestCtxKey, req)
 			ctx = context.WithValue(ctx, RequestSpanCtxKey, span)
 
 			// Route and route params must be obtained by the OpenTelemetryRoute middleware registered to httptreemux.Muxer.
@@ -53,6 +55,11 @@ func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, cfg Config)
 		})
 		return otelhttp.NewHandler(h, SpanName, otelOptions(cfg, tp, mp)...)
 	}
+}
+
+func Request(ctx context.Context) (*http.Request, bool) {
+	v, ok := ctx.Value(RequestCtxKey).(*http.Request)
+	return v, ok
 }
 
 func RequestSpan(ctx context.Context) (trace.Span, bool) {

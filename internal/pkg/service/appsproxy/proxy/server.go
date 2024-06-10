@@ -2,7 +2,11 @@ package proxy
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
+	"strings"
 	"time"
 
 	oautproxylogger "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
@@ -21,6 +25,47 @@ const (
 	readHeaderTimeout       = 10 * time.Second
 	gracefulShutdownTimeout = 30 * time.Second
 )
+
+type tracerProviderWrapper struct {
+	trace.TracerProvider
+}
+
+type tracerWrapper struct {
+	trace.Tracer
+}
+
+type spanWrapper struct {
+	trace.Span
+	req *http.Request
+}
+
+func newTracerProvider(tp trace.TracerProvider) trace.TracerProvider {
+	return &tracerProviderWrapper{TracerProvider: tp}
+}
+
+func (tp *tracerProviderWrapper) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
+	return &tracerWrapper{Tracer: tp.TracerProvider.Tracer(name, options...)}
+}
+
+func (t *tracerWrapper) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+	req, _ := middleware.Request(ctx) // todo panic
+	ctx, span := t.Tracer.Start(ctx, spanName, opts...)
+	span = &spanWrapper{Span: span, req: req}
+	ctx = trace.ContextWithSpan(ctx, span)
+	return ctx, span
+}
+
+func (w *spanWrapper) SetStatus(code codes.Code, description string) {
+	// example
+}
+
+func (w *spanWrapper) End(options ...trace.SpanEndOption) {
+	if !strings.HasPrefix(w.req.URL.Path, config.InternalPrefix) {
+		// Proxied requests are always OK, regardless of the status code
+		w.Span.SetStatus(http.StatusOK, "")
+	}
+	w.Span.End(options...)
+}
 
 func StartServer(ctx context.Context, d dependencies.ServiceScope) error {
 	logger := d.Logger()
@@ -87,7 +132,7 @@ func NewHandler(d dependencies.ServiceScope) http.Handler {
 		middleware.Filter(middlewareCfg),
 		middleware.Logger(d.Logger()),
 		middleware.OpenTelemetry(
-			d.Telemetry().TracerProvider(),
+			newTracerProvider(d.Telemetry().TracerProvider()),
 			d.Telemetry().MeterProvider(),
 			middlewareCfg,
 		),
