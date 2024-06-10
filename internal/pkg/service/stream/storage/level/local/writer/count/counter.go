@@ -3,6 +3,7 @@ package count
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"strconv"
@@ -10,6 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benbjohnson/clock"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -24,9 +28,11 @@ type Counter struct {
 }
 
 // CounterWithBackup in addition to Counter allows to read and save the counter value to a backup file.
+// The backup is saved automatically if backupInterval > 0 , and manually using the SyncBackup or the Close methods.
 type CounterWithBackup struct {
 	*Counter
-	backup backup
+	backup       backup
+	backupTicker *clock.Ticker
 }
 
 // backup interface contains used methods from *os.File.
@@ -41,13 +47,13 @@ func NewCounter() *Counter {
 	return &Counter{lock: &sync.RWMutex{}}
 }
 
-func NewCounterWithBackupFile(filePath string) (*CounterWithBackup, error) {
-	backupFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0o640)
+func NewCounterWithBackupFile(ctx context.Context, clk clock.Clock, logger log.Logger, backupPath string, backupInterval time.Duration) (*CounterWithBackup, error) {
+	backupFile, err := os.OpenFile(backupPath, os.O_CREATE|os.O_RDWR, 0o640)
 	if err != nil {
 		return nil, err
 	}
 
-	counter, err := NewCounterWithBackup(backupFile)
+	counter, err := NewCounterWithBackup(ctx, clk, logger, backupFile, backupInterval)
 	if err != nil {
 		_ = backupFile.Close()
 		return nil, err
@@ -56,7 +62,7 @@ func NewCounterWithBackupFile(filePath string) (*CounterWithBackup, error) {
 	return counter, nil
 }
 
-func NewCounterWithBackup(backup backup) (*CounterWithBackup, error) {
+func NewCounterWithBackup(ctx context.Context, clk clock.Clock, logger log.Logger, backup backup, backupInterval time.Duration) (*CounterWithBackup, error) {
 	c := &CounterWithBackup{Counter: NewCounter(), backup: backup}
 
 	// Read value
@@ -89,6 +95,19 @@ func NewCounterWithBackup(backup backup) (*CounterWithBackup, error) {
 			content = strhelper.Truncate(content, 20, "...")
 			return nil, errors.Errorf(`content "%s" of the backup file is not valid: %w`, content, err)
 		}
+	}
+
+	// Start backup ticker
+	if backupInterval > 0 {
+		c.backupTicker = clk.Ticker(backupInterval)
+		go func() {
+			for range c.backupTicker.C {
+				if err = c.SyncBackup(); err != nil {
+					err = errors.PrefixErrorf(err, `cannot flush counter backup %v`, backup)
+					logger.Error(ctx, err.Error())
+				}
+			}
+		}()
 	}
 
 	return c, nil
@@ -135,7 +154,7 @@ func (c *Counter) LastAt() utctime.UTCTime {
 	return c.lastAt
 }
 
-func (c *CounterWithBackup) Flush() error {
+func (c *CounterWithBackup) SyncBackup() error {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -162,7 +181,11 @@ func (c *CounterWithBackup) Flush() error {
 }
 
 func (c *CounterWithBackup) Close() error {
-	if err := c.Flush(); err != nil {
+	if c.backupTicker != nil {
+		c.backupTicker.Stop()
+	}
+
+	if err := c.SyncBackup(); err != nil {
 		return err
 	}
 
