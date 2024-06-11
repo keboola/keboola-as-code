@@ -54,9 +54,7 @@ func New(d dependencies, apiProvider apiProvider) *Bridge {
 		createBucketOnce: &singleflight.Group{},
 	}
 
-	b.plugins.RegisterSinkWithLocalStorage(func(sink *definition.Sink) bool {
-		return sink.Type == definition.SinkTypeTable && sink.Table.Type == definition.TableTypeKeboola
-	})
+	b.plugins.RegisterSinkWithLocalStorage(b.isKeboolaTableSink)
 
 	b.setupOnFileOpen()
 	b.deleteCredentialsOnFileDelete()
