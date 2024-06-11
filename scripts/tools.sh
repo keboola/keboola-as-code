@@ -70,6 +70,12 @@ then
   go install golang.org/x/tools/cmd/godoc@latest
 fi
 
+# benchstat
+if ! command -v benchstat &> /dev/null
+then
+  go install golang.org/x/perf/cmd/benchstat@latest
+fi
+
 # go-mod-upgrade
 if ! command -v go-mod-upgrade &> /dev/null
 then
