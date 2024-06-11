@@ -86,8 +86,7 @@ runs:
         path: |
           ${{ env.GODIRS }}/bin
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/tools.sh') }}
-        restore-keys: |
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-
+
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
