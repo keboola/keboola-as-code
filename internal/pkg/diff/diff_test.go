@@ -24,7 +24,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(branchState))
 
-	d := NewDiffer(projectState)
+	d := NewDiffer(projectState, false)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
@@ -44,7 +44,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(branchState))
 
-	d := NewDiffer(projectState)
+	d := NewDiffer(projectState, false)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
@@ -75,7 +75,7 @@ func TestDiffEqual(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(branchState))
 
-	d := NewDiffer(projectState)
+	d := NewDiffer(projectState, false)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
@@ -107,7 +107,7 @@ func TestDiffNotEqual(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(branchState))
 
-	d := NewDiffer(projectState)
+	d := NewDiffer(projectState, false)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
@@ -162,7 +162,7 @@ func TestDiffEqualConfig(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(configState))
 
-	d := NewDiffer(projectState)
+	d := NewDiffer(projectState, false)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
@@ -220,7 +220,7 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(configState))
 
-	d := NewDiffer(projectState)
+	d := NewDiffer(projectState, false)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
@@ -296,7 +296,7 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(configState))
 
-	d := NewDiffer(projectState)
+	d := NewDiffer(projectState, false)
 	results, err := d.Diff()
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
@@ -370,7 +370,7 @@ func TestDiffRelations(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(objectState))
 
-	differ := NewDiffer(projectState)
+	differ := NewDiffer(projectState, false)
 	reporter := differ.diffValues(objectState, objectState.Remote.Relations, objectState.Local.Relations)
 	expected := `
   - manifest side relation mocked key "foo"
@@ -453,7 +453,7 @@ func TestDiffTransformation(t *testing.T) {
 	assert.NoError(t, projectState.Set(configState))
 
 	// Transformation
-	differ := NewDiffer(projectState)
+	differ := NewDiffer(projectState, false)
 	reporter := differ.diffValues(configState, configState.Remote.Transformation, configState.Local.Transformation)
 	expected := `
   blocks/001-my-block:
@@ -516,7 +516,7 @@ func TestDiffSharedCode(t *testing.T) {
 	assert.NoError(t, projectState.Set(configRowState))
 
 	// Transformation
-	differ := NewDiffer(projectState)
+	differ := NewDiffer(projectState, false)
 	reporter := differ.diffValues(configRowState, configRowState.Remote.SharedCode, configRowState.Local.SharedCode)
 	expected := `
   - SELECT 4;
@@ -680,7 +680,7 @@ func TestDiffOrchestration(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(configState))
 
-	differ := NewDiffer(projectState)
+	differ := NewDiffer(projectState, false)
 	reporter := differ.diffValues(configState, configState.Remote.Orchestration, configState.Local.Orchestration)
 	expected := `
   phases/001-phase:
@@ -764,7 +764,7 @@ func TestDiffMap(t *testing.T) {
 	}
 	assert.NoError(t, projectState.Set(configState))
 
-	differ := NewDiffer(projectState)
+	differ := NewDiffer(projectState, false)
 	reporter := differ.diffValues(configState, configState.Remote.Content, configState.Local.Content)
 	expected := `
   foo.bar:

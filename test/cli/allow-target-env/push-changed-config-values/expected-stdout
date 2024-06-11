@@ -1,0 +1,6 @@
+Overriding the project ID by the environment variable KBC_PROJECT_ID=%s
+Overriding the branch ID by the environment variable KBC_BRANCH_ID=%s
+Plan for "push" operation:
+  * C main/app/keboola.data-apps/data-app | changed: configuration, name
+  × C main/extractor/ex-generic-v2/empty
+Push done.
