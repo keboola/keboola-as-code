@@ -25,7 +25,9 @@ func (r *Repository) estimateSliceSizeOnSliceOpen() {
 		}
 
 		// The operation is performed immediately, outside the atomic operation!
-		// We need to update the value to the Slice entity before saving.
+		// We need to update the value to the Slice entity before saving,
+		// before the callback is completed, because later the entity value is already stored
+		// in the WRITE phase transaction and cannot be modified.
 		if err := r.estimateSliceSize(file, slice).Do(ctx).Err(); err != nil {
 			// Error is not fatal
 			r.logger.Errorf(ctx, `cannot calculate slice pre-allocated size: %s`, err)
