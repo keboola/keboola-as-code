@@ -12,13 +12,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
+	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
+	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -90,18 +90,18 @@ func TestFile_Validation(t *testing.T) {
 	t.Parallel()
 
 	// Following values have own validation
-	localStorage := local.File{
+	localStorage := localModel.File{
 		Dir:            "my-dir",
 		Compression:    compression.NewConfig(),
 		DiskSync:       disksync.NewConfig(),
 		DiskAllocation: diskalloc.NewConfig(),
 	}
-	stagingStorage := staging.File{
+	stagingStorage := stagingModel.File{
 		Provider:    "foo",
 		Compression: compression.NewConfig(),
 		Expiration:  utctime.MustParse("2006-01-02T15:04:05.000Z"),
 	}
-	targetStorage := target.Target{
+	targetStorage := targetModel.Target{
 		Provider: "foo",
 	}
 	volumeAssignment := assignment.Assignment{

@@ -1,11 +1,10 @@
-package staging
+package model
 
 import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 )
 
 const (
@@ -24,11 +23,3 @@ type File struct {
 }
 
 type FileProvider string
-
-func NewFile(localFile local.File, openedAt time.Time) File {
-	// Note: Compression in the staging storage is same as in the local storage, but it can be modified in the future.
-	return File{
-		Compression: localFile.Compression,
-		Expiration:  utctime.From(openedAt.Add(DefaultFileExpiration)),
-	}
-}

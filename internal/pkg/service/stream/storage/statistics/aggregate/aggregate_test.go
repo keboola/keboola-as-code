@@ -1,12 +1,12 @@
 package aggregate
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 

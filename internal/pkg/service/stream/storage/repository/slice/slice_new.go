@@ -6,7 +6,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -36,10 +38,10 @@ func (r *Repository) newSlice(now time.Time, file model.File, volumeID volume.ID
 	s.Type = file.Type
 	s.State = model.SliceWriting
 	s.Columns = file.Columns
-	if s.LocalStorage, err = file.LocalStorage.NewSlice(localDir); err != nil {
+	if s.LocalStorage, err = local.NewSlice(localDir, file.LocalStorage); err != nil {
 		return model.Slice{}, err
 	}
-	if s.StagingStorage, err = file.StagingStorage.NewSlice(stagingPath, s.LocalStorage); err != nil {
+	if s.StagingStorage, err = staging.NewSlice(stagingPath, file.StagingStorage, s.LocalStorage); err != nil {
 		return model.Slice{}, err
 	}
 
