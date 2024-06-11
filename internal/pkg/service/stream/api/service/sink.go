@@ -9,6 +9,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -303,6 +304,10 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 	})
 
 	return &stream.SinkStatisticsFilesResult{Files: files}, nil
+}
+
+func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRequestScope, payload *api.SinkStatisticsClearPayload) (err error) {
+	return errors.NewNotImplementedError()
 }
 
 func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {
