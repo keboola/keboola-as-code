@@ -1,4 +1,4 @@
-package staging
+package model
 
 import (
 	"testing"

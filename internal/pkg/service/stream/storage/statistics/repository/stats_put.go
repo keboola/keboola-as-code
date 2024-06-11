@@ -2,12 +2,12 @@ package repository
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
