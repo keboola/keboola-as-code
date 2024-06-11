@@ -51,7 +51,8 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my
       "wait": true,
       "checkInterval": "5ms",
       "countTrigger": 500,
-      "bytesTrigger": "1MB",
+      "compressedBytesTrigger": "256KB",
+      "uncompressedBytesTrigger": "1MB",
       "intervalTrigger": "50ms"
     },
     "diskAllocation": {

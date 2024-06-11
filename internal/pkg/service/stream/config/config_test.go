@@ -134,9 +134,11 @@ storage:
                     # Minimal interval between syncs to disk. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
                     checkInterval: 5ms
                     # Written records count to trigger sync. Validation rules: min=0,max=1000000,required_if=Mode disk,required_if=Mode cache
-                    countTrigger: 500
-                    # Written size to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
-                    bytesTrigger: 1MB
+                    countTrigger: 10000
+                    # Size of buffered uncompressed data to trigger sync. Validation rules: maxBytes=500MB,required_if=Mode disk,required_if=Mode cache
+                    uncompressedBytesTrigger: 1MB
+                    # Size of buffered compressed data to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
+                    compressedBytesTrigger: 256KB
                     # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
                     intervalTrigger: 50ms
                 allocation:
@@ -146,6 +148,16 @@ storage:
                     static: 100MB
                     # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
                     relative: 110
+            writer:
+                # Concurrency of the writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
+                concurrency: 0
+                # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
+                inputBuffer: 1MB
+                # Max size of the buffer before the output file. 0 = disabled. Validation rules: maxBytes=16MB
+                fileBuffer: 1MB
+                statistics:
+                    # Sync interval of in-memory statistics to disk, as a backup. 0 = disabled. Validation rules: maxDuration=1m
+                    diskSyncInterval: 1s
             compression:
                 # Compression type. Validation rules: required,oneof=none gzip zstd
                 type: gzip
@@ -160,9 +172,9 @@ storage:
                     concurrency: 0
                 zstd:
                     # ZSTD compression level: fastest, default, better, best. Validation rules: min=1,max=4
-                    level: 1
+                    level: 2
                     # ZSTD window size. Validation rules: required,minBytes=1kB,maxBytes=512MB
-                    windowSize: 1MB
+                    windowSize: 4MB
                     # ZSTD concurrency, 0 = auto
                     concurrency: 0
         staging:
@@ -289,8 +301,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.local.compression.zstd.level",
     "type": "int",
     "description": "ZSTD compression level: fastest, default, better, best.",
-    "value": 1,
-    "defaultValue": 1,
+    "value": 2,
+    "defaultValue": 2,
     "overwritten": false,
     "protected": true,
     "validation": "min=1,max=4"
@@ -299,8 +311,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.local.compression.zstd.windowSize",
     "type": "string",
     "description": "ZSTD window size.",
-    "value": "1MB",
-    "defaultValue": "1MB",
+    "value": "4MB",
+    "defaultValue": "4MB",
     "overwritten": false,
     "protected": true,
     "validation": "required,minBytes=1kB,maxBytes=512MB"
@@ -359,16 +371,6 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "required,min=1"
   },
   {
-    "key": "storage.level.local.volume.sync.bytesTrigger",
-    "type": "string",
-    "description": "Written size to trigger sync.",
-    "value": "1MB",
-    "defaultValue": "1MB",
-    "overwritten": false,
-    "protected": true,
-    "validation": "maxBytes=100MB,required_if=Mode disk,required_if=Mode cache"
-  },
-  {
     "key": "storage.level.local.volume.sync.checkInterval",
     "type": "string",
     "description": "Minimal interval between syncs to disk.",
@@ -379,11 +381,21 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
   },
   {
+    "key": "storage.level.local.volume.sync.compressedBytesTrigger",
+    "type": "string",
+    "description": "Size of buffered compressed data to trigger sync.",
+    "value": "256KB",
+    "defaultValue": "256KB",
+    "overwritten": false,
+    "protected": true,
+    "validation": "maxBytes=100MB,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
     "key": "storage.level.local.volume.sync.countTrigger",
     "type": "uint",
     "description": "Written records count to trigger sync.",
-    "value": 500,
-    "defaultValue": 500,
+    "value": 10000,
+    "defaultValue": 10000,
     "overwritten": false,
     "protected": true,
     "validation": "min=0,max=1000000,required_if=Mode disk,required_if=Mode cache"
@@ -409,6 +421,16 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "required,oneof=disabled disk cache"
   },
   {
+    "key": "storage.level.local.volume.sync.uncompressedBytesTrigger",
+    "type": "string",
+    "description": "Size of buffered uncompressed data to trigger sync.",
+    "value": "1MB",
+    "defaultValue": "1MB",
+    "overwritten": false,
+    "protected": true,
+    "validation": "maxBytes=500MB,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
     "key": "storage.level.local.volume.sync.wait",
     "type": "bool",
     "description": "Wait for sync to disk OS cache or to disk hardware, depending on the mode.",
@@ -416,6 +438,46 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "defaultValue": true,
     "overwritten": false,
     "protected": true
+  },
+  {
+    "key": "storage.level.local.writer.concurrency",
+    "type": "int",
+    "description": "Concurrency of the writer for the specified file type. 0 = auto = num of CPU cores",
+    "value": 0,
+    "defaultValue": 0,
+    "overwritten": false,
+    "protected": true,
+    "validation": "min=0,max=256"
+  },
+  {
+    "key": "storage.level.local.writer.fileBuffer",
+    "type": "string",
+    "description": "Max size of the buffer before the output file. 0 = disabled",
+    "value": "1MB",
+    "defaultValue": "1MB",
+    "overwritten": false,
+    "protected": true,
+    "validation": "maxBytes=16MB"
+  },
+  {
+    "key": "storage.level.local.writer.inputBuffer",
+    "type": "string",
+    "description": "Max size of the buffer before compression, if compression is enabled. 0 = disabled",
+    "value": "1MB",
+    "defaultValue": "1MB",
+    "overwritten": false,
+    "protected": true,
+    "validation": "maxBytes=16MB"
+  },
+  {
+    "key": "storage.level.local.writer.statistics.diskSyncInterval",
+    "type": "string",
+    "description": "Sync interval of in-memory statistics to disk, as a backup. 0 = disabled.",
+    "value": 1000000000,
+    "defaultValue": 1000000000,
+    "overwritten": false,
+    "protected": true,
+    "validation": "maxDuration=1m"
   },
   {
     "key": "storage.level.staging.maxSlicesPerFile",
