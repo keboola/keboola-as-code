@@ -67,6 +67,11 @@ func TestSourceStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/test", branchID, sourceID)
 }
 
+// SourceStatisticsClearStreamPath returns the URL path to the stream service SourceStatisticsClear HTTP endpoint.
+func SourceStatisticsClearStreamPath(branchID string, sourceID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/statistics/clear", branchID, sourceID)
+}
+
 // CreateSinkStreamPath returns the URL path to the stream service CreateSink HTTP endpoint.
 func CreateSinkStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks", branchID, sourceID)
@@ -110,6 +115,11 @@ func SinkStatisticsTotalStreamPath(branchID string, sourceID string, sinkID stri
 // SinkStatisticsFilesStreamPath returns the URL path to the stream service SinkStatisticsFiles HTTP endpoint.
 func SinkStatisticsFilesStreamPath(branchID string, sourceID string, sinkID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/statistics/files", branchID, sourceID, sinkID)
+}
+
+// SinkStatisticsClearStreamPath returns the URL path to the stream service SinkStatisticsClear HTTP endpoint.
+func SinkStatisticsClearStreamPath(branchID string, sourceID string, sinkID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/statistics/clear", branchID, sourceID, sinkID)
 }
 
 // GetTaskStreamPath returns the URL path to the stream service GetTask HTTP endpoint.

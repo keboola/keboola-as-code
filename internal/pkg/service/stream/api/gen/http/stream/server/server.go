@@ -20,35 +20,37 @@ import (
 
 // Server lists the stream service endpoint HTTP handlers.
 type Server struct {
-	Mounts               []*MountPoint
-	APIRootIndex         http.Handler
-	APIVersionIndex      http.Handler
-	HealthCheck          http.Handler
-	CreateSource         http.Handler
-	UpdateSource         http.Handler
-	ListSources          http.Handler
-	GetSource            http.Handler
-	DeleteSource         http.Handler
-	GetSourceSettings    http.Handler
-	UpdateSourceSettings http.Handler
-	TestSource           http.Handler
-	CreateSink           http.Handler
-	GetSink              http.Handler
-	GetSinkSettings      http.Handler
-	UpdateSinkSettings   http.Handler
-	ListSinks            http.Handler
-	UpdateSink           http.Handler
-	DeleteSink           http.Handler
-	SinkStatisticsTotal  http.Handler
-	SinkStatisticsFiles  http.Handler
-	GetTask              http.Handler
-	AggregateSources     http.Handler
-	CORS                 http.Handler
-	OpenapiJSON          http.Handler
-	OpenapiYaml          http.Handler
-	Openapi3JSON         http.Handler
-	Openapi3Yaml         http.Handler
-	SwaggerUI            http.Handler
+	Mounts                []*MountPoint
+	APIRootIndex          http.Handler
+	APIVersionIndex       http.Handler
+	HealthCheck           http.Handler
+	CreateSource          http.Handler
+	UpdateSource          http.Handler
+	ListSources           http.Handler
+	GetSource             http.Handler
+	DeleteSource          http.Handler
+	GetSourceSettings     http.Handler
+	UpdateSourceSettings  http.Handler
+	TestSource            http.Handler
+	SourceStatisticsClear http.Handler
+	CreateSink            http.Handler
+	GetSink               http.Handler
+	GetSinkSettings       http.Handler
+	UpdateSinkSettings    http.Handler
+	ListSinks             http.Handler
+	UpdateSink            http.Handler
+	DeleteSink            http.Handler
+	SinkStatisticsTotal   http.Handler
+	SinkStatisticsFiles   http.Handler
+	SinkStatisticsClear   http.Handler
+	GetTask               http.Handler
+	AggregateSources      http.Handler
+	CORS                  http.Handler
+	OpenapiJSON           http.Handler
+	OpenapiYaml           http.Handler
+	Openapi3JSON          http.Handler
+	Openapi3Yaml          http.Handler
+	SwaggerUI             http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -109,6 +111,7 @@ func New(
 			{"GetSourceSettings", "GET", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
 			{"UpdateSourceSettings", "PATCH", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
 			{"TestSource", "POST", "/v1/branches/{branchId}/sources/{sourceId}/test"},
+			{"SourceStatisticsClear", "POST", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
 			{"CreateSink", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"GetSink", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"GetSinkSettings", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
@@ -118,6 +121,7 @@ func New(
 			{"DeleteSink", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"SinkStatisticsTotal", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"SinkStatisticsFiles", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files"},
+			{"SinkStatisticsClear", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
 			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
 			{"AggregateSources", "GET", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/"},
@@ -127,11 +131,13 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/test"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
 			{"CORS", "OPTIONS", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
@@ -145,34 +151,36 @@ func New(
 			{"openapi3.yaml", "GET", "/v1/documentation/openapi3.yaml"},
 			{"swagger-ui", "GET", "/v1/documentation"},
 		},
-		APIRootIndex:         NewAPIRootIndexHandler(e.APIRootIndex, mux, decoder, encoder, errhandler, formatter),
-		APIVersionIndex:      NewAPIVersionIndexHandler(e.APIVersionIndex, mux, decoder, encoder, errhandler, formatter),
-		HealthCheck:          NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
-		CreateSource:         NewCreateSourceHandler(e.CreateSource, mux, decoder, encoder, errhandler, formatter),
-		UpdateSource:         NewUpdateSourceHandler(e.UpdateSource, mux, decoder, encoder, errhandler, formatter),
-		ListSources:          NewListSourcesHandler(e.ListSources, mux, decoder, encoder, errhandler, formatter),
-		GetSource:            NewGetSourceHandler(e.GetSource, mux, decoder, encoder, errhandler, formatter),
-		DeleteSource:         NewDeleteSourceHandler(e.DeleteSource, mux, decoder, encoder, errhandler, formatter),
-		GetSourceSettings:    NewGetSourceSettingsHandler(e.GetSourceSettings, mux, decoder, encoder, errhandler, formatter),
-		UpdateSourceSettings: NewUpdateSourceSettingsHandler(e.UpdateSourceSettings, mux, decoder, encoder, errhandler, formatter),
-		TestSource:           NewTestSourceHandler(e.TestSource, mux, decoder, encoder, errhandler, formatter),
-		CreateSink:           NewCreateSinkHandler(e.CreateSink, mux, decoder, encoder, errhandler, formatter),
-		GetSink:              NewGetSinkHandler(e.GetSink, mux, decoder, encoder, errhandler, formatter),
-		GetSinkSettings:      NewGetSinkSettingsHandler(e.GetSinkSettings, mux, decoder, encoder, errhandler, formatter),
-		UpdateSinkSettings:   NewUpdateSinkSettingsHandler(e.UpdateSinkSettings, mux, decoder, encoder, errhandler, formatter),
-		ListSinks:            NewListSinksHandler(e.ListSinks, mux, decoder, encoder, errhandler, formatter),
-		UpdateSink:           NewUpdateSinkHandler(e.UpdateSink, mux, decoder, encoder, errhandler, formatter),
-		DeleteSink:           NewDeleteSinkHandler(e.DeleteSink, mux, decoder, encoder, errhandler, formatter),
-		SinkStatisticsTotal:  NewSinkStatisticsTotalHandler(e.SinkStatisticsTotal, mux, decoder, encoder, errhandler, formatter),
-		SinkStatisticsFiles:  NewSinkStatisticsFilesHandler(e.SinkStatisticsFiles, mux, decoder, encoder, errhandler, formatter),
-		GetTask:              NewGetTaskHandler(e.GetTask, mux, decoder, encoder, errhandler, formatter),
-		AggregateSources:     NewAggregateSourcesHandler(e.AggregateSources, mux, decoder, encoder, errhandler, formatter),
-		CORS:                 NewCORSHandler(),
-		OpenapiJSON:          http.FileServer(fileSystemOpenapiJSON),
-		OpenapiYaml:          http.FileServer(fileSystemOpenapiYaml),
-		Openapi3JSON:         http.FileServer(fileSystemOpenapi3JSON),
-		Openapi3Yaml:         http.FileServer(fileSystemOpenapi3Yaml),
-		SwaggerUI:            http.FileServer(fileSystemSwaggerUI),
+		APIRootIndex:          NewAPIRootIndexHandler(e.APIRootIndex, mux, decoder, encoder, errhandler, formatter),
+		APIVersionIndex:       NewAPIVersionIndexHandler(e.APIVersionIndex, mux, decoder, encoder, errhandler, formatter),
+		HealthCheck:           NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
+		CreateSource:          NewCreateSourceHandler(e.CreateSource, mux, decoder, encoder, errhandler, formatter),
+		UpdateSource:          NewUpdateSourceHandler(e.UpdateSource, mux, decoder, encoder, errhandler, formatter),
+		ListSources:           NewListSourcesHandler(e.ListSources, mux, decoder, encoder, errhandler, formatter),
+		GetSource:             NewGetSourceHandler(e.GetSource, mux, decoder, encoder, errhandler, formatter),
+		DeleteSource:          NewDeleteSourceHandler(e.DeleteSource, mux, decoder, encoder, errhandler, formatter),
+		GetSourceSettings:     NewGetSourceSettingsHandler(e.GetSourceSettings, mux, decoder, encoder, errhandler, formatter),
+		UpdateSourceSettings:  NewUpdateSourceSettingsHandler(e.UpdateSourceSettings, mux, decoder, encoder, errhandler, formatter),
+		TestSource:            NewTestSourceHandler(e.TestSource, mux, decoder, encoder, errhandler, formatter),
+		SourceStatisticsClear: NewSourceStatisticsClearHandler(e.SourceStatisticsClear, mux, decoder, encoder, errhandler, formatter),
+		CreateSink:            NewCreateSinkHandler(e.CreateSink, mux, decoder, encoder, errhandler, formatter),
+		GetSink:               NewGetSinkHandler(e.GetSink, mux, decoder, encoder, errhandler, formatter),
+		GetSinkSettings:       NewGetSinkSettingsHandler(e.GetSinkSettings, mux, decoder, encoder, errhandler, formatter),
+		UpdateSinkSettings:    NewUpdateSinkSettingsHandler(e.UpdateSinkSettings, mux, decoder, encoder, errhandler, formatter),
+		ListSinks:             NewListSinksHandler(e.ListSinks, mux, decoder, encoder, errhandler, formatter),
+		UpdateSink:            NewUpdateSinkHandler(e.UpdateSink, mux, decoder, encoder, errhandler, formatter),
+		DeleteSink:            NewDeleteSinkHandler(e.DeleteSink, mux, decoder, encoder, errhandler, formatter),
+		SinkStatisticsTotal:   NewSinkStatisticsTotalHandler(e.SinkStatisticsTotal, mux, decoder, encoder, errhandler, formatter),
+		SinkStatisticsFiles:   NewSinkStatisticsFilesHandler(e.SinkStatisticsFiles, mux, decoder, encoder, errhandler, formatter),
+		SinkStatisticsClear:   NewSinkStatisticsClearHandler(e.SinkStatisticsClear, mux, decoder, encoder, errhandler, formatter),
+		GetTask:               NewGetTaskHandler(e.GetTask, mux, decoder, encoder, errhandler, formatter),
+		AggregateSources:      NewAggregateSourcesHandler(e.AggregateSources, mux, decoder, encoder, errhandler, formatter),
+		CORS:                  NewCORSHandler(),
+		OpenapiJSON:           http.FileServer(fileSystemOpenapiJSON),
+		OpenapiYaml:           http.FileServer(fileSystemOpenapiYaml),
+		Openapi3JSON:          http.FileServer(fileSystemOpenapi3JSON),
+		Openapi3Yaml:          http.FileServer(fileSystemOpenapi3Yaml),
+		SwaggerUI:             http.FileServer(fileSystemSwaggerUI),
 	}
 }
 
@@ -192,6 +200,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.GetSourceSettings = m(s.GetSourceSettings)
 	s.UpdateSourceSettings = m(s.UpdateSourceSettings)
 	s.TestSource = m(s.TestSource)
+	s.SourceStatisticsClear = m(s.SourceStatisticsClear)
 	s.CreateSink = m(s.CreateSink)
 	s.GetSink = m(s.GetSink)
 	s.GetSinkSettings = m(s.GetSinkSettings)
@@ -201,6 +210,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.DeleteSink = m(s.DeleteSink)
 	s.SinkStatisticsTotal = m(s.SinkStatisticsTotal)
 	s.SinkStatisticsFiles = m(s.SinkStatisticsFiles)
+	s.SinkStatisticsClear = m(s.SinkStatisticsClear)
 	s.GetTask = m(s.GetTask)
 	s.AggregateSources = m(s.AggregateSources)
 	s.CORS = m(s.CORS)
@@ -222,6 +232,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountGetSourceSettingsHandler(mux, h.GetSourceSettings)
 	MountUpdateSourceSettingsHandler(mux, h.UpdateSourceSettings)
 	MountTestSourceHandler(mux, h.TestSource)
+	MountSourceStatisticsClearHandler(mux, h.SourceStatisticsClear)
 	MountCreateSinkHandler(mux, h.CreateSink)
 	MountGetSinkHandler(mux, h.GetSink)
 	MountGetSinkSettingsHandler(mux, h.GetSinkSettings)
@@ -231,6 +242,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountDeleteSinkHandler(mux, h.DeleteSink)
 	MountSinkStatisticsTotalHandler(mux, h.SinkStatisticsTotal)
 	MountSinkStatisticsFilesHandler(mux, h.SinkStatisticsFiles)
+	MountSinkStatisticsClearHandler(mux, h.SinkStatisticsClear)
 	MountGetTaskHandler(mux, h.GetTask)
 	MountAggregateSourcesHandler(mux, h.AggregateSources)
 	MountCORSHandler(mux, h.CORS)
@@ -773,6 +785,57 @@ func NewTestSourceHandler(
 	})
 }
 
+// MountSourceStatisticsClearHandler configures the mux to serve the "stream"
+// service "SourceStatisticsClear" endpoint.
+func MountSourceStatisticsClearHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear", f)
+}
+
+// NewSourceStatisticsClearHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "SourceStatisticsClear" endpoint.
+func NewSourceStatisticsClearHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeSourceStatisticsClearRequest(mux, decoder)
+		encodeResponse = EncodeSourceStatisticsClearResponse(encoder)
+		encodeError    = EncodeSourceStatisticsClearError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "SourceStatisticsClear")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountCreateSinkHandler configures the mux to serve the "stream" service
 // "CreateSink" endpoint.
 func MountCreateSinkHandler(mux goahttp.Muxer, h http.Handler) {
@@ -1232,6 +1295,57 @@ func NewSinkStatisticsFilesHandler(
 	})
 }
 
+// MountSinkStatisticsClearHandler configures the mux to serve the "stream"
+// service "SinkStatisticsClear" endpoint.
+func MountSinkStatisticsClearHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear", f)
+}
+
+// NewSinkStatisticsClearHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "SinkStatisticsClear" endpoint.
+func NewSinkStatisticsClearHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeSinkStatisticsClearRequest(mux, decoder)
+		encodeResponse = EncodeSinkStatisticsClearResponse(encoder)
+		encodeError    = EncodeSinkStatisticsClearError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "SinkStatisticsClear")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountGetTaskHandler configures the mux to serve the "stream" service
 // "GetTask" endpoint.
 func MountGetTaskHandler(mux goahttp.Muxer, h http.Handler) {
@@ -1376,11 +1490,13 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/settings", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/test", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/tasks/{*taskId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/aggregation/sources", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)

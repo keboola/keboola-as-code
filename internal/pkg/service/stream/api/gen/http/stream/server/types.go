@@ -512,6 +512,18 @@ type TestSourceStreamAPISourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// SourceStatisticsClearStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "SourceStatisticsClear" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type SourceStatisticsClearStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // CreateSinkStreamAPISourceNotFoundResponseBody is the type of the "stream"
 // service "CreateSink" endpoint HTTP response body for the
 // "stream.api.sourceNotFound" error.
@@ -732,6 +744,30 @@ type SinkStatisticsFilesStreamAPISourceNotFoundResponseBody struct {
 // "stream" service "SinkStatisticsFiles" endpoint HTTP response body for the
 // "stream.api.sinkNotFound" error.
 type SinkStatisticsFilesStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SinkStatisticsClearStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "SinkStatisticsClear" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type SinkStatisticsClearStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SinkStatisticsClearStreamAPISinkNotFoundResponseBody is the type of the
+// "stream" service "SinkStatisticsClear" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type SinkStatisticsClearStreamAPISinkNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -1582,6 +1618,18 @@ func NewTestSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) 
 	return body
 }
 
+// NewSourceStatisticsClearStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "SourceStatisticsClear" endpoint of the
+// "stream" service.
+func NewSourceStatisticsClearStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *SourceStatisticsClearStreamAPISourceNotFoundResponseBody {
+	body := &SourceStatisticsClearStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewCreateSinkStreamAPISourceNotFoundResponseBody builds the HTTP response
 // body from the result of the "CreateSink" endpoint of the "stream" service.
 func NewCreateSinkStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *CreateSinkStreamAPISourceNotFoundResponseBody {
@@ -1801,6 +1849,30 @@ func NewSinkStatisticsFilesStreamAPISinkNotFoundResponseBody(res *stream.Generic
 	return body
 }
 
+// NewSinkStatisticsClearStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkStatisticsClear" endpoint of the
+// "stream" service.
+func NewSinkStatisticsClearStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *SinkStatisticsClearStreamAPISourceNotFoundResponseBody {
+	body := &SinkStatisticsClearStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewSinkStatisticsClearStreamAPISinkNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkStatisticsClear" endpoint of the
+// "stream" service.
+func NewSinkStatisticsClearStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *SinkStatisticsClearStreamAPISinkNotFoundResponseBody {
+	body := &SinkStatisticsClearStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewGetTaskStreamAPITaskNotFoundResponseBody builds the HTTP response body
 // from the result of the "GetTask" endpoint of the "stream" service.
 func NewGetTaskStreamAPITaskNotFoundResponseBody(res *stream.GenericError) *GetTaskStreamAPITaskNotFoundResponseBody {
@@ -1911,6 +1983,17 @@ func NewUpdateSourceSettingsPayload(body *UpdateSourceSettingsRequestBody, branc
 // NewTestSourcePayload builds a stream service TestSource endpoint payload.
 func NewTestSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.TestSourcePayload {
 	v := &stream.TestSourcePayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewSourceStatisticsClearPayload builds a stream service
+// SourceStatisticsClear endpoint payload.
+func NewSourceStatisticsClearPayload(branchID string, sourceID string, storageAPIToken string) *stream.SourceStatisticsClearPayload {
+	v := &stream.SourceStatisticsClearPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.StorageAPIToken = storageAPIToken
@@ -2043,6 +2126,18 @@ func NewSinkStatisticsTotalPayload(branchID string, sourceID string, sinkID stri
 // endpoint payload.
 func NewSinkStatisticsFilesPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.SinkStatisticsFilesPayload {
 	v := &stream.SinkStatisticsFilesPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.SinkID = stream.SinkID(sinkID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewSinkStatisticsClearPayload builds a stream service SinkStatisticsClear
+// endpoint payload.
+func NewSinkStatisticsClearPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.SinkStatisticsClearPayload {
+	v := &stream.SinkStatisticsClearPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.SinkID = stream.SinkID(sinkID)

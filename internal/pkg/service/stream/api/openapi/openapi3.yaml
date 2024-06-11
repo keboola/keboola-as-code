@@ -1481,6 +1481,57 @@ paths:
                                 message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear:
+        post:
+            tags:
+                - configuration
+            summary: Clear sink statistics
+            description: Clears all statistics of the sink.
+            operationId: SinkStatisticsClear
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+                - name: sinkId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                  example: github-pr-table-sink
+            responses:
+                "200":
+                    description: OK response.
+                "404":
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sinkNotFound
+                                message: Sink "github-changed-files" not found.
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files:
         get:
             tags:
@@ -1643,6 +1694,47 @@ paths:
                                 statusCode: 404
                                 error: stream.api.sinkNotFound
                                 message: Sink "github-changed-files" not found.
+            security:
+                - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/statistics/clear:
+        post:
+            tags:
+                - configuration
+            summary: Clear source statistics
+            description: Clears all statistics of the source.
+            operationId: SourceStatisticsClear
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+            responses:
+                "200":
+                    description: OK response.
+                "404":
+                    description: 'stream.api.sourceNotFound: Source not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sourceNotFound
+                                message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/test:

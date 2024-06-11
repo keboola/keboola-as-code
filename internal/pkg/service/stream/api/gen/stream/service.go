@@ -46,6 +46,8 @@ type Service interface {
 	UpdateSourceSettings(context.Context, dependencies.SourceRequestScope, *UpdateSourceSettingsPayload) (res *Task, err error)
 	// Tests configured mapping of the source and its sinks.
 	TestSource(context.Context, dependencies.SourceRequestScope, *TestSourcePayload, io.ReadCloser) (res *TestResult, err error)
+	// Clears all statistics of the source.
+	SourceStatisticsClear(context.Context, dependencies.SourceRequestScope, *SourceStatisticsClearPayload) (err error)
 	// Create a new sink in the source.
 	CreateSink(context.Context, dependencies.SourceRequestScope, *CreateSinkPayload) (res *Task, err error)
 	// Get the sink definition.
@@ -64,6 +66,8 @@ type Service interface {
 	SinkStatisticsTotal(context.Context, dependencies.SinkRequestScope, *SinkStatisticsTotalPayload) (res *SinkStatisticsTotalResult, err error)
 	// Get files statistics of the sink.
 	SinkStatisticsFiles(context.Context, dependencies.SinkRequestScope, *SinkStatisticsFilesPayload) (res *SinkStatisticsFilesResult, err error)
+	// Clears all statistics of the sink.
+	SinkStatisticsClear(context.Context, dependencies.SinkRequestScope, *SinkStatisticsClearPayload) (err error)
 	// Get details of a task.
 	GetTask(context.Context, dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
 	// Details about sources for the UI.
@@ -90,7 +94,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [22]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "GetTask", "AggregateSources"}
+var MethodNames = [24]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "GetTask", "AggregateSources"}
 
 // AggregateSourcesPayload is the payload type of the stream service
 // AggregateSources method.
@@ -453,6 +457,15 @@ type SinkFiles []*SinkFile
 // Unique ID of the sink.
 type SinkID = key.SinkID
 
+// SinkStatisticsClearPayload is the payload type of the stream service
+// SinkStatisticsClear method.
+type SinkStatisticsClearPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	SinkID          SinkID
+}
+
 // SinkStatisticsFilesPayload is the payload type of the stream service
 // SinkStatisticsFiles method.
 type SinkStatisticsFilesPayload struct {
@@ -518,6 +531,14 @@ type Source struct {
 
 // Unique ID of the source.
 type SourceID = key.SourceID
+
+// SourceStatisticsClearPayload is the payload type of the stream service
+// SourceStatisticsClear method.
+type SourceStatisticsClearPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+}
 
 type SourceType = definition.SourceType
 
