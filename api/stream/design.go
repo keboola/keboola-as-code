@@ -290,6 +290,18 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("SourceStatisticsClear", func() {
+		Meta("openapi:summary", "Clear source statistics")
+		Description("Clears all statistics of the source.")
+		Payload(GetSourceRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/statistics/clear")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+		})
+	})
+
 	// Sink endpoints --------------------------------------------------------------------------------------------------
 
 	Method("CreateSink", func() {
@@ -414,6 +426,19 @@ var _ = Service("stream", func() {
 		Payload(GetSinkRequest)
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
+	Method("SinkStatisticsClear", func() {
+		Meta("openapi:summary", "Clear sink statistics")
+		Description("Clears all statistics of the sink.")
+		Payload(GetSinkRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
