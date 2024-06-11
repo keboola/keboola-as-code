@@ -65,7 +65,7 @@ func (b *Bridge) deleteToken(api *keboola.AuthorizedAPI, sinkKey key.SinkKey) *o
 }
 
 func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definition.Sink) (keboolasink.Token, error) {
-	// Get token, is the sink is not new
+	// Get token, if the sink is not new
 	var existingToken *keboolasink.Token
 	if !sink.CreatedAt().Time().Equal(now) {
 		err := b.schema.Token().ForSink(sink.SinkKey).GetOrNil(b.client).WithResultTo(&existingToken).Do(ctx).Err()
@@ -74,7 +74,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		}
 	}
 
-	// Use existing token, it the operation is not called from API
+	// Use existing token, if the operation is not called from API
 	api, err := b.apiProvider.APIFromContext(ctx)
 	if err != nil {
 		if existingToken == nil {
