@@ -9,10 +9,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
+	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
+	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -33,9 +33,9 @@ type File struct {
 	ImportedAt     *utctime.UTCTime      `json:"importedAt,omitempty"  validate:"excluded_if=State writing,excluded_if=State closing,excluded_if=State importing,required_if=State imported"`
 	Columns        column.Columns        `json:"columns" validate:"required,min=1"`
 	Assignment     assignment.Assignment `json:"assignment"`
-	LocalStorage   local.File            `json:"local"`
-	StagingStorage staging.File          `json:"staging"`
-	TargetStorage  target.Target         `json:"target"`
+	LocalStorage   localModel.File       `json:"local"`
+	StagingStorage stagingModel.File     `json:"staging"`
+	TargetStorage  targetModel.Target    `json:"target"`
 }
 
 type FileType string

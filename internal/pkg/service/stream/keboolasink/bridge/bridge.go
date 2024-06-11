@@ -10,16 +10,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
+	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
+	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
 const (
 	// stagingFileProvider marks staging files provided by the Keboola Storage API.
-	stagingFileProvider = staging.FileProvider("keboola")
+	stagingFileProvider = stagingModel.FileProvider("keboola")
 	// targetProvider marks files which destionation is a Keboola table.
-	targetProvider = target.Provider("keboola")
+	targetProvider = targetModel.Provider("keboola")
 )
 
 type Bridge struct {
