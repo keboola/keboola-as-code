@@ -1,4 +1,4 @@
-package target
+package model
 
 type Target struct {
 	// Provider of the target data destination.
@@ -6,7 +6,3 @@ type Target struct {
 }
 
 type Provider string
-
-func New() Target {
-	return Target{}
-}

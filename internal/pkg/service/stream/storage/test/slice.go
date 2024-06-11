@@ -10,8 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
+	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
@@ -46,7 +47,7 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 			column.Headers{},
 			column.Body{},
 		},
-		LocalStorage: local.Slice{
+		LocalStorage: localModel.Slice{
 			Dir:                local.NormalizeDirPath(openedAt),
 			Filename:           "slice.csv",
 			AllocatedDiskSpace: 10 * datasize.KB,
@@ -60,7 +61,7 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 				IntervalTrigger: duration.From(50 * time.Millisecond),
 			},
 		},
-		StagingStorage: staging.Slice{
+		StagingStorage: stagingModel.Slice{
 			Path:        "slice.csv",
 			Compression: compression.NewNoneConfig(),
 		},
