@@ -48,6 +48,7 @@ func (r *Repository) moveAll(parentKey fmt.Stringer, from, to level.Level, trans
 		atomicOp.Read(func(ctx context.Context) op.Op {
 			return r.schema.InLevel(from).InSlice(k).GetKV(r.client).WithOnResult(func(kv *op.KeyValueT[statistics.Value]) {
 				if kv == nil {
+					// Reset the value, in case the atomic operation was retried.
 					valueKVs = nil
 				} else {
 					valueKVs = []*op.KeyValueT[statistics.Value]{kv}
