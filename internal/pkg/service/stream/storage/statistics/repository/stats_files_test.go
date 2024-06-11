@@ -157,7 +157,7 @@ func TestRepository_FilesStats(t *testing.T) {
 		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
 	}
 
-	// File stats
+	// Files stats
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		start := model.FileID{OpenedAt: utctime.MustParse("2000-01-01T00:00:00.000Z")}
