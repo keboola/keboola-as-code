@@ -88,12 +88,13 @@ func TestConfig_With(t *testing.T) {
 	localConfigPatch2 := &local.ConfigPatch{
 		Volume: &volume.ConfigPatch{
 			Sync: &disksync.ConfigPatch{
-				Mode:            ptr.Ptr(disksync.ModeCache),
-				Wait:            ptr.Ptr(true),
-				CheckInterval:   ptr.Ptr(duration.From(10 * time.Millisecond)),
-				CountTrigger:    ptr.Ptr(uint(123)),
-				BytesTrigger:    ptr.Ptr(1 * datasize.MB),
-				IntervalTrigger: ptr.Ptr(duration.From(100 * time.Millisecond)),
+				Mode:                     ptr.Ptr(disksync.ModeCache),
+				Wait:                     ptr.Ptr(true),
+				CheckInterval:            ptr.Ptr(duration.From(10 * time.Millisecond)),
+				CountTrigger:             ptr.Ptr(uint(123)),
+				UncompressedBytesTrigger: ptr.Ptr(1 * datasize.MB),
+				CompressedBytesTrigger:   ptr.Ptr(1 * datasize.MB),
+				IntervalTrigger:          ptr.Ptr(duration.From(100 * time.Millisecond)),
 			},
 			Allocation: &diskalloc.ConfigPatch{
 				Enabled:  ptr.Ptr(true),
@@ -103,12 +104,13 @@ func TestConfig_With(t *testing.T) {
 		},
 	}
 	expectedCfg.Local.Volume.Sync = disksync.Config{
-		Mode:            disksync.ModeCache,
-		Wait:            true,
-		CheckInterval:   duration.From(10 * time.Millisecond),
-		CountTrigger:    123,
-		BytesTrigger:    1 * datasize.MB,
-		IntervalTrigger: duration.From(100 * time.Millisecond),
+		Mode:                     disksync.ModeCache,
+		Wait:                     true,
+		CheckInterval:            duration.From(10 * time.Millisecond),
+		CountTrigger:             123,
+		UncompressedBytesTrigger: 1 * datasize.MB,
+		CompressedBytesTrigger:   1 * datasize.MB,
+		IntervalTrigger:          duration.From(100 * time.Millisecond),
 	}
 
 	expectedCfg.Local.Volume.Allocation = diskalloc.Config{
