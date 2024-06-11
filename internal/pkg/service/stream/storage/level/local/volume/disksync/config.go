@@ -6,6 +6,7 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -47,10 +48,13 @@ type Config struct {
 	CheckInterval duration.Duration `json:"checkInterval,omitempty" configKey:"checkInterval" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Minimal interval between syncs to disk."`
 	// CountTrigger defines the writes count after the sync will be triggered.
 	// The number is count of the high-level writers, e.g., one table row = one write operation.
-	CountTrigger uint `json:"countTrigger,omitempty" configKey:"countTrigger" validate:"min=0,max=1000000,required_if=Mode disk,required_if=Mode cache" configUsage:"Written records count to trigger sync."`
-	// BytesTrigger defines the size after the sync will be triggered.
-	// Bytes are measured at the beginning of the writers chain.
-	BytesTrigger datasize.ByteSize `json:"bytesTrigger,omitempty" configKey:"bytesTrigger" validate:"maxBytes=100MB,required_if=Mode disk,required_if=Mode cache" configUsage:"Written size to trigger sync."`
+	CountTrigger uint `json:"countTrigger" configKey:"countTrigger,omitempty" validate:"min=0,max=1000000,required_if=Mode disk,required_if=Mode cache" configUsage:"Written records count to trigger sync."`
+	// UncompressedBytesTrigger defines the size after the sync will be triggered.
+	// Bytes are measured at the start of the writers Chain.
+	UncompressedBytesTrigger datasize.ByteSize `json:"uncompressedBytesTrigger,omitempty" configKey:"uncompressedBytesTrigger" validate:"maxBytes=500MB,required_if=Mode disk,required_if=Mode cache" configUsage:"Size of buffered uncompressed data to trigger sync."`
+	// CompressedBytesTrigger defines the size after the sync will be triggered.
+	// Bytes are measured at the end of the writers Chain.
+	CompressedBytesTrigger datasize.ByteSize `json:"compressedBytesTrigger,omitempty" configKey:"compressedBytesTrigger" validate:"maxBytes=100MB,required_if=Mode disk,required_if=Mode cache" configUsage:"Size of buffered compressed data to trigger sync."`
 	// IntervalTrigger defines the interval from the last sync after the sync will be triggered.
 	IntervalTrigger duration.Duration `json:"intervalTrigger,omitempty" configKey:"intervalTrigger" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Interval from the last sync to trigger sync."`
 }
@@ -58,22 +62,42 @@ type Config struct {
 // ConfigPatch is same as the Config, but with optional/nullable fields.
 // It may be part of a Sink definition to allow modification of the default configuration.
 type ConfigPatch struct {
-	Mode            *Mode              `json:"mode,omitempty"`
-	Wait            *bool              `json:"wait,omitempty"`
-	CheckInterval   *duration.Duration `json:"checkInterval,omitempty"`
-	CountTrigger    *uint              `json:"countTrigger,omitempty"`
-	BytesTrigger    *datasize.ByteSize `json:"bytesTrigger,omitempty"`
-	IntervalTrigger *duration.Duration `json:"intervalTrigger,omitempty"`
+	Mode                     *Mode              `json:"mode,omitempty"`
+	Wait                     *bool              `json:"wait,omitempty"`
+	CheckInterval            *duration.Duration `json:"checkInterval,omitempty"`
+	CountTrigger             *uint              `json:"countTrigger,omitempty"`
+	UncompressedBytesTrigger *datasize.ByteSize `json:"uncompressedBytesTrigger,omitempty"`
+	CompressedBytesTrigger   *datasize.ByteSize `json:"compressedBytesTrigger,omitempty"`
+	IntervalTrigger          *duration.Duration `json:"intervalTrigger,omitempty"`
 }
 
 // NewConfig provides default configuration.
 func NewConfig() Config {
 	return Config{
-		Mode:            ModeDisk,
-		Wait:            true,
-		CheckInterval:   duration.From(5 * time.Millisecond),
-		CountTrigger:    500,
-		BytesTrigger:    1 * datasize.MB,
-		IntervalTrigger: duration.From(50 * time.Millisecond),
+		Mode:                     ModeDisk,
+		Wait:                     true,
+		CheckInterval:            duration.From(5 * time.Millisecond),
+		CountTrigger:             10000,
+		UncompressedBytesTrigger: 1 * datasize.MB,
+		CompressedBytesTrigger:   256 * datasize.KB,
+		IntervalTrigger:          duration.From(50 * time.Millisecond),
 	}
+}
+
+func (c *Config) Validate() error {
+	if c.Mode != ModeDisabled {
+		if c.CheckInterval.Duration() <= 0 {
+			return errors.New("checkInterval is not set")
+		}
+		if c.IntervalTrigger.Duration() <= 0 {
+			return errors.New("intervalTrigger is not set")
+		}
+		if c.UncompressedBytesTrigger <= 0 {
+			return errors.New("uncompressedBytesTrigger is not set")
+		}
+		if c.CompressedBytesTrigger <= 0 {
+			return errors.New("compressedBytesTrigger is not set")
+		}
+	}
+	return nil
 }
