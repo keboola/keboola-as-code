@@ -1,12 +1,12 @@
 package repository_test
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 

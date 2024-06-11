@@ -1,4 +1,4 @@
-package local
+package model
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
@@ -15,13 +15,4 @@ type File struct {
 	DiskSync disksync.Config `json:"diskSync"`
 	// DiskAllocation configures pre-allocation of the disk space for file slices.
 	DiskAllocation diskalloc.Config `json:"diskAllocation"`
-}
-
-func NewFile(path string, cfg Config) File {
-	return File{
-		Dir:            NormalizeDirPath(path),
-		Compression:    cfg.Compression.Simplify(),
-		DiskSync:       cfg.Volume.Sync,
-		DiskAllocation: cfg.Volume.Allocation,
-	}
 }

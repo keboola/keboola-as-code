@@ -2,12 +2,12 @@ package repository
 
 import (
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
