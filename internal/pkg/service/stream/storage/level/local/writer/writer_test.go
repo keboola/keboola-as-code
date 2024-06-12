@@ -2,6 +2,7 @@ package writer_test
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -31,9 +33,7 @@ func TestWriter(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	helper := test.NewWriterHelper()
-
-	w, err := writer.New(cfg, file, dirPath, filePath, logger, clk, slice, writer.NewEvents(), helper.NewRowWriter)
+	w, err := writer.New(ctx, logger, clk, cfg, slice, file, dirPath, filePath, disksync.NewSyncer, test.DummyWriterFactory, writer.NewEvents())
 	require.NoError(t, err)
 
 	// Test getters
@@ -42,8 +42,8 @@ func TestWriter(t *testing.T) {
 	assert.Equal(t, filePath, w.FilePath())
 
 	// Test write methods
-	assert.NoError(t, w.WriteRow(clk.Now(), []any{"123", "456", "789"}))
-	assert.NoError(t, w.WriteRow(clk.Now(), []any{"abc", "def", "ghj"}))
+	assert.NoError(t, w.WriteRecord(clk.Now(), []any{"123", "456", "789"}))
+	assert.NoError(t, w.WriteRecord(clk.Now(), []any{"abc", "def", "ghj"}))
 
 	// Test Close method
 	assert.NoError(t, w.Close(ctx))
@@ -51,13 +51,42 @@ func TestWriter(t *testing.T) {
 	// Try Close again
 	err = w.Close(ctx)
 	if assert.Error(t, err) {
-		assert.Equal(t, "syncer is already stopped: context canceled", err.Error())
+		assert.Equal(t, "writer is already closed", err.Error())
 	}
 
 	// Check file content
 	content, err := os.ReadFile(filePath)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("123,456,789\nabc,def,ghj\n"), content)
+}
+
+func TestWriter_FlushError(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	cfg := writer.NewConfig()
+	logger := log.NewDebugLogger()
+	clk := clock.NewMock()
+	dirPath := t.TempDir()
+	filePath := filepath.Join(dirPath, "file")
+	slice := newTestSlice(t)
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
+	assert.NoError(t, err)
+
+	writerFactory := func(cfg writer.Config, out io.Writer, slice *model.Slice) (writer.FormatWriter, error) {
+		w := test.NewDummyWriter(cfg, out, slice)
+		w.FlushError = errors.New("some error")
+		return w, nil
+	}
+
+	w, err := writer.New(ctx, logger, clk, cfg, slice, file, dirPath, filePath, disksync.NewSyncer, writerFactory, writer.NewEvents())
+	require.NoError(t, err)
+
+	// Test Close method
+	err = w.Close(ctx)
+	if assert.Error(t, err) {
+		assert.Equal(t, "chain sync error:\n- chain flush error:\n  - cannot flush \"*test.DummyWriter\": some error", err.Error())
+	}
 }
 
 func TestWriter_CloseError(t *testing.T) {
@@ -73,16 +102,19 @@ func TestWriter_CloseError(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	helper := test.NewWriterHelper()
-	helper.CloseError = errors.New("some error")
+	writerFactory := func(cfg writer.Config, out io.Writer, slice *model.Slice) (writer.FormatWriter, error) {
+		w := test.NewDummyWriter(cfg, out, slice)
+		w.CloseError = errors.New("some error")
+		return w, nil
+	}
 
-	w, err := writer.New(cfg, file, dirPath, filePath, logger, clk, slice, writer.NewEvents(), helper.NewRowWriter)
+	w, err := writer.New(ctx, logger, clk, cfg, slice, file, dirPath, filePath, disksync.NewSyncer, writerFactory, writer.NewEvents())
 	require.NoError(t, err)
 
 	// Test Close method
 	err = w.Close(ctx)
 	if assert.Error(t, err) {
-		assert.Equal(t, "chain close error:\n- cannot close \"*test.RowWriter\": some error", err.Error())
+		assert.Equal(t, "chain close error:\n- cannot close \"*test.DummyWriter\": some error", err.Error())
 	}
 }
 
