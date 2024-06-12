@@ -124,63 +124,13 @@ jobs:
           echo "$APK_KEY_PRIVATE" > /tmp/keys/apk.key
           chmod 0600 /tmp/keys/apk.key
 
-      - name: Configure AWS Credentials to CLI Assets Account
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Release CLI
+        uses: ./.github/actions/release
         with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_ROLE_REGION }}
-
-      - name: Release
-        run: make release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CLI_DIST_BASE_URL: ${{ env.BASE_URL }}
-          CLI_DIST_AWS_REGION: ${{ env.AWS_REGION }}
-          CLI_DIST_AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
-          CLI_DIST_AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-          CLI_DIST_AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          CLI_DIST_AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
-          DEB_KEY_PRIVATE_PATH: /tmp/keys/deb.key
-          RPM_KEY_PRIVATE_PATH: /tmp/keys/rpm.key
-          APK_KEY_PRIVATE_PATH: /tmp/keys/apk.key
-          APPLE_ACCOUNT_PASSWORD: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
-
-      - name: Upload artifact to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/gh-release/*
           tag: ${{ env.TAG }}
-          overwrite: true
-          file_glob: true
-          prerelease: true
-
-      - name: Create Homebrew formulae
-        run: |
-          mkdir target/homebrew
-          export DARWIN_ARM_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_arm64.zip | cut -f 2 -d ' ' )
-          export DARWIN_AMD_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_amd64.zip | cut -f 2 -d ' ' )
-          export LINUX_ARM_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_armv6.zip  | cut -f 2 -d ' ' )
-          export LINUX_ARM64_TARGET_SHA256=$(openssl dgst -sha256 target/gh-release/*linux_arm64.zip  | cut -f 2 -d ' ' )
-          export LINUX_AMD_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_amd64.zip  | cut -f 2 -d ' ' )
-          envsubst < build/package/homebrew/homebrew.template.rb > target/homebrew/keboola-cli.rb
-          cat target/homebrew/keboola-cli.rb
-
-      - name: Upload Homebrew formulae
-        uses: actions/upload-artifact@v4
-        with:
-          name: homebrew-formulae
-          path: target/homebrew/keboola-cli.rb
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Upload Scoop manifest
-        uses: actions/upload-artifact@v4
-        with:
-          name: scoop-manifest
-          path: target/scoop/keboola-cli.json
-          if-no-files-found: error
-          retention-days: 1
+          version: ${{ env.VERSION }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          apple_account_password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
 
   test-expected-files:
     needs:
@@ -444,20 +394,20 @@ jobs:
             --tsaurl http://timestamp.digicert.com \
             --replace \
             $msi
-
+ 
       - name: Configure AWS Credentials to CLI Assets Account
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_ROLE_REGION }}
-
+ 
       - name: Upload MSI to CLI Assets S3
         env:
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         shell: bash
         run: |
           aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${AWS_BUCKET_NAME}/msi/
-
+ 
       - name: Checksum MSI
         id: checksum
         env:
@@ -468,7 +418,7 @@ jobs:
           checksum=$(checksum -t=sha256 -f="./build/package/windows/msi/${MSI_FILE}")
           echo $checksum
           echo "msi_checksum=${checksum}" >> $GITHUB_OUTPUT
-
+ 
       - name: Push Chocolatey
         env:
           CHOCOLATEY_KEY: ${{ secrets.CHOCOLATEY_KEY }}
@@ -484,7 +434,7 @@ jobs:
           choco apikey -k $env:CHOCOLATEY_KEY -s https://push.chocolatey.org/
           choco pack keboola-cli.nuspec
           choco push keboola-cli.$env:VERSION.nupkg -s https://push.chocolatey.org
-
+ 
       - name: Update Winget Repository fork
         uses: TobKed/github-forks-sync-action@master
         with:
@@ -494,7 +444,7 @@ jobs:
           upstream_branch: master
           target_branch: master
           force: true
-
+ 
       - name: Submit package to Winget Repository (create PR)
         shell: bash
         env:
@@ -504,7 +454,7 @@ jobs:
           curl -kLSs https://aka.ms/wingetcreate/latest -o wingetcreate.exe
           msiUrl="${BASE_URL}/msi/${MSI_FILE}"
           ./wingetcreate.exe update -v $VERSION -u $msiUrl -t $GITHUB_TOKEN Keboola.KeboolaCLI -s
-
+ 
   test-install-linux:
     needs:
       - update-repositories-linux
@@ -567,7 +517,7 @@ jobs:
           apk add keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
-
+ 
   test-install-homebrew-linux:
     needs:
       - update-repositories-homebrew
@@ -583,7 +533,7 @@ jobs:
           brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
-
+ 
   test-install-homebrew-mac-os:
     needs:
       - update-repositories-homebrew
@@ -593,12 +543,12 @@ jobs:
     steps:
       - name: Remove old git package
         run: brew list --full-name | grep '^git@' | xargs -r brew uninstall --ignore-dependencies
-
+ 
       - name: Install on MacOS by Homebrew
         run: |
           brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
-
+ 
   test-install-windows:
     needs:
       - update-repositories-windows
@@ -612,25 +562,25 @@ jobs:
           MSI_FILE: ${{ needs.update-repositories-windows.outputs.msi_file }}
         run: |
           curl "${BASE_URL}/msi/${MSI_FILE}" --output install.msi
-
+ 
       - name: Install on Windows from MSI
         timeout-minutes: 2
         continue-on-error: true
         run: |
           msiexec /i install.msi /quiet /qn /le install_log.txt
-
+ 
       - name: Get the Install log
         run: |
           if (Test-Path "install_log.txt") {
             Get-Content -Path install_log.txt
           }
-
+ 
       - name: Check the CLI was installed
         run: |
           if (!(Test-Path "C:\Program Files\Keboola CLI")) {
             Exit 1
           }
-
+ 
       - name: Install on Windows using Scoop
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
