@@ -253,14 +253,13 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	opts = append([]Option{
 		WithAllocator(tc.Allocator),
-		WithWriterFactory(func(w *writer.BaseWriter) (writer.Writer, error) {
-			return test.NewWriter(tc.WriterHelper, w), nil
-		}),
+		WithSyncerFactory(tc.WriterHelper.NewSyncer),
+		WithFormatWriterFactory(tc.WriterHelper.NewDummyWriter),
 		WithWatchDrainFile(false),
 	}, opts...)
 
-	info := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
-	return Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, info, opts...)
+	spec := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
+	return Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, writer.NewConfig(), spec, opts...)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {

@@ -36,7 +36,7 @@ func TestEventWriter(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", volume.IDFile), []byte("HDD_2"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writerVolume.WithWriterFactory(volumeFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
 	// Register "OnWriterOpen" and "OnWriterClose" events on the "volumes" level
@@ -98,9 +98,9 @@ func TestEventWriter(t *testing.T) {
 	// Register "OnWriterClose" event on the "writer" level
 	slice1 := test.NewSliceOpenedAt("2001-01-01T00:00:00.000Z")
 	slice2 := test.NewSliceOpenedAt("2002-01-01T00:00:00.000Z")
-	writer1, err := vol1.NewWriterFor(slice1)
+	writer1, err := vol1.OpenWriter(slice1)
 	require.NoError(t, err)
-	writer2, err := vol2.NewWriterFor(slice2)
+	writer2, err := vol2.OpenWriter(slice2)
 	require.NoError(t, err)
 	writer1.Events().OnWriterClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer1`, w.SliceKey().OpenedAt())
@@ -164,7 +164,7 @@ func TestEventWriter_OpenError(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writerVolume.WithWriterFactory(volumeFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
 	// Register "OnWriterOpen" event on the "volumes" level
@@ -180,7 +180,7 @@ func TestEventWriter_OpenError(t *testing.T) {
 	})
 
 	// Check error
-	_, err = vol.NewWriterFor(test.NewSlice())
+	_, err = vol.OpenWriter(test.NewSlice())
 	if assert.Error(t, err) {
 		assert.Equal(t, "- error (2)\n- error (1)", err.Error())
 	}
@@ -204,7 +204,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writerVolume.WithWriterFactory(volumeFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
 	// Register "OnWriterClose" event on the "volumes" level
@@ -220,7 +220,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 	})
 
 	// Create writer
-	w, err := vol.NewWriterFor(test.NewSlice())
+	w, err := vol.OpenWriter(test.NewSlice())
 	require.NoError(t, err)
 
 	// Register "OnWriterClose" event on the "writer" level
@@ -236,8 +236,4 @@ func TestEventWriter_CloseError(t *testing.T) {
 
 	// Close volumes
 	assert.NoError(t, volumes.Close(ctx))
-}
-
-func volumeFactory(w *writer.BaseWriter) (writer.Writer, error) {
-	return test.NewWriter(test.NewWriterHelper(), w), nil
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 )
 
 func TestOpenVolumes(t *testing.T) {
@@ -22,6 +23,7 @@ func TestOpenVolumes(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	clk := clock.New()
+	wrCfg := writer.NewConfig()
 
 	// Create volumes directories
 	volumesPath := t.TempDir()
@@ -46,7 +48,7 @@ func TestOpenVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = OpenVolumes(ctx, logger, clk, "my-node", volumesPath)
+		volumes, err = OpenVolumes(ctx, logger, clk, "my-node", volumesPath, wrCfg)
 		assert.NoError(t, err)
 	}()
 

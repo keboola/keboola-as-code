@@ -3,10 +3,7 @@ package csv_test
 import (
 	"compress/gzip"
 	"context"
-	"fmt"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/klauspost/compress/zstd"
@@ -157,7 +154,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 			Name: "compression=ZSTD_SpeedFastest,sync=ToDisk,wait=true",
 			Configure: func(wb *benchmark.WriterBenchmark) {
 				wb.Compression = compression.NewZSTDConfig()
-				wb.Compression.ZSTD.Level = 1
+				wb.Compression.ZSTD.Level = zstd.SpeedFastest
 				wb.Sync.Mode = disksync.ModeDisk
 				wb.Sync.Wait = true
 			},
