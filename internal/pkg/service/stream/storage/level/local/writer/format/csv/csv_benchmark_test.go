@@ -27,8 +27,7 @@ const (
 //
 // Run
 //
-//	go test -p 1 -benchmem ./internal/pkg/service/stream/storage/level/local/writer/csv \
-//	-bench=. -benchtime=10000x -count 1 | tee benchmark.txt
+//	go test -p 1 -benchmem ./internal/pkg/service/stream/storage/level/local/writer/format/csv -bench=. -benchtime=500000x -count 1 | tee benchmark.txt
 //
 // Optionally format results
 //
