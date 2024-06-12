@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/count"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/size"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -32,10 +35,10 @@ func TestNewSyncWriter_ModeDisabled(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeDisabled
 
-	syncer := tc.NewSyncer()
-	assert.Nil(t, syncer.TriggerSync(ctx, false))
-	assert.Nil(t, syncer.TriggerSync(ctx, true))
-	assert.NoError(t, syncer.Stop(ctx))
+	syncerWriter := tc.NewSyncerWriter()
+	assert.Nil(t, syncerWriter.TriggerSync(ctx, false))
+	assert.Nil(t, syncerWriter.TriggerSync(ctx, true))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -51,7 +54,7 @@ func TestNewSyncWriter_ModeInvalid(t *testing.T) {
 	tc.Config.Mode = "invalid"
 	assert.Panics(t, func() {
 		tc.Config.IntervalTrigger = 0
-		tc.NewSyncer()
+		tc.NewSyncerWriter()
 	})
 }
 
@@ -61,7 +64,7 @@ func TestNewSyncWriter_NoCheckInterval(t *testing.T) {
 	tc := newWriterTestCase(t)
 	assert.Panics(t, func() {
 		tc.Config.CheckInterval = 0
-		tc.NewSyncer()
+		tc.NewSyncerWriter()
 	})
 }
 
@@ -71,47 +74,28 @@ func TestNewSyncWriter_NoIntervalTrigger(t *testing.T) {
 	tc := newWriterTestCase(t)
 	assert.Panics(t, func() {
 		tc.Config.IntervalTrigger = 0
-		tc.NewSyncer()
+		tc.NewSyncerWriter()
 	})
 }
 
-// TestNewSyncWriter_NoBytesTrigger tests that Config.BytesTrigger field must be > 0.
-func TestNewSyncWriter_NoBytesTrigger(t *testing.T) {
+// TestNewSyncWriter_NoUncompressedBytesTrigger tests that Config.BytesTrigger field must be > 0.
+func TestNewSyncWriter_NoUncompressedBytesTrigger(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
 	assert.Panics(t, func() {
-		tc.Config.BytesTrigger = 0
-		tc.NewSyncer()
+		tc.Config.UncompressedBytesTrigger = 0
+		tc.NewSyncerWriter()
 	})
 }
 
-func TestSyncWriter_Write_Error(t *testing.T) {
+// TestNewSyncWriter_NoCompressedBytesTriggertests that Config.BytesTrigger field must be > 0.
+func TestNewSyncWriter_NoCompressedBytesTrigger(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
-	tc.Chain.WriteError = errors.New("some write error")
-	syncer := tc.NewSyncer()
-
-	// Try Write
-	n, notifier, err := syncer.WriteWithNotify([]byte("foo"))
-	assert.Nil(t, notifier)
-	assert.Equal(t, 0, n)
-	if assert.Error(t, err) {
-		assert.Equal(t, "some write error", err.Error())
-	}
-}
-
-func TestSyncWriter_WriteString_Error(t *testing.T) {
-	t.Parallel()
-	tc := newWriterTestCase(t)
-	tc.Chain.WriteError = errors.New("some write error")
-	syncer := tc.NewSyncer()
-
-	// Try WriteString
-	n, err := syncer.WriteString("foo")
-	assert.Equal(t, 0, n)
-	if assert.Error(t, err) {
-		assert.Equal(t, "some write error", err.Error())
-	}
+	assert.Panics(t, func() {
+		tc.Config.CompressedBytesTrigger = 0
+		tc.NewSyncerWriter()
+	})
 }
 
 func TestSyncWriter_StopStoppedSyncer(t *testing.T) {
@@ -119,20 +103,20 @@ func TestSyncWriter_StopStoppedSyncer(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Stop the syncer
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Try stop again
-	err := syncer.Stop(ctx)
+	err := syncerWriter.Stop(ctx)
 	if assert.Error(t, err) {
-		assert.Equal(t, "syncer is already stopped: context canceled", err.Error())
+		assert.Equal(t, "syncer is already stopped", err.Error())
 	}
 }
 
 // TestSyncWriter_DoWithNotify_Wait tests wrapping of multiple write operations using DoWithNotify method.
-func TestSyncWriter_DoWithNotify_Wait(t *testing.T) {
+func TestSyncWriter_Write_Wait(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -140,18 +124,13 @@ func TestSyncWriter_DoWithNotify_Wait(t *testing.T) {
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = true
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
-	notifier, err := syncer.DoWithNotify(func() error {
-		for i := 1; i <= 3; i++ {
-			n, err := syncer.WriteString(fmt.Sprintf(`data%d`, i))
-			assert.Equal(t, 5, n)
-			assert.NoError(t, err)
-		}
-		return nil
-	})
-	assert.NoError(t, err)
+	for i := 1; i <= 3; i++ {
+		syncerWriter.MustWriteTestData(t, i)
+	}
+	notifier := syncerWriter.Notifier()
 
 	// Wait for the notifier
 	wg := &sync.WaitGroup{}
@@ -163,18 +142,18 @@ func TestSyncWriter_DoWithNotify_Wait(t *testing.T) {
 	}()
 
 	// Wait for sync
-	assert.NoError(t, syncer.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
 	wg.Wait()
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -201,34 +180,30 @@ func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = false
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
-	notifier, err := syncer.DoWithNotify(func() error {
-		for i := 1; i <= 3; i++ {
-			n, err := syncer.Write([]byte(fmt.Sprintf(`data%d`, i)))
-			assert.Equal(t, 5, n)
-			assert.NoError(t, err)
-		}
-		return nil
-	})
-	assert.NoError(t, err)
+	for i := 1; i <= 3; i++ {
+		syncerWriter.MustWriteTestData(t, i)
+	}
+	notifier := syncerWriter.Notifier()
 
 	// Wait is disabled
+	require.Nil(t, notifier)
 	assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 
 	// Wait for sync
-	assert.NoError(t, syncer.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -245,25 +220,6 @@ func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 `)
 }
 
-// TestSyncWriter_DoWithNotify_Error.
-func TestSyncWriter_DoWithNotify_Error(t *testing.T) {
-	t.Parallel()
-	tc := newWriterTestCase(t)
-	tc.Config.Mode = ModeDisk
-	tc.Config.Wait = true
-
-	syncer := tc.NewSyncer()
-
-	// Write data
-	notifier, err := syncer.DoWithNotify(func() error {
-		return errors.New("some error")
-	})
-	assert.Nil(t, notifier)
-	if assert.Error(t, err) {
-		assert.Equal(t, "some error", err.Error())
-	}
-}
-
 func TestSyncWriter_SkipEmptySync(t *testing.T) {
 	t.Parallel()
 
@@ -271,20 +227,20 @@ func TestSyncWriter_SkipEmptySync(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Wait for sync
-	assert.NoError(t, syncer.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
 
 	// Check output
 	assert.Equal(t, "", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"info","message":"TEST: sync started"}
 {"level":"info","message":"TEST: sync done"}
@@ -308,15 +264,15 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = true
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
@@ -327,15 +283,15 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	}
 
 	// Wait for sync 1
-	syncer.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(ctx, false)
 	wg.Wait()
 
 	// Write data
 	for i := 4; i <= 6; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
@@ -346,18 +302,18 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	}
 
 	// Wait for sync 2
-	syncer.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(ctx, false)
 	wg.Wait()
 
 	// Check output
 	assert.Equal(t, "data1data2data3data4data5data6", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -398,21 +354,20 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 	tc.Config.Wait = true
 	tc.Chain.SyncError = errors.New("some sync error")
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err = notifier.WaitWithTimeout(testWaitTimeout)
-			if assert.Error(t, err) {
+			if err := notifier.WaitWithTimeout(testWaitTimeout); assert.Error(t, err) {
 				assert.Equal(t, "some sync error", err.Error())
 			}
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
@@ -420,21 +375,21 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 	}
 
 	// Wait for sync
-	syncer.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(ctx, false)
 	wg.Wait()
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	err := syncer.Stop(ctx)
+	err := syncerWriter.Stop(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, "some sync error", err.Error())
 	}
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -464,30 +419,30 @@ func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = false
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	// Waiting for sync is disabled, so writes are not blocked
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.Nil(t, notifier)
-		assert.NoError(t, err)
 		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
 
 	// Sync
-	assert.NoError(t, syncer.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}                            
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}                            
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -515,20 +470,20 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 	tc.Config.Wait = false
 	tc.Chain.SyncError = errors.New("some sync error")
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	// Waiting for sync is disabled, so writes are not blocked
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.Nil(t, notifier)
-		assert.NoError(t, err)
 		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
 
 	// Sync
-	err := syncer.TriggerSync(ctx, false).Wait()
+	err := syncerWriter.TriggerSync(ctx, false).Wait()
 	if assert.Error(t, err) {
 		assert.Equal(t, "some sync error", err.Error())
 	}
@@ -537,14 +492,14 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	err = syncer.Stop(ctx)
+	err = syncerWriter.Stop(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, "some sync error", err.Error())
 	}
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -571,15 +526,15 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	tc.Config.Mode = ModeCache
 	tc.Config.Wait = true
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
@@ -590,15 +545,15 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	}
 
 	// Wait for sync 1
-	syncer.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(ctx, false)
 	wg.Wait()
 
 	// Write data
 	for i := 4; i <= 6; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
@@ -609,18 +564,18 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	}
 
 	// Wait for sync 2
-	syncer.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(ctx, false)
 	wg.Wait()
 
 	// Check output
 	assert.Equal(t, "data1data2data3data4data5data6", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -661,21 +616,20 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 	tc.Config.Wait = true
 	tc.Chain.FlushError = errors.New("some flush error")
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err = notifier.WaitWithTimeout(testWaitTimeout)
-			if assert.Error(t, err) {
+			if err := notifier.WaitWithTimeout(testWaitTimeout); assert.Error(t, err) {
 				assert.Equal(t, "some flush error", err.Error())
 			}
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
@@ -683,21 +637,21 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 	}
 
 	// Wait for sync
-	syncer.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(ctx, false)
 	wg.Wait()
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	err := syncer.Stop(ctx)
+	err := syncerWriter.Stop(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, "some flush error", err.Error())
 	}
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -727,30 +681,30 @@ func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 	tc.Config.Mode = ModeCache
 	tc.Config.Wait = false
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	// Waiting for sync is disabled, so writes are not blocked
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.Nil(t, notifier)
-		assert.NoError(t, err)
 		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
 
 	// Sync
-	assert.NoError(t, syncer.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -778,20 +732,20 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 	tc.Config.Wait = false
 	tc.Chain.FlushError = errors.New("some flush error")
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	// Waiting for sync is disabled, so writes are not blocked
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.Nil(t, notifier)
-		assert.NoError(t, err)
 		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
 
 	// Sync
-	err := syncer.TriggerSync(ctx, false).Wait()
+	err := syncerWriter.TriggerSync(ctx, false).Wait()
 	if assert.Error(t, err) {
 		assert.Equal(t, "some flush error", err.Error())
 	}
@@ -800,14 +754,14 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	err = syncer.Stop(ctx)
+	err = syncerWriter.Stop(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, "some flush error", err.Error())
 	}
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -833,15 +787,15 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = true
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
@@ -855,7 +809,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 	tc.Chain.SyncLock.Lock()
 
 	// Trigger sync
-	syncer.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(ctx, false)
 
 	// Wait for sync start
 	assert.Eventually(t, func() bool {
@@ -864,9 +818,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 
 	// Write more data
 	for i := 4; i <= 7; i++ {
-		n, _, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
-		assert.NoError(t, err)
+		syncerWriter.MustWriteTestData(t, i)
 	}
 
 	// Unlock sync
@@ -879,11 +831,11 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 	assert.Equal(t, "data1data2data3data4data5data6data7", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -915,15 +867,15 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
@@ -937,7 +889,7 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 	go func() {
 		tc.Chain.SyncLock.Lock() // block sync completion
 		for i := 0; i < 20; i++ {
-			syncer.TriggerSync(ctx, false)
+			syncerWriter.TriggerSync(ctx, false)
 		}
 		tc.Chain.SyncLock.Unlock()
 	}()
@@ -949,11 +901,11 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -980,15 +932,15 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
@@ -998,8 +950,8 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 		}()
 	}
 
-	// Wait for sync
-	syncer.AddWriteOp(tc.Config.CountTrigger)
+	// Trigger sync by the records count
+	syncerWriter.Counter.Add(tc.Clock.Now(), uint64(tc.Config.CountTrigger)-syncerWriter.Counter.Count())
 	tc.Clock.Add(tc.Config.CheckInterval.Duration())
 	wg.Wait()
 
@@ -1007,11 +959,11 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -1038,15 +990,15 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 
 	// Write data
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 3; i++ {
-		n, notifier, err := syncer.WriteWithNotify([]byte(fmt.Sprintf(`data%d`, i)))
-		assert.Equal(t, 5, n)
+		syncerWriter.MustWriteTestData(t, i)
+
+		notifier := syncerWriter.Notifier()
 		assert.NotNil(t, notifier)
-		assert.NoError(t, err)
 
 		wg.Add(1)
 		go func() {
@@ -1064,11 +1016,11 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -1095,13 +1047,15 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
-	syncer := tc.NewSyncer()
+	syncerWriter := tc.NewSyncerWriter()
 	wg := &sync.WaitGroup{}
 
 	// Write 10 bytes
 	data1 := "1234567890"
-	n1, notifier1, err1 := syncer.WriteWithNotify([]byte(data1))
+	n1, err1 := syncerWriter.Write([]byte(data1))
 	assert.Equal(t, 10, n1)
+
+	notifier1 := syncerWriter.Notifier()
 	assert.NotNil(t, notifier1)
 	assert.NoError(t, err1)
 
@@ -1113,10 +1067,11 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	}()
 
 	// Write data over the limit + wait for sync
-	data2Len := int(tc.Config.BytesTrigger - datasize.ByteSize(10))
+	data2Len := int(tc.Config.UncompressedBytesTrigger - datasize.ByteSize(10))
 	data2 := strings.Repeat("-", data2Len)
-	n2, notifier2, err2 := syncer.WriteWithNotify([]byte(data2))
+	n2, err2 := syncerWriter.Write([]byte(data2))
 	assert.Equal(t, data2Len, n2)
+	notifier2 := syncerWriter.Notifier()
 	assert.NotNil(t, notifier2)
 	assert.NoError(t, err2)
 
@@ -1135,11 +1090,11 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	assert.Equal(t, data1+data2, tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncer.Stop(ctx))
+	assert.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or bytes=128KB or interval=10ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"1234567890\""}
 {"level":"info","message":"TEST: write \"--------------------...\""}
 {"level":"debug","message":"starting sync to disk"}
@@ -1173,6 +1128,14 @@ type testChain struct {
 	WriteError error
 	FlushError error
 	SyncError  error
+}
+
+type testSyncerWriter struct {
+	*Syncer
+	io.Writer
+	BytesMeter *size.Meter
+	Counter    *count.Counter
+	tc         *writerTestCase
 }
 
 func (c *testChain) Write(p []byte) (int, error) {
@@ -1219,12 +1182,13 @@ func newWriterTestCase(tb testing.TB) *writerTestCase {
 
 	// Define sync config for the test, it must be valid
 	config := Config{
-		Mode:            ModeDisk,
-		Wait:            true,
-		CheckInterval:   duration.From(1 * time.Millisecond),
-		CountTrigger:    100,
-		BytesTrigger:    128 * datasize.KB,
-		IntervalTrigger: duration.From(10 * time.Millisecond),
+		Mode:                     ModeDisk,
+		Wait:                     true,
+		CheckInterval:            duration.From(1 * time.Millisecond),
+		CountTrigger:             100,
+		UncompressedBytesTrigger: 128 * datasize.KB,
+		CompressedBytesTrigger:   128 * datasize.KB,
+		IntervalTrigger:          duration.From(10 * time.Millisecond),
 	}
 	val := validator.New()
 	require.NoError(tb, val.Validate(ctx, config))
@@ -1243,10 +1207,45 @@ func newWriterTestCase(tb testing.TB) *writerTestCase {
 	}
 }
 
-func (tc *writerTestCase) NewSyncer() *Syncer {
-	return NewSyncer(tc.Logger, tc.Clock, tc.Config, tc.Chain)
+func (tc *writerTestCase) NewSyncerWriter() *testSyncerWriter {
+	w := &testSyncerWriter{tc: tc}
+	w.BytesMeter = size.NewMeter(tc.Chain)
+	w.Counter = count.NewCounter()
+	w.Writer = w.BytesMeter
+	w.Syncer = NewSyncer(tc.Ctx, tc.Logger, tc.Clock, tc.Config, tc.Chain, w)
+	return w
 }
 
 func (tc *writerTestCase) AssertLogs(expected string) bool {
 	return tc.Logger.AssertJSONMessages(tc.TB, expected)
+}
+
+func (w *testSyncerWriter) Write(p []byte) (n int, err error) {
+	n, err = w.Writer.Write(p)
+	if err == nil {
+		w.Counter.Add(w.tc.Clock.Now(), 1)
+	}
+	return n, err
+}
+
+func (w *testSyncerWriter) MustWriteTestData(t *testing.T, i int) {
+	t.Helper()
+	n, err := w.Write([]byte(fmt.Sprintf(`data%d`, i)))
+	assert.Equal(t, 5, n)
+	assert.NoError(t, err)
+}
+
+// AcceptedWrites returns count of write operations waiting for the sync.
+func (w *testSyncerWriter) AcceptedWrites() uint64 {
+	return w.Counter.Count()
+}
+
+// CompressedSize written to the file, measured after compression writer.
+func (w *testSyncerWriter) CompressedSize() datasize.ByteSize {
+	return w.BytesMeter.Size()
+}
+
+// UncompressedSize written to the file, measured before compression writer.
+func (w *testSyncerWriter) UncompressedSize() datasize.ByteSize {
+	return w.BytesMeter.Size()
 }
