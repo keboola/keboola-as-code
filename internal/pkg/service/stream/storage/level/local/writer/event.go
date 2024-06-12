@@ -1,18 +1,8 @@
 package writer
 
 import (
-	"context"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
-
-type writer = Writer
-
-// EventWriter adds dispatching of the Events for the underlying writer.
-type EventWriter struct {
-	writer
-	events *Events
-}
 
 // Events provides listening to the writer lifecycle.
 type Events struct {
@@ -21,40 +11,8 @@ type Events struct {
 	onWriterClose []func(w Writer, closeErr error) error
 }
 
-// NewEventWriter wraps the Writer to the EventWriter and dispatch "open" event.
-func NewEventWriter(w Writer, events *Events) (*EventWriter, error) {
-	// Dispatch "open" event
-	if err := events.dispatchOnWriterOpen(w); err != nil {
-		return nil, err
-	}
-
-	// Wrap the Close method
-	return &EventWriter{writer: w, events: events}, nil
-}
-
 func NewEvents() *Events {
 	return &Events{}
-}
-
-// Close overwrites the original Close method to dispatch "close" event.
-func (w *EventWriter) Close(ctx context.Context) error {
-	errs := errors.NewMultiError()
-
-	cErr := w.writer.Close(ctx)
-	if cErr != nil {
-		errs.Append(cErr)
-	}
-
-	if eErr := w.events.dispatchOnWriterClose(w, cErr); eErr != nil {
-		errs.Append(eErr)
-	}
-
-	return errs.ErrorOrNil()
-}
-
-// Unwrap returns underlying writer, used in tests.
-func (w *EventWriter) Unwrap() Writer {
-	return w.writer
 }
 
 // OnWriterOpen registers a callback that is invoked in the LIFO order when a new writer is created.
