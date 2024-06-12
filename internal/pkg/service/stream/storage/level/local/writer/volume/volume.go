@@ -56,10 +56,10 @@ type Volume struct {
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The IDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, spec volume.Spec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, wrCfg writer.Config, spec volume.Spec, opts ...Option) (*Volume, error) {
 	v := &Volume{
 		spec:          spec,
-		config:        newConfig(opts),
+		config:        newConfig(wrCfg, opts),
 		logger:        logger,
 		clock:         clock,
 		events:        events,
