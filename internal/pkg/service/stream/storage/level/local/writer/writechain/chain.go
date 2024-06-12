@@ -11,7 +11,6 @@ import (
 
 // Chain of writers at the end of which is the File.
 //   - Writer must implement io.Writer interface - "Write([]byte) (int, error)" method.
-//   - Writer may implement io.StringWriter interface - "WriteString(string) (int, error)" method.
 //   - Writer may implement io.Closer interface - "Close() error" method.
 //   - Writer may implement "Flush() error" method to flush internal buffers before the Sync and the Close.
 //
@@ -39,7 +38,7 @@ type Chain struct {
 	// file at the end of the chain
 	file File
 	// beginning contains the first writer in the chain
-	beginning Writer
+	beginning io.Writer
 	// writers - list of writers in the chain, before the file.
 	writers []io.Writer
 	// flushers - list of resources which must be flushed before the File.Sync.
@@ -51,7 +50,7 @@ type Chain struct {
 // File defines used method from the *os.File.
 // It makes it possible to mock the file in the tests.
 type File interface {
-	Writer
+	io.Writer
 	Sync() error
 	Close() error
 }
@@ -63,11 +62,6 @@ func New(logger log.Logger, file File) *Chain {
 // Write to the Chain beginning.
 func (c *Chain) Write(p []byte) (n int, err error) {
 	return c.beginning.Write(p)
-}
-
-// WriteString to the Chain beginning.
-func (c *Chain) WriteString(s string) (n int, err error) {
-	return c.beginning.WriteString(s)
 }
 
 // Flush data from writers internal buffers, see also Sync method.
@@ -153,8 +147,8 @@ func (c *Chain) Close(ctx context.Context) error {
 // PrependWriter method adds writer from the factory to the Chain beginning.
 // The factory can return the original writer without changes.
 // If the writer implements Flush or Close method, they are automatically registered.
-func (c *Chain) PrependWriter(factory func(Writer) io.Writer) (ok bool) {
-	ok, _ = c.PrependWriterOrErr(func(w Writer) (io.Writer, error) {
+func (c *Chain) PrependWriter(factory func(w io.Writer) io.Writer) (ok bool) {
+	ok, _ = c.PrependWriterOrErr(func(w io.Writer) (io.Writer, error) {
 		return factory(w), nil
 	})
 	return ok
@@ -163,7 +157,7 @@ func (c *Chain) PrependWriter(factory func(Writer) io.Writer) (ok bool) {
 // PrependWriterOrErr method adds writer from the factory to the Chain beginning.
 // The factory can return the original writer without changes.
 // If the writer implements Flush or Close method, they are automatically registered.
-func (c *Chain) PrependWriterOrErr(factory func(Writer) (io.Writer, error)) (ok bool, err error) {
+func (c *Chain) PrependWriterOrErr(factory func(w io.Writer) (io.Writer, error)) (ok bool, err error) {
 	// Wrap Chain with the new writer
 	oldWriter := c.beginning
 	newWriter, err := factory(oldWriter)
