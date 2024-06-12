@@ -3,13 +3,14 @@ package csv_test
 import (
 	"compress/gzip"
 	"context"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/klauspost/compress/zstd"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
@@ -219,14 +220,7 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 		FileType:    model.FileTypeCSV,
 		Columns:     columns,
 		Allocate:    100 * datasize.MB,
-		Sync: disksync.Config{
-			Mode:            disksync.ModeDisk,
-			Wait:            true,
-			CheckInterval:   duration.From(5 * time.Millisecond),
-			CountTrigger:    500,
-			BytesTrigger:    1 * datasize.MB,
-			IntervalTrigger: duration.From(50 * time.Millisecond),
-		},
+		Sync:        disksync.NewConfig(),
 		Compression: compression.NewNoneConfig(),
 		DataChFactory: func(ctx context.Context, n int, g *benchmark.RandomStringGenerator) <-chan []any {
 			ch := make(chan []any, 1000)
