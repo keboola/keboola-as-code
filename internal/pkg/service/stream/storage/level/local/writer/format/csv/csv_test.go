@@ -26,7 +26,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test/testcase"
 	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -49,7 +48,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	// Open volume
 	clk := clock.New()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
-	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clk, writer.NewEvents(), spec)
+	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clk, writer.NewEvents(), writer.NewConfig(), spec)
 	require.NoError(t, err)
 
 	// Create slice
@@ -60,11 +59,11 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	assert.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
-	w, err := vol.NewWriterFor(slice)
+	w, err := vol.OpenWriter(slice)
 	require.NoError(t, err)
 
 	// Write invalid number of values
-	err = w.WriteRow(clk.Now(), []any{"foo"})
+	err = w.WriteRecord(clk.Now(), []any{"foo"})
 	if assert.Error(t, err) {
 		assert.Equal(t, `expected 2 columns in the row, given 1`, err.Error())
 	}
@@ -82,7 +81,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	// Open volume
 	clk := clock.New()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
-	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clock.New(), writer.NewEvents(), spec)
+	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clock.New(), writer.NewEvents(), writer.NewConfig(), spec)
 	require.NoError(t, err)
 
 	// Create slice
@@ -93,11 +92,11 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	assert.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
-	w, err := vol.NewWriterFor(slice)
+	w, err := vol.OpenWriter(slice)
 	require.NoError(t, err)
 
 	// Write invalid number of values
-	err = w.WriteRow(clk.Now(), []any{struct{}{}})
+	err = w.WriteRecord(clk.Now(), []any{struct{}{}})
 	if assert.Error(t, err) {
 		assert.Equal(t, `cannot convert value of the column "id" to the string: unable to cast struct {}{} of type struct {} to string`, err.Error())
 	}
@@ -123,6 +122,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 		log.NewNopLogger(),
 		clock.New(),
 		writer.NewEvents(),
+		writer.NewConfig(),
 		volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"},
 		writerVolume.WithFileOpener(func(filePath string) (writerVolume.File, error) {
 			file, err := writerVolume.DefaultFileOpener(filePath)
@@ -146,7 +146,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	assert.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
-	w, err := vol.NewWriterFor(slice)
+	w, err := vol.OpenWriter(slice)
 	require.NoError(t, err)
 
 	// Block sync
@@ -154,10 +154,10 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 
 	// Start two parallel writes
 	now := utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
-	go func() { assert.NoError(t, w.WriteRow(now, []any{"value"})) }()
-	go func() { assert.NoError(t, w.WriteRow(now, []any{"value"})) }()
+	go func() { assert.NoError(t, w.WriteRecord(now, []any{"value"})) }()
+	go func() { assert.NoError(t, w.WriteRecord(now, []any{"value"})) }()
 	assert.Eventually(t, func() bool {
-		return w.Unwrap().(*csv.Writer).WaitingWriteOps() == 2
+		return w.AcceptedWrites() == 2
 	}, time.Second, 5*time.Millisecond)
 
 	// Close writer
@@ -182,7 +182,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	assert.Equal(t, "value\nvalue\n", string(content))
 
 	// Check rows count file
-	content, err = os.ReadFile(filepath.Join(w.DirPath(), csv.RowsCounterFile))
+	content, err = os.ReadFile(filepath.Join(w.DirPath(), writer.RowsCounterFile))
 	assert.NoError(t, err)
 	assert.Equal(t, "2,2000-01-01T00:00:00.000Z,2000-01-01T00:00:00.000Z", string(content))
 
@@ -296,21 +296,23 @@ func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, pa
 		syncConfig = disksync.Config{Mode: disksync.ModeDisabled}
 	case disksync.ModeDisk:
 		syncConfig = disksync.Config{
-			Mode:            disksync.ModeDisk,
-			Wait:            syncWait,
-			CheckInterval:   duration.From(5 * time.Millisecond),
-			CountTrigger:    5000,
-			BytesTrigger:    1 * datasize.MB,
-			IntervalTrigger: duration.From(intervalTrigger),
+			Mode:                     disksync.ModeDisk,
+			Wait:                     syncWait,
+			CheckInterval:            duration.From(5 * time.Millisecond),
+			CountTrigger:             5000,
+			UncompressedBytesTrigger: 10 * datasize.MB,
+			CompressedBytesTrigger:   1 * datasize.MB,
+			IntervalTrigger:          duration.From(intervalTrigger),
 		}
 	case disksync.ModeCache:
 		syncConfig = disksync.Config{
-			Mode:            disksync.ModeCache,
-			Wait:            syncWait,
-			CheckInterval:   duration.From(5 * time.Millisecond),
-			CountTrigger:    5000,
-			BytesTrigger:    1 * datasize.MB,
-			IntervalTrigger: duration.From(intervalTrigger),
+			Mode:                     disksync.ModeCache,
+			Wait:                     syncWait,
+			CheckInterval:            duration.From(5 * time.Millisecond),
+			CountTrigger:             5000,
+			UncompressedBytesTrigger: 10 * datasize.MB,
+			CompressedBytesTrigger:   1 * datasize.MB,
+			IntervalTrigger:          duration.From(intervalTrigger),
 		}
 	default:
 		panic(errors.Errorf(`unexpected mode "%v"`, syncMode))
