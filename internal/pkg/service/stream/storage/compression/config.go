@@ -110,3 +110,8 @@ func (c Config) Simplify() Config {
 	}
 	return c
 }
+
+// HasWriterInputBuffer returns true if the compression writer includes an input buffer.
+func (c Config) HasWriterInputBuffer() bool {
+	return c.Type == TypeGZIP && c.GZIP.Implementation == GZIPImplParallel
+}
