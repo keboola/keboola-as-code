@@ -9,6 +9,7 @@ import (
 )
 
 type config struct {
+	writerConfig writer.Config
 	// allocator allocates a free disk space for a file.
 	allocator diskalloc.Allocator
 	// formatWriterFactory creates a high-level writer for the storage.FileType, for example storage.FileTypeCSV.
@@ -26,7 +27,7 @@ type config struct {
 
 type Option func(config *config)
 
-func newConfig(opts []Option) config {
+func newConfig(wrCfg writer.Config, opts []Option) config {
 	cfg := config{
 		writerConfig:        wrCfg,
 		allocator:           diskalloc.DefaultAllocator{},
@@ -60,9 +61,6 @@ func WithSyncerFactory(v disksync.SyncerFactory) Option {
 
 func WithFormatWriterFactory(v writer.FormatWriterFactory) Option {
 	return func(c *config) {
-		if v == nil {
-			panic(errors.New(`value must not be nil`))
-		}
 		c.formatWriterFactory = v
 	}
 }
