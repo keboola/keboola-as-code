@@ -61,7 +61,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	clk := clock.New()
 	now := clk.Now()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec, opts...)
+	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), writer.NewConfig(), spec, opts...)
 	require.NoError(t, err)
 
 	// Create a test slice

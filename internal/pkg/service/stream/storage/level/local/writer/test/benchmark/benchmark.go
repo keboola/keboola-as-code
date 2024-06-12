@@ -56,14 +56,13 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	gen := newRandomStringGenerator()
 
 	// Setup logger
-	logger := log.NewDebugLogger()
-	logger.ConnectTo(testhelper.VerboseStdout())
+	logger := log.NewServiceLogger(testhelper.VerboseStdout(), false)
 
 	// Open volume
 	clk := clock.New()
 	now := clk.Now()
 	spec := volume.Spec{NodeID: "my-node", Path: b.TempDir(), Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec)
+	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), writer.NewConfig(), spec)
 	require.NoError(b, err)
 
 	// Create writer

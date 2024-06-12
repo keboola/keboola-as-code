@@ -225,8 +225,10 @@ func (e *testEvents) OnWriterClose(fn func(writer.Writer, error) error) {
 	e.WriterClose = fn
 }
 
+// testWriter implements writer.Writer interface.
 type testWriter struct {
 	SliceKeyValue         model.SliceKey
+	InProgressWritesValue uint64
 	RowsCountValue        uint64
 	FirstRowAtValue       utctime.UTCTime
 	LastRowAtValue        utctime.UTCTime
@@ -238,15 +240,19 @@ func (w *testWriter) SliceKey() model.SliceKey {
 	return w.SliceKeyValue
 }
 
-func (w *testWriter) RowsCount() uint64 {
+func (w *testWriter) AcceptedWrites() uint64 {
+	return w.InProgressWritesValue
+}
+
+func (w *testWriter) CompletedWrites() uint64 {
 	return w.RowsCountValue
 }
 
-func (w *testWriter) FirstRowAt() utctime.UTCTime {
+func (w *testWriter) FirstRecordAt() utctime.UTCTime {
 	return w.FirstRowAtValue
 }
 
-func (w *testWriter) LastRowAt() utctime.UTCTime {
+func (w *testWriter) LastRecordAt() utctime.UTCTime {
 	return w.LastRowAtValue
 }
 
@@ -258,7 +264,7 @@ func (w *testWriter) UncompressedSize() datasize.ByteSize {
 	return w.UncompressedSizeValue
 }
 
-func (w *testWriter) WriteRow(_ time.Time, _ []any) error {
+func (w *testWriter) WriteRecord(_ time.Time, _ []any) error {
 	panic(errors.New("method should not be called"))
 }
 
