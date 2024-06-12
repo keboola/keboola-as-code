@@ -20,8 +20,8 @@ func Run(ctx context.Context, o Options, d dependencies, allowTargetEnv bool) (r
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.sync.diff.create")
 	defer span.End(&err)
 
-	differ := diff.NewDiffer(o.Objects)
-	results, err = differ.Diff(allowTargetEnv)
+	differ := diff.NewDiffer(o.Objects, allowTargetEnv)
+	results, err = differ.Diff()
 	if err != nil {
 		return nil, err
 	}

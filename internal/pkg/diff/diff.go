@@ -21,10 +21,11 @@ import (
 type typeName string
 
 type Differ struct {
-	objects   model.ObjectStates
-	results   []*Result                                 // diff results
-	typeCache map[typeName][]*reflecthelper.StructField // reflection cache
-	errors    errors.MultiError
+	objects        model.ObjectStates
+	results        []*Result                                 // diff results
+	typeCache      map[typeName][]*reflecthelper.StructField // reflection cache
+	errors         errors.MultiError
+	allowTargetEnv bool
 }
 
 type ResultState int
@@ -58,21 +59,22 @@ type Results struct {
 	Objects               model.ObjectStates
 }
 
-func NewDiffer(objects model.ObjectStates) *Differ {
+func NewDiffer(objects model.ObjectStates, allowTargetEnv bool) *Differ {
 	return &Differ{
-		objects:   objects,
-		typeCache: make(map[typeName][]*reflecthelper.StructField),
+		objects:        objects,
+		typeCache:      make(map[typeName][]*reflecthelper.StructField),
+		allowTargetEnv: allowTargetEnv,
 	}
 }
 
-func (d *Differ) Diff(allowTargetEnv bool) (*Results, error) {
+func (d *Differ) Diff() (*Results, error) {
 	d.results = []*Result{}
 	d.errors = errors.NewMultiError()
 
 	// Diff all objects : branches, config, configRows
 	results := &Results{Equal: true, Results: d.results, Objects: d.objects}
 	for _, objectState := range d.objects.All() {
-		result, err := d.diffState(objectState, allowTargetEnv)
+		result, err := d.diffState(objectState)
 		if err != nil {
 			d.errors.Append(err)
 		} else {
@@ -101,7 +103,7 @@ func (d *Differ) Diff(allowTargetEnv bool) (*Results, error) {
 	return results, d.errors.ErrorOrNil()
 }
 
-func (d *Differ) diffState(state model.ObjectState, allowTargetEnv bool) (*Result, error) {
+func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	result := &Result{ObjectState: state}
 	result.ChangedFields = model.NewChangedFields()
 
@@ -148,13 +150,22 @@ func (d *Differ) diffState(state model.ObjectState, allowTargetEnv bool) (*Resul
 		localValues = localValues.Elem()
 	}
 
-	// Diff
+	if remoteState.Kind().IsBranch() && d.allowTargetEnv {
+		result = d.resultFn(result, state, diffFields, remoteValues, localValues, d.newBranchOptions)
+	} else {
+		result = d.resultFn(result, state, diffFields, remoteValues, localValues, d.newOptions)
+	}
+
+	return result, nil
+}
+
+func (d *Differ) resultFn(result *Result, state model.ObjectState, diffFields []*reflecthelper.StructField, remoteValues, localValues reflect.Value, opts func(r *Reporter) cmp.Options) *Result {
 	for _, field := range diffFields {
 		reporter := d.diffValues(
 			state,
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
 			localValues.FieldByName(field.StructField.Name).Interface(),
-			allowTargetEnv,
+			opts,
 		)
 		diffStr := reporter.String()
 		if len(diffStr) > 0 {
@@ -170,20 +181,22 @@ func (d *Differ) diffState(state model.ObjectState, allowTargetEnv bool) (*Resul
 	} else {
 		result.State = ResultEqual
 	}
-
-	return result, nil
+	return result
 }
 
-func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue any, allowTargetEnv bool) *Reporter {
+func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue any, opts func(r *Reporter) cmp.Options) *Reporter {
 	reporter := newReporter(objectState, d.objects)
-
-	if reporter.remoteObject.Kind().IsBranch() && allowTargetEnv {
-		localValue = objectState.LocalState().(*model.Branch)
-		remoteValue = objectState.RemoteState().(*model.Branch)
-	}
-
-	cmp.Diff(remoteValue, localValue, d.newOptions(reporter))
+	cmp.Diff(remoteValue, localValue, opts(reporter))
 	return reporter
+}
+
+func (d *Differ) newBranchOptions(reporter *Reporter) cmp.Options {
+	options := d.newOptions(reporter)
+	options = append(options, cmp.Transformer("name", func(s string) string {
+		fmt.Println("differs")
+		return ""
+	}))
+	return options
 }
 
 func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
@@ -209,8 +222,6 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 		cmp.Transformer("sharedCodeRow", func(code model.SharedCodeRow) string {
 			return code.String()
 		}),
-
-		cmpopts.IgnoreFields(model.Branch{}, "Name"),
 
 		cmpopts.AcyclicTransformer("projectDescription", func(branchMetadata model.BranchMetadata) model.BranchMetadata {
 			branchMetadata = deepcopy.Copy(branchMetadata).(model.BranchMetadata)
