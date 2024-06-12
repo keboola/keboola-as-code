@@ -4,7 +4,6 @@ package disksync
 
 import (
 	"context"
-	"io"
 	"sync"
 
 	"github.com/benbjohnson/clock"
@@ -16,50 +15,77 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Syncer writes data to the underlying writer and according to the Config it calls the chain.Flush() or chain.Sync().
-// Regarding waiting for sync, see Notifier and DoWithNotifier methods.
+// Syncer according to the Config calls the Chain.Flush() or Chain.Sync().
+// Regarding waiting for sync, see Notifier methods.
 type Syncer struct {
 	logger log.Logger
 	clock  clock.Clock
 	config Config
-	chain  chain
+	chain  Chain
 
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     *sync.WaitGroup
+	stopped chan struct{}
+	wg      *sync.WaitGroup
 
-	// writeOpsCount is updated via AddWriteOp method.
-	// It contains count of high-level writers, e.g., one table row = one write operation.
-	// This may not correspond to the number of calls of the low-level Write or WriteString methods.
-	writeOpsCount *atomic.Uint64
-	// lastSyncAt is updated on each sync start
-	lastSyncAt *atomic.Time
-	// bytesToSync are updated by the Write method, the Syncer is the first writer in the chain
-	bytesToSync *atomic.Uint64
+	statistics StatisticsProvider
+
+	// Snapshots of the metrics at the last sync
+
+	acceptedWritesSnapshot   *atomic.Uint64
+	uncompressedSizeSnapshot *atomic.Uint64
+	compressedSizeSnapshot   *atomic.Uint64
+	lastSyncAt               *atomic.Time
 
 	// syncLock ensures that only one sync runs at a time
 	syncLock *sync.Mutex
 
-	// notifierLock ensures that each high-level write operation receives the notifier that belongs to it, see DoWithNotifier.
+	// notifierLock protects the notifier field during a swap on sync
 	notifierLock *sync.RWMutex
 	notifier     *notify.Notifier
 
+	// opFn is operation triggered on sync
 	opFn func(ctx context.Context) error
 }
 
-// chain is a resource responsible for synchronizing of file writers.
-type chain interface {
-	io.Writer
-	io.StringWriter
+type SyncerFactory func(
+	ctx context.Context,
+	logger log.Logger,
+	clock clock.Clock,
+	config Config,
+	chain Chain,
+	statistics StatisticsProvider,
+) *Syncer
+
+// Chain is a resource that should be synchronized.
+type Chain interface {
 	// Flush data from memory to OS disk cache. Used if Config.Mode=ModeToCache.
 	Flush(ctx context.Context) error
 	// Sync data from memory to disk. Used if Config.Mode=ModeToDisk.
 	Sync(ctx context.Context) error
 }
 
-// NewSyncer may return nil if the synchronization is disabled by the Config.
-func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain) *Syncer {
-	// Process mode option
+type StatisticsProvider interface {
+	// AcceptedWrites returns count of write operations waiting for the sync.
+	AcceptedWrites() uint64
+	// CompressedSize written to the file, measured after compression writer.
+	CompressedSize() datasize.ByteSize
+	// UncompressedSize written to the file, measured before compression writer.
+	UncompressedSize() datasize.ByteSize
+}
+
+func NewSyncer(
+	ctx context.Context,
+	logger log.Logger,
+	clock clock.Clock,
+	config Config,
+	chain Chain,
+	statistics StatisticsProvider,
+) *Syncer {
+	// Validate config, it should be already validated
+	if err := config.Validate(); err != nil {
+		panic(err)
+	}
+
+	// Select sync function
 	var opFn func(ctx context.Context) error
 	switch config.Mode {
 	case ModeDisabled:
@@ -72,146 +98,57 @@ func NewSyncer(logger log.Logger, clock clock.Clock, config Config, chain chain)
 		panic(errors.Errorf(`unexpected sync mode "%s"`, config.Mode))
 	}
 
-	// Check conditions
-	if config.Mode != ModeDisabled {
-		if config.CheckInterval.Duration() <= 0 {
-			panic(errors.New("checkInterval is not set"))
-		}
-		if config.IntervalTrigger.Duration() <= 0 {
-			panic(errors.New("intervalTrigger is not set"))
-		}
-		if config.BytesTrigger <= 0 {
-			panic(errors.New("bytesTrigger is not set"))
-		}
-	}
-
 	s := &Syncer{
-		logger:        logger,
-		clock:         clock,
-		config:        config,
-		chain:         chain,
-		wg:            &sync.WaitGroup{},
-		writeOpsCount: atomic.NewUint64(0),
-		lastSyncAt:    atomic.NewTime(clock.Now()),
-		bytesToSync:   atomic.NewUint64(0),
-		syncLock:      &sync.Mutex{},
-		notifierLock:  &sync.RWMutex{},
-		notifier:      notify.New(),
-		opFn:          opFn,
+		logger:                   logger,
+		clock:                    clock,
+		config:                   config,
+		chain:                    chain,
+		stopped:                  make(chan struct{}),
+		wg:                       &sync.WaitGroup{},
+		statistics:               statistics,
+		acceptedWritesSnapshot:   atomic.NewUint64(0),
+		uncompressedSizeSnapshot: atomic.NewUint64(0),
+		compressedSizeSnapshot:   atomic.NewUint64(0),
+		lastSyncAt:               atomic.NewTime(clock.Now()),
+		syncLock:                 &sync.Mutex{},
+		notifierLock:             &sync.RWMutex{},
+		notifier:                 notify.New(),
+		opFn:                     opFn,
 	}
 
-	s.ctx, s.cancel = context.WithCancel(context.Background())
+	// Syncer must be stopped by the Stop method
+	ctx = context.WithoutCancel(ctx)
 
 	if opFn != nil {
 		s.logger.Infof(
-			s.ctx,
-			`sync is enabled, mode=%s, sync each {count=%d or bytes=%s or interval=%s}, check each %s`,
+			ctx,
+			`sync is enabled, mode=%s, sync each {count=%d or uncompressed=%s or compressed=%s or interval=%s}, check each %s`,
 			config.Mode,
 			config.CountTrigger,
-			config.BytesTrigger,
+			config.UncompressedBytesTrigger,
+			config.CompressedBytesTrigger,
 			config.IntervalTrigger,
 			config.CheckInterval,
 		)
-		s.syncLoop(s.ctx)
+		s.syncLoop(ctx)
 	} else {
-		logger.Info(s.ctx, "sync is disabled")
+		logger.Info(ctx, "sync is disabled")
 	}
 
 	return s
 }
 
-// AddWriteOp increments number of high-level writer operations in progress,
-// for example writing one row of the table is one high-level write operation.
-func (s *Syncer) AddWriteOp(n uint) {
-	s.writeOpsCount.Add(uint64(n))
-}
-
-// WaitingWriteOps returns count of write operations waiting for the sync, for tests.
-func (s *Syncer) WaitingWriteOps() uint64 {
-	return s.writeOpsCount.Load()
-}
-
-// DoWithNotify provides wrapping for multiple write operations and waiting for them to be synced to disk.
-// This is ensured by shared notifierLock, so notifier cannot be swapped during the method,
-// but parallel writes are not blocked. The lock blocks the TriggerSync method,
-// so operations are expected to be short.
-func (s *Syncer) DoWithNotify(do func() error) (notifier *notify.Notifier, err error) {
-	// Get notifier and block it change during write, see doSync method
-	// Note: *notify.Notifier(nil).Wait() is a valid call
-	if s.config.Wait {
-		s.notifierLock.RLock()
-		defer s.notifierLock.RUnlock()
-		notifier = s.notifier
+// Notifier to wait for the next sync.
+func (s *Syncer) Notifier() *notify.Notifier {
+	// Wait is disabled, return nil notifier, *notify.Notifier(nil).Wait() is valid NOP call.
+	if !s.config.Wait {
+		return nil
 	}
 
-	if err = do(); err != nil {
-		return nil, err
-	}
-
-	return notifier, nil
-}
-
-// WriteWithNotify writes to the underlying writer.
-// Returned *notify.Notifier can be used to wait for disk sync.
-func (s *Syncer) WriteWithNotify(p []byte) (n int, notifier *notify.Notifier, err error) {
-	// Get notifier and block it change during write, see doSync method
-	// Note: *notify.Notifier(nil).Wait() is a valid call
-	if s.config.Wait {
-		s.notifierLock.RLock()
-		defer s.notifierLock.RUnlock()
-		notifier = s.notifier
-	}
-
-	n, err = s.Write(p)
-	if err != nil {
-		return n, nil, err
-	}
-
-	s.AddWriteOp(1)
-	return n, notifier, nil
-}
-
-func (s *Syncer) Write(p []byte) (n int, err error) {
-	// Write data to the underlying writer
-	n, err = s.chain.Write(p)
-	if err != nil {
-		return n, err
-	}
-
-	s.bytesToSync.Add(uint64(n))
-	return n, nil
-}
-
-func (s *Syncer) WriteString(str string) (n int, err error) {
-	// Write data to the underlying writer
-	n, err = s.chain.WriteString(str)
-	if err != nil {
-		return n, err
-	}
-
-	s.bytesToSync.Add(uint64(n))
-	return n, nil
-}
-
-// Stop periodical synchronization.
-func (s *Syncer) Stop(ctx context.Context) error {
-	if err := s.ctx.Err(); err != nil {
-		return errors.Errorf(`syncer is already stopped: %w`, err)
-	}
-
-	s.logger.Debug(ctx, `stopping syncer`)
-
-	// Stop sync loop
-	s.cancel()
-
-	// Run the last sync
-	err := s.TriggerSync(ctx, true).Wait()
-
-	// Wait for sync loop and running sync, if any
-	s.wg.Wait()
-
-	s.logger.Debug(ctx, `syncer stopped`)
-	return err
+	s.notifierLock.RLock()
+	notifier := s.notifier
+	s.notifierLock.RUnlock()
+	return notifier
 }
 
 // TriggerSync initiates synchronization.
@@ -231,17 +168,19 @@ func (s *Syncer) TriggerSync(ctx context.Context, force bool) *notify.Notifier {
 	} else if !s.syncLock.TryLock() {
 		// Skip trigger, if a sync is already in progress
 		s.notifierLock.RLock()
-		defer s.notifierLock.RUnlock()
-		return s.notifier
+		notifier := s.notifier
+		s.notifierLock.RUnlock()
+		return notifier
 	}
 
 	// At this point the syncLock is locked.
 	// It is released at the end of the goroutine bellow.
 
 	// Update counters
-	s.writeOpsCount.Store(0)
+	s.acceptedWritesSnapshot.Store(s.statistics.AcceptedWrites())
+	s.uncompressedSizeSnapshot.Store(uint64(s.statistics.UncompressedSize()))
+	s.compressedSizeSnapshot.Store(uint64(s.statistics.CompressedSize()))
 	s.lastSyncAt.Store(s.clock.Now())
-	s.bytesToSync.Store(0)
 
 	// Swap sync notifier, split old and new writes
 	s.notifierLock.Lock()
@@ -273,6 +212,35 @@ func (s *Syncer) TriggerSync(ctx context.Context, force bool) *notify.Notifier {
 	return notifier
 }
 
+// Stop periodical synchronization.
+func (s *Syncer) Stop(ctx context.Context) error {
+	s.logger.Debug(ctx, `stopping syncer`)
+
+	// Prevent new syncs
+	if s.isStopped() {
+		return errors.New(`syncer is already stopped`)
+	}
+	close(s.stopped)
+
+	// Run the last sync
+	err := s.TriggerSync(ctx, true).Wait()
+
+	// Wait for sync loop and running sync, if any
+	s.wg.Wait()
+
+	s.logger.Debug(ctx, `syncer stopped`)
+	return err
+}
+
+func (s *Syncer) isStopped() bool {
+	select {
+	case <-s.stopped:
+		return true
+	default:
+		return false
+	}
+}
+
 func (s *Syncer) syncLoop(ctx context.Context) {
 	ticker := s.clock.Ticker(s.config.CheckInterval.Duration())
 
@@ -284,19 +252,38 @@ func (s *Syncer) syncLoop(ctx context.Context) {
 		// Periodically check the conditions and start synchronization if any condition is met
 		for {
 			select {
-			case <-ctx.Done():
+			case <-s.stopped:
 				// The Close method has been called
 				return
 			case <-ticker.C:
-				if count := s.writeOpsCount.Load(); count > 0 {
-					countTrigger := count >= uint64(s.config.CountTrigger)
-					bytesTrigger := datasize.ByteSize(s.bytesToSync.Load()) >= s.config.BytesTrigger
-					intervalTrigger := s.clock.Now().Sub(s.lastSyncAt.Load()) >= s.config.IntervalTrigger.Duration()
-					if countTrigger || bytesTrigger || intervalTrigger {
-						s.TriggerSync(ctx, false)
-					}
+				if s.checkSyncConditions() {
+					s.TriggerSync(ctx, false)
 				}
 			}
 		}
 	}()
+}
+
+func (s *Syncer) checkSyncConditions() bool {
+	count := s.statistics.AcceptedWrites() - s.acceptedWritesSnapshot.Load()
+	if count == 0 {
+		return false
+	}
+
+	if count >= uint64(s.config.CountTrigger) {
+		return true
+	}
+
+	uncompressedSize := s.statistics.UncompressedSize() - datasize.ByteSize(s.uncompressedSizeSnapshot.Load())
+	if uncompressedSize >= s.config.UncompressedBytesTrigger {
+		return true
+	}
+
+	compressedSize := s.statistics.CompressedSize() - datasize.ByteSize(s.compressedSizeSnapshot.Load())
+	if compressedSize >= s.config.CompressedBytesTrigger {
+		return true
+	}
+
+	durationFromLastSync := s.clock.Now().Sub(s.lastSyncAt.Load())
+	return durationFromLastSync >= s.config.IntervalTrigger.Duration()
 }
