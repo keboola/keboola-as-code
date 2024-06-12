@@ -49,7 +49,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 
 	// Diff
-	results, err := createDiff.Run(ctx, createDiff.Options{Objects: templateState}, d)
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: templateState}, d, false)
 	if err != nil {
 		return err
 	}

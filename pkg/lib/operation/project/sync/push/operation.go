@@ -65,7 +65,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Diff
-	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d)
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d, projectState.ProjectManifest().AllowTargetENV())
 	if err != nil {
 		return err
 	}

@@ -16,12 +16,12 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 }
 
-func Run(ctx context.Context, o Options, d dependencies) (results *diff.Results, err error) {
+func Run(ctx context.Context, o Options, d dependencies, allowTargetEnv bool) (results *diff.Results, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.sync.diff.create")
 	defer span.End(&err)
 
 	differ := diff.NewDiffer(o.Objects)
-	results, err = differ.Diff()
+	results, err = differ.Diff(allowTargetEnv)
 	if err != nil {
 		return nil, err
 	}

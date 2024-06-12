@@ -25,7 +25,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 	assert.NoError(t, projectState.Set(branchState))
 
 	d := NewDiffer(projectState)
-	results, err := d.Diff()
+	results, err := d.Diff(false)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
@@ -45,7 +45,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 	assert.NoError(t, projectState.Set(branchState))
 
 	d := NewDiffer(projectState)
-	results, err := d.Diff()
+	results, err := d.Diff(false)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
@@ -76,7 +76,7 @@ func TestDiffEqual(t *testing.T) {
 	assert.NoError(t, projectState.Set(branchState))
 
 	d := NewDiffer(projectState)
-	results, err := d.Diff()
+	results, err := d.Diff(false)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
@@ -108,7 +108,7 @@ func TestDiffNotEqual(t *testing.T) {
 	assert.NoError(t, projectState.Set(branchState))
 
 	d := NewDiffer(projectState)
-	results, err := d.Diff()
+	results, err := d.Diff(false)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 1)
 	result := results.Results[0]
@@ -163,7 +163,7 @@ func TestDiffEqualConfig(t *testing.T) {
 	assert.NoError(t, projectState.Set(configState))
 
 	d := NewDiffer(projectState)
-	results, err := d.Diff()
+	results, err := d.Diff(false)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 	result1 := results.Results[0]
@@ -221,7 +221,7 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	assert.NoError(t, projectState.Set(configState))
 
 	d := NewDiffer(projectState)
-	results, err := d.Diff()
+	results, err := d.Diff(false)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 
@@ -297,7 +297,7 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 	assert.NoError(t, projectState.Set(configState))
 
 	d := NewDiffer(projectState)
-	results, err := d.Diff()
+	results, err := d.Diff(false)
 	assert.NoError(t, err)
 	assert.Len(t, results.Results, 2)
 
@@ -371,7 +371,7 @@ func TestDiffRelations(t *testing.T) {
 	assert.NoError(t, projectState.Set(objectState))
 
 	differ := NewDiffer(projectState)
-	reporter := differ.diffValues(objectState, objectState.Remote.Relations, objectState.Local.Relations)
+	reporter := differ.diffValues(objectState, objectState.Remote.Relations, objectState.Local.Relations, false)
 	expected := `
   - manifest side relation mocked key "foo"
   + manifest side relation mocked key "bar"
@@ -454,7 +454,7 @@ func TestDiffTransformation(t *testing.T) {
 
 	// Transformation
 	differ := NewDiffer(projectState)
-	reporter := differ.diffValues(configState, configState.Remote.Transformation, configState.Local.Transformation)
+	reporter := differ.diffValues(configState, configState.Remote.Transformation, configState.Local.Transformation, false)
 	expected := `
   blocks/001-my-block:
     - #  Block 1
@@ -472,7 +472,7 @@ func TestDiffTransformation(t *testing.T) {
 	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
 
 	// SharedCode link
-	reporter = differ.diffValues(configState, configState.Remote.SharedCode, configState.Local.SharedCode)
+	reporter = differ.diffValues(configState, configState.Remote.SharedCode, configState.Local.SharedCode, false)
 	expected = `
   - (null)
   + 12345
@@ -517,7 +517,7 @@ func TestDiffSharedCode(t *testing.T) {
 
 	// Transformation
 	differ := NewDiffer(projectState)
-	reporter := differ.diffValues(configRowState, configRowState.Remote.SharedCode, configRowState.Local.SharedCode)
+	reporter := differ.diffValues(configRowState, configRowState.Remote.SharedCode, configRowState.Local.SharedCode, false)
 	expected := `
   - SELECT 4;
   + SELECT 1;
@@ -681,7 +681,7 @@ func TestDiffOrchestration(t *testing.T) {
 	assert.NoError(t, projectState.Set(configState))
 
 	differ := NewDiffer(projectState)
-	reporter := differ.diffValues(configState, configState.Remote.Orchestration, configState.Local.Orchestration)
+	reporter := differ.diffValues(configState, configState.Remote.Orchestration, configState.Local.Orchestration, false)
 	expected := `
   phases/001-phase:
       #  001 Phase
@@ -765,7 +765,7 @@ func TestDiffMap(t *testing.T) {
 	assert.NoError(t, projectState.Set(configState))
 
 	differ := NewDiffer(projectState)
-	reporter := differ.diffValues(configState, configState.Remote.Content, configState.Local.Content)
+	reporter := differ.diffValues(configState, configState.Remote.Content, configState.Local.Content, false)
 	expected := `
   foo.bar:
     - "value"

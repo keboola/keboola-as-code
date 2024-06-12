@@ -21,7 +21,7 @@ func Run(ctx context.Context, o Options, d dependencies) (results *diff.Results,
 	defer span.End(&err)
 
 	differ := diff.NewDiffer(o.Objects)
-	results, err = differ.Diff()
+	results, err = differ.Diff(false)
 	if err != nil {
 		return nil, err
 	}
