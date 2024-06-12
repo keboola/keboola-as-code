@@ -182,7 +182,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	assert.Equal(t, "\"value\"\n\"value\"\n", string(content))
 
 	// Check rows count file
-	content, err = os.ReadFile(filepath.Join(w.DirPath(), writer.RowsCounterFile))
+	content, err = os.ReadFile(filepath.Join(w.DirPath(), writer.CompletedWritesCounter))
 	assert.NoError(t, err)
 	assert.Equal(t, "2,2000-01-01T00:00:00.000Z,2000-01-01T00:00:00.000Z", string(content))
 
