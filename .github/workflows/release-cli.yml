@@ -88,10 +88,10 @@ jobs:
       cancel-in-progress: false
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
-    runs-on: macos-latest
     permissions:
       id-token: write
       contents: write
+    runs-on: macos-latest
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -124,26 +124,69 @@ jobs:
           echo "$APK_KEY_PRIVATE" > /tmp/keys/apk.key
           chmod 0600 /tmp/keys/apk.key
 
+      - name: Release CLI
+        uses: ./.github/actions/release
+        with:
+          tag: ${{ env.TAG }}
+          version: ${{ env.VERSION }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          apple_account_password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+
+  push-to-s3:
+    needs:
+      - version
+      - release
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+    permissions:
+      id-token: write
+      contents: write
+    runs-on: macos-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Download targets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-targets
+
       - name: Configure AWS Credentials to CLI Assets Account
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_ROLE_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Release
-        run: make release
+      - name: Upload artifacts to KAC Assets S3
+        shell: bash
+        run: |
+          ls -al
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_checksums.txt" "keboola-cli_${{ env.VERSION }}_checksums.txt" "keboola-cli" "${{ env.VERSION }}" "" ""
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.zip" "keboola-cli_${{ env.VERSION }}_linux_armv6.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.zip" "keboola-cli_${{ env.VERSION }}_linux_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.zip" "keboola-cli_${{ env.VERSION }}_linux_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_armv6.zip" "keboola-cli_${{ env.VERSION }}_windows_armv6.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_darwin_amd64_v1/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_darwin_arm64/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "arm64"
+          # Publish packages
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.apk" "keboola-cli_${{ env.VERSION }}_linux_armv6.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.apk" "keboola-cli_${{ env.VERSION }}_linux_arm64.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.apk" "keboola-cli_${{ env.VERSION }}_linux_amd64.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.deb" "keboola-cli_${{ env.VERSION }}_linux_armv6.deb" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.deb" "keboola-cli_${{ env.VERSION }}_linux_arm64.deb" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.deb" "keboola-cli_${{ env.VERSION }}_linux_amd64.deb" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.rpm" "keboola-cli_${{ env.VERSION }}_linux_armv6.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.rpm" "keboola-cli_${{ env.VERSION }}_linux_arm64.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.rpm" "keboola-cli_${{ env.VERSION }}_linux_amd64.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
+          ls -al
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CLI_DIST_BASE_URL: ${{ env.BASE_URL }}
-          CLI_DIST_AWS_REGION: ${{ env.AWS_REGION }}
-          CLI_DIST_AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
-          CLI_DIST_AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-          CLI_DIST_AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          CLI_DIST_AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
-          DEB_KEY_PRIVATE_PATH: /tmp/keys/deb.key
-          RPM_KEY_PRIVATE_PATH: /tmp/keys/rpm.key
-          APK_KEY_PRIVATE_PATH: /tmp/keys/apk.key
-          APPLE_ACCOUNT_PASSWORD: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
 
       - name: Upload artifact to release
         uses: svenstaro/upload-release-action@v2
@@ -154,33 +197,6 @@ jobs:
           overwrite: true
           file_glob: true
           prerelease: true
-
-      - name: Create Homebrew formulae
-        run: |
-          mkdir target/homebrew
-          export DARWIN_ARM_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_arm64.zip | cut -f 2 -d ' ' )
-          export DARWIN_AMD_TARGET_SHA256=$(openssl dgst -sha256  target/gh-release/*darwin_amd64.zip | cut -f 2 -d ' ' )
-          export LINUX_ARM_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_armv6.zip  | cut -f 2 -d ' ' )
-          export LINUX_ARM64_TARGET_SHA256=$(openssl dgst -sha256 target/gh-release/*linux_arm64.zip  | cut -f 2 -d ' ' )
-          export LINUX_AMD_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_amd64.zip  | cut -f 2 -d ' ' )
-          envsubst < build/package/homebrew/homebrew.template.rb > target/homebrew/keboola-cli.rb
-          cat target/homebrew/keboola-cli.rb
-
-      - name: Upload Homebrew formulae
-        uses: actions/upload-artifact@v4
-        with:
-          name: homebrew-formulae
-          path: target/homebrew/keboola-cli.rb
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Upload Scoop manifest
-        uses: actions/upload-artifact@v4
-        with:
-          name: scoop-manifest
-          path: target/scoop/keboola-cli.json
-          if-no-files-found: error
-          retention-days: 1
 
   test-expected-files:
     needs:
