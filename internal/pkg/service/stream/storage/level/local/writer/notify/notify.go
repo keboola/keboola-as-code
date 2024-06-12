@@ -28,6 +28,7 @@ func (n *Notifier) Done(err error) {
 
 // Wait for the operation.
 func (n *Notifier) Wait() error {
+	// *notify.Notifier(nil).Wait() is valid call
 	if n == nil {
 		return nil
 	}
@@ -38,6 +39,7 @@ func (n *Notifier) Wait() error {
 
 // WaitWithTimeout for the operation.
 func (n *Notifier) WaitWithTimeout(timeout time.Duration) error {
+	// *notify.Notifier(nil).WaitWithTimeout(...) is valid call
 	if n == nil {
 		return nil
 	}
