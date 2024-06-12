@@ -14,7 +14,6 @@ const (
 // This makes it possible to use a custom file implementation in the tests, see FileOpener.
 type File interface {
 	io.Writer
-	io.StringWriter
 	Fd() uintptr
 	Stat() (os.FileInfo, error)
 	Sync() error
