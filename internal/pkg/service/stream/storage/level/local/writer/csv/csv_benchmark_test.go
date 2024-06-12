@@ -193,6 +193,10 @@ func BenchmarkCSVWrite(b *testing.B) {
 	for _, tc := range cases {
 		b.Run(tc.Name, func(b *testing.B) {
 			newBenchmark(tc.Configure).Run(b)
+			// if b.N > 1 {
+			//	// Waiting 10s to minimize CPU thermal throttling
+			//	time.Sleep(10 * time.Second)
+			//}
 		})
 	}
 }
