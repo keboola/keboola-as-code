@@ -34,6 +34,9 @@ func (o orchestrator[T]) start() <-chan error {
 		defer o.logger.Info(o.node.ctx, "stopped")
 		b := newRetryBackoff()
 
+		// Copy variable, it is set to nil later, to signalize successful initialization
+		initDone := initDone
+
 		for {
 			select {
 			case <-o.node.ctx.Done():
