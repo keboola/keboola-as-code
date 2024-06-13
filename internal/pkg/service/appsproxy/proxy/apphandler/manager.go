@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
@@ -86,9 +87,14 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) http.Handle
 	}
 
 	// Create authentication handlers
-	authHandlers, err := m.authProxyManager.NewHandlers(app, appUpstream)
-	if err != nil {
-		return m.newErrorHandler(ctx, app, err)
+	authHandlers := make(map[provider.ID]*authproxy.Handler, len(app.AuthProviders))
+	for _, auth := range app.AuthProviders {
+		switch p := auth.(type) {
+		case provider.OIDC:
+			authHandlers[auth.ID()] = m.authProxyManager.NewHandler(app, p, appUpstream)
+		default:
+			panic("unknown auth provider type")
+		}
 	}
 
 	// Create root handler for application

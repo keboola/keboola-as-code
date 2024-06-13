@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"reflect"
 
-	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -26,7 +26,20 @@ type Provider interface {
 	ID() ID
 	Name() string
 	Type() Type
-	ToProxyProvider() (proxyOptions.Provider, error)
+}
+
+func (v ID) String() string {
+	return string(v)
+}
+
+// new creates a new empty provider of the type.
+func (t Type) new() (Provider, error) {
+	switch t {
+	case TypeOIDC:
+		return OIDC{}, nil
+	default:
+		return nil, errors.Errorf(`unexpected type of data app auth provider "%v"`, t)
+	}
 }
 
 // UnmarshalJSON implements detection of the provider struct using the "type" field.

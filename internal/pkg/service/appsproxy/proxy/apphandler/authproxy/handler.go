@@ -53,15 +53,7 @@ func (m *Manager) ProviderSelector() *Selector {
 	return m.providerSelector
 }
 
-func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) (map[provider.ID]*Handler, error) {
-	out := make(map[provider.ID]*Handler, len(app.AuthProviders))
-	for _, auth := range app.AuthProviders {
-		out[auth.ID()] = m.newHandler(app, auth, upstream)
-	}
-	return out, nil
-}
-
-func (m *Manager) newHandler(app api.AppConfig, auth provider.Provider, upstream chain.Handler) *Handler {
+func (m *Manager) NewHandler(app api.AppConfig, auth provider.OIDC, upstream chain.Handler) *Handler {
 	var err error
 	handler := &Handler{provider: auth}
 

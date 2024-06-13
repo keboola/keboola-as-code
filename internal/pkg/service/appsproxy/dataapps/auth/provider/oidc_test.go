@@ -49,7 +49,9 @@ func TestOIDC(t *testing.T) {
 	}, provider)
 
 	// OAuth2Proxy configuration
-	oAuth2ProxyProvider, err := provider.ToProxyProvider()
+	oAuth2ProxyProvider, ok := provider.(OIDC)
+	require.True(t, ok)
+	proxyOpts, err := oAuth2ProxyProvider.ProxyProviderOptions()
 	require.NoError(t, err)
 	assert.Equal(t, proxyOptions.Provider{
 		ID:                  "my-id",
@@ -73,5 +75,5 @@ func TestOIDC(t *testing.T) {
 				Default: []string{"select_account"},
 			},
 		},
-	}, oAuth2ProxyProvider)
+	}, proxyOpts)
 }

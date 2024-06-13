@@ -17,15 +17,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.Provider, upstream chain.Handler) (*options.Options, error) {
+func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.OIDC, upstream chain.Handler) (*options.Options, error) {
 	// Generate unique cookies secret
 	secret, err := m.generateCookieSecret(app, authProvider.ID())
 	if err != nil {
 		return nil, err
 	}
 
-	// Generate OAuth2Proxy settings
-	proxyProvider, err := authProvider.ToProxyProvider()
+	proxyProvider, err := authProvider.ProxyProviderOptions()
 	if err != nil {
 		return nil, err
 	}
