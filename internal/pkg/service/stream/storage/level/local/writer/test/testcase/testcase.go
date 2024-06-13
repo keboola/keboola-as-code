@@ -68,7 +68,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	slice := tc.newSlice(t, vol)
 
 	// Create writer
-	w, err := vol.NewWriterFor(slice)
+	w, err := vol.OpenWriter(slice)
 	require.NoError(t, err)
 
 	// Write all rows batches
@@ -86,7 +86,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					assert.NoError(t, w.WriteRow(now, row))
+					assert.NoError(t, w.WriteRecord(now, row))
 				}()
 			}
 			go func() {
@@ -98,7 +98,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			go func() {
 				defer close(done)
 				for _, row := range batch.Rows {
-					assert.NoError(t, w.WriteRow(now, row))
+					assert.NoError(t, w.WriteRecord(now, row))
 				}
 			}()
 		}
@@ -113,13 +113,13 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 		// Simulate pod failure, restart writer
 		require.NoError(t, w.Close(ctx))
-		w, err = vol.NewWriterFor(slice)
+		w, err = vol.OpenWriter(slice)
 		require.NoError(t, err)
 	}
 
 	// Close the writer
 	require.NoError(t, w.Close(ctx))
-	assert.Equal(t, uint64(rowsCount), w.RowsCount())
+	assert.Equal(t, uint64(rowsCount), w.CompletedWrites())
 	assert.NotEmpty(t, w.CompressedSize())
 	assert.NotEmpty(t, w.UncompressedSize())
 

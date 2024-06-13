@@ -118,7 +118,7 @@ func (v *Volume) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
 	v.logger.Infof(ctx, "closing volume")
 
-	// Block NewReaderFor method
+	// Block OpenReader method
 	v.cancel()
 
 	// Close all slice readers
