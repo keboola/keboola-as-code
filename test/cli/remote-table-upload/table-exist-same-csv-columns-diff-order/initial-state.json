@@ -1,0 +1,48 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "buckets": [
+    {
+      "id": "in.c-my-bucket",
+      "uri": "%s/v2/storage/buckets/in.c-my-bucket",
+      "displayName": "my-bucket",
+      "description": "",
+      "tables": [
+        {
+          "id": "in.c-my-bucket.data",
+          "uri": "%s/v2/storage/tables/in.c-my-bucket.data",
+          "name": "data",
+          "displayName": "data",
+          "primaryKey": [],
+          "columns": [
+            "Id",
+            "Name",
+            "Region",
+            "Status",
+            "First_Order"
+          ],
+          "rowsCount": 4
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "data.csv",
+      "tags": [
+        "test"
+      ],
+      "isSliced": false,
+      "isEncrypted": true,
+      "isPermanent": false
+    }
+  ]
+}
