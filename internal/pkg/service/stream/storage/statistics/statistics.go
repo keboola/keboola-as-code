@@ -21,7 +21,7 @@ import (
 
 // Value contains statistics for a slice or summarized statistics for a parent object.
 type Value struct {
-	SlicesCount int `json:"slicesCount,omitempty"`
+	SlicesCount uint64 `json:"slicesCount,omitempty"`
 	// FirstRecordAt contains the timestamp of the first received record.
 	FirstRecordAt utctime.UTCTime `json:"firstRecordAt"`
 	// LastRecordAt contains the timestamp of the last received record.
@@ -36,6 +36,8 @@ type Value struct {
 	// The value is usually same as the CompressedSize,
 	// if the type of compression did not change during the upload.
 	StagingSize datasize.ByteSize `json:"stagingSize,omitempty"`
+	// Reset is true if the value is considered negative.
+	Reset bool `json:"reset,omitempty"`
 }
 
 type PerSlice struct {
@@ -65,12 +67,46 @@ type Aggregated struct {
 	Total Value
 }
 
+// Add returns a sum of the value and the given second value.
+// If only one of the values is a reset value then it returns a non-reset value using subtraction.
+// Note that the value can't be negative, in case of an underflow the fields will be 0.
 func (v Value) Add(v2 Value) Value {
-	v.SlicesCount += v2.SlicesCount
-	v.RecordsCount += v2.RecordsCount
-	v.UncompressedSize += v2.UncompressedSize
-	v.CompressedSize += v2.CompressedSize
-	v.StagingSize += v2.StagingSize
+	if v.Reset != v2.Reset {
+		if v.Reset {
+			return v2.Add(v)
+		}
+		if v2.SlicesCount > v.SlicesCount {
+			v.SlicesCount = 0
+		} else {
+			v.SlicesCount -= v2.SlicesCount
+		}
+		if v2.RecordsCount > v.RecordsCount {
+			v.RecordsCount = 0
+		} else {
+			v.RecordsCount -= v2.RecordsCount
+		}
+		if v2.UncompressedSize > v.UncompressedSize {
+			v.UncompressedSize = 0
+		} else {
+			v.UncompressedSize -= v2.UncompressedSize
+		}
+		if v2.CompressedSize > v.CompressedSize {
+			v.CompressedSize = 0
+		} else {
+			v.CompressedSize -= v2.CompressedSize
+		}
+		if v2.StagingSize > v.StagingSize {
+			v.StagingSize = 0
+		} else {
+			v.StagingSize -= v2.StagingSize
+		}
+	} else {
+		v.SlicesCount += v2.SlicesCount
+		v.RecordsCount += v2.RecordsCount
+		v.UncompressedSize += v2.UncompressedSize
+		v.CompressedSize += v2.CompressedSize
+		v.StagingSize += v2.StagingSize
+	}
 	if v.FirstRecordAt.IsZero() || (!v2.FirstRecordAt.IsZero() && v.FirstRecordAt.After(v2.FirstRecordAt)) {
 		v.FirstRecordAt = v2.FirstRecordAt
 	}
