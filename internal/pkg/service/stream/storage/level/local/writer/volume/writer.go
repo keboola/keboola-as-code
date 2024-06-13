@@ -56,19 +56,18 @@ func (v *Volume) NewWriterFor(slice *model.Slice) (out *writer.EventWriter, err 
 	var file File
 	var chain *writechain.Chain
 	defer func() {
+		// Ok, update reference
 		if err == nil {
-			// Update reference
 			ref.Writer = out
-		} else {
-			// Close resources
-			if chain != nil {
-				_ = chain.Close(v.ctx)
-			} else if file != nil {
-				_ = file.Close()
-			}
-			// Unregister the writer
-			v.removeWriter(slice.SliceKey)
+			return
 		}
+
+		// Close resources
+		if file != nil {
+			_ = file.Close()
+		}
+		// Unregister the writer
+		v.removeWriter(slice.SliceKey)
 	}()
 
 	// Create directory if not exists
