@@ -21,7 +21,7 @@ type writerRef struct {
 	writer.Writer
 }
 
-func (v *Volume) NewWriterFor(slice *model.Slice) (out *writer.EventWriter, err error) {
+func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.Errorf(`writer for slice "%s cannot be created, volume is closed: %w`, slice.SliceKey.String(), err)
@@ -58,7 +58,7 @@ func (v *Volume) NewWriterFor(slice *model.Slice) (out *writer.EventWriter, err 
 	defer func() {
 		// Ok, update reference
 		if err == nil {
-			ref.Writer = out
+			ref.Writer = w
 			return
 		}
 

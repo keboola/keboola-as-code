@@ -21,7 +21,7 @@ type readerRef struct {
 	reader.Reader
 }
 
-func (v *Volume) NewReaderFor(slice *model.Slice) (r reader.Reader, err error) {
+func (v *Volume) OpenReader(slice *model.Slice) (r reader.Reader, err error) {
 	// Check if the volume is already open
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.Errorf(`volume is closed: %w`, err)

@@ -2,7 +2,7 @@
 // Data may be compressed on-tly-fly according to the configuration.
 // Regarding creating a reader, see:
 //   - The New function.
-//   - The "volume" package and the volume.NewReaderFor method in the package.
+//   - The "volume" package and the volume.OpenReader method in the package.
 package reader
 
 import (
