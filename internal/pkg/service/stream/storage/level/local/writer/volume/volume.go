@@ -160,7 +160,7 @@ func (v *Volume) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
 	v.logger.Info(ctx, "closing volume")
 
-	// Block NewWriterFor method, stop FS notifier
+	// Block OpenWriter method, stop FS notifier
 	v.cancel()
 
 	// Close all slice writers

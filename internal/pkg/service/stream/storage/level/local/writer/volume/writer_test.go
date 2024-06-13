@@ -63,7 +63,7 @@ func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
 
 	assert.NoError(t, vol.Close(context.Background()))
 
-	_, err = vol.NewWriterFor(test.NewSlice())
+	_, err = vol.OpenWriter(test.NewSlice())
 	assert.Error(t, err)
 }
 
