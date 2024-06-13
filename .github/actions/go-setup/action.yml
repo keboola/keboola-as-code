@@ -8,7 +8,7 @@ inputs:
   cache-version:
     description: Cache workflow version
     required: false
-    default: "001"
+    default: "003"
   cache-s3-bucket:
     description: S3 bucket for various caches.
     required: true
@@ -110,9 +110,9 @@ runs:
       with:
         path: |
           ${{ env.GODIRS }}/modcache
-        key: ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
