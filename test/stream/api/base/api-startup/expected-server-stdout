@@ -12,8 +12,8 @@
 {"level":"info","message":"starting storage writer node","component":"storage.node.writer"}
 {"level":"info","message":"searching for volumes in \"%s\"","component":"storage.node.writer"}
 {"level":"info","message":"found volume, type=\"hdd\", path=\"my-volume\"","component":"storage.node.writer"}
-{"level":"info","message":"opening volume","volume.path":"%s/hdd/my-volume","component":"storage.node.writer"}
-{"level":"info","message":"opened volume","volume.id":"my-volume","volume.path":"%s/hdd/my-volume","volume.type":"hdd","volume.label":"my-volume","component":"storage.node.writer"}
+{"level":"info","message":"opening volume","volume.path":"%s/hdd/my-volume","component":"storage.node.writer.volume"}
+{"level":"info","message":"opened volume","volume.id":"my-volume","volume.path":"%s/hdd/my-volume","volume.type":"hdd","volume.label":"my-volume","component":"storage.node.writer.volume"}
 {"level":"info","message":"found \"1\" volumes","component":"storage.node.writer"}
 {"level":"info","message":"starting HTTP server on \"%s\"","component":"api"}
 {"level":"info","message":"mounted HTTP endpoints","component":"api"}

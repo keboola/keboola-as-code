@@ -72,7 +72,8 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
 
-	v.logger.With(attribute.String("volume.path", spec.Path)).Infof(ctx, `opening volume`)
+	v.logger = v.logger.WithComponent("volume").With(attribute.String("volume.path", spec.Path))
+	v.logger.Infof(ctx, `opening volume`)
 
 	// Read volume ID from the file, create it if not exists.
 	// The "local/reader.Volume" is waiting for the file.
