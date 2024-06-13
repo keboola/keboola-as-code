@@ -1,0 +1,42 @@
+<<<<<
+storage/stats/target/123/456/my-source/my-sink/_sum
+-----
+{
+  "slicesCount": 3,
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T04:00:00.000Z",
+  "recordsCount": 111,
+  "uncompressedSize": "111B",
+  "compressedSize": "111B",
+  "stagingSize": "111B"
+}
+>>>>>
+
+<<<<<
+storage/stats/target/123/456/my-source/my-sink/_reset
+-----
+{
+  "slicesCount": 4,
+  "firstRecordAt": "2000-01-01T01:00:00.000Z",
+  "lastRecordAt": "2000-01-01T10:00:00.000Z",
+  "recordsCount": 112,
+  "uncompressedSize": "112B",
+  "compressedSize": "112B",
+  "stagingSize": "112B",
+  "reset": true
+}
+>>>>>
+
+<<<<<
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T09:00:00.000Z/my-volume-1/2000-01-01T09:00:00.000Z/value
+-----
+{
+  "slicesCount": 1,
+  "firstRecordAt": "2000-01-01T09:00:00.000Z",
+  "lastRecordAt": "2000-01-01T10:00:00.000Z",
+  "recordsCount": 1,
+  "uncompressedSize": "1B",
+  "compressedSize": "1B",
+  "stagingSize": "1B"
+}
+>>>>>
