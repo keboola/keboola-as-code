@@ -95,21 +95,27 @@ linters:
   disable-all: true
   enable:
     - asciicheck
+    - bidichk
     - bodyclose
     - contextcheck
+    - decorder
     - depguard
     - dogsled
     - dupl
     - durationcheck
     - errcheck
+    - errchkjson
     - errname
     - errorlint
     - exhaustive
     - exportloopref
     - forbidigo
     - gci
+    - ginkgolinter
+    - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
+    - gochecksumtype
     - goconst
     - gocritic
     - godot
@@ -118,9 +124,11 @@ linters:
     - goheader
     - gomodguard
     - goprintffuncname
+    - gosmopolitan
     - gosec
     - gosimple
     - govet
+    - grouper
     - importas
     - ineffassign
     - makezero
@@ -130,11 +138,13 @@ linters:
     - noctx
     - predeclared
     - promlinter
+    - reassign
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
     - stylecheck
     - tagliatelle
+    - tenv
     - thelper
     - tparallel
     - paralleltest
@@ -149,11 +159,22 @@ linters:
     #- nolintlint # strange behavior
     #- gomoddirectives # allow replace directive in go.mod
     # TODO
+    #- canonicalheader # when enabled skip old headers from linting e.g X-StorageAPI-Token
+    #- containedctx
+    #- dupword
+    #- exhaustruct
     #- funlen
+    #- forcetypeassert
     #- gocyclo
     #- gocognit
     #- cyclop
+    #- maintidx
+    #- mnd
     #- nestif
+    #- nlreturn
+    #- nosprintfhostport
+    #- spancheck
+    #- testpackage
     #- lll
     #- gomnd
 
