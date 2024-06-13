@@ -1,0 +1,33 @@
+[
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/apps/app/proxy-config"
+    },
+    "httpResponse": {
+      "body": {
+        "appId": "123",
+        "appName": "app",
+        "projectId": "11",
+        "upstreamAppUrl": "http://localhost:1235",
+        "authProviders": [
+          {
+            "type": "password",
+            "id": "simpleAuth",
+            "password": "a"
+          }
+        ],
+        "authRules": [
+          {
+            "type": "pathPrefix",
+            "value": "/",
+            "auth": [
+              "simpleAuth"
+            ]
+          }
+        ]
+      },
+      "statusCode": 200
+    }
+  }
+]
