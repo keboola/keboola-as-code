@@ -58,7 +58,7 @@ func generateKey(targetDir string, schema *load.Schema, pkAnnotation PKAnnotatio
 	for _, field := range pkAnnotation.Fields {
 		importsMap[field.GoType.PkgPath] = struct{}{}
 	}
-	var importPkg []string
+	importPkg := make([]string, 0, len(importsMap))
 	for pkgPath := range importsMap {
 		importPkg = append(importPkg, pkgPath)
 	}

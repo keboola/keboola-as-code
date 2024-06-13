@@ -44,7 +44,7 @@ func (p Phase) String() string {
 	buf := new(bytes.Buffer)
 	_, _ = fmt.Fprintf(buf, "#  %03d %s\n", p.Index+1, p.Name)
 
-	var dependsOn []string
+	dependsOn := make([]string, 0, len(p.DependsOn))
 	for _, dependsOnKey := range p.DependsOn {
 		dependsOn = append(dependsOn, cast.ToString(dependsOnKey.Index+1))
 	}

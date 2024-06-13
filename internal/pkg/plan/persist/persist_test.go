@@ -37,7 +37,7 @@ func TestPersistNoChange(t *testing.T) {
 	t.Parallel()
 	tc := testCase{
 		inputDir:       `persist-no-change`,
-		untrackedPaths: nil,
+		untrackedPaths: []string{},
 		expectedPlan:   nil,
 	}
 	tc.run(t)
@@ -243,7 +243,7 @@ func TestPersistDeleted(t *testing.T) {
 	t.Parallel()
 	tc := testCase{
 		inputDir:       `persist-deleted`,
-		untrackedPaths: nil,
+		untrackedPaths: []string{},
 		expectedPlan: []action{
 			&deleteManifestRecordAction{
 				ObjectManifest: &model.ConfigManifest{
