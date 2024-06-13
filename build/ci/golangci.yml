@@ -125,6 +125,7 @@ linters:
     - ineffassign
     - makezero
     - misspell
+    - musttag
     - nakedret
     - nilerr
     - noctx

@@ -56,7 +56,7 @@ func (m *Mapper) NewTaskResponse(entity task.Task) (*api.Task, error) {
 	// Outputs
 	if entity.Outputs != nil {
 		response.Outputs = &api.TaskOutputs{}
-		err := mapstructure.Decode(entity.Outputs, response.Outputs)
+		err := mapstructure.Decode(entity.Outputs, response.Outputs) // nolint: musttag
 		if err != nil {
 			return nil, err
 		}
