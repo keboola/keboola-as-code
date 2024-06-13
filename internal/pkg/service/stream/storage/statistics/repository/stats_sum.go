@@ -9,16 +9,22 @@ import (
 
 // SumStats sums all stats from the iterator.
 func SumStats(ctx context.Context, prefix iterator.DefinitionT[statistics.Value]) (out statistics.Value, err error) {
-	if err := SumStatsOp(prefix, &out).Do(ctx).Err(); err != nil {
+	var outReset statistics.Value
+	if err := sumStatsOp(prefix, &out, &outReset).Do(ctx).Err(); err != nil {
 		return out, err
 	}
-	return out, nil
+	return out.Add(outReset), nil
 }
 
-// SumStatsOp sums all stats from the iterator.
-func SumStatsOp(prefix iterator.DefinitionT[statistics.Value], out *statistics.Value) *iterator.ForEachT[statistics.Value] {
+// sumStatsOp sums all stats from the iterator.
+func sumStatsOp(prefix iterator.DefinitionT[statistics.Value], outSum *statistics.Value, outReset *statistics.Value) *iterator.ForEachT[statistics.Value] {
+	outReset.Reset = true
 	return prefix.ForEach(func(item statistics.Value, _ *iterator.Header) error {
-		*out = out.Add(item)
+		if item.Reset {
+			*outReset = outReset.Add(item)
+		} else {
+			*outSum = outSum.Add(item)
+		}
 		return nil
 	})
 }
