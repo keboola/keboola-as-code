@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -45,7 +46,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 
 	// Mocked request scope
 	reqScpFactory := func() ProjectRequestScope {
-		req := httptest.NewRequest("GET", "/req1", nil)
+		req := httptest.NewRequest(http.MethodGet, "/req1", nil)
 		return newProjectRequestScope(NewPublicRequestScope(apiScp, req), mock)
 	}
 	// Get repository for request 1
@@ -164,7 +165,7 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 
 	// Mocked request scope
 	reqScopeFactory := func() ProjectRequestScope {
-		req := httptest.NewRequest("GET", "/req1", nil)
+		req := httptest.NewRequest(http.MethodGet, "/req1", nil)
 		return newProjectRequestScope(NewPublicRequestScope(apiScp, req), mock)
 	}
 
