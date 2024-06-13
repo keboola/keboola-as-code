@@ -59,6 +59,34 @@ func TestValue_Add(t *testing.T) {
 			},
 		},
 		{
+			name: "later first record",
+			value: statistics.Value{
+				FirstRecordAt: utctime.MustParse("2000-01-10T00:00:00.000Z"),
+				LastRecordAt:  utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			},
+			addition: statistics.Value{
+				FirstRecordAt: utctime.MustParse("2000-01-11T00:00:00.000Z"),
+			},
+			expected: statistics.Value{
+				FirstRecordAt: utctime.MustParse("2000-01-10T00:00:00.000Z"),
+				LastRecordAt:  utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			},
+		},
+		{
+			name: "earlier last record",
+			value: statistics.Value{
+				FirstRecordAt: utctime.MustParse("2000-01-10T00:00:00.000Z"),
+				LastRecordAt:  utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			},
+			addition: statistics.Value{
+				LastRecordAt: utctime.MustParse("2000-01-19T00:00:00.000Z"),
+			},
+			expected: statistics.Value{
+				FirstRecordAt: utctime.MustParse("2000-01-10T00:00:00.000Z"),
+				LastRecordAt:  utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			},
+		},
+		{
 			name: "later last record",
 			value: statistics.Value{
 				FirstRecordAt: utctime.MustParse("2000-01-10T00:00:00.000Z"),
@@ -76,18 +104,24 @@ func TestValue_Add(t *testing.T) {
 			name: "increment values",
 			value: statistics.Value{
 				RecordsCount:     100,
+				SlicesCount:      200,
 				UncompressedSize: 2000,
 				CompressedSize:   300,
+				StagingSize:      1000,
 			},
 			addition: statistics.Value{
 				RecordsCount:     1,
+				SlicesCount:      1,
 				UncompressedSize: 1,
 				CompressedSize:   1,
+				StagingSize:      1,
 			},
 			expected: statistics.Value{
 				RecordsCount:     101,
+				SlicesCount:      201,
 				UncompressedSize: 2001,
 				CompressedSize:   301,
+				StagingSize:      1001,
 			},
 		},
 	}
