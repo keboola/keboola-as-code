@@ -83,8 +83,6 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 		PermitWithoutStream:  true, // always send keep-alive pings
 		DialOptions: []grpc.DialOption{
 			grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelgrpc.WithTracerProvider(tel.TracerProvider()), otelgrpc.WithMeterProvider(tel.MeterProvider()))),
-			grpc.WithBlock(), // wait for the connection
-			grpc.WithReturnConnectionError(),
 			grpc.WithConnectParams(grpc.ConnectParams{
 				Backoff: backoff.Config{
 					BaseDelay:  100 * time.Millisecond,

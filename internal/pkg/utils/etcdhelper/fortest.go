@@ -100,8 +100,6 @@ func clientForTest(t testOrBenchmark, ctx context.Context, cfg etcdclient.Config
 	// Dial options
 	dialOpts = append(
 		dialOpts,
-		grpc.WithBlock(),                 // wait for the connection
-		grpc.WithReturnConnectionError(), // wait for the connection error
 		grpc.WithConnectParams(grpc.ConnectParams{
 			Backoff: backoff.Config{
 				BaseDelay:  100 * time.Millisecond,
