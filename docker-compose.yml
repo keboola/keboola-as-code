@@ -8,6 +8,7 @@ services:
     links:
       - etcd
       - redis
+      - sandboxesMock
     volumes:
       - ./:/code:z
       - cache:/tmp/cache
@@ -101,6 +102,17 @@ services:
       - API_TOKEN
       - K6_USERS
       - K6_DURATION
+
+  sandboxesMock:
+      image: mockserver/mockserver:latest
+      ports:
+        - 1080:1080
+      environment:
+        MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+        MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
+        MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializerJson.json
+      volumes:
+        - ./initializer.json:/config/initializerJson.json:Z
 
 volumes:
   cache:
