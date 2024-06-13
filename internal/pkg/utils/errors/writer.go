@@ -12,7 +12,7 @@ const (
 )
 
 type Writer interface {
-	Write(string)
+	Write(s string)
 	WriteIndent(level int)
 	WriteBullet(level int)
 	WritePrefix(level int, prefix string, trace StackTrace)
