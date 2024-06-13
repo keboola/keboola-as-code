@@ -102,7 +102,7 @@ func TestNode(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var files []model.FileKey
 	slices := make(map[model.FileKey][]model.SliceKey)
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		clk.Add(time.Hour)
 		file, err := fileRepo.Rotate(rb, clk.Now(), sinkKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)

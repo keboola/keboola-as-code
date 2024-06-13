@@ -231,9 +231,9 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 
 			// Pre-generate unique rows
 			rows := make([][]any, benchmarkUniqueRows)
-			for i := 0; i < benchmarkUniqueRows; i++ {
+			for i := range benchmarkUniqueRows {
 				rows[i] = make([]any, columnsCount)
-				for j := 0; j < len(columns); j++ {
+				for j := range len(columns) {
 					rows[i][j] = g.RandomString(columnLength)
 				}
 			}
@@ -242,7 +242,7 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 			go func() {
 				defer close(ch)
 				row := 0
-				for i := 0; i < n; i++ {
+				for range n {
 					if ctx.Err() != nil {
 						break
 					}

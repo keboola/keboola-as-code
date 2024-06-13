@@ -43,7 +43,7 @@ func TestOpenVolumes_DuplicatedVolumeID(t *testing.T) {
 	tc := newVolumesTestCase(t)
 
 	// Create some volumes directories
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "default", cast.ToString(i)), 0o750))
 	}
 
@@ -61,7 +61,7 @@ func TestOpenVolumes_OpenError(t *testing.T) {
 	}
 
 	// Create some volumes directories
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "default", cast.ToString(i)), 0o750))
 	}
 
@@ -140,7 +140,7 @@ func TestOpenVolumes_CloseError(t *testing.T) {
 	}
 
 	// Create some volumes directories
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		require.NoError(t, os.MkdirAll(filepath.Join(tc.VolumesPath, "default", cast.ToString(i)), 0o750))
 	}
 
