@@ -23,7 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-func TestVolume_NewWriterFor_Ok(t *testing.T) {
+func TestVolume_OpenWriter_Ok(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
 
@@ -35,7 +35,7 @@ func TestVolume_NewWriterFor_Ok(t *testing.T) {
 	assert.Len(t, tc.Volume.writers, 0)
 }
 
-func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
+func TestVolume_OpenWriter_Duplicate(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
 
@@ -55,7 +55,7 @@ func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 	assert.Len(t, tc.Volume.writers, 0)
 }
 
-func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
+func TestVolume_OpenWriter_ClosedVolume(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 	vol, err := tc.OpenVolume()
