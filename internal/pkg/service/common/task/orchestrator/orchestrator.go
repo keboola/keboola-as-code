@@ -27,7 +27,7 @@ type orchestrator[T any] struct {
 }
 
 func (o orchestrator[T]) start() <-chan error {
-	initDone := make(chan error, 1)
+	initDoneOut := make(chan error, 1)
 	o.node.wg.Add(1)
 	go func() {
 		defer o.node.wg.Done()
@@ -35,7 +35,7 @@ func (o orchestrator[T]) start() <-chan error {
 		b := newRetryBackoff()
 
 		// Copy variable, it is set to nil later, to signalize successful initialization
-		initDone := initDone
+		initDone := initDoneOut
 
 		for {
 			select {
@@ -81,7 +81,7 @@ func (o orchestrator[T]) start() <-chan error {
 			}
 		}
 	}()
-	return initDone
+	return initDoneOut
 }
 
 func (o orchestrator[T]) watch(ctx context.Context, span telemetry.Span, timeout time.Duration, onReady func()) error {
