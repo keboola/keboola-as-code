@@ -144,6 +144,7 @@ func New(
 	}
 
 	// Create empty chain of writers to the file
+	// The chain is built from the end, from the output file, to the CSV writer at the start
 	{
 		w.chain = writechain.New(logger, file)
 	}
