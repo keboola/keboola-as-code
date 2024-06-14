@@ -100,11 +100,11 @@ func (w *writer) toCSVValue(v any) (string, error) {
 	case float32:
 		return strconv.FormatFloat(float64(s), 'f', -1, 32), nil
 	case int:
-		return strconv.Itoa(s), nil
+		return strconv.FormatInt(int64(s), 10), nil
 	case int64:
 		return strconv.FormatInt(s, 10), nil
 	case int32:
-		return strconv.Itoa(int(s)), nil
+		return strconv.FormatInt(int64(s), 10), nil
 	case int16:
 		return strconv.FormatInt(int64(s), 10), nil
 	case int8:
