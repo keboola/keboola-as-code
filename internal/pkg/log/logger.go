@@ -125,13 +125,21 @@ func (l *zapLogger) zapCore() zapcore.Core {
 func (l *zapLogger) logInLevel(level string, message string, fields ...zap.Field) {
 	switch level {
 	case "debug", "DEBUG":
-		l.logger.Debug(message, fields...)
+		if l.core.Enabled(DebugLevel) {
+			l.logger.Debug(message, fields...)
+		}
 	case "info", "INFO":
-		l.logger.Info(message, fields...)
+		if l.core.Enabled(InfoLevel) {
+			l.logger.Info(message, fields...)
+		}
 	case "warn", "WARN":
-		l.logger.Warn(message, fields...)
+		if l.core.Enabled(WarnLevel) {
+			l.logger.Warn(message, fields...)
+		}
 	case "error", "ERROR":
-		l.logger.Error(message, fields...)
+		if l.core.Enabled(ErrorLevel) {
+			l.logger.Error(message, fields...)
+		}
 	case "dpanic", "DPANIC":
 		l.logger.DPanic(message, fields...)
 	case "panic", "PANIC":
@@ -139,7 +147,9 @@ func (l *zapLogger) logInLevel(level string, message string, fields ...zap.Field
 	case "fatal", "FATAL":
 		l.logger.Fatal(message, fields...)
 	default:
-		l.logger.Info(message, fields...)
+		if l.core.Enabled(InfoLevel) {
+			l.logger.Info(message, fields...)
+		}
 	}
 }
 
