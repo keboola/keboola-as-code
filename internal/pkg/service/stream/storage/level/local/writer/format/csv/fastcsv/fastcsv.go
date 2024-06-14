@@ -13,6 +13,8 @@ import (
 )
 
 type WritersPool struct {
+	// sem limits the number of parallel writers (by default the limit is the number of CPUs)
+	// struct{} is a token, number of the tokens in the channel buffer match number of free writers
 	sem  chan struct{}
 	pool *sync.Pool
 }
