@@ -3,7 +3,7 @@ tmp_dir = "target/.watcher"
 
 [build]
   bin = "./target/stream/service"
-  args_bin = ["--node-id","my-node","--source-http-public-url","http://localhost:1234","--storage-volumes-path", "/tmp/stream-volumes", "api", "disk-writer"]
+  args_bin = ["--node-id", "my-node", "--source-http-public-url", "http://localhost:1234", "--storage-volumes-path", "/tmp/stream-volumes", "api", "disk-writer"]
   cmd = "make build-stream-service"
   delay = 2000
   exclude_dir = ["internal/pkg/service/stream/api/gen"]
