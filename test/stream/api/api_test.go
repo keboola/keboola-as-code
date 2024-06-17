@@ -74,7 +74,7 @@ func TestStreamApiE2E(t *testing.T) {
 				runner.WithInitProjectState(),
 				runner.WithRunAPIServerAndRequests(
 					binaryPath,
-					[]string{"api", "disk-writer"}, // start api component and disk-writer to detect the volume
+					[]string{"api", "storage-writer"}, // start api component and storage-writer to detect the volume
 					addEnvs,
 					nil,
 				),

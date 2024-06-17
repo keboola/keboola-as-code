@@ -92,7 +92,7 @@ func run(ctx context.Context, cfg config.Config, posArgs []string) error {
 	}
 
 	// Start service components
-	if err := stream.StartComponents(ctx, d, cfg, components); err != nil {
+	if err := stream.StartComponents(ctx, d, cfg, components...); err != nil {
 		return err
 	}
 

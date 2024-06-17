@@ -36,7 +36,7 @@ func TestParseComponentsList(t *testing.T) {
 	}
 
 	// OK
-	components, err := stream.ParseComponentsList([]string{"app", stream.ComponentAPI})
+	components, err := stream.ParseComponentsList([]string{"app", string(stream.ComponentAPI)})
 	assert.NoError(t, err)
-	assert.Equal(t, stream.Components{stream.ComponentAPI: true}, components)
+	assert.Equal(t, stream.Components{stream.ComponentAPI}, components)
 }
