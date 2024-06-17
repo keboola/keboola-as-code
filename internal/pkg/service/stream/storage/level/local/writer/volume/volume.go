@@ -56,10 +56,10 @@ type Volume struct {
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The IDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, spec volume.Spec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, wrCfg writer.Config, spec volume.Spec, opts ...Option) (*Volume, error) {
 	v := &Volume{
 		spec:          spec,
-		config:        newConfig(opts),
+		config:        newConfig(wrCfg, opts),
 		logger:        logger,
 		clock:         clock,
 		events:        events,
@@ -72,7 +72,8 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
 
-	v.logger.With(attribute.String("volume.path", spec.Path)).Infof(ctx, `opening volume`)
+	v.logger = v.logger.WithComponent("volume").With(attribute.String("volume.path", spec.Path))
+	v.logger.Infof(ctx, `opening volume`)
 
 	// Read volume ID from the file, create it if not exists.
 	// The "local/reader.Volume" is waiting for the file.
@@ -160,12 +161,11 @@ func (v *Volume) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
 	v.logger.Info(ctx, "closing volume")
 
-	// Block NewWriterFor method, stop FS notifier
+	// Block OpenWriter method, stop FS notifier
 	v.cancel()
 
 	// Close all slice writers
 	for _, w := range v.Writers() {
-		w := w
 		v.wg.Add(1)
 		go func() {
 			defer v.wg.Done()

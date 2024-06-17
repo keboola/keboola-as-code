@@ -83,7 +83,7 @@ func TestOpForType_WithProcessorMethods_ScalarType(t *testing.T) {
 		return etcd.OpGet("key"), nil
 	}
 
-	mapper := func(ctx context.Context, raw op.RawResponse) (result string, err error) {
+	mapper := func(ctx context.Context, raw *op.RawResponse) (result string, err error) {
 		if response := raw.Get(); response != nil {
 			if len(response.Kvs) == 1 {
 				return string(raw.Get().Kvs[0].Value), nil
@@ -115,6 +115,14 @@ func TestOpForType_WithProcessorMethods_ScalarType(t *testing.T) {
 			log.WriteString("WithEmptyResultAsError\n")
 			if processorErrors {
 				return errors.New("error from WithEmptyResultAsError")
+			} else {
+				return nil
+			}
+		}).
+		WithNotEmptyResultAsError(func() error {
+			log.WriteString("WithNotEmptyResultAsError\n")
+			if processorErrors {
+				return errors.New("error from WithNotEmptyResultAsError")
 			} else {
 				return nil
 			}
@@ -171,7 +179,7 @@ func TestOpForType_WithProcessorMethods_ScalarType(t *testing.T) {
 			PutEtcdKeyValue: "foo",
 			ExpectedValue:   "foo",
 			ProcessorErrors: false,
-			ExpectedLog:     []string{"WithProcessor", "WithOnResult", "WithResultValidator"},
+			ExpectedLog:     []string{"WithProcessor", "WithOnResult", "WithNotEmptyResultAsError", "WithResultValidator"},
 			ExpectedError:   "",
 		},
 		{
@@ -201,7 +209,7 @@ func TestOpForType_WithProcessorMethods_Pointer(t *testing.T) {
 		return etcd.OpGet("key"), nil
 	}
 
-	mapper := func(ctx context.Context, raw op.RawResponse) (result *testValue, err error) {
+	mapper := func(ctx context.Context, raw *op.RawResponse) (result *testValue, err error) {
 		if response := raw.Get(); response != nil {
 			if len(response.Kvs) == 1 {
 				value := &testValue{}

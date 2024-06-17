@@ -1,4 +1,4 @@
-{"level":"info","message":"enabled components: api"}
+{"level":"info","message":"enabled components: api,disk-writer"}
 {"level":"info","message":"configuration: {\"debugLog\":false,\"debugHTTPClient\":false,\"cpuProfilePath\":\"\",\"nodeID\":\"test-node\",\"storageApiHost\":\"%s\",\"datadog\":{\"enabled\":false,\"debug\":false},\"etcd\":{\"endpoint\":\"%s\",\"namespace\":\"%s\",\"username\":\"%s\",\"password\":\"*****\",\"connectTimeout\":\"30s\",\"keepAliveTimeout\":\"5s\",\"keepAliveInterval\":\"10s\",\"debugLog\":false},\"metrics\":{\"listen\":\"%s\"},\"api\":{\"listen\":\"%s\",\"publicUrl\":\"https://stream.keboola.local\"},%s"}
 {"level":"info","message":"starting HTTP server on \"%s\"","component":"metrics"}
 {"level":"info","message":"started HTTP server on \"%s\", endpoint \"metrics\"\"","component":"metrics"}
@@ -9,6 +9,12 @@
 {"level":"info","message":"node ID \"test-node\"","node":"test-node","component":"task"}
 {"level":"info","message":"creating etcd session","node":"test-node","component":"task.etcd.session"}
 {"level":"info","message":"created etcd session","duration":"%s","node":"test-node","component":"task.etcd.session"}
+{"level":"info","message":"starting storage writer node","component":"storage.node.writer"}
+{"level":"info","message":"searching for volumes in \"%s\"","component":"storage.node.writer"}
+{"level":"info","message":"found volume, type=\"hdd\", path=\"my-volume\"","component":"storage.node.writer"}
+{"level":"info","message":"opening volume","volume.path":"%s/hdd/my-volume","component":"storage.node.writer.volume"}
+{"level":"info","message":"opened volume","volume.id":"my-volume","volume.path":"%s/hdd/my-volume","volume.type":"hdd","volume.label":"my-volume","component":"storage.node.writer.volume"}
+{"level":"info","message":"found \"1\" volumes","component":"storage.node.writer"}
 {"level":"info","message":"starting HTTP server on \"%s\"","component":"api"}
 {"level":"info","message":"mounted HTTP endpoints","component":"api"}
 {"level":"info","message":"started HTTP server on \"%s\"","component":"api"}

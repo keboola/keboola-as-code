@@ -244,9 +244,9 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Open two writers
-	_, err = vol.NewReaderFor(test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z"))
+	_, err = vol.OpenReader(test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z"))
 	require.NoError(t, err)
-	_, err = vol.NewReaderFor(test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z"))
+	_, err = vol.OpenReader(test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z"))
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers

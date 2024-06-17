@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/aggregate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -81,7 +81,7 @@ func (c *L1) aggregate(ctx context.Context, objectKey fmt.Stringer) (statistics.
 
 func (c *L1) aggregateWithRev(_ context.Context, objectKey fmt.Stringer) (out statistics.Aggregated, rev int64) {
 	c.cache.Atomic(func(t prefixtree.TreeReadOnly[statistics.Value]) {
-		for _, level := range level.AllLevels() {
+		for _, level := range model.AllLevels() {
 			t.WalkPrefix(
 				c.repository.ObjectPrefix(level, objectKey),
 				func(_ string, v statistics.Value) bool {

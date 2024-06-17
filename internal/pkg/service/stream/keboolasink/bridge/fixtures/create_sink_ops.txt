@@ -1,0 +1,56 @@
+// READ: the sink, get count of parent objects to check if the object exits and verify limits
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "definition/branch/active/123/456" | count only
+  002 ➡️  GET "definition/source/active/123/456/my-source" | count only
+  003 ➡️  GET "definition/sink/active/123/456/my-source/my-sink" | count only
+  004 ➡️  GET ["definition/sink/active/123/456/my-source/", "definition/sink/active/123/456/my-source0") | count only
+  005 ➡️  GET "definition/sink/deleted/123/456/my-source/my-sink"
+✔️  TXN | succeeded: true
+
+// READ: Load the source, to get config patch
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "definition/source/active/123/456/my-source"
+✔️  TXN | succeeded: true
+
+// WRITE:
+➡️  TXN
+  ➡️  IF:
+  // Objects from the READ phase must be unchanged
+  001 "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD EQUAL 0
+  002 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD EQUAL 0
+  003 "definition/branch/active/123/456" MOD GREATER 0
+  004 "definition/branch/active/123/456" MOD LESS %d
+  005 "definition/source/active/123/456/my-source" MOD GREATER 0
+  006 "definition/source/active/123/456/my-source" MOD LESS %d
+  007 "definition/sink/active/123/456/my-source/my-sink" MOD EQUAL 0
+  008 ["definition/sink/active/123/456/my-source/", "definition/sink/active/123/456/my-source0") MOD EQUAL 0
+  009 "definition/sink/deleted/123/456/my-source/my-sink" MOD EQUAL 0
+  010 "definition/source/active/123/456/my-source" MOD GREATER 0
+  011 "definition/source/active/123/456/my-source" MOD LESS %d
+  ➡️  THEN:
+  // Save sink
+  001 ➡️  PUT "definition/sink/active/123/456/my-source/my-sink"
+  002 ➡️  PUT "definition/sink/version/123/456/my-source/my-sink/0000000001"
+  // Save file
+  003 ➡️  PUT "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  004 ➡️  PUT "storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  // Save token
+  005 ➡️  PUT "storage/keboola/secret/token/123/456/my-source/my-sink"
+  // Save upload credentials
+  006 ➡️  PUT "storage/keboola/file/upload/credentials/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  // Save slice
+  007 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  008 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  ➡️  ELSE:
+  // File already exists error message
+  001 ➡️  TXN
+  001   ➡️  IF:
+  001   001 "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD EQUAL 0
+  // Slice already exists error message
+  002 ➡️  TXN
+  002   ➡️  IF:
+  002   001 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD EQUAL 0
+✔️  TXN | succeeded: true
+

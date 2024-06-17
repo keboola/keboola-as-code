@@ -2,15 +2,20 @@ package volume
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/factory"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/format/factory"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type config struct {
+	writerConfig writer.Config
 	// allocator allocates a free disk space for a file.
 	allocator diskalloc.Allocator
-	// writerFactory creates a high-level writer for the storage.FileType, for example storage.FileTypeCSV.
-	writerFactory factory.Factory
+	// formatWriterFactory creates a high-level writer for the storage.FileType, for example storage.FileTypeCSV.
+	formatWriterFactory writer.FormatWriterFactory
+	// syncerFactory provides disksync.Syncer a custom implementation can be useful for tests.
+	syncerFactory disksync.SyncerFactory
 	// fileOpener provides file opening, a custom implementation can be useful for tests.
 	fileOpener FileOpener
 	// watchDrainFile activates watching for drainFile changes (creation/deletion),
@@ -22,12 +27,14 @@ type config struct {
 
 type Option func(config *config)
 
-func newConfig(opts []Option) config {
+func newConfig(wrCfg writer.Config, opts []Option) config {
 	cfg := config{
-		allocator:      diskalloc.DefaultAllocator{},
-		writerFactory:  factory.Default,
-		fileOpener:     DefaultFileOpener,
-		watchDrainFile: true,
+		writerConfig:        wrCfg,
+		allocator:           diskalloc.DefaultAllocator{},
+		syncerFactory:       disksync.NewSyncer,
+		formatWriterFactory: factory.Default,
+		fileOpener:          DefaultFileOpener,
+		watchDrainFile:      true,
 	}
 
 	for _, o := range opts {
@@ -46,12 +53,19 @@ func WithAllocator(v diskalloc.Allocator) Option {
 	}
 }
 
-func WithWriterFactory(v factory.Factory) Option {
+func WithSyncerFactory(v disksync.SyncerFactory) Option {
+	return func(c *config) {
+		c.syncerFactory = v
+	}
+}
+
+func WithFormatWriterFactory(v writer.FormatWriterFactory) Option {
 	return func(c *config) {
 		if v == nil {
 			panic(errors.New(`value must not be nil`))
 		}
-		c.writerFactory = v
+
+		c.formatWriterFactory = v
 	}
 }
 

@@ -8,7 +8,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -21,7 +20,7 @@ type writerRef struct {
 	writer.Writer
 }
 
-func (v *Volume) NewWriterFor(slice *model.Slice) (out *writer.EventWriter, err error) {
+func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.Errorf(`writer for slice "%s cannot be created, volume is closed: %w`, slice.SliceKey.String(), err)
@@ -37,38 +36,27 @@ func (v *Volume) NewWriterFor(slice *model.Slice) (out *writer.EventWriter, err 
 		attribute.String("sliceId", slice.SliceID.String()),
 	)
 
-	// Setup events
-	events := v.events.Clone()
-
 	// Check if the writer already exists, if not, register an empty reference to unlock immediately
 	ref, exists := v.addWriter(slice.SliceKey)
 	if exists {
 		return nil, errors.Errorf(`writer for slice "%s" already exists`, slice.SliceKey.String())
 	}
 
-	// Register writer close callback
-	events.OnWriterClose(func(_ writer.Writer, _ error) error {
-		v.removeWriter(slice.SliceKey)
-		return nil
-	})
-
 	// Close resources on a creation error
 	var file File
-	var chain *writechain.Chain
 	defer func() {
+		// Ok, update reference
 		if err == nil {
-			// Update reference
-			ref.Writer = out
-		} else {
-			// Close resources
-			if chain != nil {
-				_ = chain.Close(v.ctx)
-			} else if file != nil {
-				_ = file.Close()
-			}
-			// Unregister the writer
-			v.removeWriter(slice.SliceKey)
+			ref.Writer = w
+			return
 		}
+
+		// Close resources
+		if file != nil {
+			_ = file.Close()
+		}
+		// Unregister the writer
+		v.removeWriter(slice.SliceKey)
 	}()
 
 	// Create directory if not exists
@@ -110,17 +98,19 @@ func (v *Volume) NewWriterFor(slice *model.Slice) (out *writer.EventWriter, err 
 		}
 	}
 
-	// Init writers chain
-	chain = writechain.New(logger, file)
-
-	// Create writer via factory
-	w, err := v.config.writerFactory(writer.NewBaseWriter(logger, v.clock, slice, dirPath, filePath, chain, events))
+	// Create writer
+	w, err = writer.New(v.ctx, logger, v.clock, v.config.writerConfig, slice, file, dirPath, filePath, v.config.syncerFactory, v.config.formatWriterFactory, v.events)
 	if err != nil {
 		return nil, err
 	}
 
-	// Wrap the writer to add events dispatching
-	return writer.NewEventWriter(w, events)
+	// Register writer close callback
+	w.Events().OnWriterClose(func(_ writer.Writer, _ error) error {
+		v.removeWriter(slice.SliceKey)
+		return nil
+	})
+
+	return w, nil
 }
 
 func (v *Volume) Writers() (out []writer.Writer) {

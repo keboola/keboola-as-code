@@ -2,14 +2,18 @@ package count
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -41,11 +45,16 @@ func TestCounter(t *testing.T) {
 	assert.Equal(t, utctime.MustParse("2002-01-01T00:00:00.000Z"), c.LastAt())
 }
 
-func TestMeterWithBackup(t *testing.T) {
+func TestCounterWithBackup_SyncBackupManually(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
+	clk := clock.NewMock()
+	logger := log.NewDebugLogger()
+	backupInterval := time.Second
 	backupPath := filepath.Join(t.TempDir(), "backup")
-	c, err := NewCounterWithBackupFile(backupPath)
+
+	c, err := NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
 	assert.NoError(t, err)
 
 	// Empty
@@ -69,8 +78,8 @@ func TestMeterWithBackup(t *testing.T) {
 	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
 	assert.Equal(t, utctime.MustParse("2002-01-01T00:00:00.000Z"), c.LastAt())
 
-	// Flush backup
-	assert.NoError(t, c.Flush())
+	// Sync backup manually
+	assert.NoError(t, c.SyncBackup())
 	content, err := os.ReadFile(backupPath)
 	assert.NoError(t, err)
 	assert.Equal(t, "5,2001-01-01T00:00:00.000Z,2002-01-01T00:00:00.000Z", string(content))
@@ -81,14 +90,14 @@ func TestMeterWithBackup(t *testing.T) {
 	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
 	assert.Equal(t, utctime.MustParse("2003-01-01T00:00:00.000Z"), c.LastAt())
 
-	// Close (flush backup)
+	// Close (sync backup)
 	assert.NoError(t, c.Close())
 	content, err = os.ReadFile(backupPath)
 	assert.NoError(t, err)
 	assert.Equal(t, "9,2001-01-01T00:00:00.000Z,2003-01-01T00:00:00.000Z", string(content))
 
 	// Reopen - load from backup
-	c, err = NewCounterWithBackupFile(backupPath)
+	c, err = NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(9), c.Count())
 
@@ -103,18 +112,102 @@ func TestMeterWithBackup(t *testing.T) {
 	content, err = os.ReadFile(backupPath)
 	assert.NoError(t, err)
 	assert.Equal(t, "15,2001-01-01T00:00:00.000Z,2004-01-01T00:00:00.000Z", string(content))
+
+	assert.Equal(t, "", logger.AllMessages())
 }
 
-func TestMeterWithBackup_OpenError_Missing(t *testing.T) {
+func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
+	clk := clock.NewMock()
+	logger := log.NewDebugLogger()
+	backupInterval := time.Second
+	backupPath := filepath.Join(t.TempDir(), "backup")
+
+	c, err := NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
+	assert.NoError(t, err)
+
+	// Empty
+	assert.Equal(t, uint64(0), c.Count())
+
+	// Add 0
+	c.Add(utctime.MustParse("2000-01-01T00:00:00.000Z").Time(), 0)
+	assert.Equal(t, uint64(0), c.Count())
+	assert.True(t, c.FirstAt().IsZero())
+	assert.True(t, c.LastAt().IsZero())
+
+	// Add 3
+	c.Add(utctime.MustParse("2001-01-01T00:00:00.000Z").Time(), 3)
+	assert.Equal(t, uint64(3), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.LastAt())
+
+	// Add 2
+	c.Add(utctime.MustParse("2002-01-01T00:00:00.000Z").Time(), 2)
+	assert.Equal(t, uint64(5), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2002-01-01T00:00:00.000Z"), c.LastAt())
+
+	// Sync backup by clock
+	clk.Add(backupInterval)
+	content, err := os.ReadFile(backupPath)
+	assert.NoError(t, err)
+	assert.Equal(t, "5,2001-01-01T00:00:00.000Z,2002-01-01T00:00:00.000Z", string(content))
+
+	// Add 4
+	c.Add(utctime.MustParse("2003-01-01T00:00:00.000Z").Time(), 4)
+	assert.Equal(t, uint64(9), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2003-01-01T00:00:00.000Z"), c.LastAt())
+
+	// Close (sync backup)
+	clk.Add(backupInterval)
+	assert.NoError(t, c.Close())
+	content, err = os.ReadFile(backupPath)
+	assert.NoError(t, err)
+	assert.Equal(t, "9,2001-01-01T00:00:00.000Z,2003-01-01T00:00:00.000Z", string(content))
+
+	// Reopen - load from backup
+	c, err = NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(9), c.Count())
+
+	// Add 6
+	c.Add(utctime.MustParse("2004-01-01T00:00:00.000Z").Time(), 6)
+	assert.Equal(t, uint64(15), c.Count())
+	assert.Equal(t, utctime.MustParse("2001-01-01T00:00:00.000Z"), c.FirstAt())
+	assert.Equal(t, utctime.MustParse("2004-01-01T00:00:00.000Z"), c.LastAt())
+
+	// Close
+	assert.NoError(t, c.Close())
+	content, err = os.ReadFile(backupPath)
+	assert.NoError(t, err)
+	assert.Equal(t, "15,2001-01-01T00:00:00.000Z,2004-01-01T00:00:00.000Z", string(content))
+
+	assert.Equal(t, "", logger.AllMessages())
+}
+
+func TestCounterWithBackup_OpenError_Missing(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	clk := clock.NewMock()
+	logger := log.NewNopLogger()
+	backupInterval := time.Second
+
 	// Read error
-	_, err := NewCounterWithBackupFile("/missing/file")
+	_, err := NewCounterWithBackupFile(ctx, clk, logger, "/missing/file", backupInterval)
 	assert.Error(t, err)
 }
 
-func TestMeterWithBackup_OpenError_Invalid(t *testing.T) {
+func TestCounterWithBackup_OpenError_Invalid(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
+	clk := clock.NewMock()
+	logger := log.NewNopLogger()
+	backupInterval := time.Second
 
 	cases := []struct{ name, content, expectedError string }{
 		{
@@ -140,14 +233,13 @@ func TestMeterWithBackup_OpenError_Invalid(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			backupPath := filepath.Join(t.TempDir(), "backup")
 			assert.NoError(t, os.WriteFile(backupPath, []byte(tc.content), 0o640))
 
-			_, err := NewCounterWithBackupFile(backupPath)
+			_, err := NewCounterWithBackupFile(ctx, clk, logger, backupPath, backupInterval)
 			if assert.Error(t, err) {
 				wildcards.Assert(t, tc.expectedError, err.Error())
 			}
@@ -155,28 +247,38 @@ func TestMeterWithBackup_OpenError_Invalid(t *testing.T) {
 	}
 }
 
-func TestMeterWithBackup_ReadError(t *testing.T) {
+func TestCounterWithBackup_ReadError(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
+	clk := clock.NewMock()
+	logger := log.NewNopLogger()
+	backupInterval := time.Second
 
 	// Read error
 	backupBuf := &testBuffer{}
 	backupBuf.readError = errors.New("some read error")
-	_, err := NewCounterWithBackup(backupBuf)
+	_, err := NewCounterWithBackup(ctx, clk, logger, backupBuf, backupInterval)
 	if assert.Error(t, err) {
 		assert.Equal(t, "cannot read from the backup file: some read error", err.Error())
 	}
 }
 
-func TestMeterWithBackup_FlushError(t *testing.T) {
+func TestCounterWithBackup_FlushError(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
+	clk := clock.NewMock()
+	logger := log.NewNopLogger()
+	backupInterval := time.Second
+
 	backupBuf := &testBuffer{}
-	m, err := NewCounterWithBackup(backupBuf)
+	m, err := NewCounterWithBackup(ctx, clk, logger, backupBuf, backupInterval)
 	assert.NoError(t, err)
 
 	// Seek error
 	backupBuf.seekError = errors.New("some seek error")
-	err = m.Flush()
+	err = m.SyncBackup()
 	if assert.Error(t, err) {
 		assert.Equal(t, "cannot seek the backup file: some seek error", err.Error())
 	}
@@ -184,17 +286,22 @@ func TestMeterWithBackup_FlushError(t *testing.T) {
 	// Write error
 	backupBuf.seekError = nil
 	backupBuf.writeError = errors.New("some write error")
-	err = m.Flush()
+	err = m.SyncBackup()
 	if assert.Error(t, err) {
 		assert.Equal(t, "cannot write to the backup file: some write error", err.Error())
 	}
 }
 
-func TestMeterWithBackup_CloseError(t *testing.T) {
+func TestCounterWithBackup_CloseError(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
+	clk := clock.NewMock()
+	logger := log.NewNopLogger()
+	backupInterval := time.Second
+
 	backupBuf := &testBuffer{}
-	m, err := NewCounterWithBackup(backupBuf)
+	m, err := NewCounterWithBackup(ctx, clk, logger, backupBuf, backupInterval)
 	assert.NoError(t, err)
 
 	// Write error

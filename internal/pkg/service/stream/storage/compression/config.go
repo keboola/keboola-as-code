@@ -11,8 +11,8 @@ const (
 	DefaultGZIPLevel     = gzip.BestSpeed // 1-9
 	DefaultGZIPBlockSize = 256 * datasize.KB
 
-	DefaultZSTDLevel      = zstd.SpeedFastest // 1-4
-	DefaultZSDTWindowSize = 1 * datasize.MB
+	DefaultZSTDLevel      = zstd.SpeedDefault // 1-4
+	DefaultZSDTWindowSize = 4 * datasize.MB
 )
 
 // Config configures compression writer and reader.
@@ -109,4 +109,9 @@ func (c Config) Simplify() Config {
 		c.ZSTD = nil
 	}
 	return c
+}
+
+// HasWriterInputBuffer returns true if the compression writer includes an input buffer.
+func (c Config) HasWriterInputBuffer() bool {
+	return c.Type == TypeGZIP && c.GZIP.Implementation == GZIPImplParallel
 }

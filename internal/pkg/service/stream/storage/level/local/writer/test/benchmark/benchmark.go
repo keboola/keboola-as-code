@@ -56,18 +56,17 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	gen := newRandomStringGenerator()
 
 	// Setup logger
-	logger := log.NewDebugLogger()
-	logger.ConnectTo(testhelper.VerboseStdout())
+	logger := log.NewServiceLogger(testhelper.VerboseStdout(), false)
 
 	// Open volume
 	clk := clock.New()
 	now := clk.Now()
 	spec := volume.Spec{NodeID: "my-node", Path: b.TempDir(), Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec)
+	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), writer.NewConfig(), spec)
 	require.NoError(b, err)
 
 	// Create writer
-	sliceWriter, err := vol.NewWriterFor(wb.newSlice(b, vol))
+	sliceWriter, err := vol.OpenWriter(wb.newSlice(b, vol))
 	require.NoError(b, err)
 
 	// Create data channel
@@ -95,7 +94,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 				// Read from the channel until the N rows are processed, together by all goroutines
 				for row := range dataCh {
 					start := time.Now()
-					assert.NoError(b, sliceWriter.WriteRow(now, row))
+					assert.NoError(b, sliceWriter.WriteRecord(now, row))
 					latencySum += time.Since(start).Seconds()
 					latencyCount++
 				}
@@ -120,7 +119,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	b.ReportMetric(float64(sliceWriter.UncompressedSize())/float64(sliceWriter.CompressedSize()), "ratio")
 
 	// Check rows count
-	assert.Equal(b, uint64(b.N), sliceWriter.RowsCount())
+	assert.Equal(b, uint64(b.N), sliceWriter.CompletedWrites())
 
 	// Check file real size
 	if wb.Compression.Type == compression.TypeNone {

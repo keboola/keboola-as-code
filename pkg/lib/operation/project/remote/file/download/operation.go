@@ -201,7 +201,6 @@ func (d *downloader) totalSize(ctx context.Context) (size int64, err error) {
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.SetLimit(GetFileSizeParallelism)
 	for _, slice := range d.slices {
-		slice := slice
 		grp.Go(func() error {
 			// Check context cancellation
 			if err := ctx.Err(); err != nil {

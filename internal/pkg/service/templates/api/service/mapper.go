@@ -133,8 +133,6 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 		if !hasRequirements(tmpl, d) {
 			continue
 		}
-
-		tmpl := tmpl
 		tmplResponse, err := TemplateResponse(ctx, d, &tmpl, out.Repository.Author)
 		if err != nil {
 			return nil, err
@@ -167,7 +165,6 @@ func TemplateResponse(ctx context.Context, d dependencies.ProjectRequestScope, t
 	}
 
 	for _, version := range tmpl.Versions {
-		version := version
 		out.Versions = append(out.Versions, VersionResponse(&version))
 	}
 	return out, nil
@@ -196,7 +193,6 @@ func TemplateDetailResponse(ctx context.Context, d dependencies.ProjectRequestSc
 		Versions:       make([]*Version, 0),
 	}
 	for _, version := range tmpl.Versions {
-		version := version
 		out.Versions = append(out.Versions, VersionResponse(&version))
 	}
 	return out, nil

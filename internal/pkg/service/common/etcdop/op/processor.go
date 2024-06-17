@@ -8,12 +8,10 @@ import (
 )
 
 // processors are callbacks that can react on or modify the result of an operation.
+// processors are invoked only if the etcd operation completed without server error.
+// Result methods Err/AddErr/ResetErr are used for logical errors, e.g. some unexpected value is found.
 type processors[R any] struct {
 	callbacks []func(ctx context.Context, r *Result[R])
-}
-
-func (p processors[R]) len() int {
-	return len(p.callbacks)
 }
 
 func (p processors[R]) invoke(ctx context.Context, r *Result[R]) {
@@ -38,7 +36,7 @@ func (p processors[R]) WithProcessor(fn func(ctx context.Context, result *Result
 func (p processors[R]) WithResultTo(ptr *R) processors[R] {
 	return p.WithProcessor(func(_ context.Context, r *Result[R]) {
 		if r.Err() == nil {
-			*ptr = *r.result
+			*ptr = r.Result()
 		} else {
 			var empty R
 			*ptr = empty
@@ -64,6 +62,28 @@ func (p processors[R]) WithOnResult(fn func(result R)) processors[R] {
 	return p.WithProcessor(func(_ context.Context, result *Result[R]) {
 		if result.Err() == nil {
 			fn(result.Result())
+		}
+	})
+}
+
+// WithNotEmptyResultAsError is a shortcut for the WithProcessor.
+// If no error occurred yet and the result is NOT an empty value for the R type (nil if it is a pointer),
+// then the callback is executed and returned error is added to the Result.
+func (p processors[R]) WithNotEmptyResultAsError(fn func() error) processors[R] {
+	return p.WithProcessor(func(_ context.Context, result *Result[R]) {
+		// Empty value is expected, reset EmptyResultError
+		if errors.As(result.Err(), &EmptyResultError{}) {
+			result.ResetErr()
+			return
+		}
+
+		// Found unexpected empty value and no other error
+		emptyValue := result.result == nil || reflect.ValueOf(*result.result).IsZero()
+		if !emptyValue && result.Err() == nil {
+			if err := fn(); err != nil {
+				result.ResetErr()
+				result.AddErr(err)
+			}
 		}
 	})
 }

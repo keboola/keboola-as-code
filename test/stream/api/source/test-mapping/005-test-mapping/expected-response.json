@@ -1,0 +1,29 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "tables": [
+    {
+      "sinkId": "my-sink",
+      "tableId": "in.c-my-bucket.my-table",
+      "rows": [
+        {
+          "columns": [
+            {
+              "name": "datetime",
+              "value": "%s"
+            },
+            {
+              "name": "body",
+              "value": "{\"my\":{\"value\":42}}"
+            },
+            {
+              "name": "jsonnet",
+              "value": "42"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

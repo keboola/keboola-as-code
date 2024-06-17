@@ -195,9 +195,9 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Open two writers
-	_, err = vol.NewWriterFor(test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z"))
+	_, err = vol.OpenWriter(test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z"))
 	require.NoError(t, err)
-	_, err = vol.NewWriterFor(test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z"))
+	_, err = vol.OpenWriter(test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z"))
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
@@ -253,14 +253,13 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	opts = append([]Option{
 		WithAllocator(tc.Allocator),
-		WithWriterFactory(func(w *writer.BaseWriter) (writer.Writer, error) {
-			return test.NewWriter(tc.WriterHelper, w), nil
-		}),
+		WithSyncerFactory(tc.WriterHelper.NewSyncer),
+		WithFormatWriterFactory(tc.WriterHelper.NewDummyWriter),
 		WithWatchDrainFile(false),
 	}, opts...)
 
-	info := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
-	return Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, info, opts...)
+	spec := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
+	return Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, writer.NewConfig(), spec, opts...)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {

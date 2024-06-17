@@ -42,7 +42,7 @@ if ! command -v golangci-lint &> /dev/null
 then
   # Disabled due to issues with windows curl command not working
   # Related to https://github.com/keboola/keboola-as-code/pull/1818/commits/df23a4e2855557a01460593f7d6ba59b5dc8825c
-  # curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$GOBIN" v1.57.2
+  # curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$GOBIN" v1.58.0
   go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.2
 fi
 
@@ -68,6 +68,12 @@ fi
 if ! command -v godoc &> /dev/null
 then
   go install golang.org/x/tools/cmd/godoc@latest
+fi
+
+# benchstat
+if ! command -v benchstat &> /dev/null
+then
+  go install golang.org/x/perf/cmd/benchstat@latest
 fi
 
 # go-mod-upgrade

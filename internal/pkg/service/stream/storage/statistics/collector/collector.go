@@ -66,7 +66,8 @@ func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, 
 
 		c.writersLock.Lock()
 		c.writers[k] = &writerSnapshot{
-			writer: w, stats: statistics.PerSlice{
+			writer: w,
+			stats: statistics.PerSlice{
 				SliceKey: k,
 				Value:    statistics.Value{SlicesCount: 1},
 			},
@@ -174,9 +175,9 @@ func (c *Collector) sync(filter *model.SliceKey) error {
 // collect statistics from the writer to the PerSlice struct.
 func (c *Collector) collect(w writer.Writer, out *statistics.PerSlice) (changed bool) {
 	// Get values
-	firstRowAt := w.FirstRowAt()
-	lastRowAt := w.LastRowAt()
-	rowsCount := w.RowsCount()
+	firstRowAt := w.FirstRecordAt()
+	lastRowAt := w.LastRecordAt()
+	rowsCount := w.CompletedWrites()
 	compressedSize := w.CompressedSize()
 	uncompressedSize := w.UncompressedSize()
 

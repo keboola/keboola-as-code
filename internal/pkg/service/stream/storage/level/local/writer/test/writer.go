@@ -3,66 +3,49 @@ package test
 import (
 	"bytes"
 	"context"
+	"io"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/c2h5oh/datasize"
+	"github.com/benbjohnson/clock"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/count"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Writer implements a simple writer implementing writer.Writer for tests.
+// DummyWriter implements a simple writer implementing writer.Writer for tests.
 // The writer writes row values to one line as strings, separated by comma.
-type Writer struct {
-	helper  *WriterHelper
-	base    *writer.BaseWriter
-	writeWg *sync.WaitGroup
-
-	ctx    context.Context
-	cancel context.CancelFunc
-
-	// CompressedSizeValue defines value of the CompressedSize getter.
-	CompressedSizeValue datasize.ByteSize
-	// UncompressedSizeValue defines value of the UncompressedSize getter.
-	UncompressedSizeValue datasize.ByteSize
-	// RowsCounter counts successfully written rows.
-	RowsCounter *count.Counter
-	// CloseError simulates error in the Close method.
+// Row is separated by the new line.
+type DummyWriter struct {
+	out        io.Writer
+	FlushError error
 	CloseError error
 }
 
-func NewWriter(helper *WriterHelper, base *writer.BaseWriter) *Writer {
-	w := &Writer{
-		helper:      helper,
-		base:        base,
-		writeWg:     &sync.WaitGroup{},
-		RowsCounter: count.NewCounter(),
-	}
-
-	helper.addWriter(w)
-
-	w.ctx, w.cancel = context.WithCancel(context.Background())
-
-	return w
+// NotifyWriter notifies about successful writes.
+type NotifyWriter struct {
+	writer.FormatWriter
+	writeDone chan struct{}
 }
 
-func (w *Writer) WriteRow(timestamp time.Time, values []any) error {
-	// Block Close method
-	w.writeWg.Add(1)
-	defer w.writeWg.Done()
+func DummyWriterFactory(cfg writer.Config, out io.Writer, slice *model.Slice) (writer.FormatWriter, error) {
+	return NewDummyWriter(cfg, out, slice), nil
+}
 
-	// Check if the writer is closed
-	if err := w.ctx.Err(); err != nil {
-		return errors.Errorf(`test writer is closed: %w`, err)
-	}
+func NewDummyWriter(_ writer.Config, out io.Writer, _ *model.Slice) *DummyWriter {
+	return &DummyWriter{out: out}
+}
 
+func NewNotifyWriter(w writer.FormatWriter, writeDone chan struct{}) *NotifyWriter {
+	return &NotifyWriter{FormatWriter: w, writeDone: writeDone}
+}
+
+func (w *DummyWriter) WriteRecord(values []any) error {
 	var s bytes.Buffer
 	for i, v := range values {
 		if i > 0 {
@@ -72,94 +55,48 @@ func (w *Writer) WriteRow(timestamp time.Time, values []any) error {
 	}
 	s.WriteString("\n")
 
-	// Write
-	_, notifier, err := w.base.WriteWithNotify(s.Bytes())
-	if err != nil {
-		return err
-	}
-
-	// Increments number of high-level writes in progress
-	w.base.AddWriteOp(1)
-
-	// Signal the completion of write operation and waiting for sync
-	w.helper.writeDone <- struct{}{}
-
-	// Wait for sync and return sync error, if any
-	if err = notifier.Wait(); err != nil {
-		return err
-	}
-
-	// Increase the count of successful writes
-	w.RowsCounter.Add(timestamp, 1)
-	return nil
+	_, err := w.out.Write(s.Bytes())
+	return err
 }
 
-func (w *Writer) RowsCount() uint64 {
-	return w.RowsCounter.Count()
+func (w *DummyWriter) Flush() error {
+	return w.FlushError
 }
 
-func (w *Writer) FirstRowAt() utctime.UTCTime {
-	return w.RowsCounter.FirstAt()
-}
-
-func (w *Writer) LastRowAt() utctime.UTCTime {
-	return w.RowsCounter.LastAt()
-}
-
-func (w *Writer) CompressedSize() datasize.ByteSize {
-	return w.CompressedSizeValue
-}
-
-func (w *Writer) UncompressedSize() datasize.ByteSize {
-	return w.UncompressedSizeValue
-}
-
-func (w *Writer) SliceKey() model.SliceKey {
-	return w.base.SliceKey()
-}
-
-func (w *Writer) DirPath() string {
-	return w.base.DirPath()
-}
-
-func (w *Writer) FilePath() string {
-	return w.base.FilePath()
-}
-
-func (w *Writer) Events() *writer.Events {
-	return w.base.Events()
-}
-
-func (w *Writer) Close(ctx context.Context) error {
-	// Prevent new writes
-	w.cancel()
-
-	// Close the chain
-	err := w.base.Close(ctx)
-
-	// Wait for running writes
-	w.writeWg.Wait()
-
-	if err != nil {
-		return err
-	}
-
+func (w *DummyWriter) Close() error {
 	return w.CloseError
 }
 
-// WriterHelper controls test.Writer in the tests.
+func (w *NotifyWriter) WriteRecord(values []any) error {
+	err := w.FormatWriter.WriteRecord(values)
+	if err == nil {
+		w.writeDone <- struct{}{}
+	}
+	return err
+}
+
 type WriterHelper struct {
-	// writeDone signals completion of the write operation and the start of waiting for disk synchronization.
-	// See the WriteRow method.
 	writeDone chan struct{}
-	// writers slice holds all writers to trigger manual sync by the TriggerSync method.
-	writers []*Writer
+	syncers   []*disksync.Syncer
 }
 
 func NewWriterHelper() *WriterHelper {
-	return &WriterHelper{
-		writeDone: make(chan struct{}, 100),
-	}
+	return &WriterHelper{writeDone: make(chan struct{}, 100)}
+}
+
+// NewDummyWriter implements writer.FormatWriterFactory.
+// See also ExpectWritesCount and TriggerSync methods.
+func (h *WriterHelper) NewDummyWriter(cfg writer.Config, out io.Writer, slice *model.Slice) (writer.FormatWriter, error) {
+	return NewNotifyWriter(NewDummyWriter(cfg, out, slice), h.writeDone), nil
+}
+
+// NewSyncer implements disksync.SyncerFactory.
+// See also ExpectWritesCount and TriggerSync methods.
+func (h *WriterHelper) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config disksync.Config, chain disksync.Chain, statistics disksync.StatisticsProvider,
+) *disksync.Syncer {
+	s := disksync.NewSyncer(ctx, logger, clock, config, chain, statistics)
+	h.syncers = append(h.syncers, s)
+	return s
 }
 
 func (h *WriterHelper) ExpectWritesCount(tb testing.TB, n int) {
@@ -182,19 +119,14 @@ func (h *WriterHelper) TriggerSync(tb testing.TB) {
 	tb.Logf("trigger sync")
 
 	wg := &sync.WaitGroup{}
-	for _, w := range h.writers {
-		w := w
+	for _, s := range h.syncers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(tb, w.base.TriggerSync(context.Background(), true).Wait())
+			assert.NoError(tb, s.TriggerSync(context.Background(), true).Wait())
 		}()
 	}
 	wg.Wait()
 
 	tb.Logf("sync done")
-}
-
-func (h *WriterHelper) addWriter(w *Writer) {
-	h.writers = append(h.writers, w)
 }

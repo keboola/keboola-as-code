@@ -30,31 +30,31 @@ func TestChain_SetupMethods(t *testing.T) {
 	tc := newChainTestCase(t)
 
 	// Writers
-	assert.True(t, tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	assert.True(t, tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		return &testWriterSimple{Writer: w, Name: "W1"}
 	}))
 
-	assert.False(t, tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	assert.False(t, tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		return w
 	}))
 
-	assert.False(t, tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	assert.False(t, tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		return nil
 	}))
 
-	ok, err := tc.Chain.PrependWriterOrErr(func(w Writer) (io.Writer, error) {
+	ok, err := tc.Chain.PrependWriterOrErr(func(w io.Writer) (io.Writer, error) {
 		return &testWriterFlusherCloser{Writer: w, Name: "W2"}, nil
 	})
 	assert.True(t, ok)
 	assert.NoError(t, err)
 
-	ok, err = tc.Chain.PrependWriterOrErr(func(w Writer) (io.Writer, error) {
+	ok, err = tc.Chain.PrependWriterOrErr(func(w io.Writer) (io.Writer, error) {
 		return w, nil
 	})
 	assert.False(t, ok)
 	assert.NoError(t, err)
 
-	ok, err = tc.Chain.PrependWriterOrErr(func(w Writer) (io.Writer, error) {
+	ok, err = tc.Chain.PrependWriterOrErr(func(w io.Writer) (io.Writer, error) {
 		return nil, nil
 	})
 	assert.False(t, ok)
@@ -127,7 +127,7 @@ Closers:
 func TestChain_PrependWriterOrErr_Error(t *testing.T) {
 	t.Parallel()
 	tc := newChainTestCase(t)
-	ok, err := tc.Chain.PrependWriterOrErr(func(w Writer) (io.Writer, error) {
+	ok, err := tc.Chain.PrependWriterOrErr(func(w io.Writer) (io.Writer, error) {
 		return nil, errors.New("some error")
 	})
 	assert.False(t, ok)
@@ -169,7 +169,7 @@ func TestChain_Complex_Ok(t *testing.T) {
 {"level":"info","message":"TEST: write \"foo\" to writer \"flusher\""}                      
 {"level":"info","message":"TEST: write \"foo\" to writer \"closer\""}                       
 {"level":"info","message":"TEST: write \"foo\" to writer \"buffer1\""}                      
-{"level":"info","message":"TEST: write string \"bar\" to writer \"simple\""}                
+{"level":"info","message":"TEST: write \"bar\" to writer \"simple\""}                
 {"level":"info","message":"TEST: write \"bar\" to writer \"flusher-closer\""}               
 {"level":"info","message":"TEST: write \"bar\" to writer \"flusher\""}                      
 {"level":"info","message":"TEST: write \"bar\" to writer \"closer\""}                       
@@ -189,7 +189,7 @@ func TestChain_Complex_Ok(t *testing.T) {
 {"level":"info","message":"TEST: write \"123\" to writer \"flusher\""}
 {"level":"info","message":"TEST: write \"123\" to writer \"closer\""}
 {"level":"info","message":"TEST: write \"123\" to writer \"buffer1\""}
-{"level":"info","message":"TEST: write string \"456\" to writer \"simple\""}
+{"level":"info","message":"TEST: write \"456\" to writer \"simple\""}
 {"level":"info","message":"TEST: write \"456\" to writer \"flusher-closer\""}
 {"level":"info","message":"TEST: write \"456\" to writer \"flusher\""}
 {"level":"info","message":"TEST: write \"456\" to writer \"closer\""}
@@ -213,7 +213,7 @@ func TestChain_Complex_Ok(t *testing.T) {
 {"level":"info","message":"TEST: write \"abc\" to writer \"flusher\""}
 {"level":"info","message":"TEST: write \"abc\" to writer \"closer\""}
 {"level":"info","message":"TEST: write \"abc\" to writer \"buffer1\""}
-{"level":"info","message":"TEST: write string \"def\" to writer \"simple\""}
+{"level":"info","message":"TEST: write \"def\" to writer \"simple\""}
 {"level":"info","message":"TEST: write \"def\" to writer \"flusher-closer\""}
 {"level":"info","message":"TEST: write \"def\" to writer \"flusher\""}
 {"level":"info","message":"TEST: write \"def\" to writer \"closer\""}
@@ -432,27 +432,27 @@ type testBuffer struct {
 
 type testWriterSimple struct {
 	Name   string
-	Writer Writer
+	Writer io.Writer
 	Logger log.Logger
 }
 
 type testWriterFlusher struct {
 	Name       string
-	Writer     Writer
+	Writer     io.Writer
 	Logger     log.Logger
 	FlushError error
 }
 
 type testWriterCloser struct {
 	Name       string
-	Writer     Writer
+	Writer     io.Writer
 	Logger     log.Logger
 	CloseError error
 }
 
 type testWriterFlusherCloser struct {
 	Name       string
-	Writer     Writer
+	Writer     io.Writer
 	Logger     log.Logger
 	FlushError error
 	CloseError error
@@ -483,7 +483,7 @@ func (w *testFile) Write(p []byte) (int, error) {
 }
 
 func (w *testFile) WriteString(s string) (int, error) {
-	w.Logger.Infof(context.Background(), `TEST: write string "%s" to file`, s)
+	w.Logger.Infof(context.Background(), `TEST: write "%s" to file`, s)
 	return w.OsFile.WriteString(s)
 }
 
@@ -524,11 +524,6 @@ func (w *testWriterSimple) String() string {
 func (w *testWriterSimple) Write(p []byte) (int, error) {
 	w.Logger.Infof(context.Background(), `TEST: write "%s" to writer "%s"`, string(p), w.Name)
 	return w.Writer.Write(p)
-}
-
-func (w *testWriterSimple) WriteString(s string) (int, error) {
-	w.Logger.Infof(context.Background(), `TEST: write string "%s" to writer "%s"`, s, w.Name)
-	return w.Writer.WriteString(s)
 }
 
 func (w *testWriterFlusher) String() string {
@@ -659,18 +654,11 @@ func (tc *chainTestCase) AssertLogs(expected string) bool {
 	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }
 
-// WriteData writes alternately using Write and WriteString methods.
 func (tc *chainTestCase) WriteData(items []string) {
-	for i, str := range items {
-		if i%2 == 0 {
-			n, err := tc.Chain.Write([]byte(str))
-			assert.Equal(tc.TB, 3, n)
-			assert.NoError(tc.TB, err)
-		} else {
-			n, err := tc.Chain.WriteString(str)
-			assert.Equal(tc.TB, 3, n)
-			assert.NoError(tc.TB, err)
-		}
+	for _, str := range items {
+		n, err := tc.Chain.Write([]byte(str))
+		assert.Equal(tc.TB, 3, n)
+		assert.NoError(tc.TB, err)
 	}
 }
 
@@ -678,15 +666,15 @@ func (tc *chainTestCase) WriteData(items []string) {
 // simple -> flusher-closer -> buffer -> file.
 func (tc *chainTestCase) SetupSimpleChain() *simpleChain {
 	out := &simpleChain{}
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.Buffer = &testBuffer{Name: "buffer", Buffer: bufio.NewWriter(w), Logger: tc.Logger}
 		return out.Buffer
 	})
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.FlusherCloser = &testWriterFlusherCloser{Name: "flusher-closer", Writer: w, Logger: tc.Logger}
 		return out.FlusherCloser
 	})
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.Simple = &testWriterSimple{Name: "simple", Writer: w, Logger: tc.Logger}
 		return out.Simple
 	})
@@ -713,15 +701,15 @@ Closers:
 // simple -> flusher-closer -> flusher -> closer -> flush func -> close func -> buffer1 -> buffer2 -> last -> file.
 func (tc *chainTestCase) SetupComplexChain() *complexChain {
 	out := &complexChain{}
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.Last = &testWriterSimple{Name: "last", Writer: w, Logger: tc.Logger}
 		return out.Last
 	})
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.Buffer2 = &testBuffer{Name: "buffer2", Buffer: bufio.NewWriter(w), Logger: tc.Logger}
 		return out.Buffer2
 	})
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.Buffer1 = &testBuffer{Name: "buffer1", Buffer: bufio.NewWriter(w), Logger: tc.Logger}
 		return out.Buffer1
 	})
@@ -733,23 +721,23 @@ func (tc *chainTestCase) SetupComplexChain() *complexChain {
 		tc.Logger.Info(context.Background(), `TEST: flush "func"`)
 		return nil
 	})
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		// nop
 		return w
 	})
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.Closer = &testWriterCloser{Name: "closer", Writer: w, Logger: tc.Logger}
 		return out.Closer
 	})
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.Flusher = &testWriterFlusher{Name: "flusher", Writer: w, Logger: tc.Logger}
 		return out.Flusher
 	})
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.FlusherCloser = &testWriterFlusherCloser{Name: "flusher-closer", Writer: w, Logger: tc.Logger}
 		return out.FlusherCloser
 	})
-	tc.Chain.PrependWriter(func(w Writer) io.Writer {
+	tc.Chain.PrependWriter(func(w io.Writer) io.Writer {
 		out.Simple = &testWriterSimple{Name: "simple", Writer: w, Logger: tc.Logger}
 		return out.Simple
 	})

@@ -5,7 +5,6 @@ import (
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -30,11 +29,15 @@ const SliceUploading SliceState = "uploading"
 const SliceUploaded SliceState = "uploaded"
 
 // SliceImported
+//
 // The parent File has been successfully imported to the target table.
 // The Slice can be removed from the staging storage, if needed.
 const SliceImported SliceState = "imported"
 
 // SliceState is an enum type for slice states, see also FileState.
+//
+// Only following transitions are allowed:
+// SliceWriting -> SliceClosing -> SliceUploading -> SliceUploaded -> SliceImported.
 type SliceState string
 
 func (s Slice) WithState(at time.Time, to SliceState) (Slice, error) {
@@ -60,14 +63,14 @@ func (s Slice) WithState(at time.Time, to SliceState) (Slice, error) {
 }
 
 // Level gets the storage.Level at which the slice is present.
-func (s SliceState) Level() level.Level {
+func (s SliceState) Level() Level {
 	switch s {
 	case SliceWriting, SliceClosing, SliceUploading:
-		return level.Local
+		return LevelLocal
 	case SliceUploaded:
-		return level.Staging
+		return LevelStaging
 	case SliceImported:
-		return level.Target
+		return LevelTarget
 	default:
 		panic(errors.Errorf(`unexpected slice state "%v"`, s))
 	}

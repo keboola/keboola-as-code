@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
@@ -13,13 +12,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
+	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
+	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -91,24 +90,19 @@ func TestFile_Validation(t *testing.T) {
 	t.Parallel()
 
 	// Following values have own validation
-	localStorage := local.File{
+	localStorage := localModel.File{
 		Dir:            "my-dir",
 		Compression:    compression.NewConfig(),
 		DiskSync:       disksync.NewConfig(),
 		DiskAllocation: diskalloc.NewConfig(),
 	}
-	stagingStorage := staging.File{
-		Compression:                 compression.NewConfig(),
-		UploadCredentials:           &keboola.FileUploadCredentials{},
-		UploadCredentialsExpiration: utctime.MustParse("2006-01-02T15:04:05.000Z"),
+	stagingStorage := stagingModel.File{
+		Provider:    "foo",
+		Compression: compression.NewConfig(),
+		Expiration:  utctime.MustParse("2006-01-02T15:04:05.000Z"),
 	}
-	targetStorage := target.Target{
-		Table: target.Table{
-			Keboola: target.KeboolaTable{
-				TableID:    keboola.MustParseTableID("in.bucket.table"),
-				StorageJob: &keboola.StorageJob{},
-			},
-		},
+	targetStorage := targetModel.Target{
+		Provider: "foo",
 	}
 	volumeAssignment := assignment.Assignment{
 		Config: assignment.Config{
@@ -138,12 +132,17 @@ func TestFile_Validation(t *testing.T) {
 - "assignment.config.count" is a required field
 - "assignment.config.preferredTypes" is a required field
 - "assignment.volumes" must contain at least 1 item
+- "local.dir" is a required field
+- "local.compression.type" is a required field
+- "local.diskSync.mode" is a required field
+- "local.diskAllocation.static" is a required field
+- "local.diskAllocation.relative" must be 100 or greater
+- "staging.provider" is a required field
+- "staging.compression" is a required field
+- "staging.expiration" is a required field
+- "target.provider" is a required field
 `,
-			Value: File{
-				LocalStorage:   localStorage,
-				StagingStorage: stagingStorage,
-				TargetStorage:  targetStorage,
-			},
+			Value: File{},
 		},
 		{
 			Name:          "empty columns",

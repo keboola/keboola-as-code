@@ -13,6 +13,7 @@ type VersionedInterface interface {
 	VersionNumber() VersionNumber
 	VersionHash() string
 	VersionModifiedAt() utctime.UTCTime
+	VersionModifiedBy() By
 	VersionDescription() string
 }
 
@@ -23,17 +24,20 @@ type Versioned struct {
 type Version struct {
 	Number      VersionNumber   `json:"number" hash:"ignore" validate:"required,min=1"`
 	Hash        string          `json:"hash" hash:"ignore" validate:"required,len=16"`
-	ModifiedAt  utctime.UTCTime `json:"modifiedAt" hash:"ignore" validate:"required"`
 	Description string          `json:"description" hash:"ignore"`
+	At          utctime.UTCTime `json:"at" hash:"ignore" validate:"required"`
+	By          By              `json:"by" hash:"ignore" validate:"required"`
 }
 
 type VersionNumber int
 
-func (v *Versioned) IncrementVersion(s any, now time.Time, description string) {
-	v.Version.ModifiedAt = utctime.From(now)
-	v.Version.Description = description
+func (v *Versioned) IncrementVersion(s any, now time.Time, by By, description string) {
+	v.Version.At = utctime.From(now)
+	v.Version.By = by
+
 	v.Version.Number += 1
 	v.Version.Hash = hashStruct(s)
+	v.Version.Description = description
 }
 
 func (v *Versioned) VersionNumber() VersionNumber {
@@ -45,7 +49,11 @@ func (v *Versioned) VersionHash() string {
 }
 
 func (v *Versioned) VersionModifiedAt() utctime.UTCTime {
-	return v.Version.ModifiedAt
+	return v.Version.At
+}
+
+func (v *Versioned) VersionModifiedBy() By {
+	return v.Version.By
 }
 
 func (v *Versioned) VersionDescription() string {

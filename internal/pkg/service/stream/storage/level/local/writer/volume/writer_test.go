@@ -23,7 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-func TestVolume_NewWriterFor_Ok(t *testing.T) {
+func TestVolume_OpenWriter_Ok(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
 
@@ -35,7 +35,7 @@ func TestVolume_NewWriterFor_Ok(t *testing.T) {
 	assert.Len(t, tc.Volume.writers, 0)
 }
 
-func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
+func TestVolume_OpenWriter_Duplicate(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
 
@@ -55,7 +55,7 @@ func TestVolume_NewWriterFor_Duplicate(t *testing.T) {
 	assert.Len(t, tc.Volume.writers, 0)
 }
 
-func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
+func TestVolume_OpenWriter_ClosedVolume(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 	vol, err := tc.OpenVolume()
@@ -63,7 +63,7 @@ func TestVolume_NewWriterFor_ClosedVolume(t *testing.T) {
 
 	assert.NoError(t, vol.Close(context.Background()))
 
-	_, err = vol.NewWriterFor(test.NewSlice())
+	_, err = vol.OpenWriter(test.NewSlice())
 	assert.Error(t, err)
 }
 
@@ -142,12 +142,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
@@ -158,7 +158,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
@@ -169,7 +169,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	}()
 	tc.ExpectWritesCount(t, 1)
 
@@ -193,7 +193,7 @@ ghi,jkl,789
 {"level":"info","message":"opened volume"}                  
 {"level":"debug","message":"opened file"}                   
 {"level":"debug","message":"disk space allocation is not supported"}                        
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to disk"}         
 {"level":"debug","message":"syncing file"}                  
 {"level":"debug","message":"flushing writers"}              
@@ -246,12 +246,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
@@ -262,7 +262,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
@@ -273,7 +273,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	}()
 	tc.ExpectWritesCount(t, 1)
 
@@ -295,7 +295,7 @@ ghi,jkl,789
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"writers flushed"}
@@ -335,18 +335,18 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
@@ -366,7 +366,7 @@ ghi,jkl,789
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"syncing file"}
 {"level":"debug","message":"flushing writers"}
@@ -412,18 +412,18 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
@@ -443,7 +443,7 @@ ghi,jkl,789
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"writers flushed"}
@@ -479,16 +479,16 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	// Writes are NOT BLOCKING, sync is disabled completely
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
 	tc.ExpectWritesCount(t, 2)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"abc", "def", 456}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
 	tc.ExpectWritesCount(t, 1)
 
 	// Last write
-	assert.NoError(t, w.WriteRow(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer
@@ -541,7 +541,7 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"error","message":"cannot allocate disk space \"10KB\", allocation skipped: some space allocation error"}
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"closing file"}
 `)
 }
@@ -567,7 +567,7 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or bytes=1MB or interval=50ms}, check each 1ms"}
+{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"closing file"}
 `)
 }
@@ -637,7 +637,7 @@ func (tc *writerTestCase) NewWriter(opts ...Option) (writer.Writer, error) {
 	val := validator.New()
 	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
 
-	w, err := tc.Volume.NewWriterFor(tc.Slice)
+	w, err := tc.Volume.OpenWriter(tc.Slice)
 	if err != nil {
 		return nil, err
 	}

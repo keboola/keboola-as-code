@@ -1,22 +1,28 @@
 package statistics_test
 
 import (
+	"bytes"
 	"context"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.etcd.io/etcd/client/v3/concurrency"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
 type providerTestCase struct {
@@ -29,33 +35,78 @@ type providerTestCase struct {
 func TestStatisticsProviders(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	clk := clock.NewMock()
-	d := dependencies.NewMocked(t, dependencies.WithClock(clk), dependencies.WithEnabledEtcdClient())
-	client := d.EtcdClient()
-	repo := repository.New(d)
+	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	by := test.ByUser()
 
-	l1Cache, err := cache.NewL1Cache(d.Logger(), repo)
-	require.NoError(t, err)
-	defer l1Cache.Stop()
+	// Fixtures
+	projectID := keboola.ProjectID(123)
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
-	l2Config := statistics.NewConfig().Cache.L2
-	l2Cache, err := cache.NewL2Cache(d.Logger(), clk, l1Cache, l2Config)
-	require.NoError(t, err)
-	defer l2Cache.Stop()
+	// Get services
+	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
+	client := mocked.TestEtcdClient()
+	defRepo := d.DefinitionRepository()
+	storageRepo := d.StorageRepository()
+	fileRepo := storageRepo.File()
+	sliceRepo := storageRepo.Slice()
+	volumeRepo := storageRepo.Volume()
+	statsRepo := d.StatisticsRepository()
 
-	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
-	sliceKey2 := test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")
-	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
+	// Log etcd operations
+	var etcdLogs bytes.Buffer
+	rawClient := d.EtcdClient()
+	rawClient.KV = etcdlogger.KVLogWrapper(rawClient.KV, &etcdLogs, etcdlogger.WithMinimal())
+
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
+
+	// Create branch, source, sink, file, slice
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		branch := test.NewBranch(branchKey)
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
+		source := test.NewSource(sourceKey)
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
+		sink := test.NewSinkWithLocalStorage(sinkKey)
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+	}
+
+	// Create 2 more files/slices (3 totally)
+	// -----------------------------------------------------------------------------------------------------------------
+	var sliceKey1, sliceKey2, sliceKey3 model.SliceKey
+	{
+		clk.Add(time.Hour)
+		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
+
+		clk.Add(time.Hour)
+		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
+
+		slices, err := sliceRepo.ListIn(sinkKey).Do(ctx).All()
+		require.NoError(t, err)
+		require.Len(t, slices, 3)
+		sliceKey1 = slices[0].SliceKey
+		sliceKey2 = slices[1].SliceKey
+		sliceKey3 = slices[2].SliceKey
+	}
 
 	// Define test cases
 	cases := []providerTestCase{
 		{
 			Description: "Empty",
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
+				stats, err := provider.SinkStats(ctx, sinkKey)
 				require.NoError(t, err)
 				assert.Empty(t, stats)
 			},
@@ -63,7 +114,7 @@ func TestStatisticsProviders(t *testing.T) {
 		{
 			Description: "Add record (1)",
 			Prepare: func() {
-				require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+				require.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
 					{
 						SliceKey: sliceKey1,
 						Value: statistics.Value{
@@ -78,7 +129,7 @@ func TestStatisticsProviders(t *testing.T) {
 				}))
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
+				stats, err := provider.SinkStats(ctx, sinkKey)
 				require.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -103,7 +154,7 @@ func TestStatisticsProviders(t *testing.T) {
 		{
 			Description: "Add record (2)",
 			Prepare: func() {
-				require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+				require.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
 					{
 						SliceKey: sliceKey2,
 						Value: statistics.Value{
@@ -118,7 +169,7 @@ func TestStatisticsProviders(t *testing.T) {
 				}))
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
+				stats, err := provider.SinkStats(ctx, sinkKey)
 				require.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -143,10 +194,13 @@ func TestStatisticsProviders(t *testing.T) {
 		{
 			Description: "Move stats from local -> staging level",
 			Prepare: func() {
-				require.NoError(t, repo.Move(sliceKey2, level.Local, level.Staging).Do(ctx).Err())
+				// Disable sink, it triggers closing of the active file
+				require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "some reason").Do(ctx).Err())
+				require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now()).Do(ctx).Err())
+				require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
+				stats, err := provider.SinkStats(ctx, sinkKey)
 				require.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -164,6 +218,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     10,
 						UncompressedSize: 10,
 						CompressedSize:   10,
+						StagingSize:      10,
 					},
 					Total: statistics.Value{
 						SlicesCount:      2,
@@ -172,6 +227,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     11,
 						UncompressedSize: 11,
 						CompressedSize:   11,
+						StagingSize:      10,
 					},
 				}, stats)
 			},
@@ -179,7 +235,7 @@ func TestStatisticsProviders(t *testing.T) {
 		{
 			Description: "Add record (3)",
 			Prepare: func() {
-				require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+				require.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
 					{
 						SliceKey: sliceKey3,
 						Value: statistics.Value{
@@ -194,7 +250,7 @@ func TestStatisticsProviders(t *testing.T) {
 				}))
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
+				stats, err := provider.SinkStats(ctx, sinkKey)
 				require.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -212,6 +268,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     10,
 						UncompressedSize: 10,
 						CompressedSize:   10,
+						StagingSize:      10,
 					},
 					Total: statistics.Value{
 						SlicesCount:      3,
@@ -220,6 +277,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     111,
 						UncompressedSize: 111,
 						CompressedSize:   111,
+						StagingSize:      10,
 					},
 				}, stats)
 			},
@@ -227,10 +285,13 @@ func TestStatisticsProviders(t *testing.T) {
 		{
 			Description: "Move stats from local -> target level",
 			Prepare: func() {
-				require.NoError(t, repo.Move(sliceKey3, level.Local, level.Target).Do(ctx).Err())
+				require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now()).Do(ctx).Err())
+				require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now()).Do(ctx).Err())
+				require.NoError(t, fileRepo.SwitchToImporting(sliceKey3.FileKey, clk.Now()).Do(ctx).Err())
+				require.NoError(t, fileRepo.SwitchToImported(sliceKey3.FileKey, clk.Now()).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
+				stats, err := provider.SinkStats(ctx, sinkKey)
 				require.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Local: statistics.Value{
@@ -248,6 +309,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     10,
 						UncompressedSize: 10,
 						CompressedSize:   10,
+						StagingSize:      10,
 					},
 					Target: statistics.Value{
 						SlicesCount:      1,
@@ -256,6 +318,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     100,
 						UncompressedSize: 100,
 						CompressedSize:   100,
+						StagingSize:      100,
 					},
 					Total: statistics.Value{
 						SlicesCount:      3,
@@ -264,6 +327,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     111,
 						UncompressedSize: 111,
 						CompressedSize:   111,
+						StagingSize:      110,
 					},
 				}, stats)
 			},
@@ -271,10 +335,10 @@ func TestStatisticsProviders(t *testing.T) {
 		{
 			Description: "Remove stats from the local level",
 			Prepare: func() {
-				require.NoError(t, repo.Delete(sliceKey1).Do(ctx).Err())
+				require.NoError(t, fileRepo.Delete(sliceKey1.FileKey, clk.Now()).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
+				stats, err := provider.SinkStats(ctx, sinkKey)
 				require.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Staging: statistics.Value{
@@ -284,6 +348,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     10,
 						UncompressedSize: 10,
 						CompressedSize:   10,
+						StagingSize:      10,
 					},
 					Target: statistics.Value{
 						SlicesCount:      1,
@@ -292,6 +357,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     100,
 						UncompressedSize: 100,
 						CompressedSize:   100,
+						StagingSize:      100,
 					},
 					Total: statistics.Value{
 						SlicesCount:      2,
@@ -300,6 +366,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     110,
 						UncompressedSize: 110,
 						CompressedSize:   110,
+						StagingSize:      110,
 					},
 				}, stats)
 			},
@@ -307,10 +374,10 @@ func TestStatisticsProviders(t *testing.T) {
 		{
 			Description: "Remove stats from the staging level",
 			Prepare: func() {
-				require.NoError(t, repo.Delete(sliceKey2).Do(ctx).Err())
+				require.NoError(t, fileRepo.Delete(sliceKey2.FileKey, clk.Now()).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
+				stats, err := provider.SinkStats(ctx, sinkKey)
 				require.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Target: statistics.Value{
@@ -320,6 +387,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     100,
 						UncompressedSize: 100,
 						CompressedSize:   100,
+						StagingSize:      100,
 					},
 					Total: statistics.Value{
 						SlicesCount:      1,
@@ -328,6 +396,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     100,
 						UncompressedSize: 100,
 						CompressedSize:   100,
+						StagingSize:      100,
 					},
 				}, stats)
 			},
@@ -335,10 +404,10 @@ func TestStatisticsProviders(t *testing.T) {
 		{
 			Description: "Remove stats from the target level, statistics are rolled up to the export sum",
 			Prepare: func() {
-				require.NoError(t, repo.Delete(sliceKey3.FileKey).Do(ctx).Err())
+				require.NoError(t, fileRepo.Delete(sliceKey3.FileKey, clk.Now()).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
-				stats, err := provider.SinkStats(ctx, sliceKey1.SinkKey)
+				stats, err := provider.SinkStats(ctx, sinkKey)
 				require.NoError(t, err)
 				assert.Equal(t, statistics.Aggregated{
 					Target: statistics.Value{
@@ -348,6 +417,7 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     100,
 						UncompressedSize: 100,
 						CompressedSize:   100,
+						StagingSize:      100,
 					},
 					Total: statistics.Value{
 						SlicesCount:      1,
@@ -356,11 +426,21 @@ func TestStatisticsProviders(t *testing.T) {
 						RecordsCount:     100,
 						UncompressedSize: 100,
 						CompressedSize:   100,
+						StagingSize:      100,
 					},
 				}, stats)
 			},
 		},
 	}
+
+	l1Cache, err := cache.NewL1Cache(d.Logger(), statsRepo)
+	require.NoError(t, err)
+	defer l1Cache.Stop()
+
+	l2Config := statistics.NewConfig().Cache.L2
+	l2Cache, err := cache.NewL2Cache(d.Logger(), clk, l1Cache, l2Config)
+	require.NoError(t, err)
+	defer l2Cache.Stop()
 
 	// Run test cases
 	for _, tc := range cases {
@@ -374,7 +454,7 @@ func TestStatisticsProviders(t *testing.T) {
 		}
 
 		// Test repository
-		tc.Assert(repo)
+		tc.Assert(statsRepo)
 
 		// Wait for cache sync
 		if expectedRevision > 0 {
@@ -410,8 +490,9 @@ storage/stats/target/123/456/my-source/my-sink/_sum
   "lastRecordAt": "2000-01-01T04:00:00.000Z",
   "recordsCount": 100,
   "uncompressedSize": "100B",
-  "compressedSize": "100B"
+  "compressedSize": "100B",
+  "stagingSize": "100B"
 }
 >>>>>
-`)
+`, etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/file/|storage/slice/|storage/volume/`))
 }

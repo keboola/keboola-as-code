@@ -3,6 +3,8 @@ package utctime
 import (
 	jsonLib "encoding/json"
 	"time"
+
+	"github.com/keboola/go-utils/pkg/deepcopy"
 )
 
 // TimeFormat is a time format with fixed length, so it can be used for lexicographic sorting in etcd.
@@ -12,6 +14,10 @@ type (
 	// UTCTime serializes to the JSON as the UTC time in the TimeFormat.
 	UTCTime time.Time
 )
+
+func (v UTCTime) HandleDeepCopy(_ deepcopy.TranslateFn, _ deepcopy.Path, _ deepcopy.VisitedPtrMap) (UTCTime, deepcopy.CloneFn) {
+	return v, nil
+}
 
 func (v UTCTime) String() string {
 	return FormatTime(time.Time(v))
@@ -55,7 +61,7 @@ func FormatTime(t time.Time) string {
 }
 
 func From(t time.Time) UTCTime {
-	return UTCTime(t.UTC().Truncate(time.Millisecond))
+	return UTCTime(t.UTC())
 }
 
 func MustParse(s string) UTCTime {

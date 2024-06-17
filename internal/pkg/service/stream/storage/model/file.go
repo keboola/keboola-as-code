@@ -9,15 +9,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
+	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
+	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
-	FileTypeCSV = "csv"
+	FileTypeCSV = FileType("csv")
 )
 
 // File represents a file prepared in the staging storage to be imported into the target storage.
@@ -25,6 +25,7 @@ const (
 type File struct {
 	FileKey
 	Retryable
+	Deleted        bool                  `json:"-"` // internal field to mark the entity for deletion, there is no soft delete
 	Type           FileType              `json:"type" validate:"required,oneof=csv"`
 	State          FileState             `json:"state" validate:"required,oneof=writing closing importing imported"`
 	ClosingAt      *utctime.UTCTime      `json:"closingAt,omitempty" validate:"excluded_if=State writing,required_if=State closing,required_if=State importing,required_if=State imported"`
@@ -32,9 +33,9 @@ type File struct {
 	ImportedAt     *utctime.UTCTime      `json:"importedAt,omitempty"  validate:"excluded_if=State writing,excluded_if=State closing,excluded_if=State importing,required_if=State imported"`
 	Columns        column.Columns        `json:"columns" validate:"required,min=1"`
 	Assignment     assignment.Assignment `json:"assignment"`
-	LocalStorage   local.File            `json:"local"`
-	StagingStorage staging.File          `json:"staging"`
-	TargetStorage  target.Target         `json:"target"`
+	LocalStorage   localModel.File       `json:"local"`
+	StagingStorage stagingModel.File     `json:"staging"`
+	TargetStorage  targetModel.Target    `json:"target"`
 }
 
 type FileType string

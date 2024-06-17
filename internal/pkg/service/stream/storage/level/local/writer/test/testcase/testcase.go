@@ -61,20 +61,19 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	clk := clock.New()
 	now := clk.Now()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), spec, opts...)
+	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), writer.NewConfig(), spec, opts...)
 	require.NoError(t, err)
 
 	// Create a test slice
 	slice := tc.newSlice(t, vol)
 
 	// Create writer
-	w, err := vol.NewWriterFor(slice)
+	w, err := vol.OpenWriter(slice)
 	require.NoError(t, err)
 
 	// Write all rows batches
 	rowsCount := 0
 	for i, batch := range tc.Data {
-		batch := batch
 		rowsCount += len(batch.Rows)
 
 		done := make(chan struct{})
@@ -84,11 +83,10 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			// Write rows from the set in parallel
 			wg := &sync.WaitGroup{}
 			for _, row := range batch.Rows {
-				row := row
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					assert.NoError(t, w.WriteRow(now, row))
+					assert.NoError(t, w.WriteRecord(now, row))
 				}()
 			}
 			go func() {
@@ -100,7 +98,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			go func() {
 				defer close(done)
 				for _, row := range batch.Rows {
-					assert.NoError(t, w.WriteRow(now, row))
+					assert.NoError(t, w.WriteRecord(now, row))
 				}
 			}()
 		}
@@ -115,13 +113,13 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 		// Simulate pod failure, restart writer
 		require.NoError(t, w.Close(ctx))
-		w, err = vol.NewWriterFor(slice)
+		w, err = vol.OpenWriter(slice)
 		require.NoError(t, err)
 	}
 
 	// Close the writer
 	require.NoError(t, w.Close(ctx))
-	assert.Equal(t, uint64(rowsCount), w.RowsCount())
+	assert.Equal(t, uint64(rowsCount), w.CompletedWrites())
 	assert.NotEmpty(t, w.CompressedSize())
 	assert.NotEmpty(t, w.UncompressedSize())
 

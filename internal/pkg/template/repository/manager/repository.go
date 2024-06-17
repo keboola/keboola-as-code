@@ -189,10 +189,7 @@ func (r *CachedRepository) loadAllTemplates(ctx context.Context) error {
 		if t.Deprecated {
 			continue
 		}
-
-		t := t
 		for _, v := range t.AllVersions() {
-			v := v
 			wg.Add(1)
 			go func() {
 				defer wg.Done()

@@ -1,0 +1,149 @@
+<<<<<
+storage/keboola/file/upload/credentials/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
+-----
+%A
+>>>>>
+
+<<<<<
+storage/keboola/secret/token/123/456/my-source/my-sink
+-----
+%A
+>>>>>
+
+<<<<<
+storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "type": "csv",
+  "state": "writing",
+  "columns": [
+    {
+      "type": "datetime",
+      "name": "datetime"
+    },
+    {
+      "type": "body",
+      "name": "body"
+    }
+  ],
+  "assignment": {
+    "config": {
+      "count": 1,
+      "preferredTypes": [
+        "default"
+      ]
+    },
+    "volumes": [
+      "my-volume-1"
+    ]
+  },
+  "local": {
+    "dir": "123/456/my-source/my-sink/2000-01-01T01-00-00-000Z",
+    "compression": {
+      "type": "gzip",
+      "gzip": {
+        "level": 1,
+        "implementation": "parallel",
+        "blockSize": "256KB",
+        "concurrency": 0
+      }
+    },
+    "diskSync": {
+      "mode": "disk",
+      "wait": true,
+      "checkInterval": "5ms",
+      "countTrigger": 10000,
+      "uncompressedBytesTrigger": "1MB",
+      "compressedBytesTrigger": "256KB",
+      "intervalTrigger": "50ms"
+    },
+    "diskAllocation": {
+      "enabled": true,
+      "static": "100MB",
+      "relative": 110
+    }
+  },
+  "staging": {
+    "provider": "keboola",
+    "compression": {
+      "type": "gzip",
+      "gzip": {
+        "level": 1,
+        "implementation": "parallel",
+        "blockSize": "256KB",
+        "concurrency": 0
+      }
+    },
+    "expiration": "2000-01-01T02:00:00.000Z"
+  },
+  "target": {
+    "provider": "keboola"
+  }
+}
+>>>>>
+
+<<<<<
+storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "fileOpenedAt": "2000-01-01T01:00:00.000Z",
+  "volumeId": "my-volume-1",
+  "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
+  "type": "csv",
+  "state": "writing",
+  "columns": [
+    {
+      "type": "datetime",
+      "name": "datetime"
+    },
+    {
+      "type": "body",
+      "name": "body"
+    }
+  ],
+  "local": {
+    "dir": "123/456/my-source/my-sink/2000-01-01T01-00-00-000Z/2000-01-01T01-00-00-000Z",
+    "filename": "slice.csv.gz",
+    "compression": {
+      "type": "gzip",
+      "gzip": {
+        "level": 1,
+        "implementation": "parallel",
+        "blockSize": "256KB",
+        "concurrency": 0
+      }
+    },
+    "diskSync": {
+      "mode": "disk",
+      "wait": true,
+      "checkInterval": "5ms",
+      "countTrigger": 10000,
+      "uncompressedBytesTrigger": "1MB",
+      "compressedBytesTrigger": "256KB",
+      "intervalTrigger": "50ms"
+    },
+    "allocatedDiskSpace": "100MB"
+  },
+  "staging": {
+    "path": "2000-01-01T01:00:00.000Z_my-volume-1.gz",
+    "compression": {
+      "type": "gzip",
+      "gzip": {
+        "level": 1,
+        "implementation": "parallel",
+        "blockSize": "256KB",
+        "concurrency": 0
+      }
+    }
+  }
+}
+>>>>>

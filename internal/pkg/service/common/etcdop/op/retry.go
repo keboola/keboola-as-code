@@ -32,18 +32,20 @@ var retriedErrs = map[error]bool{
 	rpctypes.ErrFutureRev: true, // broken etcd instance may be frozen in some old revision
 }
 
-func DoWithRetry(ctx context.Context, client etcd.KV, op etcd.Op, opts ...Option) (response RawResponse, err error) {
+func DoWithRetry(ctx context.Context, client etcd.KV, op etcd.Op, opts ...Option) (response *RawResponse, err error) {
 	// Add client and client options to the response.
 	// It is used if we need to perform another database operation as part of the response processing.
 	// For example, in the iterator package, to load next pages with results.
-	response.Client = client
-	response.Options = opts
+	response = newRawResponse(client, opts)
 
 	b := newBackoff(opts...)
 	attempt := 0
 	for {
-		response.OpResponse, err = client.Do(ctx, op)
+		var opResponse etcd.OpResponse
+
+		opResponse, err = client.Do(ctx, op)
 		if err == nil {
+			response = response.WithOpResponse(opResponse)
 			break
 		}
 

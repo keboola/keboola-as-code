@@ -27,9 +27,9 @@ import (
 type atomicOpTestCase struct {
 	Name                string
 	SkipPrefixKeysCheck bool
-	Prepare             func(t *testing.T, client etcd.KV) []op.Op
-	ReadPhase           func(t *testing.T, client etcd.KV) []op.Op
-	BreakingChange      func(t *testing.T, client etcd.KV) []op.Op
+	Prepare             func(t *testing.T, client etcd.KV) []op.HighLevelFactory
+	ReadPhase           func(t *testing.T, client etcd.KV) []op.HighLevelFactory
+	BreakingChange      func(t *testing.T, client etcd.KV) []op.HighLevelFactory
 	ExpectedWritePhase  string
 	ExpectedlyDontWork  bool
 }
@@ -37,28 +37,48 @@ type atomicOpTestCase struct {
 func TestAtomicOp(t *testing.T) {
 	t.Parallel()
 
-	nop := func(_ *testing.T, client etcd.KV) []op.Op {
+	nop := func(_ *testing.T, client etcd.KV) []op.HighLevelFactory {
 		return nil
 	}
-	getKey := func(_ *testing.T, client etcd.KV) []op.Op {
-		return []op.Op{etcdop.Key("key/1").Get(client)}
-	}
-	getPrefix := func(_ *testing.T, client etcd.KV) []op.Op {
-		return []op.Op{etcdop.Prefix("key").GetAll(client).ForEach(func(value *op.KeyValue, header *iterator.Header) error {
-			return nil
-		})}
-	}
-	putKey := func(_ *testing.T, client etcd.KV) []op.Op {
-		return []op.Op{etcdop.Key("key/1").Put(client, "value")}
-	}
-	putTwoKeys := func(_ *testing.T, client etcd.KV) []op.Op {
-		return []op.Op{
-			etcdop.Key("key/1").Put(client, "value"),
-			etcdop.Key("key/2").Put(client, "value"),
+	getKey := func(_ *testing.T, client etcd.KV) []op.HighLevelFactory {
+		return []op.HighLevelFactory{
+			func(ctx context.Context) op.Op {
+				return etcdop.Key("key/1").Get(client)
+			},
 		}
 	}
-	deleteKey := func(_ *testing.T, client etcd.KV) []op.Op {
-		return []op.Op{etcdop.Key("key/1").Delete(client)}
+	getPrefix := func(_ *testing.T, client etcd.KV) []op.HighLevelFactory {
+		return []op.HighLevelFactory{
+			func(ctx context.Context) op.Op {
+				return etcdop.Prefix("key").GetAll(client).ForEach(func(value *op.KeyValue, header *iterator.Header) error {
+					return nil
+				})
+			},
+		}
+	}
+	putKey := func(_ *testing.T, client etcd.KV) []op.HighLevelFactory {
+		return []op.HighLevelFactory{
+			func(ctx context.Context) op.Op {
+				return etcdop.Key("key/1").Put(client, "value")
+			},
+		}
+	}
+	putTwoKeys := func(_ *testing.T, client etcd.KV) []op.HighLevelFactory {
+		return []op.HighLevelFactory{
+			func(ctx context.Context) op.Op {
+				return etcdop.Key("key/1").Put(client, "value")
+			},
+			func(ctx context.Context) op.Op {
+				return etcdop.Key("key/2").Put(client, "value")
+			},
+		}
+	}
+	deleteKey := func(_ *testing.T, client etcd.KV) []op.HighLevelFactory {
+		return []op.HighLevelFactory{
+			func(ctx context.Context) op.Op {
+				return etcdop.Key("key/1").Delete(client)
+			},
+		}
 	}
 
 	cases := []atomicOpTestCase{
@@ -255,7 +275,6 @@ func TestAtomicOp(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.Name+"_ok", func(t *testing.T) {
 			t.Parallel()
 			tc.RunOk(t)
@@ -273,17 +292,23 @@ func (tc atomicOpTestCase) RunOk(t *testing.T) {
 	client, _ := tc.createClient(t)
 
 	// Prepare
-	if txn := op.MergeToTxn(client, tc.Prepare(t, client)...); !txn.Empty() {
-		require.NoError(t, txn.Do(ctx).Err())
+	prepareOps := op.Txn(client)
+	for _, fn := range tc.Prepare(t, client) {
+		prepareOps.Merge(fn(ctx))
+	}
+	if !prepareOps.Empty() {
+		require.NoError(t, prepareOps.Do(ctx).Err())
 	}
 
 	// Run AtomicOp
 	atomicOp := op.
 		Atomic(client, &op.NoResult{}).
-		ReadOp(tc.ReadPhase(t, client)...)
+		Read(tc.ReadPhase(t, client)...)
 
 	// Test core method
-	atomicOp.Core().WriteOp(etcdop.Key("foo").Put(client, "bar"))
+	atomicOp.Core().Write(func(ctx context.Context) op.Op {
+		return etcdop.Key("foo").Put(client, "bar")
+	})
 
 	if tc.SkipPrefixKeysCheck {
 		atomicOp.SkipPrefixKeysCheck()
@@ -300,22 +325,36 @@ func (tc atomicOpTestCase) RunBreakingChange(t *testing.T) {
 	client, logs := tc.createClient(t)
 
 	// Prepare
-	if txn := op.MergeToTxn(client, tc.Prepare(t, client)...); !txn.Empty() {
-		require.NoError(t, txn.Do(ctx).Err())
+	prepareOps := op.Txn(client)
+	for _, fn := range tc.Prepare(t, client) {
+		prepareOps.Merge(fn(ctx))
+	}
+	if !prepareOps.Empty() {
+		require.NoError(t, prepareOps.Do(ctx).Err())
 	}
 
 	// Run AtomicOp
 	atomicOp := op.
 		Atomic(client, &op.NoResult{}).
-		ReadOp(tc.ReadPhase(t, client)...).
-		BeforeWrite(func(ctx context.Context) {
+		Read(tc.ReadPhase(t, client)...).
+		Write(func(ctx context.Context) op.Op {
 			// Modify a key loaded by the Read Phase
-			require.NoError(t, op.MergeToTxn(client, tc.BreakingChange(t, client)...).Do(ctx).Err())
+			bcOps := op.Txn(client)
+			for _, fn := range tc.BreakingChange(t, client) {
+				bcOps.Merge(fn(ctx))
+			}
+			if !bcOps.Empty() {
+				require.NoError(t, bcOps.Do(ctx).Err())
+			}
+
 			logs.Reset()
+			return nil
 		})
 
 	// Test Core method
-	atomicOp.Core().WriteOp(etcdop.Key("foo").Put(client, "bar"))
+	atomicOp.Core().Write(func(ctx context.Context) op.Op {
+		return etcdop.Key("foo").Put(client, "bar")
+	})
 
 	if tc.SkipPrefixKeysCheck {
 		atomicOp.SkipPrefixKeysCheck()
@@ -348,7 +387,7 @@ func (tc atomicOpTestCase) createClient(t *testing.T) (etcd.KV, *bytes.Buffer) {
 
 // TestAtomicUpdate has been partially replaced with the TestAtomicOp.
 // In the future we should remove the test,
-// it is necessary to make a separate test for nested transactions and for shortcuts such as the BeforeWriteOrErr method.
+// it is necessary to make a separate test for nested transactions and for shortcuts such as the OnWriteOrErr method.
 func TestAtomicUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -383,16 +422,18 @@ func TestAtomicUpdate(t *testing.T) {
 	var valueFromGetPhase string
 	var result string
 	atomicOp := op.Atomic(client, &result)
-	atomicOp.OnRead(func(context.Context) {
+	atomicOp.Read(func(context.Context) op.Op {
 		result = "n/a"
-	})
-	atomicOp.OnReadOrErr(func(context.Context) error {
 		return nil
 	})
-	atomicOp.ReadOp(nil)
-	atomicOp.ReadOp(key1.Get(client).WithOnResult(func(kv *op.KeyValue) {
-		valueFromGetPhase = string(kv.Value)
-	}))
+	atomicOp.Read(func(ctx context.Context) op.Op {
+		return nil
+	})
+	atomicOp.Read(func(ctx context.Context) op.Op {
+		return key1.Get(client).WithOnResult(func(kv *op.KeyValue) {
+			valueFromGetPhase = string(kv.Value)
+		})
+	})
 	atomicOp.Read(func(context.Context) op.Op {
 		return op.MergeToTxn(
 			client,
@@ -411,7 +452,7 @@ func TestAtomicUpdate(t *testing.T) {
 				Else(key7.Get(client)),
 		)
 	})
-	atomicOp.BeforeWriteOrErr(func(context.Context) error {
+	atomicOp.Write(func(context.Context) op.Op {
 		if beforeUpdate != nil {
 			if clearCallback := beforeUpdate(); clearCallback {
 				beforeUpdate = nil
@@ -423,10 +464,14 @@ func TestAtomicUpdate(t *testing.T) {
 		// Use a value from the GET phase in the UPDATE phase
 		return key1.Put(client, "<"+valueFromGetPhase+">")
 	})
-	atomicOp.WriteOp(nil)
-	atomicOp.WriteOp(key8.Put(client, "value").WithOnResult(func(_ op.NoResult) {
-		result = "ok"
-	}))
+	atomicOp.Write(func(ctx context.Context) op.Op {
+		return nil
+	})
+	atomicOp.Write(func(ctx context.Context) op.Op {
+		return key8.Put(client, "value").WithOnResult(func(_ op.NoResult) {
+			result = "ok"
+		})
+	})
 	atomicOp.AddProcessor(func(ctx context.Context, result *op.Result[string]) {
 		if err := result.Err(); err == nil {
 			_, _ = logger.WriteString(fmt.Sprintf("atomic operation succeeded: %s\n", result.Result()))
@@ -508,31 +553,41 @@ func TestAtomicOp_AddFrom(t *testing.T) {
 
 	opRoot := op.
 		Atomic(client, &op.NoResult{}).
-		WriteOp(etcdop.Key("key0").Put(client, "0")).
+		Write(func(ctx context.Context) op.Op {
+			return etcdop.Key("key0").Put(client, "0")
+		}).
 		OnResult(func(op.NoResult) {
 			logger.WriteString("operation root ok\n")
 		})
 	op1 := op.
 		Atomic(client, &op.NoResult{}).
-		WriteOp(etcdop.Key("key1").Put(client, "1")).
+		Write(func(ctx context.Context) op.Op {
+			return etcdop.Key("key1").Put(client, "1")
+		}).
 		OnResult(func(op.NoResult) {
 			logger.WriteString("operation 1 ok\n")
 		})
 	op2 := op.
 		Atomic(client, &op.NoResult{}).
-		WriteOp(etcdop.Key("key2").Put(client, "2")).
+		Write(func(ctx context.Context) op.Op {
+			return etcdop.Key("key2").Put(client, "2")
+		}).
 		OnResult(func(op.NoResult) {
 			logger.WriteString("operation 2 ok\n")
 		})
 	op3 := op.
 		Atomic(client, &op.NoResult{}).
-		WriteOp(etcdop.Key("key3").Put(client, "3")).
+		Write(func(ctx context.Context) op.Op {
+			return etcdop.Key("key3").Put(client, "3")
+		}).
 		OnResult(func(op.NoResult) {
 			logger.WriteString("operation 3 ok\n")
 		})
 	op4 := op.
 		Atomic(client, &op.NoResult{}).
-		WriteOp(etcdop.Key("key4").Put(client, "4"))
+		Write(func(ctx context.Context) op.Op {
+			return etcdop.Key("key4").Put(client, "4")
+		})
 
 	// Merge atomic operations and invoke all
 	require.NoError(t, opRoot.AddFrom(op1).AddFrom(op2).AddFrom(op3).AddFrom(op4).Do(ctx).Err())
@@ -599,13 +654,18 @@ func TestAtomicOp_RequireLock(t *testing.T) {
 	atomicOp := op.
 		Atomic(client, &op.NoResult{}).
 		RequireLock(mutex).
-		ReadOp(etcdop.NewKey("key1").Get(client)).
-		BeforeWrite(func(ctx context.Context) {
+		Read(func(ctx context.Context) op.Op {
+			return etcdop.NewKey("key1").Get(client)
+		}).
+		Write(func(ctx context.Context) op.Op {
 			if betweenPhasesFn != nil {
 				betweenPhasesFn()
 			}
+			return nil
 		}).
-		WriteOp(etcdop.NewKey("key2").Put(client, "value"))
+		Write(func(ctx context.Context) op.Op {
+			return etcdop.NewKey("key2").Put(client, "value")
+		})
 
 	// Simple cases
 	// -----------------------------------------------------------------------------------------------------------------

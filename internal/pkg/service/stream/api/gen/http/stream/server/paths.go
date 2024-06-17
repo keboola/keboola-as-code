@@ -62,11 +62,6 @@ func UpdateSourceSettingsStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/settings", branchID, sourceID)
 }
 
-// RefreshSourceTokensStreamPath returns the URL path to the stream service RefreshSourceTokens HTTP endpoint.
-func RefreshSourceTokensStreamPath(branchID string, sourceID string) string {
-	return fmt.Sprintf("/v1/branches/%v/sources/%v/tokens/refresh", branchID, sourceID)
-}
-
 // TestSourceStreamPath returns the URL path to the stream service TestSource HTTP endpoint.
 func TestSourceStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/test", branchID, sourceID)
