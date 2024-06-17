@@ -2,17 +2,19 @@ package httpserver
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"go.opentelemetry.io/otel/attribute"
 	goaHTTP "goa.design/goa/v3/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -45,7 +47,11 @@ func (wr *ErrorWriter) Write(ctx context.Context, w http.ResponseWriter, err err
 }
 
 func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, err error) error {
-	requestID, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
+	// Get or generate requestID
+	requestID, ok := ctx.Value(middleware.RequestIDCtxKey).(string)
+	if !ok {
+		requestID = idgenerator.RequestID()
+	}
 
 	// Default values
 	response := &UnexpectedError{
@@ -96,35 +102,35 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 	// Log error
 	var logEnabledProvider WithErrorLogEnabled
 	if !errors.As(err, &logEnabledProvider) || logEnabledProvider.ErrorLogEnabled() {
-		logger := wr.logger.WithComponent("http")
-		if response.StatusCode > 499 {
-			logger.Error(ctx, errorLogMessage(err, response))
+		// Log message
+		var logMessage string
+		var logMessageProvider WithLogMessage
+		if errors.As(err, &logMessageProvider) {
+			logMessage = logMessageProvider.ErrorLogMessage()
 		} else {
-			logger.Info(ctx, errorLogMessage(err, response))
+			logMessage = errors.Format(err, errors.FormatWithStack())
+		}
+
+		// Attributes
+		attrs := datadog.ErrorAttrs(err)
+		if response.ExceptionID != nil {
+			attrs = append(attrs, attribute.String("exceptionId", *response.ExceptionID))
+		}
+		if response.Name != "" {
+			attrs = append(attrs, attribute.String("error.name", response.Name))
+		}
+		attrs = append(attrs, attribute.String("response", json.MustEncodeString(response, false)))
+
+		// Level
+		logger := wr.logger.With(attrs...)
+		if response.StatusCode > 499 {
+			logger.Error(ctx, logMessage)
+		} else {
+			logger.Info(ctx, logMessage)
 		}
 	}
 
 	// Write response
 	_, err = w.Write([]byte(json.MustEncodeString(response, true)))
 	return err
-}
-
-func errorLogMessage(err error, response *UnexpectedError) string {
-	// Log exception ID if it is present
-	exceptionIDValue := ""
-	if response.ExceptionID != nil {
-		exceptionIDValue = "exceptionId=" + *response.ExceptionID + " "
-	}
-
-	// Custom log message
-	var errWithLogMessage WithLogMessage
-	if errors.As(err, &errWithLogMessage) {
-		return exceptionIDValue + errWithLogMessage.ErrorLogMessage()
-	}
-
-	// Format message
-	return fmt.Sprintf(
-		"%s | %serrorName=%s errorType=%T response=%s",
-		errors.Format(err, errors.FormatWithStack()), exceptionIDValue, response.Name, err, json.MustEncodeString(response, false),
-	)
 }

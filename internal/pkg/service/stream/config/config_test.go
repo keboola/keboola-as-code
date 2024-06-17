@@ -88,6 +88,18 @@ source:
         listen: 0.0.0.0:7000
         # Public URL of the HTTP source for link generation.
         publicUrl: null
+        # HTTP request timeout. Validation rules: required
+        requestTimeout: 30s
+        # TCP connection idle timeout. Validation rules: required
+        idleTimeout: 30s
+        # The maximum number of concurrent connections the server may serve. Validation rules: required
+        maxConnections: 200000
+        # Read buffer size, all HTTP headers must fit in. Validation rules: required
+        readBufferSize: 16KB
+        # Write buffer size. Validation rules: required
+        writeBufferSize: 4KB
+        # Max size of the HTTP request body. Validation rules: required
+        maxRequestBodySize: 1MB
 storage:
     # Mounted volumes path, each volume is in "{type}/{label}" subdir. Validation rules: required
     volumesPath: ""
