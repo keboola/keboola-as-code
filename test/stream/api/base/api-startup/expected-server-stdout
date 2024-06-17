@@ -10,8 +10,8 @@
 {"level":"info","message":"creating etcd session","node":"test-node","component":"task.etcd.session"}
 {"level":"info","message":"created etcd session","duration":"%s","node":"test-node","component":"task.etcd.session"}
 {"level":"info","message":"starting storage writer node","component":"storage.node.writer"}
-{"level":"info","message":"searching for volumes in \"%s\"","component":"storage.node.writer"}
-{"level":"info","message":"found volume, type=\"hdd\", path=\"my-volume\"","component":"storage.node.writer"}
+{"level":"info","message":"searching for volumes in volumes path","volumes.path":"%s","component":"storage.node.writer"}
+{"level":"info","message":"found volume","volume.type":"hdd","volume.label":"my-volume","component":"storage.node.writer"}
 {"level":"info","message":"opening volume","volume.path":"%s/hdd/my-volume","component":"storage.node.writer.volume"}
 {"level":"info","message":"opened volume","volume.id":"my-volume","volume.path":"%s/hdd/my-volume","volume.type":"hdd","volume.label":"my-volume","component":"storage.node.writer.volume"}
 {"level":"info","message":"found \"1\" volumes","component":"storage.node.writer"}
@@ -23,6 +23,15 @@
 {"level":"info","message":"exiting (terminated)"}
 {"level":"info","message":"shutting down HTTP server at \"%s\"","component":"api"}
 {"level":"info","message":"HTTP server shutdown finished","component":"api"}
+{"level":"info","message":"closing volumes","component":"storage.node.writer"}
+{"level":"info","message":"closing volume","volume.path":"%s/hdd/my-volume","volume.id":"my-volume","component":"storage.node.writer.volume"}
+{"level":"info","message":"closed volume","volume.path":"%s/hdd/my-volume","volume.id":"my-volume","component":"storage.node.writer.volume"}
+{"level":"info","message":"received shutdown request","component":"volumes.registry"}
+{"level":"info","message":"closing etcd session: context canceled","component":"volumes.registry.etcd.session"}
+{"level":"info","message":"closed etcd session","component":"volumes.registry.etcd.session"}
+{"level":"info","message":"shutdown done","component":"volumes.registry"}
+{"level":"info","message":"closing volumes stream","component":"volume.repository"}
+{"level":"info","message":"closed volumes stream","component":"volume.repository"}
 {"level":"info","message":"received shutdown request","node":"test-node","component":"task"}
 {"level":"info","message":"closing etcd session: context canceled","node":"test-node","component":"task.etcd.session"}
 {"level":"info","message":"closed etcd session","duration":"%s","node":"test-node","component":"task.etcd.session"}

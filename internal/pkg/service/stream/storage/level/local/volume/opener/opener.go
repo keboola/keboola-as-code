@@ -17,7 +17,10 @@ import (
 	"strings"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -28,7 +31,7 @@ type Opener[V volume.Volume] func(spec volume.Spec) (V, error)
 // OpenVolumes function detects and opens all volumes in the volumesPath.
 // It is an abstract implementation, the opening of volumes is delegated to the Opener.
 func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, nodeID, volumesPath string, opener Opener[V]) (*volume.Collection[V], error) {
-	logger.Infof(ctx, `searching for volumes in "%s"`, volumesPath)
+	logger.With(attribute.String("volumes.path", volumesPath)).Infof(ctx, "searching for volumes in volumes path")
 
 	lock := &sync.Mutex{}
 	errs := errors.NewMultiError()
@@ -57,11 +60,12 @@ func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, nodeID
 				// Create reference
 				typ, label := parts[0], parts[1]
 				typ = strings.ToLower(typ)
-				logger.Infof(ctx, `found volume, type="%s", path="%s"`, typ, label)
+				openCtx := ctxattr.ContextWith(ctx, attribute.String("volume.type", typ), attribute.String("volume.label", label))
+				logger.Info(openCtx, `found volume`)
 
 				// Check volume directory
 				if err = checkVolumeDir(path); err != nil {
-					logger.Errorf(ctx, `cannot open volume, type="%s", path="%s": %s`, typ, path, err)
+					logger.Errorf(openCtx, "cannot open volume: %s", err)
 					errs.Append(err)
 					return
 				}
@@ -70,17 +74,15 @@ func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, nodeID
 				info := volume.Spec{NodeID: nodeID, Path: path, Type: typ, Label: label}
 				vol, err := opener(info)
 				if err != nil {
-					logger.Errorf(ctx, `cannot open volume, type="%s", path="%s": %s`, typ, path, err)
+					logger.Errorf(openCtx, `cannot open volume: %s`, err)
 					errs.Append(err)
 					return
 				}
 
 				// Register the volume
 				lock.Lock()
-				defer lock.Unlock()
-
-				// Add volume
 				volumes = append(volumes, vol)
+				lock.Unlock()
 			}()
 
 			// Don't go deeper

@@ -15,12 +15,13 @@ type collection = model.Collection[*Volume]
 
 type Volumes struct {
 	*collection
+	logger log.Logger
 	events *writer.Events
 }
 
 // OpenVolumes function detects and opens all volumes in the path.
 func OpenVolumes(ctx context.Context, logger log.Logger, clock clock.Clock, nodeID, volumesPath string, wrCfg writer.Config, opts ...Option) (out *Volumes, err error) {
-	out = &Volumes{events: writer.NewEvents()}
+	out = &Volumes{logger: logger, events: writer.NewEvents()}
 	out.collection, err = opener.OpenVolumes(ctx, logger, nodeID, volumesPath, func(spec model.Spec) (*Volume, error) {
 		return Open(ctx, logger, clock, out.events.Clone(), wrCfg, spec, opts...)
 	})
@@ -36,4 +37,9 @@ func (v *Volumes) Collection() *model.Collection[*Volume] {
 
 func (v *Volumes) Events() *writer.Events {
 	return v.events
+}
+
+func (v *Volumes) Close(ctx context.Context) error {
+	v.logger.Info(ctx, "closing volumes")
+	return v.collection.Close(ctx)
 }

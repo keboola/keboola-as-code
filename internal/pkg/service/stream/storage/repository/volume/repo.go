@@ -54,8 +54,8 @@ func (r *Repository) watchVolumes() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	r.process.OnShutdown(func(ctx context.Context) {
-		cancel()
 		r.logger.Info(ctx, "closing volumes stream")
+		cancel()
 		wg.Wait()
 		r.logger.Info(ctx, "closed volumes stream")
 	})

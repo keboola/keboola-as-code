@@ -1,3 +1,5 @@
+// Package writernode provides entrypoint for the storage writer node.
+// The node receives a stream of slice bytes over the network and stores them on the local disk.
 package writernode
 
 import (
@@ -14,6 +16,7 @@ import (
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type dependencies interface {
@@ -46,6 +49,14 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 	// Setup statistics collector
 	syncCfg := cfg.Storage.Statistics.Collector
 	collector.New(logger, clk, d.StatisticsRepository(), volumes.Events(), syncCfg)
+
+	// Graceful shutdown
+	d.Process().OnShutdown(func(ctx context.Context) {
+		if err := volumes.Close(ctx); err != nil {
+			err := errors.PrefixError(err, "`cannot close writer volumes")
+			logger.Error(ctx, err.Error())
+		}
+	})
 
 	return nil
 }
