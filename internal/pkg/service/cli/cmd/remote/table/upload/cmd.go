@@ -112,6 +112,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				IncrementalLoad: f.IncrementalLoad.Value,
 				WithoutHeaders:  f.FileWithoutHeader.Value,
 				PrimaryKey:      primaryKey,
+				FileName:        fileUploadOpts.Input,
 			}
 
 			if f.Columns.Value != "" {
