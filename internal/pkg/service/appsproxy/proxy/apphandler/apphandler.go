@@ -108,6 +108,12 @@ func (h *appHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) (err error) {
 	ctx := req.Context()
 
+	// Enrich root span with attributes
+	reqSpan, ok := middleware.RequestSpan(ctx)
+	if ok {
+		reqSpan.SetAttributes(h.attrs...)
+	}
+
 	// Enrich context with attributes
 	ctx = ctxattr.ContextWith(ctx, h.attrs...)
 
