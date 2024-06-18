@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -78,6 +79,8 @@ func AssertKeys(t assert.TestingT, client etcd.KV, expectedKeys []string, ops ..
 	}
 
 	// Compare expected and actual keys
+	sort.Strings(expectedKeys)
+	sort.Strings(actualKeys)
 	return assert.Equal(t, expectedKeys, actualKeys)
 }
 
