@@ -40,7 +40,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/logging"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/oidcproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
@@ -2474,7 +2474,7 @@ func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies
 func createProxyHandler(d proxyDependencies.ServiceScope) http.Handler {
 	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
 	logger.SetOutput(loggerWriter)
-	// Cannot separate errors from info because oauthproxy will override its error writer with either
+	// Cannot separate errors from info because ooidcproxy will override its error writer with either
 	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created.
 	logger.SetErrOutput(loggerWriter)
 	return proxy.NewHandler(d)
