@@ -80,7 +80,7 @@ func (s *service) ListSinks(ctx context.Context, d dependencies.SourceRequestSco
 		return s.definition.Sink().List(d.SourceKey(), opts...)
 	}
 
-	return s.mapper.NewSinksResponse(ctx, d.SourceKey(), payload.SinceID, payload.Limit, list)
+	return s.mapper.NewSinksResponse(ctx, d.SourceKey(), payload.AfterID, payload.Limit, list)
 }
 
 func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.UpdateSinkPayload) (*api.Task, error) {

@@ -98,7 +98,7 @@ type AggregateSourcesPayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	// Request records after the ID.
-	SinceID string
+	AfterID string
 	// Maximum number of returned records.
 	Limit int
 }
@@ -115,8 +115,8 @@ type AggregatedSink struct {
 	// Description of the source.
 	Description string
 	Table       *TableSink
-	Created     *CreatedEntity
 	Version     *Version
+	Created     *CreatedEntity
 	Deleted     *DeletedEntity
 	Disabled    *DisabledEntity
 	Statistics  *AggregatedStatistics
@@ -334,7 +334,7 @@ type ListSinksPayload struct {
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
 	// Request records after the ID.
-	SinceID string
+	AfterID string
 	// Maximum number of returned records.
 	Limit int
 }
@@ -345,7 +345,7 @@ type ListSourcesPayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	// Request records after the ID.
-	SinceID string
+	AfterID string
 	// Maximum number of returned records.
 	Limit int
 }
@@ -356,7 +356,7 @@ type PaginatedResponse struct {
 	// Total count of all records.
 	TotalCount int
 	// Current offset.
-	SinceID string
+	AfterID string
 	// ID of the last record in the response.
 	LastID string
 }

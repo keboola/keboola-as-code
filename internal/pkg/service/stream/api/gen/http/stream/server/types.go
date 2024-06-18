@@ -774,7 +774,7 @@ type PaginatedResponseResponseBody struct {
 	// Total count of all records.
 	TotalCount int `form:"totalCount" json:"totalCount" xml:"totalCount"`
 	// Current offset.
-	SinceID string `form:"sinceId" json:"sinceId" xml:"sinceId"`
+	AfterID string `form:"afterId" json:"afterId" xml:"afterId"`
 	// ID of the last record in the response.
 	LastID string `form:"lastId" json:"lastId" xml:"lastId"`
 }
@@ -1021,8 +1021,8 @@ type AggregatedSinkResponseBody struct {
 	// Description of the source.
 	Description string                            `form:"description" json:"description" xml:"description"`
 	Table       *TableSinkResponseBody            `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Created     *CreatedEntityResponseBody        `form:"created" json:"created" xml:"created"`
 	Version     *VersionResponseBody              `form:"version" json:"version" xml:"version"`
+	Created     *CreatedEntityResponseBody        `form:"created" json:"created" xml:"created"`
 	Deleted     *DeletedEntityResponseBody        `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled    *DisabledEntityResponseBody       `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 	Statistics  *AggregatedStatisticsResponseBody `form:"statistics,omitempty" json:"statistics,omitempty" xml:"statistics,omitempty"`
@@ -1848,10 +1848,10 @@ func NewUpdateSourcePayload(body *UpdateSourceRequestBody, branchID string, sour
 }
 
 // NewListSourcesPayload builds a stream service ListSources endpoint payload.
-func NewListSourcesPayload(branchID string, sinceID string, limit int, storageAPIToken string) *stream.ListSourcesPayload {
+func NewListSourcesPayload(branchID string, afterID string, limit int, storageAPIToken string) *stream.ListSourcesPayload {
 	v := &stream.ListSourcesPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
-	v.SinceID = sinceID
+	v.AfterID = afterID
 	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
@@ -1983,11 +1983,11 @@ func NewUpdateSinkSettingsPayload(body *UpdateSinkSettingsRequestBody, branchID 
 }
 
 // NewListSinksPayload builds a stream service ListSinks endpoint payload.
-func NewListSinksPayload(branchID string, sourceID string, sinceID string, limit int, storageAPIToken string) *stream.ListSinksPayload {
+func NewListSinksPayload(branchID string, sourceID string, afterID string, limit int, storageAPIToken string) *stream.ListSinksPayload {
 	v := &stream.ListSinksPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
-	v.SinceID = sinceID
+	v.AfterID = afterID
 	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
@@ -2062,10 +2062,10 @@ func NewGetTaskPayload(taskID string, storageAPIToken string) *stream.GetTaskPay
 
 // NewAggregateSourcesPayload builds a stream service AggregateSources endpoint
 // payload.
-func NewAggregateSourcesPayload(branchID string, sinceID string, limit int, storageAPIToken string) *stream.AggregateSourcesPayload {
+func NewAggregateSourcesPayload(branchID string, afterID string, limit int, storageAPIToken string) *stream.AggregateSourcesPayload {
 	v := &stream.AggregateSourcesPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
-	v.SinceID = sinceID
+	v.AfterID = afterID
 	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
