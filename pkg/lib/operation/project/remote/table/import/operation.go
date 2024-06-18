@@ -46,8 +46,8 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 			return err
 		}
 
-		if (o.Columns != nil && !o.WithoutHeaders) || (o.WithoutHeaders && o.Columns == nil) {
-			return errors.Errorf("flags --columns and --file-without-headers must be specified together")
+		if o.WithoutHeaders && o.Columns == nil {
+			return errors.Errorf(`missing required column`)
 		}
 
 		col, err := getColumns(o)
@@ -126,19 +126,11 @@ func checkTableExists(ctx context.Context, d dependencies, tableKey keboola.Tabl
 }
 
 func getColumns(o Options) (keboola.Columns, error) {
-	var c keboola.Columns
-	var err error
-	if o.Columns != nil && o.WithoutHeaders {
-		c = convertHeadersToColumns(o.Columns)
+	if o.Columns != nil {
+		return convertHeadersToColumns(o.Columns), nil
 	}
 
-	if o.Columns == nil && !o.WithoutHeaders {
-		c, err = extractColumnsFromCsv(o.FileName)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return c, nil
+	return extractColumnsFromCsv(o.FileName)
 }
 
 // this function converts array string to keboola.Columns.
