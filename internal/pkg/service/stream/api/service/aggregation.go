@@ -31,14 +31,12 @@ func (s *service) AggregateSources(ctx context.Context, d dependencies.BranchReq
 func (s *service) addSinksToAggregationResponse(ctx context.Context, d dependencies.BranchRequestScope, response *stream.AggregatedSourcesResult) error {
 	// Collect source IDs
 	var sourceKeys []key.SourceKey
-	sourceKeyToIndex := make(map[key.SourceKey]int)
-	for i, source := range response.Sources {
+	for _, source := range response.Sources {
 		sourceKey := key.SourceKey{
 			BranchKey: d.BranchKey(),
 			SourceID:  source.SourceID,
 		}
 		sourceKeys = append(sourceKeys, sourceKey)
-		sourceKeyToIndex[sourceKey] = i
 	}
 
 	// Get sinks for all the sources
@@ -47,9 +45,17 @@ func (s *service) addSinksToAggregationResponse(ctx context.Context, d dependenc
 		return err
 	}
 
-	for _, sourceWithSinks := range sourcesWithSinks {
-		// Find index of the source in response
-		sourceIndex := sourceKeyToIndex[sourceWithSinks.SourceKey]
+	// Add sinks to response
+	for _, source := range response.Sources {
+		sourceKey := key.SourceKey{
+			BranchKey: d.BranchKey(),
+			SourceID:  source.SourceID,
+		}
+
+		sourceWithSinks, ok := sourcesWithSinks[sourceKey]
+		if !ok {
+			continue
+		}
 
 		for _, sink := range sourceWithSinks.Sinks {
 			if sink == nil {
@@ -61,7 +67,6 @@ func (s *service) addSinksToAggregationResponse(ctx context.Context, d dependenc
 				return err
 			}
 
-			source := response.Sources[sourceIndex]
 			source.Sinks = append(source.Sinks, sinkResponse)
 		}
 	}

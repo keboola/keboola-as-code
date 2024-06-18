@@ -68,7 +68,7 @@ func New(d dependencies) *Repository {
 	}
 }
 
-func (r *Repository) SourcesWithSinksAndStatistics(ctx context.Context, sourceKeys []key.SourceKey) ([]*SourceWithSinks, error) {
+func (r *Repository) SourcesWithSinksAndStatistics(ctx context.Context, sourceKeys []key.SourceKey) (map[key.SourceKey]*SourceWithSinks, error) {
 	sourcesWithSinks, err := r.sinksForSources(ctx, sourceKeys)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (r *Repository) SourcesWithSinksAndStatistics(ctx context.Context, sourceKe
 		return nil, err
 	}
 
-	return maps.Values(sourcesWithSinks), nil
+	return sourcesWithSinks, nil
 }
 
 func (r *Repository) sinksForSources(ctx context.Context, sourceKeys []key.SourceKey) (map[key.SourceKey]*SourceWithSinks, error) {
