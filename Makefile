@@ -20,7 +20,7 @@ build-local:
 	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --single-target --clean --snapshot -f ./build/ci/goreleaser.yml
 
 release:
-	goreleaser release --clean -f ./build/ci/goreleaser.yml
+	goreleaser release --snapshot --clean -f ./build/ci/goreleaser.yml
 
 release-local:
 	goreleaser release --clean --snapshot --skip=publish -f ./build/ci/goreleaser.yml
