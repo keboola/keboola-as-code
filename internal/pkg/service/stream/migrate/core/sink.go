@@ -80,8 +80,12 @@ func (e Export) createSinkPayload() (*bytes.Buffer, error) {
 			}
 		}
 		column.Name = m.Name
-		column.Type = m.Type
 		column.PrimaryKey = m.PrimaryKey
+
+		column.Type = m.Type
+		if m.Type == "id" {
+			column.Type = "uuid-v7"
+		}
 
 		sinkPayload.Table.Mapping.Columns = append(sinkPayload.Table.Mapping.Columns, column)
 	}
