@@ -83,6 +83,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 			if authHandler, found := authHandlers[providerID]; found {
 				authHandlersPerRule[providerID] = authHandler
 			} else {
+				// TODO: add basic auth provider
 				return nil, errors.Errorf(`authentication provider "%s" not found for "%s"`, providerID.String(), rule.Value)
 			}
 		}

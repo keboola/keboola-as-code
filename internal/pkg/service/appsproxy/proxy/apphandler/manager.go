@@ -92,6 +92,8 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) http.Handle
 		switch p := auth.(type) {
 		case provider.OIDC:
 			authHandlers[auth.ID()] = m.oidcProxyManager.NewHandler(app, p, appUpstream)
+		case provider.Basic:
+
 		default:
 			panic("unknown auth provider type")
 		}

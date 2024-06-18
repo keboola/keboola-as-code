@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	TypeOIDC = Type("oidc")
+	TypeOIDC  Type = "oidc"
+	TypeBasic Type = "password"
 )
 
 // ID is unique identifier of the authentication provider inside a data app.
@@ -37,6 +38,8 @@ func (t Type) new() (Provider, error) {
 	switch t {
 	case TypeOIDC:
 		return OIDC{}, nil
+	case TypeBasic:
+		return Basic{}, nil
 	default:
 		return nil, errors.Errorf(`unexpected type of data app auth provider "%v"`, t)
 	}
