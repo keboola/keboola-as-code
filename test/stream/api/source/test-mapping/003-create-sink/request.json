@@ -18,6 +18,10 @@
             "name": "datetime"
           },
           {
+            "type": "headers",
+            "name": "headers"
+          },
+          {
             "type": "body",
             "name": "body"
           },

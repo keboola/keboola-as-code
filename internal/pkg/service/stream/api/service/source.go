@@ -216,7 +216,11 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 		return nil, err
 	}
 
-	receiveCtx := receivectx.New(ctx, d.Clock().Now(), d.RequestClientIP(), d.RequestHeader(), string(body))
+	// Remove X-StorageApi-Token from the mapped headers column.
+	header := d.RequestHeader()
+	header.Del("x-storageapi-token")
+
+	receiveCtx := receivectx.New(ctx, d.Clock().Now(), d.RequestClientIP(), header, string(body))
 
 	return s.mapper.NewTestResultResponse(d.SourceKey(), sinks, receiveCtx)
 }
