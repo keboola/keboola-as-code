@@ -51,7 +51,7 @@ paths:
             description: Details about sources for the UI.
             operationId: AggregateSources
             parameters:
-                - name: sinceId
+                - name: afterId
                   in: query
                   description: Request records after the ID.
                   allowEmptyValue: true
@@ -95,7 +95,7 @@ paths:
                                 page:
                                     limit: 100
                                     totalCount: 1000
-                                    sinceId: my-object-123
+                                    afterId: my-object-123
                                     lastId: my-object-456
                                 sources:
                                     - projectId: 123
@@ -171,7 +171,10 @@ paths:
                                                       template:
                                                         language: jsonnet
                                                         content: body.foo + "-" + body.bar
-                                          created:
+                                          version:
+                                            number: 3
+                                            hash: f43e93acd97eceb3
+                                            description: The reason for the last change was...
                                             at: "2022-04-28T14:20:04.000Z"
                                             by:
                                                 type: user
@@ -179,10 +182,7 @@ paths:
                                                 tokenDesc: john.green@company.com
                                                 userId: "578621"
                                                 userName: John Green
-                                          version:
-                                            number: 3
-                                            hash: f43e93acd97eceb3
-                                            description: The reason for the last change was...
+                                          created:
                                             at: "2022-04-28T14:20:04.000Z"
                                             by:
                                                 type: user
@@ -270,7 +270,7 @@ paths:
             description: List all sources in the branch.
             operationId: ListSources
             parameters:
-                - name: sinceId
+                - name: afterId
                   in: query
                   description: Request records after the ID.
                   allowEmptyValue: true
@@ -314,7 +314,7 @@ paths:
                                 page:
                                     limit: 100
                                     totalCount: 1000
-                                    sinceId: my-object-123
+                                    afterId: my-object-123
                                     lastId: my-object-456
                                 sources:
                                     - projectId: 123
@@ -793,7 +793,7 @@ paths:
             description: List all sinks in the source.
             operationId: ListSinks
             parameters:
-                - name: sinceId
+                - name: afterId
                   in: query
                   description: Request records after the ID.
                   allowEmptyValue: true
@@ -848,7 +848,7 @@ paths:
                                 page:
                                     limit: 100
                                     totalCount: 1000
-                                    sinceId: my-object-123
+                                    afterId: my-object-123
                                     lastId: my-object-456
                                 sinks:
                                     - projectId: 123
@@ -1870,7 +1870,10 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
-                created:
+                version:
+                    number: 3
+                    hash: f43e93acd97eceb3
+                    description: The reason for the last change was...
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
@@ -1878,10 +1881,7 @@ components:
                         tokenDesc: john.green@company.com
                         userId: "578621"
                         userName: John Green
-                version:
-                    number: 3
-                    hash: f43e93acd97eceb3
-                    description: The reason for the last change was...
+                created:
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
@@ -2032,7 +2032,10 @@ components:
                                       template:
                                         language: jsonnet
                                         content: body.foo + "-" + body.bar
-                          created:
+                          version:
+                            number: 3
+                            hash: f43e93acd97eceb3
+                            description: The reason for the last change was...
                             at: "2022-04-28T14:20:04.000Z"
                             by:
                                 type: user
@@ -2040,10 +2043,7 @@ components:
                                 tokenDesc: john.green@company.com
                                 userId: "578621"
                                 userName: John Green
-                          version:
-                            number: 3
-                            hash: f43e93acd97eceb3
-                            description: The reason for the last change was...
+                          created:
                             at: "2022-04-28T14:20:04.000Z"
                             by:
                                 type: user
@@ -2208,7 +2208,10 @@ components:
                                   template:
                                     language: jsonnet
                                     content: body.foo + "-" + body.bar
-                      created:
+                      version:
+                        number: 3
+                        hash: f43e93acd97eceb3
+                        description: The reason for the last change was...
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
@@ -2216,10 +2219,7 @@ components:
                             tokenDesc: john.green@company.com
                             userId: "578621"
                             userName: John Green
-                      version:
-                        number: 3
-                        hash: f43e93acd97eceb3
-                        description: The reason for the last change was...
+                      created:
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
@@ -2398,7 +2398,10 @@ components:
                                           template:
                                             language: jsonnet
                                             content: body.foo + "-" + body.bar
-                              created:
+                              version:
+                                number: 3
+                                hash: f43e93acd97eceb3
+                                description: The reason for the last change was...
                                 at: "2022-04-28T14:20:04.000Z"
                                 by:
                                     type: user
@@ -2406,10 +2409,7 @@ components:
                                     tokenDesc: john.green@company.com
                                     userId: "578621"
                                     userName: John Green
-                              version:
-                                number: 3
-                                hash: f43e93acd97eceb3
-                                description: The reason for the last change was...
+                              created:
                                 at: "2022-04-28T14:20:04.000Z"
                                 by:
                                     type: user
@@ -2493,7 +2493,7 @@ components:
                 page:
                     limit: 100
                     totalCount: 1000
-                    sinceId: my-object-123
+                    afterId: my-object-123
                     lastId: my-object-456
                 sources:
                     - projectId: 123
@@ -2569,7 +2569,10 @@ components:
                                       template:
                                         language: jsonnet
                                         content: body.foo + "-" + body.bar
-                          created:
+                          version:
+                            number: 3
+                            hash: f43e93acd97eceb3
+                            description: The reason for the last change was...
                             at: "2022-04-28T14:20:04.000Z"
                             by:
                                 type: user
@@ -2577,10 +2580,7 @@ components:
                                 tokenDesc: john.green@company.com
                                 userId: "578621"
                                 userName: John Green
-                          version:
-                            number: 3
-                            hash: f43e93acd97eceb3
-                            description: The reason for the last change was...
+                          created:
                             at: "2022-04-28T14:20:04.000Z"
                             by:
                                 type: user
@@ -3031,6 +3031,10 @@ components:
         PaginatedResponse:
             type: object
             properties:
+                afterId:
+                    type: string
+                    description: Current offset.
+                    example: my-object-123
                 lastId:
                     type: string
                     description: ID of the last record in the response.
@@ -3040,10 +3044,6 @@ components:
                     description: Current limit.
                     example: 100
                     format: int64
-                sinceId:
-                    type: string
-                    description: Current offset.
-                    example: my-object-123
                 totalCount:
                     type: integer
                     description: Total count of all records.
@@ -3052,10 +3052,10 @@ components:
             example:
                 limit: 100
                 totalCount: 1000
-                sinceId: my-object-123
+                afterId: my-object-123
                 lastId: my-object-456
             required:
-                - sinceId
+                - afterId
                 - limit
                 - lastId
                 - totalCount
@@ -3575,7 +3575,7 @@ components:
                 page:
                     limit: 100
                     totalCount: 1000
-                    sinceId: my-object-123
+                    afterId: my-object-123
                     lastId: my-object-456
                 sinks:
                     - projectId: 123
@@ -3813,7 +3813,7 @@ components:
                 page:
                     limit: 100
                     totalCount: 1000
-                    sinceId: my-object-123
+                    afterId: my-object-123
                     lastId: my-object-456
                 sources:
                     - projectId: 123

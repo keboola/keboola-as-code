@@ -269,7 +269,7 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 	return func(r *http.Request) (any, error) {
 		var (
 			branchID        string
-			sinceID         string
+			afterID         string
 			limit           int
 			storageAPIToken string
 			err             error
@@ -278,9 +278,9 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 		)
 		branchID = params["branchId"]
 		qp := r.URL.Query()
-		sinceIDRaw := qp.Get("sinceId")
-		if sinceIDRaw != "" {
-			sinceID = sinceIDRaw
+		afterIDRaw := qp.Get("afterId")
+		if afterIDRaw != "" {
+			afterID = afterIDRaw
 		}
 		{
 			limitRaw := qp.Get("limit")
@@ -307,7 +307,7 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 		if err != nil {
 			return nil, err
 		}
-		payload := NewListSourcesPayload(branchID, sinceID, limit, storageAPIToken)
+		payload := NewListSourcesPayload(branchID, afterID, limit, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -1236,7 +1236,7 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		var (
 			branchID        string
 			sourceID        string
-			sinceID         string
+			afterID         string
 			limit           int
 			storageAPIToken string
 			err             error
@@ -1252,9 +1252,9 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
 		}
 		qp := r.URL.Query()
-		sinceIDRaw := qp.Get("sinceId")
-		if sinceIDRaw != "" {
-			sinceID = sinceIDRaw
+		afterIDRaw := qp.Get("afterId")
+		if afterIDRaw != "" {
+			afterID = afterIDRaw
 		}
 		{
 			limitRaw := qp.Get("limit")
@@ -1281,7 +1281,7 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		if err != nil {
 			return nil, err
 		}
-		payload := NewListSinksPayload(branchID, sourceID, sinceID, limit, storageAPIToken)
+		payload := NewListSinksPayload(branchID, sourceID, afterID, limit, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -1839,7 +1839,7 @@ func DecodeAggregateSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request
 	return func(r *http.Request) (any, error) {
 		var (
 			branchID        string
-			sinceID         string
+			afterID         string
 			limit           int
 			storageAPIToken string
 			err             error
@@ -1848,9 +1848,9 @@ func DecodeAggregateSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request
 		)
 		branchID = params["branchId"]
 		qp := r.URL.Query()
-		sinceIDRaw := qp.Get("sinceId")
-		if sinceIDRaw != "" {
-			sinceID = sinceIDRaw
+		afterIDRaw := qp.Get("afterId")
+		if afterIDRaw != "" {
+			afterID = afterIDRaw
 		}
 		{
 			limitRaw := qp.Get("limit")
@@ -1877,7 +1877,7 @@ func DecodeAggregateSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request
 		if err != nil {
 			return nil, err
 		}
-		payload := NewAggregateSourcesPayload(branchID, sinceID, limit, storageAPIToken)
+		payload := NewAggregateSourcesPayload(branchID, afterID, limit, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -1924,7 +1924,7 @@ func marshalStreamPaginatedResponseToPaginatedResponseResponseBody(v *stream.Pag
 	res := &PaginatedResponseResponseBody{
 		Limit:      v.Limit,
 		TotalCount: v.TotalCount,
-		SinceID:    v.SinceID,
+		AfterID:    v.AfterID,
 		LastID:     v.LastID,
 	}
 
@@ -2440,11 +2440,11 @@ func marshalStreamAggregatedSinkToAggregatedSinkResponseBody(v *stream.Aggregate
 	if v.Table != nil {
 		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
 	}
-	if v.Created != nil {
-		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
-	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
+	}
+	if v.Created != nil {
+		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
 	}
 	if v.Deleted != nil {
 		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
