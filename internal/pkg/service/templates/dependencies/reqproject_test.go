@@ -36,7 +36,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 
-	runGitCommand(t, tmpDir, "reset", "--hard", "c6c1f0be98fa8fd49be15022a47dcdca22f0dc41")
+	runGitCommand(t, tmpDir, "reset", "--hard", "68656d1287af0ddb5b849f816f73bf89b6f722a4")
 	// Mocked API scope
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -127,7 +127,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	assert.DirExists(t, repo3.Fs().BasePath())
 
 	// Modify git repository
-	runGitCommand(t, tmpDir, "reset", "--hard", "HEAD~2")
+	runGitCommand(t, tmpDir, "reset", "--hard", "HEAD~1")
 
 	// Update repository -> change occurred
 	err = <-manager.Update(ctx)
