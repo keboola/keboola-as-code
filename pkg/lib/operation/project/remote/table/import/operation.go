@@ -79,7 +79,11 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return err
 	}
 
-	printInfo(ctx, o, d, isCreated)
+	if isCreated {
+		d.Logger().Infof(ctx, `Created new table "%s" from file with id "%d".`, o.TableKey.TableID, o.FileKey.FileID)
+	} else {
+		d.Logger().Infof(ctx, `Loaded data from file "%d" into table "%s".`, o.FileKey.FileID, o.TableKey.TableID)
+	}
 
 	return nil
 }
@@ -163,12 +167,4 @@ func extractColumnsFromCsv(f string) (keboola.Columns, error) {
 	}
 
 	return convertHeadersToColumns(headers), nil
-}
-
-func printInfo(ctx context.Context, o Options, d dependencies, isCreated bool) {
-	if isCreated {
-		d.Logger().Infof(ctx, `Created new table "%s" from file with id "%d".`, o.TableKey.TableID, o.FileKey.FileID)
-	} else {
-		d.Logger().Infof(ctx, `Loaded data from file "%d" into table "%s".`, o.FileKey.FileID, o.TableKey.TableID)
-	}
 }
