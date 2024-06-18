@@ -137,7 +137,7 @@ func getColumns(o Options) (keboola.Columns, error) {
 	return extractColumnsFromCsv(o.FileName)
 }
 
-// this function converts array string to keboola.Columns.
+// convertHeadersToColumns converts array string to keboola.Columns.
 func convertHeadersToColumns(headers []string) keboola.Columns {
 	var columns keboola.Columns
 	for _, header := range headers {
@@ -147,7 +147,7 @@ func convertHeadersToColumns(headers []string) keboola.Columns {
 }
 
 // extractColumnsFromCsv returns a first row in the csv file (convertHeadersToColumns)
-// this function will be used if flags --convertHeadersToColumns and --file-without-headers aren't used and table doesn't exist.
+// Used when flags --columns and --file-without-headers aren't used and table doesn't exist.
 func extractColumnsFromCsv(f string) (keboola.Columns, error) {
 	// nolint: forbidigo
 	file, err := os.Open(f)
