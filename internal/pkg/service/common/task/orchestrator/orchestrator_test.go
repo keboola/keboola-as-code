@@ -2,7 +2,6 @@ package orchestrator_test
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 
@@ -31,7 +30,6 @@ type testResource struct {
 func TestOrchestrator(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -82,7 +80,7 @@ func TestOrchestrator(t *testing.T) {
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(ctx, time.Minute)
+			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
@@ -110,8 +108,6 @@ func TestOrchestrator(t *testing.T) {
 		return d1.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"not assigned%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
-	cancel()
-	wg.Wait()
 	d1.Process().Shutdown(ctx, errors.New("bye bye 1"))
 	d1.Process().WaitForShutdown()
 	d2.Process().Shutdown(ctx, errors.New("bye bye 2"))
@@ -138,7 +134,6 @@ func TestOrchestrator(t *testing.T) {
 func TestOrchestrator_StartTaskIf(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -177,7 +172,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(ctx, time.Minute)
+			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		StartTaskIf: func(event etcdop.WatchEventT[testResource]) (string, bool) {
 			if event.Value.ID == "GoodID" { // <<<<<<<<<<<<<<<<<<<<
@@ -202,8 +197,6 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
-	cancel()
-	wg.Wait()
 	d.Process().Shutdown(ctx, errors.New("bye bye 1"))
 	d.Process().WaitForShutdown()
 
@@ -223,7 +216,6 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 func TestOrchestrator_RestartInterval(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -266,7 +258,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			// Each orchestrator task must have a deadline.
-			return context.WithTimeout(ctx, time.Minute)
+			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
@@ -298,8 +290,6 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
-	cancel()
-	wg.Wait()
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
 	d.Process().WaitForShutdown()
 
