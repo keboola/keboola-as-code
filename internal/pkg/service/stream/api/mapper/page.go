@@ -19,7 +19,7 @@ import (
 // R is type of the mapped response.
 func loadPage[E, R any](
 	ctx context.Context,
-	sinceID string,
+	afterId string,
 	limit int,
 	sort etcd.SortOrder,
 	list func(...iterator.Option) iterator.DefinitionT[E],
@@ -42,7 +42,7 @@ func loadPage[E, R any](
 
 	// Fill in inputs
 	page = &stream.PaginatedResponse{
-		SinceID: sinceID,
+		AfterID: afterId,
 		Limit:   limit,
 	}
 
@@ -52,9 +52,9 @@ func loadPage[E, R any](
 	// Set offset
 	switch sort {
 	case etcd.SortAscend:
-		opts = append(opts, iterator.WithStartOffset(sinceID, false))
+		opts = append(opts, iterator.WithStartOffset(afterId, false))
 	case etcd.SortDescend:
-		opts = append(opts, iterator.WithEndOffset(sinceID, false))
+		opts = append(opts, iterator.WithEndOffset(afterId, false))
 	default:
 		panic(errors.Errorf(`unexpected etcd sort "%v"`, sort))
 	}

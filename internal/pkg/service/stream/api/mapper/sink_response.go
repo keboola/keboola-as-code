@@ -48,11 +48,11 @@ func (m *Mapper) NewSinkResponse(entity definition.Sink) (*api.Sink, error) {
 func (m *Mapper) NewSinksResponse(
 	ctx context.Context,
 	k key.SourceKey,
-	sinceId string,
+	afterId string,
 	limit int,
 	list func(...iterator.Option) iterator.DefinitionT[definition.Sink],
 ) (*api.SinksList, error) {
-	sinks, page, err := loadPage(ctx, sinceId, limit, etcd.SortAscend, list, m.NewSinkResponse)
+	sinks, page, err := loadPage(ctx, afterId, limit, etcd.SortAscend, list, m.NewSinkResponse)
 	if err != nil {
 		return nil, err
 	}

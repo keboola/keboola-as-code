@@ -98,7 +98,7 @@ func (s *service) ListSources(ctx context.Context, d dependencies.BranchRequestS
 	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
 		return s.definition.Source().List(d.BranchKey(), opts...)
 	}
-	return s.mapper.NewSourcesResponse(ctx, d.BranchKey(), payload.SinceID, payload.Limit, list)
+	return s.mapper.NewSourcesResponse(ctx, d.BranchKey(), payload.AfterID, payload.Limit, list)
 }
 
 func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourcePayload) (*api.Source, error) {

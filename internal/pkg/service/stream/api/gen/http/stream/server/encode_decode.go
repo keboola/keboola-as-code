@@ -269,7 +269,7 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 	return func(r *http.Request) (any, error) {
 		var (
 			branchID        string
-			sinceID         string
+			afterID         string
 			limit           int
 			storageAPIToken string
 			err             error
@@ -278,9 +278,9 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 		)
 		branchID = params["branchId"]
 		qp := r.URL.Query()
-		sinceIDRaw := qp.Get("sinceId")
-		if sinceIDRaw != "" {
-			sinceID = sinceIDRaw
+		afterIDRaw := qp.Get("afterId")
+		if afterIDRaw != "" {
+			afterID = afterIDRaw
 		}
 		{
 			limitRaw := qp.Get("limit")
@@ -307,7 +307,7 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 		if err != nil {
 			return nil, err
 		}
-		payload := NewListSourcesPayload(branchID, sinceID, limit, storageAPIToken)
+		payload := NewListSourcesPayload(branchID, afterID, limit, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -1236,7 +1236,7 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		var (
 			branchID        string
 			sourceID        string
-			sinceID         string
+			afterID         string
 			limit           int
 			storageAPIToken string
 			err             error
@@ -1252,9 +1252,9 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
 		}
 		qp := r.URL.Query()
-		sinceIDRaw := qp.Get("sinceId")
-		if sinceIDRaw != "" {
-			sinceID = sinceIDRaw
+		afterIDRaw := qp.Get("afterId")
+		if afterIDRaw != "" {
+			afterID = afterIDRaw
 		}
 		{
 			limitRaw := qp.Get("limit")
@@ -1281,7 +1281,7 @@ func DecodeListSinksRequest(mux goahttp.Muxer, decoder func(*http.Request) goaht
 		if err != nil {
 			return nil, err
 		}
-		payload := NewListSinksPayload(branchID, sourceID, sinceID, limit, storageAPIToken)
+		payload := NewListSinksPayload(branchID, sourceID, afterID, limit, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -1821,6 +1821,73 @@ func EncodeGetTaskError(encoder func(context.Context, http.ResponseWriter) goaht
 	}
 }
 
+// EncodeAggregateSourcesResponse returns an encoder for responses returned by
+// the stream AggregateSources endpoint.
+func EncodeAggregateSourcesResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*stream.AggregatedSourcesResult)
+		enc := encoder(ctx, w)
+		body := NewAggregateSourcesResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeAggregateSourcesRequest returns a decoder for requests sent to the
+// stream AggregateSources endpoint.
+func DecodeAggregateSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			branchID        string
+			afterID         string
+			limit           int
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		branchID = params["branchId"]
+		qp := r.URL.Query()
+		afterIDRaw := qp.Get("afterId")
+		if afterIDRaw != "" {
+			afterID = afterIDRaw
+		}
+		{
+			limitRaw := qp.Get("limit")
+			if limitRaw == "" {
+				limit = 100
+			} else {
+				v, err2 := strconv.ParseInt(limitRaw, 10, strconv.IntSize)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				limit = int(v)
+			}
+		}
+		if limit < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 1, true))
+		}
+		if limit > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 100, false))
+		}
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewAggregateSourcesPayload(branchID, afterID, limit, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
 // marshalStreamTaskOutputsToTaskOutputsResponseBody builds a value of type
 // *TaskOutputsResponseBody from a value of type *stream.TaskOutputs.
 func marshalStreamTaskOutputsToTaskOutputsResponseBody(v *stream.TaskOutputs) *TaskOutputsResponseBody {
@@ -1857,7 +1924,7 @@ func marshalStreamPaginatedResponseToPaginatedResponseResponseBody(v *stream.Pag
 	res := &PaginatedResponseResponseBody{
 		Limit:      v.Limit,
 		TotalCount: v.TotalCount,
-		SinceID:    v.SinceID,
+		AfterID:    v.AfterID,
 		LastID:     v.LastID,
 	}
 
@@ -2305,12 +2372,114 @@ func marshalStreamSinkFileToSinkFileResponseBody(v *stream.SinkFile) *SinkFileRe
 // value of type *SinkFileStatisticsResponseBody from a value of type
 // *stream.SinkFileStatistics.
 func marshalStreamSinkFileStatisticsToSinkFileStatisticsResponseBody(v *stream.SinkFileStatistics) *SinkFileStatisticsResponseBody {
+	if v == nil {
+		return nil
+	}
 	res := &SinkFileStatisticsResponseBody{}
 	if v.Total != nil {
 		res.Total = marshalStreamLevelToLevelResponseBody(v.Total)
 	}
 	if v.Levels != nil {
 		res.Levels = marshalStreamLevelsToLevelsResponseBody(v.Levels)
+	}
+
+	return res
+}
+
+// marshalStreamAggregatedSourceToAggregatedSourceResponseBody builds a value
+// of type *AggregatedSourceResponseBody from a value of type
+// *stream.AggregatedSource.
+func marshalStreamAggregatedSourceToAggregatedSourceResponseBody(v *stream.AggregatedSource) *AggregatedSourceResponseBody {
+	res := &AggregatedSourceResponseBody{
+		ProjectID:   int(v.ProjectID),
+		BranchID:    int(v.BranchID),
+		SourceID:    string(v.SourceID),
+		Type:        string(v.Type),
+		Name:        v.Name,
+		Description: v.Description,
+	}
+	if v.HTTP != nil {
+		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
+	}
+	if v.Created != nil {
+		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
+	}
+	if v.Version != nil {
+		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
+	}
+	if v.Deleted != nil {
+		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
+	}
+	if v.Disabled != nil {
+		res.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(v.Disabled)
+	}
+	if v.Sinks != nil {
+		res.Sinks = make([]*AggregatedSinkResponseBody, len(v.Sinks))
+		for i, val := range v.Sinks {
+			res.Sinks[i] = marshalStreamAggregatedSinkToAggregatedSinkResponseBody(val)
+		}
+	} else {
+		res.Sinks = []*AggregatedSinkResponseBody{}
+	}
+
+	return res
+}
+
+// marshalStreamAggregatedSinkToAggregatedSinkResponseBody builds a value of
+// type *AggregatedSinkResponseBody from a value of type *stream.AggregatedSink.
+func marshalStreamAggregatedSinkToAggregatedSinkResponseBody(v *stream.AggregatedSink) *AggregatedSinkResponseBody {
+	res := &AggregatedSinkResponseBody{
+		ProjectID:   int(v.ProjectID),
+		BranchID:    int(v.BranchID),
+		SourceID:    string(v.SourceID),
+		SinkID:      string(v.SinkID),
+		Type:        string(v.Type),
+		Name:        v.Name,
+		Description: v.Description,
+	}
+	if v.Table != nil {
+		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
+	}
+	if v.Version != nil {
+		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
+	}
+	if v.Created != nil {
+		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
+	}
+	if v.Deleted != nil {
+		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
+	}
+	if v.Disabled != nil {
+		res.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(v.Disabled)
+	}
+	if v.Statistics != nil {
+		res.Statistics = marshalStreamAggregatedStatisticsToAggregatedStatisticsResponseBody(v.Statistics)
+	}
+
+	return res
+}
+
+// marshalStreamAggregatedStatisticsToAggregatedStatisticsResponseBody builds a
+// value of type *AggregatedStatisticsResponseBody from a value of type
+// *stream.AggregatedStatistics.
+func marshalStreamAggregatedStatisticsToAggregatedStatisticsResponseBody(v *stream.AggregatedStatistics) *AggregatedStatisticsResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &AggregatedStatisticsResponseBody{}
+	if v.Total != nil {
+		res.Total = marshalStreamLevelToLevelResponseBody(v.Total)
+	}
+	if v.Levels != nil {
+		res.Levels = marshalStreamLevelsToLevelsResponseBody(v.Levels)
+	}
+	if v.Files != nil {
+		res.Files = make([]*SinkFileResponseBody, len(v.Files))
+		for i, val := range v.Files {
+			res.Files[i] = marshalStreamSinkFileToSinkFileResponseBody(val)
+		}
+	} else {
+		res.Files = []*SinkFileResponseBody{}
 	}
 
 	return res

@@ -38,6 +38,47 @@ paths:
                             - documentation
             schemes:
                 - https
+    /v1/branches/{branchId}/aggregation/sources:
+        get:
+            tags:
+                - internal
+            summary: Aggregation endpoint for sources
+            description: Details about sources for the UI.
+            operationId: AggregateSources
+            parameters:
+                - name: afterId
+                  in: query
+                  description: Request records after the ID.
+                  required: false
+                  type: string
+                  default: ""
+                - name: limit
+                  in: query
+                  description: Maximum number of returned records.
+                  required: false
+                  type: integer
+                  default: 100
+                  maximum: 100
+                  minimum: 1
+                - name: branchId
+                  in: path
+                  description: ID of the branch or "default".
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/StreamAggregateSourcesResponseBody'
+                        required:
+                            - projectId
+                            - branchId
+                            - page
+                            - sources
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources:
         get:
             tags:
@@ -46,7 +87,7 @@ paths:
             description: List all sources in the branch.
             operationId: ListSources
             parameters:
-                - name: sinceId
+                - name: afterId
                   in: query
                   description: Request records after the ID.
                   required: false
@@ -351,7 +392,7 @@ paths:
             description: List all sinks in the source.
             operationId: ListSinks
             parameters:
-                - name: sinceId
+                - name: afterId
                   in: query
                   description: Request records after the ID.
                   required: false
@@ -920,6 +961,624 @@ paths:
             security:
                 - storage-api-token: []
 definitions:
+    AggregatedSinkResponseBody:
+        title: AggregatedSinkResponseBody
+        type: object
+        properties:
+            branchId:
+                type: integer
+                example: 345
+                format: int64
+            created:
+                $ref: '#/definitions/CreatedEntityResponseBody'
+            deleted:
+                $ref: '#/definitions/DeletedEntityResponseBody'
+            description:
+                type: string
+                description: Description of the source.
+                example: The sink stores records to a table.
+                maxLength: 4096
+            disabled:
+                $ref: '#/definitions/DisabledEntityResponseBody'
+            name:
+                type: string
+                description: Human readable name of the sink.
+                example: Raw Data Sink
+                minLength: 1
+                maxLength: 40
+            projectId:
+                type: integer
+                example: 123
+                format: int64
+            sinkId:
+                type: string
+                example: github-pr-table-sink
+                minLength: 1
+                maxLength: 48
+            sourceId:
+                type: string
+                example: github-webhook-source
+                minLength: 1
+                maxLength: 48
+            statistics:
+                $ref: '#/definitions/AggregatedStatisticsResponseBody'
+            table:
+                $ref: '#/definitions/TableSinkResponseBody'
+            type:
+                type: string
+                example: table
+                enum:
+                    - table
+            version:
+                $ref: '#/definitions/VersionResponseBody'
+        description: A mapping from imported data to a destination table.
+        example:
+            projectId: 123
+            branchId: 345
+            sourceId: github-webhook-source
+            sinkId: github-pr-table-sink
+            type: table
+            name: Raw Data Sink
+            description: The sink stores records to a table.
+            table:
+                type: keboola
+                tableId: in.c-bucket.table
+                mapping:
+                    columns:
+                        - type: uuid-v7
+                          name: id-col
+                          primaryKey: true
+                        - type: datetime
+                          name: datetime-col
+                        - type: ip
+                          name: ip-col
+                        - type: headers
+                          name: headers-col
+                        - type: body
+                          name: body-col
+                        - type: template
+                          name: template-col
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
+            version:
+                number: 3
+                hash: f43e93acd97eceb3
+                description: The reason for the last change was...
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+            created:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+            deleted:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+            disabled:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+                reason: Disabled for recurring problems.
+            statistics:
+                total:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+                levels:
+                    local:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    staging:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    target:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        uncompressedSize: 1
+                files:
+                    - state: writing
+                      openedAt: "2022-04-28T14:20:04.000Z"
+                      closingAt: "2022-04-28T14:20:04.000Z"
+                      importingAt: "2022-04-28T14:20:04.000Z"
+                      importedAt: "2022-04-28T14:20:04.000Z"
+                      retryAttempt: 3
+                      retryReason: network problem
+                      retryAfter: "2022-04-28T14:20:04.000Z"
+                      statistics:
+                        total:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        levels:
+                            local:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            staging:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            target:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+        required:
+            - projectId
+            - branchId
+            - sourceId
+            - sinkId
+            - type
+            - name
+            - description
+            - version
+            - created
+    AggregatedSourceResponseBody:
+        title: AggregatedSourceResponseBody
+        type: object
+        properties:
+            branchId:
+                type: integer
+                example: 345
+                format: int64
+            created:
+                $ref: '#/definitions/CreatedEntityResponseBody'
+            deleted:
+                $ref: '#/definitions/DeletedEntityResponseBody'
+            description:
+                type: string
+                description: Description of the source.
+                example: The source receives events from Github.
+                maxLength: 4096
+            disabled:
+                $ref: '#/definitions/DisabledEntityResponseBody'
+            http:
+                $ref: '#/definitions/HTTPSourceResponseBody'
+            name:
+                type: string
+                description: Human readable name of the source.
+                example: Github Webhook Source
+                minLength: 1
+                maxLength: 40
+            projectId:
+                type: integer
+                example: 123
+                format: int64
+            sinks:
+                type: array
+                items:
+                    $ref: '#/definitions/AggregatedSinkResponseBody'
+                example:
+                    - projectId: 123
+                      branchId: 345
+                      sourceId: github-webhook-source
+                      sinkId: github-pr-table-sink
+                      type: table
+                      name: Raw Data Sink
+                      description: The sink stores records to a table.
+                      table:
+                        type: keboola
+                        tableId: in.c-bucket.table
+                        mapping:
+                            columns:
+                                - type: uuid-v7
+                                  name: id-col
+                                  primaryKey: true
+                                - type: datetime
+                                  name: datetime-col
+                                - type: ip
+                                  name: ip-col
+                                - type: headers
+                                  name: headers-col
+                                - type: body
+                                  name: body-col
+                                - type: template
+                                  name: template-col
+                                  template:
+                                    language: jsonnet
+                                    content: body.foo + "-" + body.bar
+                      version:
+                        number: 3
+                        hash: f43e93acd97eceb3
+                        description: The reason for the last change was...
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      created:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      deleted:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      disabled:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                        reason: Disabled for recurring problems.
+                      statistics:
+                        total:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        levels:
+                            local:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            staging:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            target:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                        files:
+                            - state: writing
+                              openedAt: "2022-04-28T14:20:04.000Z"
+                              closingAt: "2022-04-28T14:20:04.000Z"
+                              importingAt: "2022-04-28T14:20:04.000Z"
+                              importedAt: "2022-04-28T14:20:04.000Z"
+                              retryAttempt: 3
+                              retryReason: network problem
+                              retryAfter: "2022-04-28T14:20:04.000Z"
+                              statistics:
+                                total:
+                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                    recordsCount: 1
+                                    uncompressedSize: 1
+                                levels:
+                                    local:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+                                    staging:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+                                    target:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+            sourceId:
+                type: string
+                example: github-webhook-source
+                minLength: 1
+                maxLength: 48
+            type:
+                type: string
+                example: http
+                enum:
+                    - http
+            version:
+                $ref: '#/definitions/VersionResponseBody'
+        description: Source of data for further processing, start of the stream, max 100 sources per a branch.
+        example:
+            projectId: 123
+            branchId: 345
+            sourceId: github-webhook-source
+            type: http
+            name: Github Webhook Source
+            description: The source receives events from Github.
+            http:
+                url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+            created:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+            version:
+                number: 3
+                hash: f43e93acd97eceb3
+                description: The reason for the last change was...
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+            deleted:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+            disabled:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+                reason: Disabled for recurring problems.
+            sinks:
+                - projectId: 123
+                  branchId: 345
+                  sourceId: github-webhook-source
+                  sinkId: github-pr-table-sink
+                  type: table
+                  name: Raw Data Sink
+                  description: The sink stores records to a table.
+                  table:
+                    type: keboola
+                    tableId: in.c-bucket.table
+                    mapping:
+                        columns:
+                            - type: uuid-v7
+                              name: id-col
+                              primaryKey: true
+                            - type: datetime
+                              name: datetime-col
+                            - type: ip
+                              name: ip-col
+                            - type: headers
+                              name: headers-col
+                            - type: body
+                              name: body-col
+                            - type: template
+                              name: template-col
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
+                  version:
+                    number: 3
+                    hash: f43e93acd97eceb3
+                    description: The reason for the last change was...
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  created:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  deleted:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  disabled:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                    reason: Disabled for recurring problems.
+                  statistics:
+                    total:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    levels:
+                        local:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        staging:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        target:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+                    files:
+                        - state: writing
+                          openedAt: "2022-04-28T14:20:04.000Z"
+                          closingAt: "2022-04-28T14:20:04.000Z"
+                          importingAt: "2022-04-28T14:20:04.000Z"
+                          importedAt: "2022-04-28T14:20:04.000Z"
+                          retryAttempt: 3
+                          retryReason: network problem
+                          retryAfter: "2022-04-28T14:20:04.000Z"
+                          statistics:
+                            total:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            levels:
+                                local:
+                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                    recordsCount: 1
+                                    uncompressedSize: 1
+                                staging:
+                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                    recordsCount: 1
+                                    uncompressedSize: 1
+                                target:
+                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                    recordsCount: 1
+                                    uncompressedSize: 1
+        required:
+            - projectId
+            - branchId
+            - sourceId
+            - type
+            - name
+            - description
+            - created
+            - version
+            - sinks
+    AggregatedStatisticsResponseBody:
+        title: AggregatedStatisticsResponseBody
+        type: object
+        properties:
+            files:
+                type: array
+                items:
+                    $ref: '#/definitions/SinkFileResponseBody'
+                example:
+                    - state: writing
+                      openedAt: "2022-04-28T14:20:04.000Z"
+                      closingAt: "2022-04-28T14:20:04.000Z"
+                      importingAt: "2022-04-28T14:20:04.000Z"
+                      importedAt: "2022-04-28T14:20:04.000Z"
+                      retryAttempt: 3
+                      retryReason: network problem
+                      retryAfter: "2022-04-28T14:20:04.000Z"
+                      statistics:
+                        total:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        levels:
+                            local:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            staging:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            target:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+            levels:
+                $ref: '#/definitions/LevelsResponseBody'
+            total:
+                $ref: '#/definitions/LevelResponseBody'
+        example:
+            total:
+                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                recordsCount: 1
+                uncompressedSize: 1
+            levels:
+                local:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+                staging:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+                target:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    uncompressedSize: 1
+            files:
+                - state: writing
+                  openedAt: "2022-04-28T14:20:04.000Z"
+                  closingAt: "2022-04-28T14:20:04.000Z"
+                  importingAt: "2022-04-28T14:20:04.000Z"
+                  importedAt: "2022-04-28T14:20:04.000Z"
+                  retryAttempt: 3
+                  retryReason: network problem
+                  retryAfter: "2022-04-28T14:20:04.000Z"
+                  statistics:
+                    total:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        uncompressedSize: 1
+                    levels:
+                        local:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        staging:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        target:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+        required:
+            - total
+            - levels
+            - files
     ByResponseBody:
         title: ByResponseBody
         type: object
@@ -1050,10 +1709,12 @@ definitions:
         properties:
             firstRecordAt:
                 type: string
+                description: Timestamp of the first received record.
                 example: "2022-04-28T14:20:04.000Z"
                 format: date-time
             lastRecordAt:
                 type: string
+                description: Timestamp of the last received record.
                 example: "2022-04-28T14:20:04.000Z"
                 format: date-time
             recordsCount:
@@ -1062,6 +1723,7 @@ definitions:
                 format: int64
             uncompressedSize:
                 type: integer
+                description: Uncompressed size of data in bytes.
                 example: 1
                 format: int64
         example:
@@ -1102,6 +1764,10 @@ definitions:
         title: PaginatedResponseResponseBody
         type: object
         properties:
+            afterId:
+                type: string
+                description: Current offset.
+                example: my-object-123
             lastId:
                 type: string
                 description: ID of the last record in the response.
@@ -1111,10 +1777,6 @@ definitions:
                 description: Current limit.
                 example: 100
                 format: int64
-            sinceId:
-                type: string
-                description: Current offset.
-                example: my-object-123
             totalCount:
                 type: integer
                 description: Total count of all records.
@@ -1123,10 +1785,10 @@ definitions:
         example:
             limit: 100
             totalCount: 1000
-            sinceId: my-object-123
+            afterId: my-object-123
             lastId: my-object-456
         required:
-            - sinceId
+            - afterId
             - limit
             - lastId
             - totalCount
@@ -1286,7 +1948,6 @@ definitions:
         required:
             - state
             - openedAt
-            - statistics
     SinkFileStatisticsResponseBody:
         title: SinkFileStatisticsResponseBody
         type: object
@@ -1560,6 +2221,363 @@ definitions:
         required:
             - api
             - documentation
+    StreamAggregateSourcesResponseBody:
+        title: StreamAggregateSourcesResponseBody
+        type: object
+        properties:
+            branchId:
+                type: integer
+                example: 345
+                format: int64
+            page:
+                $ref: '#/definitions/PaginatedResponseResponseBody'
+            projectId:
+                type: integer
+                example: 123
+                format: int64
+            sources:
+                type: array
+                items:
+                    $ref: '#/definitions/AggregatedSourceResponseBody'
+                example:
+                    - projectId: 123
+                      branchId: 345
+                      sourceId: github-webhook-source
+                      type: http
+                      name: Github Webhook Source
+                      description: The source receives events from Github.
+                      http:
+                        url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                      created:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      version:
+                        number: 3
+                        hash: f43e93acd97eceb3
+                        description: The reason for the last change was...
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      deleted:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      disabled:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                        reason: Disabled for recurring problems.
+                      sinks:
+                        - projectId: 123
+                          branchId: 345
+                          sourceId: github-webhook-source
+                          sinkId: github-pr-table-sink
+                          type: table
+                          name: Raw Data Sink
+                          description: The sink stores records to a table.
+                          table:
+                            type: keboola
+                            tableId: in.c-bucket.table
+                            mapping:
+                                columns:
+                                    - type: uuid-v7
+                                      name: id-col
+                                      primaryKey: true
+                                    - type: datetime
+                                      name: datetime-col
+                                    - type: ip
+                                      name: ip-col
+                                    - type: headers
+                                      name: headers-col
+                                    - type: body
+                                      name: body-col
+                                    - type: template
+                                      name: template-col
+                                      template:
+                                        language: jsonnet
+                                        content: body.foo + "-" + body.bar
+                          version:
+                            number: 3
+                            hash: f43e93acd97eceb3
+                            description: The reason for the last change was...
+                            at: "2022-04-28T14:20:04.000Z"
+                            by:
+                                type: user
+                                tokenId: "896455"
+                                tokenDesc: john.green@company.com
+                                userId: "578621"
+                                userName: John Green
+                          created:
+                            at: "2022-04-28T14:20:04.000Z"
+                            by:
+                                type: user
+                                tokenId: "896455"
+                                tokenDesc: john.green@company.com
+                                userId: "578621"
+                                userName: John Green
+                          deleted:
+                            at: "2022-04-28T14:20:04.000Z"
+                            by:
+                                type: user
+                                tokenId: "896455"
+                                tokenDesc: john.green@company.com
+                                userId: "578621"
+                                userName: John Green
+                          disabled:
+                            at: "2022-04-28T14:20:04.000Z"
+                            by:
+                                type: user
+                                tokenId: "896455"
+                                tokenDesc: john.green@company.com
+                                userId: "578621"
+                                userName: John Green
+                            reason: Disabled for recurring problems.
+                          statistics:
+                            total:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            levels:
+                                local:
+                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                    recordsCount: 1
+                                    uncompressedSize: 1
+                                staging:
+                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                    recordsCount: 1
+                                    uncompressedSize: 1
+                                target:
+                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                    recordsCount: 1
+                                    uncompressedSize: 1
+                            files:
+                                - state: writing
+                                  openedAt: "2022-04-28T14:20:04.000Z"
+                                  closingAt: "2022-04-28T14:20:04.000Z"
+                                  importingAt: "2022-04-28T14:20:04.000Z"
+                                  importedAt: "2022-04-28T14:20:04.000Z"
+                                  retryAttempt: 3
+                                  retryReason: network problem
+                                  retryAfter: "2022-04-28T14:20:04.000Z"
+                                  statistics:
+                                    total:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+                                    levels:
+                                        local:
+                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                                        staging:
+                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+                                        target:
+                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                            recordsCount: 1
+                                            uncompressedSize: 1
+        example:
+            projectId: 123
+            branchId: 345
+            page:
+                limit: 100
+                totalCount: 1000
+                afterId: my-object-123
+                lastId: my-object-456
+            sources:
+                - projectId: 123
+                  branchId: 345
+                  sourceId: github-webhook-source
+                  type: http
+                  name: Github Webhook Source
+                  description: The source receives events from Github.
+                  http:
+                    url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                  created:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  version:
+                    number: 3
+                    hash: f43e93acd97eceb3
+                    description: The reason for the last change was...
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  deleted:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  disabled:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                    reason: Disabled for recurring problems.
+                  sinks:
+                    - projectId: 123
+                      branchId: 345
+                      sourceId: github-webhook-source
+                      sinkId: github-pr-table-sink
+                      type: table
+                      name: Raw Data Sink
+                      description: The sink stores records to a table.
+                      table:
+                        type: keboola
+                        tableId: in.c-bucket.table
+                        mapping:
+                            columns:
+                                - type: uuid-v7
+                                  name: id-col
+                                  primaryKey: true
+                                - type: datetime
+                                  name: datetime-col
+                                - type: ip
+                                  name: ip-col
+                                - type: headers
+                                  name: headers-col
+                                - type: body
+                                  name: body-col
+                                - type: template
+                                  name: template-col
+                                  template:
+                                    language: jsonnet
+                                    content: body.foo + "-" + body.bar
+                      version:
+                        number: 3
+                        hash: f43e93acd97eceb3
+                        description: The reason for the last change was...
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      created:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      deleted:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      disabled:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                        reason: Disabled for recurring problems.
+                      statistics:
+                        total:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            uncompressedSize: 1
+                        levels:
+                            local:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            staging:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                            target:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                uncompressedSize: 1
+                        files:
+                            - state: writing
+                              openedAt: "2022-04-28T14:20:04.000Z"
+                              closingAt: "2022-04-28T14:20:04.000Z"
+                              importingAt: "2022-04-28T14:20:04.000Z"
+                              importedAt: "2022-04-28T14:20:04.000Z"
+                              retryAttempt: 3
+                              retryReason: network problem
+                              retryAfter: "2022-04-28T14:20:04.000Z"
+                              statistics:
+                                total:
+                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                    recordsCount: 1
+                                    uncompressedSize: 1
+                                levels:
+                                    local:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+                                    staging:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+                                    target:
+                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                        recordsCount: 1
+                                        uncompressedSize: 1
+        required:
+            - projectId
+            - branchId
+            - page
+            - sources
     StreamCreateSinkRequestBody:
         title: StreamCreateSinkRequestBody
         type: object
@@ -2780,7 +3798,7 @@ definitions:
             page:
                 limit: 100
                 totalCount: 1000
-                sinceId: my-object-123
+                afterId: my-object-123
                 lastId: my-object-456
             sinks:
                 - projectId: 123
@@ -2948,7 +3966,7 @@ definitions:
             page:
                 limit: 100
                 totalCount: 1000
-                sinceId: my-object-123
+                afterId: my-object-123
                 lastId: my-object-456
             sources:
                 - projectId: 123

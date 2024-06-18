@@ -42,6 +42,7 @@ type Server struct {
 	SinkStatisticsTotal  http.Handler
 	SinkStatisticsFiles  http.Handler
 	GetTask              http.Handler
+	AggregateSources     http.Handler
 	CORS                 http.Handler
 	OpenapiJSON          http.Handler
 	OpenapiYaml          http.Handler
@@ -118,6 +119,7 @@ func New(
 			{"SinkStatisticsTotal", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"SinkStatisticsFiles", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files"},
 			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
+			{"AggregateSources", "GET", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/"},
 			{"CORS", "OPTIONS", "/v1"},
 			{"CORS", "OPTIONS", "/health-check"},
@@ -131,6 +133,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files"},
 			{"CORS", "OPTIONS", "/v1/tasks/{*taskId}"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi3.json"},
@@ -163,6 +166,7 @@ func New(
 		SinkStatisticsTotal:  NewSinkStatisticsTotalHandler(e.SinkStatisticsTotal, mux, decoder, encoder, errhandler, formatter),
 		SinkStatisticsFiles:  NewSinkStatisticsFilesHandler(e.SinkStatisticsFiles, mux, decoder, encoder, errhandler, formatter),
 		GetTask:              NewGetTaskHandler(e.GetTask, mux, decoder, encoder, errhandler, formatter),
+		AggregateSources:     NewAggregateSourcesHandler(e.AggregateSources, mux, decoder, encoder, errhandler, formatter),
 		CORS:                 NewCORSHandler(),
 		OpenapiJSON:          http.FileServer(fileSystemOpenapiJSON),
 		OpenapiYaml:          http.FileServer(fileSystemOpenapiYaml),
@@ -198,6 +202,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.SinkStatisticsTotal = m(s.SinkStatisticsTotal)
 	s.SinkStatisticsFiles = m(s.SinkStatisticsFiles)
 	s.GetTask = m(s.GetTask)
+	s.AggregateSources = m(s.AggregateSources)
 	s.CORS = m(s.CORS)
 }
 
@@ -227,6 +232,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountSinkStatisticsTotalHandler(mux, h.SinkStatisticsTotal)
 	MountSinkStatisticsFilesHandler(mux, h.SinkStatisticsFiles)
 	MountGetTaskHandler(mux, h.GetTask)
+	MountAggregateSourcesHandler(mux, h.AggregateSources)
 	MountCORSHandler(mux, h.CORS)
 	MountOpenapiJSON(mux, goahttp.Replace("", "/openapi.json", h.OpenapiJSON))
 	MountOpenapiYaml(mux, goahttp.Replace("", "/openapi.yaml", h.OpenapiYaml))
@@ -1277,6 +1283,57 @@ func NewGetTaskHandler(
 	})
 }
 
+// MountAggregateSourcesHandler configures the mux to serve the "stream"
+// service "AggregateSources" endpoint.
+func MountAggregateSourcesHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/branches/{branchId}/aggregation/sources", f)
+}
+
+// NewAggregateSourcesHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "AggregateSources" endpoint.
+func NewAggregateSourcesHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeAggregateSourcesRequest(mux, decoder)
+		encodeResponse = EncodeAggregateSourcesResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "AggregateSources")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountOpenapiJSON configures the mux to serve GET request made to
 // "/v1/documentation/openapi.json".
 func MountOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
@@ -1325,6 +1382,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/tasks/{*taskId}", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/aggregation/sources", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi3.json", h.ServeHTTP)

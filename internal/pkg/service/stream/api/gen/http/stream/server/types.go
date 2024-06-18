@@ -395,6 +395,15 @@ type GetTaskResponseBody struct {
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
+// AggregateSourcesResponseBody is the type of the "stream" service
+// "AggregateSources" endpoint HTTP response body.
+type AggregateSourcesResponseBody struct {
+	ProjectID int                             `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int                             `form:"branchId" json:"branchId" xml:"branchId"`
+	Page      *PaginatedResponseResponseBody  `form:"page" json:"page" xml:"page"`
+	Sources   []*AggregatedSourceResponseBody `form:"sources" json:"sources" xml:"sources"`
+}
+
 // CreateSourceStreamAPISourceAlreadyExistsResponseBody is the type of the
 // "stream" service "CreateSource" endpoint HTTP response body for the
 // "stream.api.sourceAlreadyExists" error.
@@ -765,7 +774,7 @@ type PaginatedResponseResponseBody struct {
 	// Total count of all records.
 	TotalCount int `form:"totalCount" json:"totalCount" xml:"totalCount"`
 	// Current offset.
-	SinceID string `form:"sinceId" json:"sinceId" xml:"sinceId"`
+	AfterID string `form:"afterId" json:"afterId" xml:"afterId"`
 	// ID of the last record in the response.
 	LastID string `form:"lastId" json:"lastId" xml:"lastId"`
 }
@@ -942,10 +951,13 @@ type SinkResponseBody struct {
 
 // LevelResponseBody is used to define fields on response body types.
 type LevelResponseBody struct {
-	FirstRecordAt    *string `form:"firstRecordAt,omitempty" json:"firstRecordAt,omitempty" xml:"firstRecordAt,omitempty"`
-	LastRecordAt     *string `form:"lastRecordAt,omitempty" json:"lastRecordAt,omitempty" xml:"lastRecordAt,omitempty"`
-	RecordsCount     uint64  `form:"recordsCount" json:"recordsCount" xml:"recordsCount"`
-	UncompressedSize uint64  `form:"uncompressedSize" json:"uncompressedSize" xml:"uncompressedSize"`
+	// Timestamp of the first received record.
+	FirstRecordAt *string `form:"firstRecordAt,omitempty" json:"firstRecordAt,omitempty" xml:"firstRecordAt,omitempty"`
+	// Timestamp of the last received record.
+	LastRecordAt *string `form:"lastRecordAt,omitempty" json:"lastRecordAt,omitempty" xml:"lastRecordAt,omitempty"`
+	RecordsCount uint64  `form:"recordsCount" json:"recordsCount" xml:"recordsCount"`
+	// Uncompressed size of data in bytes.
+	UncompressedSize uint64 `form:"uncompressedSize" json:"uncompressedSize" xml:"uncompressedSize"`
 }
 
 // LevelsResponseBody is used to define fields on response body types.
@@ -968,7 +980,7 @@ type SinkFileResponseBody struct {
 	RetryReason *string `form:"retryReason,omitempty" json:"retryReason,omitempty" xml:"retryReason,omitempty"`
 	// Next attempt time.
 	RetryAfter *string                         `form:"retryAfter,omitempty" json:"retryAfter,omitempty" xml:"retryAfter,omitempty"`
-	Statistics *SinkFileStatisticsResponseBody `form:"statistics" json:"statistics" xml:"statistics"`
+	Statistics *SinkFileStatisticsResponseBody `form:"statistics,omitempty" json:"statistics,omitempty" xml:"statistics,omitempty"`
 }
 
 // SinkFileStatisticsResponseBody is used to define fields on response body
@@ -976,6 +988,52 @@ type SinkFileResponseBody struct {
 type SinkFileStatisticsResponseBody struct {
 	Total  *LevelResponseBody  `form:"total" json:"total" xml:"total"`
 	Levels *LevelsResponseBody `form:"levels" json:"levels" xml:"levels"`
+}
+
+// AggregatedSourceResponseBody is used to define fields on response body types.
+type AggregatedSourceResponseBody struct {
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	Type      string `form:"type" json:"type" xml:"type"`
+	// Human readable name of the source.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Description of the source.
+	Description string `form:"description" json:"description" xml:"description"`
+	// HTTP source details for "type" = "http".
+	HTTP     *HTTPSourceResponseBody       `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	Created  *CreatedEntityResponseBody    `form:"created" json:"created" xml:"created"`
+	Version  *VersionResponseBody          `form:"version" json:"version" xml:"version"`
+	Deleted  *DeletedEntityResponseBody    `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled *DisabledEntityResponseBody   `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Sinks    []*AggregatedSinkResponseBody `form:"sinks" json:"sinks" xml:"sinks"`
+}
+
+// AggregatedSinkResponseBody is used to define fields on response body types.
+type AggregatedSinkResponseBody struct {
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	SinkID    string `form:"sinkId" json:"sinkId" xml:"sinkId"`
+	Type      string `form:"type" json:"type" xml:"type"`
+	// Human readable name of the sink.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Description of the source.
+	Description string                            `form:"description" json:"description" xml:"description"`
+	Table       *TableSinkResponseBody            `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version     *VersionResponseBody              `form:"version" json:"version" xml:"version"`
+	Created     *CreatedEntityResponseBody        `form:"created" json:"created" xml:"created"`
+	Deleted     *DeletedEntityResponseBody        `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled    *DisabledEntityResponseBody       `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Statistics  *AggregatedStatisticsResponseBody `form:"statistics,omitempty" json:"statistics,omitempty" xml:"statistics,omitempty"`
+}
+
+// AggregatedStatisticsResponseBody is used to define fields on response body
+// types.
+type AggregatedStatisticsResponseBody struct {
+	Total  *LevelResponseBody      `form:"total" json:"total" xml:"total"`
+	Levels *LevelsResponseBody     `form:"levels" json:"levels" xml:"levels"`
+	Files  []*SinkFileResponseBody `form:"files" json:"files" xml:"files"`
 }
 
 // SettingPatchRequestBody is used to define fields on request body types.
@@ -1399,6 +1457,27 @@ func NewGetTaskResponseBody(res *stream.Task) *GetTaskResponseBody {
 	return body
 }
 
+// NewAggregateSourcesResponseBody builds the HTTP response body from the
+// result of the "AggregateSources" endpoint of the "stream" service.
+func NewAggregateSourcesResponseBody(res *stream.AggregatedSourcesResult) *AggregateSourcesResponseBody {
+	body := &AggregateSourcesResponseBody{
+		ProjectID: int(res.ProjectID),
+		BranchID:  int(res.BranchID),
+	}
+	if res.Page != nil {
+		body.Page = marshalStreamPaginatedResponseToPaginatedResponseResponseBody(res.Page)
+	}
+	if res.Sources != nil {
+		body.Sources = make([]*AggregatedSourceResponseBody, len(res.Sources))
+		for i, val := range res.Sources {
+			body.Sources[i] = marshalStreamAggregatedSourceToAggregatedSourceResponseBody(val)
+		}
+	} else {
+		body.Sources = []*AggregatedSourceResponseBody{}
+	}
+	return body
+}
+
 // NewCreateSourceStreamAPISourceAlreadyExistsResponseBody builds the HTTP
 // response body from the result of the "CreateSource" endpoint of the "stream"
 // service.
@@ -1769,10 +1848,10 @@ func NewUpdateSourcePayload(body *UpdateSourceRequestBody, branchID string, sour
 }
 
 // NewListSourcesPayload builds a stream service ListSources endpoint payload.
-func NewListSourcesPayload(branchID string, sinceID string, limit int, storageAPIToken string) *stream.ListSourcesPayload {
+func NewListSourcesPayload(branchID string, afterID string, limit int, storageAPIToken string) *stream.ListSourcesPayload {
 	v := &stream.ListSourcesPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
-	v.SinceID = sinceID
+	v.AfterID = afterID
 	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
@@ -1904,11 +1983,11 @@ func NewUpdateSinkSettingsPayload(body *UpdateSinkSettingsRequestBody, branchID 
 }
 
 // NewListSinksPayload builds a stream service ListSinks endpoint payload.
-func NewListSinksPayload(branchID string, sourceID string, sinceID string, limit int, storageAPIToken string) *stream.ListSinksPayload {
+func NewListSinksPayload(branchID string, sourceID string, afterID string, limit int, storageAPIToken string) *stream.ListSinksPayload {
 	v := &stream.ListSinksPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
-	v.SinceID = sinceID
+	v.AfterID = afterID
 	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
@@ -1976,6 +2055,18 @@ func NewSinkStatisticsFilesPayload(branchID string, sourceID string, sinkID stri
 func NewGetTaskPayload(taskID string, storageAPIToken string) *stream.GetTaskPayload {
 	v := &stream.GetTaskPayload{}
 	v.TaskID = stream.TaskID(taskID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewAggregateSourcesPayload builds a stream service AggregateSources endpoint
+// payload.
+func NewAggregateSourcesPayload(branchID string, afterID string, limit int, storageAPIToken string) *stream.AggregateSourcesPayload {
+	v := &stream.AggregateSourcesPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.AfterID = afterID
+	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
 	return v
