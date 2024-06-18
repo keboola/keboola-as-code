@@ -89,6 +89,7 @@ runs:
 
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+        RUNS_ON_RUNNER_NAME: ""
 
     # Install missing tools
     - name: Install tools
@@ -115,6 +116,7 @@ runs:
           ${{ runner.os }}-go-${{ inputs.go-version }}-${{ inputs.cache-version }}-mod-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+        RUNS_ON_RUNNER_NAME: ""
 
     - name: Load Go build and test cache
       id: go-cache-build
@@ -128,6 +130,7 @@ runs:
           ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+        RUNS_ON_RUNNER_NAME: ""
 
     - name: Load Linter cache
       id: go-cache-linter
@@ -141,6 +144,7 @@ runs:
           ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+        RUNS_ON_RUNNER_NAME: ""
 
     - name: Download Go modules
       shell: bash
