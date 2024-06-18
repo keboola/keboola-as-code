@@ -217,7 +217,7 @@ var _ = Service("stream", func() {
 		HTTP(func() {
 			GET("/branches/{branchId}/sources")
 			Meta("openapi:tag:configuration")
-			Param("sinceId")
+			Param("afterId")
 			Param("limit")
 			Response(StatusOK)
 		})
@@ -358,7 +358,7 @@ var _ = Service("stream", func() {
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/sinks")
 			Meta("openapi:tag:configuration")
-			Param("sinceId")
+			Param("afterId")
 			Param("limit")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -446,7 +446,7 @@ var _ = Service("stream", func() {
 		HTTP(func() {
 			GET("/branches/{branchId}/aggregation/sources")
 			Meta("openapi:tag:internal")
-			Param("sinceId")
+			Param("afterId")
 			Param("limit")
 			Response(StatusOK)
 		})
@@ -549,7 +549,7 @@ var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 // Pagination ---------------------------------------------------------------------------------------------------------
 
 var PaginatedRequest = func() {
-	Attribute("sinceId", String, "Request records after the ID.", func() {
+	Attribute("afterId", String, "Request records after the ID.", func() {
 		Default("")
 		Example("my-object-123")
 	})
@@ -568,13 +568,13 @@ var PaginatedResponse = Type("PaginatedResponse", func() {
 	Attribute("totalCount", Int, "Total count of all records.", func() {
 		Example(DefaultPaginationLimit * 10)
 	})
-	Attribute("sinceId", String, "Current offset.", func() {
+	Attribute("afterId", String, "Current offset.", func() {
 		Example("my-object-123")
 	})
 	Attribute("lastId", String, "ID of the last record in the response.", func() {
 		Example("my-object-456")
 	})
-	Required("sinceId", "limit", "lastId", "totalCount")
+	Required("afterId", "limit", "lastId", "totalCount")
 })
 
 // Types --------------------------------------------------------------------------------------------------------------

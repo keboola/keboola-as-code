@@ -45,11 +45,11 @@ func (m *Mapper) NewSourceResponse(entity definition.Source) (*api.Source, error
 func (m *Mapper) NewSourcesResponse(
 	ctx context.Context,
 	k key.BranchKey,
-	sinceId string,
+	afterId string,
 	limit int,
 	list func(...iterator.Option) iterator.DefinitionT[definition.Source],
 ) (*api.SourcesList, error) {
-	sources, page, err := loadPage(ctx, sinceId, limit, etcd.SortAscend, list, m.NewSourceResponse)
+	sources, page, err := loadPage(ctx, afterId, limit, etcd.SortAscend, list, m.NewSourceResponse)
 	if err != nil {
 		return nil, err
 	}
