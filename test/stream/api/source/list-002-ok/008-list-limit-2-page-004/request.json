@@ -1,5 +1,5 @@
 {
-  "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources?limit=2&sinceId=my-source-5",
+  "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources?limit=2&afterId=my-source-5",
   "method": "GET",
   "headers": {
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"

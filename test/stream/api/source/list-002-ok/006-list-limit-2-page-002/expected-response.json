@@ -4,7 +4,7 @@
   "page": {
     "limit": 2,
     "totalCount": 5,
-    "sinceId": "my-source-2",
+    "afterId": "my-source-2",
     "lastId": "my-source-4"
   },
   "sources": [

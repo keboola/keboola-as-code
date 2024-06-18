@@ -5,7 +5,7 @@
   "page": {
     "limit": 100,
     "totalCount": 5,
-    "sinceId": "my-sink-5",
+    "afterId": "my-sink-5",
     "lastId": ""
   },
   "sinks": []
