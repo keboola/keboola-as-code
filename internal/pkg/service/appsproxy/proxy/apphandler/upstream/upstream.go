@@ -106,8 +106,8 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 
 	// Create reverse proxy
 	upstream = &AppUpstream{manager: m, app: app, target: target}
-	upstream.handler = upstream.newProxy(m.config.AppTimeouts.HTTPUpstreamTimeout)
-	upstream.wsHandler = upstream.newWebsocketProxy(m.config.AppTimeouts.WebsocketUpstreamTimeout)
+	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
+	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
 	return upstream, nil
 }
 
