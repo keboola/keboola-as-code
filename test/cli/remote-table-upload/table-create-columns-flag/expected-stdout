@@ -1,1 +1,4 @@
-%A
+File "data.csv" uploaded with file id "%d".
+Table "in.c-my-bucket.data" does not exist, creating it.
+Bucket "in.c-my-bucket" does not exist, creating it.
+Created new table "in.c-my-bucket.data" from file with id "%d".

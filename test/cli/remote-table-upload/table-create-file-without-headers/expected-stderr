@@ -1,2 +1,2 @@
 %A
-- Flags --columns and --file-without-headers must be specified together.
+Error: Missing required column.
