@@ -59,8 +59,63 @@ func TestCompareJsonMessages(t *testing.T) {
 			actual: `
 {"level":"debug","message":"Debug msg"}
 {"level":"info","message":"Info msg"}
+`,
+		},
+		{
+			name:     "warning cannot be ignored - before expected message",
+			expected: `{"level":"info","message":"Info msg"}`,
+			actual: `
+{"level":"debug","message":"Debug msg"}
+{"level":"warn","message":"Warn msg"}
+{"level":"info","message":"Info msg"}
+`,
+			err: errors.Errorf(
+				"Expected:\n-----\n%s\n-----\nFound unexpected message:\n-----\n%s",
+				`{"level":"info","message":"Info msg"}`,
+				`{"level":"warn","message":"Warn msg"}`,
+			),
+		},
+		{
+			name:     "error cannot be ignored - before expected message",
+			expected: `{"level":"info","message":"Info msg"}`,
+			actual: `
+{"level":"debug","message":"Debug msg"}
+{"level":"error","message":"Error msg"}
+{"level":"info","message":"Info msg"}
+`,
+			err: errors.Errorf(
+				"Expected:\n-----\n%s\n-----\nFound unexpected message:\n-----\n%s",
+				`{"level":"info","message":"Info msg"}`,
+				`{"level":"error","message":"Error msg"}`,
+			),
+		},
+		{
+			name:     "warning cannot be ignored - after expected message",
+			expected: `{"level":"info","message":"Info msg"}`,
+			actual: `
+{"level":"debug","message":"Debug msg"}
+{"level":"info","message":"Info msg"}
 {"level":"warn","message":"Warn msg"}
 `,
+			err: errors.Errorf(
+				"Expected:\n-----\n%s\n-----\nFound unexpected message:\n-----\n%s",
+				`<nothing>`,
+				`{"level":"warn","message":"Warn msg"}`,
+			),
+		},
+		{
+			name:     "error cannot be ignored - after expected message",
+			expected: `{"level":"info","message":"Info msg"}`,
+			actual: `
+{"level":"debug","message":"Debug msg"}
+{"level":"info","message":"Info msg"}
+{"level":"error","message":"Error msg"}
+`,
+			err: errors.Errorf(
+				"Expected:\n-----\n%s\n-----\nFound unexpected message:\n-----\n%s",
+				`<nothing>`,
+				`{"level":"error","message":"Error msg"}`,
+			),
 		},
 		{
 			name:     "wildcard match",

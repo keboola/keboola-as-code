@@ -13,7 +13,7 @@ import (
 )
 
 // CompareJSONMessages checks that expected json messages appear in actual in the same order.
-// Actual string may have extra messages and the rest may have extra fields. String values are compared using wildcards.
+// Actual string may have extra debug and info messages and the rest may have extra fields. String values are compared using wildcards.
 // Returns nil if the expectations are met or an error with the first unmatched expected line and all remaining actual lines.
 func CompareJSONMessages(expected string, actual string) error {
 	expectedScanner := bufio.NewScanner(strings.NewReader(strings.Trim(expected, "\n")))
@@ -21,21 +21,19 @@ func CompareJSONMessages(expected string, actual string) error {
 
 	for expectedScanner.Scan() {
 		expectedMessage := expectedScanner.Text()
-		var expectedMessageData map[string]any
-		err := json.DecodeString(expectedMessage, &expectedMessageData)
+		expectedMessageData, err := decodeMessage(expectedMessage, "expected")
 		if err != nil {
-			return errors.Wrapf(err, "expected string contains invalid json:\n%s", expectedMessage)
+			return err
 		}
 
 		actualMessages := ""
 		messageFound := false
 		for actualScanner.Scan() {
 			actualMessage := actualScanner.Text()
-			actualMessages += actualMessage + "\n"
-			var actualMessageData map[string]any
-			err := json.DecodeString(actualMessage, &actualMessageData)
+			actualMessages += actualMessage
+			actualMessageData, err := decodeMessage(actualMessage, "actual")
 			if err != nil {
-				return errors.Wrapf(err, "actual string contains invalid json:\n%s", actualMessage)
+				return err
 			}
 
 			messageFound = true
@@ -47,9 +45,18 @@ func CompareJSONMessages(expected string, actual string) error {
 				}
 			}
 
-			if messageFound {
-				break
+			if !messageFound {
+				// Return error, if the actual message cannot be skipped and is not expected
+				if err = checkMessageCannotBeSkipped(actualMessage, actualMessageData, expectedMessage); err != nil {
+					return err
+				}
+
+				// Message not found, skip actual message and check the next one
+				continue
 			}
+
+			// Message found, go to the next expected message
+			break
 		}
 
 		if !messageFound {
@@ -61,7 +68,27 @@ func CompareJSONMessages(expected string, actual string) error {
 		}
 	}
 
+	// Scan remaining messages, whether there is something important that cannot be skipped
+	for actualScanner.Scan() {
+		actualMessage := actualScanner.Text()
+		actualMessageData, err := decodeMessage(actualMessage, "actual")
+		if err != nil {
+			return err
+		}
+		if err = checkMessageCannotBeSkipped(actualMessage, actualMessageData, "<nothing>"); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func decodeMessage(message, messageType string) (out map[string]any, err error) {
+	err = json.DecodeString(message, &out)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s string contains invalid json:\n%s", messageType, message)
+	}
+	return out, nil
 }
 
 func valueMatches(value any, actualValue any) bool {
@@ -75,6 +102,20 @@ func valueMatches(value any, actualValue any) bool {
 	}
 
 	return reflect.DeepEqual(actualValue, value)
+}
+
+func checkMessageCannotBeSkipped(actualMessage string, actualData map[string]any, expectedMessage string) error {
+	// Messages with warning level and higher must always be defined in expected messages.
+	// This prevents issues from not being caught in the tests.
+	level, ok := actualData["level"]
+	if cannotBeSkipped := ok && level != "debug" && level != "info"; cannotBeSkipped {
+		return errors.Errorf(
+			"Expected:\n-----\n%s\n-----\nFound unexpected message:\n-----\n%s",
+			expectedMessage,
+			strings.TrimRight(actualMessage, "\n"),
+		)
+	}
+	return nil
 }
 
 type tHelper interface {
