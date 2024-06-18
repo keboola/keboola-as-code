@@ -16,40 +16,21 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Configure AWS Credentials to CLI Assets Account
-      id: credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
-        aws-region: us-east-1
-        output-credentials: true
-
     - name: Release
       shell: bash
       run: make release
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         CLI_DIST_BASE_URL: "https://cli-dist.keboola.com"
-        CLI_DIST_AWS_REGION: us-east-1
-        CLI_DIST_AWS_BUCKET_NAME: cli-dist-keboola-com
-        CLI_DIST_AWS_ACCESS_KEY_ID: ${{ steps.credentials.outputs.aws-access-key-id }}
-        CLI_DIST_AWS_SECRET_ACCESS_KEY: ${{ steps.credentials.outputs.aws-secret-access-key }}
-        CLI_DIST_AWS_SESSION_TOKEN: ${{ steps.credentials.outputs.aws-session-token }}
         DEB_KEY_PRIVATE_PATH: /tmp/keys/deb.key
         RPM_KEY_PRIVATE_PATH: /tmp/keys/rpm.key
         APK_KEY_PRIVATE_PATH: /tmp/keys/apk.key
         APPLE_ACCOUNT_PASSWORD: ${{ inputs.apple_account_password }}
         VERSION: ${{ inputs.version }}
 
-    - name: Upload artifact to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ inputs.github_token }}
-        file: target/gh-release/*
-        tag: ${{ inputs.tag }}
-        overwrite: true
-        file_glob: true
-        prerelease: true
+    - name: Check targets
+      shell: bash
+      run: ls -al target
 
     - name: Create Homebrew formulae
       shell: bash
@@ -79,3 +60,18 @@ runs:
         if-no-files-found: error
         retention-days: 1
 
+    - name: Store release targets
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-targets
+        path: |
+          target/keboola-cli_dev_linux_armv6.zip
+          target/keboola-cli_dev_linux_amd64.zip
+          target/keboola-cli_dev_linux_arm64.zip
+          target/keboola-cli_dev_windows_armv6.zip
+          target/keboola-cli_dev_windows_amd64.zip
+          target/keboola-cli_dev_windows_arm64.zip
+          target/keboola-cli_darwin_amd64_v1/kbc.zip
+          target/keboola-cli_darwin_arm64/kbc.zip
+        if-no-files-found: error
+        retention-days: 1
