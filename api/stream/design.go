@@ -435,6 +435,22 @@ var _ = Service("stream", func() {
 			TaskNotFoundError()
 		})
 	})
+
+	// Aggregation endpoints -------------------------------------------------------------------------------------------
+
+	Method("AggregateSources", func() {
+		Meta("openapi:summary", "Aggregation endpoint for sources")
+		Description("Details about sources for the UI.")
+		Result(AggregatedSourcesResult)
+		Payload(AggregatedSourcesRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/aggregation/sources")
+			Meta("openapi:tag:internal")
+			Param("sinceId")
+			Param("limit")
+			Response(StatusOK)
+		})
+	})
 })
 
 // IDs -----------------------------------------------------------------------------------------------------------------
@@ -678,7 +694,7 @@ var DisabledEntity = Type("DisabledEntity", func() {
 
 // Source -------------------------------------------------------------------------------------------------------------
 
-var Source = Type("Source", func() {
+var SourceResponse = func() {
 	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", source.MaxSourcesPerBranch))
 	SourceKeyResponse()
 	SourceFields(OpRead)
@@ -687,6 +703,10 @@ var Source = Type("Source", func() {
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
 	Required("created", "version")
+}
+
+var Source = Type("Source", func() {
+	SourceResponse()
 })
 
 var Sources = Type("Sources", ArrayOf(Source), func() {
@@ -837,7 +857,7 @@ var HTTPSource = Type("HTTPSource", func() {
 
 // Sink ----------------------------------------------------------------------------------------------------------------
 
-var Sink = Type("Sink", func() {
+var SinkResponse = func() {
 	Description("A mapping from imported data to a destination table.")
 	SinkKeyResponse()
 	SinkFields(OpRead)
@@ -846,6 +866,10 @@ var Sink = Type("Sink", func() {
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
 	Required("version", "created")
+}
+
+var Sink = Type("Sink", func() {
+	SinkResponse()
 })
 
 var Sinks = Type("Sinks", ArrayOf(Sink), func() {
@@ -974,15 +998,14 @@ var SinkFile = Type("SinkFile", func() {
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Required("state", "openedAt", "statistics")
+	Required("state", "openedAt")
 	Attribute("statistics", SinkFileStatistics)
 })
 
 var SinkFileStatistics = Type("SinkFileStatistics", func() {
 	Attribute("total", Level)
-	Required("total")
 	Attribute("levels", Levels)
-	Required("levels")
+	Required("total", "levels")
 })
 
 var FileState = Type("FileState", String, func() {
@@ -1250,7 +1273,44 @@ var GetTaskRequest = Type("GetTaskRequest", func() {
 	Required("taskId")
 })
 
-// Errors ------------------------------------------------------------------------------------------------------------
+// Aggregation ---------------------------------------------------------------------------------------------------------
+
+var AggregatedSourcesRequest = Type("AggregatedSourcesRequest", func() {
+	BranchKeyRequest()
+	PaginatedRequest()
+})
+
+var AggregatedSourcesResult = Type("AggregatedSourcesResult", func() {
+	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", source.MaxSourcesPerBranch))
+	BranchKeyResponse()
+	Attribute("page", PaginatedResponse)
+	Attribute("sources", AggregatedSources)
+	Required("page", "sources")
+})
+
+var AggregatedSources = Type("AggregatedSources", ArrayOf(AggregatedSource))
+
+var AggregatedSource = Type("AggregatedSource", func() {
+	SourceResponse()
+	Attribute("sinks", AggregatedSinks)
+	Required("sinks")
+})
+
+var AggregatedSinks = Type("AggregatedSinks", ArrayOf(AggregatedSink))
+
+var AggregatedSink = Type("AggregatedSink", func() {
+	SinkResponse()
+	Attribute("statistics", AggregatedStatistics)
+})
+
+var AggregatedStatistics = Type("AggregatedStatistics", func() {
+	Attribute("total", Level)
+	Attribute("levels", Levels)
+	Attribute("files", SinkFiles)
+	Required("total", "levels", "files")
+})
+
+// Errors --------------------------------------------------------------------------------------------------------------
 
 var GenericErrorType = Type("GenericError", func() {
 	Description("Generic error.")
