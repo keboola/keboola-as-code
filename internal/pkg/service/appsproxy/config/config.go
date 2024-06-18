@@ -36,7 +36,7 @@ type SandboxesAPI struct {
 }
 
 type Timeouts struct {
-	HttpUpstreamTimeout      time.Duration `configKey:"httpUpstreamTimeout" configUsage:"Timeout for HTTP request on upstream"`
+	HTTPUpstreamTimeout      time.Duration `configKey:"httpUpstreamTimeout" configUsage:"Timeout for HTTP request on upstream"`
 	WebsocketUpstreamTimeout time.Duration `configKey:"wessocketUpstreamTimeout" configUsage:"Timeout for websocket request on upstream"`
 }
 
@@ -48,7 +48,7 @@ func New() Config {
 		Datadog:         datadog.NewConfig(),
 		Metrics:         prometheus.NewConfig(),
 		AppTimeouts: Timeouts{
-			HttpUpstreamTimeout:      30 * time.Second,
+			HTTPUpstreamTimeout:      30 * time.Second,
 			WebsocketUpstreamTimeout: 6 * time.Hour,
 		},
 		API: API{

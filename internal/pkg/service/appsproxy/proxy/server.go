@@ -21,7 +21,6 @@ import (
 )
 
 const (
-	requestTimeout          = 30 * time.Second
 	readHeaderTimeout       = 10 * time.Second
 	gracefulShutdownTimeout = 30 * time.Second
 )
@@ -131,7 +130,6 @@ func NewHandler(d dependencies.ServiceScope) http.Handler {
 	)
 	return middleware.Wrap(
 		mux,
-		middleware.ContextTimout(requestTimeout),
 		// Mandatory middleware when used in combination with newTracerProviderWrapper
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
