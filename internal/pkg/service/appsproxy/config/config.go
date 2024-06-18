@@ -21,7 +21,7 @@ type Config struct {
 	DNSServer        string            `configKey:"dnsServer" configUsage:"DNS server for proxy. If empty, the /etc/resolv.conf is used."`
 	API              API               `configKey:"api"`
 	CookieSecretSalt string            `configKey:"cookieSecretSalt" configUsage:"Cookie secret needed by OAuth 2 Proxy." validate:"required" sensitive:"true"`
-	AppTimeouts      Timeouts          `configKey:"appTimeouts" configUsage:"Timeouts set for application interactions"`
+	Upstream         Upstream          `configKey:"-" configUsage:"Configuration options for upstream"`
 	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 }
 
@@ -35,9 +35,9 @@ type SandboxesAPI struct {
 	Token string `configKey:"token" configUsage:"Sandboxes API token." validate:"required" sensitive:"true"`
 }
 
-type Timeouts struct {
-	HTTPUpstreamTimeout      time.Duration `configKey:"httpUpstreamTimeout" configUsage:"Timeout for HTTP request on upstream"`
-	WebsocketUpstreamTimeout time.Duration `configKey:"wessocketUpstreamTimeout" configUsage:"Timeout for websocket request on upstream"`
+type Upstream struct {
+	HTTPTimeout time.Duration `configKey:"httpTimeout" configUsage:"Timeout for HTTP request on upstream"`
+	WsTimeout   time.Duration `configKey:"wsTimeout" configUsage:"Timeout for websocket request on upstream"`
 }
 
 func New() Config {
@@ -47,9 +47,9 @@ func New() Config {
 		CPUProfFilePath: "",
 		Datadog:         datadog.NewConfig(),
 		Metrics:         prometheus.NewConfig(),
-		AppTimeouts: Timeouts{
-			HTTPUpstreamTimeout:      30 * time.Second,
-			WebsocketUpstreamTimeout: 6 * time.Hour,
+		Upstream: Upstream{
+			HTTPTimeout: 30 * time.Second,
+			WsTimeout:   6 * time.Hour,
 		},
 		API: API{
 			Listen: "0.0.0.0:8000",
