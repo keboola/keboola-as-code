@@ -23,9 +23,9 @@ func (m *Mapper) NewSinkFile(file model.File) *stream.SinkFile {
 	sinkFile := &stream.SinkFile{
 		State:       file.State,
 		OpenedAt:    file.OpenedAt().String(),
-		ClosingAt:   timeToString(file.ClosingAt),
-		ImportingAt: timeToString(file.ImportingAt),
-		ImportedAt:  timeToString(file.ImportedAt),
+		ClosingAt:   timeToStringPointer(file.ClosingAt),
+		ImportingAt: timeToStringPointer(file.ImportingAt),
+		ImportedAt:  timeToStringPointer(file.ImportedAt),
 	}
 
 	if file.RetryAttempt > 0 {
@@ -54,14 +54,14 @@ func mapValueToLevel(value statistics.Value) *stream.Level {
 	}
 
 	return &stream.Level{
-		FirstRecordAt:    timeToString(&value.FirstRecordAt),
-		LastRecordAt:     timeToString(&value.LastRecordAt),
+		FirstRecordAt:    timeToStringPointer(&value.FirstRecordAt),
+		LastRecordAt:     timeToStringPointer(&value.LastRecordAt),
 		RecordsCount:     value.RecordsCount,
 		UncompressedSize: uint64(value.UncompressedSize),
 	}
 }
 
-func timeToString(time *utctime.UTCTime) *string {
+func timeToStringPointer(time *utctime.UTCTime) *string {
 	if time == nil || time.IsZero() {
 		return nil
 	}

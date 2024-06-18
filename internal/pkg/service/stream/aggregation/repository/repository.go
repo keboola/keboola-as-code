@@ -68,31 +68,26 @@ func New(d dependencies) *Repository {
 	}
 }
 
-func (r *Repository) GetSourcesWithSinksAndStatistics(ctx context.Context, sourceKeys []key.SourceKey) ([]*SourceWithSinks, error) {
-	res, err := r.findSinksForSources(ctx, sourceKeys)
+func (r *Repository) SourcesWithSinksAndStatistics(ctx context.Context, sourceKeys []key.SourceKey) ([]*SourceWithSinks, error) {
+	sourcesWithSinks, err := r.sinksForSources(ctx, sourceKeys)
 	if err != nil {
 		return nil, err
 	}
 
-	err = r.addStatisticsToAggregationResponse(ctx, res)
+	err = r.addStatisticsToAggregationResponse(ctx, sourcesWithSinks)
 	if err != nil {
 		return nil, err
 	}
 
-	err = r.addFilesToAggregationResponse(ctx, res)
+	err = r.addFileStatisticsToAggregationResponse(ctx, sourcesWithSinks)
 	if err != nil {
 		return nil, err
 	}
 
-	err = r.addFileStatisticsToAggregationResponse(ctx, res)
-	if err != nil {
-		return nil, err
-	}
-
-	return maps.Values(res), nil
+	return maps.Values(sourcesWithSinks), nil
 }
 
-func (r *Repository) findSinksForSources(ctx context.Context, sourceKeys []key.SourceKey) (map[key.SourceKey]*SourceWithSinks, error) {
+func (r *Repository) sinksForSources(ctx context.Context, sourceKeys []key.SourceKey) (map[key.SourceKey]*SourceWithSinks, error) {
 	res := make(map[key.SourceKey]*SourceWithSinks)
 
 	txn := op.Txn(r.client)
@@ -131,20 +126,6 @@ func (r *Repository) addStatisticsToAggregationResponse(ctx context.Context, res
 					Total: ptr.Ptr(result.Result()),
 				}
 			}))
-		}
-	}
-
-	return txn.Do(ctx).Err()
-}
-
-func (r *Repository) addFilesToAggregationResponse(ctx context.Context, res map[key.SourceKey]*SourceWithSinks) error {
-	txn := op.Txn(r.client)
-	for sourceKey, source := range res {
-		for _, sink := range source.Sinks {
-			sinkKey := key.SinkKey{
-				SourceKey: sourceKey,
-				SinkID:    sink.SinkID,
-			}
 
 			txn.Merge(r.storage.File().ListRecentIn(sinkKey).ForEach(func(value model.File, header *iterator.Header) error {
 				sink.Statistics.Files = append(sink.Statistics.Files, &FileWithStatistics{

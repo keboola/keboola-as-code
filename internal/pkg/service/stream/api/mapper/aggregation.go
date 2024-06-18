@@ -79,6 +79,10 @@ func (m *Mapper) NewAggregationSinkResponse(entity repository.SinkWithStatistics
 		totals := m.NewSinkStatisticsTotalResponse(*entity.Statistics.Total)
 		files := api.SinkFiles{}
 		for _, file := range entity.Statistics.Files {
+			if file == nil {
+				continue
+			}
+
 			sinkFile := m.NewSinkFile(*file.File)
 			if file.Statistics != nil {
 				sinkFile.Statistics = m.NewSinkFileStatistics(file.Statistics)
@@ -92,7 +96,6 @@ func (m *Mapper) NewAggregationSinkResponse(entity repository.SinkWithStatistics
 		}
 	}
 
-	// Type
 	out.Type = entity.Type
 	switch out.Type {
 	case definition.SinkTypeTable:

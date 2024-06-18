@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
@@ -31,29 +29,40 @@ func (s *service) AggregateSources(ctx context.Context, d dependencies.BranchReq
 }
 
 func (s *service) addSinksToAggregationResponse(ctx context.Context, d dependencies.BranchRequestScope, response *stream.AggregatedSourcesResult) error {
-	sourceKeys := make(map[key.SourceKey]int)
+	// Collect source IDs
+	var sourceKeys []key.SourceKey
+	sourceKeyToIndex := make(map[key.SourceKey]int)
 	for i, source := range response.Sources {
 		sourceKey := key.SourceKey{
 			BranchKey: d.BranchKey(),
 			SourceID:  source.SourceID,
 		}
-		sourceKeys[sourceKey] = i
+		sourceKeys = append(sourceKeys, sourceKey)
+		sourceKeyToIndex[sourceKey] = i
 	}
 
-	sourcesWithSinks, err := d.AggregationRepository().GetSourcesWithSinksAndStatistics(ctx, maps.Keys(sourceKeys))
+	// Get sinks for all the sources
+	sourcesWithSinks, err := d.AggregationRepository().SourcesWithSinksAndStatistics(ctx, sourceKeys)
 	if err != nil {
 		return err
 	}
 
 	for _, sourceWithSinks := range sourcesWithSinks {
+		// Find index of the source in response
+		sourceIndex := sourceKeyToIndex[sourceWithSinks.SourceKey]
+
 		for _, sink := range sourceWithSinks.Sinks {
-			sink, err := s.mapper.NewAggregationSinkResponse(*sink)
+			if sink == nil {
+				continue
+			}
+
+			sinkResponse, err := s.mapper.NewAggregationSinkResponse(*sink)
 			if err != nil {
 				return err
 			}
 
-			source := response.Sources[sourceKeys[sourceWithSinks.SourceKey]]
-			source.Sinks = append(source.Sinks, sink)
+			source := response.Sources[sourceIndex]
+			source.Sinks = append(source.Sinks, sinkResponse)
 		}
 	}
 
