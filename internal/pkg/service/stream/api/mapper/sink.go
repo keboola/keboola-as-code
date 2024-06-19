@@ -9,7 +9,7 @@ import (
 )
 
 func (m *Mapper) NewSinkStatisticsTotalResponse(result statistics.Aggregated) *stream.SinkStatisticsTotalResult {
-	return &stream.SinkStatisticsTotalResult{
+	res := &stream.SinkStatisticsTotalResult{
 		Total: mapValueToLevel(result.Total),
 		Levels: &stream.Levels{
 			Local:   mapValueToLevel(result.Local),
@@ -17,6 +17,15 @@ func (m *Mapper) NewSinkStatisticsTotalResponse(result statistics.Aggregated) *s
 			Target:  mapValueToLevel(result.Target),
 		},
 	}
+
+	if res.Total == nil {
+		res.Total = &stream.Level{
+			RecordsCount:     0,
+			UncompressedSize: 0,
+		}
+	}
+
+	return res
 }
 
 func (m *Mapper) NewSinkFile(file model.File) *stream.SinkFile {
