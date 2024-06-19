@@ -1,0 +1,13 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: stream-http-source
+  namespace: $NAMESPACE
+  labels:
+    app: stream-http-source
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: stream-http-source

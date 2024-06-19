@@ -1,0 +1,22 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stream-http-source
+  namespace: $NAMESPACE
+  labels:
+    app: stream-http-source
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+    - host: "stream-in.${HOSTNAME_SUFFIX}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: stream-http-source
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
