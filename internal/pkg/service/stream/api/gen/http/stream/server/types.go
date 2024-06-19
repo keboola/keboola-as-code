@@ -164,8 +164,8 @@ type GetSourceResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
-	Created  *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Created  *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
@@ -395,9 +395,9 @@ type GetTaskResponseBody struct {
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
-// AggregateSourcesResponseBody is the type of the "stream" service
-// "AggregateSources" endpoint HTTP response body.
-type AggregateSourcesResponseBody struct {
+// AggregationSourcesResponseBody is the type of the "stream" service
+// "AggregationSources" endpoint HTTP response body.
+type AggregationSourcesResponseBody struct {
 	ProjectID int                             `form:"projectId" json:"projectId" xml:"projectId"`
 	BranchID  int                             `form:"branchId" json:"branchId" xml:"branchId"`
 	Page      *PaginatedResponseResponseBody  `form:"page" json:"page" xml:"page"`
@@ -827,8 +827,8 @@ type SourceResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
-	Created  *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Created  *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
@@ -839,11 +839,17 @@ type HTTPSourceResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 }
 
-// CreatedEntityResponseBody is used to define fields on response body types.
-type CreatedEntityResponseBody struct {
-	// Date and time of deletion.
+// VersionResponseBody is used to define fields on response body types.
+type VersionResponseBody struct {
+	// Version number counted from 1.
+	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
+	// Hash of the entity state.
+	Hash string `form:"hash" json:"hash" xml:"hash"`
+	// Description of the change.
+	Description string `form:"description" json:"description" xml:"description"`
+	// Date and time of the modification.
 	At string `form:"at" json:"at" xml:"at"`
-	// Who created the entity.
+	// Who modified the entity.
 	By *ByResponseBody `form:"by" json:"by" xml:"by"`
 }
 
@@ -861,17 +867,11 @@ type ByResponseBody struct {
 	UserName *string `form:"userName,omitempty" json:"userName,omitempty" xml:"userName,omitempty"`
 }
 
-// VersionResponseBody is used to define fields on response body types.
-type VersionResponseBody struct {
-	// Version number counted from 1.
-	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
-	// Hash of the entity state.
-	Hash string `form:"hash" json:"hash" xml:"hash"`
-	// Description of the change.
-	Description string `form:"description" json:"description" xml:"description"`
-	// Date and time of the modification.
+// CreatedEntityResponseBody is used to define fields on response body types.
+type CreatedEntityResponseBody struct {
+	// Date and time of deletion.
 	At string `form:"at" json:"at" xml:"at"`
-	// Who modified the entity.
+	// Who created the entity.
 	By *ByResponseBody `form:"by" json:"by" xml:"by"`
 }
 
@@ -1038,8 +1038,8 @@ type AggregatedSourceResponseBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSourceResponseBody       `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
-	Created  *CreatedEntityResponseBody    `form:"created" json:"created" xml:"created"`
 	Version  *VersionResponseBody          `form:"version" json:"version" xml:"version"`
+	Created  *CreatedEntityResponseBody    `form:"created" json:"created" xml:"created"`
 	Deleted  *DeletedEntityResponseBody    `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
 	Disabled *DisabledEntityResponseBody   `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 	Sinks    []*AggregatedSinkResponseBody `form:"sinks" json:"sinks" xml:"sinks"`
@@ -1206,11 +1206,11 @@ func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
 	if res.HTTP != nil {
 		body.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(res.HTTP)
 	}
-	if res.Created != nil {
-		body.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(res.Created)
-	}
 	if res.Version != nil {
 		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
+	}
+	if res.Created != nil {
+		body.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(res.Created)
 	}
 	if res.Deleted != nil {
 		body.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(res.Deleted)
@@ -1493,10 +1493,10 @@ func NewGetTaskResponseBody(res *stream.Task) *GetTaskResponseBody {
 	return body
 }
 
-// NewAggregateSourcesResponseBody builds the HTTP response body from the
-// result of the "AggregateSources" endpoint of the "stream" service.
-func NewAggregateSourcesResponseBody(res *stream.AggregatedSourcesResult) *AggregateSourcesResponseBody {
-	body := &AggregateSourcesResponseBody{
+// NewAggregationSourcesResponseBody builds the HTTP response body from the
+// result of the "AggregationSources" endpoint of the "stream" service.
+func NewAggregationSourcesResponseBody(res *stream.AggregatedSourcesResult) *AggregationSourcesResponseBody {
+	body := &AggregationSourcesResponseBody{
 		ProjectID: int(res.ProjectID),
 		BranchID:  int(res.BranchID),
 	}
@@ -2155,10 +2155,10 @@ func NewGetTaskPayload(taskID string, storageAPIToken string) *stream.GetTaskPay
 	return v
 }
 
-// NewAggregateSourcesPayload builds a stream service AggregateSources endpoint
-// payload.
-func NewAggregateSourcesPayload(branchID string, afterID string, limit int, storageAPIToken string) *stream.AggregateSourcesPayload {
-	v := &stream.AggregateSourcesPayload{}
+// NewAggregationSourcesPayload builds a stream service AggregationSources
+// endpoint payload.
+func NewAggregationSourcesPayload(branchID string, afterID string, limit int, storageAPIToken string) *stream.AggregationSourcesPayload {
+	v := &stream.AggregationSourcesPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.AfterID = afterID
 	v.Limit = limit

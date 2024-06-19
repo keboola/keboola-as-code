@@ -42,7 +42,7 @@ type Endpoints struct {
 	SinkStatisticsFiles   goa.Endpoint
 	SinkStatisticsClear   goa.Endpoint
 	GetTask               goa.Endpoint
-	AggregateSources      goa.Endpoint
+	AggregationSources    goa.Endpoint
 }
 
 // TestSourceRequestData holds both the payload and the HTTP request body
@@ -82,7 +82,7 @@ func NewEndpoints(s Service) *Endpoints {
 		SinkStatisticsFiles:   NewSinkStatisticsFilesEndpoint(s, a.APIKeyAuth),
 		SinkStatisticsClear:   NewSinkStatisticsClearEndpoint(s, a.APIKeyAuth),
 		GetTask:               NewGetTaskEndpoint(s, a.APIKeyAuth),
-		AggregateSources:      NewAggregateSourcesEndpoint(s, a.APIKeyAuth),
+		AggregationSources:    NewAggregationSourcesEndpoint(s, a.APIKeyAuth),
 	}
 }
 
@@ -111,7 +111,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.SinkStatisticsFiles = m(e.SinkStatisticsFiles)
 	e.SinkStatisticsClear = m(e.SinkStatisticsClear)
 	e.GetTask = m(e.GetTask)
-	e.AggregateSources = m(e.AggregateSources)
+	e.AggregationSources = m(e.AggregationSources)
 }
 
 // NewAPIRootIndexEndpoint returns an endpoint function that calls the method
@@ -541,11 +541,11 @@ func NewGetTaskEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.End
 	}
 }
 
-// NewAggregateSourcesEndpoint returns an endpoint function that calls the
-// method "AggregateSources" of service "stream".
-func NewAggregateSourcesEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+// NewAggregationSourcesEndpoint returns an endpoint function that calls the
+// method "AggregationSources" of service "stream".
+func NewAggregationSourcesEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*AggregateSourcesPayload)
+		p := req.(*AggregationSourcesPayload)
 		var err error
 		sc := security.APIKeyScheme{
 			Name:           "storage-api-token",
@@ -557,6 +557,6 @@ func NewAggregateSourcesEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
-		return s.AggregateSources(ctx, deps, p)
+		return s.AggregationSources(ctx, deps, p)
 	}
 }

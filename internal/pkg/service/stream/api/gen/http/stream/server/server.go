@@ -44,7 +44,7 @@ type Server struct {
 	SinkStatisticsFiles   http.Handler
 	SinkStatisticsClear   http.Handler
 	GetTask               http.Handler
-	AggregateSources      http.Handler
+	AggregationSources    http.Handler
 	CORS                  http.Handler
 	OpenapiJSON           http.Handler
 	OpenapiYaml           http.Handler
@@ -123,7 +123,7 @@ func New(
 			{"SinkStatisticsFiles", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files"},
 			{"SinkStatisticsClear", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
 			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
-			{"AggregateSources", "GET", "/v1/branches/{branchId}/aggregation/sources"},
+			{"AggregationSources", "GET", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/"},
 			{"CORS", "OPTIONS", "/v1"},
 			{"CORS", "OPTIONS", "/health-check"},
@@ -174,7 +174,7 @@ func New(
 		SinkStatisticsFiles:   NewSinkStatisticsFilesHandler(e.SinkStatisticsFiles, mux, decoder, encoder, errhandler, formatter),
 		SinkStatisticsClear:   NewSinkStatisticsClearHandler(e.SinkStatisticsClear, mux, decoder, encoder, errhandler, formatter),
 		GetTask:               NewGetTaskHandler(e.GetTask, mux, decoder, encoder, errhandler, formatter),
-		AggregateSources:      NewAggregateSourcesHandler(e.AggregateSources, mux, decoder, encoder, errhandler, formatter),
+		AggregationSources:    NewAggregationSourcesHandler(e.AggregationSources, mux, decoder, encoder, errhandler, formatter),
 		CORS:                  NewCORSHandler(),
 		OpenapiJSON:           http.FileServer(fileSystemOpenapiJSON),
 		OpenapiYaml:           http.FileServer(fileSystemOpenapiYaml),
@@ -212,7 +212,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.SinkStatisticsFiles = m(s.SinkStatisticsFiles)
 	s.SinkStatisticsClear = m(s.SinkStatisticsClear)
 	s.GetTask = m(s.GetTask)
-	s.AggregateSources = m(s.AggregateSources)
+	s.AggregationSources = m(s.AggregationSources)
 	s.CORS = m(s.CORS)
 }
 
@@ -244,7 +244,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountSinkStatisticsFilesHandler(mux, h.SinkStatisticsFiles)
 	MountSinkStatisticsClearHandler(mux, h.SinkStatisticsClear)
 	MountGetTaskHandler(mux, h.GetTask)
-	MountAggregateSourcesHandler(mux, h.AggregateSources)
+	MountAggregationSourcesHandler(mux, h.AggregationSources)
 	MountCORSHandler(mux, h.CORS)
 	MountOpenapiJSON(mux, goahttp.Replace("", "/openapi.json", h.OpenapiJSON))
 	MountOpenapiYaml(mux, goahttp.Replace("", "/openapi.yaml", h.OpenapiYaml))
@@ -1397,9 +1397,9 @@ func NewGetTaskHandler(
 	})
 }
 
-// MountAggregateSourcesHandler configures the mux to serve the "stream"
-// service "AggregateSources" endpoint.
-func MountAggregateSourcesHandler(mux goahttp.Muxer, h http.Handler) {
+// MountAggregationSourcesHandler configures the mux to serve the "stream"
+// service "AggregationSources" endpoint.
+func MountAggregationSourcesHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
@@ -1409,9 +1409,9 @@ func MountAggregateSourcesHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("GET", "/v1/branches/{branchId}/aggregation/sources", f)
 }
 
-// NewAggregateSourcesHandler creates a HTTP handler which loads the HTTP
-// request and calls the "stream" service "AggregateSources" endpoint.
-func NewAggregateSourcesHandler(
+// NewAggregationSourcesHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "AggregationSources" endpoint.
+func NewAggregationSourcesHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -1420,13 +1420,13 @@ func NewAggregateSourcesHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeAggregateSourcesRequest(mux, decoder)
-		encodeResponse = EncodeAggregateSourcesResponse(encoder)
+		decodeRequest  = DecodeAggregationSourcesRequest(mux, decoder)
+		encodeResponse = EncodeAggregationSourcesResponse(encoder)
 		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "AggregateSources")
+		ctx = context.WithValue(ctx, goa.MethodKey, "AggregationSources")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
 		payload, err := decodeRequest(r)
 		if err != nil {

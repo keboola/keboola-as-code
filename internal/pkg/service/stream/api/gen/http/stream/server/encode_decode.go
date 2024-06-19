@@ -1997,21 +1997,21 @@ func EncodeGetTaskError(encoder func(context.Context, http.ResponseWriter) goaht
 	}
 }
 
-// EncodeAggregateSourcesResponse returns an encoder for responses returned by
-// the stream AggregateSources endpoint.
-func EncodeAggregateSourcesResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeAggregationSourcesResponse returns an encoder for responses returned
+// by the stream AggregationSources endpoint.
+func EncodeAggregationSourcesResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*stream.AggregatedSourcesResult)
 		enc := encoder(ctx, w)
-		body := NewAggregateSourcesResponseBody(res)
+		body := NewAggregationSourcesResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeAggregateSourcesRequest returns a decoder for requests sent to the
-// stream AggregateSources endpoint.
-func DecodeAggregateSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeAggregationSourcesRequest returns a decoder for requests sent to the
+// stream AggregationSources endpoint.
+func DecodeAggregationSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
 			branchID        string
@@ -2053,7 +2053,7 @@ func DecodeAggregateSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request
 		if err != nil {
 			return nil, err
 		}
-		payload := NewAggregateSourcesPayload(branchID, afterID, limit, storageAPIToken)
+		payload := NewAggregationSourcesPayload(branchID, afterID, limit, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -2121,11 +2121,11 @@ func marshalStreamSourceToSourceResponseBody(v *stream.Source) *SourceResponseBo
 	if v.HTTP != nil {
 		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
 	}
-	if v.Created != nil {
-		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
-	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
+	}
+	if v.Created != nil {
+		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
 	}
 	if v.Deleted != nil {
 		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
@@ -2150,11 +2150,14 @@ func marshalStreamHTTPSourceToHTTPSourceResponseBody(v *stream.HTTPSource) *HTTP
 	return res
 }
 
-// marshalStreamCreatedEntityToCreatedEntityResponseBody builds a value of type
-// *CreatedEntityResponseBody from a value of type *stream.CreatedEntity.
-func marshalStreamCreatedEntityToCreatedEntityResponseBody(v *stream.CreatedEntity) *CreatedEntityResponseBody {
-	res := &CreatedEntityResponseBody{
-		At: v.At,
+// marshalStreamVersionToVersionResponseBody builds a value of type
+// *VersionResponseBody from a value of type *stream.Version.
+func marshalStreamVersionToVersionResponseBody(v *stream.Version) *VersionResponseBody {
+	res := &VersionResponseBody{
+		Number:      v.Number,
+		Hash:        v.Hash,
+		Description: v.Description,
+		At:          v.At,
 	}
 	if v.By != nil {
 		res.By = marshalStreamByToByResponseBody(v.By)
@@ -2177,14 +2180,11 @@ func marshalStreamByToByResponseBody(v *stream.By) *ByResponseBody {
 	return res
 }
 
-// marshalStreamVersionToVersionResponseBody builds a value of type
-// *VersionResponseBody from a value of type *stream.Version.
-func marshalStreamVersionToVersionResponseBody(v *stream.Version) *VersionResponseBody {
-	res := &VersionResponseBody{
-		Number:      v.Number,
-		Hash:        v.Hash,
-		Description: v.Description,
-		At:          v.At,
+// marshalStreamCreatedEntityToCreatedEntityResponseBody builds a value of type
+// *CreatedEntityResponseBody from a value of type *stream.CreatedEntity.
+func marshalStreamCreatedEntityToCreatedEntityResponseBody(v *stream.CreatedEntity) *CreatedEntityResponseBody {
+	res := &CreatedEntityResponseBody{
+		At: v.At,
 	}
 	if v.By != nil {
 		res.By = marshalStreamByToByResponseBody(v.By)
@@ -2577,11 +2577,11 @@ func marshalStreamAggregatedSourceToAggregatedSourceResponseBody(v *stream.Aggre
 	if v.HTTP != nil {
 		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
 	}
-	if v.Created != nil {
-		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
-	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
+	}
+	if v.Created != nil {
+		res.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(v.Created)
 	}
 	if v.Deleted != nil {
 		res.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(v.Deleted)
