@@ -2474,7 +2474,7 @@ func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies
 func createProxyHandler(d proxyDependencies.ServiceScope) http.Handler {
 	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
 	logger.SetOutput(loggerWriter)
-	// Cannot separate errors from info because oauthproxy will override its error writer with either
+	// Cannot separate errors from info because oidcproxy will override its error writer with either
 	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created.
 	logger.SetErrOutput(loggerWriter)
 	return proxy.NewHandler(d)
