@@ -17,11 +17,11 @@ import (
 func (m *Mapper) NewAggregationSourcesResponse(
 	ctx context.Context,
 	k key.BranchKey,
-	sinceId string,
+	afterId string,
 	limit int,
 	list func(...iterator.Option) iterator.DefinitionT[definition.Source],
 ) (*api.AggregatedSourcesResult, error) {
-	sources, page, err := loadPage(ctx, sinceId, limit, etcd.SortAscend, list, m.NewAggregationSource)
+	sources, page, err := loadPage(ctx, afterId, limit, etcd.SortAscend, list, m.NewAggregationSource)
 	if err != nil {
 		return nil, err
 	}
