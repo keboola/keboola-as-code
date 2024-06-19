@@ -182,13 +182,6 @@ storage:
                     blockSize: 256KB
                     # GZIP parallel concurrency, 0 = auto.
                     concurrency: 0
-                zstd:
-                    # ZSTD compression level: fastest, default, better, best. Validation rules: min=1,max=4
-                    level: 2
-                    # ZSTD window size. Validation rules: required,minBytes=1kB,maxBytes=512MB
-                    windowSize: 4MB
-                    # ZSTD concurrency, 0 = auto
-                    concurrency: 0
         staging:
             # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
             maxSlicesPerFile: 100
