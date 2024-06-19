@@ -170,7 +170,7 @@ runs:
         echo "Excluded: $excluded"
         
         echo "Dirs:"
-        for dir in "$(go env GOROOT)" "$(go env GOMODCACHE)" 
+        for dir in "$(go env GOROOT)" "$(go env GOMODCACHE)"
         do
           echo "$dir"
           # !!! -L = follow symlinks
