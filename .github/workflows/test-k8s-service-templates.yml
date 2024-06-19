@@ -31,7 +31,7 @@ defaults:
 
 jobs:
   test:
-    name: test
+    name: "K8S test: Templates Service"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

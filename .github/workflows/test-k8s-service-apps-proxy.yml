@@ -29,7 +29,7 @@ defaults:
 
 jobs:
   test:
-    name: test
+    name: "K8S test: Data Apps Proxy"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
