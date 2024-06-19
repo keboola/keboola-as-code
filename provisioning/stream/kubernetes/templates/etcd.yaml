@@ -1,6 +1,0 @@
-# Extends values from the common directory
-
-# Run defragmentation each 2 hours
-defragmentation:
-  cronjob:
-    schedule: "0 */2 * * *"
