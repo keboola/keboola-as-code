@@ -18,7 +18,10 @@
       "http": {
         "url": "https://stream-in.keboola.local/projects/%%TEST_KBC_PROJECT_ID%%/sources/my-source-1/%s"
       },
-      "created": {
+      "version": {
+        "number": 1,
+        "hash": "%s",
+        "description": "New source.",
         "at": "%s",
         "by": {
           "type": "user",
@@ -28,10 +31,7 @@
           "userName": "%s"
         }
       },
-      "version": {
-        "number": 1,
-        "hash": "%s",
-        "description": "New source.",
+      "created": {
         "at": "%s",
         "by": {
           "type": "user",
