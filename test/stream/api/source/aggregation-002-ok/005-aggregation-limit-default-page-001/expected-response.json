@@ -4,7 +4,7 @@
   "page": {
     "limit": 100,
     "totalCount": 5,
-    "sinceId": "",
+    "afterId": "",
     "lastId": "my-source-5"
   },
   "sources": [
@@ -68,7 +68,10 @@
               ]
             }
           },
-          "created": {
+          "version": {
+            "number": 1,
+            "hash": "%s",
+            "description": "New sink.",
             "at": "%s",
             "by": {
               "type": "user",
@@ -78,10 +81,7 @@
               "userName": "%s"
             }
           },
-          "version": {
-            "number": 1,
-            "hash": "%s",
-            "description": "New sink.",
+          "created": {
             "at": "%s",
             "by": {
               "type": "user",
@@ -163,7 +163,10 @@
               ]
             }
           },
-          "created": {
+          "version": {
+            "number": 1,
+            "hash": "%s",
+            "description": "New sink.",
             "at": "%s",
             "by": {
               "type": "user",
@@ -173,10 +176,7 @@
               "userName": "%s"
             }
           },
-          "version": {
-            "number": 1,
-            "hash": "%s",
-            "description": "New sink.",
+          "created": {
             "at": "%s",
             "by": {
               "type": "user",
