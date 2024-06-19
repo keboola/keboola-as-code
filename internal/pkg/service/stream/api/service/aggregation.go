@@ -15,7 +15,7 @@ func (s *service) AggregateSources(ctx context.Context, d dependencies.BranchReq
 		return s.definition.Source().List(d.BranchKey(), opts...)
 	}
 
-	response, err := s.mapper.NewAggregationSourcesResponse(ctx, d.BranchKey(), payload.SinceID, payload.Limit, list)
+	response, err := s.mapper.NewAggregationSourcesResponse(ctx, d.BranchKey(), payload.AfterID, payload.Limit, list)
 	if err != nil {
 		return nil, err
 	}
