@@ -463,7 +463,7 @@ var _ = Service("stream", func() {
 
 	// Aggregation endpoints -------------------------------------------------------------------------------------------
 
-	Method("AggregateSources", func() {
+	Method("AggregationSources", func() {
 		Meta("openapi:summary", "Aggregation endpoint for sources")
 		Description("Details about sources for the UI.")
 		Result(AggregatedSourcesResult)
