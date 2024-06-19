@@ -1,7 +1,5 @@
 package provider
 
-import "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-
 // Base is common implementation of the Provider interface.
 type Base struct {
 	Info
@@ -12,20 +10,6 @@ type Info struct {
 	ID   ID     `json:"id"`
 	Name string `json:"name"`
 	Type Type   `json:"type"`
-}
-
-// new creates a new empty provider of the type.
-func (t Type) new() (Provider, error) {
-	switch t {
-	case TypeOIDC:
-		return OIDC{}, nil
-	default:
-		return nil, errors.Errorf(`unexpected type of data app auth provider "%v"`, t)
-	}
-}
-
-func (v ID) String() string {
-	return string(v)
 }
 
 func (v Base) ID() ID {

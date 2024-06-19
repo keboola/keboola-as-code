@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/logging"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/oidcproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/approuter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"

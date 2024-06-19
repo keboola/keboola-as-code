@@ -8,7 +8,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/oidcproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
@@ -23,7 +24,7 @@ type Manager struct {
 	telemetry        telemetry.Telemetry
 	configLoader     *appconfig.Loader
 	upstreamManager  *upstream.Manager
-	authProxyManager *authproxy.Manager
+	oidcProxyManager *oidcproxy.Manager
 	pageWriter       *pagewriter.Writer
 	handlers         *syncmap.SyncMap[api.AppID, appHandlerWrapper]
 }
@@ -38,7 +39,7 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	PageWriter() *pagewriter.Writer
 	UpstreamManager() *upstream.Manager
-	AuthProxyManager() *authproxy.Manager
+	OidcProxyManager() *oidcproxy.Manager
 	AppConfigLoader() *appconfig.Loader
 }
 
@@ -48,7 +49,7 @@ func NewManager(d dependencies) *Manager {
 		telemetry:        d.Telemetry(),
 		configLoader:     d.AppConfigLoader(),
 		upstreamManager:  d.UpstreamManager(),
-		authProxyManager: d.AuthProxyManager(),
+		oidcProxyManager: d.OidcProxyManager(),
 		pageWriter:       d.PageWriter(),
 		handlers: syncmap.New[api.AppID, appHandlerWrapper](func(api.AppID) *appHandlerWrapper {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
@@ -86,9 +87,14 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) http.Handle
 	}
 
 	// Create authentication handlers
-	authHandlers, err := m.authProxyManager.NewHandlers(app, appUpstream)
-	if err != nil {
-		return m.newErrorHandler(ctx, app, err)
+	authHandlers := make(map[provider.ID]*oidcproxy.Handler, len(app.AuthProviders))
+	for _, auth := range app.AuthProviders {
+		switch p := auth.(type) {
+		case provider.OIDC:
+			authHandlers[auth.ID()] = m.oidcProxyManager.NewHandler(app, p, appUpstream)
+		default:
+			panic("unknown auth provider type")
+		}
 	}
 
 	// Create root handler for application

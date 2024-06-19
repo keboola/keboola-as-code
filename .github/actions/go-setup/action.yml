@@ -8,7 +8,7 @@ inputs:
   cache-version:
     description: Cache workflow version
     required: false
-    default: "003"
+    default: "004"
   cache-s3-bucket:
     description: S3 bucket for various caches.
     required: true

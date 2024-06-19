@@ -16,7 +16,7 @@ type OIDC struct {
 	AllowedRoles *[]string `json:"allowedRoles"`
 }
 
-func (v OIDC) ToProxyProvider() (proxyOptions.Provider, error) {
+func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	p := proxyOptions.Provider{
 		ID:                  v.ID().String(),
 		Type:                proxyOptions.OIDCProvider,
