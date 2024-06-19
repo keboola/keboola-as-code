@@ -17,6 +17,9 @@ fi
 : ${TEMPLATES_API_ETCD_REPLICAS?"Missing TEMPLATES_API_ETCD_REPLICAS"}
 : ${ETCD_STORAGE_CLASS_NAME?"Missing ETCD_STORAGE_CLASS_NAME"}
 
+# Default values
+export STREAM_ETCD_MEMORY="${STREAM_ETCD_MEMORY:="256Mi"}"
+
 # Constants
 export NAMESPACE="templates-api"
 ETCD_HELM_CHART_VERSION="8.5.8"
@@ -43,7 +46,11 @@ helm upgrade \
   --set "replicaCount=$TEMPLATES_API_ETCD_REPLICAS" \
   --set "pdb.create=$TEMPLATES_API_ETCD_PDB_CREATE" \
   --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD" \
-  --set "persistence.storageClass=$ETCD_STORAGE_CLASS_NAME"
+  --set "persistence.storageClass=$ETCD_STORAGE_CLASS_NAME" \
+  --set "resources.requests.memory=$STREAM_ETCD_MEMORY" \
+  --set "resources.limits.memory=$STREAM_ETCD_MEMORY" \
+  --set "extraEnvVars[3].name=GOMEMLIMIT" \
+  --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY}B"
 
 # API
 kubectl apply -f ./kubernetes/deploy/api/config-map.yaml
