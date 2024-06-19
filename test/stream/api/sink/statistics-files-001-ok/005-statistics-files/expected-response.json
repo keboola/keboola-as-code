@@ -25,14 +25,7 @@
     },
     {
       "state": "writing",
-      "openedAt": "%s",
-      "statistics": {
-        "total": {
-          "recordsCount": 0,
-          "uncompressedSize": 0
-        },
-        "levels": {}
-      }
+      "openedAt": "%s"
     }
   ]
 }
