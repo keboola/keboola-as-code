@@ -7,7 +7,7 @@ metadata:
   labels:
     app: stream-http-source
 spec:
-  type: LoadBalancer
+  type: NodePort # minikube has no load balancer/external IP by default
   selector:
     app: stream-http-source
   ports:
