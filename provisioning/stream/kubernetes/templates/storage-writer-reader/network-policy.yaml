@@ -1,0 +1,34 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: stream-storage-reader-writer
+  namespace: $NAMESPACE
+  labels:
+    app: stream-storage-reader-writer
+    releaseId: $RELEASE_ID
+spec:
+  podSelector:
+    matchLabels:
+      app: stream-storage-reader-writer
+  policyTypes:
+    - Ingress
+  ingress:
+    # Writer ingress
+    - ports:
+        - port: 6000 # writer ingress
+      from:
+       - podSelector:
+           matchLabels:
+             app: stream-http-source
+    # Metrics
+    - ports:
+        - port: 9001 # writer container
+        - port: 9002 # reader container
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: datadog
+          podSelector:
+            matchLabels:
+              app: datadog-agent
