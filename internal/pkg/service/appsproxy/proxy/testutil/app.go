@@ -39,6 +39,7 @@ func StartAppServer(t *testing.T) *AppServer {
 
 		assert.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
 	})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		lock.Lock()
 		defer lock.Unlock()

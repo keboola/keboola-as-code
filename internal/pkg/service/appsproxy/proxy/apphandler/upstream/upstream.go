@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
@@ -43,6 +44,7 @@ type Manager struct {
 	configLoader *appconfig.Loader
 	notify       *notify.Manager
 	wakeup       *wakeup.Manager
+	config       config.Config
 }
 
 type AppUpstream struct {
@@ -62,6 +64,7 @@ type dependencies interface {
 	AppConfigLoader() *appconfig.Loader
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
+	Config() config.Config
 }
 
 func NewManager(d dependencies) *Manager {
@@ -74,6 +77,7 @@ func NewManager(d dependencies) *Manager {
 		configLoader: d.AppConfigLoader(),
 		notify:       d.NotifyManager(),
 		wakeup:       d.WakeupManager(),
+		config:       d.Config(),
 	}
 
 	d.Process().OnShutdown(func(ctx context.Context) {
@@ -102,8 +106,8 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 
 	// Create reverse proxy
 	upstream = &AppUpstream{manager: m, app: app, target: target}
-	upstream.handler = upstream.newProxy()
-	upstream.wsHandler = upstream.newWebsocketProxy()
+	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
+	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
 	return upstream, nil
 }
 
@@ -115,7 +119,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 	return u.handler.ServeHTTPOrError(rw, req)
 }
 
-func (u *AppUpstream) newProxy() *chain.Chain {
+func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
 	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
@@ -123,6 +127,8 @@ func (u *AppUpstream) newProxy() *chain.Chain {
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, false))
+			ctx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
 			proxy.ServeHTTP(w, req.WithContext(ctx))
 			return nil
 		})).
@@ -132,7 +138,7 @@ func (u *AppUpstream) newProxy() *chain.Chain {
 		)
 }
 
-func (u *AppUpstream) newWebsocketProxy() *chain.Chain {
+func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
 	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
@@ -140,6 +146,8 @@ func (u *AppUpstream) newWebsocketProxy() *chain.Chain {
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, true))
+			ctx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
 			proxy.ServeHTTP(w, req.WithContext(ctx))
 			return nil
 		})).
