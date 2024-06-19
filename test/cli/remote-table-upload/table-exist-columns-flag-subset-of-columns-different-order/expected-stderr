@@ -1,0 +1,3 @@
+%A
+Error:
+- Job "%d" failed: Some columns are missing in the csv file. Missing columns: Name. Expected columns: Id,Name,Region,Status,First_Order. Please check if the expected delimiter "," is used in the csv file. (exception id:%s)

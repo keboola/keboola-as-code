@@ -2,6 +2,8 @@ package tableimport
 
 import (
 	"context"
+	"encoding/csv"
+	"os"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -28,12 +30,13 @@ type Options struct {
 	IncrementalLoad bool
 	WithoutHeaders  bool
 	PrimaryKey      []string
+	FileName        string
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.table.import")
 	defer span.End(&err)
-
+	var isCreated bool
 	if !checkTableExists(ctx, d, o.TableKey) {
 		d.Logger().Infof(ctx, `Table "%s" does not exist, creating it.`, o.TableKey.TableID)
 
@@ -43,36 +46,46 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 			return err
 		}
 
-		_, err = d.KeboolaProjectAPI().CreateTableFromFileRequest(o.TableKey, o.FileKey, getCreateOptions(&o)...).Send(ctx)
+		if o.WithoutHeaders && o.Columns == nil {
+			return errors.Errorf(`missing required column`)
+		}
+
+		col, err := getColumns(o)
+		if err != nil {
+			return err
+		}
+
+		_, err = d.KeboolaProjectAPI().CreateTableDefinitionRequest(o.TableKey, keboola.TableDefinition{
+			PrimaryKeyNames: o.PrimaryKey,
+			Columns:         col,
+		}).Send(ctx)
 		if err != nil {
 			rb.Invoke(ctx)
 			return err
 		}
 
+		isCreated = true
+	}
+	job, err := d.KeboolaProjectAPI().LoadDataFromFileRequest(o.TableKey, o.FileKey, getLoadOptions(&o)...).Send(ctx)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	err = d.KeboolaProjectAPI().WaitForStorageJob(ctx, job)
+	if err != nil {
+		return err
+	}
+
+	if isCreated {
 		d.Logger().Infof(ctx, `Created new table "%s" from file with id "%d".`, o.TableKey.TableID, o.FileKey.FileID)
 	} else {
-		job, err := d.KeboolaProjectAPI().LoadDataFromFileRequest(o.TableKey, o.FileKey, getLoadOptions(&o)...).Send(ctx)
-		if err != nil {
-			return err
-		}
-
-		ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-		defer cancel()
-
-		err = d.KeboolaProjectAPI().WaitForStorageJob(ctx, job)
-		if err != nil {
-			return err
-		}
 		d.Logger().Infof(ctx, `Loaded data from file "%d" into table "%s".`, o.FileKey.FileID, o.TableKey.TableID)
 	}
 
 	return nil
-}
-
-func getCreateOptions(o *Options) []keboola.CreateTableOption {
-	opts := make([]keboola.CreateTableOption, 0)
-	opts = append(opts, keboola.WithPrimaryKey(o.PrimaryKey))
-	return opts
 }
 
 func getLoadOptions(o *Options) []keboola.LoadDataOption {
@@ -114,4 +127,44 @@ func checkTableExists(ctx context.Context, d dependencies, tableKey keboola.Tabl
 		return false
 	}
 	return true
+}
+
+func getColumns(o Options) (keboola.Columns, error) {
+	if o.Columns != nil {
+		return convertHeadersToColumns(o.Columns), nil
+	}
+
+	return extractColumnsFromCsv(o.FileName)
+}
+
+// convertHeadersToColumns converts array string to keboola.Columns.
+func convertHeadersToColumns(headers []string) keboola.Columns {
+	var columns keboola.Columns
+	for _, header := range headers {
+		columns = append(columns, keboola.Column{Name: header})
+	}
+	return columns
+}
+
+// extractColumnsFromCsv returns a first row in the csv file (convertHeadersToColumns)
+// Used when flags --columns and --file-without-headers aren't used and table doesn't exist.
+func extractColumnsFromCsv(f string) (keboola.Columns, error) {
+	// nolint: forbidigo
+	file, err := os.Open(f)
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	// Create a new CSV reader
+	reader := csv.NewReader(file)
+
+	// Read the first line (headers)
+	headers, err := reader.Read()
+	if err != nil {
+		return nil, err
+	}
+
+	return convertHeadersToColumns(headers), nil
 }

@@ -2,6 +2,7 @@ package upload
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -105,13 +106,17 @@ func Command(p dependencies.Provider) *cobra.Command {
 			tableImportOpts := tableImport.Options{
 				FileKey:         file.FileKey,
 				TableKey:        tableKey,
-				Columns:         []string{f.Columns.Value},
 				Delimiter:       f.FileDelimiter.Value,
 				Enclosure:       f.FileEnclosure.Value,
 				EscapedBy:       f.FileEscapedBy.Value,
 				IncrementalLoad: f.IncrementalLoad.Value,
 				WithoutHeaders:  f.FileWithoutHeader.Value,
 				PrimaryKey:      primaryKey,
+				FileName:        fileUploadOpts.Input,
+			}
+
+			if f.Columns.Value != "" {
+				tableImportOpts.Columns = strings.Split(f.Columns.Value, ",")
 			}
 
 			// Send cmd successful/failed event
