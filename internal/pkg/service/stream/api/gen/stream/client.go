@@ -17,55 +17,59 @@ import (
 
 // Client is the "stream" service client.
 type Client struct {
-	APIRootIndexEndpoint         goa.Endpoint
-	APIVersionIndexEndpoint      goa.Endpoint
-	HealthCheckEndpoint          goa.Endpoint
-	CreateSourceEndpoint         goa.Endpoint
-	UpdateSourceEndpoint         goa.Endpoint
-	ListSourcesEndpoint          goa.Endpoint
-	GetSourceEndpoint            goa.Endpoint
-	DeleteSourceEndpoint         goa.Endpoint
-	GetSourceSettingsEndpoint    goa.Endpoint
-	UpdateSourceSettingsEndpoint goa.Endpoint
-	TestSourceEndpoint           goa.Endpoint
-	CreateSinkEndpoint           goa.Endpoint
-	GetSinkEndpoint              goa.Endpoint
-	GetSinkSettingsEndpoint      goa.Endpoint
-	UpdateSinkSettingsEndpoint   goa.Endpoint
-	ListSinksEndpoint            goa.Endpoint
-	UpdateSinkEndpoint           goa.Endpoint
-	DeleteSinkEndpoint           goa.Endpoint
-	SinkStatisticsTotalEndpoint  goa.Endpoint
-	SinkStatisticsFilesEndpoint  goa.Endpoint
-	GetTaskEndpoint              goa.Endpoint
-	AggregateSourcesEndpoint     goa.Endpoint
+	APIRootIndexEndpoint          goa.Endpoint
+	APIVersionIndexEndpoint       goa.Endpoint
+	HealthCheckEndpoint           goa.Endpoint
+	CreateSourceEndpoint          goa.Endpoint
+	UpdateSourceEndpoint          goa.Endpoint
+	ListSourcesEndpoint           goa.Endpoint
+	GetSourceEndpoint             goa.Endpoint
+	DeleteSourceEndpoint          goa.Endpoint
+	GetSourceSettingsEndpoint     goa.Endpoint
+	UpdateSourceSettingsEndpoint  goa.Endpoint
+	TestSourceEndpoint            goa.Endpoint
+	SourceStatisticsClearEndpoint goa.Endpoint
+	CreateSinkEndpoint            goa.Endpoint
+	GetSinkEndpoint               goa.Endpoint
+	GetSinkSettingsEndpoint       goa.Endpoint
+	UpdateSinkSettingsEndpoint    goa.Endpoint
+	ListSinksEndpoint             goa.Endpoint
+	UpdateSinkEndpoint            goa.Endpoint
+	DeleteSinkEndpoint            goa.Endpoint
+	SinkStatisticsTotalEndpoint   goa.Endpoint
+	SinkStatisticsFilesEndpoint   goa.Endpoint
+	SinkStatisticsClearEndpoint   goa.Endpoint
+	GetTaskEndpoint               goa.Endpoint
+	AggregateSourcesEndpoint      goa.Endpoint
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, getTask, aggregateSources goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, getTask, aggregateSources goa.Endpoint) *Client {
 	return &Client{
-		APIRootIndexEndpoint:         aPIRootIndex,
-		APIVersionIndexEndpoint:      aPIVersionIndex,
-		HealthCheckEndpoint:          healthCheck,
-		CreateSourceEndpoint:         createSource,
-		UpdateSourceEndpoint:         updateSource,
-		ListSourcesEndpoint:          listSources,
-		GetSourceEndpoint:            getSource,
-		DeleteSourceEndpoint:         deleteSource,
-		GetSourceSettingsEndpoint:    getSourceSettings,
-		UpdateSourceSettingsEndpoint: updateSourceSettings,
-		TestSourceEndpoint:           testSource,
-		CreateSinkEndpoint:           createSink,
-		GetSinkEndpoint:              getSink,
-		GetSinkSettingsEndpoint:      getSinkSettings,
-		UpdateSinkSettingsEndpoint:   updateSinkSettings,
-		ListSinksEndpoint:            listSinks,
-		UpdateSinkEndpoint:           updateSink,
-		DeleteSinkEndpoint:           deleteSink,
-		SinkStatisticsTotalEndpoint:  sinkStatisticsTotal,
-		SinkStatisticsFilesEndpoint:  sinkStatisticsFiles,
-		GetTaskEndpoint:              getTask,
-		AggregateSourcesEndpoint:     aggregateSources,
+		APIRootIndexEndpoint:          aPIRootIndex,
+		APIVersionIndexEndpoint:       aPIVersionIndex,
+		HealthCheckEndpoint:           healthCheck,
+		CreateSourceEndpoint:          createSource,
+		UpdateSourceEndpoint:          updateSource,
+		ListSourcesEndpoint:           listSources,
+		GetSourceEndpoint:             getSource,
+		DeleteSourceEndpoint:          deleteSource,
+		GetSourceSettingsEndpoint:     getSourceSettings,
+		UpdateSourceSettingsEndpoint:  updateSourceSettings,
+		TestSourceEndpoint:            testSource,
+		SourceStatisticsClearEndpoint: sourceStatisticsClear,
+		CreateSinkEndpoint:            createSink,
+		GetSinkEndpoint:               getSink,
+		GetSinkSettingsEndpoint:       getSinkSettings,
+		UpdateSinkSettingsEndpoint:    updateSinkSettings,
+		ListSinksEndpoint:             listSinks,
+		UpdateSinkEndpoint:            updateSink,
+		DeleteSinkEndpoint:            deleteSink,
+		SinkStatisticsTotalEndpoint:   sinkStatisticsTotal,
+		SinkStatisticsFilesEndpoint:   sinkStatisticsFiles,
+		SinkStatisticsClearEndpoint:   sinkStatisticsClear,
+		GetTaskEndpoint:               getTask,
+		AggregateSourcesEndpoint:      aggregateSources,
 	}
 }
 
@@ -200,6 +204,16 @@ func (c *Client) TestSource(ctx context.Context, p *TestSourcePayload, req io.Re
 	return ires.(*TestResult), nil
 }
 
+// SourceStatisticsClear calls the "SourceStatisticsClear" endpoint of the
+// "stream" service.
+// SourceStatisticsClear may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - error: internal error
+func (c *Client) SourceStatisticsClear(ctx context.Context, p *SourceStatisticsClearPayload) (err error) {
+	_, err = c.SourceStatisticsClearEndpoint(ctx, p)
+	return
+}
+
 // CreateSink calls the "CreateSink" endpoint of the "stream" service.
 // CreateSink may return the following errors:
 //   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
@@ -328,6 +342,17 @@ func (c *Client) SinkStatisticsFiles(ctx context.Context, p *SinkStatisticsFiles
 		return
 	}
 	return ires.(*SinkStatisticsFilesResult), nil
+}
+
+// SinkStatisticsClear calls the "SinkStatisticsClear" endpoint of the "stream"
+// service.
+// SinkStatisticsClear may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
+//   - error: internal error
+func (c *Client) SinkStatisticsClear(ctx context.Context, p *SinkStatisticsClearPayload) (err error) {
+	_, err = c.SinkStatisticsClearEndpoint(ctx, p)
+	return
 }
 
 // GetTask calls the "GetTask" endpoint of the "stream" service.

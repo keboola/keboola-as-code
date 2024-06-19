@@ -19,28 +19,30 @@ import (
 
 // Endpoints wraps the "stream" service endpoints.
 type Endpoints struct {
-	APIRootIndex         goa.Endpoint
-	APIVersionIndex      goa.Endpoint
-	HealthCheck          goa.Endpoint
-	CreateSource         goa.Endpoint
-	UpdateSource         goa.Endpoint
-	ListSources          goa.Endpoint
-	GetSource            goa.Endpoint
-	DeleteSource         goa.Endpoint
-	GetSourceSettings    goa.Endpoint
-	UpdateSourceSettings goa.Endpoint
-	TestSource           goa.Endpoint
-	CreateSink           goa.Endpoint
-	GetSink              goa.Endpoint
-	GetSinkSettings      goa.Endpoint
-	UpdateSinkSettings   goa.Endpoint
-	ListSinks            goa.Endpoint
-	UpdateSink           goa.Endpoint
-	DeleteSink           goa.Endpoint
-	SinkStatisticsTotal  goa.Endpoint
-	SinkStatisticsFiles  goa.Endpoint
-	GetTask              goa.Endpoint
-	AggregateSources     goa.Endpoint
+	APIRootIndex          goa.Endpoint
+	APIVersionIndex       goa.Endpoint
+	HealthCheck           goa.Endpoint
+	CreateSource          goa.Endpoint
+	UpdateSource          goa.Endpoint
+	ListSources           goa.Endpoint
+	GetSource             goa.Endpoint
+	DeleteSource          goa.Endpoint
+	GetSourceSettings     goa.Endpoint
+	UpdateSourceSettings  goa.Endpoint
+	TestSource            goa.Endpoint
+	SourceStatisticsClear goa.Endpoint
+	CreateSink            goa.Endpoint
+	GetSink               goa.Endpoint
+	GetSinkSettings       goa.Endpoint
+	UpdateSinkSettings    goa.Endpoint
+	ListSinks             goa.Endpoint
+	UpdateSink            goa.Endpoint
+	DeleteSink            goa.Endpoint
+	SinkStatisticsTotal   goa.Endpoint
+	SinkStatisticsFiles   goa.Endpoint
+	SinkStatisticsClear   goa.Endpoint
+	GetTask               goa.Endpoint
+	AggregateSources      goa.Endpoint
 }
 
 // TestSourceRequestData holds both the payload and the HTTP request body
@@ -57,28 +59,30 @@ func NewEndpoints(s Service) *Endpoints {
 	// Casting service to Auther interface
 	a := s.(Auther)
 	return &Endpoints{
-		APIRootIndex:         NewAPIRootIndexEndpoint(s),
-		APIVersionIndex:      NewAPIVersionIndexEndpoint(s),
-		HealthCheck:          NewHealthCheckEndpoint(s),
-		CreateSource:         NewCreateSourceEndpoint(s, a.APIKeyAuth),
-		UpdateSource:         NewUpdateSourceEndpoint(s, a.APIKeyAuth),
-		ListSources:          NewListSourcesEndpoint(s, a.APIKeyAuth),
-		GetSource:            NewGetSourceEndpoint(s, a.APIKeyAuth),
-		DeleteSource:         NewDeleteSourceEndpoint(s, a.APIKeyAuth),
-		GetSourceSettings:    NewGetSourceSettingsEndpoint(s, a.APIKeyAuth),
-		UpdateSourceSettings: NewUpdateSourceSettingsEndpoint(s, a.APIKeyAuth),
-		TestSource:           NewTestSourceEndpoint(s, a.APIKeyAuth),
-		CreateSink:           NewCreateSinkEndpoint(s, a.APIKeyAuth),
-		GetSink:              NewGetSinkEndpoint(s, a.APIKeyAuth),
-		GetSinkSettings:      NewGetSinkSettingsEndpoint(s, a.APIKeyAuth),
-		UpdateSinkSettings:   NewUpdateSinkSettingsEndpoint(s, a.APIKeyAuth),
-		ListSinks:            NewListSinksEndpoint(s, a.APIKeyAuth),
-		UpdateSink:           NewUpdateSinkEndpoint(s, a.APIKeyAuth),
-		DeleteSink:           NewDeleteSinkEndpoint(s, a.APIKeyAuth),
-		SinkStatisticsTotal:  NewSinkStatisticsTotalEndpoint(s, a.APIKeyAuth),
-		SinkStatisticsFiles:  NewSinkStatisticsFilesEndpoint(s, a.APIKeyAuth),
-		GetTask:              NewGetTaskEndpoint(s, a.APIKeyAuth),
-		AggregateSources:     NewAggregateSourcesEndpoint(s, a.APIKeyAuth),
+		APIRootIndex:          NewAPIRootIndexEndpoint(s),
+		APIVersionIndex:       NewAPIVersionIndexEndpoint(s),
+		HealthCheck:           NewHealthCheckEndpoint(s),
+		CreateSource:          NewCreateSourceEndpoint(s, a.APIKeyAuth),
+		UpdateSource:          NewUpdateSourceEndpoint(s, a.APIKeyAuth),
+		ListSources:           NewListSourcesEndpoint(s, a.APIKeyAuth),
+		GetSource:             NewGetSourceEndpoint(s, a.APIKeyAuth),
+		DeleteSource:          NewDeleteSourceEndpoint(s, a.APIKeyAuth),
+		GetSourceSettings:     NewGetSourceSettingsEndpoint(s, a.APIKeyAuth),
+		UpdateSourceSettings:  NewUpdateSourceSettingsEndpoint(s, a.APIKeyAuth),
+		TestSource:            NewTestSourceEndpoint(s, a.APIKeyAuth),
+		SourceStatisticsClear: NewSourceStatisticsClearEndpoint(s, a.APIKeyAuth),
+		CreateSink:            NewCreateSinkEndpoint(s, a.APIKeyAuth),
+		GetSink:               NewGetSinkEndpoint(s, a.APIKeyAuth),
+		GetSinkSettings:       NewGetSinkSettingsEndpoint(s, a.APIKeyAuth),
+		UpdateSinkSettings:    NewUpdateSinkSettingsEndpoint(s, a.APIKeyAuth),
+		ListSinks:             NewListSinksEndpoint(s, a.APIKeyAuth),
+		UpdateSink:            NewUpdateSinkEndpoint(s, a.APIKeyAuth),
+		DeleteSink:            NewDeleteSinkEndpoint(s, a.APIKeyAuth),
+		SinkStatisticsTotal:   NewSinkStatisticsTotalEndpoint(s, a.APIKeyAuth),
+		SinkStatisticsFiles:   NewSinkStatisticsFilesEndpoint(s, a.APIKeyAuth),
+		SinkStatisticsClear:   NewSinkStatisticsClearEndpoint(s, a.APIKeyAuth),
+		GetTask:               NewGetTaskEndpoint(s, a.APIKeyAuth),
+		AggregateSources:      NewAggregateSourcesEndpoint(s, a.APIKeyAuth),
 	}
 }
 
@@ -95,6 +99,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetSourceSettings = m(e.GetSourceSettings)
 	e.UpdateSourceSettings = m(e.UpdateSourceSettings)
 	e.TestSource = m(e.TestSource)
+	e.SourceStatisticsClear = m(e.SourceStatisticsClear)
 	e.CreateSink = m(e.CreateSink)
 	e.GetSink = m(e.GetSink)
 	e.GetSinkSettings = m(e.GetSinkSettings)
@@ -104,6 +109,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.DeleteSink = m(e.DeleteSink)
 	e.SinkStatisticsTotal = m(e.SinkStatisticsTotal)
 	e.SinkStatisticsFiles = m(e.SinkStatisticsFiles)
+	e.SinkStatisticsClear = m(e.SinkStatisticsClear)
 	e.GetTask = m(e.GetTask)
 	e.AggregateSources = m(e.AggregateSources)
 }
@@ -295,6 +301,26 @@ func NewTestSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.
 	}
 }
 
+// NewSourceStatisticsClearEndpoint returns an endpoint function that calls the
+// method "SourceStatisticsClear" of service "stream".
+func NewSourceStatisticsClearEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*SourceStatisticsClearPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
+		return nil, s.SourceStatisticsClear(ctx, deps, p)
+	}
+}
+
 // NewCreateSinkEndpoint returns an endpoint function that calls the method
 // "CreateSink" of service "stream".
 func NewCreateSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
@@ -472,6 +498,26 @@ func NewSinkStatisticsFilesEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyF
 		}
 		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return s.SinkStatisticsFiles(ctx, deps, p)
+	}
+}
+
+// NewSinkStatisticsClearEndpoint returns an endpoint function that calls the
+// method "SinkStatisticsClear" of service "stream".
+func NewSinkStatisticsClearEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*SinkStatisticsClearPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
+		return nil, s.SinkStatisticsClear(ctx, deps, p)
 	}
 }
 

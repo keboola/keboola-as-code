@@ -290,6 +290,18 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("SourceStatisticsClear", func() {
+		Meta("openapi:summary", "Clear source statistics")
+		Description("Clears all statistics of the source.")
+		Payload(GetSourceRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/statistics/clear")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+		})
+	})
+
 	// Sink endpoints --------------------------------------------------------------------------------------------------
 
 	Method("CreateSink", func() {
@@ -397,7 +409,7 @@ var _ = Service("stream", func() {
 		Meta("openapi:summary", "Sink statistics total")
 		Description("Get total statistics of the sink.")
 		Result(SinkStatisticsTotalResult)
-		Payload(GetSinkStatisticsTotalRequest)
+		Payload(GetSinkRequest)
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total")
 			Meta("openapi:tag:configuration")
@@ -411,9 +423,22 @@ var _ = Service("stream", func() {
 		Meta("openapi:summary", "Sink files statistics")
 		Description("Get files statistics of the sink.")
 		Result(SinkStatisticsFilesResult)
-		Payload(GetSinkStatisticsFilesRequest)
+		Payload(GetSinkRequest)
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
+	Method("SinkStatisticsClear", func() {
+		Meta("openapi:summary", "Clear sink statistics")
+		Description("Clears all statistics of the sink.")
+		Payload(GetSinkRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -918,10 +943,6 @@ var SinkSettingsPatch = Type("SinkSettingsPatch", func() {
 	Attribute("settings", SettingsPatch)
 })
 
-var GetSinkStatisticsTotalRequest = Type("GetSinkStatisticsTotalRequest", func() {
-	SinkKeyRequest()
-})
-
 var SinkStatisticsTotalResult = Type("SinkStatisticsTotalResult", func() {
 	Attribute("total", Level)
 	Required("total")
@@ -952,10 +973,6 @@ var Level = Type("Level", func() {
 		Description("Uncompressed size of data in bytes.")
 	})
 	Required("uncompressedSize")
-})
-
-var GetSinkStatisticsFilesRequest = Type("GetSinkStatisticsFilesRequest", func() {
-	SinkKeyRequest()
 })
 
 var SinkStatisticsFilesResult = Type("SinkStatisticsFilesResult", func() {
