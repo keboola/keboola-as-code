@@ -44,7 +44,7 @@ paths:
                 - internal
             summary: Aggregation endpoint for sources
             description: Details about sources for the UI.
-            operationId: AggregateSources
+            operationId: AggregationSources
             parameters:
                 - name: afterId
                   in: query
@@ -69,7 +69,7 @@ paths:
                 "200":
                     description: OK response.
                     schema:
-                        $ref: '#/definitions/StreamAggregateSourcesResponseBody'
+                        $ref: '#/definitions/StreamAggregationSourcesResponseBody'
                         required:
                             - projectId
                             - branchId
@@ -202,8 +202,8 @@ paths:
                             - type
                             - name
                             - description
-                            - created
                             - version
+                            - created
                 "404":
                     description: Not Found response.
                     schema:
@@ -851,8 +851,8 @@ paths:
                     schema:
                         $ref: '#/definitions/StreamSinkStatisticsTotalResponseBody'
                         required:
-                            - total
                             - levels
+                            - total
                 "404":
                     description: Not Found response.
                     schema:
@@ -1386,7 +1386,10 @@ definitions:
             description: The source receives events from Github.
             http:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-            created:
+            version:
+                number: 3
+                hash: f43e93acd97eceb3
+                description: The reason for the last change was...
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
@@ -1394,10 +1397,7 @@ definitions:
                     tokenDesc: john.green@company.com
                     userId: "578621"
                     userName: John Green
-            version:
-                number: 3
-                hash: f43e93acd97eceb3
-                description: The reason for the last change was...
+            created:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
@@ -1547,8 +1547,8 @@ definitions:
             - type
             - name
             - description
-            - created
             - version
+            - created
             - sinks
     AggregatedStatisticsResponseBody:
         title: AggregatedStatisticsResponseBody
@@ -2229,7 +2229,10 @@ definitions:
             description: The source receives events from Github.
             http:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-            created:
+            version:
+                number: 3
+                hash: f43e93acd97eceb3
+                description: The reason for the last change was...
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
@@ -2237,10 +2240,7 @@ definitions:
                     tokenDesc: john.green@company.com
                     userId: "578621"
                     userName: John Green
-            version:
-                number: 3
-                hash: f43e93acd97eceb3
-                description: The reason for the last change was...
+            created:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
@@ -2272,8 +2272,8 @@ definitions:
             - type
             - name
             - description
-            - created
             - version
+            - created
     StreamAPIVersionIndexResponseBody:
         title: StreamAPIVersionIndexResponseBody
         type: object
@@ -2292,8 +2292,8 @@ definitions:
         required:
             - api
             - documentation
-    StreamAggregateSourcesResponseBody:
-        title: StreamAggregateSourcesResponseBody
+    StreamAggregationSourcesResponseBody:
+        title: StreamAggregationSourcesResponseBody
         type: object
         properties:
             branchId:
@@ -2319,7 +2319,10 @@ definitions:
                       description: The source receives events from Github.
                       http:
                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                      created:
+                      version:
+                        number: 3
+                        hash: f43e93acd97eceb3
+                        description: The reason for the last change was...
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
@@ -2327,10 +2330,7 @@ definitions:
                             tokenDesc: john.green@company.com
                             userId: "578621"
                             userName: John Green
-                      version:
-                        number: 3
-                        hash: f43e93acd97eceb3
-                        description: The reason for the last change was...
+                      created:
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
@@ -2490,7 +2490,10 @@ definitions:
                   description: The source receives events from Github.
                   http:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                  created:
+                  version:
+                    number: 3
+                    hash: f43e93acd97eceb3
+                    description: The reason for the last change was...
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
@@ -2498,10 +2501,7 @@ definitions:
                         tokenDesc: john.green@company.com
                         userId: "578621"
                         userName: John Green
-                  version:
-                    number: 3
-                    hash: f43e93acd97eceb3
-                    description: The reason for the last change was...
+                  created:
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
@@ -3550,7 +3550,10 @@ definitions:
             description: The source receives events from Github.
             http:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-            created:
+            version:
+                number: 3
+                hash: f43e93acd97eceb3
+                description: The reason for the last change was...
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
@@ -3558,10 +3561,7 @@ definitions:
                     tokenDesc: john.green@company.com
                     userId: "578621"
                     userName: John Green
-            version:
-                number: 3
-                hash: f43e93acd97eceb3
-                description: The reason for the last change was...
+            created:
                 at: "2022-04-28T14:20:04.000Z"
                 by:
                     type: user
@@ -3593,8 +3593,8 @@ definitions:
             - type
             - name
             - description
-            - created
             - version
+            - created
     StreamGetSourceSettingsResponseBody:
         title: StreamGetSourceSettingsResponseBody
         type: object
@@ -3995,7 +3995,10 @@ definitions:
                       description: The source receives events from Github.
                       http:
                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                      created:
+                      version:
+                        number: 3
+                        hash: f43e93acd97eceb3
+                        description: The reason for the last change was...
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
@@ -4003,10 +4006,7 @@ definitions:
                             tokenDesc: john.green@company.com
                             userId: "578621"
                             userName: John Green
-                      version:
-                        number: 3
-                        hash: f43e93acd97eceb3
-                        description: The reason for the last change was...
+                      created:
                         at: "2022-04-28T14:20:04.000Z"
                         by:
                             type: user
@@ -4048,7 +4048,10 @@ definitions:
                   description: The source receives events from Github.
                   http:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                  created:
+                  version:
+                    number: 3
+                    hash: f43e93acd97eceb3
+                    description: The reason for the last change was...
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
@@ -4056,10 +4059,7 @@ definitions:
                         tokenDesc: john.green@company.com
                         userId: "578621"
                         userName: John Green
-                  version:
-                    number: 3
-                    hash: f43e93acd97eceb3
-                    description: The reason for the last change was...
+                  created:
                     at: "2022-04-28T14:20:04.000Z"
                     by:
                         type: user
@@ -4297,8 +4297,8 @@ definitions:
                     recordsCount: 1
                     uncompressedSize: 1
         required:
-            - total
             - levels
+            - total
     StreamSinkStatisticsTotalStreamAPISinkNotFoundResponseBody:
         title: StreamSinkStatisticsTotalStreamAPISinkNotFoundResponseBody
         type: object

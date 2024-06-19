@@ -40,11 +40,11 @@ type Client struct {
 	SinkStatisticsFilesEndpoint   goa.Endpoint
 	SinkStatisticsClearEndpoint   goa.Endpoint
 	GetTaskEndpoint               goa.Endpoint
-	AggregateSourcesEndpoint      goa.Endpoint
+	AggregationSourcesEndpoint    goa.Endpoint
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, getTask, aggregateSources goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, getTask, aggregationSources goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:          aPIRootIndex,
 		APIVersionIndexEndpoint:       aPIVersionIndex,
@@ -69,7 +69,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		SinkStatisticsFilesEndpoint:   sinkStatisticsFiles,
 		SinkStatisticsClearEndpoint:   sinkStatisticsClear,
 		GetTaskEndpoint:               getTask,
-		AggregateSourcesEndpoint:      aggregateSources,
+		AggregationSourcesEndpoint:    aggregationSources,
 	}
 }
 
@@ -368,11 +368,11 @@ func (c *Client) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err
 	return ires.(*Task), nil
 }
 
-// AggregateSources calls the "AggregateSources" endpoint of the "stream"
+// AggregationSources calls the "AggregationSources" endpoint of the "stream"
 // service.
-func (c *Client) AggregateSources(ctx context.Context, p *AggregateSourcesPayload) (res *AggregatedSourcesResult, err error) {
+func (c *Client) AggregationSources(ctx context.Context, p *AggregationSourcesPayload) (res *AggregatedSourcesResult, err error) {
 	var ires any
-	ires, err = c.AggregateSourcesEndpoint(ctx, p)
+	ires, err = c.AggregationSourcesEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

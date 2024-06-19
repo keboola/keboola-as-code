@@ -463,7 +463,7 @@ var _ = Service("stream", func() {
 
 	// Aggregation endpoints -------------------------------------------------------------------------------------------
 
-	Method("AggregateSources", func() {
+	Method("AggregationSources", func() {
 		Meta("openapi:summary", "Aggregation endpoint for sources")
 		Description("Details about sources for the UI.")
 		Result(AggregatedSourcesResult)
@@ -723,11 +723,11 @@ var SourceResponse = func() {
 	Description(fmt.Sprintf("Source of data for further processing, start of the stream, max %d sources per a branch.", source.MaxSourcesPerBranch))
 	SourceKeyResponse()
 	SourceFields(OpRead)
-	Attribute("created", CreatedEntity)
 	Attribute("version", EntityVersion)
+	Attribute("created", CreatedEntity)
 	Attribute("deleted", DeletedEntity)
 	Attribute("disabled", DisabledEntity)
-	Required("created", "version")
+	Required("version", "created")
 }
 
 var Source = Type("Source", func() {

@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 )
 
-func (s *service) AggregateSources(ctx context.Context, d dependencies.BranchRequestScope, payload *stream.AggregateSourcesPayload) (res *stream.AggregatedSourcesResult, err error) {
+func (s *service) AggregationSources(ctx context.Context, d dependencies.BranchRequestScope, payload *stream.AggregationSourcesPayload) (res *stream.AggregatedSourcesResult, err error) {
 	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
 		return s.definition.Source().List(d.BranchKey(), opts...)
 	}

@@ -71,7 +71,7 @@ type Service interface {
 	// Get details of a task.
 	GetTask(context.Context, dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
 	// Details about sources for the UI.
-	AggregateSources(context.Context, dependencies.BranchRequestScope, *AggregateSourcesPayload) (res *AggregatedSourcesResult, err error)
+	AggregationSources(context.Context, dependencies.BranchRequestScope, *AggregationSourcesPayload) (res *AggregatedSourcesResult, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -94,18 +94,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [24]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "GetTask", "AggregateSources"}
-
-// AggregateSourcesPayload is the payload type of the stream service
-// AggregateSources method.
-type AggregateSourcesPayload struct {
-	StorageAPIToken string
-	BranchID        BranchIDOrDefault
-	// Request records after the ID.
-	AfterID string
-	// Maximum number of returned records.
-	Limit int
-}
+var MethodNames = [24]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "GetTask", "AggregationSources"}
 
 // A mapping from imported data to a destination table.
 type AggregatedSink struct {
@@ -141,8 +130,8 @@ type AggregatedSource struct {
 	Description string
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSource
-	Created  *CreatedEntity
 	Version  *Version
+	Created  *CreatedEntity
 	Deleted  *DeletedEntity
 	Disabled *DisabledEntity
 	Sinks    AggregatedSinks
@@ -151,7 +140,7 @@ type AggregatedSource struct {
 type AggregatedSources []*AggregatedSource
 
 // AggregatedSourcesResult is the result type of the stream service
-// AggregateSources method.
+// AggregationSources method.
 type AggregatedSourcesResult struct {
 	ProjectID ProjectID
 	BranchID  BranchID
@@ -163,6 +152,17 @@ type AggregatedStatistics struct {
 	Total  *Level
 	Levels *Levels
 	Files  SinkFiles
+}
+
+// AggregationSourcesPayload is the payload type of the stream service
+// AggregationSources method.
+type AggregationSourcesPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	// Request records after the ID.
+	AfterID string
+	// Maximum number of returned records.
+	Limit int
 }
 
 // ID of the branch.
@@ -523,8 +523,8 @@ type Source struct {
 	Description string
 	// HTTP source details for "type" = "http".
 	HTTP     *HTTPSource
-	Created  *CreatedEntity
 	Version  *Version
+	Created  *CreatedEntity
 	Deleted  *DeletedEntity
 	Disabled *DisabledEntity
 }
