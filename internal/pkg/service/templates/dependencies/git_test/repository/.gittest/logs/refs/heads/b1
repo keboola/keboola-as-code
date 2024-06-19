@@ -8,3 +8,5 @@ f4bf236227116803d28fa2f931f28059a5ab588f 6a406dfaaa48848fcd0c8962914b1c465e49e5b
 db2c26cc2f75b730f034378031d43df445dd6bec 3e941e92d63b681359d5cecbd59aaab7ad7963ba Michal Jurečko <michal.jurecko@gmail.com> 1662989995 +0200	commit: Update description
 3e941e92d63b681359d5cecbd59aaab7ad7963ba ec20422509a655db82766e675e4fa6601a184fd0 Michal Jurečko <michal.jurecko@gmail.com> 1662989999 +0200	commit: Update description
 ec20422509a655db82766e675e4fa6601a184fd0 7b15d8ec908d5438de7ba8dce764eed10b357561 Michal Jurečko <michal.jurecko@gmail.com> 1663069495 +0200	commit: Fix both templates
+7b15d8ec908d5438de7ba8dce764eed10b357561 a2e9e9a7331ea1df6ec57bb90ccac0d8fc99cc28 Michal Jurečko <michal.jurecko@gmail.com> 1718710130 +0200	commit: Fix b1 branch
+a2e9e9a7331ea1df6ec57bb90ccac0d8fc99cc28 15bf5cf367e2d7a6e3f5032a909a2ed720da4772 Michal Jurečko <michal.jurecko@gmail.com> 1718710201 +0200	commit: Modifi author field

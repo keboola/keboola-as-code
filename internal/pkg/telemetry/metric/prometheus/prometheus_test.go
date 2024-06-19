@@ -27,10 +27,8 @@ func TestServeMetrics(t *testing.T) {
 
 	d := dependencies.NewMocked(t)
 
-	port, err := netutils.FreePort()
-	assert.NoError(t, err)
-
 	// Serve metrics
+	port := netutils.FreePortForTest(t)
 	listenAddr := fmt.Sprintf("localhost:%d", port)
 	endpointURL := fmt.Sprintf(`http://%s/%s`, listenAddr, prometheus.Endpoint)
 	provider, err := prometheus.ServeMetrics(ctx, prometheus.Config{Listen: listenAddr}, d.Logger(), d.Process(), "my-service")

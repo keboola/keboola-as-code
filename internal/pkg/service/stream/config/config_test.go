@@ -88,6 +88,18 @@ source:
         listen: 0.0.0.0:7000
         # Public URL of the HTTP source for link generation.
         publicUrl: null
+        # HTTP request timeout. Validation rules: required
+        requestTimeout: 30s
+        # TCP connection idle timeout. Validation rules: required
+        idleTimeout: 30s
+        # The maximum number of concurrent connections the server may serve. Validation rules: required
+        maxConnections: 200000
+        # Read buffer size, all HTTP headers must fit in. Validation rules: required
+        readBufferSize: 16KB
+        # Write buffer size. Validation rules: required
+        writeBufferSize: 4KB
+        # Max size of the HTTP request body. Validation rules: required
+        maxRequestBodySize: 1MB
 storage:
     # Mounted volumes path, each volume is in "{type}/{label}" subdir. Validation rules: required
     volumesPath: ""
@@ -169,13 +181,6 @@ storage:
                     # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
                     blockSize: 256KB
                     # GZIP parallel concurrency, 0 = auto.
-                    concurrency: 0
-                zstd:
-                    # ZSTD compression level: fastest, default, better, best. Validation rules: min=1,max=4
-                    level: 2
-                    # ZSTD window size. Validation rules: required,minBytes=1kB,maxBytes=512MB
-                    windowSize: 4MB
-                    # ZSTD concurrency, 0 = auto
                     concurrency: 0
         staging:
             # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000

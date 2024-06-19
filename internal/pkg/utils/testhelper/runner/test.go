@@ -334,14 +334,8 @@ func (t *Test) runAPIServer(
 	requestDecoratorFn func(request *APIRequestDef),
 ) {
 	// Get a free port
-	listenPort, err := netutils.FreePort()
-	if err != nil {
-		t.t.Fatalf("Could not receive a free port: %s", err)
-	}
-	metricsListenPort, err := netutils.FreePort()
-	if err != nil {
-		t.t.Fatalf("Could not receive a free port: %s", err)
-	}
+	listenPort := netutils.FreePortForTest(t.t)
+	metricsListenPort := netutils.FreePortForTest(t.t)
 	listenAddress := fmt.Sprintf("localhost:%d", listenPort)
 	metricsListenAddress := fmt.Sprintf("localhost:%d", metricsListenPort)
 	apiURL := "http://" + listenAddress
@@ -384,7 +378,7 @@ func (t *Test) runAPIServer(
 	})
 
 	// Wait for API server
-	if err = testhelper.WaitForAPI(t.ctx, cmdWaitCh, "api", apiURL, startupTimeout); err != nil {
+	if err := testhelper.WaitForAPI(t.ctx, cmdWaitCh, "api", apiURL, startupTimeout); err != nil {
 		t.t.Fatalf(
 			"Unexpected error while waiting for API: %s\n\nServer STDERR:%s\n\nServer STDOUT:%s\n",
 			err,

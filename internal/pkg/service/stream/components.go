@@ -8,30 +8,58 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/httpsource"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/readernode"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
-	ComponentAPI        = "api"
-	ComponentDiskWriter = "disk-writer"
+	ComponentAPI                Component = "api"
+	ComponentHTTPSource         Component = "http-source"
+	ComponentStorageCoordinator Component = "storage-coordinator"
+	ComponentStorageWriter      Component = "storage-writer"
+	ComponentStorageReader      Component = "storage-reader"
 )
 
-type Components map[Component]bool
+type Components []Component
 
 type Component string
 
-func StartComponents(ctx context.Context, d dependencies.ServiceScope, cfg config.Config, components map[Component]bool) error {
-	// Start components, always in the same order
+func StartComponents(ctx context.Context, d dependencies.ServiceScope, cfg config.Config, components ...Component) error {
+	componentsMap := make(map[Component]bool)
+	for _, c := range components {
+		componentsMap[c] = true
+	}
 
-	if components[ComponentDiskWriter] {
+	// Start components, always in the same order
+	if componentsMap[ComponentStorageCoordinator] {
+		if err := coordinator.Start(ctx, d, cfg); err != nil {
+			return err
+		}
+	}
+
+	if componentsMap[ComponentStorageWriter] {
 		if err := writernode.Start(ctx, d, cfg); err != nil {
 			return err
 		}
 	}
 
-	if components[ComponentAPI] {
+	if componentsMap[ComponentStorageReader] {
+		if err := readernode.Start(ctx, d, cfg); err != nil {
+			return err
+		}
+	}
+
+	if componentsMap[ComponentAPI] {
 		if err := api.Start(ctx, d, cfg); err != nil {
+			return err
+		}
+	}
+
+	if componentsMap[ComponentHTTPSource] {
+		if err := httpsource.Start(ctx, d, cfg.Source.HTTP); err != nil {
 			return err
 		}
 	}
@@ -51,12 +79,13 @@ func ParseComponentsList(args []string) (Components, error) {
 	}
 
 	// Create map of enabled components
-	components := make(Components)
+	var components Components
 	var unexpected []string
 	for _, component := range args {
-		switch component {
-		case ComponentAPI, ComponentDiskWriter: // expected components
-			components[Component(component)] = true
+		switch Component(component) {
+		// expected components
+		case ComponentAPI, ComponentHTTPSource, ComponentStorageCoordinator, ComponentStorageWriter, ComponentStorageReader:
+			components = append(components, Component(component))
 		default:
 			unexpected = append(unexpected, component)
 		}
@@ -72,8 +101,8 @@ func ParseComponentsList(args []string) (Components, error) {
 
 func (v Components) String() string {
 	var names []string
-	for k := range v {
-		names = append(names, string(k))
+	for _, n := range v {
+		names = append(names, string(n))
 	}
 	sort.Strings(names)
 	return strings.Join(names, ",")

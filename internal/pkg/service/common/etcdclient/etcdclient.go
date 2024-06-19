@@ -9,12 +9,14 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 	etcdNamespace "go.etcd.io/etcd/client/v3/namespace"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"         //nolint: depguard
 	"go.uber.org/zap/zapcore" //nolint: depguard
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -67,12 +69,19 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	// Create connect context
 	connectCtx, connectCancel := context.WithTimeout(ctx, cfg.ConnectTimeout)
 	defer connectCancel()
+	connectCtx = ctxattr.ContextWith(
+		connectCtx,
+		attribute.String("etcd.connect.timeout", cfg.ConnectTimeout.String()),
+		attribute.String("etcd.keepAlive.timeout", cfg.KeepAliveTimeout.String()),
+		attribute.String("etcd.keepAlive.interval", cfg.KeepAliveInterval.String()),
+		attribute.StringSlice("etcd.endpoints", []string{cfg.Endpoint}),
+	)
 
 	// Create client
 	startTime := time.Now()
-	logger.Infof(ctx, "connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.ConnectTimeout, cfg.KeepAliveTimeout, cfg.KeepAliveInterval)
+	logger.Info(connectCtx, "connecting to etcd")
 	c, err = etcd.New(etcd.Config{
-		Context:              context.Background(), // !!! a long-lived context must be used, client exists as long as the entire server
+		Context:              context.WithoutCancel(ctx), // !!! a long-lived context must be used, client exists as long as the entire server
 		Endpoints:            []string{cfg.Endpoint},
 		DialTimeout:          cfg.ConnectTimeout,
 		DialKeepAliveTimeout: cfg.KeepAliveTimeout,
@@ -122,6 +131,6 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 		}
 	})
 
-	logger.WithDuration(time.Since(startTime)).Infof(ctx, `connected to etcd cluster "%s"`, strings.Join(c.Endpoints(), ";"))
+	logger.WithDuration(time.Since(startTime)).Infof(connectCtx, `connected to etcd cluster "%s"`, strings.Join(c.Endpoints(), ";"))
 	return c, nil
 }

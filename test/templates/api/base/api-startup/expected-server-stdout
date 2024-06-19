@@ -3,7 +3,7 @@
 {"level":"info","message":"started HTTP server on \"%s\", endpoint \"metrics\"\"","component":"metrics"}
 {"level":"info","message":"loading Storage API index with components"}
 {"level":"info","message":"loaded Storage API index with \"%s\" components"}
-{"level":"info","message":"connecting to etcd, connectTimeout=30s, keepAliveTimeout=5s, keepAliveInterval=10s","component":"etcd.client"}
+{"level":"info","message":"connecting to etcd","component":"etcd.client"}
 {"level":"info","message":"connected to etcd cluster \"%s\"","component":"etcd.client"}
 {"level":"info","message":"creating etcd session","component":"task.etcd.session"}
 {"level":"info","message":"created etcd session","component":"task.etcd.session"}

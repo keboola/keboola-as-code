@@ -47,3 +47,9 @@ ec20422509a655db82766e675e4fa6601a184fd0 7b15d8ec908d5438de7ba8dce764eed10b35756
 f7932244e53bf41be6371f44e47db1d67b987261 92ae44c5e661d3e24e13af9e87b7b4c14e7aa903 Michal Jurečko <michal.jurecko@gmail.com> 1663069535 +0200	reset: moving to HEAD~1
 92ae44c5e661d3e24e13af9e87b7b4c14e7aa903 2f4bc9491639ac4635bc832a05eebf42e62dba9e Michal Jurečko <michal.jurecko@gmail.com> 1663069537 +0200	commit: Update readme 3
 2f4bc9491639ac4635bc832a05eebf42e62dba9e 5cd5a8b7f99ba8f68e7205506e259a89dfa202ef Michal Jurečko <michal.jurecko@gmail.com> 1710845140 +0100	commit: Added templates with required features and components
+5cd5a8b7f99ba8f68e7205506e259a89dfa202ef 7b15d8ec908d5438de7ba8dce764eed10b357561 Michal Jurečko <michal.jurecko@gmail.com> 1718710092 +0200	checkout: moving from main to b1
+7b15d8ec908d5438de7ba8dce764eed10b357561 a2e9e9a7331ea1df6ec57bb90ccac0d8fc99cc28 Michal Jurečko <michal.jurecko@gmail.com> 1718710130 +0200	commit: Fix b1 branch
+a2e9e9a7331ea1df6ec57bb90ccac0d8fc99cc28 5cd5a8b7f99ba8f68e7205506e259a89dfa202ef Michal Jurečko <michal.jurecko@gmail.com> 1718710133 +0200	checkout: moving from b1 to main
+5cd5a8b7f99ba8f68e7205506e259a89dfa202ef a2e9e9a7331ea1df6ec57bb90ccac0d8fc99cc28 Michal Jurečko <michal.jurecko@gmail.com> 1718710179 +0200	checkout: moving from main to b1
+a2e9e9a7331ea1df6ec57bb90ccac0d8fc99cc28 15bf5cf367e2d7a6e3f5032a909a2ed720da4772 Michal Jurečko <michal.jurecko@gmail.com> 1718710201 +0200	commit: Modifi author field
+15bf5cf367e2d7a6e3f5032a909a2ed720da4772 5cd5a8b7f99ba8f68e7205506e259a89dfa202ef Michal Jurečko <michal.jurecko@gmail.com> 1718710211 +0200	checkout: moving from b1 to main
