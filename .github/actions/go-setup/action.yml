@@ -8,7 +8,7 @@ inputs:
   cache-version:
     description: Cache workflow version
     required: false
-    default: "003"
+    default: "004"
   cache-s3-bucket:
     description: S3 bucket for various caches.
     required: true
@@ -151,17 +151,26 @@ runs:
         echo "Modules size:"
         du -hd0 "$GODIRS/modcache"
 
+    - name: Install git-restore-mtime
+      shell: bash
+      run: |
+        path="$(go env GOBIN)/git-restore-mtime"
+        curl -o "$path" https://raw.githubusercontent.com/MestreLion/git-tools/v2022.12/git-restore-mtime
+        chmod +x "$path"
+
     - name: Reset modtime of files to 1 unix timestamp, to make Go test caching work
       if: inputs.without-cache != 'true'
       shell: bash
       run: |
         echo "Resetting modtime ..."
         
+        git-restore-mtime --git-dir "$GITHUB_WORKSPACE/.git"
+        
         excluded='-path "**/.out*" -or -path "**/.git/**" -or -name "projects.json"'
         echo "Excluded: $excluded"
         
         echo "Dirs:"
-        for dir in "$(go env GOROOT)" "$(go env GOMODCACHE)" "$GITHUB_WORKSPACE"
+        for dir in "$(go env GOROOT)" "$(go env GOMODCACHE)" 
         do
           echo "$dir"
           # !!! -L = follow symlinks
