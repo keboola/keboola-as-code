@@ -225,7 +225,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-k8s-state
+          name: test-k8s-state-templates
           path: /tmp/artifacts
           if-no-files-found: error
 
