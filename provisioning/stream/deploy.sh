@@ -6,6 +6,8 @@ set -Eeuo pipefail
 : ${BUILD_BUILDID?"Missing BUILD_BUILDID"}
 : ${RELEASE_RELEASENAME?"Missing RELEASE_RELEASENAME"}
 
+# CD to the script directory
+cd "$(dirname "$0")"
 
 # Get commit hash
 #COMMIT_HASH=$(git rev-parse HEAD)
