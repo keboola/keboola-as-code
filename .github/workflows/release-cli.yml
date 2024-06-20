@@ -132,7 +132,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           apple_account_password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
 
-  push-to-s3:
+  push-to-s3-and-release:
     needs:
       - version
       - release
@@ -202,6 +202,7 @@ jobs:
     needs:
       - version
       - release
+      - push-to-s3-and-release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: ubuntu-latest
@@ -348,6 +349,7 @@ jobs:
     needs:
       - version
       - release
+      - push-to-s3-and-release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     outputs:
