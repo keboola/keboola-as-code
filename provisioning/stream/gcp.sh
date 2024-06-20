@@ -55,8 +55,10 @@ export ETCD_STORAGE_CLASS_NAME=
 . ./common.sh
 
 # GCP specific part of the deploy
-kubectl apply -f ./kubernetes/deploy/cloud/gcp/service.yaml
-kubectl apply -f ./kubernetes/deploy/cloud/gcp/ingress.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/service-api.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/ingress-api.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/service-http-source.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/ingress-http-source.yaml
 
 # Wait for the rollout
 . ./wait.sh
