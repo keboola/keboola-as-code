@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-// nolint: gochecknoinits
+//nolint:gochecknoinits
 func init() {
 	codegen.RegisterPluginFirst("errormsg", "gen", prepare, generate)
 }
