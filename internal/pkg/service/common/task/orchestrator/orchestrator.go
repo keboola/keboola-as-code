@@ -89,9 +89,8 @@ func (o orchestrator[T]) watch(ctx context.Context, span telemetry.Span, timeout
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err := <-o.config.Source.WatchPrefix.
-		GetAllAndWatch(ctx, o.node.client, o.config.Source.WatchEtcdOps...).
-		SetupConsumer(o.logger).
+	stream := o.config.Source.WatchPrefix.GetAllAndWatch(ctx, o.node.client, o.config.Source.WatchEtcdOps...)
+	consumer := stream.SetupConsumer(o.logger).
 		WithOnClose(func(err error) {
 			span.End(&err)
 			close(done)
@@ -100,9 +99,10 @@ func (o orchestrator[T]) watch(ctx context.Context, span telemetry.Span, timeout
 			for _, event := range events {
 				o.startTask(ctx, event)
 			}
-		}).
-		StartConsumer(ctx, o.node.wg)
-	if err != nil {
+		})
+
+	// Wait for the initialization
+	if err := <-consumer.StartConsumer(ctx, o.node.wg); err != nil {
 		return err
 	}
 
