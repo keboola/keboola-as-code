@@ -126,8 +126,8 @@ func (s MirrorSetup[T, V]) WithFilter(fn func(event WatchEventT[T]) bool) Mirror
 	return s
 }
 
-func (m *Mirror[T, V]) Restart() {
-	m.stream.Restart()
+func (m *Mirror[T, V]) Restart(cause error) {
+	m.stream.Restart(cause)
 }
 
 func (m *Mirror[T, V]) Revision() int64 {

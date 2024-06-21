@@ -37,8 +37,8 @@ func (s *WatchStreamT[T]) SetupConsumer(logger log.Logger) WatchConsumer[WatchEv
 }
 
 // Restart cancels the current stream, so a new stream is created.
-func (s RestartableWatchStreamT[T]) Restart() {
-	s.rawStream.Restart()
+func (s RestartableWatchStreamT[T]) Restart(cause error) {
+	s.rawStream.Restart(cause)
 }
 
 // GetAllAndWatch loads all keys in the prefix by the iterator and then Watch for changes.
@@ -87,11 +87,11 @@ func (v PrefixT[T]) WatchWithoutRestart(ctx context.Context, client etcd.Watcher
 
 // decodeChannel is used by Watch and GetAllAndWatch to decode raw data to typed data.
 func (v PrefixT[T]) decodeChannel(ctx context.Context, rawStream *WatchStream) *WatchStreamT[T] {
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancelCause(ctx)
 	stream := &WatchStreamT[T]{channel: make(chan WatchResponseE[WatchEventT[T]]), cancel: cancel}
 	go func() {
 		defer close(stream.channel)
-		defer cancel()
+		defer cancel(context.Canceled)
 
 		// Decode value, if an error occurs, send it through the channel.
 		decode := func(kv *op.KeyValue, header *Header) (T, bool) {

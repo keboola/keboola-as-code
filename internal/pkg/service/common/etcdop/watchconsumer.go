@@ -40,7 +40,7 @@ type WatchConsumer[E any] struct {
 
 type (
 	onWatcherCreated   func(header *Header)
-	onWatcherRestarted func(reason string, delay time.Duration)
+	onWatcherRestarted func(cause error, delay time.Duration)
 	onWatcherError     func(err error)
 	onWatcherClose     func(err error)
 )
@@ -125,9 +125,9 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// A fatal error (etcd ErrCompacted) occurred.
 				// It is not possible to continue watching, the operation must be restarted.
 				restart = true
-				c.logger.Infof(ctx, "restarted, %s", resp.RestartReason)
+				c.logger.Infof(ctx, "restarted, %s", resp.RestartCause)
 				if c.onRestarted != nil {
-					c.onRestarted(resp.RestartReason, resp.RestartDelay)
+					c.onRestarted(resp.RestartCause, resp.RestartDelay)
 				}
 			case resp.Created:
 				// The watcher has been successfully created.

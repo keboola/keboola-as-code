@@ -3,7 +3,6 @@ package etcdop
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -52,15 +51,16 @@ type WatcherStatus struct {
 	// Prefix.GetAllAndWatch and PrefixT.GetAllAndWatch watchers will stream all records again.
 	// Restart is triggered in case of a fatal error (such as ErrCompacted) from which it is not possible to recover.
 	// Restart can be triggerred also manually by RestartableWatchStream.Restart method.
-	Restarted     bool
-	RestartReason string
-	RestartDelay  time.Duration
+	Restarted    bool
+	RestartCause error
+	RestartDelay time.Duration
 }
 
 // WatchStreamE streams events of the E type.
 type WatchStreamE[E any] struct {
-	channel chan WatchResponseE[E]
-	cancel  context.CancelFunc
+	channel     chan WatchResponseE[E]
+	cancel      context.CancelCauseFunc
+	cancelCause error
 }
 
 // RestartableWatchStream is restarted on a fatal error, or manually by the Restart method.
@@ -108,10 +108,11 @@ func (s *WatchStreamE[E]) SetupConsumer(logger log.Logger) WatchConsumer[E] {
 }
 
 // Restart cancels the current stream, so a new stream is created.
-func (s RestartableWatchStream) Restart() {
+func (s RestartableWatchStream) Restart(cause error) {
 	s.lock.Lock()
 	if s.sub != nil {
-		s.sub.cancel()
+		s.sub.cancelCause = cause
+		s.sub.cancel(cause)
 		for range s.sub.channel {
 			// wait for the channel close
 		}
@@ -132,11 +133,11 @@ func (s RestartableWatchStream) Restart() {
 //   - The operation can be cancelled using the context.
 func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) *RestartableWatchStream {
 	return wrapStreamWithRestart(ctx, func(ctx context.Context) *WatchStream {
-		ctx, cancel := context.WithCancel(ctx)
+		ctx, cancel := context.WithCancelCause(ctx)
 		stream := &WatchStream{channel: make(chan WatchResponse), cancel: cancel}
 		go func() {
 			defer close(stream.channel)
-			defer cancel()
+			defer cancel(context.Canceled)
 
 			// GetAll phase
 			itr := v.GetAll(client).Do(ctx)
@@ -200,11 +201,11 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 
 // WatchWithoutRestart is same as the Watch, but watcher is not restarted on a fatal error.
 func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) *WatchStream {
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancelCause(ctx)
 	stream := &WatchStream{channel: make(chan WatchResponse), cancel: cancel}
 	go func() {
 		defer close(stream.channel)
-		defer cancel()
+		defer cancel(context.Canceled)
 
 		// The initialization phase lasts until etcd sends the "created" event.
 		// It is the first event that is sent.
@@ -302,20 +303,21 @@ func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, op
 // The operation can be cancelled using the context.
 func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.Context) *WatchStream) *RestartableWatchStream {
 	b := backoff.WithContext(newWatchBackoff(), ctx)
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancelCause(ctx)
 	stream := &RestartableWatchStream{WatchStreamE: WatchStream{channel: make(chan WatchResponse), cancel: cancel}, lock: &sync.Mutex{}}
 	go func() {
 		defer close(stream.channel)
-		defer cancel()
+		defer cancel(context.Canceled)
 
 		// The initialization phase lasts until the first "created" event.
 		// If the watch operation was restarted,
 		// the next initialization error is converted to a common error.
 		init := true
 
-		// The "restarted" event contains RestartReason - last error.
+		// The "restarted" event contains RestartCause - last error.
 		var lastErr error
 		var restart bool
+		var restartCause error
 		var restartDelay time.Duration
 
 		for {
@@ -333,20 +335,23 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 			for resp := range subStream.channel {
 				// Emit "restarted" event before the first event after the restart
 				if restart {
-					var reason string
-					if lastErr == nil {
-						reason = "manual restart"
+					var cause error
+					if lastErr != nil {
+						cause = errors.PrefixErrorf(lastErr, `unexpected restart, backoff delay %s, cause:`, restartDelay)
+					} else if restartCause != nil {
+						cause = restartCause
 					} else {
-						reason = fmt.Sprintf(`backoff delay %s, reason: %v`, restartDelay, lastErr)
+						cause = errors.New("unknown cause") // shouldn't happen
 					}
 
 					rst := WatchResponse{}
 					rst.Restarted = true
-					rst.RestartReason = reason
+					rst.RestartCause = cause
 					rst.RestartDelay = restartDelay
 					stream.channel <- rst
 					lastErr = nil
 					restart = false
+					restartCause = nil
 				}
 
 				// Stop initialization phase after the first "created" event
@@ -362,7 +367,7 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 					}
 				}
 
-				// Update lastErr for RestartReason
+				// Update lastErr for RestartCause
 				if resp.InitErr != nil {
 					lastErr = resp.InitErr
 				} else if resp.Err != nil {
@@ -412,6 +417,9 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 				case <-time.After(delay):
 					// continue
 				}
+			} else if subStream.cancelCause != nil {
+				// If the stream was cancelled manually (without error), save the cancellation reason
+				restartCause = subStream.cancelCause
 			}
 		}
 	}()

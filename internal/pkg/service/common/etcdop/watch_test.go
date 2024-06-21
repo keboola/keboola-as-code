@@ -15,6 +15,7 @@ import (
 	"go.etcd.io/etcd/tests/v3/integration"
 	"google.golang.org/grpc/connectivity"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -107,12 +108,14 @@ func TestPrefix_Watch(t *testing.T) {
 	// Manual RESTART
 	assertDone(t, func() {
 		// Trigger manual restart
-		stream.Restart()
+		stream.Restart(errors.New("some cause"))
 
 		// Receive the restarted event
 		resp := <-ch
 		assert.True(t, resp.Restarted)
-		wildcards.Assert(t, "manual restart", resp.RestartReason)
+		if assert.Error(t, resp.RestartCause) {
+			assert.Equal(t, "some cause", resp.RestartCause.Error())
+		}
 
 		// Add a new key
 		assert.NoError(t, pfx.Key("key3").Put(client, "new").Do(ctx).Err())
@@ -239,12 +242,14 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	// Manual RESTART
 	assertDone(t, func() {
 		// Trigger manual restart
-		stream.Restart()
+		stream.Restart(errors.New("some cause"))
 
 		// Receive the restart event
 		resp := <-ch
 		assert.True(t, resp.Restarted)
-		assert.Equal(t, "manual restart", resp.RestartReason)
+		if assert.Error(t, resp.RestartCause) {
+			assert.Equal(t, "some cause", resp.RestartCause.Error())
+		}
 
 		// Receive all keys
 		resp = <-ch
@@ -343,7 +348,9 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	// Expect "restarted" event
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	if assert.Error(t, resp.RestartCause) {
+		wildcards.Assert(t, "unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartCause.Error())
+	}
 
 	// After the restart, Watch is waiting for new events, put and expected the key
 	assert.NoError(t, pfx.Key("key04").Put(testClient, value).Do(ctx).Err())
@@ -367,7 +374,9 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	if assert.Error(t, resp.RestartCause) {
+		wildcards.Assert(t, "unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartCause.Error())
+	}
 
 	// After the restart, Watch is streaming new events, put and receive the key
 	assert.NoError(t, pfx.Key("key07").Put(testClient, value).Do(ctx).Err())
@@ -451,7 +460,10 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	// Expect "restarted" event
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	assert.True(t, resp.Restarted)
+	if assert.Error(t, resp.RestartCause) {
+		wildcards.Assert(t, "unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartCause.Error())
+	}
 
 	// Read keys, watcher was restarted, it is now in the GetAll phase,
 	// so all keys are received at once
@@ -484,7 +496,9 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	if assert.Error(t, resp.RestartCause) {
+		wildcards.Assert(t, "unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartCause.Error())
+	}
 	resp = receive(6)
 	assert.Equal(t, []byte("my/prefix/key01"), resp.Events[0].Kv.Key)
 	assert.Equal(t, []byte("my/prefix/key02"), resp.Events[1].Kv.Key)
