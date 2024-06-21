@@ -114,7 +114,7 @@ func TestOrchestrator(t *testing.T) {
 	d2.Process().WaitForShutdown()
 
 	expected := `
-{"level":"info","message":"consumer created","component":"orchestrator.watch.consumer","task":"some.task"}
+{"level":"info","message":"watcher created","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/custom-lock\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
@@ -125,7 +125,7 @@ func TestOrchestrator(t *testing.T) {
 	d2.DebugLogger().AssertJSONMessages(t, expected)
 
 	expected = `
-{"level":"info","message":"consumer created","component":"orchestrator.watch.consumer","task":"some.task"}
+{"level":"info","message":"watcher created","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"debug","message":"not assigned \"1000/my-prefix/some.task/ResourceID\", distribution key \"foo\"","component":"orchestrator","task":"some.task"}
 `
 	d1.DebugLogger().AssertJSONMessages(t, expected)
@@ -201,7 +201,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	expected := `
-{"level":"info","message":"consumer created","component":"orchestrator.watch.consumer","task":"some.task"}
+{"level":"info","message":"watcher created","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"debug","message":"skipped \"1000/my-prefix/some.task/BadID\", StartTaskIf condition evaluated as false","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/GoodID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/GoodID/%s"}
@@ -279,7 +279,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 			return logger.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 		}, 5*time.Second, 10*time.Millisecond, "timeout")
 		logger.AssertJSONMessages(t, `
-{"message":"consumer created","task":"some.task","component":"orchestrator.watch.consumer"}
+{"message":"watcher created","task":"some.task","component":"orchestrator.watch.consumer"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
@@ -308,13 +308,20 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 {"level":"info","message":"task succeeded (0s): ResourceID","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock released \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 `)
-		logger.Truncate()
+	}
+
+	// Watch for the watcher init, for the watch phase, after getAll phase
+	{
+		assert.Eventually(t, func() bool {
+			return logger.CompareJSONMessages(`{"level":"info","message":"watcher created","task":"some.task","component":"orchestrator.watch.consumer"}`) == nil
+		}, 5*time.Second, 10*time.Millisecond, "timeout")
 	}
 
 	// Graceful shutdown
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
 	d.Process().WaitForShutdown()
 	logger.AssertJSONMessages(t, `
+{"level":"info","message":"watcher created","task":"some.task","component":"orchestrator.watch.consumer"}
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"received shutdown request","component":"orchestrator"}
 {"level":"info","message":"waiting for orchestrators to finish","component":"orchestrator"}
