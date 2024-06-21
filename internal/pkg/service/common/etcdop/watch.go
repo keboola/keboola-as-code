@@ -213,6 +213,11 @@ func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, op
 		// At most one WatchResponse.InitErr will be emitted.
 		init := true
 
+		// End fast, if the context is cancelled
+		if ctx.Err() != nil {
+			return
+		}
+
 		// The rawCh channel is closed by the context, so the context does not have to be checked here again.
 		rawCh := client.Watch(ctx, v.Prefix(), append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCreatedNotify()}, opts...)...)
 		for rawResp := range rawCh {

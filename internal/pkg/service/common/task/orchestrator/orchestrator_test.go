@@ -114,7 +114,7 @@ func TestOrchestrator(t *testing.T) {
 	d2.Process().WaitForShutdown()
 
 	expected := `
-{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"consumer created","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/custom-lock\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
@@ -125,7 +125,7 @@ func TestOrchestrator(t *testing.T) {
 	d2.DebugLogger().AssertJSONMessages(t, expected)
 
 	expected = `
-{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"consumer created","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"debug","message":"not assigned \"1000/my-prefix/some.task/ResourceID\", distribution key \"foo\"","component":"orchestrator","task":"some.task"}
 `
 	d1.DebugLogger().AssertJSONMessages(t, expected)
@@ -201,7 +201,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	expected := `
-{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"consumer created","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"debug","message":"skipped \"1000/my-prefix/some.task/BadID\", StartTaskIf condition evaluated as false","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/GoodID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/GoodID/%s"}
@@ -279,7 +279,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 			return logger.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
 		}, 5*time.Second, 10*time.Millisecond, "timeout")
 		logger.AssertJSONMessages(t, `
-{"message":"ready","task":"some.task","component":"orchestrator"}
+{"message":"consumer created","task":"some.task","component":"orchestrator.watch.consumer"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
@@ -295,12 +295,12 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		clk.Add(restartInterval)
 		assert.Eventually(t, func() bool {
 			return logger.CompareJSONMessages(`
-{"level":"debug","message":"restart"}
+{"level":"info","message":"consumer restarted: restarted by timer","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"debug","message":"lock released%s"}
 `) == nil
 		}, 5*time.Second, 10*time.Millisecond, "timeout")
 		logger.AssertJSONMessages(t, `
-{"level":"debug","message":"restart","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"consumer restarted: restarted by timer","component":"orchestrator.watch.consumer"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
@@ -318,7 +318,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"received shutdown request","component":"orchestrator"}
 {"level":"info","message":"waiting for orchestrators to finish","component":"orchestrator"}
-{"level":"info","message":"stopped","task":"some.task","component":"orchestrator"}
+{"level":"info","message":"consumer closed: context canceled","task":"some.task","component":"orchestrator.watch.consumer"}
 {"level":"info","message":"shutdown done","component":"orchestrator"}
 {"level":"info","message":"received shutdown request","component":"distribution"}
 {"level":"info","message":"unregistering the node \"node1\"","component":"distribution"}
