@@ -114,8 +114,8 @@ func TestWatchConsumer(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.AssertJSONMessages(t, `
 {"level":"warn","message":"watch error: etcdserver: mvcc: required revision has been compacted"}
-{"level":"info","message":"consumer restarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}                                                                                                                                                      
-{"level":"info","message":"OnRestarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}                                                                                                                                                    
+{"level":"info","message":"consumer restarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}
+{"level":"info","message":"OnRestarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}
 {"level":"info","message":"ForEach: restart=true, events(3): create \"my/prefix/key1\", create \"my/prefix/key2\", create \"my/prefix/key3\""}
 `)
 	logger.Truncate()
