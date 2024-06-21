@@ -205,14 +205,15 @@ jobs:
       - name: Check API response
         if: always()
         run: |
-          kubectl port-forward --address 0.0.0.0 --namespace $KUBERNETES_NAMESPACE service/stream-api 30001:80 &
-          curl --fail -s --max-time 5 --retry 5 --retry-connrefused "localhost:30001/health-check"
+          hostPort=$(minikube service --url stream-api --namespace $KUBERNETES_NAMESPACE)
+          echo "$hostPort"
+          curl --fail -s --max-time 5 --retry 5 --retry-connrefused "$hostPort/health-check"
 
       - name: Check HTTP source response
         if: always()
         run: |
-          kubectl port-forward --address 0.0.0.0 --namespace $KUBERNETES_NAMESPACE service/stream-http-source 30002:80 &
-          curl --fail -s --max-time 5 --retry 5 --retry-connrefused "localhost:30002/health-check"
+          hostPort=$(minikube service --url stream-http-source --namespace $KUBERNETES_NAMESPACE)
+          curl --fail -s --max-time 5 --retry 5 --retry-connrefused "$hostPort/health-check"
 
       - name: Test etcd defragmentation cron job
         if: always()
