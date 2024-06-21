@@ -40,7 +40,7 @@ type WatchConsumer[E any] struct {
 
 type (
 	onWatcherCreated   func(header *Header)
-	onWatcherRestarted func(reason string, delay time.Duration)
+	onWatcherRestarted func(cause error, delay time.Duration)
 	onWatcherError     func(err error)
 	onWatcherClose     func(err error)
 )
@@ -83,6 +83,8 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 	go func() {
 		defer wg.Done()
 
+		init := initErrCh
+
 		// The flag restart=true is send with the first events batch after the "restarted" event, see WatchConsumer.forEachFn.
 		restart := false
 
@@ -98,8 +100,9 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// Initialization error, the channel will be closed in the beginning of the next iteration.
 				// Signal the problem via InitErr channel.
 				// It is fatal error (e.g., no network connection), the app should be stopped and restarted.
-				initErrCh <- resp.InitErr
-				close(initErrCh)
+				init <- resp.InitErr
+				close(init)
+				init = nil
 			case resp.Err != nil:
 				// An error occurred, it is logged.
 				// If it is a fatal error, then it is followed
@@ -125,17 +128,22 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// A fatal error (etcd ErrCompacted) occurred.
 				// It is not possible to continue watching, the operation must be restarted.
 				restart = true
-				c.logger.Infof(ctx, "restarted, %s", resp.RestartReason)
+				c.logger.Infof(ctx, "consumer restarted: %s", resp.RestartCause)
 				if c.onRestarted != nil {
-					c.onRestarted(resp.RestartReason, resp.RestartDelay)
+					c.onRestarted(resp.RestartCause, resp.RestartDelay)
 				}
 			case resp.Created:
 				// The watcher has been successfully created.
 				// This means transition from GetAll to Watch phase.
+				// The Created event is emitted always if a new watches is created, so after initialization and each restart.
+				c.logger.Info(ctx, "watcher created")
 				if c.onCreated != nil {
 					c.onCreated(resp.Header)
 				}
-				close(initErrCh)
+				if init != nil {
+					close(init)
+					init = nil
+				}
 			default:
 				lastError = nil
 				c.forEachFn(resp.Events, resp.Header, restart)
@@ -143,13 +151,18 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 			}
 		}
 
+		// Close
+		var closeErr error
+		if lastError != nil {
+			closeErr = lastError
+		} else if err := ctx.Err(); err != nil {
+			closeErr = err
+		} else {
+			closeErr = errors.New("unknown cause") // shouldn't happen
+		}
+		c.logger.Infof(ctx, "consumer closed: %s", closeErr.Error())
 		if c.onClose != nil {
-			if errors.Is(lastError, context.Canceled) || errors.Is(lastError, context.DeadlineExceeded) {
-				// Context cancellation is the proper way to end the watch
-				c.onClose(nil)
-			} else {
-				c.onClose(lastError)
-			}
+			c.onClose(closeErr)
 		}
 	}()
 	return initErrCh

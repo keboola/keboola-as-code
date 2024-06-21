@@ -44,8 +44,8 @@ func TestWatchConsumer(t *testing.T) {
 		WithOnCreated(func(header *Header) {
 			logger.Infof(ctx, `OnCreated: created (rev %v)`, header.Revision)
 		}).
-		WithOnRestarted(func(reason string, delay time.Duration) {
-			logger.Infof(ctx, `OnRestarted: %s`, reason)
+		WithOnRestarted(func(cause error, delay time.Duration) {
+			logger.Infof(ctx, `OnRestarted: %s`, cause)
 		}).
 		WithOnError(func(err error) {
 			if !strings.Contains(err.Error(), "mvcc: required revision has been compacted") {
@@ -53,7 +53,7 @@ func TestWatchConsumer(t *testing.T) {
 			}
 		}).
 		WithOnClose(func(err error) {
-			assert.NoError(t, err)
+			assert.ErrorIs(t, err, context.Canceled) // there should be no unexpected error
 			onCloseCalled = true
 		}).
 		WithForEach(func(events []WatchEvent, header *Header, restart bool) {
@@ -114,8 +114,8 @@ func TestWatchConsumer(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.AssertJSONMessages(t, `
 {"level":"warn","message":"watch error: etcdserver: mvcc: required revision has been compacted"}
-{"level":"info","message":"restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted"}
-{"level":"info","message":"OnRestarted: backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted"}
+{"level":"info","message":"consumer restarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}
+{"level":"info","message":"OnRestarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}
 {"level":"info","message":"ForEach: restart=true, events(3): create \"my/prefix/key1\", create \"my/prefix/key2\", create \"my/prefix/key3\""}
 `)
 	logger.Truncate()

@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -11,8 +10,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 const (
@@ -27,95 +26,47 @@ type orchestrator[T any] struct {
 }
 
 func (o orchestrator[T]) start() <-chan error {
-	initDoneOut := make(chan error, 1)
+	initErrCh := make(chan error, 1)
 	o.node.wg.Add(1)
 	go func() {
 		defer o.node.wg.Done()
-		defer o.logger.Info(o.node.ctx, "stopped")
-		b := newRetryBackoff()
+		ctx, span := o.node.tracer.Start(o.node.ctx, spanName, trace.WithAttributes(attribute.String("resource.name", o.config.Name)))
+		stream := o.config.Source.WatchPrefix.GetAllAndWatch(ctx, o.node.client, o.config.Source.WatchEtcdOps...)
+		err := <-stream.SetupConsumer(o.logger.WithComponent("watch.consumer")).
+			WithOnClose(func(err error) {
+				span.End(&err)
+			}).
+			WithForEach(func(events []etcdop.WatchEventT[T], header *etcdop.Header, _ bool) {
+				for _, event := range events {
+					o.startTask(ctx, event)
+				}
+			}).
+			StartConsumer(ctx, o.node.wg)
 
-		// Copy variable, it is set to nil later, to signalize successful initialization
-		initDone := initDoneOut
+		// Handle init error
+		if err == nil {
+			close(initErrCh)
+		} else {
+			span.End(&err)
+			initErrCh <- err
+			close(initErrCh)
+		}
 
+		// Restart on distribution change and periodically
+		distChangeListener := o.dist.OnChangeListener()
+		defer distChangeListener.Stop()
 		for {
 			select {
-			case <-o.node.ctx.Done():
+			case <-ctx.Done():
 				return
-			default:
-				ctx, span := o.node.tracer.Start(o.node.ctx, spanName, trace.WithAttributes(attribute.String("resource.name", o.config.Name)))
-
-				// The watcher is periodically restarted to rescan existing keys.
-				if initDone == nil {
-					o.logger.Debug(ctx, "restart")
-				}
-
-				// Run the watch operation for the RestartInterval.
-				err := o.watch(ctx, span, o.config.Source.RestartInterval, func() {
-					if initDone != nil {
-						// Initialization was successful
-						o.logger.Info(ctx, "ready")
-						close(initDone)
-						initDone = nil
-					}
-				})
-
-				// Handle initialization error for the watcher.
-				if err == nil {
-					// No error, reset backoff.
-					b.Reset()
-				} else {
-					if initDone != nil {
-						// Initialization error in the first iteration is fatal, e.g., connection failed, stop.
-						initDone <- err
-						close(initDone)
-						return
-					} else if errors.Is(err, context.Canceled) {
-						return
-					}
-
-					// An error occurred, wait before reset.
-					delay := b.NextBackOff()
-					o.logger.Warnf(ctx, "re-creating watcher, backoff delay %s, reason: %s", delay, err.Error())
-					<-time.After(delay)
-				}
+			case events := <-distChangeListener.C:
+				stream.Restart(RestartedByDistribution{error: errors.Errorf(`restarted by distribution change: %s`, strhelper.Truncate(events.Messages(), 100, "…"))})
+			case <-o.node.clock.After(o.config.Source.RestartInterval):
+				stream.Restart(RestartedByTimer{error: errors.New("restarted by timer")})
 			}
 		}
 	}()
-	return initDoneOut
-}
-
-func (o orchestrator[T]) watch(ctx context.Context, span telemetry.Span, timeout time.Duration, onReady func()) error {
-	done := make(chan struct{})
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	err := <-o.config.Source.WatchPrefix.
-		GetAllAndWatch(ctx, o.node.client, o.config.Source.WatchEtcdOps...).
-		SetupConsumer(o.logger).
-		WithOnClose(func(err error) {
-			span.End(&err)
-			close(done)
-		}).
-		WithForEach(func(events []etcdop.WatchEventT[T], header *etcdop.Header, _ bool) {
-			for _, event := range events {
-				o.startTask(ctx, event)
-			}
-		}).
-		StartConsumer(ctx, o.node.wg)
-	if err != nil {
-		return err
-	}
-
-	// Wait for the consumer to finish.
-	onReady()
-	select {
-	case <-done:
-		return nil
-	case <-o.node.clock.After(timeout):
-		cancel()
-		<-done
-		return nil
-	}
+	return initErrCh
 }
 
 // startTask for the event received from the watched prefix.
@@ -138,8 +89,8 @@ func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT
 
 	// Should be the task started?
 	if o.config.StartTaskIf != nil {
-		if skipReason, start := o.config.StartTaskIf(event); !start {
-			o.logger.Debugf(ctx, `skipped "%s", %s`, taskKey.String(), skipReason)
+		if skipCause, start := o.config.StartTaskIf(event); !start {
+			o.logger.Debugf(ctx, `skipped "%s", %s`, taskKey.String(), skipCause)
 			return
 		}
 	}

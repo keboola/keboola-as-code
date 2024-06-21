@@ -114,7 +114,7 @@ func TestOrchestrator(t *testing.T) {
 	d2.Process().WaitForShutdown()
 
 	expected := `
-{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"watcher created","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/custom-lock\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
@@ -125,7 +125,7 @@ func TestOrchestrator(t *testing.T) {
 	d2.DebugLogger().AssertJSONMessages(t, expected)
 
 	expected = `
-{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"watcher created","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"debug","message":"not assigned \"1000/my-prefix/some.task/ResourceID\", distribution key \"foo\"","component":"orchestrator","task":"some.task"}
 `
 	d1.DebugLogger().AssertJSONMessages(t, expected)
@@ -201,7 +201,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	expected := `
-{"level":"info","message":"ready","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"watcher created","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"debug","message":"skipped \"1000/my-prefix/some.task/BadID\", StartTaskIf condition evaluated as false","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/GoodID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/GoodID/%s"}
@@ -222,7 +222,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	etcdCfg := etcdhelper.TmpNamespace(t)
 	client := etcdhelper.ClientForTest(t, etcdCfg)
 
-	restartInterval := time.Millisecond
+	restartInterval := 100 * time.Millisecond
 	clk := clock.NewMock()
 	d := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
@@ -231,7 +231,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		dependencies.WithNodeID("node1"),
 		dependencies.WithEnabledOrchestrator(),
 	)
-
+	logger := d.DebugLogger()
 	dist, err := d.DistributionNode().Group("my-group")
 	require.NoError(t, err)
 
@@ -272,35 +272,75 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	assert.NoError(t, <-node.Start(dist, config))
 
 	// Put some key to trigger the task
-	v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}
-	assert.NoError(t, pfx.Key("key1").Put(client, v).Do(ctx).Err())
-	assert.Eventually(t, func() bool {
-		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
-	}, 5*time.Second, 10*time.Millisecond, "timeout")
-	d.DebugLogger().Truncate()
-
-	// 3x restart interval
-	clk.Add(restartInterval)
-	assert.Eventually(t, func() bool {
-		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"restart"}`) == nil
-	}, 5*time.Second, 10*time.Millisecond, "timeout")
-
-	// Put some key to trigger the task
-	assert.Eventually(t, func() bool {
-		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
-	}, 5*time.Second, 10*time.Millisecond, "timeout")
-
-	d.Process().Shutdown(ctx, errors.New("bye bye"))
-	d.Process().WaitForShutdown()
-
-	expected := `
-{"level":"debug","message":"restart","component":"orchestrator","task":"some.task"}
+	{
+		v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}
+		assert.NoError(t, pfx.Key("key1").Put(client, v).Do(ctx).Err())
+		assert.Eventually(t, func() bool {
+			return logger.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
+		}, 5*time.Second, 10*time.Millisecond, "timeout")
+		logger.AssertJSONMessages(t, `
+{"message":"watcher created","task":"some.task","component":"orchestrator.watch.consumer"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"info","message":"message from the task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"info","message":"task succeeded (0s): ResourceID","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock released \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
-`
-	d.DebugLogger().AssertJSONMessages(t, expected)
+`)
+		logger.Truncate()
+	}
+
+	// Trigger task by the restart
+	{
+		clk.Add(restartInterval)
+		assert.Eventually(t, func() bool {
+			return logger.CompareJSONMessages(`
+{"level":"info","message":"consumer restarted: restarted by timer","component":"orchestrator.watch.consumer","task":"some.task"}
+{"level":"debug","message":"lock released%s"}
+`) == nil
+		}, 5*time.Second, 10*time.Millisecond, "timeout")
+		logger.AssertJSONMessages(t, `
+{"level":"info","message":"consumer restarted: restarted by timer","component":"orchestrator.watch.consumer"}
+{"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
+{"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"info","message":"message from the task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"info","message":"task succeeded (0s): ResourceID","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+{"level":"debug","message":"lock released \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
+`)
+	}
+
+	// Watch for the watcher init, for the watch phase, after getAll phase
+	{
+		assert.Eventually(t, func() bool {
+			return logger.CompareJSONMessages(`{"level":"info","message":"watcher created","task":"some.task","component":"orchestrator.watch.consumer"}`) == nil
+		}, 5*time.Second, 10*time.Millisecond, "timeout")
+	}
+
+	// Graceful shutdown
+	d.Process().Shutdown(ctx, errors.New("bye bye"))
+	d.Process().WaitForShutdown()
+	logger.AssertJSONMessages(t, `
+{"level":"info","message":"watcher created","task":"some.task","component":"orchestrator.watch.consumer"}
+{"level":"info","message":"exiting (bye bye)"}
+{"level":"info","message":"received shutdown request","component":"orchestrator"}
+{"level":"info","message":"waiting for orchestrators to finish","component":"orchestrator"}
+{"level":"info","message":"consumer closed: context canceled","task":"some.task","component":"orchestrator.watch.consumer"}
+{"level":"info","message":"shutdown done","component":"orchestrator"}
+{"level":"info","message":"received shutdown request","component":"distribution"}
+{"level":"info","message":"unregistering the node \"node1\"","component":"distribution"}
+{"level":"info","message":"the node \"node1\" unregistered","component":"distribution"}
+{"level":"info","message":"closing etcd session: context canceled","distribution.group":"my-group","component":"distribution.etcd.session"}
+{"level":"info","message":"closed etcd session","distribution.group":"my-group","component":"distribution.etcd.session"}
+{"level":"info","message":"shutdown done","component":"distribution"}
+{"level":"info","message":"received shutdown request","component":"orchestrator"}
+{"level":"info","message":"waiting for orchestrators to finish","component":"orchestrator"}
+{"level":"info","message":"shutdown done","component":"orchestrator"}
+{"level":"info","message":"received shutdown request","node":"node1","component":"task"}
+{"level":"info","message":"closing etcd session: context canceled","node":"node1","component":"task.etcd.session"}
+{"level":"info","message":"closed etcd session","node":"node1","component":"task.etcd.session"}
+{"level":"info","message":"shutdown done","node":"node1","component":"task"}
+{"level":"info","message":"closing etcd connection","component":"etcd.client"}
+{"level":"info","message":"closed etcd connection","component":"etcd.client"}
+`)
 }

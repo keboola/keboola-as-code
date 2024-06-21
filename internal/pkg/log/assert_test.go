@@ -226,6 +226,7 @@ func TestAssertWildcardsDifferent1(t *testing.T) {
 {"level":"info","message":"Opened file", "file":"file3"}
 {"level":"info","message":"Opened file", "file":"file4"}
 {"level":"info","message":"Opened file", "file":"file5"}
+{"level":"info","message":"Opened file", "file":"file7"}
 `,
 	)
 	assert.False(t, ok)
@@ -237,6 +238,7 @@ Expected:
 Actual:
 -----
 {"level":"info","message":"Opened file", "file":"file5"}
+{"level":"info","message":"Opened file", "file":"file7"}
 `
 	// Get error message
 	_, testLog, _ := strings.Cut(test.buf.String(), "Error:")

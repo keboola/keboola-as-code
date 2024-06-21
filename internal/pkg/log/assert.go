@@ -30,7 +30,7 @@ func CompareJSONMessages(expected string, actual string) error {
 		messageFound := false
 		for actualScanner.Scan() {
 			actualMessage := actualScanner.Text()
-			actualMessages += actualMessage
+			actualMessages += actualMessage + "\n"
 			actualMessageData, err := decodeMessage(actualMessage, "actual")
 			if err != nil {
 				return err

@@ -3,6 +3,7 @@ package httpsource
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -83,8 +84,16 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	// Start HTTP server in a separate goroutine.
 	proc := d.Process()
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
+		// Create connection
+		conn, err := net.Listen("tcp4", cfg.Listen)
+		if err != nil {
+			shutdown(context.Background(), err) // nolint: contextcheck // intentionally creating new context for the shutdown operation
+			return
+		}
+		// Serve requests
 		logger.Infof(ctx, "started HTTP source on %q", cfg.Listen)
-		serverErr := srv.ListenAndServe(cfg.Listen) // ListenAndServe blocks while the server is running
+		serverErr := srv.Serve(conn) // blocks while the server is running
+		// Server finished
 		startDone()
 		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
 	})
