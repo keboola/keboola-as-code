@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -49,7 +50,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Diff
-	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d)
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d, diff.WithAllowTargetEnv(projectState.ProjectManifest().AllowTargetENV()))
 	if err != nil {
 		return err
 	}

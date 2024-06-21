@@ -18,13 +18,26 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+type Option func(c *Config)
+
+type Config struct {
+	allowTargetEnv bool
+}
+
+func WithAllowTargetEnv(allowTargetEnv bool) Option {
+	return func(c *Config) {
+		c.allowTargetEnv = allowTargetEnv
+	}
+}
+
 type typeName string
 
 type Differ struct {
-	objects   model.ObjectStates
-	results   []*Result                                 // diff results
-	typeCache map[typeName][]*reflecthelper.StructField // reflection cache
-	errors    errors.MultiError
+	objects        model.ObjectStates
+	results        []*Result                                 // diff results
+	typeCache      map[typeName][]*reflecthelper.StructField // reflection cache
+	allowTargetEnv bool
+	errors         errors.MultiError
 }
 
 type ResultState int
@@ -58,10 +71,17 @@ type Results struct {
 	Objects               model.ObjectStates
 }
 
-func NewDiffer(objects model.ObjectStates) *Differ {
+func NewDiffer(objects model.ObjectStates, option ...Option) *Differ {
+	config := Config{}
+
+	for _, o := range option {
+		o(&config)
+	}
+
 	return &Differ{
-		objects:   objects,
-		typeCache: make(map[typeName][]*reflecthelper.StructField),
+		objects:        objects,
+		allowTargetEnv: config.allowTargetEnv,
+		typeCache:      make(map[typeName][]*reflecthelper.StructField),
 	}
 }
 
