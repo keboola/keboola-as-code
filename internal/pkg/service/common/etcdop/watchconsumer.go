@@ -83,6 +83,8 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 	go func() {
 		defer wg.Done()
 
+		init := initErrCh
+
 		// The flag restart=true is send with the first events batch after the "restarted" event, see WatchConsumer.forEachFn.
 		restart := false
 
@@ -98,8 +100,9 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// Initialization error, the channel will be closed in the beginning of the next iteration.
 				// Signal the problem via InitErr channel.
 				// It is fatal error (e.g., no network connection), the app should be stopped and restarted.
-				initErrCh <- resp.InitErr
-				close(initErrCh)
+				init <- resp.InitErr
+				close(init)
+				init = nil
 			case resp.Err != nil:
 				// An error occurred, it is logged.
 				// If it is a fatal error, then it is followed
@@ -132,10 +135,14 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 			case resp.Created:
 				// The watcher has been successfully created.
 				// This means transition from GetAll to Watch phase.
+				// The Created event is emitted always if a new watches is created, so after initialization and each restart.
 				if c.onCreated != nil {
 					c.onCreated(resp.Header)
 				}
-				close(initErrCh)
+				if init != nil {
+					close(init)
+					init = nil
+				}
 			default:
 				lastError = nil
 				c.forEachFn(resp.Events, resp.Header, restart)

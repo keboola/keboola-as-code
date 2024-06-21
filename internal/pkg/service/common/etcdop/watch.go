@@ -336,11 +336,12 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 				// Emit "restarted" event before the first event after the restart
 				if restart {
 					var cause error
-					if lastErr != nil {
+					switch {
+					case lastErr != nil:
 						cause = errors.PrefixErrorf(lastErr, `unexpected restart, backoff delay %s, cause:`, restartDelay)
-					} else if restartCause != nil {
+					case restartCause != nil:
 						cause = restartCause
-					} else {
+					default:
 						cause = errors.New("unknown cause") // shouldn't happen
 					}
 
@@ -354,17 +355,10 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 					restartCause = nil
 				}
 
-				// Stop initialization phase after the first "created" event
+				// Pass OnCreated to the stream.channel channel
 				if resp.Created {
-					if init {
-						init = false
-						// Pass event to the stream.channel channel
-					} else {
-						// Create event can be emitted only once, skip.
-						// Reset the backoff
-						b.Reset()
-						continue
-					}
+					init = false
+					b.Reset()
 				}
 
 				// Update lastErr for RestartCause
