@@ -2,15 +2,15 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: stream-api
+  name: stream-http-source
   namespace: $NAMESPACE
   labels:
-    app: stream-api
+    app: stream-http-source
     releaseId: $RELEASE_ID
 spec:
   podSelector:
     matchLabels:
-      app: stream-api
+      app: stream-http-source
   policyTypes:
     - Ingress
   ingress:
