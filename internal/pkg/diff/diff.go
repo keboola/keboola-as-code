@@ -169,11 +169,23 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	}
 
 	// Diff
+	if remoteState.Kind().IsBranch() {
+		result = d.resultFn(result, state, diffFields, remoteValues, localValues, d.newBranchOptions)
+	} else {
+		result = d.resultFn(result, state, diffFields, remoteValues, localValues, d.newOptions)
+	}
+
+	return result, nil
+}
+
+func (d *Differ) resultFn(result *Result, state model.ObjectState, diffFields []*reflecthelper.StructField, remoteValues, localValues reflect.Value, opts func(r *Reporter) cmp.Options) *Result {
+	state.RemoteState()
 	for _, field := range diffFields {
 		reporter := d.diffValues(
 			state,
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
 			localValues.FieldByName(field.StructField.Name).Interface(),
+			opts,
 		)
 		diffStr := reporter.String()
 		if len(diffStr) > 0 {
@@ -189,14 +201,25 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	} else {
 		result.State = ResultEqual
 	}
-
-	return result, nil
+	return result
 }
 
-func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue any) *Reporter {
+func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue any, opts func(r *Reporter) cmp.Options) *Reporter {
 	reporter := newReporter(objectState, d.objects)
-	cmp.Diff(remoteValue, localValue, d.newOptions(reporter))
+	cmp.Diff(remoteValue, localValue, opts(reporter))
 	return reporter
+}
+
+func (d *Differ) newBranchOptions(reporter *Reporter) cmp.Options {
+	options := d.newOptions(reporter)
+	options = append(options, cmp.Transformer("name", func(s string) string {
+		if d.allowTargetEnv {
+			return ""
+		}
+
+		return s
+	}))
+	return options
 }
 
 func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
