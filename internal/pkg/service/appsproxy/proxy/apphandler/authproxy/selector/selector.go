@@ -25,7 +25,7 @@ const (
 	continueAuthQueryParam     = "continue_auth"
 	callbackQueryParam         = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
 	selectionPagePath          = config.InternalPrefix + "/selection"
-	signOutPath                = config.InternalPrefix + "/sign_out"
+	SignOutPath                = config.InternalPrefix + "/sign_out"
 	proxyCallbackPath          = config.InternalPrefix + "/callback"
 	ignoreProviderCookieCtxKey = ctxKey("ignoreProviderCookieCtxKey")
 	selectorHandlerCtxKey      = ctxKey("selectorHandlerCtxKey")
@@ -93,7 +93,7 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 	req = req.WithContext(context.WithValue(req.Context(), selectorHandlerCtxKey, s))
 
 	// Clear cookie on logout
-	if req.URL.Path == signOutPath {
+	if req.URL.Path == SignOutPath {
 		// This clears provider selection cookie while oauth2-proxy clears the session cookie.
 		// The user isn't logged out on the provider's side, but when redirected to the provider they're
 		// forced to select their account again because of the "select_account" flag in LoginURLParameters.
