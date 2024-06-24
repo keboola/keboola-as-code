@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
@@ -226,7 +225,11 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 }
 
 func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.SourceRequestScope, payload *api.SourceStatisticsClearPayload) (err error) {
-	return errors.NewNotImplementedError()
+	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+		return err
+	}
+
+	return d.StatisticsRepository().ResetStats(d.SourceKey()).Do(ctx).Err()
 }
 
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {

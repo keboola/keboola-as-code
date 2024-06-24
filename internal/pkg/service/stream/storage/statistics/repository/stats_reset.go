@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
@@ -15,13 +15,13 @@ func (r *Repository) ResetStats(objectKey fmt.Stringer) *op.AtomicOp[op.NoResult
 	ops := op.Atomic(r.client, &op.NoResult{})
 
 	// Object prefix contains all statistics related to the object
-	objectPfx := r.schema.InLevel(level.Target).InObject(objectKey)
+	objectPfx := r.schema.InLevel(model.LevelTarget).InObject(objectKey)
 
 	var objectSum statistics.Value
 	var resetSum statistics.Value
 
 	// resetKey contains the sum of all statistics from the children that were deleted
-	resetKey := r.schema.InLevel(level.Target).InObject(objectKey).Reset()
+	resetKey := r.schema.InLevel(model.LevelTarget).InObject(objectKey).Reset()
 
 	// Get statistics of the object
 	ops.Read(func(context.Context) op.Op {
