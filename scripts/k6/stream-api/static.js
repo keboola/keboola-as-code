@@ -1,5 +1,5 @@
 import * as common from "./common.js";
-import {checkResponse, post} from "./common.js";
+import { checkResponse, post } from "./common.js";
 
 export const options = common.options;
 
@@ -9,18 +9,13 @@ export function setup() {
       exportId: "test-export",
       name: "test-export",
       mapping: {
-        tableId: "in.c-buffer-template.data",
+        tableId: "in.c-stream-static.data",
         columns: [
           { type: "id", name: "id" },
-          {
-            type: "template",
-            name: "template",
-            template: {
-              language: "jsonnet",
-              undefinedValueStrategy: "null",
-              content: `Body('a')+":"+Body('c.f.g')`,
-            },
-          },
+          { type: "datetime", name: "datetime" },
+          { type: "ip", name: "ip" },
+          { type: "body", name: "body" },
+          { type: "headers", name: "headers" },
         ],
       },
     },
@@ -38,6 +33,7 @@ export function teardown(data) {
   common.teardownReceiver(data.receiver.id)
 }
 
-export default function (data) {
+export default function(data) {
   checkResponse(post(data.receiver.url, data.payload, data.headers));
 }
+
