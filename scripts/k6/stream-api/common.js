@@ -37,60 +37,100 @@ export const options = {
   },
 };
 
-export function setupReceiver(exports) {
+export function setupSource() {
   if (!TOKEN) throw new Error("Please set the `API_TOKEN` env var.");
 
   const sourceId = "stream-" + randomString(8)
-  let res = post("v1/branches/main/sources", {
-    id: sourceId,
+  let res = post("v1/branches/default/sources", {
+    sourceId: sourceId,
     name: "Stream API Static Benchmark",
-    exports: exports,
+    type: "http",
   });
   if (res.status !== 202) {
     console.error(res);
-    throw new Error("failed to create receiver task");
+    throw new Error("failed to create source task");
   }
 
-  const createReceiverTimeoutSec = 60
+  const createSourceTimeoutSec = 60
   const taskUrl = stripUrlHost(res.json().url)
-  for (let retries = createReceiverTimeoutSec; retries > 0; retries--) {
+  for (let retries = createSourceTimeoutSec; retries > 0; retries--) {
     res = get(taskUrl)
     if (res.status !== 200) {
       console.error(res);
-      throw new Error("failed to get receiver task");
+      throw new Error("failed to get source task");
     }
-    if (res.status !== "processing") {
-      if (res.error) {
-        throw new Error("failed to create receiver: " + res.error);
+    if (res.json().status !== "processing") {
+      if (res.json().error) {
+        throw new Error("failed to create source: " + res.json().error);
       }
       break
     }
-    sleep(1000)
+    sleep(1)
   }
 
-  res = get(`v1/branches/main/sources/${sourceId}`);
+  res = get(`v1/branches/default/sources/${sourceId}`);
   if (res.status !== 200) {
-    throw new Error("failed to get receiver");
+    throw new Error("failed to get source");
   }
 
-  const receiverUrl = stripUrlHost(res.json().url)
-  if (!receiverUrl) {
-    throw new Error("receiver url is not set");
+  const sourceUrl = stripUrlHost(res.json().http.url)
+  if (!sourceUrl) {
+    throw new Error("source url is not set");
   }
 
-  console.log("Receiver url: " + receiverUrl)
-  return { id: receiverId, url: receiverUrl }
+  console.log("Source url: " + sourceUrl)
+  return { id: sourceId, url: sourceUrl }
+}
+
+export function setupSink(sourceId, body) {
+  if (!TOKEN) throw new Error("Please set the `API_TOKEN` env var.");
+
+  let res = post(`v1/branches/default/sources/${sourceId}/sinks`, body);
+  if (res.status !== 202) {
+    console.error(res);
+    throw new Error("failed to create sink task");
+  }
+
+  const createSinkTimeoutSec = 60
+  const taskUrl = stripUrlHost(res.json().url)
+  for (let retries = createSinkTimeoutSec; retries > 0; retries--) {
+    res = get(taskUrl)
+    if (res.status !== 200) {
+      console.error(res);
+      throw new Error("failed to get sink task");
+    }
+    if (res.json().status !== "processing") {
+      if (res.json().error) {
+        throw new Error("failed to create sink: " + res.json().error);
+      }
+      break
+    }
+    sleep(1)
+  }
+
+  res = get(`v1/branches/default/sources/${sourceId}/sinks/${body.sinkId}`);
+  if (res.status !== 200) {
+    throw new Error("failed to get sink");
+  }
+
+  const sinkId = res.json().sinkId
+  if (!sinkId) {
+    throw new Error("sink id is not set");
+  }
+
+  console.log("Sink id: " + sinkId)
+  return { id: sinkId }
 }
 
 export function stripUrlHost(url) {
   return (new URL(url)).pathname
 }
 
-export function teardownReceiver(sourceId) {
-  const res = del(`v1/branches/main/sources/${sourceId}`);
+export function teardownSource(sourceId) {
+  const res = del(`v1/branches/default/sources/${sourceId}`);
   if (res.status !== 200) {
     console.error(res);
-    throw new Error("failed to delete receiver");
+    throw new Error("failed to delete source");
   }
 }
 

@@ -4,40 +4,47 @@ import { checkResponse, post } from "./common.js";
 export const options = common.options;
 
 export function setup() {
-  let receiver = common.setupReceiver([
+  let source = common.setupSource();
+
+  let sink = common.setupSink(
+    source.id,
     {
-      exportId: "test-export",
-      name: "test-export",
-      mapping: {
+      sinkId: "test-sink",
+      name: "test-sink",
+      type: "table",
+      table: {
+        type: "keboola",
         tableId: "in.c-stream-template.data",
-        columns: [
-          { type: "id", name: "id" },
-          {
-            type: "template",
-            name: "template",
-            template: {
-              language: "jsonnet",
-              undefinedValueStrategy: "null",
-              content: `Body('a')+":"+Body('c.f.g')`,
+        mapping: {
+          columns: [
+            { type: "uuid-v7", name: "id", primaryKey: true },
+            {
+              type: "template",
+              name: "template",
+              template: {
+                language: "jsonnet",
+                undefinedValueStrategy: "null",
+                content: `Body('a')+":"+Body('c.f.g')`,
+              },
             },
-          },
-        ],
+          ],
+        },
       },
     },
-  ]);
+  )
 
   const payload = { a: "b", c: { d: "e", f: { g: "h" } } };
   const headers = {
     "My-Custom-Header": "custom header value abcd",
   };
 
-  return { receiver, payload, headers };
+  return { source, sink, payload, headers };
 }
 
 export function teardown(data) {
-  common.teardownReceiver(data.receiver.id)
+  common.teardownSource(data.source.id)
 }
 
 export default function(data) {
-  checkResponse(post(data.receiver.url, data.payload, data.headers));
+  checkResponse(post(data.source.url, data.payload, data.headers));
 }
