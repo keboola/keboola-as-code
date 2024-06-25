@@ -130,6 +130,8 @@ func (v *listeners) add() *Listener {
 	return out
 }
 
+// trigger sends all buffered events to all subscribed listeners and clears the buffer.
+// Should only be called while lock is held.
 func (v *listeners) trigger() {
 	for _, l := range v.listeners {
 		l.trigger(v.bufferedEvents)
