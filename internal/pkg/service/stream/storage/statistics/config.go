@@ -24,7 +24,7 @@ type CacheConfig struct {
 type SyncConfig struct {
 	Enabled      bool              // the timer may cause problems with tests, so the collector can be disabled
 	SyncInterval duration.Duration `configKey:"interval" configUsage:"Statistics synchronization interval, from memory to the etcd." validate:"required,minDuration=100ms,maxDuration=5s"`
-	SyncTimeout  duration.Duration `configKey:"timeout" configUsage:"Statistics synchronization timeout."  validate:"required,minDuration=1s,maxDuration=1m"`
+	SyncTimeout  duration.Duration `configKey:"timeout" configUsage:"Statistics synchronization timeout." validate:"required,minDuration=1s,maxDuration=1m"`
 }
 
 type L2CacheConfig struct {

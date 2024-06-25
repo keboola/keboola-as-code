@@ -14,9 +14,9 @@ import (
 type Retryable struct {
 	RetryAttempt  int              `json:"retryAttempt,omitempty"`
 	RetryReason   string           `json:"retryReason,omitempty" validate:"required_with=RetryAttempt,excluded_without=RetryAttempt"`
-	FirstFailedAt *utctime.UTCTime `json:"firstFailedAt,omitempty"  validate:"required_with=RetryAttempt,excluded_without=RetryAttempt"`
-	LastFailedAt  *utctime.UTCTime `json:"lastFailedAt,omitempty"  validate:"required_with=RetryAttempt,excluded_without=RetryAttempt,gtefield=FirstFailedAt"`
-	RetryAfter    *utctime.UTCTime `json:"retryAfter,omitempty"  validate:"required_with=RetryAttempt,excluded_without=RetryAttempt,gtefield=FirstFailedAt,gtefield=LastFailedAt"`
+	FirstFailedAt *utctime.UTCTime `json:"firstFailedAt,omitempty" validate:"required_with=RetryAttempt,excluded_without=RetryAttempt"`
+	LastFailedAt  *utctime.UTCTime `json:"lastFailedAt,omitempty" validate:"required_with=RetryAttempt,excluded_without=RetryAttempt,gtefield=FirstFailedAt"`
+	RetryAfter    *utctime.UTCTime `json:"retryAfter,omitempty" validate:"required_with=RetryAttempt,excluded_without=RetryAttempt,gtefield=FirstFailedAt,gtefield=LastFailedAt"`
 }
 
 // RetryBackoff determines the time in the future after which a failed operation will be retried.
