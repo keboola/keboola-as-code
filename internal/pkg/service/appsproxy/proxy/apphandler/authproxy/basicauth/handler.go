@@ -2,6 +2,7 @@ package basicauth
 
 import (
 	"crypto/sha256"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -72,6 +73,13 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	}
 
 	requestCookie, _ := req.Cookie(basicAuthCookie)
+
+	err := req.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(req.FormValue("password"))
 
 	// req.Form / req.PostForm does not work
 	b, err := io.ReadAll(req.Body)
