@@ -2,10 +2,8 @@ package basicauth
 
 import (
 	"crypto/sha256"
-	"fmt"
-	"io"
+	"encoding/hex"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -22,7 +20,6 @@ import (
 )
 
 const (
-	providerCookie  = "_oauth2_provider"
 	basicAuthCookie = "proxyBasicAuth"
 	formPagePath    = config.InternalPrefix + "/form"
 )
@@ -72,27 +69,15 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		panic(errors.New("host cannot be empty"))
 	}
 
-	requestCookie, _ := req.Cookie(basicAuthCookie)
-
-	err := req.ParseForm()
-	if err != nil {
+	if err := req.ParseForm(); err != nil {
 		return err
 	}
 
-	fmt.Println(req.FormValue("password"))
-
-	// req.Form / req.PostForm does not work
-	b, err := io.ReadAll(req.Body)
-	if err != nil {
-		return err
-	}
-
-	values, err := url.ParseQuery(string(b))
-	if err != nil {
-		return err
-	}
+	// Unset content length as we do not want to push req.Body to upstream
+	req.ContentLength = 0
 
 	// Unset cookie as /_proxy/sign_out was called and enforce login
+	requestCookie, _ := req.Cookie(basicAuthCookie)
 	if requestCookie != nil && req.URL.Path == selector.SignOutPath {
 		requestCookie.Value = ""
 		h.setCookie(w, host, -1, requestCookie)
@@ -100,12 +85,12 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	}
 
 	// Login page
-	if !values.Has("password") && requestCookie == nil {
+	if !req.Form.Has("password") && requestCookie == nil {
 		h.pageWriter.WriteLoginPage(w, req, &h.app, nil)
 		return nil
 	}
 
-	p := values.Get("password")
+	p := req.Form.Get("password")
 	// Login page with unauthorized alert
 	if err := h.isAuthorized(p, requestCookie); err != nil {
 		h.logger.Warn(req.Context(), err.Error())
@@ -124,23 +109,28 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	hash.Write([]byte(p))
 	hashedValue := hash.Sum(nil)
 	v := &http.Cookie{
-		Value: string(hashedValue),
+		Value: hex.EncodeToString(hashedValue),
 	}
 	h.setCookie(w, host, expires, v)
 	return h.upstream.ServeHTTPOrError(w, req)
 }
 
 func (h *Handler) isAuthorized(p string, cookie *http.Cookie) error {
-	if err := cookie.Valid(); cookie != nil {
-		if err != nil {
-			return err
-		}
-
-		return nil
+	if p != "" && !h.basicAuth.IsAuthorized(p) {
+		return errors.New("Please enter a correct password.")
 	}
 
-	if !h.basicAuth.IsAuthorized(p) {
-		return errors.New("wrong password was given")
+	if err := cookie.Valid(); cookie != nil && err != nil {
+		return err
+	}
+
+	if cookie != nil {
+		hash := sha256.New()
+		hash.Write([]byte(h.basicAuth.Password))
+		hashedValue := hash.Sum(nil)
+		if hex.EncodeToString(hashedValue) != cookie.Value {
+			return errors.New("Cookie not set correctly.")
+		}
 	}
 
 	return nil

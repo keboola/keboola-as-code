@@ -1996,6 +1996,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Fill wrong password into form
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodPost, "https://basic-auth.hub.keboola.local/", bytes.NewBuffer([]byte("password=def")))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
@@ -2011,30 +2012,30 @@ func TestAppProxyRouter(t *testing.T) {
 			name: "public-basic-auth-correct-login",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Request public basic auth app
-				//				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://basic-auth.hub.keboola.local/", nil)
-				//				require.NoError(t, err)
-				//				response, err := client.Do(request)
-				//				require.NoError(t, err)
-				//				require.Equal(t, http.StatusOK, response.StatusCode)
-				//				body, err := io.ReadAll(response.Body)
-				//				require.NoError(t, err)
-				//				assert.Contains(t, string(body), "Basic Authentication")
-
-				// Fill wrong password into form
-				request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://basic-auth.hub.keboola.local/", bytes.NewBuffer([]byte("password=abc")))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://basic-auth.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
+				assert.Contains(t, string(body), "Basic Authentication")
+
+				// Fill correct password into form
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodPost, "https://basic-auth.hub.keboola.local/", bytes.NewBuffer([]byte("password=abc")))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
 				assert.Contains(t, string(body), "Hello, client")
 				// Check that cookies were set
 				cookies := response.Cookies()
 				if assert.Len(t, cookies, 1) {
 					assert.Equal(t, "proxyBasicAuth", cookies[0].Name)
-					assert.Equal(t, "xAA@]#aza", cookies[0].Value)
+					assert.Equal(t, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", cookies[0].Value)
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "basic-auth.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
@@ -2048,24 +2049,28 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedWakeUps: map[string]int{},
 		},
 		{
-			name: "public-basic-auth-expired-cookie",
+			name: "public-basic-auth-wrong-cookie",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				// Access with expired cookie
+				// Access with cookie
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://basic-auth.hub.keboola.local/", nil)
-				client.Jar.SetCookies(
-					&url.URL{
-						Scheme: "https",
-						Host:   "oidc.hub.keboola.local",
-					},
-					[]*http.Cookie{
-						{
-							Name:   "_oauth2_proxy_csrf",
-							Value:  "",
-							Path:   "/",
-							Domain: "oidc.hub.keboola.local",
-						},
-					},
-				)
+				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015a"})
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Cookie not set correctly")
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
+			name: "public-basic-auth-cookie",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				// Access with cookie
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://basic-auth.hub.keboola.local/", nil)
+				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"})
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
@@ -2073,11 +2078,39 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Hello, client")
+				require.Len(t, response.Cookies(), 2)
 			},
 			expectedNotifications: map[string]int{
 				"auth": 1,
 			},
 			expectedWakeUps: map[string]int{},
+		},
+		{
+			name: "public-basic-auth-sign-out",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				// Access with cookie
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://basic-auth.hub.keboola.local/_proxy/sign_out", nil)
+				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"})
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Basic Authentication")
+				if assert.Len(t, response.Cookies(), 3) {
+					c := response.Cookies()[2]
+					assert.Equal(t, "proxyBasicAuth", c.Name)
+					assert.Equal(t, "", c.Value)
+					assert.Equal(t, "/", c.Path)
+					assert.Equal(t, "basic-auth.hub.keboola.local", c.Domain)
+					assert.True(t, c.HttpOnly)
+					assert.True(t, c.Secure)
+					assert.Equal(t, http.SameSiteStrictMode, c.SameSite)
+				}
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 	}
 
@@ -2556,7 +2589,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 			ID:             "auth",
 			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
-			AppSlug:        ptr.Ptr("basic"), //basic-auth.hub.keboola.local
+			AppSlug:        ptr.Ptr("basic"), // basic-auth.hub.keboola.local
 			AuthProviders: provider.Providers{
 				provider.Basic{
 					Base: provider.Base{
