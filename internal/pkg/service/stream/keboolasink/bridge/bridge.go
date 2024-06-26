@@ -21,7 +21,7 @@ const (
 	// targetProvider marks files which destionation is a Keboola table.
 	targetProvider = targetModel.Provider("keboola")
 
-	// exportMetaKey is a key of the table metadata that marks each table created by the stream.export
+	// exportMetaKey is a key of the table metadata that marks each table created by the stream.export.
 	exportMetaKey = "KBC.stream.export.id"
 )
 
