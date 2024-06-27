@@ -106,7 +106,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	}
 
 	hash := sha256.New()
-	hash.Write([]byte(p))
+	hash.Write([]byte(p + string(h.app.ID)))
 	hashedValue := hash.Sum(nil)
 	v := &http.Cookie{
 		Value: hex.EncodeToString(hashedValue),
@@ -126,7 +126,7 @@ func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {
 
 	if cookie != nil {
 		hash := sha256.New()
-		hash.Write([]byte(h.basicAuth.Password))
+		hash.Write([]byte(h.basicAuth.Password + string(h.app.ID)))
 		hashedValue := hash.Sum(nil)
 		if hex.EncodeToString(hashedValue) != cookie.Value {
 			return errors.New("Cookie not set correctly.")
