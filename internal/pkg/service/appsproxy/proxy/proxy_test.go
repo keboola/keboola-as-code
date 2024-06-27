@@ -2035,7 +2035,7 @@ func TestAppProxyRouter(t *testing.T) {
 				cookies := response.Cookies()
 				if assert.Len(t, cookies, 1) {
 					assert.Equal(t, "proxyBasicAuth", cookies[0].Name)
-					assert.Equal(t, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", cookies[0].Value)
+					assert.Equal(t, "bfd0255218cceb44fec106d13875be3b7120b304b97df9bfccbeb9aab19019fa", cookies[0].Value)
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "basic-auth.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
@@ -2070,7 +2070,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Access with cookie
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://basic-auth.hub.keboola.local/", nil)
-				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"})
+				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "bfd0255218cceb44fec106d13875be3b7120b304b97df9bfccbeb9aab19019fa"})
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
