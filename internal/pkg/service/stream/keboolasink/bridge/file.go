@@ -27,7 +27,7 @@ func (b *Bridge) setupOnFileOpen() {
 		if b.isKeboolaTableSink(&sink) {
 			// Create table if not exists
 			tableKey := keboola.TableKey{BranchID: sink.BranchID, TableID: sink.Table.Keboola.TableID}
-			if err := b.ensureTableExists(ctx, tableKey, sink.Table.Mapping); err != nil {
+			if err := b.ensureTableExists(ctx, tableKey, sink); err != nil {
 				return err
 			}
 
