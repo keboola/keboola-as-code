@@ -36,8 +36,8 @@ type Differ struct {
 	objects        model.ObjectStates
 	results        []*Result                                 // diff results
 	typeCache      map[typeName][]*reflecthelper.StructField // reflection cache
-	allowTargetEnv bool
 	errors         errors.MultiError
+	allowTargetEnv bool // option
 }
 
 type ResultState int
