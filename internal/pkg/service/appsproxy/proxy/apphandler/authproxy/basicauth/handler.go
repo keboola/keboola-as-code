@@ -66,7 +66,7 @@ func (h *Handler) CookieExpiration() time.Duration {
 func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) error {
 	host, _ := util.SplitHostPort(req.Host)
 	if host == "" {
-		panic(errors.New("host cannot be empty"))
+		return errors.New("internal server error")
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -115,8 +115,8 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	return h.upstream.ServeHTTPOrError(w, req)
 }
 
-func (h *Handler) isAuthorized(p string, cookie *http.Cookie) error {
-	if p != "" && !h.basicAuth.IsAuthorized(p) {
+func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {
+	if password != "" && !h.basicAuth.IsAuthorized(password) {
 		return errors.New("Please enter a correct password.")
 	}
 
