@@ -72,7 +72,7 @@ services:
       ports:
         - "6379:6379"
       volumes:
-        - ./redis.conf:/etc/redis/redis.conf
+        - ./provisioning/common/redis/redis.conf:/etc/redis/redis.conf
       environment:
         REDIS_PORT: 6379
   # Same etcd is used for all services, but with different namespace
@@ -110,9 +110,9 @@ services:
       environment:
         MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
         MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
-        MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializerJson.json
+        MOCKSERVER_INITIALIZATION_JSON_PATH: /config/sandboxesMock.json
       volumes:
-        - ./initializer.json:/config/initializerJson.json:Z
+        - ./provisioning/apps-proxy/dev/sandboxesMock.json:/config/sandboxesMock.json:Z
 
 volumes:
   cache:
