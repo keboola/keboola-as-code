@@ -4,9 +4,12 @@ package ctxattr
 
 import (
 	"context"
+	"fmt"
+	"math"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -87,5 +90,28 @@ func attrToZapField(keyValue attribute.KeyValue) zap.Field {
 		return zap.Strings(key, value.AsStringSlice())
 	default:
 		return zap.Any(key, value.AsInterface())
+	}
+}
+
+func ZapFieldsToAttrs(fields []zap.Field, target *[]attribute.KeyValue) {
+	for _, field := range fields {
+		*target = append(*target, zapFieldToAttr(field))
+	}
+}
+
+func zapFieldToAttr(field zap.Field) attribute.KeyValue {
+	switch field.Type {
+	case zapcore.StringType:
+		return attribute.String(field.Key, field.String)
+	case zapcore.Int64Type, zapcore.Int32Type, zapcore.Int16Type, zapcore.Int8Type, zapcore.Uint64Type, zapcore.Uint32Type, zapcore.Uint16Type, zapcore.Uint8Type:
+		return attribute.Int64(field.Key, field.Integer)
+	case zapcore.Float64Type, zapcore.Float32Type:
+		return attribute.Float64(field.Key, math.Float64frombits(uint64(field.Integer)))
+	case zapcore.BoolType:
+		return attribute.Bool(field.Key, field.Integer != 0)
+	case zapcore.ErrorType:
+		return attribute.String(field.Key, field.Interface.(error).Error())
+	default:
+		return attribute.String(field.Key, fmt.Sprintf("<unable to convert value for zap type %d>", field.Type))
 	}
 }
