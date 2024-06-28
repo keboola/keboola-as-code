@@ -114,17 +114,29 @@ func (b *Bridge) addTableMetadata(ctx context.Context, table *keboola.Table, sin
 		return err
 	}
 
-	for i := range table.Metadata {
-		if table.Metadata[i].Key == exportMetaKey {
-			return nil
+	foundSinkMetaKey := false
+	foundSourceMetaKey := false
+
+	for _, metadata := range table.Metadata {
+		if metadata.Key == sinkMetaKey && metadata.Value == sink.SinkID.String() {
+			foundSinkMetaKey = true
 		}
+
+		if metadata.Key == sourceMetaKey && metadata.Value == sink.SourceID.String() {
+			foundSourceMetaKey = true
+		}
+	}
+
+	if foundSinkMetaKey && foundSourceMetaKey {
+		return nil
 	}
 
 	return api.CreateOrUpdateTableMetadata(
 		table.TableKey,
 		"stream",
 		[]keboola.TableMetadataRequest{
-			{Key: exportMetaKey, Value: sink.SinkID.String()},
+			{Key: sinkMetaKey, Value: sink.SinkID.String()},
+			{Key: sourceMetaKey, Value: sink.SourceID.String()},
 		},
 		[]keboola.ColumnMetadataRequest{},
 	).SendOrErr(ctx)
