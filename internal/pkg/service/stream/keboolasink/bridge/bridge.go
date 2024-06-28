@@ -21,8 +21,10 @@ const (
 	// targetProvider marks files which destionation is a Keboola table.
 	targetProvider = targetModel.Provider("keboola")
 
-	// exportMetaKey is a key of the table metadata that marks each table created by the stream.export.
-	exportMetaKey = "KBC.stream.export.id"
+	// sinkMetaKey is a key of the table metadata that marks each table created by the stream.sink.
+	sinkMetaKey = "KBC.stream.sink.id"
+	// sourceMetaKey is a key of the table metadata that marks each table created by the stream.source.
+	sourceMetaKey = "KBC.stream.source.id"
 )
 
 type Bridge struct {
