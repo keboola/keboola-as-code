@@ -48,7 +48,7 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 
 	// Setup statistics collector
 	syncCfg := cfg.Storage.Statistics.Collector
-	collector.New(logger, clk, d.StatisticsRepository(), volumes.Events(), syncCfg)
+	collector.Start(d, volumes.Events(), syncCfg)
 
 	// Graceful shutdown
 	d.Process().OnShutdown(func(ctx context.Context) {
