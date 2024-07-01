@@ -43,7 +43,7 @@ func TestCollector(t *testing.T) {
 	}
 
 	// Start collector
-	collector.Start(d, events, cfg)
+	collector.Start(d, events, cfg, "test-node")
 
 	// The collector should listen on writers events
 	require.NotNil(t, events.WriterOpen)
@@ -57,7 +57,7 @@ func TestCollector(t *testing.T) {
 
 	// Sync: no data
 	triggerSyncAndWait()
-	etcdhelper.AssertKVsString(t, client, ``)
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_001.txt")
 
 	// Sync: one writer
 	w1.RowsCountValue = 1
@@ -66,37 +66,11 @@ func TestCollector(t *testing.T) {
 	w1.CompressedSizeValue = 10
 	w1.UncompressedSizeValue = 100
 	triggerSyncAndWait()
-	etcdhelper.AssertKVsString(t, client, `
-<<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T01:10:00.000Z",
-  "lastRecordAt": "2000-01-01T01:10:00.000Z",
-  "recordsCount": 1,
-  "uncompressedSize": "100B",
-  "compressedSize": "10B"
-}
->>>>>
-`)
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_002.txt")
 
 	// Sync: no change
 	triggerSyncAndWait()
-	etcdhelper.AssertKVsString(t, client, `
-<<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T01:10:00.000Z",
-  "lastRecordAt": "2000-01-01T01:10:00.000Z",
-  "recordsCount": 1,
-  "uncompressedSize": "100B",
-  "compressedSize": "10B"
-}
->>>>>
-`)
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_002.txt")
 
 	// sync: two writers
 	w1.RowsCountValue = 5
@@ -109,33 +83,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	w2.CompressedSizeValue = 10
 	w2.UncompressedSizeValue = 100
 	triggerSyncAndWait()
-	etcdhelper.AssertKVsString(t, client, `
-<<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T01:10:00.000Z",
-  "lastRecordAt": "2000-01-01T01:30:00.000Z",
-  "recordsCount": 5,
-  "uncompressedSize": "500B",
-  "compressedSize": "50B"
-}
->>>>>
-
-<<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T01:25:00.000Z",
-  "lastRecordAt": "2000-01-01T01:25:00.000Z",
-  "recordsCount": 1,
-  "uncompressedSize": "100B",
-  "compressedSize": "10B"
-}
->>>>>
-`)
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_003.txt")
 
 	// Close the writer 1
 	w1.RowsCountValue = 6
@@ -143,33 +91,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	w1.CompressedSizeValue = 60
 	w1.UncompressedSizeValue = 600
 	assert.NoError(t, events.WriterClose(w1, nil))
-	etcdhelper.AssertKVsString(t, client, `
-<<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T01:10:00.000Z",
-  "lastRecordAt": "2000-01-01T01:40:00.000Z",
-  "recordsCount": 6,
-  "uncompressedSize": "600B",
-  "compressedSize": "60B"
-}
->>>>>
-
-<<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T01:25:00.000Z",
-  "lastRecordAt": "2000-01-01T01:25:00.000Z",
-  "recordsCount": 1,
-  "uncompressedSize": "100B",
-  "compressedSize": "10B"
-}
->>>>>
-`)
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_004.txt")
 
 	// Shutdown: stop Collector and remaining writer 2
 	w2.RowsCountValue = 3
@@ -178,33 +100,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	w2.UncompressedSizeValue = 300
 	d.Process().Shutdown(context.Background(), errors.New("bye bye"))
 	d.Process().WaitForShutdown()
-	etcdhelper.AssertKVsString(t, client, `
-<<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T01:10:00.000Z",
-  "lastRecordAt": "2000-01-01T01:40:00.000Z",
-  "recordsCount": 6,
-  "uncompressedSize": "600B",
-  "compressedSize": "60B"
-}
->>>>>
-
-<<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-01T01:25:00.000Z",
-  "lastRecordAt": "2000-01-01T01:35:00.000Z",
-  "recordsCount": 3,
-  "uncompressedSize": "300B",
-  "compressedSize": "30B"
-}
->>>>>
-`)
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_005.txt")
 }
 
 type testEvents struct {

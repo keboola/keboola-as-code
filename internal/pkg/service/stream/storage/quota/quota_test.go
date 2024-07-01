@@ -48,14 +48,11 @@ func TestQuota_Check(t *testing.T) {
 	quoteChecker := quota.New(d)
 	updateStats := func(sliceKey model.SliceKey, size datasize.ByteSize) {
 		header := etcdhelper.ExpectModificationInPrefix(t, client, "storage/stats/", func() {
-			require.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+			require.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{
 				{
-					SliceKey: sliceKey,
-					Value: statistics.Value{
-						SlicesCount:    1,
-						RecordsCount:   123,
-						CompressedSize: size,
-					},
+					SliceKey:       sliceKey,
+					RecordsCount:   123,
+					CompressedSize: size,
 				},
 			}))
 		})
