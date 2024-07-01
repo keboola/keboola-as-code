@@ -23,6 +23,7 @@ type Collector struct {
 	logger     log.Logger
 	repository *repository.Repository
 	config     statistics.SyncConfig
+	nodeID     string
 	wg         *sync.WaitGroup
 
 	syncLock    *sync.Mutex
@@ -49,11 +50,12 @@ type dependencies interface {
 	StatisticsRepository() *repository.Repository
 }
 
-func Start(d dependencies, events WriterEvents, config statistics.SyncConfig) {
+func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, nodeID string) {
 	c := &Collector{
 		logger:      d.Logger().WithComponent("statistics.collector"),
 		repository:  d.StatisticsRepository(),
 		config:      config,
+		nodeID:      nodeID,
 		wg:          &sync.WaitGroup{},
 		syncLock:    &sync.Mutex{},
 		writersLock: &sync.Mutex{},
@@ -161,7 +163,7 @@ func (c *Collector) sync(filter *model.SliceKey) error {
 
 	// Update values in the database
 	if len(forSync) > 0 {
-		if err := c.repository.Put(ctx, forSync); err != nil {
+		if err := c.repository.Put(ctx, c.nodeID, forSync); err != nil {
 			err = errors.Errorf("cannot save the storage statistics to the database: %w", err)
 			c.logger.Error(ctx, err.Error())
 			return err

@@ -4,7 +4,7 @@
 //
 // Statistics are stored in the etcd database as [statistics.Value] under the following key format:
 //
-//	storage/stats/<LEVEL:local>/<SLICE_KEY:PROJECT_ID/SOURCE_ID/SINK_ID/FILE_ID/VOLUME_ID/SLICE_ID>/value
+//	storage/stats/<LEVEL:local>/<SLICE_KEY:PROJECT_ID/SOURCE_ID/SINK_ID/FILE_ID/VOLUME_ID/SLICE_ID>/<NODE_ID>
 //
 // Statistics are stored at the slice level, which represents the smallest unit.
 //
@@ -54,8 +54,8 @@ type Repository struct {
 	logger    log.Logger
 	telemetry telemetry.Telemetry
 	client    *etcd.Client
-	schema    schema
 	plugins   *plugin.Plugins
+	schema    schema
 }
 
 type dependencies interface {
@@ -71,8 +71,8 @@ func New(d dependencies) *Repository {
 		logger:    d.Logger().WithComponent("storage.statistics.repository"),
 		telemetry: d.Telemetry(),
 		client:    d.EtcdClient(),
-		schema:    newSchema(d.EtcdSerde()),
 		plugins:   d.Plugins(),
+		schema:    newSchema(d.EtcdSerde()),
 	}
 
 	// Setup Provider interface

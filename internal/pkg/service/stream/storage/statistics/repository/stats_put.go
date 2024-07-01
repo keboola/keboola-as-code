@@ -13,7 +13,7 @@ import (
 )
 
 // Put creates or updates slices statistics records in the level.LevelLocal.
-func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err error) {
+func (r *Repository) Put(ctx context.Context, nodeID string, stats []statistics.PerSlice) (err error) {
 	ctx, span := r.telemetry.Tracer().Start(ctx, "keboola.go.buffer.storage.statistics.Repository.Put")
 	defer span.End(&err)
 
@@ -31,7 +31,7 @@ func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err 
 			i = 0
 			addTxn()
 		}
-		currentTxn.Then(r.schema.InLevel(model.LevelLocal).InSlice(v.SliceKey).Put(r.client, v.Value))
+		currentTxn.Then(r.schema.InLevel(model.LevelLocal).InSourceNodeSlice(v.SliceKey, nodeID).Put(r.client, v.Value))
 		i++
 	}
 

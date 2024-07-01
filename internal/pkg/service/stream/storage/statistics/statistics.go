@@ -3,7 +3,13 @@
 // These statistics are primarily used to evaluate upload and import conditions,
 // but users can also access them through the API.
 //
-// Statistics are collected and stored per definition.Sink, one definition.Source can have multiple sinks.
+// Statistics are collected and stored per definition.Sink, one definition.Source can have multiple sinks,
+// so one message, received by a source, is counted several times, according to the number of sinks.
+//
+// The statistics Collector collects statistics from each active slice writer on each source node.
+//
+// Statistics are saved per the slice and the source node, see OpenSlice and Put method in the repository.
+// Later, the rollup operation is performed, see deleteOrRollup method.
 package statistics
 
 import (

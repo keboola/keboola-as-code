@@ -68,8 +68,12 @@ func TestSchema(t *testing.T) {
 			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/",
 		},
 		{
-			s.InLevel(model.LevelLocal).InSlice(sliceKey).Key(),
-			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/value",
+			s.InLevel(model.LevelLocal).InSlice(sliceKey).Prefix(),
+			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/",
+		},
+		{
+			s.InLevel(model.LevelLocal).InSliceSourceNode(sliceKey, "my-node").Key(),
+			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/my-node",
 		},
 		{
 			s.InLevel(model.LevelLocal).InParentOf(sliceKey.BranchKey).Prefix(),
