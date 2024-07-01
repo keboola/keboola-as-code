@@ -47,7 +47,7 @@ spec:
           args: [ "--config-file", "/stream/config/config.yaml", "api" ] # run API component
           resources:
             requests:
-              cpu: "200m"
+              cpu: "1000m"
               memory: "$STREAM_API_MEMORY_SOFT_LIMIT"
             limits:
               memory: "$STREAM_API_MEMORY_HARD_LIMIT"
