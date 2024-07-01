@@ -68,7 +68,7 @@ func TestCollector(t *testing.T) {
 	triggerSyncAndWait()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/test-node
 -----
 {
   "slicesCount": 1,
@@ -85,7 +85,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	triggerSyncAndWait()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/test-node
 -----
 {
   "slicesCount": 1,
@@ -111,7 +111,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	triggerSyncAndWait()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/test-node
 -----
 {
   "slicesCount": 1,
@@ -124,7 +124,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 
 <<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/test-node
 -----
 {
   "slicesCount": 1,
@@ -145,7 +145,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	assert.NoError(t, events.WriterClose(w1, nil))
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/test-node
 -----
 {
   "slicesCount": 1,
@@ -158,7 +158,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 
 <<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/test-node
 -----
 {
   "slicesCount": 1,
@@ -180,7 +180,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 	d.Process().WaitForShutdown()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/test-node
 -----
 {
   "slicesCount": 1,
@@ -193,7 +193,7 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 
 <<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/value
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T02:00:00.000Z/test-node
 -----
 {
   "slicesCount": 1,
