@@ -1,0 +1,25 @@
+<<<<<
+storage/stats/target/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-20T00:00:00.000Z/value
+-----
+{
+  "slicesCount": 10,
+  "firstRecordAt": "2000-01-19T00:00:00.000Z",
+  "lastRecordAt": "2000-01-20T00:00:00.000Z",
+  "recordsCount": 100,
+  "uncompressedSize": "100B",
+  "compressedSize": "100B"
+}
+>>>>>
+
+<<<<<
+storage/stats/target/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/2000-01-01T20:00:00.000Z/my-volume/2000-01-21T00:00:00.000Z/value
+-----
+{
+  "slicesCount": 9,
+  "firstRecordAt": "2000-01-20T00:00:00.000Z",
+  "lastRecordAt": "2000-01-21T00:00:00.000Z",
+  "recordsCount": 99,
+  "uncompressedSize": "99B",
+  "compressedSize": "99B"
+}
+>>>>>
