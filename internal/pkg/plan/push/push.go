@@ -18,10 +18,6 @@ func NewPlan(diffResults *diff.Results, allowTargetEnv bool) (*diffop.Plan, erro
 			if result.ChangedFields.String() == "relations" && !result.ChangedFields.Get("relations").HasPath("InAPI") {
 				continue
 			}
-
-			if allowTargetEnv && result.ChangedFields.Has("name") {
-				continue
-			}
 			plan.Add(result, diffop.ActionSaveRemote)
 		case diff.ResultOnlyInLocal:
 			plan.Add(result, diffop.ActionSaveRemote)

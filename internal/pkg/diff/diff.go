@@ -18,13 +18,26 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+type Option func(c *Config)
+
+type Config struct {
+	allowTargetEnv bool
+}
+
+func WithIgnoreBranchName(allowTargetEnv bool) Option {
+	return func(c *Config) {
+		c.allowTargetEnv = allowTargetEnv
+	}
+}
+
 type typeName string
 
 type Differ struct {
-	objects   model.ObjectStates
-	results   []*Result                                 // diff results
-	typeCache map[typeName][]*reflecthelper.StructField // reflection cache
-	errors    errors.MultiError
+	objects        model.ObjectStates
+	results        []*Result                                 // diff results
+	typeCache      map[typeName][]*reflecthelper.StructField // reflection cache
+	errors         errors.MultiError
+	allowTargetEnv bool // option
 }
 
 type ResultState int
@@ -58,10 +71,17 @@ type Results struct {
 	Objects               model.ObjectStates
 }
 
-func NewDiffer(objects model.ObjectStates) *Differ {
+func NewDiffer(objects model.ObjectStates, option ...Option) *Differ {
+	config := Config{}
+
+	for _, o := range option {
+		o(&config)
+	}
+
 	return &Differ{
-		objects:   objects,
-		typeCache: make(map[typeName][]*reflecthelper.StructField),
+		objects:        objects,
+		allowTargetEnv: config.allowTargetEnv,
+		typeCache:      make(map[typeName][]*reflecthelper.StructField),
 	}
 }
 
@@ -149,11 +169,23 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	}
 
 	// Diff
+	if remoteState.Kind().IsBranch() {
+		result = d.resultFn(result, state, diffFields, remoteValues, localValues, d.newBranchOptions)
+	} else {
+		result = d.resultFn(result, state, diffFields, remoteValues, localValues, d.newOptions)
+	}
+
+	return result, nil
+}
+
+func (d *Differ) resultFn(result *Result, state model.ObjectState, diffFields []*reflecthelper.StructField, remoteValues, localValues reflect.Value, opts func(r *Reporter) cmp.Options) *Result {
+	state.RemoteState()
 	for _, field := range diffFields {
 		reporter := d.diffValues(
 			state,
 			remoteValues.FieldByName(field.StructField.Name).Interface(),
 			localValues.FieldByName(field.StructField.Name).Interface(),
+			opts,
 		)
 		diffStr := reporter.String()
 		if len(diffStr) > 0 {
@@ -169,14 +201,25 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	} else {
 		result.State = ResultEqual
 	}
-
-	return result, nil
+	return result
 }
 
-func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue any) *Reporter {
+func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localValue any, opts func(r *Reporter) cmp.Options) *Reporter {
 	reporter := newReporter(objectState, d.objects)
-	cmp.Diff(remoteValue, localValue, d.newOptions(reporter))
+	cmp.Diff(remoteValue, localValue, opts(reporter))
 	return reporter
+}
+
+func (d *Differ) newBranchOptions(reporter *Reporter) cmp.Options {
+	options := d.newOptions(reporter)
+	options = append(options, cmp.Transformer("name", func(s string) string {
+		if d.allowTargetEnv {
+			return ""
+		}
+
+		return s
+	}))
+	return options
 }
 
 func (d *Differ) newOptions(reporter *Reporter) cmp.Options {

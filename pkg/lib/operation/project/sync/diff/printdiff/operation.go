@@ -27,7 +27,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Diff
-	results, err = createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d)
+	results, err = createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d, diff.WithIgnoreBranchName(projectState.ProjectManifest().AllowTargetENV()))
 	if err != nil {
 		return nil, err
 	}

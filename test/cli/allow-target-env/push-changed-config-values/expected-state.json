@@ -1,0 +1,32 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "keboola.data-apps",
+          "name": "Data-App",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "foo": "modified"
+          },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "test fixture",
+          "configuration": {},
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}
