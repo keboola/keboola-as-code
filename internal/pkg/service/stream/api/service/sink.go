@@ -289,7 +289,7 @@ func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRe
 		return err
 	}
 
-	return d.StatisticsRepository().ResetStats(d.SinkKey()).Do(ctx).Err()
+	return d.StatisticsRepository().ResetSinkStats(d.SinkKey()).Do(ctx).Err()
 }
 
 func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {

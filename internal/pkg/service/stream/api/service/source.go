@@ -229,7 +229,17 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 		return err
 	}
 
-	return d.StatisticsRepository().ResetStats(d.SourceKey()).Do(ctx).Err()
+	sinks, err := s.definition.Sink().List(d.SourceKey()).Do(ctx).All()
+	if err != nil {
+		return err
+	}
+
+	sinkKeys := []key.SinkKey{}
+	for _, sink := range sinks {
+		sinkKeys = append(sinkKeys, sink.SinkKey)
+	}
+
+	return d.StatisticsRepository().ResetAllSinksStats(ctx, sinkKeys)
 }
 
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {

@@ -330,7 +330,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, statsRepo.ResetStats(sinkKey).Do(ctx).Err())
+		require.NoError(t, statsRepo.ResetSinkStats(sinkKey).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, `fixtures/stats_delete_snapshot_004.txt`, etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/file/|storage/slice/|storage/volume/`))
 	}
 
@@ -401,7 +401,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, statsRepo.ResetStats(sinkKey).Do(ctx).Err())
+		require.NoError(t, statsRepo.ResetSinkStats(sinkKey).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, `fixtures/stats_delete_snapshot_006.txt`, etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/file/|storage/slice/|storage/volume/`))
 	}
 }
