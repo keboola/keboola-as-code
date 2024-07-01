@@ -24,7 +24,7 @@ type Config struct {
 	allowTargetEnv bool
 }
 
-func WithAllowTargetEnv(allowTargetEnv bool) Option {
+func WithIgnoreBranchName(allowTargetEnv bool) Option {
 	return func(c *Config) {
 		c.allowTargetEnv = allowTargetEnv
 	}
