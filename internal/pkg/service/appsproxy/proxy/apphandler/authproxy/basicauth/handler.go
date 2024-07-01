@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -14,14 +15,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
-	basicAuthCookie = "proxyBasicAuth"
-	formPagePath    = config.InternalPrefix + "/form"
+	basicAuthCookie        = "proxyBasicAuth"
+	continueAuthQueryParam = "continue_auth"
+	formPagePath           = config.InternalPrefix + "/form"
 )
 
 type Handler struct {
@@ -30,7 +31,7 @@ type Handler struct {
 	clock      clock.Clock
 	app        api.AppConfig
 	basicAuth  provider.Basic
-	upstream   chain.Handler
+	publicURL  *url.URL
 }
 
 func NewHandler(
@@ -39,7 +40,7 @@ func NewHandler(
 	clock clock.Clock,
 	app api.AppConfig,
 	auth provider.Basic,
-	upstream chain.Handler,
+	publicURL *url.URL,
 ) *Handler {
 	return &Handler{
 		logger:     logger,
@@ -47,7 +48,7 @@ func NewHandler(
 		clock:      clock,
 		app:        app,
 		basicAuth:  auth,
-		upstream:   upstream,
+		publicURL:  publicURL,
 	}
 }
 
@@ -72,9 +73,6 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	if err := req.ParseForm(); err != nil {
 		return err
 	}
-
-	// Unset content length as we do not want to push req.Body to upstream
-	req.ContentLength = 0
 
 	// Unset cookie as /_proxy/sign_out was called and enforce login
 	requestCookie, _ := req.Cookie(basicAuthCookie)
@@ -102,7 +100,14 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	// Skip generating cookie value when already set and verified
 	if requestCookie != nil {
 		h.setCookie(w, host, expires, requestCookie)
-		return h.upstream.ServeHTTPOrError(w, req)
+		query := req.URL.Query()
+		if query.Get(continueAuthQueryParam) != "true" {
+			query.Set(continueAuthQueryParam, "true")
+			baseURL := h.app.BaseURL(h.publicURL)
+			redirectURL := baseURL.ResolveReference(&url.URL{Path: req.URL.Path, RawQuery: query.Encode()})
+			h.pageWriter.WriteRedirectPage(w, req, http.StatusOK, redirectURL.String())
+		}
+		return nil
 	}
 
 	hash := sha256.New()
@@ -112,7 +117,13 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		Value: hex.EncodeToString(hashedValue),
 	}
 	h.setCookie(w, host, expires, v)
-	return h.upstream.ServeHTTPOrError(w, req)
+	query := req.URL.Query()
+	if query.Get(continueAuthQueryParam) != "true" {
+		baseURL := h.app.BaseURL(h.publicURL)
+		redirectURL := baseURL.ResolveReference(&url.URL{Path: req.URL.Path, RawQuery: query.Encode()})
+		h.pageWriter.WriteRedirectPage(w, req, http.StatusOK, redirectURL.String())
+	}
+	return nil
 }
 
 func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {

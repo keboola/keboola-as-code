@@ -2030,7 +2030,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Hello, client")
+				assert.Contains(t, string(body), "Signing in ...")
 				// Check that cookies were set
 				cookies := response.Cookies()
 				if assert.Len(t, cookies, 1) {
@@ -2043,10 +2043,8 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 				}
 			},
-			expectedNotifications: map[string]int{
-				"auth": 1,
-			},
-			expectedWakeUps: map[string]int{},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "public-basic-auth-wrong-cookie",
@@ -2077,13 +2075,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Hello, client")
+				assert.Contains(t, string(body), "Signing in ...")
 				require.Len(t, response.Cookies(), 2)
 			},
-			expectedNotifications: map[string]int{
-				"auth": 1,
-			},
-			expectedWakeUps: map[string]int{},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
 		},
 		{
 			name: "public-basic-auth-sign-out",
