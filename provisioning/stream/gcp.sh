@@ -21,7 +21,7 @@ echo ""
 
 terraform -chdir=./gcp  init -input=false -no-color \
   -backend-config="bucket=${TERRAFORM_REMOTE_STATE_BUCKET}" \
-  -backend-config="prefix=keboola-as-code/buffer"
+  -backend-config="prefix=keboola-as-code/stream"
 
 echo "=> Validating configuration"
 terraform validate -no-color
@@ -55,8 +55,10 @@ export ETCD_STORAGE_CLASS_NAME=
 . ./common.sh
 
 # GCP specific part of the deploy
-kubectl apply -f ./kubernetes/deploy/cloud/gcp/service.yaml
-kubectl apply -f ./kubernetes/deploy/cloud/gcp/ingress.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/service-api.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/ingress-api.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/service-http-source.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/gcp/ingress-http-source.yaml
 
 # Wait for the rollout
 . ./wait.sh

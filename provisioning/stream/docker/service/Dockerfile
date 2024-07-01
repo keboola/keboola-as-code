@@ -21,6 +21,12 @@ RUN apk add -U --no-cache ca-certificates git
 COPY --from=buildContainer /app/target/stream/service /app/service
 WORKDIR /app
 
+# Storage writer ingress - UDP port
+EXPOSE 6000
+
+# HTTP source
+EXPOSE 7000
+
 # API
 EXPOSE 8000
 

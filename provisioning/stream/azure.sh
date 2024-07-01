@@ -26,22 +26,37 @@ export ETCD_STORAGE_CLASS_NAME=
 . ./common.sh
 
 # Azure specific part of the deploy
-kubectl apply -f ./kubernetes/deploy/cloud/azure/service.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/azure/service-api.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/azure/service-http-source.yaml
 
 # Wait for the rollout
 . ./wait.sh
 
-# Update IP
-IP_ADDRESS=""
+# Update API IP
+API_IP_ADDRESS=""
 TIME_WAITED=0
-# every 10 seconds but in total max 15 minutes try to fetch IP_ADDRESS
 #shellcheck disable=2203
-while [[ -z "$IP_ADDRESS" && $TIME_WAITED -lt 15*60 ]]; do
-    echo "Waiting for Buffer API ingress IP..."
+while [[ -z "$API_IP_ADDRESS" && $TIME_WAITED -lt 15*60 ]]; do # each 10s, max 15min
+    echo "Waiting for Stream API ingress IP..."
     sleep 10;
     TIME_WAITED=$((TIME_WAITED + 10))
-    IP_ADDRESS=$(kubectl get services \
-      --selector "app=buffer-api" \
+    API_IP_ADDRESS=$(kubectl get services \
+      --selector "app=stream-api" \
+      --namespace "$NAMESPACE" \
+      --no-headers \
+      --output jsonpath="{.items[0].status.loadBalancer.ingress[0].ip}")
+done
+
+# Update HTTP Source IP
+HTTP_SOURCE_IP_ADDRESS=""
+TIME_WAITED=0
+#shellcheck disable=2203
+while [[ -z "$HTTP_SOURCE_IP_ADDRESS" && $TIME_WAITED -lt 15*60 ]]; do # each 10s, max 15min
+    echo "Waiting for Stream HTTP Source ingress IP..."
+    sleep 10;
+    TIME_WAITED=$((TIME_WAITED + 10))
+    HTTP_SOURCE_IP_ADDRESS=$(kubectl get services \
+      --selector "app=stream-http-source" \
       --namespace "$NAMESPACE" \
       --no-headers \
       --output jsonpath="{.items[0].status.loadBalancer.ingress[0].ip}")
@@ -56,12 +71,17 @@ APPLICATION_GATEWAY_NAME=$(az deployment group show \
 az network application-gateway address-pool update \
   --gateway-name="$APPLICATION_GATEWAY_NAME" \
   --resource-group "$RESOURCE_GROUP" \
-  --name=buffer \
-  --servers "$IP_ADDRESS"
+  --name=stream \
+  --servers "$API_IP_ADDRESS" "$HTTP_SOURCE_IP_ADDRESS"
 
 az network application-gateway probe update \
   --gateway-name="$APPLICATION_GATEWAY_NAME" \
   --resource-group "$RESOURCE_GROUP" \
-  --name=buffer-health-probe \
-  --host "$IP_ADDRESS"
+  --name=stream-api-health-probe \
+  --host "$API_IP_ADDRESS"
 
+az network application-gateway probe update \
+  --gateway-name="$APPLICATION_GATEWAY_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --name=stream-http-source-health-probe \
+  --host "$HTTP_SOURCE_IP_ADDRESS"

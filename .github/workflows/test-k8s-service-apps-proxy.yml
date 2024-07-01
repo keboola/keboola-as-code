@@ -29,7 +29,7 @@ defaults:
 
 jobs:
   test:
-    name: test
+    name: "K8S test: Data Apps Proxy"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -165,7 +165,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-k8s-state
+          name: test-k8s-state-apps-proxy
           path: /tmp/artifacts
           if-no-files-found: error
 

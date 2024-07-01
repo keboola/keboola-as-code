@@ -2,12 +2,12 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: buffer-worker-pdb
+  name: stream-http-source
   namespace: $NAMESPACE
   labels:
-    app: buffer-worker
+    app: stream-http-source
 spec:
   maxUnavailable: 1
   selector:
     matchLabels:
-      app: buffer-worker
+      app: stream-http-source

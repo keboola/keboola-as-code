@@ -1,0 +1,17 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: stream-api
+  namespace: $NAMESPACE
+  labels:
+    app: stream-api
+spec:
+  type: ClusterIP
+  selector:
+    app: stream-api
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+      name: http

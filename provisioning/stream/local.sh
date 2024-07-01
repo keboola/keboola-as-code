@@ -8,26 +8,44 @@ then
     exit 1
 fi
 
+# Default values for the local deployment
+export MINIKUBE_PROFILE="${MINIKUBE_PROFILE:=stream}"
+export KEBOOLA_STACK="${KEBOOLA_STACK:=local-machine}"
+export HOSTNAME_SUFFIX="${HOSTNAME_SUFFIX:=keboola.com}"
+export STREAM_IMAGE_REPOSITORY="${STREAM_IMAGE_REPOSITORY:=docker.io/keboola/stream-api}"
+export STREAM_IMAGE_TAG="${STREAM_IMAGE_TAG:=$(git rev-parse --short HEAD)-$(date +%s)}"
+
+export STREAM_ETCD_REPLICAS=2
+export STREAM_API_REPLICAS=2
+export STREAM_HTTP_SOURCE_REPLICAS=2
+export STREAM_STORAGE_READER_WRITER_REPLICAS=2
+export STREAM_STORAGE_COORDINATOR_REPLICAS=2
+
+export STREAM_ETCD_STORAGE_CLASS_NAME="standard"
+export STREAM_VOLUME_FAST_STORAGE_CLASS_NAME="standard"
+export STREAM_VOLUME_MEDIUM_STORAGE_CLASS_NAME="standard"
+export STREAM_VOLUME_SLOW_STORAGE_CLASS_NAME="standard"
+
+export STREAM_VOLUME_FAST_STORAGE_SIZE="100Mi"
+export STREAM_VOLUME_MEDIUM_STORAGE_SIZE="100Mi"
+export STREAM_VOLUME_SLOW_STORAGE_SIZE="100Mi"
+
+
 # Start minikube if needed
 if ! minikube status > /dev/null; then
   ./../common/scripts/minikube/start.sh
 fi
 
 # Build Docker image in the local Docker, so it is cached, if Minikube is destroyed
-API_IMAGE="$BUFFER_API_REPOSITORY:$BUFFER_API_IMAGE_TAG"
-WORKER_IMAGE="$BUFFER_WORKER_REPOSITORY:$BUFFER_WORKER_IMAGE_TAG"
+SERVICE_IMAGE="$STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG"
 echo
-echo "Building API image ..."
+echo "Building Service image ..."
 echo "--------------------------"
-docker build -t "$API_IMAGE" -f "./docker/api/Dockerfile" "../../"
+docker build -t "$SERVICE_IMAGE" -f "./docker/service/Dockerfile" "../../"
 echo
-echo "Building Worker image ..."
-echo "--------------------------"
-docker build -t "$WORKER_IMAGE" -f "./docker/worker/Dockerfile" "../../"
 
 # Load the images to the Minikube
-minikube image load --overwrite=true "$API_IMAGE"
-minikube image load --overwrite=true "$WORKER_IMAGE"
+minikube image load --overwrite=true "$SERVICE_IMAGE"
 
 echo
 echo "Images in the MiniKube:"
@@ -38,14 +56,14 @@ minikube image list
 minikube kubectl -- label nodes --overwrite --all nodepool=main > /dev/null
 
 # Common part
-export ETCD_STORAGE_CLASS_NAME=
 echo
 echo "Starting deployment ..."
 echo "--------------------------"
 . common.sh
 
 # Local specific part of the deploy
-kubectl apply -f ./kubernetes/deploy/cloud/local/service.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/local/service-api.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/local/service-http-source.yaml
 
 # Wait for the deployment
 . ./wait.sh
@@ -58,6 +76,10 @@ echo
 echo "To clear the MiniKube:"
 echo "MINIKUBE_PROFILE=${MINIKUBE_PROFILE} minikube delete --purge"
 echo
-echo "Load balancer of the service is accessible at:"
-minikube service --url --namespace "$NAMESPACE" buffer-api
-
+echo "Run port-forwarding to access services:"
+echo "API:"
+echo "  kubectl port-forward --address 0.0.0.0 --namespace $NAMESPACE service/stream-api :80"
+echo "  OR "
+echo "HTTP source:"
+echo "  kubectl port-forward --address 0.0.0.0 --namespace $NAMESPACE service/stream-http-source :80"
+echo "  OR "

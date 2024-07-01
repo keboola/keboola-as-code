@@ -10,8 +10,8 @@ set -Eeuo pipefail
 cd "$(dirname "$0")"
 
 # Get commit hash
-COMMIT_HASH=$(git rev-parse HEAD)
-export COMMIT_HASH
+#COMMIT_HASH=$(git rev-parse HEAD)
+#export COMMIT_HASH
 
 # Compose RELEASE_ID
 export RELEASE_ID="$BUILD_BUILDID-$RELEASE_RELEASENAME"

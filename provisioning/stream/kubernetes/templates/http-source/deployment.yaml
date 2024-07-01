@@ -2,20 +2,20 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: stream-api
+  name: stream-http-source
   namespace: $NAMESPACE
   labels:
-    app: stream-api
+    app: stream-http-source
     releaseId: $RELEASE_ID
 spec:
-  replicas: $STREAM_API_REPLICAS
+  replicas: $STREAM_HTTP_SOURCE_REPLICAS
   selector:
     matchLabels:
-      app: stream-api
+      app: stream-http-source
   template:
     metadata:
       labels:
-        app: stream-api
+        app: stream-http-source
         releaseId: $RELEASE_ID
         stream-etcd-client: "true"
         tags.datadoghq.com/env: "$KEBOOLA_STACK"
@@ -24,7 +24,7 @@ spec:
       annotations:
         log: "true"
         ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT_HASH", "git.repository_url": "github.com/keboola/keboola-as-code"}'
-        ad.datadoghq.com/stream-api.checks: |
+        ad.datadoghq.com/stream-http-source.checks: |
           {
             "openmetrics": {
               "instances": [
@@ -41,18 +41,18 @@ spec:
     spec:
       terminationGracePeriodSeconds: 60
       containers:
-        - name: stream-api
+        - name: stream-http-source
           image: $STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG
           command: [ "/app/service" ]
-          args: [ "--config-file", "/stream/config/config.yaml", "api" ] # run API component
+          args: [ "--config-file", "/stream/config/config.yaml", "http-source" ] # run HTTP source component
           resources:
             requests:
-              cpu: "1000m"
-              memory: "$STREAM_API_MEMORY_SOFT_LIMIT"
+              cpu: "200m"
+              memory: "$STREAM_HTTP_SOURCE_MEMORY_SOFT_LIMIT" # also GOMEMLIMIT soft limit
             limits:
-              memory: "$STREAM_API_MEMORY_HARD_LIMIT"
+              memory: "$STREAM_HTTP_SOURCE_MEMORY_HARD_LIMIT"
           ports:
-            - containerPort: 8000 # API
+            - containerPort: 7000 # HTTP source
             - containerPort: 9000 # metrics
           volumeMounts:
             - name: config
@@ -60,9 +60,9 @@ spec:
               readOnly: true
           env:
             - name: GOMEMLIMIT
-              value: "${STREAM_API_MEMORY_SOFT_LIMIT}B"
-            - name: STREAM_API_LISTEN
-              value: 0.0.0.0:8000
+              value: "${STREAM_HTTP_SOURCE_MEMORY_SOFT_LIMIT}B"
+            - name: STREAM_SOURCE_HTTP_LISTEN
+              value: 0.0.0.0:7000
             - name: STREAM_METRICS_LISTEN
               value: 0.0.0.0:9000
             - name: STREAM_NODE_ID
@@ -93,7 +93,7 @@ spec:
           startupProbe:
             httpGet:
               path: /health-check
-              port: 8000
+              port: 7000
               httpHeaders:
                 - name: Host
                   value: KubernetesStartupProbe
@@ -103,7 +103,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /health-check
-              port: 8000
+              port: 7000
               httpHeaders:
                 - name: Host
                   value: KubernetesReadinessProbe
@@ -112,7 +112,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health-check
-              port: 8000
+              port: 7000
               httpHeaders:
                 - name: Host
                   value: KubernetesLivenessProbe
