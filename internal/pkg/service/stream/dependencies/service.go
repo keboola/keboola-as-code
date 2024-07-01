@@ -139,7 +139,7 @@ func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff m
 		return api
 	})
 
-	d.storageStatisticsRepository = statsRepo.New(d)
+	d.storageStatisticsRepository = statsRepo.New(d, cfg.NodeID)
 
 	d.aggregationRepository = aggregationRepo.New(d)
 
