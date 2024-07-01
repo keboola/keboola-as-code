@@ -2,20 +2,20 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: buffer-api
+  name: stream-http-source
   namespace: $NAMESPACE
   labels:
-    app: buffer-api
+    app: stream-http-source
   annotations:
     kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
-    - host: "buffer.${HOSTNAME_SUFFIX}"
+    - host: "stream-in.${HOSTNAME_SUFFIX}"
       http:
         paths:
           - backend:
               service:
-                name: buffer-api
+                name: stream-http-source
                 port:
                   number: 80
             path: /

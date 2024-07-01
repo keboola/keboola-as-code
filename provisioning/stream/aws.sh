@@ -20,8 +20,10 @@ export ETCD_STORAGE_CLASS_NAME="etcd-gp3"
 . ./common.sh
 
 # AWS specific part of the deploy
-kubectl apply -f ./kubernetes/deploy/cloud/aws/service.yaml
-kubectl apply -f ./kubernetes/deploy/cloud/aws/ingress.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/aws/service-api.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/aws/ingress-api.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/aws/service-http-source.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/aws/ingress-http-source.yaml
 
 # Wait for the rollout
 . ./wait.sh

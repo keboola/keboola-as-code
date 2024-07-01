@@ -2,12 +2,12 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: stream-api
+  name: stream-storage-coordinator
   namespace: $NAMESPACE
   labels:
-    app: stream-api
+    app: stream-storage-coordinator
 spec:
   maxUnavailable: 1
   selector:
     matchLabels:
-      app: stream-api
+      app: stream-storage-coordinator
