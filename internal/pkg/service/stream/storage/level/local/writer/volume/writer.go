@@ -99,7 +99,7 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
 	}
 
 	// Create writer
-	w, err = writer.New(v.ctx, logger, v.clock, v.config.writerConfig, slice, file, dirPath, filePath, v.config.syncerFactory, v.config.formatWriterFactory, v.events)
+	w, err = writer.New(v.ctx, logger, v.clock, v.config.writerConfig, slice, file, v.config.syncerFactory, v.config.formatWriterFactory, v.events)
 	if err != nil {
 		return nil, err
 	}

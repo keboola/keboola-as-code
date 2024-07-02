@@ -29,7 +29,7 @@ func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
 	// Check file size after allocation
 	// The size is rounded to whole blocks, so we check:
 	// EXPECTED <= ACTUAL SIZE < 2*EXPECTED
-	allocated, err := diskalloc.Allocated(w.FilePath())
+	allocated, err := diskalloc.Allocated(tc.FilePath())
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, allocated, expectedSize)
 	assert.Less(t, allocated, 2*expectedSize)

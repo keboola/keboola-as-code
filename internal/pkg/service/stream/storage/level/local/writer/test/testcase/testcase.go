@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -60,12 +61,14 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	opts := []writerVolume.Option{writerVolume.WithWatchDrainFile(false)}
 	clk := clock.New()
 	now := clk.Now()
-	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "1"}
+	volPath := t.TempDir()
+	spec := volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "1"}
 	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), writer.NewConfig(), spec, opts...)
 	require.NoError(t, err)
 
 	// Create a test slice
 	slice := tc.newSlice(t, vol)
+	filePath := filepath.Join(volPath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
 
 	// Create writer
 	w, err := vol.OpenWriter(slice)
@@ -127,12 +130,12 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	assert.NoError(t, vol.Close(ctx))
 
 	// Check compressed size
-	stat, err := os.Stat(w.FilePath())
+	stat, err := os.Stat(filePath)
 	require.NoError(t, err)
 	assert.Equal(t, int64(w.CompressedSize().Bytes()), stat.Size(), "compressed file size doesn't match")
 
 	// Open file
-	f, err := os.OpenFile(w.FilePath(), os.O_RDONLY, 0o640)
+	f, err := os.OpenFile(filePath, os.O_RDONLY, 0o640)
 	require.NoError(t, err)
 
 	// Create file reader

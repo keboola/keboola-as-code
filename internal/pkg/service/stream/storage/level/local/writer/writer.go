@@ -3,7 +3,6 @@ package writer
 import (
 	"context"
 	"io"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -23,18 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const (
-	CompletedWritesCounter = "completed_count"
-	CompressedSizeFile     = "compressed_size"
-	UncompressedSizeFile   = "uncompressed_size"
-)
-
 // Writer writes values as bytes to the slice file on the disk, in the configured format and compression.
-//
-// The FormatWriter is used for values to bytes conversion.
-// The disksync.Syncer is used for syncing to the cache/disk,
-// The writechain.Chain is used to glue together all buffers and intermediate writers.
-// The Events are used to dispatch writer open and close events.
 type Writer interface {
 	StatisticsProvider
 
@@ -45,10 +33,6 @@ type Writer interface {
 	Close(context.Context) error
 	// Events provides listening to the writer lifecycle.
 	Events() *Events
-	// DirPath is absolute path to the slice directory. It contains slice file and optionally an auxiliary files.
-	DirPath() string
-	// FilePath is absolute path to the slice file.
-	FilePath() string
 }
 
 type StatisticsProvider interface {
@@ -69,9 +53,6 @@ type StatisticsProvider interface {
 // writer implements Writer interface, it wraps common logic for all file types.
 // For conversion between record values and bytes, the Writer is used.
 type writer struct {
-	dirPath  string
-	filePath string
-
 	logger log.Logger
 	slice  *model.Slice
 	events *Events
@@ -86,9 +67,9 @@ type writer struct {
 	writeWg *sync.WaitGroup
 
 	acceptedWrites    *count.Counter
-	completedWrites   *count.CounterWithBackup
-	compressedMeter   *size.MeterWithBackup
-	uncompressedMeter *size.MeterWithBackup
+	completedWrites   *count.Counter
+	compressedMeter   *size.Meter
+	uncompressedMeter *size.Meter
 }
 
 func New(
@@ -98,20 +79,16 @@ func New(
 	cfg Config,
 	slice *model.Slice,
 	file writechain.File,
-	dirPath string,
-	filePath string,
 	syncerFactory disksync.SyncerFactory,
 	formatWriterFactory FormatWriterFactory,
 	volumeEvents *Events,
 ) (out Writer, err error) {
 	w := &writer{
-		dirPath:  dirPath,
-		filePath: filePath,
-		logger:   logger.WithComponent("slice-writer"),
-		slice:    slice,
-		events:   volumeEvents.Clone(), // clone volume events, to attach additional writer specific events
-		closed:   make(chan struct{}),
-		writeWg:  &sync.WaitGroup{},
+		logger:  logger.WithComponent("slice-writer"),
+		slice:   slice,
+		events:  volumeEvents.Clone(), // clone volume events, to attach additional writer specific events
+		closed:  make(chan struct{}),
+		writeWg: &sync.WaitGroup{},
 	}
 
 	// Close resources on error
@@ -122,9 +99,6 @@ func New(
 			}
 			if w.chain != nil {
 				_ = w.chain.Close(ctx)
-			}
-			if w.completedWrites != nil {
-				_ = w.completedWrites.Close()
 			}
 		}
 	}()
@@ -137,10 +111,7 @@ func New(
 		// Successful writes counter, the value backup is periodically saved to disk.
 		// In the case of non-graceful node shutdown, the initial state is loaded from the disk after the node is restarted.
 		// In that case, the statistics may not be accurate, but this should not happen, and we prefer throughput over the atomicity of statistics.
-		w.completedWrites, err = count.NewCounterWithBackupFile(ctx, clk, logger, filepath.Join(dirPath, CompletedWritesCounter), cfg.Statistics.DiskSyncInterval)
-		if err != nil {
-			return nil, err
-		}
+		w.completedWrites = count.NewCounter()
 	}
 
 	// Create empty chain of writers to the file
@@ -160,14 +131,10 @@ func New(
 
 	// Measure size of compressed data
 	{
-		backupPath := filepath.Join(dirPath, CompressedSizeFile)
-		_, err = w.chain.PrependWriterOrErr(func(writer io.Writer) (out io.Writer, err error) {
-			w.compressedMeter, err = size.NewMeterWithBackupFile(ctx, clk, logger, writer, backupPath, cfg.Statistics.DiskSyncInterval)
-			return w.compressedMeter, err
+		w.chain.PrependWriter(func(writer io.Writer) io.Writer {
+			w.compressedMeter = size.NewMeter(writer)
+			return w.compressedMeter
 		})
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Add compression if enabled
@@ -189,14 +156,10 @@ func New(
 			}
 
 			// Measure size of uncompressed CSV data
-			backupPath := filepath.Join(dirPath, UncompressedSizeFile)
-			_, err = w.chain.PrependWriterOrErr(func(writer io.Writer) (_ io.Writer, err error) {
-				w.uncompressedMeter, err = size.NewMeterWithBackupFile(ctx, clk, logger, writer, backupPath, cfg.Statistics.DiskSyncInterval)
-				return w.uncompressedMeter, err
+			w.chain.PrependWriter(func(writer io.Writer) io.Writer {
+				w.uncompressedMeter = size.NewMeter(writer)
+				return w.uncompressedMeter
 			})
-			if err != nil {
-				return nil, err
-			}
 		} else {
 			// Size of the compressed and uncompressed data is same
 			w.uncompressedMeter = w.compressedMeter
@@ -271,18 +234,6 @@ func (w *writer) Events() *Events {
 	return w.events
 }
 
-// DirPath to the directory with slice files.
-// It is an absolute path.
-func (w *writer) DirPath() string {
-	return w.dirPath
-}
-
-// FilePath to the slice data.
-// It is an absolute path.
-func (w *writer) FilePath() string {
-	return w.filePath
-}
-
 // AcceptedWrites returns count of write operations waiting for the sync.
 func (w *writer) AcceptedWrites() uint64 {
 	return w.acceptedWrites.Count()
@@ -337,11 +288,6 @@ func (w *writer) Close(ctx context.Context) error {
 
 	// Wait for running writes
 	w.writeWg.Wait()
-
-	// Close, backup counter value
-	if err := w.completedWrites.Close(); err != nil {
-		errs.Append(err)
-	}
 
 	if err := w.events.dispatchOnWriterClose(w, errs.ErrorOrNil()); err != nil {
 		errs.Append(err)
