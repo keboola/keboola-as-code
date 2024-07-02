@@ -113,6 +113,13 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 			if providerID := s.providerIDFromCookie(req); providerID != id {
 				s.setCookie(w, req, id, handler)
 			}
+
+			// Get path for redirect after sign in, it must not refer to an external URL
+			callback := req.URL.Path
+			if isAcceptedCallbackURL(callback) {
+				req.Header.Set(callbackQueryParam, callback)
+			}
+
 			return handler.ServeHTTPOrError(w, req)
 		}
 	}
@@ -269,5 +276,5 @@ func (s *Selector) cookie(req *http.Request, value string, expires time.Duration
 }
 
 func isAcceptedCallbackURL(callback string) bool {
-	return callback != "" && callback != "/" && callback != selectionPagePath && strings.HasPrefix(callback, "/")
+	return callback != "" && callback != "/" && !strings.HasPrefix(callback, config.InternalPrefix)
 }

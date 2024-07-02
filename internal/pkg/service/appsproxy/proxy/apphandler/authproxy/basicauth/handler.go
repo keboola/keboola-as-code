@@ -105,21 +105,28 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		return nil
 	}
 
-	expires := h.CookieExpiration()
-	// Skip generating cookie value when already set and verified
-	if requestCookie != nil {
-		h.setCookie(w, host, expires, requestCookie)
-		return h.upstream.ServeHTTPOrError(w, req)
+	// Redirect to page that user comes from
+	path := req.Header.Get(callbackQueryParam)
+	if path == "" {
+		path = "/"
 	}
 
+	redirectURL := &url.URL{
+		Scheme: h.publicURL.Scheme,
+		Host:   req.Host,
+		Path:   path,
+	}
 	hash := sha256.New()
 	hash.Write([]byte(p + string(h.app.ID)))
 	hashedValue := hash.Sum(nil)
 	v := &http.Cookie{
 		Value: hex.EncodeToString(hashedValue),
 	}
-	h.setCookie(w, host, expires, v)
-	return h.upstream.ServeHTTPOrError(w, req)
+	h.setCookie(w, host, h.CookieExpiration(), v)
+	// Redirect to upstream
+	w.Header().Set("Location", redirectURL.String())
+	w.WriteHeader(http.StatusMovedPermanently)
+	return nil
 }
 
 func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {
@@ -150,13 +157,12 @@ func (h *Handler) isCookieAuthorized(cookie *http.Cookie) error {
 func (h *Handler) signOut(host string, cookie *http.Cookie, w http.ResponseWriter, req *http.Request) {
 	cookie.Value = ""
 	h.setCookie(w, host, -1, cookie)
-	cookie = nil
-	redirectUrl := &url.URL{
+	redirectURL := &url.URL{
 		Scheme: h.publicURL.Scheme,
 		Host:   req.Host,
 		Path:   h.SignInPath(),
 	}
-	w.Header().Set("Location", redirectUrl.String())
+	w.Header().Set("Location", redirectURL.String())
 	w.WriteHeader(http.StatusFound)
 }
 
