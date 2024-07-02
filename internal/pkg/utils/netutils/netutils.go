@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -57,6 +58,31 @@ func WaitForTCP(addr string, timeout time.Duration) (err error) {
 			conn, err = net.DialTimeout("tcp", addr, time.Second)
 			if err == nil {
 				_ = conn.Close()
+				return nil
+			}
+		}
+	}
+}
+
+func WaitForHTTP(url string, timeout time.Duration) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			if err == nil {
+				err = ctx.Err()
+			}
+			return err
+		default:
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			if err != nil {
+				return err
+			}
+			resp, err := http.DefaultClient.Do(req)
+			if err == nil {
+				_ = resp.Body.Close()
 				return nil
 			}
 		}

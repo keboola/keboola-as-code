@@ -18,7 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -30,9 +29,8 @@ func TestCollector(t *testing.T) {
 	clk := clock.NewMock()
 	cfg := statistics.NewConfig().Collector
 
-	d, mock := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk), commonDeps.WithEnabledEtcdClient())
-	client := d.EtcdClient()
-	repo := repository.New(d)
+	d, mock := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
+	client := mock.TestEtcdClient()
 	events := &testEvents{}
 
 	syncCounter := 0
@@ -44,9 +42,8 @@ func TestCollector(t *testing.T) {
 		}, time.Second, 10*time.Millisecond)
 	}
 
-	// Create collector
-	col := collector.New(d.Logger(), clk, repo, events, cfg)
-	require.NotNil(t, col)
+	// Start collector
+	collector.Start(d, events, cfg)
 
 	// The collector should listen on writers events
 	require.NotNil(t, events.WriterOpen)
@@ -174,15 +171,13 @@ storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume
 >>>>>
 `)
 
-	// Stop periodical sync
-	col.Stop(context.Background())
-
-	// Close writer 2
+	// Shutdown: stop Collector and remaining writer 2
 	w2.RowsCountValue = 3
 	w2.LastRowAtValue = utctime.MustParse("2000-01-01T01:35:00.000Z")
 	w2.CompressedSizeValue = 30
 	w2.UncompressedSizeValue = 300
-	assert.NoError(t, events.WriterClose(w2, nil))
+	d.Process().Shutdown(context.Background(), errors.New("bye bye"))
+	d.Process().WaitForShutdown()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T01:00:00.000Z/value

@@ -16,7 +16,6 @@ import (
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type dependencies interface {
@@ -29,12 +28,11 @@ type dependencies interface {
 }
 
 func Start(ctx context.Context, d dependencies, cfg config.Config) error {
-	clk := d.Clock()
 	logger := d.Logger().WithComponent("storage.node.writer")
 	logger.Info(ctx, `starting storage writer node`)
 
 	// Open volumes
-	volumes, err := volume.OpenVolumes(ctx, logger, clk, cfg.NodeID, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
+	volumes, err := volume.OpenVolumes(ctx, logger, d.Clock(), d.Process(), cfg.NodeID, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
 	if err != nil {
 		return err
 	}
@@ -48,15 +46,7 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 
 	// Setup statistics collector
 	syncCfg := cfg.Storage.Statistics.Collector
-	collector.New(logger, clk, d.StatisticsRepository(), volumes.Events(), syncCfg)
-
-	// Graceful shutdown
-	d.Process().OnShutdown(func(ctx context.Context) {
-		if err := volumes.Close(ctx); err != nil {
-			err := errors.PrefixError(err, "`cannot close writer volumes")
-			logger.Error(ctx, err.Error())
-		}
-	})
+	collector.Start(d, volumes.Events(), syncCfg)
 
 	return nil
 }

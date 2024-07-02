@@ -9,6 +9,7 @@ import (
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -21,11 +22,8 @@ import (
 type Collector struct {
 	logger     log.Logger
 	repository *repository.Repository
-
-	config statistics.SyncConfig
-
-	cancel context.CancelFunc
-	wg     *sync.WaitGroup
+	config     statistics.SyncConfig
+	wg         *sync.WaitGroup
 
 	syncLock    *sync.Mutex
 	writersLock *sync.Mutex
@@ -44,10 +42,17 @@ type writerSnapshot struct {
 	writer writer.Writer
 }
 
-func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, events WriterEvents, config statistics.SyncConfig) *Collector {
+type dependencies interface {
+	Logger() log.Logger
+	Clock() clock.Clock
+	Process() *servicectx.Process
+	StatisticsRepository() *repository.Repository
+}
+
+func Start(d dependencies, events WriterEvents, config statistics.SyncConfig) {
 	c := &Collector{
-		logger:      logger,
-		repository:  repository,
+		logger:      d.Logger().WithComponent("statistics.collector"),
+		repository:  d.StatisticsRepository(),
 		config:      config,
 		wg:          &sync.WaitGroup{},
 		syncLock:    &sync.Mutex{},
@@ -55,9 +60,14 @@ func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, 
 		writers:     make(map[model.SliceKey]*writerSnapshot),
 	}
 
-	// Create context for cancellation of the periodical sync
-	var ctx context.Context
-	ctx, c.cancel = context.WithCancel(context.Background())
+	// Graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	d.Process().OnShutdown(func(ctx context.Context) {
+		cancel()
+		c.logger.Info(ctx, "stopping storage statistics collector")
+		c.wg.Wait()
+		c.logger.Info(ctx, "storage statistics stopped")
+	})
 
 	// Listen on writer events
 	events.OnWriterOpen(func(w writer.Writer) error {
@@ -90,7 +100,7 @@ func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, 
 
 	// Periodically collect statistics and sync them to the database
 	c.wg.Add(1)
-	ticker := clk.Ticker(c.config.SyncInterval.Duration())
+	ticker := d.Clock().Ticker(c.config.SyncInterval.Duration())
 	go func() {
 		defer c.wg.Done()
 		defer ticker.Stop()
@@ -106,16 +116,6 @@ func New(logger log.Logger, clk clock.Clock, repository *repository.Repository, 
 			}
 		}
 	}()
-
-	return c
-}
-
-// Stop periodical sync on shutdown.
-func (c *Collector) Stop(ctx context.Context) {
-	c.cancel()
-	c.logger.Info(ctx, "stopping storage statistics collector")
-	c.wg.Wait()
-	c.logger.Info(ctx, "storage statistics stopped")
 }
 
 func (c *Collector) syncAll() error {

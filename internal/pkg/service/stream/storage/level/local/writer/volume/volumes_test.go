@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestOpenVolumes(t *testing.T) {
@@ -23,6 +25,7 @@ func TestOpenVolumes(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	clk := clock.New()
+	process := servicectx.New()
 	wrCfg := writer.NewConfig()
 
 	// Create volumes directories
@@ -48,7 +51,7 @@ func TestOpenVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = OpenVolumes(ctx, logger, clk, "my-node", volumesPath, wrCfg)
+		volumes, err = OpenVolumes(ctx, logger, clk, process, "my-node", volumesPath, wrCfg)
 		assert.NoError(t, err)
 	}()
 
@@ -62,13 +65,13 @@ func TestOpenVolumes(t *testing.T) {
 	}
 
 	// Check opened volumes
-	assert.Len(t, volumes.All(), 6)
-	assert.Len(t, volumes.VolumeByType("foo"), 0)
-	assert.Len(t, volumes.VolumeByType("hdd"), 3)
-	assert.Len(t, volumes.VolumeByType("ssd"), 2)
-	assert.Len(t, volumes.VolumeByType("drained"), 1)
+	assert.Len(t, volumes.Collection().All(), 6)
+	assert.Len(t, volumes.Collection().VolumeByType("foo"), 0)
+	assert.Len(t, volumes.Collection().VolumeByType("hdd"), 3)
+	assert.Len(t, volumes.Collection().VolumeByType("ssd"), 2)
+	assert.Len(t, volumes.Collection().VolumeByType("drained"), 1)
 	for _, id := range []volume.ID{"HDD_1", "HDD_2"} {
-		vol, err := volumes.Volume(id)
+		vol, err := volumes.Collection().Volume(id)
 		assert.NotNil(t, vol)
 		assert.NoError(t, err)
 	}
@@ -80,11 +83,12 @@ func TestOpenVolumes(t *testing.T) {
 	} {
 		content, err := os.ReadFile(path)
 		assert.NoError(t, err)
-		vol, err := volumes.Volume(volume.ID(content))
+		vol, err := volumes.Collection().Volume(volume.ID(content))
 		assert.NotNil(t, vol)
 		assert.NoError(t, err)
 	}
 
 	// Close volumes
-	assert.NoError(t, volumes.Close(ctx))
+	process.Shutdown(ctx, errors.New("bye bye"))
+	process.WaitForShutdown()
 }

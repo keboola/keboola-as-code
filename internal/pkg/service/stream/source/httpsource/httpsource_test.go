@@ -58,7 +58,7 @@ func TestStart(t *testing.T) {
 	require.NoError(t, stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentHTTPSource))
 
 	// Wait for the HTTP server
-	require.NoError(t, netutils.WaitForTCP(listenAddr, time.Second))
+	require.NoError(t, netutils.WaitForHTTP(url, 10*time.Second))
 	logger.AssertJSONMessages(t, `
 {"level":"info","message":"starting HTTP source node","component":"http-source"}
 {"level":"info","message":"started HTTP source on \"0.0.0.0:%d\"","component":"http-source"}

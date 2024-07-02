@@ -6,40 +6,46 @@ import (
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/opener"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type collection = model.Collection[*Volume]
-
 type Volumes struct {
-	*collection
-	logger log.Logger
-	events *writer.Events
+	logger     log.Logger
+	events     *writer.Events
+	collection *volume.Collection[*Volume]
 }
 
 // OpenVolumes function detects and opens all volumes in the path.
-func OpenVolumes(ctx context.Context, logger log.Logger, clock clock.Clock, nodeID, volumesPath string, wrCfg writer.Config, opts ...Option) (out *Volumes, err error) {
+func OpenVolumes(ctx context.Context, logger log.Logger, clock clock.Clock, process *servicectx.Process, nodeID, volumesPath string, wrCfg writer.Config, opts ...Option) (out *Volumes, err error) {
 	out = &Volumes{logger: logger, events: writer.NewEvents()}
-	out.collection, err = opener.OpenVolumes(ctx, logger, nodeID, volumesPath, func(spec model.Spec) (*Volume, error) {
+	out.collection, err = opener.OpenVolumes(ctx, logger, nodeID, volumesPath, func(spec volume.Spec) (*Volume, error) {
 		return Open(ctx, logger, clock, out.events.Clone(), wrCfg, spec, opts...)
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	// Graceful shutdown
+	process.OnShutdown(func(ctx context.Context) {
+		logger.Info(ctx, "closing volumes")
+		if err := out.collection.Close(ctx); err != nil {
+			err := errors.PrefixError(err, "cannot close volumes")
+			logger.Error(ctx, err.Error())
+		}
+		logger.Info(ctx, "closed volumes")
+	})
+
 	return out, nil
 }
 
-func (v *Volumes) Collection() *model.Collection[*Volume] {
+func (v *Volumes) Collection() *volume.Collection[*Volume] {
 	return v.collection
 }
 
 func (v *Volumes) Events() *writer.Events {
 	return v.events
-}
-
-func (v *Volumes) Close(ctx context.Context) error {
-	v.logger.Info(ctx, "closing volumes")
-	return v.collection.Close(ctx)
 }
