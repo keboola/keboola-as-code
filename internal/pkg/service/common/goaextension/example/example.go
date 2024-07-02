@@ -23,7 +23,7 @@ const (
 	metaVisitedAttrValue = "true"
 )
 
-// nolint: gochecknoinits
+//nolint:gochecknoinits
 func init() {
 	codegen.RegisterPluginFirst("001-example-object", "gen", prepare, generate)
 }

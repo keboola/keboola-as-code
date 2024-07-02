@@ -21,7 +21,7 @@ type Prompt struct {
 	editor string // the editor is started when Editor() is called, if empty, the default is system editor is used
 }
 
-// nolint: gochecknoinits
+//nolint:gochecknoinits
 func init() {
 	// Workaround for bug in 3rd party lib
 	// https://github.com/AlecAivazis/survey/issues/336
