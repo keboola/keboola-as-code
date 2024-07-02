@@ -31,7 +31,7 @@ func (r *Repository) Put(ctx context.Context, stats []statistics.PerSlice) (err 
 			i = 0
 			addTxn()
 		}
-		currentTxn.Then(r.schema.InLevel(model.LevelLocal).InSlice(v.SliceKey).Put(r.client, v.Value))
+		currentTxn.Then(r.schema.InLevel(model.LevelLocal).InSourceNodeSlice(v.SliceKey, r.nodeID).Put(r.client, v.Value))
 		i++
 	}
 

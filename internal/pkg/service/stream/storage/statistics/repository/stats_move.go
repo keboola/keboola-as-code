@@ -41,27 +41,12 @@ func (r *Repository) moveAll(parentKey fmt.Stringer, from, to model.Level, trans
 	var sum statistics.Value
 	atomicOp := op.Atomic(r.client, &sum)
 
+	// List
 	var valueKVs op.KeyValuesT[statistics.Value]
-	if k, ok := parentKey.(model.SliceKey); ok {
-		// Get
-		atomicOp.Read(func(ctx context.Context) op.Op {
-			return r.schema.InLevel(from).InSlice(k).GetKV(r.client).WithOnResult(func(kv *op.KeyValueT[statistics.Value]) {
-				if kv == nil {
-					// Reset the value, in case the atomic operation was retried.
-					valueKVs = nil
-				} else {
-					valueKVs = []*op.KeyValueT[statistics.Value]{kv}
-				}
-			})
-		})
-	} else {
-		// List
-		atomicOp.Read(func(ctx context.Context) op.Op {
-			return r.schema.InLevel(from).InObject(parentKey).GetAll(r.client).WithAllKVsTo(&valueKVs)
-		})
-	}
-
 	return atomicOp.
+		Read(func(ctx context.Context) op.Op {
+			return r.schema.InLevel(from).InObject(parentKey).GetAll(r.client).WithAllKVsTo(&valueKVs)
+		}).
 		Write(func(ctx context.Context) op.Op {
 			txn := op.Txn(r.client)
 
