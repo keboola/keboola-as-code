@@ -1,4 +1,4 @@
-package oidcproxy
+package selector
 
 import (
 	"context"
@@ -25,7 +25,7 @@ const (
 	continueAuthQueryParam     = "continue_auth"
 	callbackQueryParam         = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
 	selectionPagePath          = config.InternalPrefix + "/selection"
-	signOutPath                = config.InternalPrefix + "/sign_out"
+	SignOutPath                = config.InternalPrefix + "/sign_out"
 	proxyCallbackPath          = config.InternalPrefix + "/callback"
 	ignoreProviderCookieCtxKey = ctxKey("ignoreProviderCookieCtxKey")
 	selectorHandlerCtxKey      = ctxKey("selectorHandlerCtxKey")
@@ -42,10 +42,16 @@ type Selector struct {
 type SelectorForAppRule struct {
 	*Selector
 	app      api.AppConfig
-	handlers map[provider.ID]*Handler
+	handlers map[provider.ID]Handler
 }
 
-func newSelector(d dependencies) *Selector {
+type dependencies interface {
+	Clock() clock.Clock
+	Config() config.Config
+	PageWriter() *pagewriter.Writer
+}
+
+func New(d dependencies) *Selector {
 	return &Selector{
 		clock:      d.Clock(),
 		config:     d.Config(),
@@ -53,7 +59,7 @@ func newSelector(d dependencies) *Selector {
 	}
 }
 
-func (s *Selector) For(app api.AppConfig, handlers map[provider.ID]*Handler) (*SelectorForAppRule, error) {
+func (s *Selector) For(app api.AppConfig, handlers map[provider.ID]Handler) (*SelectorForAppRule, error) {
 	// Validate handlers count
 	if len(handlers) == 0 {
 		return nil, svcErrors.NewServiceUnavailableError(errors.New(`no authentication provider found`))
@@ -87,7 +93,7 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 	req = req.WithContext(context.WithValue(req.Context(), selectorHandlerCtxKey, s))
 
 	// Clear cookie on logout
-	if req.URL.Path == signOutPath {
+	if req.URL.Path == SignOutPath {
 		// This clears provider selection cookie while oauth2-proxy clears the session cookie.
 		// The user isn't logged out on the provider's side, but when redirected to the provider they're
 		// forced to select their account again because of the "select_account" flag in LoginURLParameters.
@@ -102,11 +108,18 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 	// Skip selector page, if there is only one provider
 	if len(s.handlers) == 1 {
 		// The handlers variable is a map, use the first handler via a for cycle
-		for _, handler := range s.handlers {
+		for id, handler := range s.handlers {
 			// Set cookie if needed
-			if providerID := s.providerIDFromCookie(req); providerID != handler.Provider().ID() {
-				s.setCookie(w, req, handler)
+			if providerID := s.providerIDFromCookie(req); providerID != id {
+				s.setCookie(w, req, id, handler)
 			}
+
+			// Get path for redirect after sign in, it must not refer to an external URL
+			callback := req.URL.Path
+			if isAcceptedCallbackURL(callback) {
+				req.Header.Set(callbackQueryParam, callback)
+			}
+
 			return handler.ServeHTTPOrError(w, req)
 		}
 	}
@@ -131,7 +144,7 @@ func (s *SelectorForAppRule) writeSelectorPage(w http.ResponseWriter, req *http.
 	id := provider.ID(req.URL.Query().Get(providerQueryParam))
 	if selected, found := s.handlers[id]; found {
 		// Set cookie with the same expiration as other provider cookies
-		s.setCookie(w, req, selected)
+		s.setCookie(w, req, id, selected)
 
 		// Get path for redirect after sign in, it must not refer to an external URL
 		query := make(url.Values)
@@ -162,9 +175,9 @@ func (s *SelectorForAppRule) selectorPageData(req *http.Request) *pagewriter.Sel
 
 	// Generate link for each providers
 	data := &pagewriter.SelectorPageData{App: pagewriter.NewAppData(&s.app)}
-	for _, handler := range s.handlers {
+	for id, handler := range s.handlers {
 		query := make(url.Values)
-		query.Set(providerQueryParam, handler.ID().String())
+		query.Set(providerQueryParam, id.String())
 		if isAcceptedCallbackURL(callback) {
 			query.Set(callbackQueryParam, callback)
 		}
@@ -180,6 +193,35 @@ func (s *SelectorForAppRule) selectorPageData(req *http.Request) *pagewriter.Sel
 	})
 
 	return data
+}
+
+func (s *Selector) OnNeedsLogin(
+	app *api.AppConfig,
+	writeErrorPage func(rw http.ResponseWriter, req *http.Request, app *api.AppConfig, err error),
+) func(rw http.ResponseWriter, req *http.Request) bool {
+	return func(w http.ResponseWriter, req *http.Request) (stop bool) {
+		// Determine, if we should render the selector page using the selector instance from the context
+		if selector, ok := req.Context().Value(selectorHandlerCtxKey).(*SelectorForAppRule); ok {
+			// If there is only one provider, continue to the sing in page
+			if len(selector.handlers) <= 1 {
+				return false
+			}
+
+			// Go back and render the selector page, ignore the cookie value
+			req = req.WithContext(context.WithValue(req.Context(), ignoreProviderCookieCtxKey, true))
+			if err := selector.ServeHTTPOrError(w, req); err != nil {
+				writeErrorPage(w, req, app, err)
+			}
+			return true
+		}
+
+		// Fallback, the selector instance is not found, it shouldn't happen.
+		// Clear the cookie and redirect to the same path, so the selector page is rendered.
+		s.clearCookie(w, req)
+		w.Header().Set("Location", req.URL.Path)
+		w.WriteHeader(http.StatusFound)
+		return true
+	}
 }
 
 func (s *Selector) redirect(w http.ResponseWriter, req *http.Request, path string, query url.Values) {
@@ -202,8 +244,8 @@ func (s *Selector) clearCookie(w http.ResponseWriter, req *http.Request) {
 	http.SetCookie(w, s.cookie(req, "", -1))
 }
 
-func (s *Selector) setCookie(w http.ResponseWriter, req *http.Request, handler *Handler) {
-	http.SetCookie(w, s.cookie(req, handler.ID().String(), handler.CookieExpiration()))
+func (s *Selector) setCookie(w http.ResponseWriter, req *http.Request, id provider.ID, handler Handler) {
+	http.SetCookie(w, s.cookie(req, id.String(), handler.CookieExpiration()))
 }
 
 func (s *Selector) cookie(req *http.Request, value string, expires time.Duration) *http.Cookie {
@@ -234,5 +276,5 @@ func (s *Selector) cookie(req *http.Request, value string, expires time.Duration
 }
 
 func isAcceptedCallbackURL(callback string) bool {
-	return callback != "" && callback != "/" && callback != selectionPagePath && strings.HasPrefix(callback, "/")
+	return callback != "" && callback != "/" && !strings.HasPrefix(callback, config.InternalPrefix)
 }

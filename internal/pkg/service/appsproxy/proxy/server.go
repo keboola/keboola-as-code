@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/csrf"
 	oautproxylogger "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -14,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/oidcproxy/logging"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oidcproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/approuter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -23,6 +24,8 @@ import (
 const (
 	readHeaderTimeout       = 10 * time.Second
 	gracefulShutdownTimeout = 30 * time.Second
+	csrfMiddlewareKey       = "bcc3add3bf72e628149fbfbc11932329de7f375db3d8503ef0e32b336adf46c4"
+	csrfMiddlewareMaxAge    = 60 * 15 // 15 minutes
 )
 
 // tracerProviderWrapper wraps the TraceProvider to manipulate with all spans within tracing.
@@ -119,6 +122,11 @@ func NewHandler(d dependencies.ServiceScope) http.Handler {
 
 	// Register applications router
 	mux.Handle("/", approuter.New(d))
+	CSRF := csrf.Protect(
+		[]byte(csrfMiddlewareKey),
+		csrf.MaxAge(csrfMiddlewareMaxAge),
+		csrf.SameSite(csrf.SameSiteStrictMode),
+	)
 
 	// Wrap handler with middlewares
 	middlewareCfg := middleware.NewConfig(
@@ -139,5 +147,6 @@ func NewHandler(d dependencies.ServiceScope) http.Handler {
 			d.Telemetry().MeterProvider(),
 			middlewareCfg,
 		),
+		CSRF,
 	)
 }
