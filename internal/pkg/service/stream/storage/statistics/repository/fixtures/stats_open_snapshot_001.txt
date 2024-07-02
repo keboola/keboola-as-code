@@ -1,0 +1,9 @@
+<<<<<
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/_open
+-----
+{
+  "slicesCount": 1,
+  "firstRecordAt": "",
+  "lastRecordAt": ""
+}
+>>>>>
