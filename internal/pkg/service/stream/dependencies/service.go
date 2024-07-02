@@ -61,7 +61,7 @@ func NewServiceScope(
 	stdout io.Writer,
 	stderr io.Writer,
 ) (v ServiceScope, err error) {
-	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.dependencies.NewServiceScope")
+	ctx, span := tel.Tracer().Start(ctx, "keboola.go.stream.dependencies.NewServiceScope")
 	defer span.End(&err)
 	parentScp, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
 	if err != nil {
@@ -79,7 +79,7 @@ func newParentScopes(
 	stdout io.Writer,
 	stderr io.Writer,
 ) (v parentScopes, err error) {
-	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.dependencies.newParentScopes")
+	ctx, span := tel.Tracer().Start(ctx, "keboola.go.stream.dependencies.newParentScopes")
 	defer span.End(&err)
 
 	// Create base HTTP client for all API requests to other APIs

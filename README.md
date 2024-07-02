@@ -17,9 +17,9 @@
 - See [user documentation](https://developers.keboola.com/cli/templates/).
 - See **[architecture overview](./docs/templates/overview.md)** for more details.
 
-### Buffer Service
+### Stream Service
 
-- A Proxy API to buffer collected data and their import to Storage tables in batches.
+- A Proxy API to stream of collected data and their import to Storage tables in batches.
 - See **[architecture overview](./docs/stream/overview.md)** for more details.
 
 

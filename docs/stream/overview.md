@@ -1,6 +1,6 @@
-# Buffer Architecture Overview
+# Stream Architecture Overview
 
-- The Buffer Service consists of API and Worker nodes.
+- The Stream Service consists of API and Worker nodes.
 - API nodes contain configuration endpoints and collect data via the Import endpoint.
 - Worker nodes import the collected data into Storage tables in batches.
 
@@ -15,7 +15,7 @@ User documentation can be found at [https://developers.keboola.com/integrate/pus
 
 The API design can be found in [api/stream/design.go](../../api/stream/design.go) and is implemented using **[Goa framework](https://goa.design/)**.
 
-There is `generate-buffer-api` make command available to generate the code from the design specs. (The command is
+There is `generate-stream-api` make command available to generate the code from the design specs. (The command is
 also run before other commands to run the API locally, build API image, release the API, etc.)
 
 The command generates:
@@ -36,7 +36,7 @@ TODO
 
 ## Resources
 
-The Service uses an [etcd](https://etcd.io/) database to buffer incoming data until they are imported to Storage.
+The Service uses an [etcd](https://etcd.io/) database to stream incoming data until they are imported to Storage.
 
 ## Other information
 

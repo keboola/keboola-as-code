@@ -181,7 +181,7 @@ Format:
 
 ## Polling for tasks
 
-**Supported only in Buffer API tests.**
+**Supported only in Stream API tests.**
 
 `Path` supports reference to previous request's response. The reference is in the format `<<001-create:response.url>>` where `001-create` is the name of the request and `url` is the path to the value in the `response`. The referenced URL will be stripped of the hostname so that it will be relative to the API server.
 
@@ -209,7 +209,7 @@ Format:
 
 ## `initial-etcd-kvs.txt` and `expected-etcd-kvs.txt`
 
-**Supported only in Buffer API tests.**
+**Supported only in Stream API tests.**
 
 Format:
 
