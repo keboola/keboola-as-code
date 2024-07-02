@@ -11,11 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKey, mapping table.Mapping) error {
+func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKey, sink definition.Sink) error {
 	// Create bucket if not exists
 	if err := b.ensureBucketExists(ctx, tableKey.BucketKey()); err != nil {
 		return err
@@ -25,8 +25,8 @@ func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKe
 	tab, err := b.getTable(ctx, tableKey)
 
 	// Create table
-	columnsNames := mapping.Columns.Names()
-	primaryKey := mapping.Columns.PrimaryKey()
+	columnsNames := sink.Table.Mapping.Columns.Names()
+	primaryKey := sink.Table.Mapping.Columns.PrimaryKey()
 	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.tables.notFound" {
 		// Create table
@@ -35,6 +35,11 @@ func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKe
 
 	// Handle get/create error
 	if err != nil {
+		return err
+	}
+
+	// add table metadata
+	if err = b.addTableMetadata(ctx, tab, sink); err != nil {
 		return err
 	}
 
@@ -101,4 +106,38 @@ func (b *Bridge) createTable(ctx context.Context, tableKey keboola.TableKey, col
 
 	b.logger.Info(ctx, "created table")
 	return tab, nil
+}
+
+func (b *Bridge) addTableMetadata(ctx context.Context, table *keboola.Table, sink definition.Sink) error {
+	api, err := b.apiProvider.APIFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	foundSinkMetaKey := false
+	foundSourceMetaKey := false
+
+	for _, metadata := range table.Metadata {
+		if metadata.Key == sinkMetaKey && metadata.Value == sink.SinkID.String() {
+			foundSinkMetaKey = true
+		}
+
+		if metadata.Key == sourceMetaKey && metadata.Value == sink.SourceID.String() {
+			foundSourceMetaKey = true
+		}
+	}
+
+	if foundSinkMetaKey && foundSourceMetaKey {
+		return nil
+	}
+
+	return api.CreateOrUpdateTableMetadata(
+		table.TableKey,
+		"stream",
+		[]keboola.TableMetadataRequest{
+			{Key: sinkMetaKey, Value: sink.SinkID.String()},
+			{Key: sourceMetaKey, Value: sink.SourceID.String()},
+		},
+		[]keboola.ColumnMetadataRequest{},
+	).SendOrErr(ctx)
 }

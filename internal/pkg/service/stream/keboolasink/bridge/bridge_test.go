@@ -100,6 +100,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 		assert.Equal(t, 1, transport.GetCallCountInfo()["POST https://connection.keboola.local/v2/storage/tokens"])
 		assert.Equal(t, 1, transport.GetCallCountInfo()["POST https://connection.keboola.local/v2/storage/branch/456/buckets"])
 		assert.Equal(t, 1, transport.GetCallCountInfo()["POST https://connection.keboola.local/v2/storage/branch/456/buckets/in.c-bucket/tables-definition"])
+		assert.Equal(t, 1, transport.GetCallCountInfo()["POST https://connection.keboola.local/v2/storage/branch/456/tables/in.c-bucket.table/metadata"])
 		assert.Equal(t, 1, transport.GetCallCountInfo()["POST https://connection.keboola.local/v2/storage/branch/456/files/prepare"])
 		transport.ZeroCallCounters()
 	}

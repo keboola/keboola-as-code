@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -134,6 +135,25 @@ func MockTableStorageAPICalls(t *testing.T, transport *httpmock.MockTransport) {
 			}
 
 			return nil, errors.Errorf(`job "%d" not found`, jobID)
+		},
+	)
+
+	// Add table metadata
+	transport.RegisterResponder(
+		http.MethodPost,
+		`=~/v2/storage/branch/[0-9]+/tables/[a-z0-9\.\-]+/metadata`,
+		func(request *http.Request) (*http.Response, error) {
+			lock.Lock()
+			defer lock.Unlock()
+
+			return httpmock.NewJsonResponse(
+				http.StatusCreated,
+				keboola.TableMetadataResponse{
+					Metadata: keboola.TableMetadata{
+						{ID: "19509", Key: "KBC.stream.export.id", Value: "12345", Provider: "stream", Timestamp: time.Now().Format(time.DateTime)},
+					},
+				},
+			)
 		},
 	)
 }
