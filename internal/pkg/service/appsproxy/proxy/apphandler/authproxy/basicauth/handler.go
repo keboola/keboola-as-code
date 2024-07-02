@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -20,14 +21,16 @@ import (
 )
 
 const (
-	basicAuthCookie = "proxyBasicAuth"
-	formPagePath    = config.InternalPrefix + "/form"
+	basicAuthCookie    = "proxyBasicAuth"
+	callbackQueryParam = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
+	formPagePath       = config.InternalPrefix + "/form"
 )
 
 type Handler struct {
 	logger     log.Logger
 	pageWriter *pagewriter.Writer
 	clock      clock.Clock
+	publicURL  *url.URL
 	app        api.AppConfig
 	basicAuth  provider.Basic
 	upstream   chain.Handler
@@ -37,6 +40,7 @@ func NewHandler(
 	logger log.Logger,
 	pageWriter *pagewriter.Writer,
 	clock clock.Clock,
+	publicURL *url.URL,
 	app api.AppConfig,
 	auth provider.Basic,
 	upstream chain.Handler,
@@ -45,6 +49,7 @@ func NewHandler(
 		logger:     logger,
 		pageWriter: pageWriter,
 		clock:      clock,
+		publicURL:  publicURL,
 		app:        app,
 		basicAuth:  auth,
 		upstream:   upstream,
@@ -69,19 +74,21 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		return errors.New("internal server error")
 	}
 
-	if err := req.ParseForm(); err != nil {
-		return err
+	requestCookie, _ := req.Cookie(basicAuthCookie)
+	// Pass request to upstream when cookie have been set
+	if requestCookie != nil && req.URL.Path != selector.SignOutPath && h.isCookieAuthorized(requestCookie) == nil {
+		h.setCookie(w, host, h.CookieExpiration(), requestCookie)
+		return h.upstream.ServeHTTPOrError(w, req)
 	}
 
-	// Unset content length as we do not want to push req.Body to upstream
-	req.ContentLength = 0
-
-	// Unset cookie as /_proxy/sign_out was called and enforce login
-	requestCookie, _ := req.Cookie(basicAuthCookie)
+	// Unset cookie as /_proxy/sign_out was called and enforce login by redirecting to SignInPath
 	if requestCookie != nil && req.URL.Path == selector.SignOutPath {
-		requestCookie.Value = ""
-		h.setCookie(w, host, -1, requestCookie)
-		requestCookie = nil
+		h.signOut(host, requestCookie, w, req)
+		return nil
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return err
 	}
 
 	// Login page
@@ -120,6 +127,10 @@ func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {
 		return errors.New("Please enter a correct password.")
 	}
 
+	return h.isCookieAuthorized(cookie)
+}
+
+func (h *Handler) isCookieAuthorized(cookie *http.Cookie) error {
 	if err := cookie.Valid(); cookie != nil && err != nil {
 		return err
 	}
@@ -129,11 +140,24 @@ func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {
 		hash.Write([]byte(h.basicAuth.Password + string(h.app.ID)))
 		hashedValue := hash.Sum(nil)
 		if hex.EncodeToString(hashedValue) != cookie.Value {
-			return errors.New("Cookie not set correctly.")
+			return errors.New("Cookie has expired.")
 		}
 	}
 
 	return nil
+}
+
+func (h *Handler) signOut(host string, cookie *http.Cookie, w http.ResponseWriter, req *http.Request) {
+	cookie.Value = ""
+	h.setCookie(w, host, -1, cookie)
+	cookie = nil
+	redirectUrl := &url.URL{
+		Scheme: h.publicURL.Scheme,
+		Host:   req.Host,
+		Path:   h.SignInPath(),
+	}
+	w.Header().Set("Location", redirectUrl.String())
+	w.WriteHeader(http.StatusFound)
 }
 
 func (h *Handler) setCookie(w http.ResponseWriter, host string, expires time.Duration, cookie *http.Cookie) {

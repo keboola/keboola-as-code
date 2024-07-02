@@ -2042,6 +2042,19 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.True(t, cookies[0].Secure)
 					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 				}
+
+				location := response.Header.Get("Location")
+				// All config.InternalPrefix are redirected to `/`
+				assert.Contains(t, location, "https://basic-auth.hub.keboola.local/")
+
+				// Request to proxy location
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Hello, client")
 			},
 			expectedNotifications: map[string]int{
 				"auth": 1,
@@ -2060,7 +2073,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Cookie not set correctly")
+				assert.Contains(t, string(body), "Cookie has expired")
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},
@@ -2094,20 +2107,21 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusOK, response.StatusCode)
+				require.Equal(t, http.StatusFound, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
+				location := response.Header.Get("Location")
+				assert.Contains(t, location, "https://basic-auth.hub.keboola.local/")
+
+				// Request to proxy location
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
 				assert.Contains(t, string(body), "Basic Authentication")
-				if assert.Len(t, response.Cookies(), 3) {
-					c := response.Cookies()[2]
-					assert.Equal(t, "proxyBasicAuth", c.Name)
-					assert.Equal(t, "", c.Value)
-					assert.Equal(t, "/", c.Path)
-					assert.Equal(t, "basic-auth.hub.keboola.local", c.Domain)
-					assert.True(t, c.HttpOnly)
-					assert.True(t, c.Secure)
-					assert.Equal(t, http.SameSiteStrictMode, c.SameSite)
-				}
+				require.Len(t, response.Cookies(), 0)
 			},
 			expectedNotifications: map[string]int{},
 			expectedWakeUps:       map[string]int{},

@@ -51,7 +51,7 @@ func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) map[pro
 			authHandlers[auth.ID()] = oidcproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, upstream)
 
 		case provider.Basic:
-			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.pageWriter, m.clock, app, p, upstream)
+			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.pageWriter, m.clock, m.config.API.PublicURL, app, p, upstream)
 
 		default:
 			panic("unknown auth provider type")
