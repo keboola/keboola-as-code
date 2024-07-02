@@ -73,10 +73,10 @@ func TestVolume_Writer_OpenFile_Ok(t *testing.T) {
 
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
-	assert.FileExists(t, w.FilePath())
+	assert.FileExists(t, tc.FilePath())
 
 	assert.NoError(t, w.Close(context.Background()))
-	assert.FileExists(t, w.FilePath())
+	assert.FileExists(t, tc.FilePath())
 }
 
 func TestVolume_Writer_OpenFile_MkdirError(t *testing.T) {
@@ -180,7 +180,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Wait()
 
 	// Check file content
-	AssertFileContent(t, w.FilePath(), `
+	AssertFileContent(t, tc.FilePath(), `
 foo,bar,123
 foo,bar,123
 abc,def,456
@@ -282,7 +282,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Wait()
 
 	// Check file content
-	AssertFileContent(t, w.FilePath(), `
+	AssertFileContent(t, tc.FilePath(), `
 foo,bar,123
 foo,bar,123
 abc,def,456
@@ -353,7 +353,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
-	AssertFileContent(t, w.FilePath(), `
+	AssertFileContent(t, tc.FilePath(), `
 foo,bar,123
 foo,bar,123
 abc,def,456
@@ -430,7 +430,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
-	AssertFileContent(t, w.FilePath(), `
+	AssertFileContent(t, tc.FilePath(), `
 foo,bar,123
 foo,bar,123
 abc,def,456
@@ -495,7 +495,7 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
-	AssertFileContent(t, w.FilePath(), `
+	AssertFileContent(t, tc.FilePath(), `
 foo,bar,123
 foo,bar,123
 abc,def,456
@@ -529,11 +529,11 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
-	assert.FileExists(t, w.FilePath())
+	assert.FileExists(t, tc.FilePath())
 
 	// Close writer
 	assert.NoError(t, w.Close(ctx))
-	assert.FileExists(t, w.FilePath())
+	assert.FileExists(t, tc.FilePath())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -555,11 +555,11 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
-	assert.FileExists(t, w.FilePath())
+	assert.FileExists(t, tc.FilePath())
 
 	// Close writer
 	assert.NoError(t, w.Close(ctx))
-	assert.FileExists(t, w.FilePath())
+	assert.FileExists(t, tc.FilePath())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -582,7 +582,7 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check file - no allocation
-	allocated, err := diskalloc.Allocated(w.FilePath())
+	allocated, err := diskalloc.Allocated(tc.FilePath())
 	require.NoError(t, err)
 	assert.Less(t, allocated, datasize.KB)
 
@@ -643,6 +643,10 @@ func (tc *writerTestCase) NewWriter(opts ...Option) (writer.Writer, error) {
 	}
 
 	return w, nil
+}
+
+func (tc *writerTestCase) FilePath() string {
+	return filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
 }
 
 type testAllocator struct {

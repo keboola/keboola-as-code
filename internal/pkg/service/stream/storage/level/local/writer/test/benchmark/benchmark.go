@@ -3,6 +3,7 @@ package benchmark
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -61,12 +62,17 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Open volume
 	clk := clock.New()
 	now := clk.Now()
-	spec := volume.Spec{NodeID: "my-node", Path: b.TempDir(), Type: "hdd", Label: "1"}
+	volPath := b.TempDir()
+	spec := volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "1"}
 	vol, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), writer.NewConfig(), spec)
 	require.NoError(b, err)
 
+	// Create slice
+	slice := wb.newSlice(b, vol)
+	filePath := filepath.Join(volPath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
+
 	// Create writer
-	sliceWriter, err := vol.OpenWriter(wb.newSlice(b, vol))
+	sliceWriter, err := vol.OpenWriter(slice)
 	require.NoError(b, err)
 
 	// Create data channel
@@ -125,7 +131,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	if wb.Compression.Type == compression.TypeNone {
 		assert.Equal(b, sliceWriter.CompressedSize(), sliceWriter.UncompressedSize())
 	}
-	stat, err := os.Stat(sliceWriter.FilePath())
+	stat, err := os.Stat(filePath)
 	assert.NoError(b, err)
 	assert.Equal(b, sliceWriter.CompressedSize(), datasize.ByteSize(stat.Size()))
 }

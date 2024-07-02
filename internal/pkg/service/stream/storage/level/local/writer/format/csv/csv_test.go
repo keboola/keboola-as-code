@@ -117,13 +117,14 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	syncLock := &sync.Mutex{}
 
 	// Open volume
+	volPath := t.TempDir()
 	vol, err := writerVolume.Open(
 		ctx,
 		log.NewNopLogger(),
 		clock.New(),
 		writer.NewEvents(),
 		writer.NewConfig(),
-		volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"},
+		volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "001"},
 		writerVolume.WithFileOpener(func(filePath string) (writerVolume.File, error) {
 			file, err := writerVolume.DefaultFileOpener(filePath)
 			if err != nil {
@@ -144,6 +145,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	slice.LocalStorage.DiskSync.IntervalTrigger = duration.From(2 * time.Second)
 	val := validator.New()
 	assert.NoError(t, val.Validate(ctx, slice))
+	filePath := filepath.Join(volPath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
 
 	// Create writer
 	w, err := vol.OpenWriter(slice)
@@ -177,14 +179,16 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	}
 
 	// Check file content
-	content, err := os.ReadFile(w.FilePath())
+	content, err := os.ReadFile(filePath)
 	assert.NoError(t, err)
 	assert.Equal(t, "\"value\"\n\"value\"\n", string(content))
 
-	// Check rows count file
-	content, err = os.ReadFile(filepath.Join(w.DirPath(), writer.CompletedWritesCounter))
-	assert.NoError(t, err)
-	assert.Equal(t, "2,2000-01-01T00:00:00.000Z,2000-01-01T00:00:00.000Z", string(content))
+	// Check statistics
+
+	assert.Equal(t, uint64(2), w.AcceptedWrites())
+	assert.Equal(t, uint64(2), w.CompletedWrites())
+	assert.Equal(t, "2000-01-01T00:00:00.000Z", w.FirstRecordAt().String())
+	assert.Equal(t, "2000-01-01T00:00:00.000Z", w.LastRecordAt().String())
 
 	// Close volume
 	assert.NoError(t, vol.Close(ctx))

@@ -33,13 +33,11 @@ func TestWriter(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	w, err := writer.New(ctx, logger, clk, cfg, slice, file, dirPath, filePath, disksync.NewSyncer, test.DummyWriterFactory, writer.NewEvents())
+	w, err := writer.New(ctx, logger, clk, cfg, slice, file, disksync.NewSyncer, test.DummyWriterFactory, writer.NewEvents())
 	require.NoError(t, err)
 
 	// Test getters
 	assert.Equal(t, slice.SliceKey, w.SliceKey())
-	assert.Equal(t, dirPath, w.DirPath())
-	assert.Equal(t, filePath, w.FilePath())
 
 	// Test write methods
 	assert.NoError(t, w.WriteRecord(clk.Now(), []any{"123", "456", "789"}))
@@ -79,7 +77,7 @@ func TestWriter_FlushError(t *testing.T) {
 		return w, nil
 	}
 
-	w, err := writer.New(ctx, logger, clk, cfg, slice, file, dirPath, filePath, disksync.NewSyncer, writerFactory, writer.NewEvents())
+	w, err := writer.New(ctx, logger, clk, cfg, slice, file, disksync.NewSyncer, writerFactory, writer.NewEvents())
 	require.NoError(t, err)
 
 	// Test Close method
@@ -108,7 +106,7 @@ func TestWriter_CloseError(t *testing.T) {
 		return w, nil
 	}
 
-	w, err := writer.New(ctx, logger, clk, cfg, slice, file, dirPath, filePath, disksync.NewSyncer, writerFactory, writer.NewEvents())
+	w, err := writer.New(ctx, logger, clk, cfg, slice, file, disksync.NewSyncer, writerFactory, writer.NewEvents())
 	require.NoError(t, err)
 
 	// Test Close method
