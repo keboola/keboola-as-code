@@ -250,10 +250,21 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	filesMap := make(map[model.FileID]*stream.SinkFile)
 
-	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).Do(ctx).ForEachValue(func(value model.File, header *iterator.Header) error {
-		filesMap[value.FileID] = s.mapper.NewSinkFile(value)
-		return nil
-	})
+	lastReset, err := d.StatisticsRepository().LastReset(d.SinkKey()).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+
+	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).
+		WithFilter(func(v model.File) bool {
+			// Exclude files newer than last reset.
+			return v.OpenedAt().After(lastReset.LastRecordAt)
+		}).
+		Do(ctx).
+		ForEachValue(func(value model.File, header *iterator.Header) error {
+			filesMap[value.FileID] = s.mapper.NewSinkFile(value)
+			return nil
+		})
 	if err != nil {
 		return nil, err
 	}

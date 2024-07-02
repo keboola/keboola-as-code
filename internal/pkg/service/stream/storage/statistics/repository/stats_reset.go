@@ -50,3 +50,7 @@ func (r *Repository) ResetSinkStats(sinkKey key.SinkKey) *op.AtomicOp[op.NoResul
 
 	return ops
 }
+
+func (r *Repository) LastReset(sinkKey key.SinkKey) op.WithResult[statistics.Value] {
+	return r.schema.InLevel(model.LevelTarget).InObject(sinkKey).Reset().GetOrEmpty(r.client)
+}
