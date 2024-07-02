@@ -3,12 +3,15 @@ package basicauth
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
+	"html/template"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/util"
+	"golang.org/x/net/xsrftoken"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -24,35 +27,39 @@ const (
 	basicAuthCookie    = "proxyBasicAuth"
 	callbackQueryParam = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
 	formPagePath       = config.InternalPrefix + "/form"
+	csrfTokenKey       = "_csrf"
+	csrfTokenMaxAge    = 15 * time.Minute
 )
 
 type Handler struct {
-	logger     log.Logger
-	pageWriter *pagewriter.Writer
-	clock      clock.Clock
-	publicURL  *url.URL
-	app        api.AppConfig
-	basicAuth  provider.Basic
-	upstream   chain.Handler
+	logger        log.Logger
+	clock         clock.Clock
+	pageWriter    *pagewriter.Writer
+	csrfTokenSalt string
+	publicURL     *url.URL
+	app           api.AppConfig
+	basicAuth     provider.Basic
+	upstream      chain.Handler
 }
 
 func NewHandler(
 	logger log.Logger,
-	pageWriter *pagewriter.Writer,
+	config config.Config,
 	clock clock.Clock,
-	publicURL *url.URL,
+	pageWriter *pagewriter.Writer,
 	app api.AppConfig,
 	auth provider.Basic,
 	upstream chain.Handler,
 ) *Handler {
 	return &Handler{
-		logger:     logger,
-		pageWriter: pageWriter,
-		clock:      clock,
-		publicURL:  publicURL,
-		app:        app,
-		basicAuth:  auth,
-		upstream:   upstream,
+		logger:        logger,
+		clock:         clock,
+		pageWriter:    pageWriter,
+		csrfTokenSalt: config.CsrfTokenSalt,
+		publicURL:     config.API.PublicURL,
+		app:           app,
+		basicAuth:     auth,
+		upstream:      upstream,
 	}
 }
 
@@ -91,17 +98,25 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		return err
 	}
 
-	// Login page
-	if !req.Form.Has("password") && requestCookie == nil {
-		h.pageWriter.WriteLoginPage(w, req, &h.app, nil)
+	// CSRF token validation
+	if key := req.Form.Get(csrfTokenKey); key != "" && !xsrftoken.ValidFor(key, csrfTokenKey, h.csrfTokenSalt, "/", csrfTokenMaxAge) {
+		h.pageWriter.WriteErrorPage(w, req, &h.app, http.StatusForbidden, "Session expired, reload page", pagewriter.ExceptionIDPrefix+key)
 		return nil
 	}
 
-	p := req.Form.Get("password")
+	// Login page first access
+	csrfToken := xsrftoken.Generate(csrfTokenKey, h.csrfTokenSalt, "/")
+	fragment := fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, template.HTMLEscapeString(csrfTokenKey), template.HTMLEscapeString(csrfToken))
+	if !req.Form.Has("password") && requestCookie == nil {
+		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), nil) // #nosec G203
+		return nil
+	}
+
 	// Login page with unauthorized alert
+	p := req.Form.Get("password")
 	if err := h.isAuthorized(p, requestCookie); err != nil {
 		h.logger.Warn(req.Context(), err.Error())
-		h.pageWriter.WriteLoginPage(w, req, &h.app, err)
+		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), err) // #nosec G203
 		return nil
 	}
 
@@ -123,7 +138,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		Value: hex.EncodeToString(hashedValue),
 	}
 	h.setCookie(w, host, h.CookieExpiration(), v)
-	// Redirect to upstream
+	// Redirect to upstream (Same handler)
 	w.Header().Set("Location", redirectURL.String())
 	w.WriteHeader(http.StatusMovedPermanently)
 	return nil

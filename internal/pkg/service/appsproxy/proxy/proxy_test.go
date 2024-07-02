@@ -2676,9 +2676,14 @@ func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies
 	_, err := rand.Read(secret)
 	require.NoError(t, err)
 
+	csrfSecret := make([]byte, 32)
+	_, err = rand.Read(csrfSecret)
+	require.NoError(t, err)
+
 	cfg := config.New()
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CookieSecretSalt = string(secret)
+	cfg.CsrfTokenSalt = string(csrfSecret)
 	cfg.SandboxesAPI.URL = sandboxesAPIURL
 
 	return proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
