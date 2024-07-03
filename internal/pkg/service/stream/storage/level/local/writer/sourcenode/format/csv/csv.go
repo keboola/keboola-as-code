@@ -1,18 +1,18 @@
 package csv
 
 import (
+	fastcsv2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format/csv/fastcsv"
 	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/format/csv/fastcsv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Writer struct {
 	columns column.Columns
-	pool    *fastcsv.WritersPool
+	pool    *fastcsv2.WritersPool
 }
 
 // NewWriter creates CSV writers pool and implements format.FormatWriter
@@ -21,14 +21,14 @@ type Writer struct {
 func NewWriter(cfg writer.Config, out io.Writer, slice *model.Slice) (writer.FormatWriter, error) {
 	return &Writer{
 		columns: slice.Columns,
-		pool:    fastcsv.NewWritersPool(out, cfg.Concurrency),
+		pool:    fastcsv2.NewWritersPool(out, cfg.Concurrency),
 	}, nil
 }
 
 func (w *Writer) WriteRecord(values []any) error {
 	err := w.pool.WriteRow(&values)
 	if err != nil {
-		var valErr fastcsv.ValueError
+		var valErr fastcsv2.ValueError
 		if errors.As(err, &valErr) {
 			columnName := w.columns[valErr.ColumnIndex].ColumnName()
 			return errors.Errorf(`cannot convert value of the column "%s" to the string: %w`, columnName, err)
