@@ -35,6 +35,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -55,6 +56,7 @@ type Repository struct {
 	telemetry telemetry.Telemetry
 	client    *etcd.Client
 	plugins   *plugin.Plugins
+	storage   *storageRepo.Repository
 	schema    schema
 }
 
@@ -64,6 +66,7 @@ type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
+	StorageRepository() *storageRepo.Repository
 }
 
 func New(d dependencies) *Repository {
@@ -72,6 +75,7 @@ func New(d dependencies) *Repository {
 		telemetry: d.Telemetry(),
 		client:    d.EtcdClient(),
 		plugins:   d.Plugins(),
+		storage:   d.StorageRepository(),
 		schema:    newSchema(d.EtcdSerde()),
 	}
 

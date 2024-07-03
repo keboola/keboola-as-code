@@ -80,6 +80,20 @@ func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Ag
 	return txn
 }
 
+func (r *Repository) AggregateInLevel(objectKey fmt.Stringer, level model.Level) *op.TxnOp[statistics.Aggregated] {
+	var result statistics.Aggregated
+	return op.TxnWithResult(r.client, &result).
+		Then(r.schema.
+			InLevel(level).
+			InObject(objectKey).
+			GetAll(r.client).
+			ForEach(func(v statistics.Value, header *iterator.Header) error {
+				aggregate.Aggregate(level, v, &result)
+				return nil
+			}),
+		)
+}
+
 // aggregate statistics from the database.
 func (r *Repository) aggregate(ctx context.Context, objectKey fmt.Stringer) (out statistics.Aggregated, err error) {
 	txn := r.AggregateIn(objectKey)
