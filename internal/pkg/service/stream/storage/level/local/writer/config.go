@@ -4,11 +4,13 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format"
 )
 
 // Config configures the local writer.
 type Config struct {
-	Concurrency int               `configKey:"concurrency" configUsage:"Concurrency of the writer for the specified file type. 0 = auto = num of CPU cores" validate:"min=0,max=256"`
+	Format      format.Config     `configKey:"format"`
 	InputBuffer datasize.ByteSize `configKey:"inputBuffer" configUsage:"Max size of the buffer before compression, if compression is enabled. 0 = disabled" validate:"maxBytes=16MB"`
 	FileBuffer  datasize.ByteSize `configKey:"fileBuffer" configUsage:"Max size of the buffer before the output file. 0 = disabled" validate:"maxBytes=16MB"`
 	Statistics  StatisticsConfig  `configKey:"statistics"`
@@ -17,7 +19,7 @@ type Config struct {
 // ConfigPatch is same as the Config, but with optional/nullable fields.
 // It may be part of a Sink definition to allow modification of the default configuration.
 type ConfigPatch struct {
-	Concurrency *int                   `json:"concurrency,omitempty"`
+	Format      *format.ConfigPatch    `json:"format,omitempty"`
 	InputBuffer *datasize.ByteSize     `json:"inputBuffer,omitempty"`
 	FileBuffer  *datasize.ByteSize     `json:"fileBuffer,omitempty"`
 	Statistics  *StatisticsConfigPatch `json:"statistics,omitempty"`
@@ -39,7 +41,7 @@ type StatisticsConfigPatch struct {
 // NewConfig provides default configuration.
 func NewConfig() Config {
 	return Config{
-		Concurrency: 0, // 0 = auto = CPU cores
+		Format:      format.NewConfig(),
 		InputBuffer: 1 * datasize.MB,
 		FileBuffer:  1 * datasize.MB,
 		Statistics: StatisticsConfig{

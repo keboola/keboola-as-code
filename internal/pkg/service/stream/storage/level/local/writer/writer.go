@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/count"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/limitbuffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/size"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writechain"
@@ -60,7 +61,7 @@ type writer struct {
 	chain  *writechain.Chain
 	syncer *writesync.Syncer
 
-	formatWriter FormatWriter
+	formatWriter format.Writer
 	// closed blocks new writes
 	closed chan struct{}
 	// writeWg waits for in-progress writes before Close
@@ -80,7 +81,7 @@ func New(
 	slice *model.Slice,
 	file writechain.File,
 	syncerFactory writesync.SyncerFactory,
-	formatWriterFactory FormatWriterFactory,
+	formatWriterFactory format.WriterFactory,
 	volumeEvents *Events,
 ) (out Writer, err error) {
 	w := &writer{
@@ -174,7 +175,7 @@ func New(
 	// Create file format writer.
 	// It is entrypoint of the writers chain.
 	{
-		w.formatWriter, err = formatWriterFactory(cfg, w.chain, w.slice)
+		w.formatWriter, err = formatWriterFactory(cfg.Format, w.chain, w.slice)
 		if err != nil {
 			return nil, err
 		}

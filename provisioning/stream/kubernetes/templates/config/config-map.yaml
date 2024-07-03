@@ -146,8 +146,9 @@ data:
               # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
               relative: 110
           writer:
-            # Concurrency of the writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
-            concurrency: 0
+            format:
+              # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
+              concurrency: 0
             # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
             inputBuffer: 1MB
             # Max size of the buffer before the output file. 0 = disabled. Validation rules: maxBytes=16MB
