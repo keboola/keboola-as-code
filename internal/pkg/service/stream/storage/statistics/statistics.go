@@ -27,11 +27,11 @@ type Value struct {
 	// LastRecordAt contains the timestamp of the last received record.
 	LastRecordAt utctime.UTCTime `json:"lastRecordAt"`
 	// RecordsCount is count of received records.
-	RecordsCount uint64 `json:"recordsCount"`
+	RecordsCount uint64 `json:"recordsCount,omitempty"`
 	// UncompressedSize is data size before compression in the local storage.
-	UncompressedSize datasize.ByteSize `json:"uncompressedSize"`
+	UncompressedSize datasize.ByteSize `json:"uncompressedSize,omitempty"`
 	// CompressedSize is data size after compression in the local storage.
-	CompressedSize datasize.ByteSize `json:"compressedSize"`
+	CompressedSize datasize.ByteSize `json:"compressedSize,omitempty"`
 	// StagingSize is data size in the staging storage.
 	// The value is usually same as the CompressedSize,
 	// if the type of compression did not change during the upload.
