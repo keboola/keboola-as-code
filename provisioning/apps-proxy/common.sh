@@ -26,10 +26,17 @@ export NAMESPACE="apps-proxy"
 kubectl apply -f ./kubernetes/deploy/namespace.yaml
 
 if ! kubectl get secret apps-proxy-salt --namespace apps-proxy > /dev/null 2>&1; then
-  COOKIE_SECRET_SALT=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 128)
-  export COOKIE_SECRET_SALT
+  APPS_PROXY_COOKIE_SECRET_SALT=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 128)
+  export APPS_PROXY_COOKIE_SECRET_SALT
   envsubst < kubernetes/templates/proxy/salt.yaml > kubernetes/deploy/proxy/salt.yaml
   kubectl apply -f ./kubernetes/deploy/proxy/salt.yaml
+fi
+
+if ! kubectl get secret apps-proxy-csrf-token-salt --namespace apps-proxy > /dev/null 2>&1; then
+  APPS_PROXY_CSRF_TOKEN_SALT=$(head -c 32 /dev/urandom | openssl enc | xxd -p -c 32)
+  export APPS_PROXY_CSRF_TOKEN_SALT
+  envsubst < kubernetes/templates/proxy/csrf-salt.yaml > kubernetes/deploy/proxy/csrf-salt.yaml
+  kubectl apply -f ./kubernetes/deploy/proxy/csrf-salt.yaml
 fi
 
 # Proxy

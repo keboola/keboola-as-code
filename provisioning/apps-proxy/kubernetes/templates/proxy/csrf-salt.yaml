@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: apps-proxy-salt
+  name: apps-proxy-csrf-token-salt
   namespace: $NAMESPACE
   labels:
     app: apps-proxy
 stringData:
-  cookieSecretSalt: "$APPS_PROXY_COOKIE_SECRET_SALT"
+  csrfTokenSalt: "$APPS_PROXY_CSRF_TOKEN_SALT"

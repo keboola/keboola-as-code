@@ -74,6 +74,11 @@ spec:
                 secretKeyRef:
                   name: apps-proxy-salt
                   key: cookieSecretSalt
+            - name: APPS_PROXY_CSRF_TOKEN_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: apps-proxy-csrf-token-salt
+                  key: csrfTokenSalt
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:
