@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -27,7 +28,7 @@ func (r *Repository) estimateSliceSizeOnSliceOpen() {
 		// We need to update the value to the Slice entity before saving,
 		// before the callback is completed, because later the entity value is already stored
 		// in the WRITE phase transaction and cannot be modified.
-		if err := r.estimateSliceSize(file, slice).Do(ctx).Err(); err != nil {
+		if err := r.estimateSliceSize(ctx, file, slice); err != nil {
 			// Error is not fatal
 			r.logger.Errorf(ctx, `cannot calculate slice pre-allocated size: %s`, err)
 		}
@@ -35,33 +36,54 @@ func (r *Repository) estimateSliceSizeOnSliceOpen() {
 	})
 }
 
-func (r *Repository) estimateSliceSize(file model.File, slice *model.Slice) *op.TxnOp[datasize.ByteSize] {
-	return r.
-		maxUsedDiskSizeBySliceIn(slice.SinkKey, recordsForSliceDiskSizeCalc).
-		OnResult(func(r *op.TxnResult[datasize.ByteSize]) {
-			slice.LocalStorage.AllocatedDiskSpace = file.LocalStorage.DiskAllocation.ForNextSlice(r.Result())
-		})
+func (r *Repository) estimateSliceSize(ctx context.Context, file model.File, slice *model.Slice) error {
+	// Get maximum slice size
+	size, err := r.maxUsedDiskSizeBySliceIn(ctx, slice.SinkKey, recordsForSliceDiskSizeCalc)
+	if err != nil {
+		return err
+	}
+
+	// Calculate allocated disk space for the new slice
+	slice.LocalStorage.AllocatedDiskSpace = file.LocalStorage.DiskAllocation.ForNextSlice(size)
+	return nil
 }
 
 // maxUsedDiskSizeBySliceIn scans the statistics in the parentKey, scanned are:
 //   - The last <limit> slices in level.LevelStaging (uploaded slices).
 //   - The last <limit> slices in level.LevelTarget  (imported slices).
-func (r *Repository) maxUsedDiskSizeBySliceIn(parentKey fmt.Stringer, limit int) *op.TxnOp[datasize.ByteSize] {
-	var maxSize datasize.ByteSize
-	txn := op.TxnWithResult(r.client, &maxSize)
-	for _, l := range []model.Level{model.LevelStaging, model.LevelTarget} {
-		// Get maximum
-		txn.Then(
-			r.schema.
-				InLevel(l).InObject(parentKey).
-				GetAll(r.client, iterator.WithLimit(limit), iterator.WithSort(etcd.SortDescend)).
-				ForEach(func(v statistics.Value, header *iterator.Header) error {
-					// Ignore sums
-					if v.SlicesCount == 1 && v.CompressedSize > maxSize {
-						maxSize = v.CompressedSize
-					}
-					return nil
-				}))
+func (r *Repository) maxUsedDiskSizeBySliceIn(ctx context.Context, parentKey fmt.Stringer, limit int) (datasize.ByteSize, error) {
+	// Get last <limit> slices from staging and target levels
+	var lastStagingSlices, lastTargetSlices []model.Slice
+	listSlicesOpts := []iterator.Option{iterator.WithSort(etcd.SortDescend), iterator.WithLimit(limit)}
+	err := op.Txn(r.client).
+		Then(r.storage.Slice().ListInLevel(parentKey, model.LevelStaging, listSlicesOpts...).WithAllTo(&lastStagingSlices)).
+		Then(r.storage.Slice().ListInLevel(parentKey, model.LevelTarget, listSlicesOpts...).WithAllTo(&lastTargetSlices)).
+		Do(ctx).
+		Err()
+	if err != nil {
+		return 0, err
 	}
-	return txn
+
+	// Load and process statistics for each slice from the previous step
+	var maxSize datasize.ByteSize
+	txn := op.Txn(r.client)
+	for _, slice := range slices.Concat(lastStagingSlices, lastTargetSlices) {
+		txn.Merge(
+			r.AggregateInLevel(slice.SliceKey, slice.State.Level()).OnSucceeded(func(r *op.TxnResult[statistics.Aggregated]) {
+				if s := r.Result().Total.CompressedSize; s > maxSize {
+					maxSize = s
+				}
+			}),
+		)
+	}
+
+	if txn.Empty() {
+		return 0, nil
+	}
+
+	if err := txn.Do(ctx).Err(); err != nil {
+		return 0, err
+	}
+
+	return maxSize, nil
 }

@@ -14,11 +14,11 @@
 ➡️  GET "storage/keboola/secret/token/123/456/my-source/my-sink"
 ✔️  GET "storage/keboola/secret/token/123/456/my-source/my-sink" | count: 0
 
-// READ: statistics to calculate pre-allocated space for new slices
+// READ: sink slices and their statistics to calculate pre-allocated disk space - there is no previous slice
 ➡️  TXN
   ➡️  THEN:
-  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink/", "storage/stats/staging/123/456/my-source/my-sink0")
-  002 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink/", "storage/stats/target/123/456/my-source/my-sink0")
+  001 ➡️  GET ["storage/slice/level/staging/123/456/my-source/my-sink/", "storage/slice/level/staging/123/456/my-source/my-sink0")
+  002 ➡️  GET ["storage/slice/level/target/123/456/my-source/my-sink/", "storage/slice/level/target/123/456/my-source/my-sink0")
 ✔️  TXN | succeeded: true
 
 // WRITE:

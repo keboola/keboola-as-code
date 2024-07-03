@@ -5,11 +5,11 @@
   002 ➡️  GET ["storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-1/", "storage/slice/level/local/123/456/my-source/my-sink-1/2000-01-01T01:00:00.000Z/my-volume-10")
 ✔️  TXN | succeeded: true
 
-// READ - statistics to be moved
+// READ - get previous slice and their statistics to calculate size of the new slice - there are no previous slices
 ➡️  TXN
   ➡️  THEN:
-  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink-1/", "storage/stats/staging/123/456/my-source/my-sink-10")
-  002 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink-1/", "storage/stats/target/123/456/my-source/my-sink-10")
+  001 ➡️  GET ["storage/slice/level/staging/123/456/my-source/my-sink-1/", "storage/slice/level/staging/123/456/my-source/my-sink-10")
+  002 ➡️  GET ["storage/slice/level/target/123/456/my-source/my-sink-1/", "storage/slice/level/target/123/456/my-source/my-sink-10")
 ✔️  TXN | succeeded: true
 
 // WRITE

@@ -20,62 +20,63 @@ func TestRepository_Put(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, _ := dependencies.NewMockedLocalStorageScope(t)
+	d, mock := dependencies.NewMockedLocalStorageScope(t)
+	client := mock.TestEtcdClient()
 	repo := d.StatisticsRepository()
+	sliceKey := test.NewSliceKeyOpenedAt("2000-01-20T00:00:00.000Z")
 
 	// Empty
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{}))
+	assert.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{}))
 	etcdhelper.AssertKVsString(t, d.EtcdClient(), ``)
 
-	// One
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	// Node1
+	nodeID1 := "test-node-1"
+	assert.NoError(t, repo.OpenSlice(sliceKey, nodeID1).Do(ctx).Err())
+	assert.NoError(t, repo.Put(ctx, nodeID1, []statistics.PerSlice{
 		{
-			SliceKey: test.NewSliceKeyOpenedAt("2000-01-20T00:00:00.000Z"),
-			Value: statistics.Value{
-				SlicesCount:      1,
-				FirstRecordAt:    utctime.MustParse("2000-01-20T00:00:00.000Z"),
-				LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
-				RecordsCount:     1,
-				UncompressedSize: 1,
-				CompressedSize:   1,
-			},
+			SliceKey:         sliceKey,
+			FirstRecordAt:    utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-21T00:00:00.000Z"),
+			RecordsCount:     1,
+			UncompressedSize: 1,
+			CompressedSize:   1,
 		},
 	}))
-	etcdhelper.AssertKVsString(t, d.EtcdClient(), `
-<<<<<
-storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-20T00:00:00.000Z/value
------
-{
-  "slicesCount": 1,
-  "firstRecordAt": "2000-01-20T00:00:00.000Z",
-  "lastRecordAt": "2000-01-21T00:00:00.000Z",
-  "recordsCount": 1,
-  "uncompressedSize": "1B",
-  "compressedSize": "1B"
-}
->>>>>
-`)
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_put_snapshot_001.txt")
+
+	// Node2
+	nodeID2 := "test-node-2"
+	assert.NoError(t, repo.OpenSlice(sliceKey, nodeID2).Do(ctx).Err())
+	assert.NoError(t, repo.Put(ctx, nodeID2, []statistics.PerSlice{
+		{
+			SliceKey:         sliceKey,
+			FirstRecordAt:    utctime.MustParse("2000-01-21T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-22T00:00:00.000Z"),
+			RecordsCount:     2,
+			UncompressedSize: 2,
+			CompressedSize:   2,
+		},
+	}))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_put_snapshot_002.txt")
 
 	// Many
+	nodeID3 := "test-node-3"
 	var records []statistics.PerSlice
 	start := utctime.MustParse("2000-01-21T00:00:00.000Z")
 	for i := 0; i < 150; i++ {
 		openedAt := start.Add(time.Duration(i) * time.Second)
 		records = append(records, statistics.PerSlice{
-			SliceKey: test.NewSliceKeyOpenedAt(openedAt.String()),
-			Value: statistics.Value{
-				SlicesCount:      1,
-				FirstRecordAt:    openedAt,
-				LastRecordAt:     openedAt.Add(time.Hour),
-				RecordsCount:     1,
-				UncompressedSize: 1,
-				CompressedSize:   1,
-			},
+			SliceKey:         test.NewSliceKeyOpenedAt(openedAt.String()),
+			FirstRecordAt:    openedAt,
+			LastRecordAt:     openedAt.Add(time.Hour),
+			RecordsCount:     1,
+			UncompressedSize: 1,
+			CompressedSize:   1,
 		})
 	}
 	assert.Len(t, records, 150)
-	assert.NoError(t, repo.Put(ctx, records))
+	assert.NoError(t, repo.Put(ctx, nodeID3, records))
 	kvs, err := etcdhelper.DumpAll(ctx, d.EtcdClient())
 	assert.NoError(t, err)
-	assert.Len(t, kvs, 151)
+	assert.Equal(t, 1+2+150, len(kvs))
 }

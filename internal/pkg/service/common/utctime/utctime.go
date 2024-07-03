@@ -40,6 +40,9 @@ func (v UTCTime) After(target UTCTime) bool {
 }
 
 func (v UTCTime) MarshalJSON() ([]byte, error) {
+	if v.IsZero() {
+		return jsonLib.Marshal("")
+	}
 	return jsonLib.Marshal(v.String())
 }
 
@@ -47,6 +50,10 @@ func (v *UTCTime) UnmarshalJSON(b []byte) error {
 	var str string
 	if err := jsonLib.Unmarshal(b, &str); err != nil {
 		return err
+	}
+	if str == "" {
+		*v = UTCTime{}
+		return nil
 	}
 	out, err := time.Parse(TimeFormat, str)
 	if err != nil {

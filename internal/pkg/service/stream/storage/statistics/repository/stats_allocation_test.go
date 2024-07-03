@@ -112,23 +112,23 @@ func TestRepository_EstimateSliceSizeOnSliceCreate(t *testing.T) {
 	// Create stats records
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
-			{SliceKey: sliceKey1, Value: statistics.Value{
-				SlicesCount:      1,
+		assert.NoError(t, statsRepo.Put(ctx, "test-node", []statistics.PerSlice{
+			{
+				SliceKey:         sliceKey1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 				RecordsCount:     123,
 				UncompressedSize: 20000,
 				CompressedSize:   1000, // <<<<<<<<<<<
-			}},
-			{SliceKey: sliceKey2, Value: statistics.Value{
-				SlicesCount:      1,
+			},
+			{
+				SliceKey:         sliceKey2,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 				RecordsCount:     345,
 				UncompressedSize: 10000,
 				CompressedSize:   500,
-			}},
+			},
 		}))
 	}
 

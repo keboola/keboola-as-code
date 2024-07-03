@@ -4,7 +4,7 @@
 //
 // Statistics are stored in the etcd database as [statistics.Value] under the following key format:
 //
-//	storage/stats/<LEVEL:local>/<SLICE_KEY:PROJECT_ID/SOURCE_ID/SINK_ID/FILE_ID/VOLUME_ID/SLICE_ID>/value
+//	storage/stats/<LEVEL:local>/<SLICE_KEY:PROJECT_ID/SOURCE_ID/SINK_ID/FILE_ID/VOLUME_ID/SLICE_ID>/<NODE_ID>
 //
 // Statistics are stored at the slice level, which represents the smallest unit.
 //
@@ -35,6 +35,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -54,8 +55,9 @@ type Repository struct {
 	logger    log.Logger
 	telemetry telemetry.Telemetry
 	client    *etcd.Client
-	schema    schema
 	plugins   *plugin.Plugins
+	storage   *storageRepo.Repository
+	schema    schema
 }
 
 type dependencies interface {
@@ -64,6 +66,7 @@ type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
+	StorageRepository() *storageRepo.Repository
 }
 
 func New(d dependencies) *Repository {
@@ -71,8 +74,9 @@ func New(d dependencies) *Repository {
 		logger:    d.Logger().WithComponent("storage.statistics.repository"),
 		telemetry: d.Telemetry(),
 		client:    d.EtcdClient(),
-		schema:    newSchema(d.EtcdSerde()),
 		plugins:   d.Plugins(),
+		storage:   d.StorageRepository(),
+		schema:    newSchema(d.EtcdSerde()),
 	}
 
 	// Setup Provider interface

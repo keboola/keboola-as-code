@@ -8,13 +8,13 @@ import (
 )
 
 // ListIn lists slices in the parent, in all storage levels.
-func (r *Repository) ListIn(parentKey fmt.Stringer) iterator.DefinitionT[model.Slice] {
-	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client)
+func (r *Repository) ListIn(parentKey fmt.Stringer, opts ...iterator.Option) iterator.DefinitionT[model.Slice] {
+	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client, opts...)
 }
 
 // ListInLevel lists slices in the specified storage level.
-func (r *Repository) ListInLevel(parentKey fmt.Stringer, level model.Level) iterator.DefinitionT[model.Slice] {
-	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client)
+func (r *Repository) ListInLevel(parentKey fmt.Stringer, level model.Level, opts ...iterator.Option) iterator.DefinitionT[model.Slice] {
+	return r.schema.InLevel(level).InObject(parentKey).GetAll(r.client, opts...)
 }
 
 // ListInState lists slices in the specified state.

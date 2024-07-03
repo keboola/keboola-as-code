@@ -14,8 +14,6 @@ import (
 )
 
 const (
-	// sliceValueKey contains a slice statistics, it is the lowest level.
-	sliceValueKey = "value"
 	// rollupSumKey contains the sum of all statistics from the object children that were deleted.
 	rollupSumKey = "_sum"
 )
@@ -86,8 +84,12 @@ func (v schemaInLevel) InFile(k FileKey) schemaInObject {
 	return v.inObject(k)
 }
 
-func (v schemaInLevel) InSlice(k SliceKey) KeyT[statistics.Value] {
-	return v.inObject(k).Key(sliceValueKey)
+func (v schemaInLevel) InSlice(k SliceKey) schemaInObject {
+	return v.inObject(k)
+}
+
+func (v schemaInLevel) InSliceSourceNode(k SliceKey, nodeID string) KeyT[statistics.Value] {
+	return v.inObject(k).Key(nodeID)
 }
 
 func (v schemaInLevel) inObject(objectKey fmt.Stringer) schemaInObject {

@@ -46,7 +46,7 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 
 	// Setup statistics collector
 	syncCfg := cfg.Storage.Statistics.Collector
-	collector.Start(d, volumes.Events(), syncCfg)
+	collector.Start(d, volumes.Events(), syncCfg, cfg.NodeID)
 
 	return nil
 }

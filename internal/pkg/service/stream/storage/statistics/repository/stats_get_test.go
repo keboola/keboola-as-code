@@ -115,42 +115,58 @@ func TestProvider(t *testing.T) {
 	// Add some statistics
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
+		nodeID1 := "test-node-1"
+		assert.NoError(t, statsRepo.OpenSlice(sliceKey1, nodeID1).Do(ctx).Err())
+		assert.NoError(t, statsRepo.OpenSlice(sliceKey2, nodeID1).Do(ctx).Err())
+		assert.NoError(t, statsRepo.OpenSlice(sliceKey3, nodeID1).Do(ctx).Err())
+		assert.NoError(t, statsRepo.Put(ctx, nodeID1, []statistics.PerSlice{
 			{
-				SliceKey: sliceKey1,
-				Value: statistics.Value{
-					SlicesCount:      1,
-					FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
-					LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
-					RecordsCount:     1,
-					UncompressedSize: 1,
-					CompressedSize:   1,
-				},
+				SliceKey:         sliceKey1,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				RecordsCount:     1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
 			},
 			{
-				SliceKey: sliceKey2,
-				Value: statistics.Value{
-					SlicesCount:      1,
-					FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
-					LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
-					RecordsCount:     10,
-					UncompressedSize: 10,
-					CompressedSize:   10,
-				},
+				SliceKey:         sliceKey2,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T02:10:00.000Z"),
+				RecordsCount:     1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
 			},
 			{
-				SliceKey: sliceKey3,
-				Value: statistics.Value{
-					SlicesCount:      1,
-					FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
-					LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
-					RecordsCount:     100,
-					UncompressedSize: 100,
-					CompressedSize:   100,
-				},
+				SliceKey:         sliceKey3,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T03:10:00.000Z"),
+				RecordsCount:     1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
 			},
 		}))
 	}
+	nodeID2 := "test-node-2"
+	assert.NoError(t, statsRepo.OpenSlice(sliceKey2, nodeID2).Do(ctx).Err())
+	assert.NoError(t, statsRepo.OpenSlice(sliceKey3, nodeID2).Do(ctx).Err())
+	assert.NoError(t, statsRepo.Put(ctx, nodeID2, []statistics.PerSlice{
+		{
+			SliceKey:         sliceKey2,
+			FirstRecordAt:    utctime.MustParse("2000-01-01T02:10:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+			RecordsCount:     9,
+			UncompressedSize: 9,
+			CompressedSize:   9,
+		},
+		{
+			SliceKey:         sliceKey3,
+			FirstRecordAt:    utctime.MustParse("2000-01-01T03:10:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     99,
+			UncompressedSize: 99,
+			CompressedSize:   99,
+		},
+	}))
 
 	// Move statistics file2 to the staging, and file3 to the target level
 	// -----------------------------------------------------------------------------------------------------------------

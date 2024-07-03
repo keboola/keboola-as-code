@@ -26,28 +26,22 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 	// Add 2 records
 	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
 	sliceKey2 := test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	assert.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{
 		{
-			SliceKey: sliceKey1,
-			Value: statistics.Value{
-				SlicesCount:      1,
-				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
-				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
-				RecordsCount:     1,
-				UncompressedSize: 1,
-				CompressedSize:   1,
-			},
+			SliceKey:         sliceKey1,
+			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+			RecordsCount:     1,
+			UncompressedSize: 1,
+			CompressedSize:   1,
 		},
 		{
-			SliceKey: sliceKey2,
-			Value: statistics.Value{
-				SlicesCount:      1,
-				FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
-				LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
-				RecordsCount:     10,
-				UncompressedSize: 10,
-				CompressedSize:   10,
-			},
+			SliceKey:         sliceKey2,
+			FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+			RecordsCount:     10,
+			UncompressedSize: 10,
+			CompressedSize:   10,
 		},
 	}))
 
@@ -57,7 +51,6 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, []statistics.Value{
 		{
-			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			RecordsCount:     1,
@@ -65,7 +58,6 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 			CompressedSize:   1,
 		},
 		{
-			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			RecordsCount:     10,
@@ -76,17 +68,14 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 
 	// Add record
 	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
-	assert.NoError(t, repo.Put(ctx, []statistics.PerSlice{
+	assert.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{
 		{
-			SliceKey: sliceKey3,
-			Value: statistics.Value{
-				SlicesCount:      1,
-				FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
-				LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
-				RecordsCount:     100,
-				UncompressedSize: 100,
-				CompressedSize:   100,
-			},
+			SliceKey:         sliceKey3,
+			FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+			RecordsCount:     100,
+			UncompressedSize: 100,
+			CompressedSize:   100,
 		},
 	}))
 
@@ -101,7 +90,6 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, []statistics.Value{
 		{
-			SlicesCount:      1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
 			LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
 			RecordsCount:     100,

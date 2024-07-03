@@ -10,18 +10,18 @@
   001 ➡️  GET ["definition/sink/active/123/456/my-source/", "definition/sink/active/123/456/my-source0")
 ✔️  TXN | succeeded: true
 
-// READ - get statistics of the sink1 - to calculate pre-allocated disk space
+// READ - get previous slices from the sink 1 and their statistics to calculate pre-allocated disk space - there is no slice
 ➡️  TXN
   ➡️  THEN:
-  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink-1/", "storage/stats/staging/123/456/my-source/my-sink-10")
-  002 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink-1/", "storage/stats/target/123/456/my-source/my-sink-10")
+  001 ➡️  GET ["storage/slice/level/staging/123/456/my-source/my-sink-1/", "storage/slice/level/staging/123/456/my-source/my-sink-10")
+  002 ➡️  GET ["storage/slice/level/target/123/456/my-source/my-sink-1/", "storage/slice/level/target/123/456/my-source/my-sink-10")
 ✔️  TXN | succeeded: true
 
-// READ - get statistics of the sink2 - to calculate pre-allocated disk space
+// READ - get previous slices from the sink 2 and their statistics to calculate pre-allocated disk space - there is no slice
 ➡️  TXN
   ➡️  THEN:
-  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink-2/", "storage/stats/staging/123/456/my-source/my-sink-20")
-  002 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink-2/", "storage/stats/target/123/456/my-source/my-sink-20")
+  001 ➡️  GET ["storage/slice/level/staging/123/456/my-source/my-sink-2/", "storage/slice/level/staging/123/456/my-source/my-sink-20")
+  002 ➡️  GET ["storage/slice/level/target/123/456/my-source/my-sink-2/", "storage/slice/level/target/123/456/my-source/my-sink-20")
 ✔️  TXN | succeeded: true
 
 // WRITE

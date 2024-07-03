@@ -12,11 +12,11 @@
   001 ➡️  GET ["storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0")
 ✔️  TXN | succeeded: true
 
-// READ - statistics for aggregation
+// READ - previous slices for statistics for aggregation - there is no previous slice in the sink
 ➡️  TXN
   ➡️  THEN:
-  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink/", "storage/stats/staging/123/456/my-source/my-sink0")
-  002 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink/", "storage/stats/target/123/456/my-source/my-sink0")
+  001 ➡️  GET ["storage/slice/level/staging/123/456/my-source/my-sink/", "storage/slice/level/staging/123/456/my-source/my-sink0")
+  002 ➡️  GET ["storage/slice/level/target/123/456/my-source/my-sink/", "storage/slice/level/target/123/456/my-source/my-sink0")
 ✔️  TXN | succeeded: true
 
 // WRITE

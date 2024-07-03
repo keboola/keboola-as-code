@@ -15,7 +15,7 @@
 // READ - get statistics to be moved
 ➡️  TXN
   ➡️  THEN:
-  001 ➡️  GET "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value"
+  001 ➡️  GET ["storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z0")
 
 ✔️  TXN | succeeded: true
 
@@ -29,7 +29,7 @@
   005 ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD GREATER 0
   006 ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD LESS %d
   007 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
-  008 "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/value" MOD EQUAL 0
+  008 ["storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z0") MOD EQUAL 0
   ➡️  THEN:
   // Mark file and slice as imported, move stats
   001 ➡️  PUT "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"

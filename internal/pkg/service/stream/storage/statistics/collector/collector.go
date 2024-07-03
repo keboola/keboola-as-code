@@ -23,6 +23,7 @@ type Collector struct {
 	logger     log.Logger
 	repository *repository.Repository
 	config     statistics.SyncConfig
+	nodeID     string
 	wg         *sync.WaitGroup
 
 	syncLock    *sync.Mutex
@@ -38,8 +39,10 @@ type WriterEvents interface {
 // writerSnapshot contains collected statistics from a writer.Writer.
 // It is used to determine whether the statistics have changed and should be saved to the database or not.
 type writerSnapshot struct {
-	stats  statistics.PerSlice
-	writer writer.Writer
+	writer       writer.Writer
+	sliceKey     model.SliceKey
+	initialValue statistics.Value
+	value        statistics.Value
 }
 
 type dependencies interface {
@@ -49,11 +52,12 @@ type dependencies interface {
 	StatisticsRepository() *repository.Repository
 }
 
-func Start(d dependencies, events WriterEvents, config statistics.SyncConfig) {
+func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, nodeID string) {
 	c := &Collector{
 		logger:      d.Logger().WithComponent("statistics.collector"),
 		repository:  d.StatisticsRepository(),
 		config:      config,
+		nodeID:      nodeID,
 		wg:          &sync.WaitGroup{},
 		syncLock:    &sync.Mutex{},
 		writersLock: &sync.Mutex{},
@@ -74,13 +78,17 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig) {
 		// Register the writer for the periodical sync, see bellow
 		k := w.SliceKey()
 
+		initialValue, err := c.repository.OpenSlice(k, c.nodeID).Do(ctx).ResultOrErr()
+		if err != nil {
+			return err
+		}
+
 		c.writersLock.Lock()
 		c.writers[k] = &writerSnapshot{
-			writer: w,
-			stats: statistics.PerSlice{
-				SliceKey: k,
-				Value:    statistics.Value{SlicesCount: 1},
-			},
+			writer:       w,
+			sliceKey:     k,
+			initialValue: initialValue,
+			value:        statistics.Value{},
 		}
 		c.writersLock.Unlock()
 
@@ -140,16 +148,30 @@ func (c *Collector) sync(filter *model.SliceKey) error {
 	if filter == nil {
 		// Collect all writers
 		for _, s := range c.writers {
-			if changed := c.collect(s.writer, &s.stats); changed {
-				forSync = append(forSync, s.stats)
+			if changed := c.collect(s.writer, &s.value); changed {
+				value := s.initialValue.Add(s.value)
+				forSync = append(forSync, statistics.PerSlice{
+					SliceKey:         s.sliceKey,
+					FirstRecordAt:    value.FirstRecordAt,
+					LastRecordAt:     value.LastRecordAt,
+					RecordsCount:     value.RecordsCount,
+					UncompressedSize: value.UncompressedSize,
+					CompressedSize:   value.CompressedSize,
+				})
 			}
 		}
-	} else {
+	} else if s, found := c.writers[*filter]; found {
 		// Collect one writer
-		if s, found := c.writers[*filter]; found {
-			if changed := c.collect(s.writer, &s.stats); changed {
-				forSync = append(forSync, s.stats)
-			}
+		if changed := c.collect(s.writer, &s.value); changed {
+			value := s.initialValue.Add(s.value)
+			forSync = append(forSync, statistics.PerSlice{
+				SliceKey:         s.sliceKey,
+				FirstRecordAt:    value.FirstRecordAt,
+				LastRecordAt:     value.LastRecordAt,
+				RecordsCount:     value.RecordsCount,
+				UncompressedSize: value.UncompressedSize,
+				CompressedSize:   value.CompressedSize,
+			})
 		}
 	}
 	c.writersLock.Unlock()
@@ -161,7 +183,7 @@ func (c *Collector) sync(filter *model.SliceKey) error {
 
 	// Update values in the database
 	if len(forSync) > 0 {
-		if err := c.repository.Put(ctx, forSync); err != nil {
+		if err := c.repository.Put(ctx, c.nodeID, forSync); err != nil {
 			err = errors.Errorf("cannot save the storage statistics to the database: %w", err)
 			c.logger.Error(ctx, err.Error())
 			return err
@@ -173,7 +195,7 @@ func (c *Collector) sync(filter *model.SliceKey) error {
 }
 
 // collect statistics from the writer to the PerSlice struct.
-func (c *Collector) collect(w writer.Writer, out *statistics.PerSlice) (changed bool) {
+func (c *Collector) collect(w writer.Writer, out *statistics.Value) (changed bool) {
 	// Get values
 	firstRowAt := w.FirstRecordAt()
 	lastRowAt := w.LastRecordAt()
@@ -182,18 +204,18 @@ func (c *Collector) collect(w writer.Writer, out *statistics.PerSlice) (changed 
 	uncompressedSize := w.UncompressedSize()
 
 	// Are statistics changed?
-	changed = out.Value.FirstRecordAt != firstRowAt ||
-		out.Value.LastRecordAt != lastRowAt ||
-		out.Value.RecordsCount != rowsCount ||
-		out.Value.CompressedSize != compressedSize ||
-		out.Value.UncompressedSize != uncompressedSize
+	changed = out.FirstRecordAt != firstRowAt ||
+		out.LastRecordAt != lastRowAt ||
+		out.RecordsCount != rowsCount ||
+		out.CompressedSize != compressedSize ||
+		out.UncompressedSize != uncompressedSize
 
 	// Update values
-	out.Value.FirstRecordAt = firstRowAt
-	out.Value.LastRecordAt = lastRowAt
-	out.Value.RecordsCount = rowsCount
-	out.Value.CompressedSize = compressedSize
-	out.Value.UncompressedSize = uncompressedSize
+	out.FirstRecordAt = firstRowAt
+	out.LastRecordAt = lastRowAt
+	out.RecordsCount = rowsCount
+	out.CompressedSize = compressedSize
+	out.UncompressedSize = uncompressedSize
 
 	return changed
 }

@@ -102,6 +102,7 @@ func TestStatisticsProviders(t *testing.T) {
 	}
 
 	// Define test cases
+	nodeID := "test-node"
 	cases := []providerTestCase{
 		{
 			Description: "Empty",
@@ -112,19 +113,34 @@ func TestStatisticsProviders(t *testing.T) {
 			},
 		},
 		{
+			Description: "Open slice statistics (1)",
+			Prepare: func() {
+				require.NoError(t, statsRepo.OpenSlice(sliceKey1, nodeID).Do(ctx).Err())
+			},
+			Assert: func(provider repository.Provider) {
+				stats, err := provider.SinkStats(ctx, sinkKey)
+				require.NoError(t, err)
+				assert.Equal(t, statistics.Aggregated{
+					Local: statistics.Value{
+						SlicesCount: 1,
+					},
+					Total: statistics.Value{
+						SlicesCount: 1,
+					},
+				}, stats)
+			},
+		},
+		{
 			Description: "Add record (1)",
 			Prepare: func() {
-				require.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
+				require.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
 					{
-						SliceKey: sliceKey1,
-						Value: statistics.Value{
-							SlicesCount:      1,
-							FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
-							LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
-							RecordsCount:     1,
-							UncompressedSize: 1,
-							CompressedSize:   1,
-						},
+						SliceKey:         sliceKey1,
+						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+						LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+						RecordsCount:     1,
+						UncompressedSize: 1,
+						CompressedSize:   1,
 					},
 				}))
 			},
@@ -152,19 +168,44 @@ func TestStatisticsProviders(t *testing.T) {
 			},
 		},
 		{
+			Description: "Open slice statistics (2)",
+			Prepare: func() {
+				require.NoError(t, statsRepo.OpenSlice(sliceKey2, nodeID).Do(ctx).Err())
+			},
+			Assert: func(provider repository.Provider) {
+				stats, err := provider.SinkStats(ctx, sinkKey)
+				require.NoError(t, err)
+				assert.Equal(t, statistics.Aggregated{
+					Local: statistics.Value{
+						SlicesCount:      2,
+						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+						LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+						RecordsCount:     1,
+						UncompressedSize: 1,
+						CompressedSize:   1,
+					},
+					Total: statistics.Value{
+						SlicesCount:      2,
+						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+						LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+						RecordsCount:     1,
+						UncompressedSize: 1,
+						CompressedSize:   1,
+					},
+				}, stats)
+			},
+		},
+		{
 			Description: "Add record (2)",
 			Prepare: func() {
-				require.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
+				require.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
 					{
-						SliceKey: sliceKey2,
-						Value: statistics.Value{
-							SlicesCount:      1,
-							FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
-							LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
-							RecordsCount:     10,
-							UncompressedSize: 10,
-							CompressedSize:   10,
-						},
+						SliceKey:         sliceKey2,
+						FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
+						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+						RecordsCount:     10,
+						UncompressedSize: 10,
+						CompressedSize:   10,
 					},
 				}))
 			},
@@ -233,19 +274,54 @@ func TestStatisticsProviders(t *testing.T) {
 			},
 		},
 		{
+			Description: "Open slice statistics (3)",
+			Prepare: func() {
+				require.NoError(t, statsRepo.OpenSlice(sliceKey3, nodeID).Do(ctx).Err())
+			},
+			Assert: func(provider repository.Provider) {
+				stats, err := provider.SinkStats(ctx, sinkKey)
+				require.NoError(t, err)
+				assert.Equal(t, statistics.Aggregated{
+					Local: statistics.Value{
+						SlicesCount:      2,
+						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+						LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+						RecordsCount:     1,
+						UncompressedSize: 1,
+						CompressedSize:   1,
+					},
+					Staging: statistics.Value{
+						SlicesCount:      1,
+						FirstRecordAt:    utctime.MustParse("2000-01-01T02:00:00.000Z"),
+						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+						RecordsCount:     10,
+						UncompressedSize: 10,
+						CompressedSize:   10,
+						StagingSize:      10,
+					},
+					Total: statistics.Value{
+						SlicesCount:      3,
+						FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+						LastRecordAt:     utctime.MustParse("2000-01-01T03:00:00.000Z"),
+						RecordsCount:     11,
+						UncompressedSize: 11,
+						CompressedSize:   11,
+						StagingSize:      10,
+					},
+				}, stats)
+			},
+		},
+		{
 			Description: "Add record (3)",
 			Prepare: func() {
-				require.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
+				require.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
 					{
-						SliceKey: sliceKey3,
-						Value: statistics.Value{
-							SlicesCount:      1,
-							FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
-							LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
-							RecordsCount:     100,
-							UncompressedSize: 100,
-							CompressedSize:   100,
-						},
+						SliceKey:         sliceKey3,
+						FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),
+						LastRecordAt:     utctime.MustParse("2000-01-01T04:00:00.000Z"),
+						RecordsCount:     100,
+						UncompressedSize: 100,
+						CompressedSize:   100,
 					},
 				}))
 			},
