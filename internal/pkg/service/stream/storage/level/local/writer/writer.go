@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/count"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/limitbuffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/size"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writechain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
