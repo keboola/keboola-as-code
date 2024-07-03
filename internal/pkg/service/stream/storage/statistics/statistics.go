@@ -40,7 +40,14 @@ type Value struct {
 
 type PerSlice struct {
 	SliceKey model.SliceKey
-	Value    Value
+
+	// The following fields are part of the Value structure, which are applicable when collecting statistics.
+
+	FirstRecordAt    utctime.UTCTime
+	LastRecordAt     utctime.UTCTime
+	RecordsCount     uint64
+	UncompressedSize datasize.ByteSize
+	CompressedSize   datasize.ByteSize
 }
 
 // Aggregated contains aggregated statistics for an object, such as file or export.
