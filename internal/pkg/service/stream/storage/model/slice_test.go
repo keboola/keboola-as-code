@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -149,7 +149,7 @@ func TestSlice_Validation(t *testing.T) {
 		Dir:         "my-dir",
 		Filename:    "slice.csv",
 		Compression: compression.NewConfig(),
-		DiskSync:    disksync.NewConfig(),
+		DiskSync:    writesync.NewConfig(),
 	}
 	stagingStorage := stagingModel.Slice{
 		Path:        "slice.csv.gzip",

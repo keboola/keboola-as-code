@@ -1,4 +1,4 @@
-package disksync
+package writesync
 
 import (
 	"bytes"

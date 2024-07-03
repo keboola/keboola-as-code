@@ -1,6 +1,6 @@
-// Package disksync providers synchronization of in-memory data to disk or OS disk cache.
+// Package writesync providers synchronization of in-memory data to disk or OS disk cache.
 // It is also possible to wait for the next synchronization.
-package disksync
+package writesync
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/notify"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

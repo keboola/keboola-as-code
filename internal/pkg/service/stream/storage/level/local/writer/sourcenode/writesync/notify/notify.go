@@ -7,7 +7,7 @@ import (
 )
 
 // Notifier allows multiple listeners to Wait for the completion of an operation that may end with an error.
-// It is used while awaiting synchronization, see the disksync package.
+// It is used while awaiting synchronization, see the writesync package.
 type Notifier struct {
 	doneCh chan struct{}
 	error  error

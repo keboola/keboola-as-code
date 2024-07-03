@@ -9,8 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -52,7 +52,7 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 		LocalStorage: localModel.File{
 			Dir:         local.NormalizeDirPath(fileKey.String()),
 			Compression: compression.NewNoneConfig(),
-			DiskSync:    disksync.NewConfig(),
+			DiskSync:    writesync.NewConfig(),
 		},
 		StagingStorage: stagingModel.File{
 			Compression: compression.NewNoneConfig(),

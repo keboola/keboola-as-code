@@ -10,7 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test/benchmark"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
@@ -37,34 +37,34 @@ func BenchmarkCSVWrite(b *testing.B) {
 		{
 			Name: "compression=None,sync=None",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Sync = disksync.Config{Mode: disksync.ModeDisabled}
+				wb.Sync = writesync.Config{Mode: writesync.ModeDisabled}
 			},
 		},
 		{
 			Name: "compression=None,sync=ToDisk,wait=true",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = true
 			},
 		},
 		{
 			Name: "compression=None,sync=ToDisk,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = false
 			},
 		},
 		{
 			Name: "compression=None,sync=ToCache,wait=true",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Sync.Mode = disksync.ModeCache
+				wb.Sync.Mode = writesync.ModeCache
 				wb.Sync.Wait = true
 			},
 		},
 		{
 			Name: "compression=None,sync=ToCache,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Sync.Mode = disksync.ModeCache
+				wb.Sync.Mode = writesync.ModeCache
 				wb.Sync.Wait = false
 			},
 		},
@@ -74,7 +74,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplStandard
 				wb.Compression.GZIP.Level = gzip.BestSpeed
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = true
 			},
 		},
@@ -84,7 +84,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplStandard
 				wb.Compression.GZIP.Level = gzip.BestSpeed
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = false
 			},
 		},
@@ -94,7 +94,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplFast
 				wb.Compression.GZIP.Level = gzip.BestSpeed
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = true
 			},
 		},
@@ -104,7 +104,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplFast
 				wb.Compression.GZIP.Level = gzip.BestSpeed
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = false
 			},
 		},
@@ -114,7 +114,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplParallel
 				wb.Compression.GZIP.Level = gzip.BestSpeed
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = true
 			},
 		},
@@ -124,7 +124,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplParallel
 				wb.Compression.GZIP.Level = gzip.BestSpeed
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = false
 			},
 		},
@@ -134,7 +134,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplParallel
 				wb.Compression.GZIP.Level = 6
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = true
 			},
 		},
@@ -144,7 +144,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 				wb.Compression = compression.NewGZIPConfig()
 				wb.Compression.GZIP.Implementation = compression.GZIPImplParallel
 				wb.Compression.GZIP.Level = 6
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = false
 			},
 		},
@@ -154,7 +154,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 			Configure: func(wb *benchmark.WriterBenchmark) {
 				wb.Compression = compression.NewZSTDConfig()
 				wb.Compression.ZSTD.Level = zstd.SpeedFastest
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = true
 			},
 		},
@@ -163,7 +163,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 			Configure: func(wb *benchmark.WriterBenchmark) {
 				wb.Compression = compression.NewZSTDConfig()
 				wb.Compression.ZSTD.Level = zstd.SpeedFastest
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = false
 			},
 		},
@@ -172,7 +172,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 			Configure: func(wb *benchmark.WriterBenchmark) {
 				wb.Compression = compression.NewZSTDConfig()
 				wb.Compression.ZSTD.Level = zstd.SpeedDefault
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = true
 			},
 		},
@@ -181,7 +181,7 @@ func BenchmarkCSVWrite(b *testing.B) {
 			Configure: func(wb *benchmark.WriterBenchmark) {
 				wb.Compression = compression.NewZSTDConfig()
 				wb.Compression.ZSTD.Level = zstd.SpeedDefault
-				wb.Sync.Mode = disksync.ModeDisk
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = false
 			},
 		},
@@ -216,7 +216,7 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 		FileType:    model.FileTypeCSV,
 		Columns:     columns,
 		Allocate:    100 * datasize.MB,
-		Sync:        disksync.NewConfig(),
+		Sync:        writesync.NewConfig(),
 		Compression: compression.NewNoneConfig(),
 		DataChFactory: func(ctx context.Context, n int, g *benchmark.RandomStringGenerator) <-chan []any {
 			ch := make(chan []any, 1000)

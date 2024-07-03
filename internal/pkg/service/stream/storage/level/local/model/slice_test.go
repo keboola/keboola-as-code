@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -28,7 +28,7 @@ func TestSlice_Validation(t *testing.T) {
 				Filename:           "slice.csv.gzip",
 				AllocatedDiskSpace: 10 * datasize.KB,
 				Compression:        compression.NewConfig(),
-				DiskSync:           disksync.NewConfig(),
+				DiskSync:           writesync.NewConfig(),
 			},
 		},
 		{
@@ -39,7 +39,7 @@ func TestSlice_Validation(t *testing.T) {
 				IsEmpty:            true,
 				AllocatedDiskSpace: 10 * datasize.KB,
 				Compression:        compression.NewConfig(),
-				DiskSync:           disksync.NewConfig(),
+				DiskSync:           writesync.NewConfig(),
 			},
 		},
 		{
@@ -49,7 +49,7 @@ func TestSlice_Validation(t *testing.T) {
 				Filename:           "slice.csv.gzip",
 				AllocatedDiskSpace: 0,
 				Compression:        compression.NewConfig(),
-				DiskSync:           disksync.NewConfig(),
+				DiskSync:           writesync.NewConfig(),
 			},
 		},
 		{
@@ -60,7 +60,7 @@ func TestSlice_Validation(t *testing.T) {
 				Filename:           "slice.csv.gzip",
 				AllocatedDiskSpace: 0,
 				Compression:        compression.NewConfig(),
-				DiskSync:           disksync.NewConfig(),
+				DiskSync:           writesync.NewConfig(),
 			},
 		},
 		{
@@ -71,7 +71,7 @@ func TestSlice_Validation(t *testing.T) {
 				Filename:           "",
 				AllocatedDiskSpace: 0,
 				Compression:        compression.NewConfig(),
-				DiskSync:           disksync.NewConfig(),
+				DiskSync:           writesync.NewConfig(),
 			},
 		},
 	}

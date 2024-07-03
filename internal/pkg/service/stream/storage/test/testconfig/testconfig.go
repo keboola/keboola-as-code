@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 )
 
 func StorageConfigPatch() configpatch.PatchKVs {
@@ -29,8 +29,8 @@ func StorageConfigPatch() configpatch.PatchKVs {
 								Count:          ptr.Ptr(1),
 								PreferredTypes: ptr.Ptr([]string{"default"}),
 							},
-							Sync: &disksync.ConfigPatch{
-								Mode:                     ptr.Ptr(disksync.ModeDisk),
+							Sync: &writesync.ConfigPatch{
+								Mode:                     ptr.Ptr(writesync.ModeDisk),
 								Wait:                     ptr.Ptr(false),
 								CheckInterval:            ptr.Ptr(duration.From(1 * time.Millisecond)),
 								CountTrigger:             ptr.Ptr(uint(100)),

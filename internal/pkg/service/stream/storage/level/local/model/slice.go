@@ -4,7 +4,7 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 )
 
 type Slice struct {
@@ -18,7 +18,7 @@ type Slice struct {
 	// Compression of the local file.
 	Compression compression.Config `json:"compression"`
 	// DiskSync writer configuration.
-	DiskSync disksync.Config `json:"diskSync"`
+	DiskSync writesync.Config `json:"diskSync"`
 	// AllocatedDiskSpace defines the disk size that is pre-allocated when creating the slice.
 	AllocatedDiskSpace datasize.ByteSize `json:"allocatedDiskSpace"`
 }

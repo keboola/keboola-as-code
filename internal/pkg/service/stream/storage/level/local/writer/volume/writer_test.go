@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -130,7 +130,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
+	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
@@ -234,7 +234,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeCache
+	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
@@ -327,7 +327,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
+	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
@@ -404,7 +404,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.DiskSync.Mode = disksync.ModeCache
+	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
@@ -472,7 +472,7 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	tc.Slice.LocalStorage.DiskSync = disksync.Config{Mode: disksync.ModeDisabled}
+	tc.Slice.LocalStorage.DiskSync = writesync.Config{Mode: writesync.ModeDisabled}
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
 

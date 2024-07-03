@@ -2,8 +2,8 @@ package volume
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/diskalloc"
 )
 
@@ -12,7 +12,7 @@ type Config struct {
 	Assignment   assignment.Config   `configKey:"assignment"`
 	Registration registration.Config `configKey:"registration"`
 	// Sync configures the synchronization of the in-memory copy of written data to disk or OS disk cache.
-	Sync disksync.Config `configKey:"sync"`
+	Sync writesync.Config `configKey:"sync"`
 	// Allocation configures allocation of the disk space for file slices.
 	Allocation diskalloc.Config `configKey:"allocation"`
 }
@@ -20,7 +20,7 @@ type Config struct {
 type ConfigPatch struct {
 	Assignment *assignment.ConfigPatch `json:"assignment,omitempty"`
 	// Sync configures the synchronization of the in-memory copy of written data to disk or OS disk cache.
-	Sync *disksync.ConfigPatch `json:"sync,omitempty"`
+	Sync *writesync.ConfigPatch `json:"sync,omitempty"`
 	// Allocation configures allocation of the disk space for file slices.
 	Allocation *diskalloc.ConfigPatch `json:"allocation,omitempty"`
 }
@@ -30,7 +30,7 @@ func NewConfig() Config {
 	return Config{
 		Assignment:   assignment.NewConfig(),
 		Registration: registration.NewConfig(),
-		Sync:         disksync.NewConfig(),
+		Sync:         writesync.NewConfig(),
 		Allocation:   diskalloc.NewConfig(),
 	}
 }
