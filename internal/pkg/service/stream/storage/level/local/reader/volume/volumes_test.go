@@ -12,7 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestVolumes(t *testing.T) {
@@ -23,6 +25,7 @@ func TestVolumes(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	clk := clock.New()
+	process := servicectx.New()
 
 	// Create volumes directories
 	volumesPath := t.TempDir()
@@ -44,7 +47,7 @@ func TestVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = OpenVolumes(ctx, logger, clk, "my-node", volumesPath)
+		volumes, err = OpenVolumes(ctx, logger, clk, process, "my-node", volumesPath)
 		assert.NoError(t, err)
 	}()
 
@@ -66,16 +69,17 @@ func TestVolumes(t *testing.T) {
 	}
 
 	// Check opened volumes
-	assert.Len(t, volumes.All(), 5)
-	assert.Len(t, volumes.VolumeByType("foo"), 0)
-	assert.Len(t, volumes.VolumeByType("hdd"), 3)
-	assert.Len(t, volumes.VolumeByType("ssd"), 2)
+	assert.Len(t, volumes.Collection().All(), 5)
+	assert.Len(t, volumes.Collection().VolumeByType("foo"), 0)
+	assert.Len(t, volumes.Collection().VolumeByType("hdd"), 3)
+	assert.Len(t, volumes.Collection().VolumeByType("ssd"), 2)
 	for _, id := range []volume.ID{"HDD_1", "HDD_2", "HDD_3", "SSD_1", "SSD_2"} {
-		vol, err := volumes.Volume(id)
+		vol, err := volumes.Collection().Volume(id)
 		assert.NotNil(t, vol)
 		assert.NoError(t, err)
 	}
 
 	// Close volumes
-	assert.NoError(t, volumes.Close(ctx))
+	process.Shutdown(ctx, errors.New("bye bye"))
+	process.WaitForShutdown()
 }

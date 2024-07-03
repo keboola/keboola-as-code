@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test"
@@ -27,6 +28,7 @@ func TestEventWriter(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	clk := clock.New()
+	process := servicectx.New()
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
@@ -36,7 +38,7 @@ func TestEventWriter(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", volume.IDFile), []byte("HDD_2"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, process, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
 	// Register "OnWriterOpen" and "OnWriterClose" events on the "volumes" level
@@ -58,9 +60,9 @@ func TestEventWriter(t *testing.T) {
 	})
 
 	// Register "OnWriterOpen" and "OnWriterClose" events on the "volume" level
-	vol1, err := volumes.Volume("HDD_1")
+	vol1, err := volumes.Collection().Volume("HDD_1")
 	assert.NoError(t, err)
-	vol2, err := volumes.Volume("HDD_2")
+	vol2, err := volumes.Collection().Volume("HDD_2")
 	assert.NoError(t, err)
 	vol1.Events().OnWriterOpen(func(w writer.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume1`, w.SliceKey().OpenedAt())
@@ -120,7 +122,8 @@ func TestEventWriter(t *testing.T) {
 	})
 
 	// Close all
-	assert.NoError(t, volumes.Close(ctx))
+	process.Shutdown(ctx, errors.New("bye bye"))
+	process.WaitForShutdown()
 
 	// Check logs, closing is parallel, so writers logs are checked separately
 	logger.AssertJSONMessages(t, `
@@ -157,6 +160,7 @@ func TestWriterEvents_OpenError(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	clk := clock.New()
+	process := servicectx.New()
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
@@ -164,7 +168,7 @@ func TestWriterEvents_OpenError(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, process, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
 	// Register "OnWriterOpen" event on the "volumes" level
@@ -173,7 +177,7 @@ func TestWriterEvents_OpenError(t *testing.T) {
 	})
 
 	// Register "OnWriterOpen" event on the "volume" level
-	vol, err := volumes.Volume("HDD_1")
+	vol, err := volumes.Collection().Volume("HDD_1")
 	assert.NoError(t, err)
 	vol.Events().OnWriterOpen(func(w writer.Writer) error {
 		return errors.New("error (2)")
@@ -186,7 +190,8 @@ func TestWriterEvents_OpenError(t *testing.T) {
 	}
 
 	// Close volumes
-	assert.NoError(t, volumes.Close(ctx))
+	process.Shutdown(ctx, errors.New("bye bye"))
+	process.WaitForShutdown()
 }
 
 func TestEventWriter_CloseError(t *testing.T) {
@@ -197,6 +202,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	clk := clock.New()
+	process := servicectx.New()
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
@@ -204,7 +210,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, logger, clk, process, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
 	// Register "OnWriterClose" event on the "volumes" level
@@ -213,7 +219,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 	})
 
 	// Register "OnWriterClose" event on the "volume" level
-	vol, err := volumes.Volume("HDD_1")
+	vol, err := volumes.Collection().Volume("HDD_1")
 	assert.NoError(t, err)
 	vol.Events().OnWriterClose(func(w writer.Writer, _ error) error {
 		return errors.New("error (2)")
@@ -235,5 +241,6 @@ func TestEventWriter_CloseError(t *testing.T) {
 	}
 
 	// Close volumes
-	assert.NoError(t, volumes.Close(ctx))
+	process.Shutdown(ctx, errors.New("bye bye"))
+	process.WaitForShutdown()
 }
