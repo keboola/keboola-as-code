@@ -64,10 +64,8 @@ func (r *Repository) moveAll(parentKey fmt.Stringer, from, to model.Level, trans
 				oldKey := etcdop.NewTypedKey[statistics.Value](kv.Key(), r.schema.Serde())
 
 				// Save value to the new destination
-				if kv.Value.RecordsCount > 0 {
-					newKey := oldKey.ReplacePrefix(r.schema.InLevel(from).Prefix(), r.schema.InLevel(to).Prefix())
-					txn.Then(newKey.Put(r.client, kv.Value))
-				}
+				newKey := oldKey.ReplacePrefix(r.schema.InLevel(from).Prefix(), r.schema.InLevel(to).Prefix())
+				txn.Then(newKey.Put(r.client, kv.Value))
 
 				// Delete old record
 				txn.Then(oldKey.Delete(r.client))
