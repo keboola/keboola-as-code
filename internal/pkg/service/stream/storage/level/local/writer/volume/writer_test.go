@@ -2,6 +2,7 @@ package volume
 
 import (
 	"context"
+	diskalloc2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/diskalloc"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
@@ -578,11 +578,11 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.AllocatedDiskSpace = 0
-	w, err := tc.NewWriter(WithAllocator(diskalloc.DefaultAllocator{}))
+	w, err := tc.NewWriter(WithAllocator(diskalloc2.DefaultAllocator{}))
 	assert.NoError(t, err)
 
 	// Check file - no allocation
-	allocated, err := diskalloc.Allocated(tc.FilePath())
+	allocated, err := diskalloc2.Allocated(tc.FilePath())
 	require.NoError(t, err)
 	assert.Less(t, allocated, datasize.KB)
 
@@ -654,7 +654,7 @@ type testAllocator struct {
 	Error error
 }
 
-func (a *testAllocator) Allocate(_ diskalloc.File, _ datasize.ByteSize) (bool, error) {
+func (a *testAllocator) Allocate(_ diskalloc2.File, _ datasize.ByteSize) (bool, error) {
 	return a.Ok, a.Error
 }
 
