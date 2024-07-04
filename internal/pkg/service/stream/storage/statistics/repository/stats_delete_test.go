@@ -359,17 +359,14 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	}
 
 	// Create record
-	assert.NoError(t, statsRepo.Put(ctx, []statistics.PerSlice{
+	assert.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
 		{
-			SliceKey: sliceKey4,
-			Value: statistics.Value{
-				SlicesCount:      1,
-				FirstRecordAt:    utctime.MustParse("2000-01-01T09:00:00.000Z"),
-				LastRecordAt:     utctime.MustParse("2000-01-01T10:00:00.000Z"),
-				RecordsCount:     1,
-				UncompressedSize: 1,
-				CompressedSize:   1,
-			},
+			SliceKey:         sliceKey4,
+			FirstRecordAt:    utctime.MustParse("2000-01-01T09:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-01T10:00:00.000Z"),
+			RecordsCount:     1,
+			UncompressedSize: 1,
+			CompressedSize:   1,
 		},
 	}))
 
