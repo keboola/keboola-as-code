@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
