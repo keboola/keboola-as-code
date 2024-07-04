@@ -10,6 +10,7 @@ on:
       - .github/workflows/test-k8s-service-stream.yml
       - provisioning/stream/**
       - provisioning/common/**
+      - internal/pkg/service/stream/config/**
 
 env:
   MINIKUBE_PROFILE: stream
