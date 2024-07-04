@@ -17,7 +17,7 @@ func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Create an empty drain file
-	drainFilePath := filepath.Join(tc.VolumePath, drainFile)
+	drainFilePath := filepath.Join(tc.VolumePath, DrainFile)
 	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
 
 	// Type open volume
@@ -56,7 +56,7 @@ func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 	}
 
 	// Create an empty drain file
-	drainFilePath := filepath.Join(tc.VolumePath, drainFile)
+	drainFilePath := filepath.Join(tc.VolumePath, DrainFile)
 	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
 	assert.Eventually(t, func() bool {
 		return vol.Drained() == true

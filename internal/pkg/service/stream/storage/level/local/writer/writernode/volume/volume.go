@@ -21,7 +21,7 @@ import (
 
 const (
 	// drainFile blocks opening of the volume for writing.
-	drainFile = "drain"
+	DrainFile = "drain"
 	// lockFile ensures only one opening of the volume for writing.
 	lockFile          = "writer.lock"
 	volumeIDFileFlags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
@@ -65,7 +65,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *wri
 		events:        events,
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
-		drainFilePath: filepath.Join(spec.Path, drainFile),
+		drainFilePath: filepath.Join(spec.Path, DrainFile),
 		writersLock:   &sync.Mutex{},
 		writers:       make(map[string]*writerRef),
 	}
