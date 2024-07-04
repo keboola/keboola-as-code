@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -403,5 +404,15 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 		clk.Add(time.Hour)
 		require.NoError(t, statsRepo.ResetSinkStats(sinkKey).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, `fixtures/stats_delete_snapshot_006.txt`, etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/file/|storage/slice/|storage/volume/`))
+
+		stats, err := statsRepo.SinkStats(ctx, sinkKey)
+		require.NoError(t, err)
+		assert.Equal(t, uint64(0), stats.Total.SlicesCount)
+		assert.Equal(t, uint64(0), stats.Total.RecordsCount)
+		assert.Equal(t, datasize.ByteSize(0), stats.Total.CompressedSize)
+		assert.Equal(t, datasize.ByteSize(0), stats.Total.UncompressedSize)
+		assert.Equal(t, datasize.ByteSize(0), stats.Total.StagingSize)
+		assert.False(t, stats.Total.FirstRecordAt.IsZero())
+		assert.False(t, stats.Total.LastRecordAt.IsZero())
 	}
 }
