@@ -77,11 +77,11 @@ az network application-gateway address-pool update \
 az network application-gateway probe update \
   --gateway-name="$APPLICATION_GATEWAY_NAME" \
   --resource-group "$RESOURCE_GROUP" \
-  --name=stream-api-health-probe \
+  --name=stream-health-probe \
   --host "$API_IP_ADDRESS"
 
 az network application-gateway probe update \
   --gateway-name="$APPLICATION_GATEWAY_NAME" \
   --resource-group "$RESOURCE_GROUP" \
-  --name=stream-http-source-health-probe \
+  --name=stream-in-health-probe \
   --host "$HTTP_SOURCE_IP_ADDRESS"
