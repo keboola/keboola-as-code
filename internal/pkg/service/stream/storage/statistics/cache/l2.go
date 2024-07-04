@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/benbjohnson/clock"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -38,9 +36,9 @@ type L2 struct {
 
 type l2CachePerObjectKey map[string]statistics.Aggregated
 
-func NewL2Cache(logger log.Logger, clk clock.Clock, l1Cache *L1, config statistics.L2CacheConfig) (*L2, error) {
+func NewL2Cache(d dependencies, l1Cache *L1, config statistics.L2CacheConfig) (*L2, error) {
 	c := &L2{
-		logger:    logger.WithComponent("stats.cache.L2"),
+		logger:    d.Logger().WithComponent("stats.cache.L2"),
 		l1Cache:   l1Cache,
 		wg:        &sync.WaitGroup{},
 		enabled:   config.Enabled,
@@ -55,7 +53,7 @@ func NewL2Cache(logger log.Logger, clk clock.Clock, l1Cache *L1, config statisti
 	// Periodically invalidates the cache.
 	if c.enabled {
 		c.wg.Add(1)
-		ticker := clk.Ticker(config.InvalidationInterval.Duration())
+		ticker := d.Clock().Ticker(config.InvalidationInterval.Duration())
 		go func() {
 			defer c.wg.Done()
 			defer ticker.Stop()

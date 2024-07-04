@@ -42,12 +42,12 @@ func newLocalStorageScope(parentScp localStorageParentScopes, cfg config.Config)
 
 	d.localStorageParentScopes = parentScp
 
-	d.statisticsL1Cache, err = cache.NewL1Cache(d.Logger(), d.StatisticsRepository())
+	d.statisticsL1Cache, err = cache.NewL1Cache(d)
 	if err != nil {
 		return nil, err
 	}
 
-	d.statisticsL2Cache, err = cache.NewL2Cache(d.Logger(), d.Clock(), d.statisticsL1Cache, cfg.Storage.Statistics.Cache.L2)
+	d.statisticsL2Cache, err = cache.NewL2Cache(d, d.statisticsL1Cache, cfg.Storage.Statistics.Cache.L2)
 	if err != nil {
 		return nil, err
 	}

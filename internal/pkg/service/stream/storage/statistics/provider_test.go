@@ -18,7 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -49,8 +48,8 @@ func TestStatisticsProviders(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
-	client := mocked.TestEtcdClient()
+	d, mock := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
+	client := mock.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
 	fileRepo := storageRepo.File()
@@ -509,14 +508,8 @@ func TestStatisticsProviders(t *testing.T) {
 		},
 	}
 
-	l1Cache, err := cache.NewL1Cache(d.Logger(), statsRepo)
-	require.NoError(t, err)
-	defer l1Cache.Stop()
-
-	l2Config := statistics.NewConfig().Cache.L2
-	l2Cache, err := cache.NewL2Cache(d.Logger(), clk, l1Cache, l2Config)
-	require.NoError(t, err)
-	defer l2Cache.Stop()
+	l1Cache := d.StatisticsL1Cache()
+	l2Cache := d.StatisticsL2Cache()
 
 	// Run test cases
 	for _, tc := range cases {
@@ -543,7 +536,7 @@ func TestStatisticsProviders(t *testing.T) {
 		tc.Assert(l1Cache)
 
 		// Invalidate L2
-		clk.Add(l2Config.InvalidationInterval.Duration())
+		clk.Add(mock.TestConfig().Storage.Statistics.Cache.L2.InvalidationInterval.Duration())
 		if expectedRevision > 0 {
 			assert.Eventually(t, func() bool {
 				return l2Cache.Revision() >= expectedRevision
