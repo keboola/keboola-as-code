@@ -71,47 +71,53 @@ type Aggregated struct {
 // If only one of the values is a reset value then it returns a non-reset value using subtraction.
 // Note that the value can't be negative, in case of an underflow the fields will be 0.
 func (v Value) Add(v2 Value) Value {
-	if v.Reset != v2.Reset {
-		if v.Reset {
-			return v2.Add(v)
+	r := v
+	if r.Reset != v2.Reset {
+		if r.Reset {
+			return v2.Add(r)
 		}
-		if v2.SlicesCount > v.SlicesCount {
-			v.SlicesCount = 0
-		} else {
-			v.SlicesCount -= v2.SlicesCount
-		}
-		if v2.RecordsCount > v.RecordsCount {
-			v.RecordsCount = 0
-		} else {
-			v.RecordsCount -= v2.RecordsCount
-		}
-		if v2.UncompressedSize > v.UncompressedSize {
-			v.UncompressedSize = 0
-		} else {
-			v.UncompressedSize -= v2.UncompressedSize
-		}
-		if v2.CompressedSize > v.CompressedSize {
-			v.CompressedSize = 0
-		} else {
-			v.CompressedSize -= v2.CompressedSize
-		}
-		if v2.StagingSize > v.StagingSize {
-			v.StagingSize = 0
-		} else {
-			v.StagingSize -= v2.StagingSize
-		}
+		r = r.sub(v2)
 	} else {
-		v.SlicesCount += v2.SlicesCount
-		v.RecordsCount += v2.RecordsCount
-		v.UncompressedSize += v2.UncompressedSize
-		v.CompressedSize += v2.CompressedSize
-		v.StagingSize += v2.StagingSize
+		r.SlicesCount += v2.SlicesCount
+		r.RecordsCount += v2.RecordsCount
+		r.UncompressedSize += v2.UncompressedSize
+		r.CompressedSize += v2.CompressedSize
+		r.StagingSize += v2.StagingSize
 	}
-	if v.FirstRecordAt.IsZero() || (!v2.FirstRecordAt.IsZero() && v.FirstRecordAt.After(v2.FirstRecordAt)) {
-		v.FirstRecordAt = v2.FirstRecordAt
+	if r.FirstRecordAt.IsZero() || (!v2.FirstRecordAt.IsZero() && r.FirstRecordAt.After(v2.FirstRecordAt)) {
+		r.FirstRecordAt = v2.FirstRecordAt
 	}
-	if v2.LastRecordAt.After(v.LastRecordAt) {
-		v.LastRecordAt = v2.LastRecordAt
+	if v2.LastRecordAt.After(r.LastRecordAt) {
+		r.LastRecordAt = v2.LastRecordAt
+	}
+	return r
+}
+
+func (v Value) sub(v2 Value) Value {
+	if v2.SlicesCount > v.SlicesCount {
+		v.SlicesCount = 0
+	} else {
+		v.SlicesCount -= v2.SlicesCount
+	}
+	if v2.RecordsCount > v.RecordsCount {
+		v.RecordsCount = 0
+	} else {
+		v.RecordsCount -= v2.RecordsCount
+	}
+	if v2.UncompressedSize > v.UncompressedSize {
+		v.UncompressedSize = 0
+	} else {
+		v.UncompressedSize -= v2.UncompressedSize
+	}
+	if v2.CompressedSize > v.CompressedSize {
+		v.CompressedSize = 0
+	} else {
+		v.CompressedSize -= v2.CompressedSize
+	}
+	if v2.StagingSize > v.StagingSize {
+		v.StagingSize = 0
+	} else {
+		v.StagingSize -= v2.StagingSize
 	}
 	return v
 }
