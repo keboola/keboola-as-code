@@ -29,7 +29,7 @@ func TestSumStats(t *testing.T) {
 	// Put values
 	assert.NoError(t, pfx.Key("0").Put(client, statistics.Value{}).Do(ctx).Err())
 
-	// Reset value should be subtracted but only at the vert end.
+	// Reset value should be subtracted but only at the very end.
 	assert.NoError(t, pfx.Key("1").Put(client, statistics.Value{
 		Reset:            true,
 		SlicesCount:      1,

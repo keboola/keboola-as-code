@@ -48,37 +48,35 @@ func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoRe
 		resetKey := r.schema.InLevel(model.LevelTarget).InParentOf(objectKey).Reset()
 
 		// Get sum from the parent object
-		ops.Read(func(context.Context) op.Op {
+		ops.Read(func(_ context.Context) op.Op {
 			return sumKey.GetOrEmpty(r.client).WithResultTo(&parentSum)
 		})
 
 		// Get reset sum from the parent object
-		ops.Read(func(context.Context) op.Op {
+		ops.Read(func(_ context.Context) op.Op {
 			return resetKey.GetOrEmpty(r.client).WithResultTo(&parentReset)
 		})
 
 		// Get statistics of the object
-		ops.Read(func(context.Context) op.Op {
+		ops.Read(func(_ context.Context) op.Op {
 			objectSum = statistics.Value{}
 			return sumStatsOp(objectPfx.GetAll(r.client), &objectSum, &objectReset)
 		})
 
 		// Save update sum
-		ops.Write(func(context.Context) op.Op {
-			if objectSum.RecordsCount > 0 {
-				return sumKey.Put(r.client, parentSum.Add(objectSum))
-			} else {
+		ops.Write(func(_ context.Context) op.Op {
+			if objectSum.RecordsCount <= 0 {
 				return nil
 			}
+			return sumKey.Put(r.client, parentSum.Add(objectSum))
 		})
 
 		// Save update reset
-		ops.Write(func(context.Context) op.Op {
-			if objectReset.RecordsCount > 0 {
-				return resetKey.Put(r.client, parentReset.Add(objectReset))
-			} else {
+		ops.Write(func(_ context.Context) op.Op {
+			if objectReset.RecordsCount <= 0 {
 				return nil
 			}
+			return resetKey.Put(r.client, parentReset.Add(objectReset))
 		})
 	}
 
