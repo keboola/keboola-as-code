@@ -55,10 +55,11 @@ func TestStart_Ok(t *testing.T) {
 	// Logs
 	mock.DebugLogger().AssertJSONMessages(t, `
 {"level":"info","message":"starting storage reader node","component":"storage.node.reader"}
-{"level":"info","message":"searching for volumes in volumes path","volumes.path":"%s","component":"storage.node.reader"}
-{"level":"info","message":"found \"2\" volumes","component":"storage.node.reader"}
+{"level":"info","message":"searching for volumes in volumes path","volumes.path":"%s","component":"storage.node.reader.volumes"}
+{"level":"info","message":"found \"2\" volumes","component":"storage.node.reader.volumes"}
 {"level":"info","message":"exiting (bye bye)"}
-{"level":"info","message":"closing volumes","component":"storage.node.reader"}
+{"level":"info","message":"closing volumes","component":"storage.node.reader.volumes"}
+{"level":"info","message":"closed volumes","component":"storage.node.reader.volumes"}
 {"level":"info","message":"closing volumes stream","component":"volume.repository"}
 {"level":"info","message":"closed volumes stream","component":"volume.repository"}
 {"level":"info","message":"received shutdown request","component":"distribution.mutex.provider"}
