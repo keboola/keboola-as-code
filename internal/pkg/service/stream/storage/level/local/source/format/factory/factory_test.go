@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format/factory"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
@@ -27,7 +28,7 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	clk := clock.New()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
 
-	v, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), writer.NewConfig(), spec, writerVolume.WithFormatWriterFactory(factory.Default))
+	v, err := writerVolume.Open(ctx, logger, clk, events.New[writer.Writer](), writer.NewConfig(), spec, writerVolume.WithFormatWriterFactory(factory.Default))
 	require.NoError(t, err)
 
 	slice := test.NewSlice()
@@ -49,7 +50,7 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	clk := clock.New()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
 
-	v, err := writerVolume.Open(ctx, logger, clk, writer.NewEvents(), writer.NewConfig(), spec, writerVolume.WithFormatWriterFactory(factory.Default))
+	v, err := writerVolume.Open(ctx, logger, clk, events.New[writer.Writer](), writer.NewConfig(), spec, writerVolume.WithFormatWriterFactory(factory.Default))
 	assert.NoError(t, err)
 
 	slice := test.NewSlice()

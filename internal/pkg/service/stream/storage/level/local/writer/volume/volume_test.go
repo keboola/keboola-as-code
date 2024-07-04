@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -217,7 +218,7 @@ type volumeTestCase struct {
 	Ctx          context.Context
 	Logger       log.DebugLogger
 	Clock        *clock.Mock
-	Events       *writer.Events
+	Events       *events.Events[writer.Writer]
 	Allocator    *testAllocator
 	VolumeNodeID string
 	VolumePath   string
@@ -241,7 +242,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 		Ctx:          ctx,
 		Logger:       logger,
 		Clock:        clock.NewMock(),
-		Events:       writer.NewEvents(),
+		Events:       events.New[writer.Writer](),
 		Allocator:    &testAllocator{},
 		VolumeNodeID: "my-node",
 		VolumePath:   tmpDir,

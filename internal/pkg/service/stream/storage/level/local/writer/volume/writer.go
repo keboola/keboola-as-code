@@ -99,14 +99,14 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
 	}
 
 	// Create writer
-	w, err = writer.New(v.ctx, logger, v.clock, v.config.writerConfig, slice, file, v.config.syncerFactory, v.config.formatWriterFactory, v.events)
+	w, err = writer.New(v.ctx, logger, v.clock, v.config.writerConfig, slice, file, v.config.syncerFactory, v.config.formatWriterFactory, v.writerEvents)
 	if err != nil {
 		return nil, err
 	}
 
 	// Register writer close callback
-	w.Events().OnWriterClose(func(_ writer.Writer, _ error) error {
-		v.removeWriter(slice.SliceKey)
+	w.Events().OnClose(func(w writer.Writer, _ error) error {
+		v.removeWriter(w.SliceKey())
 		return nil
 	})
 

@@ -14,6 +14,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -33,10 +34,10 @@ type Volume struct {
 	id   volume.ID
 	spec volume.Spec
 
-	config config
-	logger log.Logger
-	clock  clock.Clock
-	events *writer.Events
+	config       config
+	logger       log.Logger
+	clock        clock.Clock
+	writerEvents *events.Events[writer.Writer]
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -56,13 +57,13 @@ type Volume struct {
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The IDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, events *writer.Events, wrCfg writer.Config, spec volume.Spec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, writerEvents *events.Events[writer.Writer], wrCfg writer.Config, spec volume.Spec, opts ...Option) (*Volume, error) {
 	v := &Volume{
 		spec:          spec,
 		config:        newConfig(wrCfg, opts),
 		logger:        logger,
 		clock:         clock,
-		events:        events,
+		writerEvents:  writerEvents,
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
 		drainFilePath: filepath.Join(spec.Path, DrainFile),
@@ -146,8 +147,8 @@ func (v *Volume) ID() volume.ID {
 	return v.id
 }
 
-func (v *Volume) Events() *writer.Events {
-	return v.events
+func (v *Volume) Events() *events.Events[writer.Writer] {
+	return v.writerEvents
 }
 
 func (v *Volume) Metadata() volume.Metadata {

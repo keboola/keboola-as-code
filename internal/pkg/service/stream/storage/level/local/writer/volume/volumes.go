@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/opener"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
@@ -18,7 +19,7 @@ type Volumes struct {
 	clock  clock.Clock
 	logger log.Logger
 	// events instance is passed to each volume and then to each writer
-	events     *writer.Events
+	events     *events.Events[writer.Writer]
 	collection *volume.Collection[*Volume]
 }
 
@@ -33,7 +34,7 @@ func OpenVolumes(ctx context.Context, d dependencies, nodeID, volumesPath string
 	v = &Volumes{
 		clock:  d.Clock(),
 		logger: d.Logger().WithComponent("storage.node.writer.volumes"),
-		events: writer.NewEvents(),
+		events: events.New[writer.Writer](),
 	}
 
 	v.collection, err = opener.OpenVolumes(ctx, v.logger, nodeID, volumesPath, func(spec volume.Spec) (*Volume, error) {
@@ -60,6 +61,6 @@ func (v *Volumes) Collection() *volume.Collection[*Volume] {
 	return v.collection
 }
 
-func (v *Volumes) Events() *writer.Events {
+func (v *Volumes) Events() *events.Events[writer.Writer] {
 	return v.events
 }

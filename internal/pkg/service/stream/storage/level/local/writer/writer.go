@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/count"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/limitbuffer"
@@ -33,7 +34,7 @@ type Writer interface {
 	// Close the writer and sync data to the disk.
 	Close(context.Context) error
 	// Events provides listening to the writer lifecycle.
-	Events() *Events
+	Events() *events.Events[Writer]
 }
 
 type StatisticsProvider interface {
@@ -56,7 +57,7 @@ type StatisticsProvider interface {
 type writer struct {
 	logger log.Logger
 	slice  *model.Slice
-	events *Events
+	events *events.Events[Writer]
 
 	chain  *writechain.Chain
 	syncer *writesync.Syncer
@@ -82,12 +83,12 @@ func New(
 	file writechain.File,
 	syncerFactory writesync.SyncerFactory,
 	formatWriterFactory format.WriterFactory,
-	volumeEvents *Events,
+	writerEvents *events.Events[Writer],
 ) (out Writer, err error) {
 	w := &writer{
 		logger:  logger.WithComponent("slice-writer"),
 		slice:   slice,
-		events:  volumeEvents.Clone(), // clone volume events, to attach additional writer specific events
+		events:  writerEvents.Clone(), // clone volume writerEvents, to attach additional writer specific writerEvents
 		closed:  make(chan struct{}),
 		writeWg: &sync.WaitGroup{},
 	}
@@ -185,7 +186,7 @@ func New(
 	}
 
 	// Dispatch "open" event
-	if err = volumeEvents.dispatchOnWriterOpen(w); err != nil {
+	if err = writerEvents.DispatchOnOpen(w); err != nil {
 		return nil, err
 	}
 
@@ -231,7 +232,7 @@ func (w *writer) SliceKey() model.SliceKey {
 	return w.slice.SliceKey
 }
 
-func (w *writer) Events() *Events {
+func (w *writer) Events() *events.Events[Writer] {
 	return w.events
 }
 
@@ -290,7 +291,7 @@ func (w *writer) Close(ctx context.Context) error {
 	// Wait for running writes
 	w.writeWg.Wait()
 
-	if err := w.events.dispatchOnWriterClose(w, errs.ErrorOrNil()); err != nil {
+	if err := w.events.DispatchOnClose(w, errs.ErrorOrNil()); err != nil {
 		errs.Append(err)
 	}
 
