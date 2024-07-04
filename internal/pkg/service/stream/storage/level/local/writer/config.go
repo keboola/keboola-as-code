@@ -3,7 +3,7 @@ package writer
 import (
 	"github.com/c2h5oh/datasize"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format"
 )
 
 // Config configures the local writer.
