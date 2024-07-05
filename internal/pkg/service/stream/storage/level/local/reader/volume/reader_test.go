@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -32,10 +33,8 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 	assert.Len(t, tc.Volume.readers, 1)
 
 	assert.Equal(t, tc.Slice.SliceKey, r.SliceKey())
-	assert.Equal(t, filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), r.DirPath())
-	assert.Equal(t, filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename), r.FilePath())
 
-	assert.NoError(t, r.Close())
+	assert.NoError(t, r.Close(context.Background()))
 	assert.Len(t, tc.Volume.readers, 0)
 
 	// Check logs
@@ -65,7 +64,7 @@ func TestVolume_NewReaderFor_Duplicate(t *testing.T) {
 	}
 	assert.Len(t, tc.Volume.readers, 1)
 
-	assert.NoError(t, w.Close())
+	assert.NoError(t, w.Close(context.Background()))
 	assert.Len(t, tc.Volume.readers, 0)
 }
 
@@ -84,7 +83,7 @@ func TestVolume_NewReaderFor_ClosedVolume(t *testing.T) {
 	// Try crate a reader
 	_, err = tc.NewReader()
 	if assert.Error(t, err) {
-		assert.Equal(t, "volume is closed: context canceled", err.Error())
+		wildcards.Assert(t, "reader for slice \"%s\" cannot be created: volume is closed:\n- context canceled", err.Error())
 	}
 }
 
@@ -177,25 +176,25 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 	r, err := rtc.NewReader()
 	require.NoError(t, err)
 
-	// Create decoder, if any
-	var toStagingReader io.ReadCloser = r
-	var decoder io.ReadCloser
+	// Read all
+	var buf bytes.Buffer
+	_, err = r.WriteTo(&buf)
+	require.NoError(t, err)
+
+	// Decode
+	content := buf.Bytes()
 	if tc.StagingCompression.Type != compression.TypeNone {
-		decoder, err = compressionReader.New(toStagingReader, tc.StagingCompression)
+		decoder, err := compressionReader.New(&buf, tc.StagingCompression)
 		require.NoError(t, err)
-		t.Cleanup(func() {
-			assert.NoError(t, decoder.Close())
-		})
-		toStagingReader = decoder
+		content, err = io.ReadAll(decoder)
+		require.NoError(t, err)
 	}
 
-	// Read all
-	content, err := io.ReadAll(toStagingReader)
-	assert.NoError(t, err)
+	// Check content
 	assert.Equal(t, []byte("foo bar"), content)
 
 	// Close
-	assert.NoError(t, r.Close())
+	assert.NoError(t, r.Close(context.Background()))
 }
 
 // TestReadError tests propagation of the file read error through read chain.
@@ -236,26 +235,14 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 	}))
 	require.NoError(t, err)
 
-	// Create decoder, if any
-	var toStagingReader io.ReadCloser = r
-	var decoder io.ReadCloser
-	if tc.StagingCompression.Type != compression.TypeNone {
-		decoder, err = compressionReader.New(toStagingReader, tc.StagingCompression)
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			assert.NoError(t, decoder.Close())
-		})
-		toStagingReader = decoder
-	}
-
 	// Read all
-	_, err = io.ReadAll(toStagingReader)
-	if assert.Error(t, err) {
+	var buf bytes.Buffer
+	if _, err = r.WriteTo(&buf); assert.Error(t, err) {
 		assert.Equal(t, "some read error", err.Error())
 	}
 
 	// Close
-	assert.NoError(t, r.Close())
+	assert.NoError(t, r.Close(context.Background()))
 }
 
 // TestCloseError tests propagation of the file close error through read chain.
@@ -296,26 +283,27 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 	}))
 	require.NoError(t, err)
 
-	// Create decoder, if any
-	var toStagingReader io.ReadCloser = r
-	var decoder io.ReadCloser
+	// Read all
+	var buf bytes.Buffer
+	_, err = r.WriteTo(&buf)
+	require.NoError(t, err)
+
+	// Decode
+	content := buf.Bytes()
 	if tc.StagingCompression.Type != compression.TypeNone {
-		decoder, err = compressionReader.New(toStagingReader, tc.StagingCompression)
+		decoder, err := compressionReader.New(&buf, tc.StagingCompression)
 		require.NoError(t, err)
-		t.Cleanup(func() {
-			assert.NoError(t, decoder.Close())
-		})
-		toStagingReader = decoder
+		content, err = io.ReadAll(decoder)
+		require.NoError(t, err)
 	}
 
-	// Read all
-	_, err = io.ReadAll(toStagingReader)
-	assert.NoError(t, err)
+	// Check content
+	assert.Equal(t, []byte("foo bar"), content)
 
 	// Close
-	err = r.Close()
+	err = r.Close(context.Background())
 	if assert.Error(t, err) {
-		assert.Equal(t, "chain close error:\n- cannot close \"*volume.testFile\": some close error", err.Error())
+		assert.Equal(t, "chain close error: cannot close file: some close error", err.Error())
 	}
 }
 

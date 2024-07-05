@@ -26,6 +26,8 @@ import (
 //   - PrependCloseFn
 type Chain struct {
 	logger log.Logger
+	// file at the end of the chain
+	file File
 	// beginning contains the first reader in the chain
 	beginning io.Reader
 	// readers - list of readers in the chain.
@@ -34,12 +36,15 @@ type Chain struct {
 	closers []io.Closer
 }
 
-func New(logger log.Logger, end io.Reader) *Chain {
-	c := &Chain{logger: logger}
-	c.PrependReader(func(_ io.Reader) io.Reader {
-		return end
-	})
-	return c
+// File defines used method from the *os.File.
+// It makes it possible to mock the file in the tests.
+type File interface {
+	io.Reader
+	Close() error
+}
+
+func New(logger log.Logger, file File) *Chain {
+	return &Chain{logger: logger, file: file, beginning: file}
 }
 
 // UnwrapFile returns underlying file, if it is the only element in the chain.
@@ -50,8 +55,8 @@ func New(logger log.Logger, end io.Reader) *Chain {
 // The Close methods should always be called on the Chain, not directly on the File,
 // because Chain may contain multiple closers, even if there is only one reader.
 func (c *Chain) UnwrapFile() (file *os.File, ok bool) {
-	if len(c.readers) == 1 {
-		if f, ok := c.readers[0].(*os.File); ok {
+	if len(c.readers) == 0 {
+		if f, ok := c.beginning.(*os.File); ok {
 			return f, true
 		}
 	}
@@ -102,22 +107,24 @@ func (c *Chain) Read(p []byte) (n int, err error) {
 }
 
 // Close method flushes and closes all readers in the Chain and finally the underlying file.
-func (c *Chain) Close() error {
-	return c.CloseCtx(context.Background())
-}
-
-// CloseCtx method flushes and closes all readers in the Chain and finally the underlying file.
-func (c *Chain) CloseCtx(ctx context.Context) error {
+func (c *Chain) Close(ctx context.Context) error {
 	c.logger.Debug(ctx, "closing chain")
 	errs := errors.NewMultiError()
 
 	// Close all reader in the chain
 	for _, item := range c.closers {
 		if err := item.Close(); err != nil {
-			err = errors.Errorf(`cannot close "%s": %w`, stringOrType(item), err)
+			err = errors.PrefixErrorf(err, `cannot close "%s"`, stringOrType(item))
 			c.logger.Error(ctx, err.Error())
 			errs.Append(err)
 		}
+	}
+
+	// Close the underlying file
+	if err := c.file.Close(); err != nil {
+		err = errors.PrefixError(err, `cannot close file`)
+		c.logger.Error(ctx, err.Error())
+		errs.Append(err)
 	}
 
 	c.logger.Debug(ctx, "chain closed")

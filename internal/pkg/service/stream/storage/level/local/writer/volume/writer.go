@@ -23,7 +23,7 @@ type writerRef struct {
 func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
-		return nil, errors.Errorf(`writer for slice "%s cannot be created, volume is closed: %w`, slice.SliceKey.String(), err)
+		return nil, errors.PrefixErrorf(err, `writer for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
 	}
 
 	// Setup logger
@@ -55,6 +55,7 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
 		if file != nil {
 			_ = file.Close()
 		}
+
 		// Unregister the writer
 		v.removeWriter(slice.SliceKey)
 	}()
@@ -62,7 +63,7 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
 	// Create directory if not exists
 	dirPath := filepath.Join(v.Path(), slice.LocalStorage.Dir)
 	if err = os.Mkdir(dirPath, sliceDirPerm); err != nil && !errors.Is(err, os.ErrExist) {
-		return nil, errors.Errorf(`cannot create slice directory "%s": %w`, dirPath, err)
+		return nil, errors.PrefixErrorf(err, `cannot create slice directory "%s"`, dirPath)
 	}
 
 	// Open file

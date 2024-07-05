@@ -211,7 +211,7 @@ ghi,jkl,789
 {"level":"debug","message":"file synced"}                   
 {"level":"debug","message":"sync to disk done"}             
 {"level":"info","message":"TEST: write unblocked"}           
-{"level":"debug","message":"closing file"}                  
+{"level":"debug","message":"closing disk writer"}                  
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"syncing file"}
@@ -225,7 +225,7 @@ ghi,jkl,789
 {"level":"debug","message":"syncing file"}
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
-{"level":"debug","message":"closed file"}
+{"level":"debug","message":"closed disk writer"}
 `)
 }
 
@@ -307,7 +307,7 @@ ghi,jkl,789
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
 {"level":"info","message":"TEST: write unblocked"}
-{"level":"debug","message":"closing file"}
+{"level":"debug","message":"closing disk writer"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
@@ -318,7 +318,7 @@ ghi,jkl,789
 {"level":"debug","message":"syncing file"}
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
-{"level":"debug","message":"closed file"}
+{"level":"debug","message":"closed disk writer"}
 `)
 }
 
@@ -381,7 +381,7 @@ ghi,jkl,789
 {"level":"debug","message":"syncing file"}
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"sync to disk done"}
-{"level":"debug","message":"closing file"}
+{"level":"debug","message":"closing disk writer"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"syncing file"}
@@ -395,7 +395,7 @@ ghi,jkl,789
 {"level":"debug","message":"syncing file"}
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
-{"level":"debug","message":"closed file"}
+{"level":"debug","message":"closed disk writer"}
 `)
 }
 
@@ -452,7 +452,7 @@ ghi,jkl,789
 {"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
-{"level":"debug","message":"closing file"}
+{"level":"debug","message":"closing disk writer"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
@@ -463,7 +463,7 @@ ghi,jkl,789
 {"level":"debug","message":"syncing file"}
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
-{"level":"debug","message":"closed file"}
+{"level":"debug","message":"closed disk writer"}
 `)
 }
 
@@ -509,14 +509,14 @@ ghi,jkl,789
 {"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
 {"level":"debug","message":"disk space allocation is not supported"}
 {"level":"info","message":"sync is disabled"}
-{"level":"debug","message":"closing file"}
+{"level":"debug","message":"closing disk writer"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"syncer stopped"}
 {"level":"debug","message":"closing chain"}
 {"level":"debug","message":"syncing file"}
 {"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
-{"level":"debug","message":"closed file"}
+{"level":"debug","message":"closed disk writer"}
 `)
 }
 
@@ -542,7 +542,7 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 {"level":"debug","message":"opened file"}
 {"level":"error","message":"cannot allocate disk space \"10KB\", allocation skipped: some space allocation error"}
 {"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
-{"level":"debug","message":"closing file"}
+{"level":"debug","message":"closing disk writer"}
 `)
 }
 
@@ -568,7 +568,7 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is not supported"}
 {"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
-{"level":"debug","message":"closing file"}
+{"level":"debug","message":"closing disk writer"}
 `)
 }
 

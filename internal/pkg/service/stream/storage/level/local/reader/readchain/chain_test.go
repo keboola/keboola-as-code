@@ -12,6 +12,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 // TestChain_Empty tests that an empty Chain with only one reader.
@@ -26,7 +27,7 @@ func TestChain_Empty(t *testing.T) {
 	}
 
 	// Close the chain
-	assert.NoError(t, tc.Chain.Close())
+	assert.NoError(t, tc.Chain.Close(context.Background()))
 }
 
 // TestChain_SetupMethods tests all setup methods.
@@ -85,14 +86,12 @@ func TestChain_SetupMethods(t *testing.T) {
 Readers:
   R2
   R1
-  file
 
 Closers:
   fn3
   C2
   C1
   R2
-  file
   C3
   C4
   fn4
@@ -134,7 +133,7 @@ func TestChain_UnwrapFile_NotOk(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	chain := New(logger, strings.NewReader("foo bar"))
+	chain := New(logger, &testFile{Reader: strings.NewReader("foo bar")})
 
 	// Unwrap not OK, there is only one reader, but it is not *os.File
 	file, ok := chain.UnwrapFile()
@@ -177,7 +176,7 @@ func TestChain_ReadAndCloseOk(t *testing.T) {
 	}
 
 	// Close the chain
-	assert.NoError(t, tc.Chain.Close())
+	assert.NoError(t, tc.Chain.Close(context.Background()))
 
 	// 1st read is the content, 2nd is EOF error
 	tc.AssertLogs(`
@@ -191,9 +190,9 @@ func TestChain_ReadAndCloseOk(t *testing.T) {
 {"level":"info","message":"TEST: close \"FN2\""}
 {"level":"info","message":"TEST: close \"FN1\""}
 {"level":"info","message":"TEST: close \"RC2\""}
-{"level":"info","message":"TEST: close \"file\""}
 {"level":"info","message":"TEST: close \"FN3\""}
 {"level":"info","message":"TEST: close \"FN4\""}
+{"level":"info","message":"TEST: close \"file\""}
 {"level":"debug","message":"chain closed"}
 `)
 }
@@ -242,8 +241,7 @@ func TestChain_CloseError(t *testing.T) {
 	}
 
 	// Read all from the Chain
-	err = tc.Chain.Close()
-	if assert.Error(tc.TB, err) {
+	if err = tc.Chain.Close(context.Background()); assert.Error(tc.TB, err) {
 		assert.Equal(tc.TB, "chain close error: cannot close \"RC2\": some error", err.Error())
 	}
 
@@ -264,6 +262,15 @@ func TestChain_CloseError(t *testing.T) {
 `)
 }
 
+type testFile struct {
+	io.Reader
+	CloseErr error
+}
+
+func (f *testFile) Close() error {
+	return f.CloseErr
+}
+
 type chainTestCase struct {
 	TB     testing.TB
 	Logger log.DebugLogger
@@ -272,7 +279,10 @@ type chainTestCase struct {
 
 func newChainTestCase(tb testing.TB) *chainTestCase {
 	tb.Helper()
+
 	logger := log.NewDebugLogger()
+	logger.ConnectTo(testhelper.VerboseStdout())
+
 	testFile := &testReadCloser{inner: strings.NewReader("foo bar"), Logger: logger, Name: "file"}
 	tb.Cleanup(func() {
 		_ = testFile.Close()

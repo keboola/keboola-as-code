@@ -8,8 +8,10 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/writer"
@@ -88,10 +90,13 @@ func New(
 	w := &writer{
 		logger:  logger.WithComponent("slice-writer"),
 		slice:   slice,
-		events:  writerEvents.Clone(), // clone volume writerEvents, to attach additional writer specific writerEvents
+		events:  writerEvents.Clone(), // clone events passed from the volume, so additional writer specific listeners can be added
 		closed:  make(chan struct{}),
 		writeWg: &sync.WaitGroup{},
 	}
+
+	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", slice.SliceKey.String()))
+	w.logger.Debug(ctx, "opening disk writer")
 
 	// Close resources on error
 	defer func() {
@@ -186,10 +191,11 @@ func New(
 	}
 
 	// Dispatch "open" event
-	if err = writerEvents.DispatchOnOpen(w); err != nil {
+	if err = w.events.DispatchOnOpen(w); err != nil {
 		return nil, err
 	}
 
+	w.logger.Debug(ctx, "opened disk writer")
 	return w, nil
 }
 
@@ -267,7 +273,7 @@ func (w *writer) UncompressedSize() datasize.ByteSize {
 }
 
 func (w *writer) Close(ctx context.Context) error {
-	w.logger.Debug(ctx, "closing file")
+	w.logger.Debug(ctx, "closing disk writer")
 
 	// Prevent new writes
 	if w.isClosed() {
@@ -291,11 +297,12 @@ func (w *writer) Close(ctx context.Context) error {
 	// Wait for running writes
 	w.writeWg.Wait()
 
+	// Dispatch "close"" event
 	if err := w.events.DispatchOnClose(w, errs.ErrorOrNil()); err != nil {
 		errs.Append(err)
 	}
 
-	w.logger.Debug(ctx, "closed file")
+	w.logger.Debug(ctx, "closed disk writer")
 	return errs.ErrorOrNil()
 }
 

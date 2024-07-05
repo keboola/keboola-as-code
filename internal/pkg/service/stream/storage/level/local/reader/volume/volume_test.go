@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -173,7 +175,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 		defer close(done)
 		_, err := tc.OpenVolume(WithWaitForVolumeIDTimeout(timeout))
 		if assert.Error(t, err) {
-			wildcards.Assert(t, `cannot open volume ID file "%s": context deadline exceeded`, err.Error())
+			wildcards.Assert(t, "cannot open volume ID file \"%s\":\n- context deadline exceeded", err.Error())
 		}
 	}()
 
@@ -254,10 +256,12 @@ func TestVolume_Close_Errors(t *testing.T) {
 	if assert.Error(t, err) {
 		// Order of the errors is random, readers are closed in parallel
 		wildcards.Assert(t, strings.TrimSpace(`
-- cannot close reader for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s": chain close error:
-  - cannot close "*volume.testFile": some close error
-- cannot close reader for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s": chain close error:
-  - cannot close "*volume.testFile": some close error
+- cannot close reader for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s":
+  - chain close error:
+    - cannot close file: some close error
+- cannot close reader for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s":
+  - chain close error:
+    - cannot close file: some close error
 `), err.Error())
 	}
 }
@@ -298,7 +302,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 
 func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
 	info := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
-	return Open(tc.Ctx, tc.Logger, tc.Clock, info, opts...)
+	return Open(tc.Ctx, tc.Logger, tc.Clock, events.New[reader.Reader](), info, opts...)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {

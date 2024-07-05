@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	// drainFile blocks opening of the volume for writing.
+	// DrainFile blocks opening of the volume for writing.
 	DrainFile = "drain"
 	// lockFile ensures only one opening of the volume for writing.
 	lockFile          = "writer.lock"
@@ -63,7 +63,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, writerEvent
 		config:        newConfig(wrCfg, opts),
 		logger:        logger,
 		clock:         clock,
-		writerEvents:  writerEvents,
+		writerEvents:  writerEvents.Clone(), // clone events passed from volumes collection, so volume specific listeners can be added
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
 		drainFilePath: filepath.Join(spec.Path, DrainFile),
@@ -92,7 +92,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, writerEvent
 
 		// Check ID file error
 		if err != nil {
-			return nil, errors.Errorf(`cannot open volume ID file "%s": %w`, idFilePath, err)
+			return nil, errors.PrefixErrorf(err, `cannot open volume ID file "%s"`, idFilePath)
 		}
 
 		// Store volume ID
@@ -107,7 +107,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, writerEvent
 	{
 		v.fsLock = flock.New(filepath.Join(v.spec.Path, lockFile))
 		if locked, err := v.fsLock.TryLock(); err != nil {
-			return nil, errors.Errorf(`cannot acquire writer lock "%s": %w`, v.fsLock.Path(), err)
+			return nil, errors.PrefixErrorf(err, `cannot acquire writer lock "%s"`, v.fsLock.Path())
 		} else if !locked {
 			return nil, errors.Errorf(`cannot acquire writer lock "%s": already locked`, v.fsLock.Path())
 		}
@@ -171,7 +171,7 @@ func (v *Volume) Close(ctx context.Context) error {
 		go func() {
 			defer v.wg.Done()
 			if err := w.Close(ctx); err != nil {
-				errs.Append(errors.Errorf(`cannot close writer for slice "%s": %w`, w.SliceKey().String(), err))
+				errs.Append(errors.PrefixErrorf(err, `cannot close writer for slice "%s"`, w.SliceKey().String()))
 			}
 		}()
 	}
@@ -181,10 +181,10 @@ func (v *Volume) Close(ctx context.Context) error {
 
 	// Release the lock
 	if err := v.fsLock.Unlock(); err != nil {
-		errs.Append(errors.Errorf(`cannot release writer lock "%s": %w`, v.fsLock.Path(), err))
+		errs.Append(errors.PrefixErrorf(err, `cannot release writer lock "%s"`, v.fsLock.Path()))
 	}
 	if err := os.Remove(v.fsLock.Path()); err != nil {
-		errs.Append(errors.Errorf(`cannot remove writer lock "%s": %w`, v.fsLock.Path(), err))
+		errs.Append(errors.PrefixErrorf(err, `cannot remove writer lock "%s"`, v.fsLock.Path()))
 	}
 
 	v.logger.Info(ctx, "closed volume")
