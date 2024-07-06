@@ -22,8 +22,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
@@ -49,7 +50,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	// Open volume
 	clk := clock.New()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
-	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clk, events.New[diskwriter.Writer](), diskwriter.NewConfig(), spec)
+	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clk, events.New[encoding.Writer](), local.NewConfig(), spec)
 	require.NoError(t, err)
 
 	// Create slice
@@ -82,7 +83,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	// Open volume
 	clk := clock.New()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
-	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clock.New(), events.New[diskwriter.Writer](), diskwriter.NewConfig(), spec)
+	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clock.New(), events.New[encoding.Writer](), local.NewConfig(), spec)
 	require.NoError(t, err)
 
 	// Create slice
@@ -123,8 +124,8 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 		ctx,
 		log.NewNopLogger(),
 		clock.New(),
-		events.New[diskwriter.Writer](),
-		diskwriter.NewConfig(),
+		events.New[encoding.Writer](),
+		local.NewConfig(),
 		volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "001"},
 		writerVolume.WithFileOpener(func(filePath string) (writerVolume.File, error) {
 			file, err := writerVolume.DefaultFileOpener(filePath)

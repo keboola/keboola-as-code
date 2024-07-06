@@ -16,8 +16,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
@@ -65,7 +66,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	now := clk.Now()
 	volPath := b.TempDir()
 	spec := volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, logger, clk, events.New[diskwriter.Writer](), diskwriter.NewConfig(), spec)
+	vol, err := writerVolume.Open(ctx, logger, clk, events.New[encoding.Writer](), local.NewConfig(), spec)
 	require.NoError(b, err)
 
 	// Create slice

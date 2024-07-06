@@ -21,7 +21,7 @@ func TestConfig_Validation(t *testing.T) {
 - "volume.sync.mode" is a required field
 - "volume.allocation.static" is a required field
 - "volume.allocation.relative" must be 100 or greater
-- "compression.type" is a required field
+- "encoding.compression.type" is a required field
 `,
 			Value: local.Config{},
 		},

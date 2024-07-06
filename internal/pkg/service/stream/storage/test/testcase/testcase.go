@@ -16,8 +16,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
@@ -57,7 +57,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	cfg := mock.TestConfig()
 
 	// Start statistics collector
-	writerEvents := events.New[diskwriter.Writer]()
+	writerEvents := events.New[encoding.Writer]()
 	collector.Start(d, writerEvents, cfg.Storage.Statistics.Collector, cfg.NodeID)
 
 	// Open volume
@@ -65,7 +65,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	now := d.Clock().Now()
 	volPath := t.TempDir()
 	spec := volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, d.Logger(), d.Clock(), writerEvents, cfg.Storage.Level.Local.Writer, spec, opts...)
+	vol, err := writerVolume.Open(ctx, d.Logger(), d.Clock(), writerEvents, cfg.Storage.Level.Local, spec, opts...)
 	require.NoError(t, err)
 
 	// Create a test slice

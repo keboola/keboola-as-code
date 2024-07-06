@@ -1,7 +1,7 @@
 package volume
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format/factory"
@@ -10,7 +10,7 @@ import (
 )
 
 type config struct {
-	writerConfig diskwriter.Config
+	local.Config
 	// allocator allocates a free disk space for a file.
 	allocator diskalloc.Allocator
 	// formatWriterFactory creates a high-level writer for the storage.FileType, for example storage.FileTypeCSV.
@@ -28,9 +28,9 @@ type config struct {
 
 type Option func(config *config)
 
-func newConfig(wrCfg diskwriter.Config, opts []Option) config {
-	cfg := config{
-		writerConfig:        wrCfg,
+func newConfig(cfg local.Config, opts []Option) config {
+	c := config{
+		Config:              cfg,
 		allocator:           diskalloc.DefaultAllocator{},
 		syncerFactory:       writesync.NewSyncer,
 		formatWriterFactory: factory.Default,
@@ -39,10 +39,10 @@ func newConfig(wrCfg diskwriter.Config, opts []Option) config {
 	}
 
 	for _, o := range opts {
-		o(&cfg)
+		o(&c)
 	}
 
-	return cfg
+	return c
 }
 
 func WithAllocator(v diskalloc.Allocator) Option {

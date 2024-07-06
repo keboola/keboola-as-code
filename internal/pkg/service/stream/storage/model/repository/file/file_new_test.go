@@ -36,7 +36,7 @@ func TestNewFile_InvalidCompressionType(t *testing.T) {
 
 	// Set unsupported compression type
 	cfg := level.NewConfig()
-	cfg.Local.Compression.Type = compression.TypeZSTD
+	cfg.Local.Encoding.Compression.Type = compression.TypeZSTD
 
 	// Assert
 	r := &Repository{plugins: plugins}

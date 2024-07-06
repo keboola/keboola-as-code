@@ -10,7 +10,7 @@ import (
 func NewFile(path string, c Config) model.File {
 	return model.File{
 		Dir:            NormalizeDirPath(path),
-		Compression:    c.Compression.Simplify(),
+		Compression:    c.Encoding.Compression.Simplify(),
 		DiskSync:       c.Volume.Sync,
 		DiskAllocation: c.Volume.Allocation,
 	}
