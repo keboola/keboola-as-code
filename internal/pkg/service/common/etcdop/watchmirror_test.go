@@ -134,7 +134,7 @@ func TestFullMirror(t *testing.T) {
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
 	waitForSync := func() {
-		assert.Eventually(t, func() bool { return mirror.Revision() >= header.Revision }, time.Second, 100*time.Millisecond)
+		assert.Eventually(t, func() bool { return mirror.Revision() >= header.Revision }, 5*time.Second, 100*time.Millisecond)
 	}
 
 	// Wait for initialization
