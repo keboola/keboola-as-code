@@ -1,4 +1,4 @@
-package volume
+package volume_test
 
 import (
 	"context"
@@ -9,19 +9,22 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
 // TestOpen_DrainFile_TrueFalse tests that the volume can be blocked for writing by a drain file.
 func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterTestCase(t)
 
 	// Create an empty drain file
-	drainFilePath := filepath.Join(tc.VolumePath, DrainFile)
+	drainFilePath := filepath.Join(tc.VolumePath, volume.DrainFile)
 	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
 
 	// Type open volume
-	vol, err := tc.OpenVolume(WithWatchDrainFile(true))
+	vol, err := tc.OpenVolume(volume.WithWatchDrainFile(true))
 	assert.NoError(t, err)
 	assert.True(t, vol.Drained())
 
@@ -43,10 +46,10 @@ func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 // TestOpen_DrainFile_FalseTrue tests that the volume can be blocked for writing by a drain file.
 func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterTestCase(t)
 
 	// Type open volume
-	vol, err := tc.OpenVolume(WithWatchDrainFile(true))
+	vol, err := tc.OpenVolume(volume.WithWatchDrainFile(true))
 	assert.NoError(t, err)
 	assert.False(t, vol.Drained())
 
@@ -56,7 +59,7 @@ func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 	}
 
 	// Create an empty drain file
-	drainFilePath := filepath.Join(tc.VolumePath, DrainFile)
+	drainFilePath := filepath.Join(tc.VolumePath, volume.DrainFile)
 	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
 	assert.Eventually(t, func() bool {
 		return vol.Drained() == true

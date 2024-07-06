@@ -1,4 +1,4 @@
-package volume
+package volume_test
 
 import (
 	"context"
@@ -14,50 +14,47 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync"
-	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func TestVolume_OpenWriter_Ok(t *testing.T) {
 	t.Parallel()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
-	assert.Len(t, tc.Volume.writers, 1)
+	assert.Len(t, tc.Volume.Writers(), 1)
 
 	assert.NoError(t, w.Close(context.Background()))
-	assert.Len(t, tc.Volume.writers, 0)
+	assert.Len(t, tc.Volume.Writers(), 0)
 }
 
 func TestVolume_OpenWriter_Duplicate(t *testing.T) {
 	t.Parallel()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 
 	// Create the writer first time - ok
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
-	assert.Len(t, tc.Volume.writers, 1)
+	assert.Len(t, tc.Volume.Writers(), 1)
 
 	// Create writer for the same slice again - error
 	_, err = tc.NewWriter()
 	if assert.Error(t, err) {
 		assert.Equal(t, `writer for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z" already exists`, err.Error())
 	}
-	assert.Len(t, tc.Volume.writers, 1)
+	assert.Len(t, tc.Volume.Writers(), 1)
 
 	assert.NoError(t, w.Close(context.Background()))
-	assert.Len(t, tc.Volume.writers, 0)
+	assert.Len(t, tc.Volume.Writers(), 0)
 }
 
 func TestVolume_OpenWriter_ClosedVolume(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterVolumeTestCase(t)
 	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
@@ -69,7 +66,7 @@ func TestVolume_OpenWriter_ClosedVolume(t *testing.T) {
 
 func TestVolume_Writer_OpenFile_Ok(t *testing.T) {
 	t.Parallel()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
@@ -86,7 +83,7 @@ func TestVolume_Writer_OpenFile_MkdirError(t *testing.T) {
 		t.Skip("permissions work different on Windows")
 	}
 
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 
 	// Open volume
 	vol, err := tc.OpenVolume()
@@ -114,7 +111,7 @@ func TestVolume_Writer_OpenFile_FileError(t *testing.T) {
 		t.Skip("permissions work different on Windows")
 	}
 
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 
 	// Create read only slice directory
 	assert.NoError(t, os.Mkdir(filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), 0o440))
@@ -129,7 +126,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
@@ -233,7 +230,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
@@ -326,7 +323,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
@@ -403,7 +400,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
@@ -471,7 +468,7 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 	tc.Slice.LocalStorage.DiskSync = writesync.Config{Mode: writesync.ModeDisabled}
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
@@ -524,7 +521,7 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 	tc.Allocator.Error = errors.New("some space allocation error")
 
 	w, err := tc.NewWriter()
@@ -550,7 +547,7 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 	tc.Allocator.Ok = false
 
 	w, err := tc.NewWriter()
@@ -576,9 +573,9 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := newWriterTestCase(t)
+	tc := test.NewWriterTestCase(t)
 	tc.Slice.LocalStorage.AllocatedDiskSpace = 0
-	w, err := tc.NewWriter(WithAllocator(diskalloc.DefaultAllocator{}))
+	w, err := tc.NewWriter(volume.WithAllocator(diskalloc.DefaultAllocator{}))
 	assert.NoError(t, err)
 
 	// Check file - no allocation
@@ -596,66 +593,6 @@ func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
 {"level":"debug","message":"opened file"}
 {"level":"debug","message":"disk space allocation is disabled"}
 `)
-}
-
-type writerTestCase struct {
-	*volumeTestCase
-	Volume *Volume
-	Slice  *model.Slice
-}
-
-func newWriterTestCase(tb testing.TB) *writerTestCase {
-	tb.Helper()
-	tc := &writerTestCase{}
-	tc.volumeTestCase = newVolumeTestCase(tb)
-	tc.Slice = test.NewSlice()
-	return tc
-}
-
-func (tc *writerTestCase) OpenVolume(opts ...Option) (*Volume, error) {
-	vol, err := tc.volumeTestCase.OpenVolume(opts...)
-	tc.Volume = vol
-	return vol, err
-}
-
-func (tc *writerTestCase) NewWriter(opts ...Option) (writer.Writer, error) {
-	if tc.Volume == nil {
-		// Write file with the ID
-		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("my-volume"), 0o640))
-
-		// Open volume
-		vol, err := tc.OpenVolume(opts...)
-		require.NoError(tc.TB, err)
-
-		// Close volume after the test
-		tc.TB.Cleanup(func() {
-			assert.NoError(tc.TB, vol.Close(context.Background()))
-		})
-	}
-
-	// Slice definition must be valid
-	val := validator.New()
-	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
-
-	w, err := tc.Volume.OpenWriter(tc.Slice)
-	if err != nil {
-		return nil, err
-	}
-
-	return w, nil
-}
-
-func (tc *writerTestCase) FilePath() string {
-	return filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
-}
-
-type testAllocator struct {
-	Ok    bool
-	Error error
-}
-
-func (a *testAllocator) Allocate(_ diskalloc.File, _ datasize.ByteSize) (bool, error) {
-	return a.Ok, a.Error
 }
 
 func AssertFileContent(tb testing.TB, path, expected string) {

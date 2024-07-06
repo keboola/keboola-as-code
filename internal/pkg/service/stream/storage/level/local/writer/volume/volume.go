@@ -24,7 +24,7 @@ const (
 	// DrainFile blocks opening of the volume for writing.
 	DrainFile = "drain"
 	// lockFile ensures only one opening of the volume for writing.
-	lockFile          = "writer.lock"
+	LockFile          = "writer.lock"
 	volumeIDFileFlags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	volumeIDFilePerm  = 0o640
 )
@@ -105,7 +105,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, writerEvent
 
 	// Create lock file
 	{
-		v.fsLock = flock.New(filepath.Join(v.spec.Path, lockFile))
+		v.fsLock = flock.New(filepath.Join(v.spec.Path, LockFile))
 		if locked, err := v.fsLock.TryLock(); err != nil {
 			return nil, errors.PrefixErrorf(err, `cannot acquire writer lock "%s"`, v.fsLock.Path())
 		} else if !locked {
