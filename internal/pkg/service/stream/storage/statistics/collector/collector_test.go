@@ -14,8 +14,8 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
@@ -32,7 +32,7 @@ func TestCollector(t *testing.T) {
 
 	d, mock := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
-	events := &testEvents{}
+	writerEvents := &testEvents{}
 
 	syncCounter := 0
 	triggerSyncAndWait := func() {
@@ -44,17 +44,17 @@ func TestCollector(t *testing.T) {
 	}
 
 	// Start collector
-	collector.Start(d, events, cfg, "test-node")
+	collector.Start(d, writerEvents, cfg, "test-node")
 
 	// The collector should listen on writers events
-	require.NotNil(t, events.WriterOpen)
-	require.NotNil(t, events.WriterClose)
+	require.NotNil(t, writerEvents.WriterOpen)
+	require.NotNil(t, writerEvents.WriterClose)
 
 	// Create 3 writers
 	w1 := &testWriter{SliceKeyValue: test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")}
 	w2 := &testWriter{SliceKeyValue: test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")}
-	assert.NoError(t, events.WriterOpen(w1))
-	assert.NoError(t, events.WriterOpen(w2))
+	assert.NoError(t, writerEvents.WriterOpen(w1))
+	assert.NoError(t, writerEvents.WriterOpen(w2))
 
 	// Sync: no data
 	triggerSyncAndWait()
@@ -91,7 +91,7 @@ func TestCollector(t *testing.T) {
 	w1.LastRowAtValue = utctime.MustParse("2000-01-01T01:40:00.000Z")
 	w1.CompressedSizeValue = 60
 	w1.UncompressedSizeValue = 600
-	assert.NoError(t, events.WriterClose(w1, nil))
+	assert.NoError(t, writerEvents.WriterClose(w1, nil))
 	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_004.txt")
 
 	// Shutdown: stop Collector and remaining writer 2
@@ -105,15 +105,15 @@ func TestCollector(t *testing.T) {
 }
 
 type testEvents struct {
-	WriterOpen  func(w writer.Writer) error
-	WriterClose func(w writer.Writer, closeErr error) error
+	WriterOpen  func(w diskwriter.Writer) error
+	WriterClose func(w diskwriter.Writer, closeErr error) error
 }
 
-func (e *testEvents) OnOpen(fn func(writer.Writer) error) {
+func (e *testEvents) OnOpen(fn func(diskwriter.Writer) error) {
 	e.WriterOpen = fn
 }
 
-func (e *testEvents) OnClose(fn func(writer.Writer, error) error) {
+func (e *testEvents) OnClose(fn func(diskwriter.Writer, error) error) {
 	e.WriterClose = fn
 }
 
@@ -164,7 +164,7 @@ func (w *testWriter) Close(context.Context) error {
 	panic(errors.New("method should not be called"))
 }
 
-func (w *testWriter) Events() *events.Events[writer.Writer] {
+func (w *testWriter) Events() *events.Events[diskwriter.Writer] {
 	panic(errors.New("method should not be called"))
 }
 

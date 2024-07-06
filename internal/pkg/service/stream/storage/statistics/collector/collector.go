@@ -10,7 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -32,14 +32,14 @@ type Collector struct {
 }
 
 type WriterEvents interface {
-	OnOpen(fn func(writer.Writer) error)
-	OnClose(func(w writer.Writer, err error) error)
+	OnOpen(fn func(diskwriter.Writer) error)
+	OnClose(func(w diskwriter.Writer, err error) error)
 }
 
 // writerSnapshot contains collected statistics from a writer.Writer.
 // It is used to determine whether the statistics have changed and should be saved to the database or not.
 type writerSnapshot struct {
-	writer       writer.Writer
+	writer       diskwriter.Writer
 	sliceKey     model.SliceKey
 	initialValue statistics.Value
 	value        statistics.Value
@@ -74,7 +74,7 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 	})
 
 	// Listen on writer events
-	events.OnOpen(func(w writer.Writer) error {
+	events.OnOpen(func(w diskwriter.Writer) error {
 		// Register the writer for the periodical sync, see bellow
 		k := w.SliceKey()
 
@@ -94,7 +94,7 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 
 		return nil
 	})
-	events.OnClose(func(w writer.Writer, _ error) error {
+	events.OnClose(func(w diskwriter.Writer, _ error) error {
 		// Sync the final statistics and unregister the writer
 		k := w.SliceKey()
 		err := c.syncOne(k)
@@ -195,7 +195,7 @@ func (c *Collector) sync(filter *model.SliceKey) error {
 }
 
 // collect statistics from the writer to the PerSlice struct.
-func (c *Collector) collect(w writer.Writer, out *statistics.Value) (changed bool) {
+func (c *Collector) collect(w diskwriter.Writer, out *statistics.Value) (changed bool) {
 	// Get values
 	firstRowAt := w.FirstRecordAt()
 	lastRowAt := w.LastRecordAt()

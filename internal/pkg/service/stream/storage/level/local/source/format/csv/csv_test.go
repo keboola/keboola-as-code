@@ -23,11 +23,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testcase"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -49,7 +49,7 @@ func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
 	// Open volume
 	clk := clock.New()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
-	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clk, events.New[writer.Writer](), writer.NewConfig(), spec)
+	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clk, events.New[diskwriter.Writer](), diskwriter.NewConfig(), spec)
 	require.NoError(t, err)
 
 	// Create slice
@@ -82,7 +82,7 @@ func TestCSVWriter_CastToStringError(t *testing.T) {
 	// Open volume
 	clk := clock.New()
 	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
-	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clock.New(), events.New[writer.Writer](), writer.NewConfig(), spec)
+	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clock.New(), events.New[diskwriter.Writer](), diskwriter.NewConfig(), spec)
 	require.NoError(t, err)
 
 	// Create slice
@@ -123,8 +123,8 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 		ctx,
 		log.NewNopLogger(),
 		clock.New(),
-		events.New[writer.Writer](),
-		writer.NewConfig(),
+		events.New[diskwriter.Writer](),
+		diskwriter.NewConfig(),
 		volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "001"},
 		writerVolume.WithFileOpener(func(filePath string) (writerVolume.File, error) {
 			file, err := writerVolume.DefaultFileOpener(filePath)

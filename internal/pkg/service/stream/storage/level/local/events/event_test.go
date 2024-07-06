@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -35,23 +35,23 @@ func TestEventWriter(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", volume.IDFile), []byte("HDD_2"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, diskwriter.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
 	// Register "OnOpen" and "OnClose" events on the "volumes" level
-	volumes.Events().OnOpen(func(w writer.Writer) error {
+	volumes.Events().OnOpen(func(w diskwriter.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (1), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	volumes.Events().OnOpen(func(w writer.Writer) error {
+	volumes.Events().OnOpen(func(w diskwriter.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (2), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	volumes.Events().OnClose(func(w writer.Writer, _ error) error {
+	volumes.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (1), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	volumes.Events().OnClose(func(w writer.Writer, _ error) error {
+	volumes.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (2), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
@@ -61,35 +61,35 @@ func TestEventWriter(t *testing.T) {
 	assert.NoError(t, err)
 	vol2, err := volumes.Collection().Volume("HDD_2")
 	assert.NoError(t, err)
-	vol1.Events().OnOpen(func(w writer.Writer) error {
+	vol1.Events().OnOpen(func(w diskwriter.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol1.Events().OnOpen(func(w writer.Writer) error {
+	vol1.Events().OnOpen(func(w diskwriter.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (4), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol1.Events().OnClose(func(w writer.Writer, _ error) error {
+	vol1.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (3), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol1.Events().OnClose(func(w writer.Writer, _ error) error {
+	vol1.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (4), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol2.Events().OnOpen(func(w writer.Writer) error {
+	vol2.Events().OnOpen(func(w diskwriter.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol2.Events().OnOpen(func(w writer.Writer) error {
+	vol2.Events().OnOpen(func(w diskwriter.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (4), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol2.Events().OnClose(func(w writer.Writer, _ error) error {
+	vol2.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (3), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol2.Events().OnClose(func(w writer.Writer, _ error) error {
+	vol2.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (4), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
@@ -101,19 +101,19 @@ func TestEventWriter(t *testing.T) {
 	require.NoError(t, err)
 	writer2, err := vol2.OpenWriter(slice2)
 	require.NoError(t, err)
-	writer1.Events().OnClose(func(w writer.Writer, _ error) error {
+	writer1.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	writer1.Events().OnClose(func(w writer.Writer, _ error) error {
+	writer1.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (6), level: writer1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	writer2.Events().OnClose(func(w writer.Writer, _ error) error {
+	writer2.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer2`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	writer2.Events().OnClose(func(w writer.Writer, _ error) error {
+	writer2.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (6), level: writer2`, w.SliceKey().OpenedAt())
 		return nil
 	})
@@ -163,18 +163,18 @@ func TestWriterEvents_OpenError(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, diskwriter.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
 	// Register "OnOpen" event on the "volumes" level
-	volumes.Events().OnOpen(func(w writer.Writer) error {
+	volumes.Events().OnOpen(func(w diskwriter.Writer) error {
 		return errors.New("error (1)")
 	})
 
 	// Register "OnOpen" event on the "volume" level
 	vol, err := volumes.Collection().Volume("HDD_1")
 	assert.NoError(t, err)
-	vol.Events().OnOpen(func(w writer.Writer) error {
+	vol.Events().OnOpen(func(w diskwriter.Writer) error {
 		return errors.New("error (2)")
 	})
 
@@ -203,18 +203,18 @@ func TestEventWriter_CloseError(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
+	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, diskwriter.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
 	// Register "OnClose" event on the "volumes" level
-	volumes.Events().OnClose(func(w writer.Writer, _ error) error {
+	volumes.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		return errors.New("error (1)")
 	})
 
 	// Register "OnClose" event on the "volume" level
 	vol, err := volumes.Collection().Volume("HDD_1")
 	assert.NoError(t, err)
-	vol.Events().OnClose(func(w writer.Writer, _ error) error {
+	vol.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		return errors.New("error (2)")
 	})
 
@@ -223,7 +223,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 	require.NoError(t, err)
 
 	// Register "OnClose" event on the "writer" level
-	w.Events().OnClose(func(w writer.Writer, _ error) error {
+	w.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		return errors.New("error (3)")
 	})
 

@@ -7,7 +7,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -17,10 +17,10 @@ const (
 )
 
 type writerRef struct {
-	writer.Writer
+	diskwriter.Writer
 }
 
-func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
+func (v *Volume) OpenWriter(slice *model.Slice) (w diskwriter.Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.PrefixErrorf(err, `writer for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
@@ -100,13 +100,13 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
 	}
 
 	// Create writer
-	w, err = writer.New(v.ctx, logger, v.clock, v.config.writerConfig, slice, file, v.config.syncerFactory, v.config.formatWriterFactory, v.writerEvents)
+	w, err = diskwriter.New(v.ctx, logger, v.clock, v.config.writerConfig, slice, file, v.config.syncerFactory, v.config.formatWriterFactory, v.writerEvents)
 	if err != nil {
 		return nil, err
 	}
 
 	// Register writer close callback
-	w.Events().OnClose(func(w writer.Writer, _ error) error {
+	w.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		v.removeWriter(w.SliceKey())
 		return nil
 	})
@@ -114,11 +114,11 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w writer.Writer, err error) {
 	return w, nil
 }
 
-func (v *Volume) Writers() (out []writer.Writer) {
+func (v *Volume) Writers() (out []diskwriter.Writer) {
 	v.writersLock.Lock()
 	defer v.writersLock.Unlock()
 
-	out = make([]writer.Writer, 0, len(v.writers))
+	out = make([]diskwriter.Writer, 0, len(v.writers))
 	for _, w := range v.writers {
 		out = append(out, w)
 	}

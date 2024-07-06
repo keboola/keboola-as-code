@@ -1,4 +1,4 @@
-package writer_test
+package diskwriter_test
 
 import (
 	"context"
@@ -16,12 +16,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -31,7 +31,7 @@ func TestWriter(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cfg := writer.NewConfig()
+	cfg := diskwriter.NewConfig()
 	logger := log.NewDebugLogger()
 	clk := clock.New()
 	dirPath := t.TempDir()
@@ -40,7 +40,7 @@ func TestWriter(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	w, err := writer.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, test.DummyWriterFactory, events.New[writer.Writer]())
+	w, err := diskwriter.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, test.DummyWriterFactory, events.New[diskwriter.Writer]())
 	require.NoError(t, err)
 
 	// Test getters
@@ -69,7 +69,7 @@ func TestWriter_FlushError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cfg := writer.NewConfig()
+	cfg := diskwriter.NewConfig()
 	logger := log.NewDebugLogger()
 	clk := clock.NewMock()
 	dirPath := t.TempDir()
@@ -84,7 +84,7 @@ func TestWriter_FlushError(t *testing.T) {
 		return w, nil
 	}
 
-	w, err := writer.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[writer.Writer]())
+	w, err := diskwriter.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[diskwriter.Writer]())
 	require.NoError(t, err)
 
 	// Test Close method
@@ -98,7 +98,7 @@ func TestWriter_CloseError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cfg := writer.NewConfig()
+	cfg := diskwriter.NewConfig()
 	logger := log.NewDebugLogger()
 	clk := clock.NewMock()
 	dirPath := t.TempDir()
@@ -113,7 +113,7 @@ func TestWriter_CloseError(t *testing.T) {
 		return w, nil
 	}
 
-	w, err := writer.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[writer.Writer]())
+	w, err := diskwriter.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[diskwriter.Writer]())
 	require.NoError(t, err)
 
 	// Test Close method
