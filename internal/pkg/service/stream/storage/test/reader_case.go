@@ -14,8 +14,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader"
-	volume2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader/volume"
-	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader/volume"
+	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -35,7 +35,7 @@ type ReaderVolumeTestCase struct {
 // ReaderTestCase is a helper to open disk reader in tests.
 type ReaderTestCase struct {
 	*ReaderVolumeTestCase
-	Volume    *volume2.Volume
+	Volume    *volume.Volume
 	Slice     *model.Slice
 	SliceData []byte
 }
@@ -71,18 +71,18 @@ func NewReaderTestCase(tb testing.TB) *ReaderTestCase {
 	return tc
 }
 
-func (tc *ReaderVolumeTestCase) OpenVolume(opts ...volume2.Option) (*volume2.Volume, error) {
-	info := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
-	return volume2.Open(tc.Ctx, tc.Logger, tc.Clock, events.New[reader.Reader](), info, opts...)
+func (tc *ReaderVolumeTestCase) OpenVolume(opts ...volume.Option) (*volume.Volume, error) {
+	info := volumeModel.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
+	return volume.Open(tc.Ctx, tc.Logger, tc.Clock, events.New[reader.Reader](), info, opts...)
 }
 
 func (tc *ReaderVolumeTestCase) AssertLogs(expected string) bool {
 	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }
 
-func (tc *ReaderTestCase) OpenVolume(opts ...volume2.Option) (*volume2.Volume, error) {
+func (tc *ReaderTestCase) OpenVolume(opts ...volume.Option) (*volume.Volume, error) {
 	// Write file with the ID
-	require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("my-volume"), 0o640))
+	require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("my-volume"), 0o640))
 
 	vol, err := tc.ReaderVolumeTestCase.OpenVolume(opts...)
 	tc.Volume = vol
@@ -90,7 +90,7 @@ func (tc *ReaderTestCase) OpenVolume(opts ...volume2.Option) (*volume2.Volume, e
 	return vol, err
 }
 
-func (tc *ReaderTestCase) NewReader(opts ...volume2.Option) (reader.Reader, error) {
+func (tc *ReaderTestCase) NewReader(opts ...volume.Option) (reader.Reader, error) {
 	if tc.Volume == nil {
 		// Open volume
 		vol, err := tc.OpenVolume(opts...)

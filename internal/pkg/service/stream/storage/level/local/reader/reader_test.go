@@ -1,4 +1,4 @@
-package volume_test
+package reader_test
 
 import (
 	"bytes"
