@@ -64,7 +64,7 @@ type writer struct {
 	chain  *writechain.Chain
 	syncer *writesync.Syncer
 
-	formatWriter format.Writer
+	formatWriter format.Encoder
 	// closed blocks new writes
 	closed chan struct{}
 	// writeWg waits for in-progress writes before Close
@@ -84,7 +84,7 @@ func New(
 	slice *model.Slice,
 	file writechain.File,
 	syncerFactory writesync.SyncerFactory,
-	formatWriterFactory format.WriterFactory,
+	formatWriterFactory format.EncoderFactory,
 	writerEvents *events.Events[Writer],
 ) (out Writer, err error) {
 	w := &writer{

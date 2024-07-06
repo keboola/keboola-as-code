@@ -29,11 +29,11 @@ type DummyWriter struct {
 
 // NotifyWriter notifies about successful writes.
 type NotifyWriter struct {
-	format.Writer
+	format.Encoder
 	writeDone chan struct{}
 }
 
-func DummyWriterFactory(cfg format.Config, out io.Writer, slice *model.Slice) (format.Writer, error) {
+func DummyWriterFactory(cfg format.Config, out io.Writer, slice *model.Slice) (format.Encoder, error) {
 	return NewDummyWriter(cfg, out, slice), nil
 }
 
@@ -41,8 +41,8 @@ func NewDummyWriter(_ format.Config, out io.Writer, _ *model.Slice) *DummyWriter
 	return &DummyWriter{out: out}
 }
 
-func NewNotifyWriter(w format.Writer, writeDone chan struct{}) *NotifyWriter {
-	return &NotifyWriter{Writer: w, writeDone: writeDone}
+func NewNotifyWriter(w format.Encoder, writeDone chan struct{}) *NotifyWriter {
+	return &NotifyWriter{Encoder: w, writeDone: writeDone}
 }
 
 func (w *DummyWriter) WriteRecord(values []any) error {
@@ -68,7 +68,7 @@ func (w *DummyWriter) Close() error {
 }
 
 func (w *NotifyWriter) WriteRecord(values []any) error {
-	err := w.Writer.WriteRecord(values)
+	err := w.Encoder.WriteRecord(values)
 	if err == nil {
 		w.writeDone <- struct{}{}
 	}
@@ -86,7 +86,7 @@ func NewWriterHelper() *WriterHelper {
 
 // NewDummyWriter implements writer.WriterFactory.
 // See also ExpectWritesCount and TriggerSync methods.
-func (h *WriterHelper) NewDummyWriter(cfg format.Config, out io.Writer, slice *model.Slice) (format.Writer, error) {
+func (h *WriterHelper) NewDummyWriter(cfg format.Config, out io.Writer, slice *model.Slice) (format.Encoder, error) {
 	return NewNotifyWriter(NewDummyWriter(cfg, out, slice), h.writeDone), nil
 }
 

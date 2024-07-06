@@ -14,7 +14,7 @@ type config struct {
 	// allocator allocates a free disk space for a file.
 	allocator diskalloc.Allocator
 	// formatWriterFactory creates a high-level writer for the storage.FileType, for example storage.FileTypeCSV.
-	formatWriterFactory format.WriterFactory
+	formatWriterFactory format.EncoderFactory
 	// syncerFactory provides writesync.Syncer a custom implementation can be useful for tests.
 	syncerFactory writesync.SyncerFactory
 	// fileOpener provides file opening, a custom implementation can be useful for tests.
@@ -60,7 +60,7 @@ func WithSyncerFactory(v writesync.SyncerFactory) Option {
 	}
 }
 
-func WithFormatWriterFactory(v format.WriterFactory) Option {
+func WithFormatWriterFactory(v format.EncoderFactory) Option {
 	return func(c *config) {
 		if v == nil {
 			panic(errors.New(`value must not be nil`))

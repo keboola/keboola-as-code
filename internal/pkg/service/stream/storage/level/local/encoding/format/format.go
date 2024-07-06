@@ -6,12 +6,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
-// WriterFactory creates Writer according to the configuration and slice entity.
-type WriterFactory func(cfg Config, out io.Writer, slice *model.Slice) (Writer, error)
+// EncoderFactory creates Writer according to the configuration and slice entity.
+type EncoderFactory func(cfg Config, out io.Writer, slice *model.Slice) (Encoder, error)
 
-// Writer writers record values as bytes to the underlying writer.
+// Encoder writers record values as bytes to the underlying writer.
 // It is used inside the Writer.
-type Writer interface {
+type Encoder interface {
 	WriteRecord(values []any) error
 	Flush() error
 	Close() error

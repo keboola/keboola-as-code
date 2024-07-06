@@ -10,7 +10,7 @@ import (
 )
 
 // Default implements format.WriterFactory.
-func Default(cfg format.Config, out io.Writer, slice *model.Slice) (format.Writer, error) {
+func Default(cfg format.Config, out io.Writer, slice *model.Slice) (format.Encoder, error) {
 	switch slice.Type {
 	case model.FileTypeCSV:
 		return csv.NewWriter(cfg, out, slice)
