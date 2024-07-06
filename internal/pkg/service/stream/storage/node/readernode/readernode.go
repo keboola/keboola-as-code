@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader/volume"
 )
 
 type dependencies interface {

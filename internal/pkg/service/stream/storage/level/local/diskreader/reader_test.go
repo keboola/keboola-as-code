@@ -1,4 +1,4 @@
-package reader_test
+package diskreader_test
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/reader"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )

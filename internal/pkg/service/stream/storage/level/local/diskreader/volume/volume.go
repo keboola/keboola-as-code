@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -35,7 +35,7 @@ type Volume struct {
 	config       config
 	logger       log.Logger
 	clock        clock.Clock
-	readerEvents *events.Events[reader.Reader]
+	readerEvents *events.Events[diskreader.Reader]
 
 	fsLock *flock.Flock
 
@@ -48,7 +48,7 @@ type Volume struct {
 //   - The IDFile is loaded.
 //   - If the IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The LockFile ensures only one opening of the volume for reading.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, readerEvents *events.Events[reader.Reader], spec volume.Spec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, readerEvents *events.Events[diskreader.Reader], spec volume.Spec, opts ...Option) (*Volume, error) {
 	v := &Volume{
 		spec:         spec,
 		config:       newConfig(opts),
@@ -111,7 +111,7 @@ func (v *Volume) ID() volume.ID {
 	return v.id
 }
 
-func (v *Volume) Events() *events.Events[reader.Reader] {
+func (v *Volume) Events() *events.Events[diskreader.Reader] {
 	return v.readerEvents
 }
 

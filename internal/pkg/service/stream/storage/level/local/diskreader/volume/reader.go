@@ -7,16 +7,16 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type readerRef struct {
-	reader.Reader
+	diskreader.Reader
 }
 
-func (v *Volume) OpenReader(slice *model.Slice) (r reader.Reader, err error) {
+func (v *Volume) OpenReader(slice *model.Slice) (r diskreader.Reader, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.PrefixErrorf(err, `reader for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
@@ -69,13 +69,13 @@ func (v *Volume) OpenReader(slice *model.Slice) (r reader.Reader, err error) {
 	}
 
 	// Init reader and chain
-	r, err = reader.New(v.ctx, logger, slice, file, v.readerEvents)
+	r, err = diskreader.New(v.ctx, logger, slice, file, v.readerEvents)
 	if err != nil {
 		return nil, err
 	}
 
 	// Register writer close callback
-	r.Events().OnClose(func(r reader.Reader, _ error) error {
+	r.Events().OnClose(func(r diskreader.Reader, _ error) error {
 		v.removeReader(r.SliceKey())
 		return nil
 	})
@@ -83,11 +83,11 @@ func (v *Volume) OpenReader(slice *model.Slice) (r reader.Reader, err error) {
 	return r, nil
 }
 
-func (v *Volume) Readers() (out []reader.Reader) {
+func (v *Volume) Readers() (out []diskreader.Reader) {
 	v.readersLock.Lock()
 	defer v.readersLock.Unlock()
 
-	out = make([]reader.Reader, 0, len(v.readers))
+	out = make([]diskreader.Reader, 0, len(v.readers))
 	for _, w := range v.readers {
 		out = append(out, w)
 	}

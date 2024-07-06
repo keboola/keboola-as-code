@@ -8,8 +8,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/opener"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -19,7 +19,7 @@ type Volumes struct {
 	logger     log.Logger
 	collection *volume.Collection[*Volume]
 	// events instance is passed to each volume and then to each reader
-	events *events.Events[reader.Reader]
+	events *events.Events[diskreader.Reader]
 }
 
 type dependencies interface {
@@ -32,7 +32,7 @@ type dependencies interface {
 func OpenVolumes(ctx context.Context, d dependencies, nodeID, volumesPath string, opts ...Option) (v *Volumes, err error) {
 	v = &Volumes{
 		logger: d.Logger().WithComponent("storage.node.reader.volumes"),
-		events: events.New[reader.Reader](),
+		events: events.New[diskreader.Reader](),
 	}
 
 	v.collection, err = opener.OpenVolumes(ctx, v.logger, nodeID, volumesPath, func(spec volume.Spec) (*Volume, error) {
