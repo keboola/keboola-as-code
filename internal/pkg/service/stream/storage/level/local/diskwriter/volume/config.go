@@ -3,9 +3,9 @@ package volume
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format/factory"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format/factory"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

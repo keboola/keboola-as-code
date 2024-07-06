@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 

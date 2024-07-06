@@ -3,8 +3,8 @@ package factory
 import (
 	"io"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format/csv"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )

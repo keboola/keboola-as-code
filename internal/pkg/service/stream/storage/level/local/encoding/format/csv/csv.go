@@ -4,8 +4,8 @@ import (
 	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format"
-	fastcsv2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format/csv/fastcsv"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
+	fastcsv2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format/csv/fastcsv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )

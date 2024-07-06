@@ -17,8 +17,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/count"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/size"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/count"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/size"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
