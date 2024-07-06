@@ -1,4 +1,4 @@
-package diskwriter
+package encoding
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/count"
@@ -64,7 +63,7 @@ type writer struct {
 	chain  *writechain.Chain
 	syncer *writesync.Syncer
 
-	formatWriter encoding.Encoder
+	formatWriter Encoder
 	// closed blocks new writes
 	closed chan struct{}
 	// writeWg waits for in-progress writes before Close
@@ -84,7 +83,7 @@ func New(
 	slice *model.Slice,
 	file writechain.File,
 	syncerFactory writesync.SyncerFactory,
-	formatWriterFactory encoding.EncoderFactory,
+	formatWriterFactory EncoderFactory,
 	writerEvents *events.Events[Writer],
 ) (out Writer, err error) {
 	w := &writer{
@@ -129,9 +128,9 @@ func New(
 
 	// Add a buffer before the file
 	{
-		if cfg.FileBuffer > 0 {
+		if cfg.OutputBuffer > 0 {
 			w.chain.PrependWriter(func(w io.Writer) io.Writer {
-				return limitbuffer.New(w, int(cfg.FileBuffer.Bytes()))
+				return limitbuffer.New(w, int(cfg.OutputBuffer.Bytes()))
 			})
 		}
 	}
@@ -181,7 +180,7 @@ func New(
 	// Create file format writer.
 	// It is entrypoint of the writers chain.
 	{
-		w.formatWriter, err = formatWriterFactory(cfg.Format, w.chain, w.slice)
+		w.formatWriter, err = formatWriterFactory(cfg, w.chain, w.slice)
 		if err != nil {
 			return nil, err
 		}

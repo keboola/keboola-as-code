@@ -1,4 +1,4 @@
-package diskwriter_test
+package encoding_test
 
 import (
 	"context"
@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
@@ -31,7 +30,7 @@ func TestWriter(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cfg := diskwriter.NewConfig()
+	cfg := encoding.NewConfig()
 	logger := log.NewDebugLogger()
 	clk := clock.New()
 	dirPath := t.TempDir()
@@ -40,7 +39,7 @@ func TestWriter(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	w, err := diskwriter.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, test.DummyWriterFactory, events.New[diskwriter.Writer]())
+	w, err := encoding.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, test.DummyWriterFactory, events.New[encoding.Writer]())
 	require.NoError(t, err)
 
 	// Test getters
@@ -69,7 +68,7 @@ func TestWriter_FlushError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cfg := diskwriter.NewConfig()
+	cfg := encoding.NewConfig()
 	logger := log.NewDebugLogger()
 	clk := clock.NewMock()
 	dirPath := t.TempDir()
@@ -84,7 +83,7 @@ func TestWriter_FlushError(t *testing.T) {
 		return w, nil
 	}
 
-	w, err := diskwriter.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[diskwriter.Writer]())
+	w, err := encoding.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[encoding.Writer]())
 	require.NoError(t, err)
 
 	// Test Close method
@@ -98,7 +97,7 @@ func TestWriter_CloseError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cfg := diskwriter.NewConfig()
+	cfg := encoding.NewConfig()
 	logger := log.NewDebugLogger()
 	clk := clock.NewMock()
 	dirPath := t.TempDir()
@@ -113,7 +112,7 @@ func TestWriter_CloseError(t *testing.T) {
 		return w, nil
 	}
 
-	w, err := diskwriter.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[diskwriter.Writer]())
+	w, err := encoding.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[encoding.Writer]())
 	require.NoError(t, err)
 
 	// Test Close method
