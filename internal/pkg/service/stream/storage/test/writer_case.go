@@ -14,10 +14,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
-	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/diskalloc"
-	volume2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -40,7 +40,7 @@ type WriterVolumeTestCase struct {
 // WriterTestCase is a helper to open disk writer in tests.
 type WriterTestCase struct {
 	*WriterVolumeTestCase
-	Volume *volume2.Volume
+	Volume *volume.Volume
 	Slice  *model.Slice
 }
 
@@ -83,16 +83,16 @@ func NewWriterVolumeTestCase(tb testing.TB) *WriterVolumeTestCase {
 	}
 }
 
-func (tc *WriterTestCase) OpenVolume(opts ...volume2.Option) (*volume2.Volume, error) {
+func (tc *WriterTestCase) OpenVolume(opts ...volume.Option) (*volume.Volume, error) {
 	vol, err := tc.WriterVolumeTestCase.OpenVolume(opts...)
 	tc.Volume = vol
 	return vol, err
 }
 
-func (tc *WriterTestCase) NewWriter(opts ...volume2.Option) (writer.Writer, error) {
+func (tc *WriterTestCase) NewWriter(opts ...volume.Option) (writer.Writer, error) {
 	if tc.Volume == nil {
 		// Write file with the ID
-		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volume.IDFile), []byte("my-volume"), 0o640))
+		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("my-volume"), 0o640))
 
 		// Open volume
 		vol, err := tc.OpenVolume(opts...)
@@ -120,16 +120,16 @@ func (tc *WriterTestCase) FilePath() string {
 	return filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
 }
 
-func (tc *WriterVolumeTestCase) OpenVolume(opts ...volume2.Option) (*volume2.Volume, error) {
-	opts = append([]volume2.Option{
-		volume2.WithAllocator(tc.Allocator),
-		volume2.WithSyncerFactory(tc.WriterHelper.NewSyncer),
-		volume2.WithFormatWriterFactory(tc.WriterHelper.NewDummyWriter),
-		volume2.WithWatchDrainFile(false),
+func (tc *WriterVolumeTestCase) OpenVolume(opts ...volume.Option) (*volume.Volume, error) {
+	opts = append([]volume.Option{
+		volume.WithAllocator(tc.Allocator),
+		volume.WithSyncerFactory(tc.WriterHelper.NewSyncer),
+		volume.WithFormatWriterFactory(tc.WriterHelper.NewDummyWriter),
+		volume.WithWatchDrainFile(false),
 	}, opts...)
 
-	spec := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
-	return volume2.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, writer.NewConfig(), spec, opts...)
+	spec := volumeModel.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
+	return volume.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, writer.NewConfig(), spec, opts...)
 }
 
 func (tc *WriterVolumeTestCase) AssertLogs(expected string) bool {
