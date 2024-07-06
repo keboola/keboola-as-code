@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	// lockFile ensures only one opening of the volume for reading.
-	lockFile                = "reader.lock"
-	waitForVolumeIDInterval = 500 * time.Millisecond
+	// LockFile ensures only one opening of the volume for reading.
+	LockFile                = "reader.lock"
+	WaitForVolumeIDInterval = 500 * time.Millisecond
 )
 
 type Volume struct {
@@ -47,7 +47,7 @@ type Volume struct {
 //   - It is checked that the volume path exists.
 //   - The IDFile is loaded.
 //   - If the IDFile doesn't exist, the function waits until the writer.Open function will create it.
-//   - The lockFile ensures only one opening of the volume for reading.
+//   - The LockFile ensures only one opening of the volume for reading.
 func Open(ctx context.Context, logger log.Logger, clock clock.Clock, readerEvents *events.Events[reader.Reader], spec volume.Spec, opts ...Option) (*Volume, error) {
 	v := &Volume{
 		spec:         spec,
@@ -75,7 +75,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, readerEvent
 	// Note: If it is necessary to use the filesystem mounted in read-only mode,
 	// this lock can be removed from the code, if it is ensured that only one reader is running at a time.
 	{
-		v.fsLock = flock.New(filepath.Join(v.spec.Path, lockFile))
+		v.fsLock = flock.New(filepath.Join(v.spec.Path, LockFile))
 		if locked, err := v.fsLock.TryLock(); err != nil {
 			return nil, errors.PrefixErrorf(err, `cannot acquire reader lock "%s"`, v.fsLock.Path())
 		} else if !locked {
@@ -161,7 +161,7 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
 	ctx, cancel := v.clock.WithTimeout(ctx, v.config.waitForVolumeIDTimeout)
 	defer cancel()
 
-	ticker := v.clock.Ticker(waitForVolumeIDInterval)
+	ticker := v.clock.Ticker(WaitForVolumeIDInterval)
 	defer ticker.Stop()
 
 	path := filepath.Join(v.spec.Path, volume.IDFile)
