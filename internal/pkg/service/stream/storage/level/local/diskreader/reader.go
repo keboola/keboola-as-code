@@ -14,10 +14,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/reader"
-	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader/readchain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
+	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/reader"
+	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

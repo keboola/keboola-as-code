@@ -1,8 +1,8 @@
 package model
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 )
 

@@ -9,7 +9,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/benchmark"

@@ -10,7 +10,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

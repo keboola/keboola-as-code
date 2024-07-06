@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"

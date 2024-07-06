@@ -1,4 +1,4 @@
-package reader
+package writer
 
 import (
 	"bytes"
@@ -14,25 +14,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 )
 
-func TestReader(t *testing.T) {
+func TestWriter(t *testing.T) {
 	t.Parallel()
 
-	// Encoders to compressed data before test
-	noneDecoder := func(t *testing.T, w io.Writer) io.Writer {
+	// Decoders to validate compressed data
+	noneDecoder := func(t *testing.T, r io.Reader) io.Reader {
 		t.Helper()
-		return w
+		return r
 	}
-	gzipEncoder := func(t *testing.T, w io.Writer) io.Writer {
+	gzipDecoder := func(t *testing.T, r io.Reader) io.Reader {
 		t.Helper()
-		// The standard gzip implementation is used to encode data.
-		return gzip.NewWriter(w)
+		// The standard gzip implementation is used to decode data.
+		r, err := gzip.NewReader(r)
+		require.NoError(t, err)
+		return r
 	}
-	zstdEncoder := func(t *testing.T, w io.Writer) io.Writer {
+	zstdDecoder := func(t *testing.T, r io.Reader) io.Reader {
 		t.Helper()
-		r, err := zstd.NewWriter(w)
+		r, err := zstd.NewReader(r)
 		require.NoError(t, err)
 		return r
 	}
@@ -41,18 +43,18 @@ func TestReader(t *testing.T) {
 	cases := []struct {
 		Name    string
 		Config  compression.Config
-		Encoder func(t *testing.T, w io.Writer) io.Writer
+		Decoder func(t *testing.T, r io.Reader) io.Reader
 	}{
 		{
 			Name:    "none",
-			Encoder: noneDecoder,
+			Decoder: noneDecoder,
 			Config: compression.Config{
 				Type: compression.TypeNone,
 			},
 		},
 		{
 			Name:    "gzip.standard",
-			Encoder: gzipEncoder,
+			Decoder: gzipDecoder,
 			Config: compression.Config{
 				Type: compression.TypeGZIP,
 				GZIP: &compression.GZIPConfig{
@@ -63,7 +65,7 @@ func TestReader(t *testing.T) {
 		},
 		{
 			Name:    "gzip.fast",
-			Encoder: gzipEncoder,
+			Decoder: gzipDecoder,
 			Config: compression.Config{
 				Type: compression.TypeGZIP,
 				GZIP: &compression.GZIPConfig{
@@ -74,23 +76,25 @@ func TestReader(t *testing.T) {
 		},
 		{
 			Name:    "gzip.parallel",
-			Encoder: gzipEncoder,
+			Decoder: gzipDecoder,
 			Config: compression.Config{
 				Type: compression.TypeGZIP,
 				GZIP: &compression.GZIPConfig{
 					Level:          compression.DefaultGZIPLevel,
 					Implementation: compression.GZIPImplParallel, // <<<<<<<<
+					BlockSize:      compression.DefaultGZIPBlockSize,
 					Concurrency:    4,
 				},
 			},
 		},
 		{
 			Name:    "zstd",
-			Encoder: zstdEncoder,
+			Decoder: zstdDecoder,
 			Config: compression.Config{
 				Type: compression.TypeZSTD,
 				ZSTD: &compression.ZSTDConfig{
 					Level:       compression.DefaultZSTDLevel,
+					WindowSize:  compression.DefaultZSDTWindowSize,
 					Concurrency: 4,
 				},
 			},
@@ -98,6 +102,7 @@ func TestReader(t *testing.T) {
 	}
 
 	// Random data for compression
+	// The data is written 2x, in halves, to simulate reopen of the file when writing.
 	dataLen := 4 * datasize.MB
 	step := 100 * datasize.KB
 	data := make([]byte, dataLen.Bytes())
@@ -126,7 +131,8 @@ func TestReader(t *testing.T) {
 			t.Parallel()
 
 			var out bytes.Buffer
-			w := tc.Encoder(t, &out)
+			w, err := New(&out, tc.Config)
+			require.NoError(t, err)
 
 			// Write the first half
 			pos := datasize.ByteSize(0)
@@ -140,7 +146,8 @@ func TestReader(t *testing.T) {
 			}
 
 			// Reopen writer - simulates recovery from the outage
-			w = tc.Encoder(t, &out)
+			w, err = New(&out, tc.Config)
+			require.NoError(t, err)
 
 			// Write the second half
 			for ; pos < dataLen; pos += step {
@@ -152,15 +159,9 @@ func TestReader(t *testing.T) {
 				assert.NoError(t, v.Close())
 			}
 
-			// Create reader
-			r, err := New(&out, tc.Config)
-			require.NoError(t, err)
-
-			// Decode all
-			decoded, err := io.ReadAll(r)
-			assert.NoError(t, err)
-
+			// Decode written data and compare.
 			// Compare md5 checksum, because assert library cannot diff such big data.
+			decoded, err := io.ReadAll(tc.Decoder(t, &out))
 			assert.NoError(t, err)
 			assert.Equal(t, md5.Sum(data), md5.Sum(decoded))
 		})

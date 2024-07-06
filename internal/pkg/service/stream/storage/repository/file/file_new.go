@@ -2,9 +2,9 @@ package file
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
