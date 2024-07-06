@@ -10,7 +10,7 @@ import (
 type EncoderFactory func(cfg Config, out io.Writer, slice *model.Slice) (Encoder, error)
 
 // Encoder writers record values as bytes to the underlying writer.
-// It is used inside the Writer.
+// It is used inside the Writer pipeline, at the beginning, before the compression.
 type Encoder interface {
 	WriteRecord(values []any) error
 	Flush() error

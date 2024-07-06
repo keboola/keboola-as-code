@@ -25,7 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Writer writes values as bytes to the slice file on the disk, in the configured format and compression.
+// Writer writes record values as bytes to output network connection, using the configured Encoder and compression.
 type Writer interface {
 	StatisticsProvider
 
