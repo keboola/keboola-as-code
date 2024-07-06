@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	fastcsv2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format/csv/fastcsv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -18,7 +18,7 @@ type Writer struct {
 // NewWriter creates CSV writers pool and implements format.Writer
 // The order of the lines is not preserved, because we use the writers pool,
 // but also because there are several source nodes with a load balancer in front of them.
-func NewWriter(cfg format.Config, out io.Writer, slice *model.Slice) (format.Encoder, error) {
+func NewWriter(cfg encoding.Config, out io.Writer, slice *model.Slice) (encoding.Encoder, error) {
 	return &Writer{
 		columns: slice.Columns,
 		pool:    fastcsv2.NewWritersPool(out, cfg.Concurrency),

@@ -1,4 +1,4 @@
-package format
+package encoding
 
 // Config configures the local writer.
 type Config struct {
@@ -9,4 +9,10 @@ type Config struct {
 // It may be part of a Sink definition to allow modification of the default configuration.
 type ConfigPatch struct {
 	Concurrency *int `json:"concurrency,omitempty"`
+}
+
+func NewConfig() Config {
+	return Config{
+		Concurrency: 0, // 0 = auto = CPU cores
+	}
 }

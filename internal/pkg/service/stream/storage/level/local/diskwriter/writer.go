@@ -13,10 +13,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/count"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/limitbuffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/size"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writechain"
@@ -64,7 +64,7 @@ type writer struct {
 	chain  *writechain.Chain
 	syncer *writesync.Syncer
 
-	formatWriter format.Encoder
+	formatWriter encoding.Encoder
 	// closed blocks new writes
 	closed chan struct{}
 	// writeWg waits for in-progress writes before Close
@@ -84,7 +84,7 @@ func New(
 	slice *model.Slice,
 	file writechain.File,
 	syncerFactory writesync.SyncerFactory,
-	formatWriterFactory format.EncoderFactory,
+	formatWriterFactory encoding.EncoderFactory,
 	writerEvents *events.Events[Writer],
 ) (out Writer, err error) {
 	w := &writer{

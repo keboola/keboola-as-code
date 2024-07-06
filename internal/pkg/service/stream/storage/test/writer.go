@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
@@ -29,19 +29,19 @@ type DummyWriter struct {
 
 // NotifyWriter notifies about successful writes.
 type NotifyWriter struct {
-	format.Encoder
+	encoding.Encoder
 	writeDone chan struct{}
 }
 
-func DummyWriterFactory(cfg format.Config, out io.Writer, slice *model.Slice) (format.Encoder, error) {
+func DummyWriterFactory(cfg encoding.Config, out io.Writer, slice *model.Slice) (encoding.Encoder, error) {
 	return NewDummyWriter(cfg, out, slice), nil
 }
 
-func NewDummyWriter(_ format.Config, out io.Writer, _ *model.Slice) *DummyWriter {
+func NewDummyWriter(_ encoding.Config, out io.Writer, _ *model.Slice) *DummyWriter {
 	return &DummyWriter{out: out}
 }
 
-func NewNotifyWriter(w format.Encoder, writeDone chan struct{}) *NotifyWriter {
+func NewNotifyWriter(w encoding.Encoder, writeDone chan struct{}) *NotifyWriter {
 	return &NotifyWriter{Encoder: w, writeDone: writeDone}
 }
 
@@ -86,7 +86,7 @@ func NewWriterHelper() *WriterHelper {
 
 // NewDummyWriter implements writer.WriterFactory.
 // See also ExpectWritesCount and TriggerSync methods.
-func (h *WriterHelper) NewDummyWriter(cfg format.Config, out io.Writer, slice *model.Slice) (format.Encoder, error) {
+func (h *WriterHelper) NewDummyWriter(cfg encoding.Config, out io.Writer, slice *model.Slice) (encoding.Encoder, error) {
 	return NewNotifyWriter(NewDummyWriter(cfg, out, slice), h.writeDone), nil
 }
 

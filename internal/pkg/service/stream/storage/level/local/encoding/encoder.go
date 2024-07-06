@@ -1,4 +1,4 @@
-package format
+package encoding
 
 import (
 	"io"
@@ -15,10 +15,4 @@ type Encoder interface {
 	WriteRecord(values []any) error
 	Flush() error
 	Close() error
-}
-
-func NewConfig() Config {
-	return Config{
-		Concurrency: 0, // 0 = auto = CPU cores
-	}
 }

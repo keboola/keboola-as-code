@@ -19,7 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -78,7 +78,7 @@ func TestWriter_FlushError(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	writerFactory := func(cfg format.Config, out io.Writer, slice *model.Slice) (format.Encoder, error) {
+	writerFactory := func(cfg encoding.Config, out io.Writer, slice *model.Slice) (encoding.Encoder, error) {
 		w := test.NewDummyWriter(cfg, out, slice)
 		w.FlushError = errors.New("some error")
 		return w, nil
@@ -107,7 +107,7 @@ func TestWriter_CloseError(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	writerFactory := func(cfg format.Config, out io.Writer, slice *model.Slice) (format.Encoder, error) {
+	writerFactory := func(cfg encoding.Config, out io.Writer, slice *model.Slice) (encoding.Encoder, error) {
 		w := test.NewDummyWriter(cfg, out, slice)
 		w.CloseError = errors.New("some error")
 		return w, nil
