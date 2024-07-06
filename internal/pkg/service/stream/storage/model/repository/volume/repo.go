@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/volume/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/volume/schema"
 )
 
 // Repository provides database operations with the storage.Metadata entity.

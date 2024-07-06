@@ -14,8 +14,8 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/slice/schema"
+	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/file"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/slice/schema"
 )
 
 // Repository provides database operations with the model.Slice entity.

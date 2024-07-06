@@ -17,8 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/file/schema"
-	volumeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/repository/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/file/schema"
+	volumeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/volume"
 )
 
 // Repository provides database operations with the model.File entity.
