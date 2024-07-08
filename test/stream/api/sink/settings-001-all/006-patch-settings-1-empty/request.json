@@ -1,0 +1,9 @@
+{
+  "path": "/v1/branches/default/sources/my-source/sinks/my-sink/settings",
+  "method": "PATCH",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {}
+}
