@@ -52,7 +52,7 @@ type Chain struct {
 type File interface {
 	io.Writer
 	Sync() error
-	Close() error
+	Close(ctx context.Context) error
 }
 
 func New(logger log.Logger, file File) *Chain {
@@ -129,7 +129,7 @@ func (c *Chain) Close(ctx context.Context) error {
 	}
 
 	// Close the underlying file
-	if err := c.file.Close(); err != nil {
+	if err := c.file.Close(ctx); err != nil {
 		err = errors.Errorf(`cannot close file: %w`, err)
 		c.logger.Error(ctx, err.Error())
 		errs.Append(err)

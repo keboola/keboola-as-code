@@ -20,7 +20,7 @@ const (
 	benchmarkUniqueRows = 1000
 )
 
-// BenchmarkCSVWriter benchmarks different configuration options of the csv.Writer.
+// BenchmarkCSVWriter benchmarks different configuration options of the csv.Encoder.
 //
 // Run
 //

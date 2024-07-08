@@ -5,30 +5,22 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
-	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
-	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testcase"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -40,159 +32,27 @@ type fileCompression struct {
 	FileDecoder func(t *testing.T, r io.Reader) io.Reader
 }
 
-func TestCSVWriter_InvalidNumberOfValues(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// Open volume
-	clk := clock.New()
-	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
-	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clk, events.New[diskwriter.Writer](), diskwriter.NewConfig(), spec)
-	require.NoError(t, err)
-
-	// Create slice
-	slice := testcase.NewTestSlice(vol)
-	slice.Type = model.FileTypeCSV
-	slice.Columns = column.Columns{column.UUID{Name: "id"}, column.Body{Name: "body"}} // <<<<< two columns
-	val := validator.New()
-	assert.NoError(t, val.Validate(ctx, slice))
-
-	// Create writer
-	w, err := vol.OpenWriter(slice)
-	require.NoError(t, err)
-
-	// Write invalid number of values
-	err = w.WriteRecord(clk.Now(), []any{"foo"})
-	if assert.Error(t, err) {
-		assert.Equal(t, `expected 2 columns in the row, given 1`, err.Error())
-	}
-
-	// Close volume
-	assert.NoError(t, vol.Close(ctx))
-}
-
 func TestCSVWriter_CastToStringError(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// Open volume
-	clk := clock.New()
-	spec := volume.Spec{NodeID: "my-node", Path: t.TempDir(), Type: "hdd", Label: "001"}
-	vol, err := writerVolume.Open(ctx, log.NewNopLogger(), clock.New(), events.New[diskwriter.Writer](), diskwriter.NewConfig(), spec)
-	require.NoError(t, err)
+	ctx := context.Background()
 
 	// Create slice
-	slice := testcase.NewTestSlice(vol)
+	slice := test.NewSlice()
 	slice.Type = model.FileTypeCSV
-	slice.Columns = column.Columns{column.UUID{Name: "id"}}
+	slice.Columns = column.Columns{column.UUID{Name: "id"}, column.Body{Name: "body"}} // <<<<< two columns
 	val := validator.New()
-	assert.NoError(t, val.Validate(ctx, slice))
+	require.NoError(t, val.Validate(ctx, slice))
 
 	// Create writer
-	w, err := vol.OpenWriter(slice)
+	w, err := csv.NewEncoder(0, io.Discard, slice)
 	require.NoError(t, err)
 
 	// Write invalid number of values
-	err = w.WriteRecord(clk.Now(), []any{struct{}{}})
+	err = w.WriteRecord([]any{struct{}{}})
 	if assert.Error(t, err) {
 		assert.Equal(t, `cannot convert value of the column "id" to the string: unable to cast struct {}{} of type struct {} to string`, err.Error())
 	}
-
-	// Close volume
-	assert.NoError(t, vol.Close(ctx))
-}
-
-// TestCSVWriter_Close_WaitForWrites tests that the Close method waits for writes in progress
-// and rows counter backup file contains the right value after the Close - count of the written rows.
-func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// Create lock to defer file sync
-	syncLock := &sync.Mutex{}
-
-	// Open volume
-	volPath := t.TempDir()
-	vol, err := writerVolume.Open(
-		ctx,
-		log.NewNopLogger(),
-		clock.New(),
-		events.New[diskwriter.Writer](),
-		diskwriter.NewConfig(),
-		volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "001"},
-		writerVolume.WithFileOpener(func(filePath string) (writerVolume.File, error) {
-			file, err := writerVolume.DefaultFileOpener(filePath)
-			if err != nil {
-				return nil, err
-			}
-			return &testFile{File: file, SyncLock: syncLock}, nil
-		}))
-	require.NoError(t, err)
-
-	// Create slice
-	slice := testcase.NewTestSlice(vol)
-	slice.Type = model.FileTypeCSV
-	slice.Columns = column.Columns{column.UUID{Name: "id"}}
-	slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
-	slice.LocalStorage.DiskSync.Wait = true
-	// prevent sync during the test
-	slice.LocalStorage.DiskSync.CheckInterval = duration.From(2 * time.Second)
-	slice.LocalStorage.DiskSync.IntervalTrigger = duration.From(2 * time.Second)
-	val := validator.New()
-	assert.NoError(t, val.Validate(ctx, slice))
-	filePath := filepath.Join(volPath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
-
-	// Create writer
-	w, err := vol.OpenWriter(slice)
-	require.NoError(t, err)
-
-	// Block sync
-	syncLock.Lock()
-
-	// Start two parallel writes
-	now := utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
-	go func() { assert.NoError(t, w.WriteRecord(now, []any{"value"})) }()
-	go func() { assert.NoError(t, w.WriteRecord(now, []any{"value"})) }()
-	assert.Eventually(t, func() bool {
-		return w.AcceptedWrites() == 2
-	}, time.Second, 5*time.Millisecond)
-
-	// Close writer
-	closeDone := make(chan struct{})
-	go func() {
-		defer close(closeDone)
-		assert.NoError(t, w.Close(ctx))
-	}()
-
-	// Unblock sync and wait for Close
-	syncLock.Unlock()
-	select {
-	case <-closeDone:
-		// ok
-	case <-time.After(time.Second):
-		assert.Fail(t, "timeout")
-	}
-
-	// Check file content
-	content, err := os.ReadFile(filePath)
-	assert.NoError(t, err)
-	assert.Equal(t, "\"value\"\n\"value\"\n", string(content))
-
-	// Check statistics
-
-	assert.Equal(t, uint64(2), w.AcceptedWrites())
-	assert.Equal(t, uint64(2), w.CompletedWrites())
-	assert.Equal(t, "2000-01-01T00:00:00.000Z", w.FirstRecordAt().String())
-	assert.Equal(t, "2000-01-01T00:00:00.000Z", w.LastRecordAt().String())
-
-	// Close volume
-	assert.NoError(t, vol.Close(ctx))
 }
 
 // nolint:tparallel // false positive
@@ -338,15 +198,4 @@ func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, p
 		FileDecoder: comp.FileDecoder,
 		Validator:   validateFn,
 	}
-}
-
-type testFile struct {
-	writerVolume.File
-	SyncLock *sync.Mutex
-}
-
-func (f *testFile) Sync() error {
-	f.SyncLock.Lock()
-	defer f.SyncLock.Unlock()
-	return f.File.Sync()
 }

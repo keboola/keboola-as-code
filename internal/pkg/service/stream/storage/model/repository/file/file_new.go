@@ -20,10 +20,10 @@ func (r *Repository) newFile(cfg level.Config, k model.FileKey, sink definition.
 	// Validate compression type.
 	// Other parts of the system are also prepared for other types of compression,
 	// but now only GZIP is supported in the Keboola platform.
-	switch cfg.Local.Compression.Type {
+	switch cfg.Local.Encoding.Compression.Type {
 	case compression.TypeNone, compression.TypeGZIP: // ok
 	default:
-		return model.File{}, errors.Errorf(`file compression type "%s" is not supported`, cfg.Local.Compression.Type)
+		return model.File{}, errors.Errorf(`file compression type "%s" is not supported`, cfg.Local.Encoding.Compression.Type)
 	}
 
 	localDir := k.String()
