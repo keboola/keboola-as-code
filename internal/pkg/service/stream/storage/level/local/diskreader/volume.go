@@ -1,9 +1,10 @@
-package volume
+package diskreader
 
 import (
 	"context"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -13,9 +14,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -32,10 +33,10 @@ type Volume struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	config       config
+	config       Config
 	logger       log.Logger
 	clock        clock.Clock
-	readerEvents *events.Events[diskreader.Reader]
+	readerEvents *events.Events[Reader]
 
 	fsLock *flock.Flock
 
@@ -43,15 +44,19 @@ type Volume struct {
 	readers     map[string]*readerRef
 }
 
+type readerRef struct {
+	Reader
+}
+
 // Open volume for writing.
 //   - It is checked that the volume path exists.
 //   - The IDFile is loaded.
 //   - If the IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The LockFile ensures only one opening of the volume for reading.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, readerEvents *events.Events[diskreader.Reader], spec volume.Spec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, readerEvents *events.Events[Reader], spec volume.Spec) (*Volume, error) {
 	v := &Volume{
 		spec:         spec,
-		config:       newConfig(opts),
+		config:       config,
 		logger:       logger,
 		clock:        clock,
 		readerEvents: readerEvents.Clone(), // clone events passed from volumes collection, so volume specific listeners can be added
@@ -111,7 +116,7 @@ func (v *Volume) ID() volume.ID {
 	return v.id
 }
 
-func (v *Volume) Events() *events.Events[diskreader.Reader] {
+func (v *Volume) Events() *events.Events[Reader] {
 	return v.readerEvents
 }
 
@@ -120,6 +125,91 @@ func (v *Volume) Metadata() volume.Metadata {
 		ID:   v.id,
 		Spec: v.spec,
 	}
+}
+
+func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
+	// Check context
+	if err := v.ctx.Err(); err != nil {
+		return nil, errors.PrefixErrorf(err, `reader for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
+	}
+
+	// Setup logger
+	logger := v.logger.With(
+		attribute.String("projectId", slice.ProjectID.String()),
+		attribute.String("branchId", slice.BranchID.String()),
+		attribute.String("sourceId", slice.SourceID.String()),
+		attribute.String("sinkId", slice.SinkID.String()),
+		attribute.String("fileId", slice.FileID.String()),
+		attribute.String("sliceId", slice.SliceID.String()),
+	)
+
+	// Check if the reader already exists, if not, register an empty reference to unlock immediately
+	ref, exists := v.addReader(slice.SliceKey)
+	if exists {
+		return nil, errors.Errorf(`reader for slice "%s" already exists`, slice.SliceKey.String())
+	}
+
+	// Close resources on a creation error
+	var file File
+	defer func() {
+		// Ok, update reference
+		if err == nil {
+			ref.Reader = r
+			return
+		}
+
+		// Close resources
+		if file != nil {
+			_ = file.Close()
+		}
+
+		// Unregister the reader
+		v.removeReader(slice.SliceKey)
+	}()
+
+	// Open file
+	dirPath := filepath.Join(v.Path(), slice.LocalStorage.Dir)
+	filePath := filepath.Join(dirPath, slice.LocalStorage.Filename)
+	logger = logger.With(attribute.String("file.path", filePath))
+	file, err = v.config.FileOpener.OpenFile(filePath)
+	if err == nil {
+		logger.Debug(v.ctx, "opened file")
+	} else {
+		logger.Errorf(v.ctx, `cannot open file "%s": %s`, filePath, err)
+		return nil, err
+	}
+
+	// Init reader and chain
+	r, err = New(v.ctx, logger, slice, file, v.readerEvents)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register writer close callback
+	r.Events().OnClose(func(r Reader, _ error) error {
+		v.removeReader(r.SliceKey())
+		return nil
+	})
+
+	return r, nil
+}
+
+func (v *Volume) Readers() (out []Reader) {
+	v.readersLock.Lock()
+	defer v.readersLock.Unlock()
+
+	out = make([]Reader, 0, len(v.readers))
+	for _, r := range v.readers {
+		if r.Reader != nil { // nil == creating a new reader
+			out = append(out, r)
+		}
+	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].SliceKey().String() < out[j].SliceKey().String()
+	})
+
+	return out
 }
 
 func (v *Volume) Close(ctx context.Context) error {
@@ -158,7 +248,7 @@ func (v *Volume) Close(ctx context.Context) error {
 // The file is created by the writer.Open
 // and this reader.Open is waiting for it.
 func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
-	ctx, cancel := v.clock.WithTimeout(ctx, v.config.waitForVolumeIDTimeout)
+	ctx, cancel := v.clock.WithTimeout(ctx, v.config.WaitForVolumeIDTimeout)
 	defer cancel()
 
 	ticker := v.clock.Ticker(WaitForVolumeIDInterval)
@@ -183,4 +273,26 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
 			return "", errors.PrefixErrorf(ctx.Err(), `cannot open volume ID file "%s"`, path)
 		}
 	}
+}
+
+func (v *Volume) addReader(k model.SliceKey) (ref *readerRef, exists bool) {
+	v.readersLock.Lock()
+	defer v.readersLock.Unlock()
+
+	key := k.String()
+	ref, exists = v.readers[key]
+	if !exists {
+		// Register a new empty reference, it will be initialized later.
+		// Empty reference is used to make possible to create multiple writers without being blocked by the lock.
+		ref = &readerRef{}
+		v.readers[key] = ref
+	}
+
+	return ref, exists
+}
+
+func (v *Volume) removeReader(k model.SliceKey) {
+	v.readersLock.Lock()
+	defer v.readersLock.Unlock()
+	delete(v.readers, k.String())
 }

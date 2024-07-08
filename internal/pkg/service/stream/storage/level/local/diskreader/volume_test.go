@@ -1,4 +1,4 @@
-package volume_test
+package diskreader_test
 
 import (
 	"context"
@@ -9,13 +9,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/gofrs/flock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -28,7 +31,7 @@ func TestOpenVolume_Error_DirPermissions(t *testing.T) {
 		t.Skip("permissions work different on Windows")
 	}
 
-	tc := test.NewReaderVolumeTestCase(t)
+	tc := newVolumeTestCase(t)
 
 	// Volume directory is readonly
 	assert.NoError(t, os.Chmod(tc.VolumePath, 0o440))
@@ -47,10 +50,10 @@ func TestOpenVolume_Error_VolumeIDFilePermissions(t *testing.T) {
 		t.Skip("permissions work different on Windows")
 	}
 
-	tc := test.NewReaderVolumeTestCase(t)
+	tc := newVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filepath.Join(tc.VolumePath, model.IDFile)
+	path := filepath.Join(tc.VolumePath, volumeModel.IDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 
@@ -63,17 +66,17 @@ func TestOpenVolume_Error_VolumeIDFilePermissions(t *testing.T) {
 // TestOpenVolume_NonExistentPath tests successful opening of the volume and filesystem locks.
 func TestOpenVolume_Ok(t *testing.T) {
 	t.Parallel()
-	tc := test.NewReaderVolumeTestCase(t)
+	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, model.IDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
 
 	vol, err := tc.OpenVolume()
 	assert.NoError(t, err)
-	assert.Equal(t, model.ID("abcdef"), vol.ID())
+	assert.Equal(t, volumeModel.ID("abcdef"), vol.ID())
 
 	// Lock is locked by the volume
-	lock := flock.New(filepath.Join(tc.VolumePath, volume.LockFile))
+	lock := flock.New(filepath.Join(tc.VolumePath, diskreader.LockFile))
 	locked, err := lock.TryLock()
 	assert.False(t, locked)
 	assert.NoError(t, err)
@@ -98,32 +101,34 @@ func TestOpenVolume_Ok(t *testing.T) {
 // TestOpenVolume_WaitForVolumeIDFile_Ok tests that volume should wait for volume ID file.
 func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	t.Parallel()
-	tc := test.NewReaderVolumeTestCase(t)
+	tc := newVolumeTestCase(t)
+
+	timeout := 5 * diskreader.WaitForVolumeIDInterval
+	tc.Config.WaitForVolumeIDTimeout = timeout
 
 	// Start opening the volume in background
-	var vol *volume.Volume
+	var vol *diskreader.Volume
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		var err error
-		timeout := 5 * volume.WaitForVolumeIDInterval
-		vol, err = tc.OpenVolume(volume.WithWaitForVolumeIDTimeout(timeout))
+		vol, err = tc.OpenVolume()
 		assert.NoError(t, err)
-		assert.Equal(t, model.ID("abcdef"), vol.ID())
+		assert.Equal(t, volumeModel.ID("abcdef"), vol.ID())
 	}()
 
 	// Wait for 2 checks
 	assert.Eventually(t, func() bool {
 		return strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file") == 1
 	}, time.Second, 5*time.Millisecond)
-	tc.Clock.Add(volume.WaitForVolumeIDInterval)
+	tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
 	assert.Eventually(t, func() bool {
 		return strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file") == 2
 	}, time.Second, 5*time.Millisecond)
 
 	// Create the volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, model.IDFile), []byte("abcdef"), 0o640))
-	tc.Clock.Add(volume.WaitForVolumeIDInterval)
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
+	tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
 
 	// Wait for the goroutine
 	select {
@@ -133,7 +138,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	}
 
 	// Lock is locked by the volume
-	lock := flock.New(filepath.Join(tc.VolumePath, volume.LockFile))
+	lock := flock.New(filepath.Join(tc.VolumePath, diskreader.LockFile))
 	locked, err := lock.TryLock()
 	assert.False(t, locked)
 	assert.NoError(t, err)
@@ -160,17 +165,18 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 // TestOpenVolume_WaitForVolumeIDFile_Ok tests a timeout when waiting for volume ID file.
 func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 	t.Parallel()
-	tc := test.NewReaderVolumeTestCase(t)
+	tc := newVolumeTestCase(t)
 
 	intervals := 4
 	timeoutExtra := 1 * time.Millisecond
-	timeout := time.Duration(intervals)*volume.WaitForVolumeIDInterval + timeoutExtra
+	timeout := time.Duration(intervals)*diskreader.WaitForVolumeIDInterval + timeoutExtra
+	tc.Config.WaitForVolumeIDTimeout = timeout
 
 	// Start opening the volume in background
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		_, err := tc.OpenVolume(volume.WithWaitForVolumeIDTimeout(timeout))
+		_, err := tc.OpenVolume()
 		if assert.Error(t, err) {
 			wildcards.Assert(t, "cannot open volume ID file \"%s\":\n- context deadline exceeded", err.Error())
 		}
@@ -181,7 +187,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 		assert.Eventually(t, func() bool {
 			return strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file") == i
 		}, time.Second, 5*time.Millisecond)
-		tc.Clock.Add(volume.WaitForVolumeIDInterval)
+		tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
 	}
 	tc.Clock.Add(timeoutExtra)
 
@@ -206,10 +212,10 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 // TestOpenVolume_VolumeLock tests that only one volume instance can be active at a time.
 func TestOpenVolume_VolumeLock(t *testing.T) {
 	t.Parallel()
-	tc := test.NewReaderVolumeTestCase(t)
+	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, model.IDFile), []byte("abcdef"), 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
 
 	// Open volume - first instance - ok
 	vol, err := tc.OpenVolume()
@@ -229,17 +235,18 @@ func TestOpenVolume_VolumeLock(t *testing.T) {
 func TestVolume_Close_Errors(t *testing.T) {
 	t.Parallel()
 
-	tc := test.NewReaderVolumeTestCase(t)
-
-	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, model.IDFile), []byte("abcdef"), 0o640))
-
-	// Open volume, replace file opener
-	vol, err := tc.OpenVolume(volume.WithFileOpener(func(filePath string) (volume.File, error) {
-		f := test.NewReaderTestFile(strings.NewReader("foo bar"))
+	tc := newVolumeTestCase(t)
+	tc.Config.FileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
+		f := newTestFile(strings.NewReader("foo bar"))
 		f.CloseError = errors.New("some close error")
 		return f, nil
-	}))
+	})
+
+	// Create volume ID file
+	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
+
+	// Open volume, replace file opener
+	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
 	// Open two writers
@@ -261,4 +268,50 @@ func TestVolume_Close_Errors(t *testing.T) {
     - cannot close file: some close error
 `), err.Error())
 	}
+}
+
+// volumeTestCase is a helper to open disk reader volume in tests.
+type volumeTestCase struct {
+	TB           testing.TB
+	Ctx          context.Context
+	Logger       log.DebugLogger
+	Clock        *clock.Mock
+	Config       diskreader.Config
+	VolumeNodeID string
+	VolumePath   string
+	VolumeType   string
+	VolumeLabel  string
+}
+
+func newVolumeTestCase(tb testing.TB) *volumeTestCase {
+	tb.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	tb.Cleanup(func() {
+		cancel()
+	})
+
+	logger := log.NewDebugLogger()
+	tmpDir := tb.TempDir()
+
+	return &volumeTestCase{
+		TB:           tb,
+		Ctx:          ctx,
+		Logger:       logger,
+		Clock:        clock.NewMock(),
+		Config:       diskreader.NewConfig(),
+		VolumeNodeID: "my-node",
+		VolumePath:   tmpDir,
+		VolumeType:   "hdd",
+		VolumeLabel:  "1",
+	}
+}
+
+func (tc *volumeTestCase) OpenVolume() (*diskreader.Volume, error) {
+	info := volumeModel.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
+	return diskreader.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Config, events.New[diskreader.Reader](), info)
+}
+
+func (tc *volumeTestCase) AssertLogs(expected string) bool {
+	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }

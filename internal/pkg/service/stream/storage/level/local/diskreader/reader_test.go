@@ -4,24 +4,29 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/reader"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
+	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // TestVolume_NewReaderFor_Ok tests Volume.OpenReader method and Reader getters.
 func TestVolume_NewReaderFor_Ok(t *testing.T) {
 	t.Parallel()
-	tc := test.NewReaderTestCase(t)
+	tc := newReaderTestCase(t)
 
 	r, err := tc.NewReader()
 	require.NoError(t, err)
@@ -45,7 +50,7 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 // TestVolume_NewReaderFor_Duplicate tests that only one reader for a slice can exist simultaneously.
 func TestVolume_NewReaderFor_Duplicate(t *testing.T) {
 	t.Parallel()
-	tc := test.NewReaderTestCase(t)
+	tc := newReaderTestCase(t)
 
 	// Create the writer first time - ok
 	w, err := tc.NewReader()
@@ -66,7 +71,7 @@ func TestVolume_NewReaderFor_Duplicate(t *testing.T) {
 // TestVolume_NewReaderFor_ClosedVolume tests that a new reader cannot be created on closed volume.
 func TestVolume_NewReaderFor_ClosedVolume(t *testing.T) {
 	t.Parallel()
-	tc := test.NewReaderTestCase(t)
+	tc := newReaderTestCase(t)
 
 	// Open volume
 	vol, err := tc.OpenVolume()
@@ -162,7 +167,7 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 	}
 
 	// Setup slice
-	rtc := test.NewReaderTestCase(t)
+	rtc := newReaderTestCase(t)
 	rtc.SliceData = localData.Bytes()
 	rtc.Slice.LocalStorage.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
@@ -217,17 +222,20 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 	}
 
 	// Setup slice
-	rtc := test.NewReaderTestCase(t)
+	rtc := newReaderTestCase(t)
 	rtc.Slice.LocalStorage.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
-	// Create reader
+	// Replace file opener
 	readError := errors.New("some read error")
-	r, err := rtc.NewReader(volume.WithFileOpener(func(filePath string) (volume.File, error) {
-		f := test.NewReaderTestFile(localData)
+	rtc.Config.FileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
+		f := newTestFile(localData)
 		f.ReadError = readError
 		return f, nil
-	}))
+	})
+
+	// Create reader
+	r, err := rtc.NewReader()
 	require.NoError(t, err)
 
 	// Read all
@@ -265,17 +273,20 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 	}
 
 	// Setup slice
-	rtc := test.NewReaderTestCase(t)
+	rtc := newReaderTestCase(t)
 	rtc.Slice.LocalStorage.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
-	// Create reader
+	// Replace file opener
 	closeError := errors.New("some close error")
-	r, err := rtc.NewReader(volume.WithFileOpener(func(filePath string) (volume.File, error) {
-		f := test.NewReaderTestFile(localData)
+	rtc.Config.FileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
+		f := newTestFile(localData)
 		f.CloseError = closeError
 		return f, nil
-	}))
+	})
+
+	// Create reader
+	r, err := rtc.NewReader()
 	require.NoError(t, err)
 
 	// Read all
@@ -300,4 +311,82 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, "chain close error: cannot close file: some close error", err.Error())
 	}
+}
+
+// readerTestCase is a helper to open disk reader in tests.
+type readerTestCase struct {
+	*volumeTestCase
+	Volume    *diskreader.Volume
+	Slice     *model.Slice
+	SliceData []byte
+}
+
+func newReaderTestCase(tb testing.TB) *readerTestCase {
+	tb.Helper()
+	tc := &readerTestCase{}
+	tc.volumeTestCase = newVolumeTestCase(tb)
+	tc.Slice = test.NewSlice()
+	return tc
+}
+
+func (tc *readerTestCase) OpenVolume() (*diskreader.Volume, error) {
+	// Write file with the ID
+	require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("my-volume"), 0o640))
+
+	vol, err := tc.volumeTestCase.OpenVolume()
+	tc.Volume = vol
+
+	return vol, err
+}
+
+func (tc *readerTestCase) NewReader() (diskreader.Reader, error) {
+	if tc.Volume == nil {
+		// Open volume
+		vol, err := tc.OpenVolume()
+		require.NoError(tc.TB, err)
+
+		// Close volume after the test
+		tc.TB.Cleanup(func() {
+			assert.NoError(tc.TB, vol.Close(context.Background()))
+		})
+	}
+
+	// Slice definition must be valid
+	val := validator.New()
+	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
+
+	// Write slice data
+	path := filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
+	assert.NoError(tc.TB, os.MkdirAll(filepath.Dir(path), 0o750))
+	assert.NoError(tc.TB, os.WriteFile(path, tc.SliceData, 0o640))
+
+	r, err := tc.Volume.OpenReader(tc.Slice)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// testFile provides implementation of the File interface for tests.
+type testFile struct {
+	reader     io.Reader
+	ReadError  error
+	CloseError error
+}
+
+func newTestFile(r io.Reader) *testFile {
+	return &testFile{reader: r}
+}
+
+func (r *testFile) Read(p []byte) (n int, err error) {
+	n, err = r.reader.Read(p)
+	if r.ReadError != nil && (n == 0 || errors.Is(err, io.EOF)) {
+		return 0, r.ReadError
+	}
+	return n, err
+}
+
+func (r *testFile) Close() error {
+	return r.CloseError
 }

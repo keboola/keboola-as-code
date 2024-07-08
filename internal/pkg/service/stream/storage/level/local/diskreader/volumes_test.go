@@ -1,4 +1,4 @@
-package volume_test
+package diskreader_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -41,11 +41,11 @@ func TestVolumes(t *testing.T) {
 
 	// Start volumes opening
 	var err error
-	var volumes *volume.Volumes
+	var volumes *diskreader.Volumes
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = volume.OpenVolumes(ctx, d, "my-node", volumesPath)
+		volumes, err = diskreader.OpenVolumes(ctx, d, "my-node", volumesPath, mock.TestConfig().Storage.Level.Local.Reader)
 		assert.NoError(t, err)
 	}()
 
