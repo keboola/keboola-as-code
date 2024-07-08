@@ -1,13 +1,30 @@
 package diskwriter
 
-// Config configures the local writer.
-type Config struct{}
+import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
+)
 
-// ConfigPatch is same as the Config, but with optional/nullable fields.
-// It may be part of a Sink definition to allow modification of the default configuration.
-type ConfigPatch struct{}
+type Config struct {
+	// WatchDrainFile activates watching for drainFile changes (creation/deletion),
+	// otherwise the file is checked only on the volume opening.
+	// Default Linux OS limit is 128 inotify watchers = 128 volumes.
+	// The value is sufficient for production but insufficient parallel for tests.
+	WatchDrainFile bool
+	// Allocator allocates a free disk space for a file.
+	// A custom implementation can be useful for tests.
+	Allocator diskalloc.Allocator
+	// FileOpener provides file opening, a custom implementation can be useful for tests.
+	// A custom implementation can be useful for tests.
+	FileOpener FileOpener
+}
 
-// NewConfig provides default configuration.
+type ConfigPatch struct {
+}
+
 func NewConfig() Config {
-	return Config{}
+	return Config{
+		WatchDrainFile: true,
+		Allocator:      diskalloc.DefaultAllocator{},
+		FileOpener:     DefaultFileOpener,
+	}
 }

@@ -3,6 +3,7 @@ package testcase
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"io"
 	"os"
 	"path/filepath"
@@ -55,17 +56,17 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	d, mock := dependencies.NewMockedLocalStorageScope(t)
 	cfg := mock.TestConfig()
+	cfg.Storage.Level.Local.Writer.WatchDrainFile = false
 
 	// Start statistics collector
-	writerEvents := events.New[encoding.Writer]()
-	collector.Start(d, writerEvents, cfg.Storage.Statistics.Collector, cfg.NodeID)
+	encoderEvents := events.New[encoding.Writer]()
+	collector.Start(d, encoderEvents, cfg.Storage.Statistics.Collector, cfg.NodeID)
 
 	// Open volume
-	opts := []writerVolume.Option{writerVolume.WithWatchDrainFile(false)}
 	now := d.Clock().Now()
 	volPath := t.TempDir()
 	spec := volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, d.Logger(), d.Clock(), writerEvents, cfg.Storage.Level.Local, spec, opts...)
+	vol, err := writerVolume.Open(ctx, d.Logger(), d.Clock(), events.New[diskwriter.Writer](), cfg.Storage.Level.Local.Writer, spec)
 	require.NoError(t, err)
 
 	// Create a test slice
@@ -73,8 +74,11 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	filePath := filepath.Join(volPath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
 
 	// Create writer
-	w, err := vol.OpenWriter(slice)
+	_, err = vol.OpenWriter(slice)
 	require.NoError(t, err)
+
+	// Create encoder
+	var encoder encoding.Writer
 
 	// Write all rows batches
 	rowsCount := 0
@@ -91,7 +95,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					assert.NoError(t, w.WriteRecord(now, row))
+					assert.NoError(t, encoder.WriteRecord(now, row))
 				}()
 			}
 			go func() {
@@ -103,7 +107,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			go func() {
 				defer close(done)
 				for _, row := range batch.Rows {
-					assert.NoError(t, w.WriteRecord(now, row))
+					assert.NoError(t, encoder.WriteRecord(now, row))
 				}
 			}()
 		}
@@ -117,13 +121,13 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 		}
 
 		// Simulate pod failure, restart writer
-		require.NoError(t, w.Close(ctx))
-		w, err = vol.OpenWriter(slice)
+		require.NoError(t, encoder.Close(ctx))
+		// w, err = vol.OpenWriter(slice) // TODO
 		require.NoError(t, err)
 	}
 
 	// Close the writer
-	require.NoError(t, w.Close(ctx))
+	require.NoError(t, encoder.Close(ctx))
 
 	// Close volume
 	assert.NoError(t, vol.Close(ctx))

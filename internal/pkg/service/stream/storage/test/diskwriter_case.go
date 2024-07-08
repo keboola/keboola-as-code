@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,34 +14,32 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// WriterVolumeTestCase is a helper to open disk writer volume in tests.
-type WriterVolumeTestCase struct {
-	*WriterHelper
+// DiskWriterVolumeTestCase is a helper to open disk writer volume in tests.
+type DiskWriterVolumeTestCase struct {
 	TB           testing.TB
 	Ctx          context.Context
 	Logger       log.DebugLogger
 	Clock        *clock.Mock
-	Events       *events.Events[encoding.Writer]
+	Events       *events.Events[diskwriter.Writer]
 	Allocator    *Allocator
+	Config       diskwriter.Config
 	VolumeNodeID string
 	VolumePath   string
 	VolumeType   string
 	VolumeLabel  string
 }
 
-// WriterTestCase is a helper to open disk writer in tests.
-type WriterTestCase struct {
-	*WriterVolumeTestCase
+// DiskWriterTestCase is a helper to open disk writer in tests.
+type DiskWriterTestCase struct {
+	*DiskWriterVolumeTestCase
 	Volume *volume.Volume
 	Slice  *model.Slice
 }
@@ -51,15 +50,15 @@ type Allocator struct {
 	Error error
 }
 
-func NewWriterTestCase(tb testing.TB) *WriterTestCase {
+func NewDiskWriterTestCase(tb testing.TB) *DiskWriterTestCase {
 	tb.Helper()
-	tc := &WriterTestCase{}
-	tc.WriterVolumeTestCase = NewWriterVolumeTestCase(tb)
+	tc := &DiskWriterTestCase{}
+	tc.DiskWriterVolumeTestCase = NewDiskWriterVolumeTestCase(tb)
 	tc.Slice = NewSlice()
 	return tc
 }
 
-func NewWriterVolumeTestCase(tb testing.TB) *WriterVolumeTestCase {
+func NewDiskWriterVolumeTestCase(tb testing.TB) *DiskWriterVolumeTestCase {
 	tb.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	tb.Cleanup(func() {
@@ -69,14 +68,19 @@ func NewWriterVolumeTestCase(tb testing.TB) *WriterVolumeTestCase {
 	logger := log.NewDebugLogger()
 	tmpDir := tb.TempDir()
 
-	return &WriterVolumeTestCase{
-		WriterHelper: NewWriterHelper(),
-		TB:           tb,
-		Ctx:          ctx,
-		Logger:       logger,
-		Clock:        clock.NewMock(),
-		Events:       events.New[encoding.Writer](),
-		Allocator:    &Allocator{},
+	allocator := &Allocator{}
+	return &DiskWriterVolumeTestCase{
+		TB:        tb,
+		Ctx:       ctx,
+		Logger:    logger,
+		Clock:     clock.NewMock(),
+		Events:    events.New[diskwriter.Writer](),
+		Allocator: allocator,
+		Config: diskwriter.Config{
+			Allocator:      allocator,
+			WatchDrainFile: false,
+			FileOpener:     diskwriter.DefaultFileOpener,
+		},
 		VolumeNodeID: "my-node",
 		VolumePath:   tmpDir,
 		VolumeType:   "hdd",
@@ -84,19 +88,19 @@ func NewWriterVolumeTestCase(tb testing.TB) *WriterVolumeTestCase {
 	}
 }
 
-func (tc *WriterTestCase) OpenVolume(opts ...volume.Option) (*volume.Volume, error) {
-	vol, err := tc.WriterVolumeTestCase.OpenVolume(opts...)
+func (tc *DiskWriterTestCase) OpenVolume() (*volume.Volume, error) {
+	vol, err := tc.DiskWriterVolumeTestCase.OpenVolume()
 	tc.Volume = vol
 	return vol, err
 }
 
-func (tc *WriterTestCase) NewWriter(opts ...volume.Option) (encoding.Writer, error) {
+func (tc *DiskWriterTestCase) NewWriter() (diskwriter.Writer, error) {
 	if tc.Volume == nil {
 		// Write file with the ID
 		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("my-volume"), 0o640))
 
 		// Open volume
-		vol, err := tc.OpenVolume(opts...)
+		vol, err := tc.OpenVolume()
 		require.NoError(tc.TB, err)
 
 		// Close volume after the test
@@ -117,23 +121,16 @@ func (tc *WriterTestCase) NewWriter(opts ...volume.Option) (encoding.Writer, err
 	return w, nil
 }
 
-func (tc *WriterTestCase) FilePath() string {
+func (tc *DiskWriterTestCase) FilePath() string {
 	return filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
 }
 
-func (tc *WriterVolumeTestCase) OpenVolume(opts ...volume.Option) (*volume.Volume, error) {
-	opts = append([]volume.Option{
-		volume.WithAllocator(tc.Allocator),
-		volume.WithSyncerFactory(tc.WriterHelper.NewSyncer),
-		volume.WithFormatWriterFactory(tc.WriterHelper.NewDummyWriter),
-		volume.WithWatchDrainFile(false),
-	}, opts...)
-
+func (tc *DiskWriterVolumeTestCase) OpenVolume() (*volume.Volume, error) {
 	spec := volumeModel.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
-	return volume.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, local.NewConfig(), spec, opts...)
+	return volume.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, tc.Config, spec)
 }
 
-func (tc *WriterVolumeTestCase) AssertLogs(expected string) bool {
+func (tc *DiskWriterVolumeTestCase) AssertLogs(expected string) bool {
 	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }
 

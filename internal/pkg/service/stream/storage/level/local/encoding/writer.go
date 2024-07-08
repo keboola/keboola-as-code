@@ -2,6 +2,7 @@ package encoding
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
 	"io"
 	"sync"
 	"time"
@@ -32,10 +33,10 @@ type Writer interface {
 	SliceKey() model.SliceKey
 
 	WriteRecord(timestamp time.Time, values []any) error
-	// Close the writer and sync data to the disk.
-	Close(context.Context) error
 	// Events provides listening to the writer lifecycle.
 	Events() *events.Events[Writer]
+	// Close the writer and sync data to the disk.
+	Close(context.Context) error
 }
 
 type StatisticsProvider interface {
@@ -63,7 +64,7 @@ type writer struct {
 	chain  *writechain.Chain
 	syncer *writesync.Syncer
 
-	formatWriter Encoder
+	encoder encoder.Encoder
 	// closed blocks new writes
 	closed chan struct{}
 	// writeWg waits for in-progress writes before Close
@@ -75,15 +76,13 @@ type writer struct {
 	uncompressedMeter *size.Meter
 }
 
-func New(
+func NewWriter(
 	ctx context.Context,
 	logger log.Logger,
 	clk clock.Clock,
 	cfg Config,
 	slice *model.Slice,
 	file writechain.File,
-	syncerFactory writesync.SyncerFactory,
-	formatWriterFactory EncoderFactory,
 	writerEvents *events.Events[Writer],
 ) (out Writer, err error) {
 	w := &writer{
@@ -174,19 +173,19 @@ func New(
 
 	// Create syncer to trigger sync based on counter and meters from the previous steps
 	{
-		w.syncer = syncerFactory(ctx, logger, clk, slice.LocalStorage.DiskSync, w.chain, w)
+		w.syncer = cfg.SyncerFactory(ctx, logger, clk, slice.LocalStorage.DiskSync, w.chain, w)
 	}
 
 	// Create file format writer.
 	// It is entrypoint of the writers chain.
 	{
-		w.formatWriter, err = formatWriterFactory(cfg, w.chain, w.slice)
+		w.encoder, err = cfg.Encoder.Factory(cfg.Encoder, w.chain, w.slice)
 		if err != nil {
 			return nil, err
 		}
 
 		// Flush/Close the file format writer at first
-		w.chain.PrependFlusherCloser(w.formatWriter)
+		w.chain.PrependFlusherCloser(w.encoder)
 	}
 
 	// Dispatch "open" event
@@ -214,7 +213,7 @@ func (w *writer) WriteRecord(timestamp time.Time, values []any) error {
 	}
 
 	// Format and write table row
-	if err := w.formatWriter.WriteRecord(values); err != nil {
+	if err := w.encoder.WriteRecord(values); err != nil {
 		return err
 	}
 
@@ -274,7 +273,7 @@ func (w *writer) UncompressedSize() datasize.ByteSize {
 func (w *writer) Close(ctx context.Context) error {
 	w.logger.Debug(ctx, "closing disk writer")
 
-	// Prevent new writes
+	// Close only once
 	if w.isClosed() {
 		return errors.New(`writer is already closed`)
 	}
@@ -288,13 +287,13 @@ func (w *writer) Close(ctx context.Context) error {
 		errs.Append(err)
 	}
 
+	// Wait for running writes
+	w.writeWg.Wait()
+
 	// Close writers  chain, it closes all writers, and then sync/close the file.
 	if err := w.chain.Close(ctx); err != nil {
 		errs.Append(err)
 	}
-
-	// Wait for running writes
-	w.writeWg.Wait()
 
 	// Dispatch "close"" event
 	if err := w.events.DispatchOnClose(w, errs.ErrorOrNil()); err != nil {

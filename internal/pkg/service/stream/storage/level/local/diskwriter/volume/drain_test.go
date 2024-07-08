@@ -17,14 +17,15 @@ import (
 // TestOpen_DrainFile_TrueFalse tests that the volume can be blocked for writing by a drain file.
 func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 	t.Parallel()
-	tc := test.NewWriterTestCase(t)
+	tc := test.NewDiskWriterTestCase(t)
+	tc.Config.WatchDrainFile = true
 
 	// Create an empty drain file
 	drainFilePath := filepath.Join(tc.VolumePath, volume.DrainFile)
 	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
 
 	// Type open volume
-	vol, err := tc.OpenVolume(volume.WithWatchDrainFile(true))
+	vol, err := tc.OpenVolume()
 	assert.NoError(t, err)
 	assert.True(t, vol.Drained())
 
@@ -46,10 +47,11 @@ func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 // TestOpen_DrainFile_FalseTrue tests that the volume can be blocked for writing by a drain file.
 func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 	t.Parallel()
-	tc := test.NewWriterTestCase(t)
+	tc := test.NewDiskWriterTestCase(t)
+	tc.Config.WatchDrainFile = true
 
 	// Type open volume
-	vol, err := tc.OpenVolume(volume.WithWatchDrainFile(true))
+	vol, err := tc.OpenVolume()
 	assert.NoError(t, err)
 	assert.False(t, vol.Drained())
 

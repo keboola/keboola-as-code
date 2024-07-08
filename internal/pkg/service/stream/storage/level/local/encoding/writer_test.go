@@ -1,23 +1,25 @@
 package encoding_test
 
 import (
+	"bytes"
 	"context"
+	"github.com/benbjohnson/clock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/manager"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writechain"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
+	"github.com/spf13/cast"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
-	"strings"
 	"sync"
 	"testing"
-
-	"github.com/benbjohnson/clock"
-	"github.com/c2h5oh/datasize"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
@@ -30,7 +32,6 @@ func TestWriter(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cfg := encoding.NewConfig()
 	logger := log.NewDebugLogger()
 	clk := clock.New()
 	dirPath := t.TempDir()
@@ -39,7 +40,10 @@ func TestWriter(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	w, err := encoding.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, test.DummyWriterFactory, events.New[encoding.Writer]())
+	cfg := encoding.NewConfig()
+	cfg.Encoder.Factory = DummyEncoderFactory
+
+	w, err := encoding.NewWriter(ctx, logger, clk, cfg, slice, file, events.New[encoding.Writer]())
 	require.NoError(t, err)
 
 	// Test getters
@@ -68,7 +72,6 @@ func TestWriter_FlushError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cfg := encoding.NewConfig()
 	logger := log.NewDebugLogger()
 	clk := clock.NewMock()
 	dirPath := t.TempDir()
@@ -77,19 +80,20 @@ func TestWriter_FlushError(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	writerFactory := func(cfg encoding.Config, out io.Writer, slice *model.Slice) (encoding.Encoder, error) {
-		w := test.NewDummyWriter(cfg, out, slice)
+	cfg := encoding.NewConfig()
+	cfg.Encoder.Factory = func(cfg encoder.Config, out io.Writer, slice *model.Slice) (encoder.Encoder, error) {
+		w := NewDummyEncoder(cfg, out, slice, nil)
 		w.FlushError = errors.New("some error")
 		return w, nil
 	}
 
-	w, err := encoding.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[encoding.Writer]())
+	w, err := encoding.NewWriter(ctx, logger, clk, cfg, slice, file, events.New[encoding.Writer]())
 	require.NoError(t, err)
 
 	// Test Close method
 	err = w.Close(ctx)
 	if assert.Error(t, err) {
-		assert.Equal(t, "chain sync error:\n- chain flush error:\n  - cannot flush \"*test.DummyWriter\": some error", err.Error())
+		assert.Equal(t, "chain sync error:\n- chain flush error:\n  - cannot flush \"*encoding_test.DummyEncoder\": some error", err.Error())
 	}
 }
 
@@ -97,7 +101,6 @@ func TestWriter_CloseError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cfg := encoding.NewConfig()
 	logger := log.NewDebugLogger()
 	clk := clock.NewMock()
 	dirPath := t.TempDir()
@@ -106,129 +109,60 @@ func TestWriter_CloseError(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	writerFactory := func(cfg encoding.Config, out io.Writer, slice *model.Slice) (encoding.Encoder, error) {
-		w := test.NewDummyWriter(cfg, out, slice)
+	cfg := encoding.NewConfig()
+	cfg.Encoder.Factory = func(cfg encoder.Config, out io.Writer, slice *model.Slice) (encoder.Encoder, error) {
+		w := NewDummyEncoder(cfg, out, slice, nil)
 		w.CloseError = errors.New("some error")
 		return w, nil
 	}
 
-	w, err := encoding.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, events.New[encoding.Writer]())
+	w, err := encoding.NewWriter(ctx, logger, clk, cfg, slice, file, events.New[encoding.Writer]())
 	require.NoError(t, err)
 
 	// Test Close method
 	err = w.Close(ctx)
 	if assert.Error(t, err) {
-		assert.Equal(t, "chain close error:\n- cannot close \"*test.DummyWriter\": some error", err.Error())
+		assert.Equal(t, "chain close error:\n- cannot close \"*encoding_test.DummyEncoder\": some error", err.Error())
 	}
 }
 
 func TestVolume_OpenWriter_Ok(t *testing.T) {
 	t.Parallel()
-	tc := test.NewWriterTestCase(t)
+	tc := NewEncodingTestCase(t)
 
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
-	assert.Len(t, tc.Volume.Writers(), 1)
+	assert.Len(t, tc.Manager.Writers(), 1)
 
 	assert.NoError(t, w.Close(context.Background()))
-	assert.Len(t, tc.Volume.Writers(), 0)
+	assert.Len(t, tc.Manager.Writers(), 0)
 }
 
 func TestVolume_OpenWriter_Duplicate(t *testing.T) {
 	t.Parallel()
-	tc := test.NewWriterTestCase(t)
+	tc := NewEncodingTestCase(t)
 
 	// Create the writer first time - ok
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
-	assert.Len(t, tc.Volume.Writers(), 1)
+	assert.Len(t, tc.Manager.Writers(), 1)
 
 	// Create writer for the same slice again - error
 	_, err = tc.NewWriter()
 	if assert.Error(t, err) {
 		assert.Equal(t, `writer for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z" already exists`, err.Error())
 	}
-	assert.Len(t, tc.Volume.Writers(), 1)
+	assert.Len(t, tc.Manager.Writers(), 1)
 
 	assert.NoError(t, w.Close(context.Background()))
-	assert.Len(t, tc.Volume.Writers(), 0)
-}
-
-func TestVolume_OpenWriter_ClosedVolume(t *testing.T) {
-	t.Parallel()
-	tc := test.NewWriterVolumeTestCase(t)
-	vol, err := tc.OpenVolume()
-	require.NoError(t, err)
-
-	assert.NoError(t, vol.Close(context.Background()))
-
-	_, err = vol.OpenWriter(test.NewSlice())
-	assert.Error(t, err)
-}
-
-func TestVolume_Writer_OpenFile_Ok(t *testing.T) {
-	t.Parallel()
-	tc := test.NewWriterTestCase(t)
-
-	w, err := tc.NewWriter()
-	assert.NoError(t, err)
-	assert.FileExists(t, tc.FilePath())
-
-	assert.NoError(t, w.Close(context.Background()))
-	assert.FileExists(t, tc.FilePath())
-}
-
-func TestVolume_Writer_OpenFile_MkdirError(t *testing.T) {
-	t.Parallel()
-
-	if runtime.GOOS == "windows" {
-		t.Skip("permissions work different on Windows")
-	}
-
-	tc := test.NewWriterTestCase(t)
-
-	// Open volume
-	vol, err := tc.OpenVolume()
-	require.NoError(t, err)
-
-	// Block creating of the slice directory in the volume directory
-	assert.NoError(t, os.Chmod(tc.VolumePath, 0o440))
-
-	_, err = tc.NewWriter()
-	if assert.Error(t, err) {
-		assert.True(t, errors.Is(err, os.ErrPermission))
-	}
-
-	// Revert permission for cleanup
-	assert.NoError(t, os.Chmod(tc.VolumePath, 0o750))
-
-	// Close volume
-	assert.NoError(t, vol.Close(context.Background()))
-}
-
-func TestVolume_Writer_OpenFile_FileError(t *testing.T) {
-	t.Parallel()
-
-	if runtime.GOOS == "windows" {
-		t.Skip("permissions work different on Windows")
-	}
-
-	tc := test.NewWriterTestCase(t)
-
-	// Create read only slice directory
-	assert.NoError(t, os.Mkdir(filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), 0o440))
-
-	_, err := tc.NewWriter()
-	if assert.Error(t, err) {
-		assert.True(t, errors.Is(err, os.ErrPermission))
-	}
+	assert.Len(t, tc.Manager.Writers(), 0)
 }
 
 func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := test.NewWriterTestCase(t)
+	tc := NewEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
@@ -279,12 +213,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Wait()
 
 	// Check file content
-	AssertFileContent(t, tc.FilePath(), `
+	assert.Equal(t, `
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`)
+`, tc.Output.String())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -332,7 +266,7 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := test.NewWriterTestCase(t)
+	tc := NewEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = true
 	w, err := tc.NewWriter()
@@ -381,12 +315,12 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Wait()
 
 	// Check file content
-	AssertFileContent(t, tc.FilePath(), `
+	assert.Equal(t, `
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`)
+`, tc.Output.String())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -425,7 +359,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := test.NewWriterTestCase(t)
+	tc := NewEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
@@ -452,12 +386,12 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
-	AssertFileContent(t, tc.FilePath(), `
+	assert.Equal(t, `
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`)
+`, tc.Output.String())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -502,7 +436,7 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := test.NewWriterTestCase(t)
+	tc := NewEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = false
 	w, err := tc.NewWriter()
@@ -529,12 +463,12 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
-	AssertFileContent(t, tc.FilePath(), `
+	assert.Equal(t, `
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`)
+`, tc.Output.String())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -570,7 +504,7 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := test.NewWriterTestCase(t)
+	tc := NewEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync = writesync.Config{Mode: writesync.ModeDisabled}
 	w, err := tc.NewWriter()
 	assert.NoError(t, err)
@@ -594,12 +528,12 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
-	AssertFileContent(t, tc.FilePath(), `
+	assert.Equal(t, `
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`)
+`, tc.Output.String())
 
 	// Check logs
 	tc.AssertLogs(`
@@ -619,87 +553,182 @@ ghi,jkl,789
 `)
 }
 
-func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	tc := test.NewWriterTestCase(t)
-	tc.Allocator.Error = errors.New("some space allocation error")
-
-	w, err := tc.NewWriter()
-	assert.NoError(t, err)
-	assert.FileExists(t, tc.FilePath())
-
-	// Close writer
-	assert.NoError(t, w.Close(ctx))
-	assert.FileExists(t, tc.FilePath())
-
-	// Check logs
-	tc.AssertLogs(`
-{"level":"info","message":"opening volume"}
-{"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file"}
-{"level":"error","message":"cannot allocate disk space \"10KB\", allocation skipped: some space allocation error"}
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
-{"level":"debug","message":"closing disk writer"}
-`)
+// EncodingTestCase is a helper to open disk writer in tests.
+type EncodingTestCase struct {
+	*writerSyncHelper
+	T       *testing.T
+	Ctx     context.Context
+	Logger  log.DebugLogger
+	Clock   *clock.Mock
+	Events  *events.Events[encoding.Writer]
+	Output  *DummyOutput
+	Manager *manager.Manager
+	Slice   *model.Slice
 }
 
-func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	tc := test.NewWriterTestCase(t)
-	tc.Allocator.Ok = false
-
-	w, err := tc.NewWriter()
-	assert.NoError(t, err)
-	assert.FileExists(t, tc.FilePath())
-
-	// Close writer
-	assert.NoError(t, w.Close(ctx))
-	assert.FileExists(t, tc.FilePath())
-
-	// Check logs
-	tc.AssertLogs(`
-{"level":"info","message":"opening volume"}
-{"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file"}
-{"level":"debug","message":"disk space allocation is not supported"}
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
-{"level":"debug","message":"closing disk writer"}
-`)
+type writerSyncHelper struct {
+	writeDone chan struct{}
+	syncers   []*writesync.Syncer
 }
 
-func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
-	t.Parallel()
+type DummyOutput struct {
+	bytes      bytes.Buffer
+	SyncError  error
+	CloseError error
+}
 
-	ctx := context.Background()
-	tc := test.NewWriterTestCase(t)
-	tc.Slice.LocalStorage.AllocatedDiskSpace = 0
-	w, err := tc.NewWriter(volume.WithAllocator(diskalloc.DefaultAllocator{}))
-	assert.NoError(t, err)
+func NewEncodingTestCase(t *testing.T) *EncodingTestCase {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	t.Cleanup(func() {
+		cancel()
+	})
 
-	// Check file - no allocation
-	allocated, err := diskalloc.Allocated(tc.FilePath())
+	d, mock := dependencies.NewMockedServiceScope(t)
+
+	tc := &EncodingTestCase{
+		T:                t,
+		writerSyncHelper: &writerSyncHelper{writeDone: make(chan struct{}, 100)},
+		Ctx:              ctx,
+		Logger:           mock.DebugLogger(),
+		Clock:            clock.NewMock(),
+		Events:           events.New[encoding.Writer](),
+		Output:           &DummyOutput{},
+		Slice:            test.NewSlice(),
+	}
+
+	cfg := mock.TestConfig().Storage.Level.Local.Encoding
+	cfg.Encoder.Factory = tc.writerSyncHelper.NewDummyEncoder
+	cfg.OutputOpener = func(sliceKey model.SliceKey) (writechain.File, error) {
+		return tc.Output, nil
+	}
+
+	var err error
+	tc.Manager, err = manager.New(d, cfg)
 	require.NoError(t, err)
-	assert.Less(t, allocated, datasize.KB)
 
-	// Close writer
-	assert.NoError(t, w.Close(ctx))
-
-	// Check logs
-	tc.AssertLogs(`
-{"level":"info","message":"opening volume"}
-{"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file"}
-{"level":"debug","message":"disk space allocation is disabled"}
-`)
+	return tc
 }
 
-func AssertFileContent(tb testing.TB, path, expected string) {
+func (tc *EncodingTestCase) NewWriter() (encoding.Writer, error) {
+	// Slice definition must be valid
+	val := validator.New()
+	require.NoError(tc.T, val.Validate(context.Background(), tc.Slice))
+
+	w, err := tc.Manager.OpenWriter(tc.Ctx, tc.Slice)
+	if err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+
+func (tc *EncodingTestCase) AssertLogs(expected string) bool {
+	return tc.Logger.AssertJSONMessages(tc.T, expected)
+}
+
+func (o *DummyOutput) String() string {
+	return o.bytes.String()
+}
+
+func (o *DummyOutput) Write(p []byte) (n int, err error) {
+	return o.bytes.Write(p)
+}
+
+func (o *DummyOutput) Sync() error {
+	return o.SyncError
+}
+
+func (o *DummyOutput) Close() error {
+	return o.CloseError
+}
+
+// NewDummyEncoder implements writer.WriterFactory.
+// See also ExpectWritesCount and TriggerSync methods.
+func (h *writerSyncHelper) NewDummyEncoder(cfg encoder.Config, out io.Writer, slice *model.Slice) (encoder.Encoder, error) {
+	return NewDummyEncoder(cfg, out, slice, h.writeDone), nil
+}
+
+// NewSyncer implements writesync.SyncerFactory.
+// See also ExpectWritesCount and TriggerSync methods.
+func (h *writerSyncHelper) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config writesync.Config, chain writesync.Chain, statistics writesync.StatisticsProvider,
+) *writesync.Syncer {
+	s := writesync.NewSyncer(ctx, logger, clock, config, chain, statistics)
+	h.syncers = append(h.syncers, s)
+	return s
+}
+
+func (h *writerSyncHelper) ExpectWritesCount(tb testing.TB, n int) {
 	tb.Helper()
-	content, err := os.ReadFile(path)
-	assert.NoError(tb, err)
-	assert.Equal(tb, strings.TrimSpace(expected), strings.TrimSpace(string(content)))
+	tb.Logf(`waiting for %d writes`, n)
+	for i := 0; i < n; i++ {
+		select {
+		case <-h.writeDone:
+			tb.Logf(`write %d done`, i+1)
+		case <-time.After(2 * time.Second):
+			assert.FailNow(tb, "timeout")
+			return
+		}
+	}
+	tb.Logf(`all writes done`)
+}
+
+func (h *writerSyncHelper) TriggerSync(tb testing.TB) {
+	tb.Helper()
+	tb.Logf("trigger sync")
+
+	wg := &sync.WaitGroup{}
+	for _, s := range h.syncers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			assert.NoError(tb, s.TriggerSync(context.Background(), true).Wait())
+		}()
+	}
+	wg.Wait()
+
+	tb.Logf("sync done")
+}
+
+// DummyEncoder implements the encoder.Encoder for tests.
+// It encodes row values to one line as strings, separated by comma.
+// Row is separated by the new line.
+type DummyEncoder struct {
+	out        io.Writer
+	writeDone  chan struct{}
+	FlushError error
+	CloseError error
+}
+
+func DummyEncoderFactory(cfg encoder.Config, out io.Writer, slice *model.Slice) (encoder.Encoder, error) {
+	return NewDummyEncoder(cfg, out, slice, nil), nil
+}
+
+func NewDummyEncoder(_ encoder.Config, out io.Writer, _ *model.Slice, writeDone chan struct{}) *DummyEncoder {
+	return &DummyEncoder{out: out, writeDone: writeDone}
+}
+
+func (w *DummyEncoder) WriteRecord(values []any) error {
+	var s bytes.Buffer
+	for i, v := range values {
+		if i > 0 {
+			s.WriteString(",")
+		}
+		s.WriteString(cast.ToString(v))
+	}
+	s.WriteString("\n")
+
+	_, err := w.out.Write(s.Bytes())
+	if err == nil && w.writeDone != nil {
+		w.writeDone <- struct{}{}
+	}
+	return err
+}
+
+func (w *DummyEncoder) Flush() error {
+	return w.FlushError
+}
+
+func (w *DummyEncoder) Close() error {
+	return w.CloseError
 }

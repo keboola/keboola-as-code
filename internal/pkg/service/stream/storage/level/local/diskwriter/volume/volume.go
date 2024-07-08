@@ -4,6 +4,7 @@ package volume
 import (
 	"bytes"
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"os"
 	"path/filepath"
 	"sync"
@@ -14,8 +15,6 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -24,7 +23,7 @@ import (
 const (
 	// DrainFile blocks opening of the volume for writing.
 	DrainFile = "drain"
-	// lockFile ensures only one opening of the volume for writing.
+	// LockFile ensures only one opening of the volume for writing.
 	LockFile          = "writer.lock"
 	volumeIDFileFlags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	volumeIDFilePerm  = 0o640
@@ -35,10 +34,10 @@ type Volume struct {
 	id   volume.ID
 	spec volume.Spec
 
-	config       config
 	logger       log.Logger
 	clock        clock.Clock
-	writerEvents *events.Events[encoding.Writer]
+	writerEvents *events.Events[diskwriter.Writer]
+	config       diskwriter.Config
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -58,13 +57,13 @@ type Volume struct {
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The IDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, writerEvents *events.Events[encoding.Writer], cfg local.Config, spec volume.Spec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, writerEvents *events.Events[diskwriter.Writer], config diskwriter.Config, spec volume.Spec) (*Volume, error) {
 	v := &Volume{
 		spec:          spec,
-		config:        newConfig(cfg, opts),
 		logger:        logger,
 		clock:         clock,
 		writerEvents:  writerEvents.Clone(), // clone events passed from volumes collection, so volume specific listeners can be added
+		config:        config,
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
 		drainFilePath: filepath.Join(spec.Path, DrainFile),
@@ -148,7 +147,7 @@ func (v *Volume) ID() volume.ID {
 	return v.id
 }
 
-func (v *Volume) Events() *events.Events[encoding.Writer] {
+func (v *Volume) Events() *events.Events[diskwriter.Writer] {
 	return v.writerEvents
 }
 

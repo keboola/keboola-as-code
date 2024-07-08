@@ -88,8 +88,10 @@ func (v *Volume) Readers() (out []diskreader.Reader) {
 	defer v.readersLock.Unlock()
 
 	out = make([]diskreader.Reader, 0, len(v.readers))
-	for _, w := range v.readers {
-		out = append(out, w)
+	for _, r := range v.readers {
+		if r.Reader != nil { // nil == creating a new reader
+			out = append(out, r)
+		}
 	}
 
 	sort.SliceStable(out, func(i, j int) bool {
