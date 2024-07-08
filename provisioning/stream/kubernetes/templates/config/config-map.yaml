@@ -145,26 +145,26 @@ data:
               static: 100MB
               # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
               relative: 110
-          writer:
-            format:
-              # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
-              concurrency: 0
-            # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
-            inputBuffer: 1MB
-            # Max size of the buffer before the output file. 0 = disabled. Validation rules: maxBytes=16MB
-            fileBuffer: 1MB
-          compression:
-            # Compression type. Validation rules: required,oneof=none gzip zstd
-            type: gzip
-            gzip:
-              # GZIP compression level: 1-9. Validation rules: min=1,max=9
-              level: 1
-              # GZIP implementation: standard, fast, parallel. Validation rules: required,oneof=standard fast parallel
-              implementation: parallel
-              # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
-              blockSize: 256KB
-              # GZIP parallel concurrency, 0 = auto.
-              concurrency: 0
+            encoding:
+              encoder:
+                # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
+                concurrency: 0
+              # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
+              inputBuffer: 1MB
+              # Max size of the buffer before the output. 0 = disabled. Validation rules: maxBytes=16MB
+              outputBuffer: 1MB
+              compression:
+                # Compression type. Validation rules: required,oneof=none gzip zstd
+                type: gzip
+                gzip:
+                  # GZIP compression level: 1-9. Validation rules: min=1,max=9
+                  level: 1
+                  # GZIP implementation: standard, fast, parallel. Validation rules: required,oneof=standard fast parallel
+                  implementation: parallel
+                  # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
+                  blockSize: 256KB
+                  # GZIP parallel concurrency, 0 = auto.
+                  concurrency: 0
         staging:
           # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
           maxSlicesPerFile: 100

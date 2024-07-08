@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
@@ -41,16 +42,18 @@ func TestConfig_With(t *testing.T) {
 				PreferredTypes: ptr.Ptr([]string{"foo", "bar"}),
 			},
 		},
-		Compression: &compression.ConfigPatch{
-			GZIP: &compression.GZIPConfigPatch{
-				Level:          ptr.Ptr(5),
-				Implementation: ptr.Ptr(compression.GZIPImplFast),
-				BlockSize:      ptr.Ptr(10 * datasize.MB),
-				Concurrency:    ptr.Ptr(10),
+		Encoding: &encoding.ConfigPatch{
+			Compression: &compression.ConfigPatch{
+				GZIP: &compression.GZIPConfigPatch{
+					Level:          ptr.Ptr(5),
+					Implementation: ptr.Ptr(compression.GZIPImplFast),
+					BlockSize:      ptr.Ptr(10 * datasize.MB),
+					Concurrency:    ptr.Ptr(10),
+				},
 			},
 		},
 	}
-	expectedCfg.Local.Compression.GZIP = &compression.GZIPConfig{
+	expectedCfg.Local.Encoding.Compression.GZIP = &compression.GZIPConfig{
 		Level:          5,
 		Implementation: compression.GZIPImplFast,
 		BlockSize:      10 * datasize.MB,
