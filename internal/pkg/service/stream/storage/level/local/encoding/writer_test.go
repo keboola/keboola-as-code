@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -213,19 +214,15 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Wait()
 
 	// Check file content
-	assert.Equal(t, `
+	assert.Equal(t, strings.TrimSpace(`
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`, tc.Output.String())
+`), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume"}               
-{"level":"info","message":"opened volume"}                  
-{"level":"debug","message":"opened file"}                   
-{"level":"debug","message":"disk space allocation is not supported"}                        
 {"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to disk"}         
 {"level":"debug","message":"syncing file"}                  
@@ -315,19 +312,15 @@ func TestVolume_Writer_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Wait()
 
 	// Check file content
-	assert.Equal(t, `
+	assert.Equal(t, strings.TrimSpace(`
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`, tc.Output.String())
+`), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume"}
-{"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file"}
-{"level":"debug","message":"disk space allocation is not supported"}
 {"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
@@ -386,19 +379,15 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
-	assert.Equal(t, `
+	assert.Equal(t, strings.TrimSpace(`
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`, tc.Output.String())
+`), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume"}
-{"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file"}
-{"level":"debug","message":"disk space allocation is not supported"}
 {"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"syncing file"}
@@ -463,19 +452,15 @@ func TestVolume_Writer_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
-	assert.Equal(t, `
+	assert.Equal(t, strings.TrimSpace(`
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`, tc.Output.String())
+`), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume"}
-{"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file"}
-{"level":"debug","message":"disk space allocation is not supported"}
 {"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
@@ -528,19 +513,15 @@ func TestVolume_Writer_Sync_Disabled(t *testing.T) {
 	assert.NoError(t, w.Close(ctx))
 
 	// Check file content
-	assert.Equal(t, `
+	assert.Equal(t, strings.TrimSpace(`
 foo,bar,123
 foo,bar,123
 abc,def,456
 ghi,jkl,789
-`, tc.Output.String())
+`), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"opening volume"}
-{"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
-{"level":"debug","message":"disk space allocation is not supported"}
 {"level":"info","message":"sync is disabled"}
 {"level":"debug","message":"closing disk writer"}
 {"level":"debug","message":"stopping syncer"}
@@ -599,6 +580,7 @@ func NewEncodingTestCase(t *testing.T) *EncodingTestCase {
 
 	cfg := mock.TestConfig().Storage.Level.Local.Encoding
 	cfg.Encoder.Factory = tc.writerSyncHelper.NewDummyEncoder
+	cfg.SyncerFactory = tc.writerSyncHelper.NewSyncer
 	cfg.OutputOpener = func(sliceKey model.SliceKey) (writechain.File, error) {
 		return tc.Output, nil
 	}
