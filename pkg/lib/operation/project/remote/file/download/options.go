@@ -1,10 +1,11 @@
 package download
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"path/filepath"
 
 	"github.com/keboola/go-client/pkg/keboola"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
 type Options struct {
