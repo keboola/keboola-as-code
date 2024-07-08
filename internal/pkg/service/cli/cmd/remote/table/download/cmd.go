@@ -1,6 +1,7 @@
 package download
 
 import (
+	"context"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -22,6 +23,7 @@ type Flags struct {
 	ChangeSince     configmap.Value[string]   `configKey:"changed-since" configUsage:"only export rows imported after this date"`
 	ChangedUntil    configmap.Value[string]   `configKey:"changed-until" configUsage:"only export rows imported before this date"`
 	Columns         configmap.Value[[]string] `configKey:"columns" configUsage:"comma-separated list of columns to export"`
+	Header          configmap.Value[bool]     `configKey:"header" configUsage:"first line of the csv file contains the column names"`
 	Limit           configmap.Value[uint]     `configKey:"limit" configUsage:"limit the number of exported rows"`
 	Where           configmap.Value[string]   `configKey:"where" configUsage:"filter columns by value"`
 	Order           configmap.Value[string]   `configKey:"order" configUsage:"order by one or more columns"`
@@ -108,10 +110,17 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			columns, err := getColumns(cmd.Context(), d, f, tableKey)
+			if err != nil {
+				return err
+			}
+
 			downloadOpts := download.Options{
 				File:        fileWithCredentials,
 				Output:      fileOutput,
 				AllowSliced: f.AllowSliced.Value,
+				Header:      f.Header,
+				Columns:     columns,
 			}
 
 			// Send cmd successful/failed event
@@ -124,4 +133,17 @@ func Command(p dependencies.Provider) *cobra.Command {
 	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
+}
+
+func getColumns(ctx context.Context, d dependencies.RemoteCommandScope, f Flags, key keboola.TableKey) ([]string, error) {
+	if f.Header.IsSet() && len(f.Columns.Value) == 0 {
+		table, err := d.KeboolaProjectAPI().GetTableRequest(key).Send(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return table.Columns, nil
+	}
+
+	return f.Columns.Value, nil
 }
