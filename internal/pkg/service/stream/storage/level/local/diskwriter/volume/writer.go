@@ -15,13 +15,13 @@ type writerRef struct {
 func (v *Volume) OpenWriter(slice *model.Slice) (w diskwriter.Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
-		return nil, errors.PrefixErrorf(err, `writer for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
+		return nil, errors.PrefixErrorf(err, `disk writer for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
 	}
 
 	// Check if the writer already exists, if not, register an empty reference to unlock immediately
 	ref, exists := v.addWriter(slice.SliceKey)
 	if exists {
-		return nil, errors.Errorf(`writer for slice "%s" already exists`, slice.SliceKey.String())
+		return nil, errors.Errorf(`disk writer for slice "%s" already exists`, slice.SliceKey.String())
 	}
 
 	// Close resources on a creation error

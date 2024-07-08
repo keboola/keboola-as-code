@@ -3,6 +3,7 @@ package diskwriter_test
 import (
 	"context"
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -18,7 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
-func TestWriter(t *testing.T) {
+func TestWriter_Basic(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -58,7 +59,7 @@ func TestWriter(t *testing.T) {
 	assert.Equal(t, []byte("123,456,789\nabc,def,ghj\n"), content)
 }
 
-func TestVolume_OpenWriter_ClosedVolume(t *testing.T) {
+func TestOpenWriter_ClosedVolume(t *testing.T) {
 	t.Parallel()
 	tc := test.NewDiskWriterTestCase(t)
 	vol, err := tc.OpenVolume()
@@ -67,10 +68,12 @@ func TestVolume_OpenWriter_ClosedVolume(t *testing.T) {
 	assert.NoError(t, vol.Close(context.Background()))
 
 	_, err = vol.OpenWriter(test.NewSlice())
-	assert.Error(t, err)
+	if assert.Error(t, err) {
+		wildcards.Assert(t, "disk writer for slice \"%s\" cannot be created: volume is closed:\n- context canceled", err.Error())
+	}
 }
 
-func TestVolume_Writer_OpenFile_Ok(t *testing.T) {
+func TestWriter_OpenFile_Ok(t *testing.T) {
 	t.Parallel()
 	tc := test.NewDiskWriterTestCase(t)
 
@@ -82,7 +85,7 @@ func TestVolume_Writer_OpenFile_Ok(t *testing.T) {
 	assert.FileExists(t, tc.FilePath())
 }
 
-func TestVolume_Writer_OpenFile_MkdirError(t *testing.T) {
+func TestWriter_OpenFile_MkdirError(t *testing.T) {
 	t.Parallel()
 
 	if runtime.GOOS == "windows" {
@@ -110,7 +113,7 @@ func TestVolume_Writer_OpenFile_MkdirError(t *testing.T) {
 	assert.NoError(t, vol.Close(context.Background()))
 }
 
-func TestVolume_Writer_OpenFile_FileError(t *testing.T) {
+func TestWriter_OpenFile_FileError(t *testing.T) {
 	t.Parallel()
 
 	if runtime.GOOS == "windows" {
@@ -128,7 +131,7 @@ func TestVolume_Writer_OpenFile_FileError(t *testing.T) {
 	}
 }
 
-func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
+func TestWriter_AllocateSpace_Error(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -153,7 +156,7 @@ func TestVolume_Writer_AllocateSpace_Error(t *testing.T) {
 `)
 }
 
-func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
+func TestWriter_AllocateSpace_NotSupported(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -178,7 +181,7 @@ func TestVolume_Writer_AllocateSpace_NotSupported(t *testing.T) {
 `)
 }
 
-func TestVolume_Writer_AllocateSpace_Disabled(t *testing.T) {
+func TestWriter_AllocateSpace_Disabled(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()

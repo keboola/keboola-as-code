@@ -17,7 +17,7 @@ const (
 )
 
 // Writer writes bytes to the slice file on the disk.
-// Thw Writer.Write method is called by the network.Listener, which received bytes from the encoding.Writer.
+// Thw Writer.Write method is called by the network.Listener, which received bytes from the network.Writer/encoding.Writer.
 type Writer interface {
 	SliceKey() model.SliceKey
 	Write(p []byte) (n int, err error)

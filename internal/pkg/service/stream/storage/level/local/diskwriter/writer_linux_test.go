@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
-func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
+func TestWriter_AllocateSpace_Enabled(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()

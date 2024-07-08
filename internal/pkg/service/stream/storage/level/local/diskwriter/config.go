@@ -13,7 +13,7 @@ type Config struct {
 	// Allocator allocates a free disk space for a file.
 	// A custom implementation can be useful for tests.
 	Allocator diskalloc.Allocator
-	// FileOpener provides file opening, a custom implementation can be useful for tests.
+	// FileOpener provides file opening.
 	// A custom implementation can be useful for tests.
 	FileOpener FileOpener
 }
