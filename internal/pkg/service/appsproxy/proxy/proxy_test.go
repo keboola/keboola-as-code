@@ -2031,7 +2031,7 @@ func TestAppProxyRouter(t *testing.T) {
 				cookies := response.Cookies()
 				if assert.Len(t, cookies, 1) {
 					assert.Equal(t, "proxyBasicAuth", cookies[0].Name)
-					assert.Equal(t, "bfd0255218cceb44fec106d13875be3b7120b304b97df9bfccbeb9aab19019fa", cookies[0].Value)
+					assert.Contains(t, cookies[0].Value, "$2a$10$")
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "basic-auth.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
@@ -2080,7 +2080,7 @@ func TestAppProxyRouter(t *testing.T) {
 				cookies := response.Cookies()
 				if assert.Len(t, cookies, 1) {
 					assert.Equal(t, "proxyBasicAuth", cookies[0].Name)
-					assert.Equal(t, "bfd0255218cceb44fec106d13875be3b7120b304b97df9bfccbeb9aab19019fa", cookies[0].Value)
+					assert.Contains(t, cookies[0].Value, "$2a$10$")
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "basic-auth.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
@@ -2095,6 +2095,7 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to proxy location
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, location, nil)
 				require.NoError(t, err)
+				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: cookies[0].Value})
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				body, err = io.ReadAll(response.Body)
@@ -2128,7 +2129,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Access with cookie
 				request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://basic-auth.hub.keboola.local/", nil)
-				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "bfd0255218cceb44fec106d13875be3b7120b304b97df9bfccbeb9aab19019fa"})
+				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "$2a$10$65mF6LI2F0Nm9PkQk8DlJu.C5jD.fseeXWn9CCGmDxLPomikYWtte"})
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)

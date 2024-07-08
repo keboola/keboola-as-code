@@ -1,8 +1,6 @@
 package basicauth
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -11,6 +9,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/util"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/xsrftoken"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -108,7 +107,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	csrfToken := xsrftoken.Generate(csrfTokenKey, h.csrfTokenSalt, "/")
 	fragment := fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, template.HTMLEscapeString(csrfTokenKey), template.HTMLEscapeString(csrfToken))
 	if !req.Form.Has("password") && requestCookie == nil {
-		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), nil) // #nosec G203
+		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), nil) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
 		return nil
 	}
 
@@ -116,7 +115,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	p := req.Form.Get("password")
 	if err := h.isAuthorized(p, requestCookie); err != nil {
 		h.logger.Warn(req.Context(), err.Error())
-		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), err) // #nosec G203
+		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), err) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
 		return nil
 	}
 
@@ -131,11 +130,13 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		Host:   req.Host,
 		Path:   path,
 	}
-	hash := sha256.New()
-	hash.Write([]byte(p + string(h.app.ID)))
-	hashedValue := hash.Sum(nil)
+	hash, err := bcrypt.GenerateFromPassword([]byte(p+string(h.app.ID)), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
 	v := &http.Cookie{
-		Value: hex.EncodeToString(hashedValue),
+		Value: string(hash),
 	}
 	h.setCookie(w, host, h.CookieExpiration(), v)
 	// Redirect to upstream (Same handler)
@@ -158,10 +159,7 @@ func (h *Handler) isCookieAuthorized(cookie *http.Cookie) error {
 	}
 
 	if cookie != nil {
-		hash := sha256.New()
-		hash.Write([]byte(h.basicAuth.Password + string(h.app.ID)))
-		hashedValue := hash.Sum(nil)
-		if hex.EncodeToString(hashedValue) != cookie.Value {
+		if err := bcrypt.CompareHashAndPassword([]byte(cookie.Value), []byte(h.basicAuth.Password+string(h.app.ID))); err != nil {
 			return errors.New("Cookie has expired.")
 		}
 	}
