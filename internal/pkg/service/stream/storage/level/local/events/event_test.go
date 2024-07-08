@@ -12,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
-	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -35,7 +34,8 @@ func TestEventWriter(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", volume.IDFile), []byte("HDD_2"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, diskwriter.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
+	cfg := mock.TestConfig().Storage.Level.Local.Writer
+	volumes, err := diskwriter.OpenVolumes(ctx, d, "my-node", volumesPath, cfg)
 	assert.NoError(t, err)
 
 	// Register "OnOpen" and "OnClose" events on the "volumes" level
@@ -155,7 +155,7 @@ func TestWriterEvents_OpenError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, _ := dependencies.NewMockedLocalStorageScope(t)
+	d, mock := dependencies.NewMockedLocalStorageScope(t)
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
@@ -163,7 +163,8 @@ func TestWriterEvents_OpenError(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, diskwriter.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
+	cfg := mock.TestConfig().Storage.Level.Local.Writer
+	volumes, err := diskwriter.OpenVolumes(ctx, d, "my-node", volumesPath, cfg)
 	assert.NoError(t, err)
 
 	// Register "OnOpen" event on the "volumes" level
@@ -195,7 +196,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, _ := dependencies.NewMockedLocalStorageScope(t)
+	d, mock := dependencies.NewMockedLocalStorageScope(t)
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
@@ -203,7 +204,8 @@ func TestEventWriter_CloseError(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
-	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, diskwriter.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
+	cfg := mock.TestConfig().Storage.Level.Local.Writer
+	volumes, err := diskwriter.OpenVolumes(ctx, d, "my-node", volumesPath, cfg)
 	assert.NoError(t, err)
 
 	// Register "OnClose" event on the "volumes" level

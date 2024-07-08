@@ -1,4 +1,4 @@
-package volume
+package diskwriter
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func (v *Volume) watchDrainFile(ctx context.Context) error {
 	}
 
 	// Check if the watcher is enabled
-	if !v.config.watchDrainFile {
+	if !v.config.WatchDrainFile {
 		return nil
 	}
 

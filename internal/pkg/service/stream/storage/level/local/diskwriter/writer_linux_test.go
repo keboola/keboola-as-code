@@ -1,6 +1,6 @@
 //go:build linux
 
-package volume_test
+package diskwriter_test
 
 import (
 	"context"
@@ -11,21 +11,20 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
-func TestVolume_Writer_AllocateSpace_Enabled(t *testing.T) {
+func TestWriter_AllocateSpace_Enabled(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	tc := test.NewWriterTestCase(t)
+	tc := newWriterTestCase(t)
+	tc.Config.Allocator = diskalloc.DefaultAllocator{}
 
 	expectedSize := 10 * datasize.KB
 	tc.Slice.LocalStorage.AllocatedDiskSpace = expectedSize
 
 	// Use real allocator
-	w, err := tc.NewWriter(volume.WithAllocator(diskalloc.DefaultAllocator{}))
+	w, err := tc.NewWriter()
 	assert.NoError(t, err)
 
 	// Check file size after allocation

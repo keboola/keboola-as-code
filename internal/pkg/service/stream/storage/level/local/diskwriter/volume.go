@@ -1,11 +1,12 @@
 // Package volume provides detection and opening of volumes intended for slices writing.
-package volume
+package diskwriter
 
 import (
 	"bytes"
 	"context"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	"github.com/benbjohnson/clock"
@@ -14,16 +15,16 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
 	// DrainFile blocks opening of the volume for writing.
 	DrainFile = "drain"
-	// lockFile ensures only one opening of the volume for writing.
+	// LockFile ensures only one opening of the volume for writing.
 	LockFile          = "writer.lock"
 	volumeIDFileFlags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	volumeIDFilePerm  = 0o640
@@ -34,10 +35,10 @@ type Volume struct {
 	id   volume.ID
 	spec volume.Spec
 
-	config       config
 	logger       log.Logger
 	clock        clock.Clock
-	writerEvents *events.Events[diskwriter.Writer]
+	writerEvents *events.Events[Writer]
+	config       Config
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -52,18 +53,22 @@ type Volume struct {
 	writers     map[string]*writerRef
 }
 
+type writerRef struct {
+	Writer
+}
+
 // Open volume for writing.
 //   - It is checked that the volume path exists.
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The IDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, writerEvents *events.Events[diskwriter.Writer], wrCfg diskwriter.Config, spec volume.Spec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, spec volume.Spec, writerEvents *events.Events[Writer]) (*Volume, error) {
 	v := &Volume{
 		spec:          spec,
-		config:        newConfig(wrCfg, opts),
 		logger:        logger,
 		clock:         clock,
 		writerEvents:  writerEvents.Clone(), // clone events passed from volumes collection, so volume specific listeners can be added
+		config:        config,
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
 		drainFilePath: filepath.Join(spec.Path, DrainFile),
@@ -147,7 +152,7 @@ func (v *Volume) ID() volume.ID {
 	return v.id
 }
 
-func (v *Volume) Events() *events.Events[diskwriter.Writer] {
+func (v *Volume) Events() *events.Events[Writer] {
 	return v.writerEvents
 }
 
@@ -156,6 +161,63 @@ func (v *Volume) Metadata() volume.Metadata {
 		ID:   v.id,
 		Spec: v.spec,
 	}
+}
+
+func (v *Volume) OpenWriter(slice *model.Slice) (w Writer, err error) {
+	// Check context
+	if err := v.ctx.Err(); err != nil {
+		return nil, errors.PrefixErrorf(err, `disk writer for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
+	}
+
+	// Check if the writer already exists, if not, register an empty reference to unlock immediately
+	ref, exists := v.addWriter(slice.SliceKey)
+	if exists {
+		return nil, errors.Errorf(`disk writer for slice "%s" already exists`, slice.SliceKey.String())
+	}
+
+	// Close resources on a creation error
+	defer func() {
+		// Ok, update reference
+		if err == nil {
+			ref.Writer = w
+			return
+		}
+
+		// Unregister the writer
+		v.removeWriter(slice.SliceKey)
+	}()
+
+	// Create writer
+	w, err = New(v.ctx, v.logger, v.config, v.Path(), slice, v.writerEvents)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register writer close callback
+	w.Events().OnClose(func(w Writer, _ error) error {
+		v.removeWriter(w.SliceKey())
+		return nil
+	})
+
+	return w, nil
+}
+
+func (v *Volume) Writers() (out []Writer) {
+	v.writersLock.Lock()
+	defer v.writersLock.Unlock()
+
+	out = make([]Writer, 0, len(v.writers))
+	for _, w := range v.writers {
+		if w.Writer != nil { // nil == creating a new writer
+			out = append(out, w)
+		}
+	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].SliceKey().String() < out[j].SliceKey().String()
+	})
+
+	return out
 }
 
 func (v *Volume) Close(ctx context.Context) error {
@@ -189,6 +251,28 @@ func (v *Volume) Close(ctx context.Context) error {
 
 	v.logger.Info(ctx, "closed volume")
 	return errs.ErrorOrNil()
+}
+
+func (v *Volume) addWriter(k model.SliceKey) (ref *writerRef, exists bool) {
+	v.writersLock.Lock()
+	defer v.writersLock.Unlock()
+
+	key := k.String()
+	ref, exists = v.writers[key]
+	if !exists {
+		// Register a new empty reference, it will be initialized later.
+		// Empty reference is used to make possible to create multiple writers without being blocked by the lock.
+		ref = &writerRef{}
+		v.writers[key] = ref
+	}
+
+	return ref, exists
+}
+
+func (v *Volume) removeWriter(k model.SliceKey) {
+	v.writersLock.Lock()
+	defer v.writersLock.Unlock()
+	delete(v.writers, k.String())
 }
 
 func createVolumeIDFile(path string, content []byte) error {

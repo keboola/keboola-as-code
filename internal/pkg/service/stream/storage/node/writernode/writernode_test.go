@@ -75,9 +75,6 @@ func TestStart_Ok(t *testing.T) {
 {"level":"info","message":"creating etcd session","component":"volumes.registry.etcd.session"}
 {"level":"info","message":"created etcd session","component":"volumes.registry.etcd.session"}
 {"level":"info","message":"exiting (bye bye)"}
-{"level":"info","message":"stopping storage statistics collector","component":"statistics.collector"}
-{"level":"debug","message":"sync done","component":"statistics.collector"}
-{"level":"info","message":"storage statistics stopped","component":"statistics.collector"}
 {"level":"info","message":"stopping volumes registration","component":"volumes.registry"}
 {"level":"info","message":"closing etcd session: context canceled","component":"volumes.registry.etcd.session"}
 {"level":"info","message":"closed etcd session","component":"volumes.registry.etcd.session"}

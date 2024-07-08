@@ -1,4 +1,4 @@
-package volume_test
+package diskwriter_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -24,7 +24,6 @@ func TestOpenVolumes(t *testing.T) {
 
 	process := servicectx.New()
 	d, mock := dependencies.NewMockedLocalStorageScope(t)
-	wrCfg := mock.TestConfig().Storage.Level.Local.Writer
 
 	// Create volumes directories
 	volumesPath := t.TempDir()
@@ -37,7 +36,7 @@ func TestOpenVolumes(t *testing.T) {
 
 	// Created also some drained volume
 	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "drained", "1"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "drained", "1", volume.DrainFile), []byte{}, 0o640))
+	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "drained", "1", diskwriter.DrainFile), []byte{}, 0o640))
 
 	// Only two volumes has volume ID file
 	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", model.IDFile), []byte("HDD_1"), 0o640))
@@ -45,11 +44,11 @@ func TestOpenVolumes(t *testing.T) {
 
 	// Start volumes opening
 	var err error
-	var volumes *volume.Volumes
+	var volumes *diskwriter.Volumes
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = volume.OpenVolumes(ctx, d, "my-node", volumesPath, wrCfg)
+		volumes, err = diskwriter.OpenVolumes(ctx, d, "my-node", volumesPath, mock.TestConfig().Storage.Level.Local.Writer)
 		assert.NoError(t, err)
 	}()
 
