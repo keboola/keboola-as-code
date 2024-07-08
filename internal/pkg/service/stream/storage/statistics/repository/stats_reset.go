@@ -28,18 +28,17 @@ func (r *Repository) ResetSinkStats(sinkKey key.SinkKey) *op.AtomicOp[op.NoResul
 	objectPfx := r.schema.InLevel(model.LevelTarget).InObject(sinkKey)
 
 	var objectSum statistics.Value
-	var resetSum statistics.Value
 
 	// resetKey contains the sum of all statistics from the children that were deleted
 	resetKey := r.schema.InLevel(model.LevelTarget).InObject(sinkKey).Reset()
 
 	// Get statistics of the object
 	ops.Read(func(context.Context) op.Op {
+		// resetSum is intentionally unused
+		resetSum := statistics.Value{}
 		objectSum = statistics.Value{}
 		return sumStatsOp(objectPfx.GetAll(r.client), &objectSum, &resetSum)
 	})
-
-	// resetSum is intentionally ignored
 
 	// Save reset key
 	ops.Write(func(context.Context) op.Op {
