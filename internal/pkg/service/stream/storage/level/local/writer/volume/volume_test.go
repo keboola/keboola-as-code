@@ -1,4 +1,4 @@
-package volume
+package volume_test
 
 import (
 	"context"
@@ -7,25 +7,21 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/gofrs/flock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
-	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	model "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestOpen_NonExistentPath(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterVolumeTestCase(t)
 	tc.VolumePath = filepath.Join("non-existent", "path")
 
 	_, err := tc.OpenVolume()
@@ -41,7 +37,7 @@ func TestOpen_Error_DirPermissions(t *testing.T) {
 		t.Skip("permissions work different on Windows")
 	}
 
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterVolumeTestCase(t)
 
 	// Volume directory is readonly
 	assert.NoError(t, os.Chmod(tc.VolumePath, 0o440))
@@ -59,10 +55,10 @@ func TestOpen_Error_VolumeFilePermissions(t *testing.T) {
 		t.Skip("permissions work different on Windows")
 	}
 
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterVolumeTestCase(t)
 
 	// Volume ID file is not readable
-	path := filepath.Join(tc.VolumePath, volume.IDFile)
+	path := filepath.Join(tc.VolumePath, model.IDFile)
 	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
 	assert.NoError(t, os.Chmod(path, 0o110))
 
@@ -75,25 +71,25 @@ func TestOpen_Error_VolumeFilePermissions(t *testing.T) {
 // TestOpen_GenerateVolumeID tests that the file with the volume ID is generated if not exists.
 func TestOpen_GenerateVolumeID(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterVolumeTestCase(t)
 
 	// Open volume - it generates the file
 	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
 	// Read the volume ID file and check content length
-	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
+	idFilePath := filepath.Join(tc.VolumePath, model.IDFile)
 	if assert.FileExists(t, idFilePath) {
 		content, err := os.ReadFile(idFilePath)
 		assert.NoError(t, err)
-		assert.Len(t, content, volume.IDLength)
+		assert.Len(t, content, model.IDLength)
 
 		// Volume ID reported by the volume instance match the file content
-		assert.Equal(t, volume.ID(content), vol.ID())
+		assert.Equal(t, model.ID(content), vol.ID())
 	}
 
 	// Lock is locked by the volume
-	lock := flock.New(filepath.Join(tc.VolumePath, lockFile))
+	lock := flock.New(filepath.Join(tc.VolumePath, volume.LockFile))
 	locked, err := lock.TryLock()
 	assert.False(t, locked)
 	assert.NoError(t, err)
@@ -119,10 +115,10 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 // TestOpen_LoadVolumeID tests that the volume ID is loaded from the file if it exists.
 func TestOpen_LoadVolumeID(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterVolumeTestCase(t)
 
 	// Write volume ID file
-	idFilePath := filepath.Join(tc.VolumePath, volume.IDFile)
+	idFilePath := filepath.Join(tc.VolumePath, model.IDFile)
 	writeContent := []byte("  123456789  ")
 	require.NoError(t, os.WriteFile(idFilePath, writeContent, 0o0640))
 
@@ -131,7 +127,7 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 	require.NoError(t, err)
 
 	// Volume ID reported by the volume instance match the file content
-	assert.Equal(t, volume.ID("123456789"), vol.ID())
+	assert.Equal(t, model.ID("123456789"), vol.ID())
 
 	// File content remains same
 	if assert.FileExists(t, idFilePath) {
@@ -141,7 +137,7 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 	}
 
 	// Lock is locked by the volume
-	lock := flock.New(filepath.Join(tc.VolumePath, lockFile))
+	lock := flock.New(filepath.Join(tc.VolumePath, volume.LockFile))
 	locked, err := lock.TryLock()
 	assert.False(t, locked)
 	assert.NoError(t, err)
@@ -166,7 +162,7 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 // TestOpen_VolumeLock tests that only one volume instance can be active at a time.
 func TestOpen_VolumeLock(t *testing.T) {
 	t.Parallel()
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterVolumeTestCase(t)
 
 	// Open volume - first instance - ok
 	vol, err := tc.OpenVolume()
@@ -185,11 +181,11 @@ func TestOpen_VolumeLock(t *testing.T) {
 func TestVolume_Close_Errors(t *testing.T) {
 	t.Parallel()
 
-	tc := newVolumeTestCase(t)
+	tc := test.NewWriterVolumeTestCase(t)
 
 	// Open volume, replace file opener
-	vol, err := tc.OpenVolume(WithFileOpener(func(filePath string) (File, error) {
-		f := newTestFile(t, filePath)
+	vol, err := tc.OpenVolume(volume.WithFileOpener(func(filePath string) (volume.File, error) {
+		f := test.NewWriterTestFile(t, filePath)
 		f.CloseError = errors.New("some close error")
 		return f, nil
 	}))
@@ -214,59 +210,4 @@ func TestVolume_Close_Errors(t *testing.T) {
     - cannot close file: some close error
 `), err.Error())
 	}
-}
-
-type volumeTestCase struct {
-	*test.WriterHelper
-	TB           testing.TB
-	Ctx          context.Context
-	Logger       log.DebugLogger
-	Clock        *clock.Mock
-	Events       *events.Events[writer.Writer]
-	Allocator    *testAllocator
-	VolumeNodeID string
-	VolumePath   string
-	VolumeType   string
-	VolumeLabel  string
-}
-
-func newVolumeTestCase(tb testing.TB) *volumeTestCase {
-	tb.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	tb.Cleanup(func() {
-		cancel()
-	})
-
-	logger := log.NewDebugLogger()
-	tmpDir := tb.TempDir()
-
-	return &volumeTestCase{
-		WriterHelper: test.NewWriterHelper(),
-		TB:           tb,
-		Ctx:          ctx,
-		Logger:       logger,
-		Clock:        clock.NewMock(),
-		Events:       events.New[writer.Writer](),
-		Allocator:    &testAllocator{},
-		VolumeNodeID: "my-node",
-		VolumePath:   tmpDir,
-		VolumeType:   "hdd",
-		VolumeLabel:  "1",
-	}
-}
-
-func (tc *volumeTestCase) OpenVolume(opts ...Option) (*Volume, error) {
-	opts = append([]Option{
-		WithAllocator(tc.Allocator),
-		WithSyncerFactory(tc.WriterHelper.NewSyncer),
-		WithFormatWriterFactory(tc.WriterHelper.NewDummyWriter),
-		WithWatchDrainFile(false),
-	}, opts...)
-
-	spec := volume.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
-	return Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, writer.NewConfig(), spec, opts...)
-}
-
-func (tc *volumeTestCase) AssertLogs(expected string) bool {
-	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }
