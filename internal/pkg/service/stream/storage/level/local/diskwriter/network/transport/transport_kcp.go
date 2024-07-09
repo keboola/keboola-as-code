@@ -1,34 +1,33 @@
 package transport
 
 import (
+	"net"
+
+	"github.com/xtaci/kcp-go/v5"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/xtaci/kcp-go/v5"
-	"net"
 )
 
-type Transport interface {
-	// Listen for connections by the server.
-	Listen(config network.Config) (net.Listener, error)
-	// Accept new connection by the server.
-	Accept(listener net.Listener) (net.Conn, error)
-	// Dial a new connection from the client.
-	Dial(addr string, config network.Config) (net.Conn, error)
+type kcpTransport struct {
+	config network.Config
 }
 
-type kcpTransport struct{}
+func newKCPTransport(config network.Config) Transport {
+	return &kcpTransport{config: config}
+}
 
-func (*kcpTransport) Listen(config network.Config) (net.Listener, error) {
-	listener, err := kcp.ListenWithOptions(config.Listen, nil, 0, 0)
+func (t *kcpTransport) Listen() (net.Listener, error) {
+	listener, err := kcp.ListenWithOptions(t.config.Listen, nil, 0, 0)
 	if err != nil {
 		return nil, errors.PrefixError(err, "cannot create listener")
 	}
 
 	// Setup buffer sizes (reversed as on the client side)
-	if err := listener.SetReadBuffer(int(config.InputBuffer.Bytes())); err != nil {
+	if err := listener.SetReadBuffer(int(t.config.KCPInputBuffer.Bytes())); err != nil {
 		return nil, errors.PrefixError(err, "cannot set read buffer size")
 	}
-	if err := listener.SetWriteBuffer(int(config.ResponseBuffer.Bytes())); err != nil {
+	if err := listener.SetWriteBuffer(int(t.config.KCPResponseBuffer.Bytes())); err != nil {
 		return nil, errors.PrefixError(err, "cannot set write buffer size")
 	}
 
@@ -41,33 +40,33 @@ func (t *kcpTransport) Accept(listener net.Listener) (net.Conn, error) {
 		return nil, err
 	}
 
-	if conn, ok := conn.(*kcp.UDPSession); ok {
-		t.setupKCPConnection(conn)
-	}
-
+	t.setupConnection(conn)
 	return conn, nil
 }
 
-func (t *kcpTransport) Dial(addr string, config network.Config) (net.Conn, error) {
+func (t *kcpTransport) Dial(addr string) (net.Conn, error) {
 	conn, err := kcp.DialWithOptions(addr, nil, 0, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	// Setup buffer sizes (reversed as on the server side)
-	if err := conn.SetReadBuffer(int(config.ResponseBuffer.Bytes())); err != nil {
+	if err := conn.SetReadBuffer(int(t.config.KCPResponseBuffer.Bytes())); err != nil {
 		return nil, errors.PrefixError(err, "cannot set read buffer size")
 	}
-	if err := conn.SetWriteBuffer(int(config.InputBuffer.Bytes())); err != nil {
+	if err := conn.SetWriteBuffer(int(t.config.KCPInputBuffer.Bytes())); err != nil {
 		return nil, errors.PrefixError(err, "cannot set write buffer size")
 	}
 
-	t.setupKCPConnection(conn)
-
+	t.setupConnection(conn)
 	return conn, nil
 }
 
-func (*kcpTransport) setupKCPConnection(conn *kcp.UDPSession) {
-	conn.SetStreamMode(true)
-	conn.SetNoDelay(1, 5, 2, 1)
+func (t *kcpTransport) setupConnection(conn net.Conn) {
+	c := conn.(*kcp.UDPSession)
+	c.SetWindowSize(512, 512)
+	c.SetWriteDelay(false)
+	c.SetStreamMode(false)
+	c.SetACKNoDelay(true) // send data immediately, needed for bigger payloads
+	c.SetNoDelay(1, 10, 2, 1)
 }
