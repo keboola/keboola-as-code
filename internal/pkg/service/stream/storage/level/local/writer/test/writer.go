@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
@@ -77,7 +77,7 @@ func (w *NotifyWriter) WriteRecord(values []any) error {
 
 type WriterHelper struct {
 	writeDone chan struct{}
-	syncers   []*disksync.Syncer
+	syncers   []*writesync.Syncer
 }
 
 func NewWriterHelper() *WriterHelper {
@@ -90,11 +90,11 @@ func (h *WriterHelper) NewDummyWriter(cfg writer.Config, out io.Writer, slice *m
 	return NewNotifyWriter(NewDummyWriter(cfg, out, slice), h.writeDone), nil
 }
 
-// NewSyncer implements disksync.SyncerFactory.
+// NewSyncer implements writesync.SyncerFactory.
 // See also ExpectWritesCount and TriggerSync methods.
-func (h *WriterHelper) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config disksync.Config, chain disksync.Chain, statistics disksync.StatisticsProvider,
-) *disksync.Syncer {
-	s := disksync.NewSyncer(ctx, logger, clock, config, chain, statistics)
+func (h *WriterHelper) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config writesync.Config, chain writesync.Chain, statistics writesync.StatisticsProvider,
+) *writesync.Syncer {
+	s := writesync.NewSyncer(ctx, logger, clock, config, chain, statistics)
 	h.syncers = append(h.syncers, s)
 	return s
 }

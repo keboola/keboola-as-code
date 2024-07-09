@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
@@ -52,8 +52,8 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 			Filename:           "slice.csv",
 			AllocatedDiskSpace: 10 * datasize.KB,
 			Compression:        compression.NewNoneConfig(),
-			DiskSync: disksync.Config{
-				Mode:                     disksync.ModeDisk,
+			DiskSync: writesync.Config{
+				Mode:                     writesync.ModeDisk,
 				Wait:                     true,
 				CheckInterval:            duration.From(1 * time.Millisecond),
 				CountTrigger:             500,

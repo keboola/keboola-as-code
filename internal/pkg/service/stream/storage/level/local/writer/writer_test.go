@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -33,7 +33,7 @@ func TestWriter(t *testing.T) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 	assert.NoError(t, err)
 
-	w, err := writer.New(ctx, logger, clk, cfg, slice, file, disksync.NewSyncer, test.DummyWriterFactory, writer.NewEvents())
+	w, err := writer.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, test.DummyWriterFactory, writer.NewEvents())
 	require.NoError(t, err)
 
 	// Test getters
@@ -77,7 +77,7 @@ func TestWriter_FlushError(t *testing.T) {
 		return w, nil
 	}
 
-	w, err := writer.New(ctx, logger, clk, cfg, slice, file, disksync.NewSyncer, writerFactory, writer.NewEvents())
+	w, err := writer.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, writer.NewEvents())
 	require.NoError(t, err)
 
 	// Test Close method
@@ -106,7 +106,7 @@ func TestWriter_CloseError(t *testing.T) {
 		return w, nil
 	}
 
-	w, err := writer.New(ctx, logger, clk, cfg, slice, file, disksync.NewSyncer, writerFactory, writer.NewEvents())
+	w, err := writer.New(ctx, logger, clk, cfg, slice, file, writesync.NewSyncer, writerFactory, writer.NewEvents())
 	require.NoError(t, err)
 
 	// Test Close method

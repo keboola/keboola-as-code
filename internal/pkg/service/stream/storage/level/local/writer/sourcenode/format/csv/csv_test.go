@@ -23,9 +23,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test/testcase"
 	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -138,7 +138,7 @@ func TestCSVWriter_Close_WaitForWrites(t *testing.T) {
 	slice := testcase.NewTestSlice(vol)
 	slice.Type = model.FileTypeCSV
 	slice.Columns = column.Columns{column.UUID{Name: "id"}}
-	slice.LocalStorage.DiskSync.Mode = disksync.ModeDisk
+	slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
 	slice.LocalStorage.DiskSync.Wait = true
 	// prevent sync during the test
 	slice.LocalStorage.DiskSync.CheckInterval = duration.From(2 * time.Second)
@@ -225,10 +225,10 @@ func TestCSVWriter(t *testing.T) {
 		},
 	}
 
-	syncModes := []disksync.Mode{
-		disksync.ModeDisabled,
-		disksync.ModeDisk,
-		disksync.ModeCache,
+	syncModes := []writesync.Mode{
+		writesync.ModeDisabled,
+		writesync.ModeDisk,
+		writesync.ModeCache,
 	}
 
 	// Generate all possible combinations of the parameters
@@ -238,7 +238,7 @@ func TestCSVWriter(t *testing.T) {
 			for _, syncWait := range []bool{false, true} {
 				for _, parallelWrite := range []bool{false, true} {
 					// Skip invalid combination
-					if syncMode == disksync.ModeDisabled && syncWait {
+					if syncMode == writesync.ModeDisabled && syncWait {
 						continue
 					}
 
@@ -252,7 +252,7 @@ func TestCSVWriter(t *testing.T) {
 	}
 }
 
-func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, parallelWrite bool) *testcase.WriterTestCase {
+func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, parallelWrite bool) *testcase.WriterTestCase {
 	// Input rows
 	data := []testcase.RowBatch{
 		{
@@ -294,13 +294,13 @@ func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, pa
 	}
 
 	// Sync config
-	var syncConfig disksync.Config
+	var syncConfig writesync.Config
 	switch syncMode {
-	case disksync.ModeDisabled:
-		syncConfig = disksync.Config{Mode: disksync.ModeDisabled}
-	case disksync.ModeDisk:
-		syncConfig = disksync.Config{
-			Mode:                     disksync.ModeDisk,
+	case writesync.ModeDisabled:
+		syncConfig = writesync.Config{Mode: writesync.ModeDisabled}
+	case writesync.ModeDisk:
+		syncConfig = writesync.Config{
+			Mode:                     writesync.ModeDisk,
 			Wait:                     syncWait,
 			CheckInterval:            duration.From(5 * time.Millisecond),
 			CountTrigger:             5000,
@@ -308,9 +308,9 @@ func newTestCase(comp fileCompression, syncMode disksync.Mode, syncWait bool, pa
 			CompressedBytesTrigger:   1 * datasize.MB,
 			IntervalTrigger:          duration.From(intervalTrigger),
 		}
-	case disksync.ModeCache:
-		syncConfig = disksync.Config{
-			Mode:                     disksync.ModeCache,
+	case writesync.ModeCache:
+		syncConfig = writesync.Config{
+			Mode:                     writesync.ModeCache,
 			Wait:                     syncWait,
 			CheckInterval:            duration.From(5 * time.Millisecond),
 			CountTrigger:             5000,

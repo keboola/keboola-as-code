@@ -13,11 +13,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/count"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/limitbuffer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/size"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writechain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/count"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/limitbuffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/size"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writechain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -58,7 +58,7 @@ type writer struct {
 	events *Events
 
 	chain  *writechain.Chain
-	syncer *disksync.Syncer
+	syncer *writesync.Syncer
 
 	formatWriter FormatWriter
 	// closed blocks new writes
@@ -79,7 +79,7 @@ func New(
 	cfg Config,
 	slice *model.Slice,
 	file writechain.File,
-	syncerFactory disksync.SyncerFactory,
+	syncerFactory writesync.SyncerFactory,
 	formatWriterFactory FormatWriterFactory,
 	volumeEvents *Events,
 ) (out Writer, err error) {

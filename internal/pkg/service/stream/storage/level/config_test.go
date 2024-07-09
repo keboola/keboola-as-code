@@ -16,8 +16,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
 )
@@ -87,8 +87,8 @@ func TestConfig_With(t *testing.T) {
 	// Second patch
 	localConfigPatch2 := &local.ConfigPatch{
 		Volume: &volume.ConfigPatch{
-			Sync: &disksync.ConfigPatch{
-				Mode:                     ptr.Ptr(disksync.ModeCache),
+			Sync: &writesync.ConfigPatch{
+				Mode:                     ptr.Ptr(writesync.ModeCache),
 				Wait:                     ptr.Ptr(true),
 				CheckInterval:            ptr.Ptr(duration.From(10 * time.Millisecond)),
 				CountTrigger:             ptr.Ptr(uint(123)),
@@ -103,8 +103,8 @@ func TestConfig_With(t *testing.T) {
 			},
 		},
 	}
-	expectedCfg.Local.Volume.Sync = disksync.Config{
-		Mode:                     disksync.ModeCache,
+	expectedCfg.Local.Volume.Sync = writesync.Config{
+		Mode:                     writesync.ModeCache,
 		Wait:                     true,
 		CheckInterval:            duration.From(10 * time.Millisecond),
 		CountTrigger:             123,

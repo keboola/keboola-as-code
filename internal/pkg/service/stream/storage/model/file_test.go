@@ -14,9 +14,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/diskalloc"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -93,7 +93,7 @@ func TestFile_Validation(t *testing.T) {
 	localStorage := localModel.File{
 		Dir:            "my-dir",
 		Compression:    compression.NewConfig(),
-		DiskSync:       disksync.NewConfig(),
+		DiskSync:       writesync.NewConfig(),
 		DiskAllocation: diskalloc.NewConfig(),
 	}
 	stagingStorage := stagingModel.File{

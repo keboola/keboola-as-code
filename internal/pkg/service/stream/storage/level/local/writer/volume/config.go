@@ -1,10 +1,10 @@
 package volume
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/disksync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/format/factory"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format/factory"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -14,8 +14,8 @@ type config struct {
 	allocator diskalloc.Allocator
 	// formatWriterFactory creates a high-level writer for the storage.FileType, for example storage.FileTypeCSV.
 	formatWriterFactory writer.FormatWriterFactory
-	// syncerFactory provides disksync.Syncer a custom implementation can be useful for tests.
-	syncerFactory disksync.SyncerFactory
+	// syncerFactory provides writesync.Syncer a custom implementation can be useful for tests.
+	syncerFactory writesync.SyncerFactory
 	// fileOpener provides file opening, a custom implementation can be useful for tests.
 	fileOpener FileOpener
 	// watchDrainFile activates watching for drainFile changes (creation/deletion),
@@ -31,7 +31,7 @@ func newConfig(wrCfg writer.Config, opts []Option) config {
 	cfg := config{
 		writerConfig:        wrCfg,
 		allocator:           diskalloc.DefaultAllocator{},
-		syncerFactory:       disksync.NewSyncer,
+		syncerFactory:       writesync.NewSyncer,
 		formatWriterFactory: factory.Default,
 		fileOpener:          DefaultFileOpener,
 		watchDrainFile:      true,
@@ -53,7 +53,7 @@ func WithAllocator(v diskalloc.Allocator) Option {
 	}
 }
 
-func WithSyncerFactory(v disksync.SyncerFactory) Option {
+func WithSyncerFactory(v writesync.SyncerFactory) Option {
 	return func(c *config) {
 		c.syncerFactory = v
 	}
