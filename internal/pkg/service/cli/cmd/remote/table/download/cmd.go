@@ -136,14 +136,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 }
 
 func getColumns(ctx context.Context, d dependencies.RemoteCommandScope, f Flags, key keboola.TableKey) ([]string, error) {
-	if f.Header.IsSet() && len(f.Columns.Value) == 0 {
-		table, err := d.KeboolaProjectAPI().GetTableRequest(key).Send(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		return table.Columns, nil
+	if !f.Header.IsSet() || len(f.Columns.Value) != 0 {
+		return f.Columns.Value, nil
 	}
 
-	return f.Columns.Value, nil
+	table, err := d.KeboolaProjectAPI().GetTableRequest(key).Send(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return table.Columns, nil
 }
