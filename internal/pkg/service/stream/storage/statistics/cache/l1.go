@@ -30,29 +30,30 @@ type L1 struct {
 	provider
 	logger     log.Logger
 	repository *repository.Repository
-
-	cancel context.CancelFunc
-	wg     *sync.WaitGroup
-
-	cache *etcdop.Mirror[statistics.Value, statistics.Value]
+	cache      *etcdop.Mirror[statistics.Value, statistics.Value]
 }
 
-func NewL1Cache(logger log.Logger, r *repository.Repository) (*L1, error) {
+func NewL1Cache(d dependencies) (*L1, error) {
 	c := &L1{
-		logger:     logger.WithComponent("stats.cache.L1"),
-		repository: r,
-		wg:         &sync.WaitGroup{},
+		logger:     d.Logger().WithComponent("stats.cache.L1"),
+		repository: d.StatisticsRepository(),
 	}
 
-	// Setup context for graceful shutdown
-	var ctx context.Context
-	ctx, c.cancel = context.WithCancel(context.Background())
+	// Graceful shutdown
+	wg := &sync.WaitGroup{}
+	ctx, cancel := context.WithCancel(context.Background())
+	d.Process().OnShutdown(func(ctx context.Context) {
+		cancel()
+		c.logger.Info(ctx, "stopping L1 statistics cache")
+		wg.Wait()
+		c.logger.Info(ctx, "stopped L1 statistics cache")
+	})
 
 	// Mirror statistics from the database to the cache via etcd watcher
 	stream := c.repository.GetAllAndWatch(ctx)
 	mapKey := func(kv *op.KeyValue, _ statistics.Value) string { return string(kv.Key) }
 	mapValue := func(_ *op.KeyValue, stats statistics.Value) statistics.Value { return stats }
-	mirror, errCh := etcdop.SetupMirror(c.logger, stream, mapKey, mapValue).StartMirroring(ctx, c.wg)
+	mirror, errCh := etcdop.SetupMirror(c.logger, stream, mapKey, mapValue).StartMirroring(ctx, wg)
 	if err := <-errCh; err == nil {
 		c.cache = mirror
 	} else {
@@ -63,11 +64,6 @@ func NewL1Cache(logger log.Logger, r *repository.Repository) (*L1, error) {
 	c.provider = repository.NewProvider(c.aggregate)
 
 	return c, nil
-}
-
-func (c *L1) Stop() {
-	c.cancel()
-	c.wg.Wait()
 }
 
 func (c *L1) Revision() int64 {

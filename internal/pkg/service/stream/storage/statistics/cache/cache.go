@@ -5,3 +5,18 @@
 //
 // The L2 cache is implemented on top of the L1 cache, it caches final aggregated value for the object.
 package cache
+
+import (
+	"github.com/benbjohnson/clock"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+)
+
+type dependencies interface {
+	Logger() log.Logger
+	Clock() clock.Clock
+	Process() *servicectx.Process
+	StatisticsRepository() *statsRepo.Repository
+}
