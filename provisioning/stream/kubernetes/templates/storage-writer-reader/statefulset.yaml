@@ -67,6 +67,7 @@ spec:
             limits:
               memory: "$STREAM_STORAGE_WRITER_MEMORY_HARD_LIMIT"
           ports:
+            - containerPort: 6000 # R-UDP disk writer listener
             - containerPort: 9001 # metrics
           volumeMounts:
             - name: config
@@ -83,6 +84,8 @@ spec:
               valueFrom:
                 resourceFieldRef:
                   resource: requests.memory
+            - name: STREAM_STORAGE_LEVEL_LOCAL_WRITER_NETWORK_LISTEN
+              value: 0.0.0.0:6000
             - name: STREAM_METRICS_LISTEN
               value: 0.0.0.0:9001
             - name: STREAM_NODE_ID

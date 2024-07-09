@@ -2,9 +2,11 @@ package diskwriter
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 )
 
 type Config struct {
+	Network network.Config `configKey:"network"`
 	// WatchDrainFile activates watching for drainFile changes (creation/deletion),
 	// otherwise the file is checked only on the volume opening.
 	// Default Linux OS limit is 128 inotify watchers = 128 volumes.
@@ -22,6 +24,7 @@ type ConfigPatch struct{}
 
 func NewConfig() Config {
 	return Config{
+		Network:        network.NewConfig(),
 		WatchDrainFile: true,
 		Allocator:      diskalloc.DefaultAllocator{},
 		FileOpener:     DefaultFileOpener{},
