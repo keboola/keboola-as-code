@@ -13,11 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -29,7 +29,7 @@ type WriterVolumeTestCase struct {
 	Ctx          context.Context
 	Logger       log.DebugLogger
 	Clock        *clock.Mock
-	Events       *events.Events[writer.Writer]
+	Events       *events.Events[diskwriter.Writer]
 	Allocator    *Allocator
 	VolumeNodeID string
 	VolumePath   string
@@ -74,7 +74,7 @@ func NewWriterVolumeTestCase(tb testing.TB) *WriterVolumeTestCase {
 		Ctx:          ctx,
 		Logger:       logger,
 		Clock:        clock.NewMock(),
-		Events:       events.New[writer.Writer](),
+		Events:       events.New[diskwriter.Writer](),
 		Allocator:    &Allocator{},
 		VolumeNodeID: "my-node",
 		VolumePath:   tmpDir,
@@ -89,7 +89,7 @@ func (tc *WriterTestCase) OpenVolume(opts ...volume.Option) (*volume.Volume, err
 	return vol, err
 }
 
-func (tc *WriterTestCase) NewWriter(opts ...volume.Option) (writer.Writer, error) {
+func (tc *WriterTestCase) NewWriter(opts ...volume.Option) (diskwriter.Writer, error) {
 	if tc.Volume == nil {
 		// Write file with the ID
 		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("my-volume"), 0o640))
@@ -129,7 +129,7 @@ func (tc *WriterVolumeTestCase) OpenVolume(opts ...volume.Option) (*volume.Volum
 	}, opts...)
 
 	spec := volumeModel.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
-	return volume.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, writer.NewConfig(), spec, opts...)
+	return volume.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Events, diskwriter.NewConfig(), spec, opts...)
 }
 
 func (tc *WriterVolumeTestCase) AssertLogs(expected string) bool {

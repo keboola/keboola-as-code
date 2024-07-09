@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader/volume"
 	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -73,7 +73,7 @@ func NewReaderTestCase(tb testing.TB) *ReaderTestCase {
 
 func (tc *ReaderVolumeTestCase) OpenVolume(opts ...volume.Option) (*volume.Volume, error) {
 	info := volumeModel.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
-	return volume.Open(tc.Ctx, tc.Logger, tc.Clock, events.New[reader.Reader](), info, opts...)
+	return volume.Open(tc.Ctx, tc.Logger, tc.Clock, events.New[diskreader.Reader](), info, opts...)
 }
 
 func (tc *ReaderVolumeTestCase) AssertLogs(expected string) bool {
@@ -90,7 +90,7 @@ func (tc *ReaderTestCase) OpenVolume(opts ...volume.Option) (*volume.Volume, err
 	return vol, err
 }
 
-func (tc *ReaderTestCase) NewReader(opts ...volume.Option) (reader.Reader, error) {
+func (tc *ReaderTestCase) NewReader(opts ...volume.Option) (diskreader.Reader, error) {
 	if tc.Volume == nil {
 		// Open volume
 		vol, err := tc.OpenVolume(opts...)
