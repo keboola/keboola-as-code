@@ -66,12 +66,14 @@ runs:
         mkdir -p $GODIRS/modcache
         mkdir -p $GODIRS/lintcache
         mkdir -p $GODIRS/bin
+        mkdir -p $GODIRS/tmp
         
         go env -w \
         GOPATH=$GODIRS/path \
         GOCACHE=$GODIRS/cache \
         GOMODCACHE=$GODIRS/modcache \
         GOBIN=$GODIRS/bin \
+        GOTMPDIR=$GODIRS/tmp
         
         echo "GODIRS=$GODIRS" >> $GITHUB_ENV
         echo "GOLANGCI_LINT_CACHE=$GODIRS/lintcache" >> $GITHUB_ENV 
