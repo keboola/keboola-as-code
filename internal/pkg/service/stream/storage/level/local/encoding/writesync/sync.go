@@ -46,14 +46,15 @@ type Syncer struct {
 	opFn func(ctx context.Context) error
 }
 
-type SyncerFactory func(
-	ctx context.Context,
-	logger log.Logger,
-	clock clock.Clock,
-	config Config,
-	chain Chain,
-	statistics StatisticsProvider,
-) *Syncer
+type SyncerFactory interface {
+	NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, chain Chain, statistics StatisticsProvider) *Syncer
+}
+
+type DefaultSyncerFactory struct{}
+
+func (DefaultSyncerFactory) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, chain Chain, statistics StatisticsProvider) *Syncer {
+	return NewSyncer(ctx, logger, clock, config, chain, statistics)
+}
 
 // Chain is a resource that should be synchronized.
 type Chain interface {

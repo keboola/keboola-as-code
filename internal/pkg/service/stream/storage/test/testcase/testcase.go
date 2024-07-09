@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
-	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
@@ -55,26 +55,32 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	d, mock := dependencies.NewMockedLocalStorageScope(t)
 	cfg := mock.TestConfig()
+	cfg.Storage.Level.Local.Writer.WatchDrainFile = false
 
 	// Start statistics collector
-	writerEvents := events.New[diskwriter.Writer]()
-	collector.Start(d, writerEvents, cfg.Storage.Statistics.Collector, cfg.NodeID)
+	pipelineEvents := events.New[encoding.Pipeline]()
+	collector.Start(d, pipelineEvents, cfg.Storage.Statistics.Collector, cfg.NodeID)
 
 	// Open volume
-	opts := []writerVolume.Option{writerVolume.WithWatchDrainFile(false)}
 	now := d.Clock().Now()
 	volPath := t.TempDir()
 	spec := volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, d.Logger(), d.Clock(), writerEvents, cfg.Storage.Level.Local.Writer, spec, opts...)
+	vol, err := diskwriter.Open(ctx, d.Logger(), d.Clock(), cfg.Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
 	require.NoError(t, err)
 
 	// Create a test slice
 	slice := tc.newSlice(t, vol)
 	filePath := filepath.Join(volPath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
 
-	// Create writer
-	w, err := vol.OpenWriter(slice)
-	require.NoError(t, err)
+	// Create encoder pipeline
+	openPipeline := func() encoding.Pipeline {
+		diskWriter, err := vol.OpenWriter(slice)
+		require.NoError(t, err)
+		pipeline, err := encoding.NewPipeline(ctx, d.Logger(), d.Clock(), cfg.Storage.Level.Local.Encoding, slice, diskWriter, pipelineEvents)
+		require.NoError(t, err)
+		return pipeline
+	}
+	writer := openPipeline()
 
 	// Write all rows batches
 	rowsCount := 0
@@ -91,7 +97,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					assert.NoError(t, w.WriteRecord(now, row))
+					assert.NoError(t, writer.WriteRecord(now, row))
 				}()
 			}
 			go func() {
@@ -103,7 +109,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			go func() {
 				defer close(done)
 				for _, row := range batch.Rows {
-					assert.NoError(t, w.WriteRecord(now, row))
+					assert.NoError(t, writer.WriteRecord(now, row))
 				}
 			}()
 		}
@@ -117,13 +123,12 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 		}
 
 		// Simulate pod failure, restart writer
-		require.NoError(t, w.Close(ctx))
-		w, err = vol.OpenWriter(slice)
-		require.NoError(t, err)
+		require.NoError(t, writer.Close(ctx))
+		writer = openPipeline()
 	}
 
 	// Close the writer
-	require.NoError(t, w.Close(ctx))
+	require.NoError(t, writer.Close(ctx))
 
 	// Close volume
 	assert.NoError(t, vol.Close(ctx))
@@ -161,7 +166,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	}
 }
 
-func (tc *WriterTestCase) newSlice(t *testing.T, volume *writerVolume.Volume) *model.Slice {
+func (tc *WriterTestCase) newSlice(t *testing.T, volume *diskwriter.Volume) *model.Slice {
 	t.Helper()
 
 	s := NewTestSlice(volume)
@@ -178,7 +183,7 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *writerVolume.Volume) *m
 	return s
 }
 
-func NewTestSlice(volume *writerVolume.Volume) *model.Slice {
+func NewTestSlice(volume *diskwriter.Volume) *model.Slice {
 	s := test.NewSlice()
 	s.VolumeID = volume.ID()
 	return s

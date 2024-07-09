@@ -14,7 +14,7 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -105,15 +105,15 @@ func TestCollector(t *testing.T) {
 }
 
 type testEvents struct {
-	WriterOpen  func(w diskwriter.Writer) error
-	WriterClose func(w diskwriter.Writer, closeErr error) error
+	WriterOpen  func(w encoding.Pipeline) error
+	WriterClose func(w encoding.Pipeline, closeErr error) error
 }
 
-func (e *testEvents) OnOpen(fn func(diskwriter.Writer) error) {
+func (e *testEvents) OnOpen(fn func(encoding.Pipeline) error) {
 	e.WriterOpen = fn
 }
 
-func (e *testEvents) OnClose(fn func(diskwriter.Writer, error) error) {
+func (e *testEvents) OnClose(fn func(encoding.Pipeline, error) error) {
 	e.WriterClose = fn
 }
 
@@ -164,7 +164,7 @@ func (w *testWriter) Close(context.Context) error {
 	panic(errors.New("method should not be called"))
 }
 
-func (w *testWriter) Events() *events.Events[diskwriter.Writer] {
+func (w *testWriter) Events() *events.Events[encoding.Pipeline] {
 	panic(errors.New("method should not be called"))
 }
 

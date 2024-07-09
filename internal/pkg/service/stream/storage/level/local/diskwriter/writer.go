@@ -2,192 +2,110 @@ package diskwriter
 
 import (
 	"context"
-	"io"
+	"os"
+	"path/filepath"
 	"sync"
-	"time"
 
-	"github.com/benbjohnson/clock"
-	"github.com/c2h5oh/datasize"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
-	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/count"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/limitbuffer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/size"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writechain"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Writer writes values as bytes to the slice file on the disk, in the configured format and compression.
+const (
+	sliceDirPerm = 0o750
+)
+
+// Writer writes bytes to the slice file on the disk.
+// Thw Writer.Write method is called by the network.Listener, which received bytes from the network.Writer/encoding.Writer.
 type Writer interface {
-	StatisticsProvider
-
 	SliceKey() model.SliceKey
-
-	WriteRecord(timestamp time.Time, values []any) error
-	// Close the writer and sync data to the disk.
-	Close(context.Context) error
+	Write(p []byte) (n int, err error)
+	// Sync data from OS cache to the disk.
+	Sync() error
 	// Events provides listening to the writer lifecycle.
 	Events() *events.Events[Writer]
+	// Close the writer and sync data to the disk.
+	Close(context.Context) error
 }
 
-type StatisticsProvider interface {
-	// AcceptedWrites returns count of write operations waiting for the sync.
-	AcceptedWrites() uint64
-	// CompletedWrites returns count of successfully written and synced writes.
-	CompletedWrites() uint64
-	// FirstRecordAt returns timestamp of receiving the first record for processing.
-	FirstRecordAt() utctime.UTCTime
-	// LastRecordAt returns timestamp of receiving the last record for processing.
-	LastRecordAt() utctime.UTCTime
-	// CompressedSize written to the file, measured after compression writer.
-	CompressedSize() datasize.ByteSize
-	// UncompressedSize written to the file, measured before compression writer.
-	UncompressedSize() datasize.ByteSize
-}
-
-// writer implements Writer interface, it wraps common logic for all file types.
-// For conversion between record values and bytes, the Writer is used.
 type writer struct {
 	logger log.Logger
 	slice  *model.Slice
+	file   File
 	events *events.Events[Writer]
-
-	chain  *writechain.Chain
-	syncer *writesync.Syncer
-
-	formatWriter format.Writer
 	// closed blocks new writes
 	closed chan struct{}
 	// writeWg waits for in-progress writes before Close
 	writeWg *sync.WaitGroup
-
-	acceptedWrites    *count.Counter
-	completedWrites   *count.Counter
-	compressedMeter   *size.Meter
-	uncompressedMeter *size.Meter
 }
 
 func New(
 	ctx context.Context,
 	logger log.Logger,
-	clk clock.Clock,
 	cfg Config,
+	volumePath string,
 	slice *model.Slice,
-	file writechain.File,
-	syncerFactory writesync.SyncerFactory,
-	formatWriterFactory format.WriterFactory,
-	writerEvents *events.Events[Writer],
+	events *events.Events[Writer],
 ) (out Writer, err error) {
+	logger = logger.With(
+		attribute.String("projectId", slice.ProjectID.String()),
+		attribute.String("branchId", slice.BranchID.String()),
+		attribute.String("sourceId", slice.SourceID.String()),
+		attribute.String("sinkId", slice.SinkID.String()),
+		attribute.String("fileId", slice.FileID.String()),
+		attribute.String("sliceId", slice.SliceID.String()),
+	)
+
 	w := &writer{
-		logger:  logger.WithComponent("slice-writer"),
+		logger:  logger,
 		slice:   slice,
-		events:  writerEvents.Clone(), // clone events passed from the volume, so additional writer specific listeners can be added
+		events:  events.Clone(), // clone passed events, so additional writer specific listeners can be added
 		closed:  make(chan struct{}),
 		writeWg: &sync.WaitGroup{},
 	}
 
-	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", slice.SliceKey.String()))
 	w.logger.Debug(ctx, "opening disk writer")
 
-	// Close resources on error
-	defer func() {
-		if err != nil {
-			if w.syncer != nil {
-				_ = w.syncer.Stop(ctx)
-			}
-			if w.chain != nil {
-				_ = w.chain.Close(ctx)
-			}
-		}
-	}()
-
-	// Create counters
-	{
-		// In progress writes counter
-		w.acceptedWrites = count.NewCounter()
-
-		// Successful writes counter, the value backup is periodically saved to disk.
-		// In the case of non-graceful node shutdown, the initial state is loaded from the disk after the node is restarted.
-		// In that case, the statistics may not be accurate, but this should not happen, and we prefer throughput over the atomicity of statistics.
-		w.completedWrites = count.NewCounter()
+	// Create directory if not exists
+	dirPath := filepath.Join(volumePath, slice.LocalStorage.Dir)
+	if err = os.Mkdir(dirPath, sliceDirPerm); err != nil && !errors.Is(err, os.ErrExist) {
+		return nil, errors.PrefixErrorf(err, `cannot create slice directory "%s"`, dirPath)
 	}
 
-	// Create empty chain of writers to the file
-	// The chain is built from the end, from the output file, to the CSV writer at the start
-	{
-		w.chain = writechain.New(logger, file)
+	// Open file
+	filePath := filepath.Join(dirPath, slice.LocalStorage.Filename)
+	logger = logger.With(attribute.String("file.path", filePath))
+	w.file, err = cfg.FileOpener.OpenFile(filePath)
+	if err == nil {
+		logger.Debug(ctx, "opened file")
+	} else {
+		logger.Errorf(ctx, `cannot open file "%s": %s`, filePath, err)
+		return nil, err
 	}
 
-	// Add a buffer before the file
-	{
-		if cfg.FileBuffer > 0 {
-			w.chain.PrependWriter(func(w io.Writer) io.Writer {
-				return limitbuffer.New(w, int(cfg.FileBuffer.Bytes()))
-			})
-		}
+	// Get file info
+	stat, err := w.file.Stat()
+	if err != nil {
+		return nil, err
 	}
 
-	// Measure size of compressed data
-	{
-		w.chain.PrependWriter(func(writer io.Writer) io.Writer {
-			w.compressedMeter = size.NewMeter(writer)
-			return w.compressedMeter
-		})
-	}
-
-	// Add compression if enabled
-	{
-		if compConfig := slice.LocalStorage.Compression; compConfig.Type != compression.TypeNone {
-			// Add compression writer
-			_, err = w.chain.PrependWriterOrErr(func(writer io.Writer) (io.Writer, error) {
-				return compressionWriter.New(writer, compConfig)
-			})
-			if err != nil {
-				return nil, err
+	// Allocate disk space
+	if isNew := stat.Size() == 0; isNew {
+		if size := slice.LocalStorage.AllocatedDiskSpace; size != 0 {
+			if ok, err := cfg.Allocator.Allocate(w.file, size); ok {
+				logger.Debugf(ctx, `allocated disk space "%s"`, size)
+			} else if err != nil {
+				// The error is not fatal
+				logger.Errorf(ctx, `cannot allocate disk space "%s", allocation skipped: %s`, size, err)
+			} else {
+				logger.Debug(ctx, "disk space allocation is not supported")
 			}
-
-			// Add a buffer before compression writer, if it is not included in the writer itself
-			if cfg.InputBuffer > 0 && !compConfig.HasWriterInputBuffer() {
-				w.chain.PrependWriter(func(w io.Writer) io.Writer {
-					return limitbuffer.New(w, int(cfg.InputBuffer.Bytes()))
-				})
-			}
-
-			// Measure size of uncompressed CSV data
-			w.chain.PrependWriter(func(writer io.Writer) io.Writer {
-				w.uncompressedMeter = size.NewMeter(writer)
-				return w.uncompressedMeter
-			})
 		} else {
-			// Size of the compressed and uncompressed data is same
-			w.uncompressedMeter = w.compressedMeter
+			logger.Debug(ctx, "disk space allocation is disabled")
 		}
-	}
-
-	// Create syncer to trigger sync based on counter and meters from the previous steps
-	{
-		w.syncer = syncerFactory(ctx, logger, clk, slice.LocalStorage.DiskSync, w.chain, w)
-	}
-
-	// Create file format writer.
-	// It is entrypoint of the writers chain.
-	{
-		w.formatWriter, err = formatWriterFactory(cfg.Format, w.chain, w.slice)
-		if err != nil {
-			return nil, err
-		}
-
-		// Flush/Close the file format writer at first
-		w.chain.PrependFlusherCloser(w.formatWriter)
 	}
 
 	// Dispatch "open" event
@@ -199,83 +117,30 @@ func New(
 	return w, nil
 }
 
-func (w *writer) WriteRecord(timestamp time.Time, values []any) error {
+func (w *writer) SliceKey() model.SliceKey {
+	return w.slice.SliceKey
+}
+
+func (w *writer) Write(p []byte) (n int, err error) {
 	// Block Close method
 	w.writeWg.Add(1)
 	defer w.writeWg.Done()
 
-	// Check if the writer is closed
-	if w.isClosed() {
-		return errors.New(`writer is closed`)
-	}
-
-	// Check values count
-	if len(values) != len(w.slice.Columns) {
-		return errors.Errorf(`expected %d columns in the row, given %d`, len(w.slice.Columns), len(values))
-	}
-
-	// Format and write table row
-	if err := w.formatWriter.WriteRecord(values); err != nil {
-		return err
-	}
-
-	notifier := w.syncer.Notifier()
-
-	// Increments number of high-level writes in progress
-	w.acceptedWrites.Add(timestamp, 1)
-
-	// Wait for sync and return sync error, if any
-	if err := notifier.Wait(); err != nil {
-		return err
-	}
-
-	// Increase the count of successful writes
-	w.completedWrites.Add(timestamp, 1)
-	return nil
+	return w.file.Write(p)
 }
 
-func (w *writer) SliceKey() model.SliceKey {
-	return w.slice.SliceKey
+func (w *writer) Sync() error {
+	return w.file.Sync()
 }
 
 func (w *writer) Events() *events.Events[Writer] {
 	return w.events
 }
 
-// AcceptedWrites returns count of write operations waiting for the sync.
-func (w *writer) AcceptedWrites() uint64 {
-	return w.acceptedWrites.Count()
-}
-
-// CompletedWrites returns count of successfully written and synced writes.
-func (w *writer) CompletedWrites() uint64 {
-	return w.completedWrites.Count()
-}
-
-// FirstRecordAt returns timestamp of receiving the first row for processing.
-func (w *writer) FirstRecordAt() utctime.UTCTime {
-	return w.completedWrites.FirstAt()
-}
-
-// LastRecordAt returns timestamp of receiving the last row for processing.
-func (w *writer) LastRecordAt() utctime.UTCTime {
-	return w.completedWrites.LastAt()
-}
-
-// CompressedSize written to the file, measured after compression writer.
-func (w *writer) CompressedSize() datasize.ByteSize {
-	return w.compressedMeter.Size()
-}
-
-// UncompressedSize written to the file, measured before compression writer.
-func (w *writer) UncompressedSize() datasize.ByteSize {
-	return w.uncompressedMeter.Size()
-}
-
 func (w *writer) Close(ctx context.Context) error {
 	w.logger.Debug(ctx, "closing disk writer")
 
-	// Prevent new writes
+	// Close only once
 	if w.isClosed() {
 		return errors.New(`writer is already closed`)
 	}
@@ -283,19 +148,18 @@ func (w *writer) Close(ctx context.Context) error {
 
 	errs := errors.NewMultiError()
 
-	// Stop syncer, it triggers also the last sync.
-	// Returns "syncer is already stopped" error, if called multiple times.
-	if err := w.syncer.Stop(ctx); err != nil {
-		errs.Append(err)
-	}
-
-	// Close writers  chain, it closes all writers, and then sync/close the file.
-	if err := w.chain.Close(ctx); err != nil {
-		errs.Append(err)
-	}
-
 	// Wait for running writes
 	w.writeWg.Wait()
+
+	// Sync file
+	if err := w.file.Sync(); err != nil {
+		errs.Append(errors.Errorf(`cannot sync file: %w`, err))
+	}
+
+	// Close file
+	if err := w.file.Close(); err != nil {
+		errs.Append(errors.Errorf(`cannot close file: %w`, err))
+	}
 
 	// Dispatch "close"" event
 	if err := w.events.DispatchOnClose(w, errs.ErrorOrNil()); err != nil {

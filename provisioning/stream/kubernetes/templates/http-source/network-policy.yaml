@@ -17,6 +17,11 @@ spec:
     # HTTP source
     - ports:
         - port: 7000
+    # Storage Writer responses
+    - from:
+        - podSelector:
+            matchLabels:
+              app: stream-storage-reader-writer
     # Metrics
     - ports:
         - port: 9000

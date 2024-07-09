@@ -495,8 +495,8 @@ func (w *testFile) Sync() error {
 	return w.OsFile.Sync()
 }
 
-func (w *testFile) Close() error {
-	w.Logger.Info(context.Background(), "TEST: close file")
+func (w *testFile) Close(ctx context.Context) error {
+	w.Logger.Info(ctx, "TEST: close file")
 	if w.CloseError != nil {
 		return w.CloseError
 	}

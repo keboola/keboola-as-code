@@ -153,7 +153,7 @@ func (r *reader) Events() *events.Events[Reader] {
 func (r *reader) Close(ctx context.Context) error {
 	r.logger.Debug(ctx, "closing disk reader")
 
-	// Prevent new writes
+	// Close only once
 	if r.isClosed() {
 		return errors.New(`reader is already closed`)
 	}
@@ -161,13 +161,13 @@ func (r *reader) Close(ctx context.Context) error {
 
 	errs := errors.NewMultiError()
 
+	// Wait for running reads
+	r.readWg.Wait()
+
 	// Close readers chain
 	if err := r.chain.Close(ctx); err != nil {
 		errs.Append(err)
 	}
-
-	// Wait for running reads
-	r.readWg.Wait()
 
 	// Dispatch "close"" event
 	if err := r.events.DispatchOnClose(r, errs.ErrorOrNil()); err != nil {

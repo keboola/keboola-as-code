@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
-	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
@@ -65,7 +65,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	now := clk.Now()
 	volPath := b.TempDir()
 	spec := volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, logger, clk, events.New[diskwriter.Writer](), diskwriter.NewConfig(), spec)
+	vol, err := diskwriter.Open(ctx, logger, clk, diskwriter.NewConfig(), spec, events.New[diskwriter.Writer]())
 	require.NoError(b, err)
 
 	// Create slice
@@ -73,7 +73,12 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	filePath := filepath.Join(volPath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
 
 	// Create writer
-	sliceWriter, err := vol.OpenWriter(slice)
+	diskWriter, err := vol.OpenWriter(slice)
+	require.NoError(b, err)
+
+	// Create encoder pipeline
+	cfg := encoding.NewConfig()
+	writer, err := encoding.NewPipeline(ctx, logger, clk, cfg, slice, diskWriter, events.New[encoding.Pipeline]())
 	require.NoError(b, err)
 
 	// Create data channel
@@ -101,7 +106,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 				// Read from the channel until the N rows are processed, together by all goroutines
 				for row := range dataCh {
 					start := time.Now()
-					assert.NoError(b, sliceWriter.WriteRecord(now, row))
+					assert.NoError(b, writer.WriteRecord(now, row))
 					latencySum += time.Since(start).Seconds()
 					latencyCount++
 				}
@@ -114,30 +119,33 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	wg.Wait()
 	end := time.Now()
 
+	// Close encoder
+	require.NoError(b, writer.Close(ctx))
+
 	// Close volume
-	assert.NoError(b, vol.Close(ctx))
+	require.NoError(b, vol.Close(ctx))
 
 	// Report extra metrics
 	duration := end.Sub(start)
 	b.ReportMetric(float64(b.N)/duration.Seconds(), "wr/s")
 	b.ReportMetric(wb.latencySum.Load()/float64(wb.latencyCount.Load())*1000, "ms/wr")
-	b.ReportMetric(sliceWriter.UncompressedSize().MBytes()/duration.Seconds(), "in_MB/s")
-	b.ReportMetric(sliceWriter.CompressedSize().MBytes()/duration.Seconds(), "out_MB/s")
-	b.ReportMetric(float64(sliceWriter.UncompressedSize())/float64(sliceWriter.CompressedSize()), "ratio")
+	b.ReportMetric(writer.UncompressedSize().MBytes()/duration.Seconds(), "in_MB/s")
+	b.ReportMetric(writer.CompressedSize().MBytes()/duration.Seconds(), "out_MB/s")
+	b.ReportMetric(float64(writer.UncompressedSize())/float64(writer.CompressedSize()), "ratio")
 
 	// Check rows count
-	assert.Equal(b, uint64(b.N), sliceWriter.CompletedWrites())
+	assert.Equal(b, uint64(b.N), writer.CompletedWrites())
 
 	// Check file real size
 	if wb.Compression.Type == compression.TypeNone {
-		assert.Equal(b, sliceWriter.CompressedSize(), sliceWriter.UncompressedSize())
+		assert.Equal(b, writer.CompressedSize(), writer.UncompressedSize())
 	}
 	stat, err := os.Stat(filePath)
 	assert.NoError(b, err)
-	assert.Equal(b, sliceWriter.CompressedSize(), datasize.ByteSize(stat.Size()))
+	assert.Equal(b, writer.CompressedSize(), datasize.ByteSize(stat.Size()))
 }
 
-func (wb *WriterBenchmark) newSlice(b *testing.B, volume *writerVolume.Volume) *model.Slice {
+func (wb *WriterBenchmark) newSlice(b *testing.B, volume *diskwriter.Volume) *model.Slice {
 	b.Helper()
 
 	s := test.NewSlice()

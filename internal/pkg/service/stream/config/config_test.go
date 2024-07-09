@@ -160,26 +160,48 @@ storage:
                     static: 100MB
                     # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
                     relative: 110
-            writer:
-                format:
+            encoding:
+                encoder:
                     # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
                     concurrency: 0
                 # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
                 inputBuffer: 1MB
-                # Max size of the buffer before the output file. 0 = disabled. Validation rules: maxBytes=16MB
-                fileBuffer: 1MB
-            compression:
-                # Compression type. Validation rules: required,oneof=none gzip zstd
-                type: gzip
-                gzip:
-                    # GZIP compression level: 1-9. Validation rules: min=1,max=9
-                    level: 1
-                    # GZIP implementation: standard, fast, parallel. Validation rules: required,oneof=standard fast parallel
-                    implementation: parallel
-                    # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
-                    blockSize: 256KB
-                    # GZIP parallel concurrency, 0 = auto.
-                    concurrency: 0
+                # Max size of the buffer before the output. 0 = disabled. Validation rules: maxBytes=16MB
+                outputBuffer: 1MB
+                compression:
+                    # Compression type. Validation rules: required,oneof=none gzip zstd
+                    type: gzip
+                    gzip:
+                        # GZIP compression level: 1-9. Validation rules: min=1,max=9
+                        level: 1
+                        # GZIP implementation: standard, fast, parallel. Validation rules: required,oneof=standard fast parallel
+                        implementation: parallel
+                        # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
+                        blockSize: 256KB
+                        # GZIP parallel concurrency, 0 = auto.
+                        concurrency: 0
+            writer:
+                network:
+                    # Listen address of the configuration HTTP API. Validation rules: required,hostname_port
+                    listen: 0.0.0.0:6000
+                    # Keep alive interval. Validation rules: required,minDuration=1s,maxDuration=60s
+                    keepAliveInterval: 5s
+                    # Buffer size for transferring data between source and writer nodes. Validation rules: required,minBytes=16kB,maxBytes=100MB
+                    inputBuffer: 10MB
+                    # Buffer size for transferring responses between writer and source node. Validation rules: required,minBytes=16kB,maxBytes=1MB
+                    responseBuffer: 32KB
+                    # How many streams may be waiting an accept per connection. Validation rules: required,min=10,max=100000
+                    maxWaitingStreamsPerConn: 1024
+                    # Validation rules: required,minBytes=256kB,maxBytes=10MB
+                    streamMaxWindow: 512KB
+                    # Stream ACK timeout. Validation rules: required,minDuration=1s,maxDuration=30s
+                    streamOpenTimeout: 5s
+                    # Stream close timeout. Validation rules: required,minDuration=1s,maxDuration=30s
+                    streamCloseTimeout: 5s
+                    # Stream write timeout. Validation rules: required,minDuration=1s,maxDuration=60s
+                    streamWriteTimeout: 5s
+                    # How long the server waits for streams closing. Validation rules: required,minDuration=1s,max=600s
+                    shutdownTimeout: 5s
         staging:
             # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
             maxSlicesPerFile: 100
@@ -243,7 +265,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(`
 [
   {
-    "key": "storage.level.local.compression.gzip.blockSize",
+    "key": "storage.level.local.encoding.compression.gzip.blockSize",
     "type": "string",
     "description": "GZIP parallel block size.",
     "value": "256KB",
@@ -253,7 +275,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "required,minBytes=16kB,maxBytes=100MB"
   },
   {
-    "key": "storage.level.local.compression.gzip.concurrency",
+    "key": "storage.level.local.encoding.compression.gzip.concurrency",
     "type": "int",
     "description": "GZIP parallel concurrency, 0 = auto.",
     "value": 0,
@@ -262,7 +284,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "protected": true
   },
   {
-    "key": "storage.level.local.compression.gzip.implementation",
+    "key": "storage.level.local.encoding.compression.gzip.implementation",
     "type": "string",
     "description": "GZIP implementation: standard, fast, parallel.",
     "value": "parallel",
@@ -272,7 +294,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "required,oneof=standard fast parallel"
   },
   {
-    "key": "storage.level.local.compression.gzip.level",
+    "key": "storage.level.local.encoding.compression.gzip.level",
     "type": "int",
     "description": "GZIP compression level: 1-9.",
     "value": 1,
@@ -282,7 +304,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "min=1,max=9"
   },
   {
-    "key": "storage.level.local.compression.type",
+    "key": "storage.level.local.encoding.compression.type",
     "type": "string",
     "description": "Compression type.",
     "value": "gzip",
@@ -292,7 +314,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "required,oneof=none gzip zstd"
   },
   {
-    "key": "storage.level.local.compression.zstd.concurrency",
+    "key": "storage.level.local.encoding.compression.zstd.concurrency",
     "type": "int",
     "description": "ZSTD concurrency, 0 = auto",
     "value": 0,
@@ -301,7 +323,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "protected": true
   },
   {
-    "key": "storage.level.local.compression.zstd.level",
+    "key": "storage.level.local.encoding.compression.zstd.level",
     "type": "int",
     "description": "ZSTD compression level: fastest, default, better, best.",
     "value": 2,
@@ -311,7 +333,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "min=1,max=4"
   },
   {
-    "key": "storage.level.local.compression.zstd.windowSize",
+    "key": "storage.level.local.encoding.compression.zstd.windowSize",
     "type": "string",
     "description": "ZSTD window size.",
     "value": "4MB",
@@ -319,6 +341,36 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "overwritten": false,
     "protected": true,
     "validation": "required,minBytes=1kB,maxBytes=512MB"
+  },
+  {
+    "key": "storage.level.local.encoding.encoder.concurrency",
+    "type": "int",
+    "description": "Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores",
+    "value": 0,
+    "defaultValue": 0,
+    "overwritten": false,
+    "protected": true,
+    "validation": "min=0,max=256"
+  },
+  {
+    "key": "storage.level.local.encoding.inputBuffer",
+    "type": "string",
+    "description": "Max size of the buffer before compression, if compression is enabled. 0 = disabled",
+    "value": "1MB",
+    "defaultValue": "1MB",
+    "overwritten": false,
+    "protected": true,
+    "validation": "maxBytes=16MB"
+  },
+  {
+    "key": "storage.level.local.encoding.outputBuffer",
+    "type": "string",
+    "description": "Max size of the buffer before the output. 0 = disabled",
+    "value": "1MB",
+    "defaultValue": "1MB",
+    "overwritten": false,
+    "protected": true,
+    "validation": "maxBytes=16MB"
   },
   {
     "key": "storage.level.local.volume.allocation.enabled",
@@ -443,36 +495,6 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "protected": true
   },
   {
-    "key": "storage.level.local.writer.fileBuffer",
-    "type": "string",
-    "description": "Max size of the buffer before the output file. 0 = disabled",
-    "value": "1MB",
-    "defaultValue": "1MB",
-    "overwritten": false,
-    "protected": true,
-    "validation": "maxBytes=16MB"
-  },
-  {
-    "key": "storage.level.local.writer.format.concurrency",
-    "type": "int",
-    "description": "Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores",
-    "value": 0,
-    "defaultValue": 0,
-    "overwritten": false,
-    "protected": true,
-    "validation": "min=0,max=256"
-  },
-  {
-    "key": "storage.level.local.writer.inputBuffer",
-    "type": "string",
-    "description": "Max size of the buffer before compression, if compression is enabled. 0 = disabled",
-    "value": "1MB",
-    "defaultValue": "1MB",
-    "overwritten": false,
-    "protected": true,
-    "validation": "maxBytes=16MB"
-  },
-  {
     "key": "storage.level.staging.maxSlicesPerFile",
     "type": "int",
     "description": "Maximum number of slices in a file, a new file is created after reaching it.",
@@ -577,13 +599,13 @@ func TestConfig_BindKVs_InvalidType(t *testing.T) {
 
 	err := configpatch.BindKVs(&config.Patch{}, []configpatch.PatchKV{
 		{
-			KeyPath: "storage.level.local.compression.gzip.level",
+			KeyPath: "storage.level.local.encoding.compression.gzip.level",
 			Value:   "foo",
 		},
 	})
 
 	if assert.Error(t, err) {
-		assert.Equal(t, `invalid "storage.level.local.compression.gzip.level" value: found type "string", expected "int"`, err.Error())
+		assert.Equal(t, `invalid "storage.level.local.encoding.compression.gzip.level" value: found type "string", expected "int"`, err.Error())
 	}
 }
 

@@ -1,31 +1,32 @@
 package diskwriter
 
 import (
-	"github.com/c2h5oh/datasize"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/format"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 )
 
-// Config configures the local writer.
 type Config struct {
-	Format      format.Config     `configKey:"format"`
-	InputBuffer datasize.ByteSize `configKey:"inputBuffer" configUsage:"Max size of the buffer before compression, if compression is enabled. 0 = disabled" validate:"maxBytes=16MB"`
-	FileBuffer  datasize.ByteSize `configKey:"fileBuffer" configUsage:"Max size of the buffer before the output file. 0 = disabled" validate:"maxBytes=16MB"`
+	Network network.Config `configKey:"network"`
+	// WatchDrainFile activates watching for drainFile changes (creation/deletion),
+	// otherwise the file is checked only on the volume opening.
+	// Default Linux OS limit is 128 inotify watchers = 128 volumes.
+	// The value is sufficient for production but insufficient parallel for tests.
+	WatchDrainFile bool
+	// Allocator allocates a free disk space for a file.
+	// A custom implementation can be useful for tests.
+	Allocator diskalloc.Allocator
+	// FileOpener provides file opening.
+	// A custom implementation can be useful for tests.
+	FileOpener FileOpener
 }
 
-// ConfigPatch is same as the Config, but with optional/nullable fields.
-// It may be part of a Sink definition to allow modification of the default configuration.
-type ConfigPatch struct {
-	Format      *format.ConfigPatch `json:"format,omitempty"`
-	InputBuffer *datasize.ByteSize  `json:"inputBuffer,omitempty"`
-	FileBuffer  *datasize.ByteSize  `json:"fileBuffer,omitempty"`
-}
+type ConfigPatch struct{}
 
-// NewConfig provides default configuration.
 func NewConfig() Config {
 	return Config{
-		Format:      format.NewConfig(),
-		InputBuffer: 1 * datasize.MB,
-		FileBuffer:  1 * datasize.MB,
+		Network:        network.NewConfig(),
+		WatchDrainFile: true,
+		Allocator:      diskalloc.DefaultAllocator{},
+		FileOpener:     DefaultFileOpener{},
 	}
 }

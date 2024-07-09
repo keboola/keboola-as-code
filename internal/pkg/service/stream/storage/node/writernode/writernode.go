@@ -11,10 +11,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 )
 
@@ -32,7 +31,7 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 	logger.Info(ctx, `starting storage writer node`)
 
 	// Open volumes
-	volumes, err := volume.OpenVolumes(ctx, d, cfg.NodeID, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
+	volumes, err := diskwriter.OpenVolumes(ctx, d, cfg.NodeID, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
 	if err != nil {
 		return err
 	}
@@ -43,10 +42,6 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-
-	// Setup statistics collector
-	syncCfg := cfg.Storage.Statistics.Collector
-	collector.Start(d, volumes.Events(), syncCfg, cfg.NodeID)
 
 	return nil
 }
