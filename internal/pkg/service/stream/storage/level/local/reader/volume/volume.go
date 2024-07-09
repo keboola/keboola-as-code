@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -30,9 +32,10 @@ type Volume struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	config config
-	logger log.Logger
-	clock  clock.Clock
+	config       config
+	logger       log.Logger
+	clock        clock.Clock
+	readerEvents *events.Events[reader.Reader]
 
 	fsLock *flock.Flock
 
@@ -45,14 +48,15 @@ type Volume struct {
 //   - The IDFile is loaded.
 //   - If the IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The lockFile ensures only one opening of the volume for reading.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec volume.Spec, opts ...Option) (*Volume, error) {
+func Open(ctx context.Context, logger log.Logger, clock clock.Clock, readerEvents *events.Events[reader.Reader], spec volume.Spec, opts ...Option) (*Volume, error) {
 	v := &Volume{
-		spec:        spec,
-		config:      newConfig(opts),
-		logger:      logger,
-		clock:       clock,
-		readersLock: &sync.Mutex{},
-		readers:     make(map[string]*readerRef),
+		spec:         spec,
+		config:       newConfig(opts),
+		logger:       logger,
+		clock:        clock,
+		readerEvents: readerEvents.Clone(), // clone events passed from volumes collection, so volume specific listeners can be added
+		readersLock:  &sync.Mutex{},
+		readers:      make(map[string]*readerRef),
 	}
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
@@ -73,7 +77,7 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, spec volume
 	{
 		v.fsLock = flock.New(filepath.Join(v.spec.Path, lockFile))
 		if locked, err := v.fsLock.TryLock(); err != nil {
-			return nil, errors.Errorf(`cannot acquire reader lock "%s": %w`, v.fsLock.Path(), err)
+			return nil, errors.PrefixErrorf(err, `cannot acquire reader lock "%s"`, v.fsLock.Path())
 		} else if !locked {
 			return nil, errors.Errorf(`cannot acquire reader lock "%s": already locked`, v.fsLock.Path())
 		}
@@ -107,6 +111,10 @@ func (v *Volume) ID() volume.ID {
 	return v.id
 }
 
+func (v *Volume) Events() *events.Events[reader.Reader] {
+	return v.readerEvents
+}
+
 func (v *Volume) Metadata() volume.Metadata {
 	return volume.Metadata{
 		ID:   v.id,
@@ -123,12 +131,12 @@ func (v *Volume) Close(ctx context.Context) error {
 
 	// Close all slice readers
 	wg := &sync.WaitGroup{}
-	for _, r := range v.openedReaders() {
+	for _, r := range v.Readers() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := r.CloseCtx(ctx); err != nil {
-				errs.Append(errors.Errorf(`cannot close reader for slice "%s": %w`, r.SliceKey().String(), err))
+			if err := r.Close(ctx); err != nil {
+				errs.Append(errors.PrefixErrorf(err, `cannot close reader for slice "%s"`, r.SliceKey().String()))
 			}
 		}()
 	}
@@ -136,10 +144,10 @@ func (v *Volume) Close(ctx context.Context) error {
 
 	// Release the lock
 	if err := v.fsLock.Unlock(); err != nil {
-		errs.Append(errors.Errorf(`cannot release reader lock "%s": %w`, v.fsLock.Path(), err))
+		errs.Append(errors.PrefixErrorf(err, `cannot release reader lock "%s"`, v.fsLock.Path()))
 	}
 	if err := os.Remove(v.fsLock.Path()); err != nil {
-		errs.Append(errors.Errorf(`cannot remove reader lock "%s": %w`, v.fsLock.Path(), err))
+		errs.Append(errors.PrefixErrorf(err, `cannot remove reader lock "%s"`, v.fsLock.Path()))
 	}
 
 	v.logger.Infof(ctx, "closed volume")
@@ -162,7 +170,7 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
 		if content, err := os.ReadFile(path); err == nil {
 			return volume.ID(strings.TrimSpace(string(content))), nil
 		} else if !errors.Is(err, os.ErrNotExist) {
-			return "", errors.Errorf(`cannot open volume ID file "%s": %w`, path, err)
+			return "", errors.PrefixErrorf(err, `cannot open volume ID file "%s"`, path)
 		} else {
 			v.logger.Infof(ctx, `waiting for volume ID file`)
 		}
@@ -172,7 +180,7 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
 			// One more attempt
 		case <-ctx.Done():
 			// Stop on context cancellation / timeout
-			return "", errors.Errorf(`cannot open volume ID file "%s": %w`, path, ctx.Err())
+			return "", errors.PrefixErrorf(ctx.Err(), `cannot open volume ID file "%s"`, path)
 		}
 	}
 }

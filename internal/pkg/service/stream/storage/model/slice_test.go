@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )

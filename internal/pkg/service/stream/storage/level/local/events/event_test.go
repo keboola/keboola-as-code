@@ -1,4 +1,4 @@
-package writer_test
+package events_test
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test"
-	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/volume"
+	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -38,82 +38,82 @@ func TestEventWriter(t *testing.T) {
 	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
-	// Register "OnWriterOpen" and "OnWriterClose" events on the "volumes" level
-	volumes.Events().OnWriterOpen(func(w writer.Writer) error {
+	// Register "OnOpen" and "OnClose" events on the "volumes" level
+	volumes.Events().OnOpen(func(w writer.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (1), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	volumes.Events().OnWriterOpen(func(w writer.Writer) error {
+	volumes.Events().OnOpen(func(w writer.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (2), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	volumes.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	volumes.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (1), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	volumes.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	volumes.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (2), level: volumes`, w.SliceKey().OpenedAt())
 		return nil
 	})
 
-	// Register "OnWriterOpen" and "OnWriterClose" events on the "volume" level
+	// Register "OnOpen" and "OnClose" events on the "volume" level
 	vol1, err := volumes.Collection().Volume("HDD_1")
 	assert.NoError(t, err)
 	vol2, err := volumes.Collection().Volume("HDD_2")
 	assert.NoError(t, err)
-	vol1.Events().OnWriterOpen(func(w writer.Writer) error {
+	vol1.Events().OnOpen(func(w writer.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol1.Events().OnWriterOpen(func(w writer.Writer) error {
+	vol1.Events().OnOpen(func(w writer.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (4), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol1.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	vol1.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (3), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol1.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	vol1.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (4), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol2.Events().OnWriterOpen(func(w writer.Writer) error {
+	vol2.Events().OnOpen(func(w writer.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol2.Events().OnWriterOpen(func(w writer.Writer) error {
+	vol2.Events().OnOpen(func(w writer.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (4), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol2.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	vol2.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (3), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	vol2.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	vol2.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (4), level: volume2`, w.SliceKey().OpenedAt())
 		return nil
 	})
 
-	// Register "OnWriterClose" event on the "writer" level
+	// Register "OnClose" event on the "writer" level
 	slice1 := test.NewSliceOpenedAt("2001-01-01T00:00:00.000Z")
 	slice2 := test.NewSliceOpenedAt("2002-01-01T00:00:00.000Z")
 	writer1, err := vol1.OpenWriter(slice1)
 	require.NoError(t, err)
 	writer2, err := vol2.OpenWriter(slice2)
 	require.NoError(t, err)
-	writer1.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	writer1.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	writer1.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	writer1.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (6), level: writer1`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	writer2.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	writer2.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer2`, w.SliceKey().OpenedAt())
 		return nil
 	})
-	writer2.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	writer2.Events().OnClose(func(w writer.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (6), level: writer2`, w.SliceKey().OpenedAt())
 		return nil
 	})
@@ -166,15 +166,15 @@ func TestWriterEvents_OpenError(t *testing.T) {
 	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
-	// Register "OnWriterOpen" event on the "volumes" level
-	volumes.Events().OnWriterOpen(func(w writer.Writer) error {
+	// Register "OnOpen" event on the "volumes" level
+	volumes.Events().OnOpen(func(w writer.Writer) error {
 		return errors.New("error (1)")
 	})
 
-	// Register "OnWriterOpen" event on the "volume" level
+	// Register "OnOpen" event on the "volume" level
 	vol, err := volumes.Collection().Volume("HDD_1")
 	assert.NoError(t, err)
-	vol.Events().OnWriterOpen(func(w writer.Writer) error {
+	vol.Events().OnOpen(func(w writer.Writer) error {
 		return errors.New("error (2)")
 	})
 
@@ -206,15 +206,15 @@ func TestEventWriter_CloseError(t *testing.T) {
 	volumes, err := writerVolume.OpenVolumes(ctx, d, "my-node", volumesPath, writer.NewConfig(), writerVolume.WithFormatWriterFactory(test.DummyWriterFactory))
 	assert.NoError(t, err)
 
-	// Register "OnWriterClose" event on the "volumes" level
-	volumes.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	// Register "OnClose" event on the "volumes" level
+	volumes.Events().OnClose(func(w writer.Writer, _ error) error {
 		return errors.New("error (1)")
 	})
 
-	// Register "OnWriterClose" event on the "volume" level
+	// Register "OnClose" event on the "volume" level
 	vol, err := volumes.Collection().Volume("HDD_1")
 	assert.NoError(t, err)
-	vol.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	vol.Events().OnClose(func(w writer.Writer, _ error) error {
 		return errors.New("error (2)")
 	})
 
@@ -222,8 +222,8 @@ func TestEventWriter_CloseError(t *testing.T) {
 	w, err := vol.OpenWriter(test.NewSlice())
 	require.NoError(t, err)
 
-	// Register "OnWriterClose" event on the "writer" level
-	w.Events().OnWriterClose(func(w writer.Writer, _ error) error {
+	// Register "OnClose" event on the "writer" level
+	w.Events().OnClose(func(w writer.Writer, _ error) error {
 		return errors.New("error (3)")
 	})
 

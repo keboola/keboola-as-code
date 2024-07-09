@@ -19,7 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -168,9 +168,6 @@ storage:
                 inputBuffer: 1MB
                 # Max size of the buffer before the output file. 0 = disabled. Validation rules: maxBytes=16MB
                 fileBuffer: 1MB
-                statistics:
-                    # Sync interval of in-memory statistics to disk, as a backup. 0 = disabled. Validation rules: maxDuration=1m
-                    diskSyncInterval: 1s
             compression:
                 # Compression type. Validation rules: required,oneof=none gzip zstd
                 type: gzip
@@ -474,16 +471,6 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "overwritten": false,
     "protected": true,
     "validation": "maxBytes=16MB"
-  },
-  {
-    "key": "storage.level.local.writer.statistics.diskSyncInterval",
-    "type": "string",
-    "description": "Sync interval of in-memory statistics to disk, as a backup. 0 = disabled.",
-    "value": 1000000000,
-    "defaultValue": 1000000000,
-    "overwritten": false,
-    "protected": true,
-    "validation": "maxDuration=1m"
   },
   {
     "key": "storage.level.staging.maxSlicesPerFile",

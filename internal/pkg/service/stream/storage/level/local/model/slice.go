@@ -4,7 +4,7 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync"
 )
 
 type Slice struct {

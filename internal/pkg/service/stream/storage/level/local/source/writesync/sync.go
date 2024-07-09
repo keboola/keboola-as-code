@@ -11,7 +11,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync/notify"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

@@ -17,10 +17,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
-	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/volume"
+	writerVolume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -56,15 +57,15 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	cfg := mock.TestConfig()
 
 	// Start statistics collector
-	events := writer.NewEvents()
-	collector.Start(d, events, cfg.Storage.Statistics.Collector, cfg.NodeID)
+	writerEvents := events.New[writer.Writer]()
+	collector.Start(d, writerEvents, cfg.Storage.Statistics.Collector, cfg.NodeID)
 
 	// Open volume
 	opts := []writerVolume.Option{writerVolume.WithWatchDrainFile(false)}
 	now := d.Clock().Now()
 	volPath := t.TempDir()
 	spec := volume.Spec{NodeID: "my-node", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := writerVolume.Open(ctx, d.Logger(), d.Clock(), events, cfg.Storage.Level.Local.Writer, spec, opts...)
+	vol, err := writerVolume.Open(ctx, d.Logger(), d.Clock(), writerEvents, cfg.Storage.Level.Local.Writer, spec, opts...)
 	require.NoError(t, err)
 
 	// Create a test slice

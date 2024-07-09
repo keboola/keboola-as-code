@@ -16,9 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -205,8 +206,12 @@ func TestVolume_Close_Errors(t *testing.T) {
 	if assert.Error(t, err) {
 		// Order of the errors is random, writers are closed in parallel
 		wildcards.Assert(t, strings.TrimSpace(`
-- cannot close writer for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s": chain close error: cannot close file: some close error
-- cannot close writer for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s": chain close error: cannot close file: some close error
+- cannot close writer for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s":
+  - chain close error:
+    - cannot close file: some close error
+- cannot close writer for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s":
+  - chain close error:
+    - cannot close file: some close error
 `), err.Error())
 	}
 }
@@ -217,7 +222,7 @@ type volumeTestCase struct {
 	Ctx          context.Context
 	Logger       log.DebugLogger
 	Clock        *clock.Mock
-	Events       *writer.Events
+	Events       *events.Events[writer.Writer]
 	Allocator    *testAllocator
 	VolumeNodeID string
 	VolumePath   string
@@ -241,7 +246,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 		Ctx:          ctx,
 		Logger:       logger,
 		Clock:        clock.NewMock(),
-		Events:       writer.NewEvents(),
+		Events:       events.New[writer.Writer](),
 		Allocator:    &testAllocator{},
 		VolumeNodeID: "my-node",
 		VolumePath:   tmpDir,

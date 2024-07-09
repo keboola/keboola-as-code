@@ -8,17 +8,20 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/count"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/limitbuffer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/size"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writechain"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/count"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/format"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/limitbuffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/size"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writechain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/source/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -33,7 +36,7 @@ type Writer interface {
 	// Close the writer and sync data to the disk.
 	Close(context.Context) error
 	// Events provides listening to the writer lifecycle.
-	Events() *Events
+	Events() *events.Events[Writer]
 }
 
 type StatisticsProvider interface {
@@ -56,7 +59,7 @@ type StatisticsProvider interface {
 type writer struct {
 	logger log.Logger
 	slice  *model.Slice
-	events *Events
+	events *events.Events[Writer]
 
 	chain  *writechain.Chain
 	syncer *writesync.Syncer
@@ -82,15 +85,18 @@ func New(
 	file writechain.File,
 	syncerFactory writesync.SyncerFactory,
 	formatWriterFactory format.WriterFactory,
-	volumeEvents *Events,
+	writerEvents *events.Events[Writer],
 ) (out Writer, err error) {
 	w := &writer{
 		logger:  logger.WithComponent("slice-writer"),
 		slice:   slice,
-		events:  volumeEvents.Clone(), // clone volume events, to attach additional writer specific events
+		events:  writerEvents.Clone(), // clone events passed from the volume, so additional writer specific listeners can be added
 		closed:  make(chan struct{}),
 		writeWg: &sync.WaitGroup{},
 	}
+
+	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", slice.SliceKey.String()))
+	w.logger.Debug(ctx, "opening disk writer")
 
 	// Close resources on error
 	defer func() {
@@ -185,10 +191,11 @@ func New(
 	}
 
 	// Dispatch "open" event
-	if err = volumeEvents.dispatchOnWriterOpen(w); err != nil {
+	if err = w.events.DispatchOnOpen(w); err != nil {
 		return nil, err
 	}
 
+	w.logger.Debug(ctx, "opened disk writer")
 	return w, nil
 }
 
@@ -231,7 +238,7 @@ func (w *writer) SliceKey() model.SliceKey {
 	return w.slice.SliceKey
 }
 
-func (w *writer) Events() *Events {
+func (w *writer) Events() *events.Events[Writer] {
 	return w.events
 }
 
@@ -266,7 +273,7 @@ func (w *writer) UncompressedSize() datasize.ByteSize {
 }
 
 func (w *writer) Close(ctx context.Context) error {
-	w.logger.Debug(ctx, "closing file")
+	w.logger.Debug(ctx, "closing disk writer")
 
 	// Prevent new writes
 	if w.isClosed() {
@@ -290,11 +297,12 @@ func (w *writer) Close(ctx context.Context) error {
 	// Wait for running writes
 	w.writeWg.Wait()
 
-	if err := w.events.dispatchOnWriterClose(w, errs.ErrorOrNil()); err != nil {
+	// Dispatch "close"" event
+	if err := w.events.DispatchOnClose(w, errs.ErrorOrNil()); err != nil {
 		errs.Append(err)
 	}
 
-	w.logger.Debug(ctx, "closed file")
+	w.logger.Debug(ctx, "closed disk writer")
 	return errs.ErrorOrNil()
 }
 

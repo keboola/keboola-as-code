@@ -153,9 +153,6 @@ data:
             inputBuffer: 1MB
             # Max size of the buffer before the output file. 0 = disabled. Validation rules: maxBytes=16MB
             fileBuffer: 1MB
-            statistics:
-              # Sync interval of in-memory statistics to disk, as a backup. 0 = disabled. Validation rules: maxDuration=1m
-              diskSyncInterval: 1s
           compression:
             # Compression type. Validation rules: required,oneof=none gzip zstd
             type: gzip

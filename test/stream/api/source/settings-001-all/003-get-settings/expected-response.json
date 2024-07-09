@@ -231,16 +231,6 @@
       "validation": "maxBytes=16MB"
     },
     {
-      "key": "storage.level.local.writer.statistics.diskSyncInterval",
-      "type": "string",
-      "description": "Sync interval of in-memory statistics to disk, as a backup. 0 = disabled.",
-      "value": 1000000000,
-      "defaultValue": 1000000000,
-      "overwritten": false,
-      "protected": true,
-      "validation": "maxDuration=1m"
-    },
-    {
       "key": "storage.level.staging.maxSlicesPerFile",
       "type": "int",
       "description": "Maximum number of slices in a file, a new file is created after reaching it.",

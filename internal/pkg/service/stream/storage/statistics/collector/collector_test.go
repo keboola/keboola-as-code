@@ -14,6 +14,7 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -108,11 +109,11 @@ type testEvents struct {
 	WriterClose func(w writer.Writer, closeErr error) error
 }
 
-func (e *testEvents) OnWriterOpen(fn func(writer.Writer) error) {
+func (e *testEvents) OnOpen(fn func(writer.Writer) error) {
 	e.WriterOpen = fn
 }
 
-func (e *testEvents) OnWriterClose(fn func(writer.Writer, error) error) {
+func (e *testEvents) OnClose(fn func(writer.Writer, error) error) {
 	e.WriterClose = fn
 }
 
@@ -163,7 +164,7 @@ func (w *testWriter) Close(context.Context) error {
 	panic(errors.New("method should not be called"))
 }
 
-func (w *testWriter) Events() *writer.Events {
+func (w *testWriter) Events() *events.Events[writer.Writer] {
 	panic(errors.New("method should not be called"))
 }
 

@@ -2,17 +2,12 @@
 package volume
 
 import (
-	"io"
 	"path/filepath"
 	"sort"
 
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression"
-	compressionReader "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/reader"
-	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/reader/readchain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -22,9 +17,9 @@ type readerRef struct {
 }
 
 func (v *Volume) OpenReader(slice *model.Slice) (r reader.Reader, err error) {
-	// Check if the volume is already open
+	// Check context
 	if err := v.ctx.Err(); err != nil {
-		return nil, errors.Errorf(`volume is closed: %w`, err)
+		return nil, errors.PrefixErrorf(err, `reader for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
 	}
 
 	// Setup logger
@@ -38,28 +33,27 @@ func (v *Volume) OpenReader(slice *model.Slice) (r reader.Reader, err error) {
 	)
 
 	// Check if the reader already exists, if not, register an empty reference to unlock immediately
-	ref, exists := v.addReaderFor(slice.SliceKey)
+	ref, exists := v.addReader(slice.SliceKey)
 	if exists {
 		return nil, errors.Errorf(`reader for slice "%s" already exists`, slice.SliceKey.String())
 	}
 
 	// Close resources on a creation error
 	var file File
-	var chain *readchain.Chain
 	defer func() {
+		// Ok, update reference
 		if err == nil {
-			// Update reference
 			ref.Reader = r
-		} else {
-			// Close resources
-			if chain != nil {
-				_ = chain.CloseCtx(v.ctx)
-			} else if file != nil {
-				_ = file.Close()
-			}
-			// Unregister the reader
-			v.removeReader(slice.SliceKey)
+			return
 		}
+
+		// Close resources
+		if file != nil {
+			_ = file.Close()
+		}
+
+		// Unregister the reader
+		v.removeReader(slice.SliceKey)
 	}()
 
 	// Open file
@@ -75,65 +69,21 @@ func (v *Volume) OpenReader(slice *model.Slice) (r reader.Reader, err error) {
 	}
 
 	// Init reader and chain
-	chain = readchain.New(logger, file)
-	r = reader.New(chain, slice.SliceKey, dirPath, filePath)
+	r, err = reader.New(v.ctx, logger, slice, file, v.readerEvents)
+	if err != nil {
+		return nil, err
+	}
 
-	// Unregister the reader on close
-	chain.AppendCloseFn("unregister", func() error {
-		v.removeReader(slice.SliceKey)
+	// Register writer close callback
+	r.Events().OnClose(func(r reader.Reader, _ error) error {
+		v.removeReader(r.SliceKey())
 		return nil
 	})
-
-	// Compare local and staging compression
-	if slice.LocalStorage.Compression.Type == slice.StagingStorage.Compression.Type {
-		// Local and staging compression types are same.
-		// Return the chain with only the *os.File inside.
-		//
-		// See the Chain.UnwrapFile method, to get the underlying *os.File.
-		//
-		// This is preferred way, it enables internal Go optimization and "zero CPU copy" to be used,
-		// read more about "sendfile" syscall for details.
-		return r, nil
-	}
-
-	// Decompress the file stream on-the-fly, when reading.
-	if slice.LocalStorage.Compression.Type != compression.TypeNone {
-		_, err := chain.PrependReaderOrErr(func(r io.Reader) (io.Reader, error) {
-			return compressionReader.New(r, slice.LocalStorage.Compression)
-		})
-		if err != nil {
-			return nil, errors.Errorf(`cannot create compression reader: %w`, err)
-		}
-	}
-
-	// Compress the file stream on-the-fly, when reading.
-	if slice.StagingStorage.Compression.Type != compression.TypeNone {
-		// Convert compression writer to a reader using pipe
-		pipeR, pipeW := io.Pipe()
-		compressionW, err := compressionWriter.New(pipeW, slice.StagingStorage.Compression)
-		if err != nil {
-			return nil, errors.Errorf(`cannot create compression writer: %w`, err)
-		}
-		chain.PrependReader(func(r io.Reader) io.Reader {
-			// Copy: raw bytes (r) -> compressionW -> pipeW -> pipeR
-			go func() {
-				var err error
-				if _, copyErr := io.Copy(compressionW, r); copyErr != nil {
-					err = copyErr
-				}
-				if closeErr := compressionW.Close(); err == nil && closeErr != nil {
-					err = closeErr
-				}
-				_ = pipeW.CloseWithError(err)
-			}()
-			return pipeR
-		})
-	}
 
 	return r, nil
 }
 
-func (v *Volume) openedReaders() (out []reader.Reader) {
+func (v *Volume) Readers() (out []reader.Reader) {
 	v.readersLock.Lock()
 	defer v.readersLock.Unlock()
 
@@ -149,7 +99,7 @@ func (v *Volume) openedReaders() (out []reader.Reader) {
 	return out
 }
 
-func (v *Volume) addReaderFor(k model.SliceKey) (ref *readerRef, exists bool) {
+func (v *Volume) addReader(k model.SliceKey) (ref *readerRef, exists bool) {
 	v.readersLock.Lock()
 	defer v.readersLock.Unlock()
 
