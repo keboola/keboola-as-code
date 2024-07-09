@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
@@ -29,20 +29,20 @@ type DummyWriter struct {
 
 // NotifyWriter notifies about successful writes.
 type NotifyWriter struct {
-	writer.FormatWriter
+	format.Writer
 	writeDone chan struct{}
 }
 
-func DummyWriterFactory(cfg writer.Config, out io.Writer, slice *model.Slice) (writer.FormatWriter, error) {
+func DummyWriterFactory(cfg format.Config, out io.Writer, slice *model.Slice) (format.Writer, error) {
 	return NewDummyWriter(cfg, out, slice), nil
 }
 
-func NewDummyWriter(_ writer.Config, out io.Writer, _ *model.Slice) *DummyWriter {
+func NewDummyWriter(_ format.Config, out io.Writer, _ *model.Slice) *DummyWriter {
 	return &DummyWriter{out: out}
 }
 
-func NewNotifyWriter(w writer.FormatWriter, writeDone chan struct{}) *NotifyWriter {
-	return &NotifyWriter{FormatWriter: w, writeDone: writeDone}
+func NewNotifyWriter(w format.Writer, writeDone chan struct{}) *NotifyWriter {
+	return &NotifyWriter{Writer: w, writeDone: writeDone}
 }
 
 func (w *DummyWriter) WriteRecord(values []any) error {
@@ -68,7 +68,7 @@ func (w *DummyWriter) Close() error {
 }
 
 func (w *NotifyWriter) WriteRecord(values []any) error {
-	err := w.FormatWriter.WriteRecord(values)
+	err := w.Writer.WriteRecord(values)
 	if err == nil {
 		w.writeDone <- struct{}{}
 	}
@@ -84,9 +84,9 @@ func NewWriterHelper() *WriterHelper {
 	return &WriterHelper{writeDone: make(chan struct{}, 100)}
 }
 
-// NewDummyWriter implements writer.FormatWriterFactory.
+// NewDummyWriter implements writer.WriterFactory.
 // See also ExpectWritesCount and TriggerSync methods.
-func (h *WriterHelper) NewDummyWriter(cfg writer.Config, out io.Writer, slice *model.Slice) (writer.FormatWriter, error) {
+func (h *WriterHelper) NewDummyWriter(cfg format.Config, out io.Writer, slice *model.Slice) (format.Writer, error) {
 	return NewNotifyWriter(NewDummyWriter(cfg, out, slice), h.writeDone), nil
 }
 

@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format"
 	fastcsv2 "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format/csv/fastcsv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -15,10 +15,10 @@ type Writer struct {
 	pool    *fastcsv2.WritersPool
 }
 
-// NewWriter creates CSV writers pool and implements format.FormatWriter
+// NewWriter creates CSV writers pool and implements format.Writer
 // The order of the lines is not preserved, because we use the writers pool,
 // but also because there are several source nodes with a load balancer in front of them.
-func NewWriter(cfg writer.Config, out io.Writer, slice *model.Slice) (writer.FormatWriter, error) {
+func NewWriter(cfg format.Config, out io.Writer, slice *model.Slice) (format.Writer, error) {
 	return &Writer{
 		columns: slice.Columns,
 		pool:    fastcsv2.NewWritersPool(out, cfg.Concurrency),

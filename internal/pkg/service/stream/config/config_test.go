@@ -161,8 +161,9 @@ storage:
                     # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
                     relative: 110
             writer:
-                # Concurrency of the writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
-                concurrency: 0
+                format:
+                    # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
+                    concurrency: 0
                 # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
                 inputBuffer: 1MB
                 # Max size of the buffer before the output file. 0 = disabled. Validation rules: maxBytes=16MB
@@ -445,16 +446,6 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "protected": true
   },
   {
-    "key": "storage.level.local.writer.concurrency",
-    "type": "int",
-    "description": "Concurrency of the writer for the specified file type. 0 = auto = num of CPU cores",
-    "value": 0,
-    "defaultValue": 0,
-    "overwritten": false,
-    "protected": true,
-    "validation": "min=0,max=256"
-  },
-  {
     "key": "storage.level.local.writer.fileBuffer",
     "type": "string",
     "description": "Max size of the buffer before the output file. 0 = disabled",
@@ -463,6 +454,16 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "overwritten": false,
     "protected": true,
     "validation": "maxBytes=16MB"
+  },
+  {
+    "key": "storage.level.local.writer.format.concurrency",
+    "type": "int",
+    "description": "Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores",
+    "value": 0,
+    "defaultValue": 0,
+    "overwritten": false,
+    "protected": true,
+    "validation": "min=0,max=256"
   },
   {
     "key": "storage.level.local.writer.inputBuffer",

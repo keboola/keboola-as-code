@@ -201,16 +201,6 @@
       "protected": true
     },
     {
-      "key": "storage.level.local.writer.concurrency",
-      "type": "int",
-      "description": "Concurrency of the writer for the specified file type. 0 = auto = num of CPU cores",
-      "value": 0,
-      "defaultValue": 0,
-      "overwritten": false,
-      "protected": true,
-      "validation": "min=0,max=256"
-    },
-    {
       "key": "storage.level.local.writer.fileBuffer",
       "type": "string",
       "description": "Max size of the buffer before the output file. 0 = disabled",
@@ -219,6 +209,16 @@
       "overwritten": false,
       "protected": true,
       "validation": "maxBytes=16MB"
+    },
+    {
+      "key": "storage.level.local.writer.format.concurrency",
+      "type": "int",
+      "description": "Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores",
+      "value": 0,
+      "defaultValue": 0,
+      "overwritten": false,
+      "protected": true,
+      "validation": "min=0,max=256"
     },
     {
       "key": "storage.level.local.writer.inputBuffer",

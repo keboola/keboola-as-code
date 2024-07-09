@@ -2,6 +2,7 @@ package volume
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/format/factory"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/sourcenode/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/writer/writernode/diskalloc"
@@ -13,7 +14,7 @@ type config struct {
 	// allocator allocates a free disk space for a file.
 	allocator diskalloc.Allocator
 	// formatWriterFactory creates a high-level writer for the storage.FileType, for example storage.FileTypeCSV.
-	formatWriterFactory writer.FormatWriterFactory
+	formatWriterFactory format.WriterFactory
 	// syncerFactory provides writesync.Syncer a custom implementation can be useful for tests.
 	syncerFactory writesync.SyncerFactory
 	// fileOpener provides file opening, a custom implementation can be useful for tests.
@@ -59,7 +60,7 @@ func WithSyncerFactory(v writesync.SyncerFactory) Option {
 	}
 }
 
-func WithFormatWriterFactory(v writer.FormatWriterFactory) Option {
+func WithFormatWriterFactory(v format.WriterFactory) Option {
 	return func(c *config) {
 		if v == nil {
 			panic(errors.New(`value must not be nil`))

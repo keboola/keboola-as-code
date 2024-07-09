@@ -10,6 +10,7 @@ on:
       - .github/workflows/test-k8s-service-templates.yml
       - provisioning/templates-api/**
       - provisioning/common/**
+      - internal/pkg/service/templates/api/config/**
 
 env:
   MINIKUBE_PROFILE: templates-api
