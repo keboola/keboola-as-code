@@ -1,6 +1,8 @@
 package sink
 
-import "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/tablesink"
+import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink"
+)
 
 type Config struct {
 	Table tablesink.Config `configKey:"table"`
