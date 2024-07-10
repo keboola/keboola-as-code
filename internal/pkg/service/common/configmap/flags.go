@@ -115,7 +115,7 @@ func mapAndFilterField() OnField {
 			if fieldName = parts[0]; fieldName == "" && len(parts) == 2 && parts[1] == "squash" {
 				// Iterate a squashed/embedded struct
 				return "", true
-			} else if fieldName != "" {
+			} else if fieldName != "" && fieldName != "-" {
 				return fieldName, true
 			}
 		}

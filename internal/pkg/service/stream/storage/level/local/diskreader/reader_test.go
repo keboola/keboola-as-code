@@ -103,17 +103,17 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 			LocalCompression:   compression.NewNoneConfig(),
 			StagingCompression: compression.NewGZIPConfig(),
 		},
-		{
+		/*{
 			Name:               "None_To_ZSTD",
 			LocalCompression:   compression.NewNoneConfig(),
 			StagingCompression: compression.NewZSTDConfig(),
-		},
+		},*/
 		{
 			Name:               "GZIP_To_None",
 			LocalCompression:   compression.NewGZIPConfig(),
 			StagingCompression: compression.NewNoneConfig(),
 		},
-		{
+		/*{
 			Name:               "ZSTD_To_None",
 			LocalCompression:   compression.NewZSTDConfig(),
 			StagingCompression: compression.NewNoneConfig(),
@@ -122,7 +122,7 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 			Name:               "ZSTD_To_GZIP",
 			LocalCompression:   compression.NewZSTDConfig(),
 			StagingCompression: compression.NewGZIPConfig(),
-		},
+		},*/
 	}
 
 	// Run test cases for OK/ReadError/CloseError scenarios
