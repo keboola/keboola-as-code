@@ -8,7 +8,7 @@
   "body": {
     "settings": [
       {
-        "key": "storage.level.local.compression.gzip.blockSize",
+        "key": "storage.level.local.encoding.compression.gzip.blockSize",
         "value": "128KB"
       }
     ]
