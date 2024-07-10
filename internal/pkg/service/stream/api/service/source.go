@@ -10,10 +10,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 )
 
 //nolint:dupl // CreateSink method is similar
@@ -221,9 +221,9 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 	header := d.RequestHeader()
 	header.Del("x-storageapi-token")
 
-	receiveCtx := receivectx.New(ctx, d.Clock().Now(), d.RequestClientIP(), header, string(body))
+	recordCtx := recordctx.New(ctx, d.Clock().Now(), d.RequestClientIP(), header, string(body))
 
-	return s.mapper.NewTestResultResponse(d.SourceKey(), sinks, receiveCtx)
+	return s.mapper.NewTestResultResponse(d.SourceKey(), sinks, recordCtx)
 }
 
 func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.SourceRequestScope, payload *api.SourceStatisticsClearPayload) (err error) {

@@ -1,5 +1,5 @@
-// Package receivectx provides Context with all information needed to process a received request by the Buffer API import endpoint.
-package receivectx
+// Package recordctx provides information about processing record.
+package recordctx
 
 import (
 	"context"

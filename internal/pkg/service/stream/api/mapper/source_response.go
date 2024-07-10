@@ -8,9 +8,9 @@ import (
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -62,7 +62,7 @@ func (m *Mapper) NewSourcesResponse(
 	}, nil
 }
 
-func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definition.Sink, receiveCtx *receivectx.Context) (*api.TestResult, error) {
+func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definition.Sink, recordCtx *recordctx.Context) (*api.TestResult, error) {
 	result := &api.TestResult{
 		ProjectID: sourceKey.ProjectID,
 		BranchID:  sourceKey.BranchID,
@@ -74,7 +74,7 @@ func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definiti
 	for _, sink := range sinks {
 		row := &api.TestResultRow{}
 		for _, c := range sink.Table.Mapping.Columns {
-			csvValue, err := renderer.CSVValue(c, receiveCtx)
+			csvValue, err := renderer.CSVValue(c, recordCtx)
 			if err != nil {
 				return nil, err
 			}

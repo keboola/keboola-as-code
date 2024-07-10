@@ -7,13 +7,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	jsonnetWrapper "github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Renderer struct {
-	jsonnetPool *jsonnetWrapper.VMPool[receivectx.Context]
+	jsonnetPool *jsonnetWrapper.VMPool[recordctx.Context]
 }
 
 func NewRenderer() *Renderer {
@@ -22,7 +21,7 @@ func NewRenderer() *Renderer {
 	}
 }
 
-func (r *Renderer) CSVValue(c Column, ctx *receivectx.Context) (string, error) {
+func (r *Renderer) CSVValue(c Column, ctx *recordctx.Context) (string, error) {
 	switch c := c.(type) {
 	case Body:
 		return ctx.Body, nil
