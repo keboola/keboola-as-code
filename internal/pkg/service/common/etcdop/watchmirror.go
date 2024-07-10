@@ -19,6 +19,7 @@ type Mirror[T any, V any] struct {
 	tree         *prefixtree.AtomicTree[V]
 	revisionLock *sync.Mutex
 	revision     int64
+	onUpdate     []func(updateLog MirrorUpdatedKeys[V])
 }
 
 type MirrorSetup[T any, V any] struct {
@@ -27,6 +28,18 @@ type MirrorSetup[T any, V any] struct {
 	filter   func(t WatchEventT[T]) bool
 	mapKey   func(kv *op.KeyValue, value T) string
 	mapValue func(kv *op.KeyValue, value T) V
+	onUpdate []func(updateLog MirrorUpdatedKeys[V])
+}
+
+type MirrorUpdatedKeys[V any] struct {
+	Created []MirrorKVPair[V]
+	Updated []MirrorKVPair[V]
+	Deleted []MirrorKVPair[V]
+}
+
+type MirrorKVPair[V any] struct {
+	Key   string
+	Value V
 }
 
 // SetupFullMirror - without key and value mapping.
@@ -67,10 +80,12 @@ func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 		stream:       s.stream,
 		tree:         prefixtree.New[V](),
 		revisionLock: &sync.Mutex{},
+		onUpdate:     s.onUpdate,
 	}
 	errCh := s.stream.
 		SetupConsumer(s.logger).
 		WithForEach(func(events []WatchEventT[T], header *Header, restart bool) {
+			changes := MirrorUpdatedKeys[V]{}
 			mirror.tree.Atomic(func(t *prefixtree.Tree[V]) {
 				// Reset the tree after receiving the first batch after the restart.
 				if restart {
@@ -99,10 +114,22 @@ func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 								t.Delete(oldKey)
 							}
 						}
-						fallthrough
+						newValue := s.mapValue(event.Kv, event.Value)
+						if len(mirror.onUpdate) > 0 {
+							changes.Updated = append(changes.Updated, MirrorKVPair[V]{Key: newKey, Value: newValue})
+						}
+						t.Insert(newKey, newValue)
 					case CreateEvent:
-						t.Insert(newKey, s.mapValue(event.Kv, event.Value))
+						newValue := s.mapValue(event.Kv, event.Value)
+						if len(mirror.onUpdate) > 0 {
+							changes.Created = append(changes.Created, MirrorKVPair[V]{Key: newKey, Value: newValue})
+						}
+						t.Insert(newKey, newValue)
 					case DeleteEvent:
+						if len(mirror.onUpdate) > 0 {
+							oldValue, _ := t.Get(oldKey)
+							changes.Deleted = append(changes.Deleted, MirrorKVPair[V]{Key: oldKey, Value: oldValue})
+						}
 						t.Delete(oldKey)
 					default:
 						panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
@@ -115,6 +142,11 @@ func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 				mirror.revisionLock.Unlock()
 				s.logger.Debugf(ctx, `synced to revision %d`, header.Revision)
 			})
+
+			// Call OnUpdate callbacks
+			for _, fn := range mirror.onUpdate {
+				go fn(changes)
+			}
 		}).
 		StartConsumer(ctx, wg)
 	return mirror, errCh
@@ -123,6 +155,11 @@ func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 // WithFilter set a filter, the filter must return true if the event should be processed.
 func (s MirrorSetup[T, V]) WithFilter(fn func(event WatchEventT[T]) bool) MirrorSetup[T, V] {
 	s.filter = fn
+	return s
+}
+
+func (s MirrorSetup[T, V]) WithOnUpdate(fn func(updateLog MirrorUpdatedKeys[V])) MirrorSetup[T, V] {
+	s.onUpdate = append(s.onUpdate, fn)
 	return s
 }
 

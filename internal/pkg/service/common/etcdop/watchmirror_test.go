@@ -106,6 +106,119 @@ func TestMirror(t *testing.T) {
 	}, mirror.ToMap())
 }
 
+func TestMirror_WithOnUpdate(t *testing.T) {
+	t.Parallel()
+
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Create a typed prefix with some keys
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+	pfx := NewTypedPrefix[testUser]("my/prefix", serde.NewJSON(serde.NoValidation))
+	require.NoError(t, pfx.Key("key1").Put(client, testUser{FirstName: "John", LastName: "Brown", Age: 10}).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key2").Put(client, testUser{FirstName: "Paul", LastName: "Green", Age: 20}).Do(ctx).Err())
+
+	// Create a channel for onUpdate results
+	updatedCh := make(chan MirrorUpdatedKeys[int])
+	waitForUpdate := func() MirrorUpdatedKeys[int] {
+		select {
+		case v := <-updatedCh:
+			return v
+		case <-time.After(5 * time.Second):
+			require.Fail(t, "update timeout")
+			return MirrorUpdatedKeys[int]{}
+		}
+	}
+
+	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
+	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
+	logger := log.NewDebugLogger()
+	mirror, errCh := SetupMirror(
+		logger,
+		pfx.GetAllAndWatch(ctx, client, clientv3.WithPrevKV()),
+		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
+		func(kv *op.KeyValue, v testUser) int { return v.Age },
+	).
+		WithFilter(func(event WatchEventT[testUser]) bool {
+			return !strings.Contains(event.Kv.String(), "/ignore")
+		}).
+		WithOnUpdate(func(updateLog MirrorUpdatedKeys[int]) {
+			updatedCh <- updateLog
+		}).
+		StartMirroring(ctx, wg)
+
+	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
+	var header *op.Header
+	waitForSync := func() {
+		assert.Eventually(t, func() bool { return mirror.Revision() >= header.Revision }, time.Second, 100*time.Millisecond)
+	}
+
+	// Wait for initialization
+	require.NoError(t, <-errCh)
+
+	// Test state after initialization
+	assert.Equal(t, MirrorUpdatedKeys[int]{
+		Created: []MirrorKVPair[int]{
+			{
+				Key:   "John Brown",
+				Value: 10,
+			},
+			{
+				Key:   "Paul Green",
+				Value: 20,
+			},
+		},
+	}, waitForUpdate())
+
+	// Insert
+	header, err := pfx.Key("key3").Put(client, testUser{FirstName: "Luke", LastName: "Blue", Age: 30}).Do(ctx).HeaderOrErr()
+	require.NoError(t, err)
+	waitForSync()
+	assert.Equal(t, MirrorUpdatedKeys[int]{
+		Created: []MirrorKVPair[int]{
+			{
+				Key:   "Luke Blue",
+				Value: 30,
+			},
+		},
+	}, waitForUpdate())
+
+	// Update
+	header, err = pfx.Key("key1").Put(client, testUser{FirstName: "Jacob", LastName: "Brown", Age: 15}).Do(ctx).HeaderOrErr()
+	require.NoError(t, err)
+	waitForSync()
+	assert.Equal(t, MirrorUpdatedKeys[int]{
+		Updated: []MirrorKVPair[int]{
+			{
+				Key:   "Jacob Brown",
+				Value: 15,
+			},
+		},
+	}, waitForUpdate())
+
+	// Delete
+	header, err = pfx.Key("key2").Delete(client).Do(ctx).HeaderOrErr()
+	require.NoError(t, err)
+	waitForSync()
+	assert.Equal(t, MirrorUpdatedKeys[int]{
+		Deleted: []MirrorKVPair[int]{
+			{
+				Key:   "Paul Green",
+				Value: 20,
+			},
+		},
+	}, waitForUpdate())
+
+	// Filter
+	header, err = pfx.Key("ignore").Put(client, testUser{FirstName: "Ignored", LastName: "User", Age: 50}).Do(ctx).HeaderOrErr()
+	require.NoError(t, err)
+	waitForSync()
+	assert.Equal(t, MirrorUpdatedKeys[int]{}, waitForUpdate())
+}
+
 func TestFullMirror(t *testing.T) {
 	t.Parallel()
 
