@@ -2,14 +2,12 @@ package transport
 
 import (
 	"context"
-	"io"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/yamux"
-	"github.com/xtaci/kcp-go/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/maps"
 
@@ -28,6 +26,7 @@ type serverDependencies interface {
 type Server struct {
 	logger     log.Logger
 	config     network.Config
+	transport  Transport
 	handler    StreamHandler
 	listenAddr net.Addr
 
@@ -50,17 +49,23 @@ func Listen(d serverDependencies, config network.Config, nodeID string, handler 
 		attribute.String("listenAddress", config.Listen),
 	)
 
+	transport, err := newTransport(config)
+	if err != nil {
+		return nil, err
+	}
+
 	s := &Server{
-		logger:   d.Logger().WithComponent("storage.node.writer.network.server"),
-		config:   config,
-		handler:  handler,
-		closed:   make(chan struct{}),
-		sessions: make(map[string]*yamux.Session),
-		streams:  make(map[string]*yamux.Stream),
+		logger:    d.Logger().WithComponent("storage.node.writer.network.server"),
+		config:    config,
+		transport: transport,
+		handler:   handler,
+		closed:    make(chan struct{}),
+		sessions:  make(map[string]*yamux.Session),
+		streams:   make(map[string]*yamux.Stream),
 	}
 
 	// Create listener
-	listener, err := s.listen(ctx, config)
+	listener, err := s.listen(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -163,18 +168,10 @@ func (s *Server) ListenAddr() net.Addr {
 // listen creates a TCP like listener using the kcp-go library.
 //   - No encryption - access limited by the Kubernetes network policy
 //   - No FEC - Forward Error Correction - a reliable network is assumed
-func (s *Server) listen(ctx context.Context, config network.Config) (*kcp.Listener, error) {
-	listener, err := kcp.ListenWithOptions(config.Listen, nil, 0, 0)
+func (s *Server) listen(ctx context.Context) (net.Listener, error) {
+	listener, err := s.transport.Listen()
 	if err != nil {
-		return nil, errors.PrefixError(err, "cannot create listener")
-	}
-
-	// Setup buffer sizes (reversed as on the client side)
-	if err := listener.SetReadBuffer(int(config.InputBuffer.Bytes())); err != nil {
-		return nil, errors.PrefixError(err, "cannot set read buffer size")
-	}
-	if err := listener.SetWriteBuffer(int(config.ResponseBuffer.Bytes())); err != nil {
-		return nil, errors.PrefixError(err, "cannot set write buffer size")
+		return nil, err
 	}
 
 	s.listenAddr = listener.Addr()
@@ -182,19 +179,17 @@ func (s *Server) listen(ctx context.Context, config network.Config) (*kcp.Listen
 	return listener, nil
 }
 
-func (s *Server) acceptConnectionsLoop(ctx context.Context, listener *kcp.Listener) {
+func (s *Server) acceptConnectionsLoop(ctx context.Context, listener net.Listener) {
 	b := newServerBackoff()
 	for {
 		if s.isClosed() {
 			return
 		}
 
-		if err := s.acceptConnection(ctx, listener); err != nil {
+		if err := s.acceptConnection(ctx, listener); err != nil && !s.isClosed() {
 			delay := b.NextBackOff()
-			if !errors.Is(err, io.ErrClosedPipe) {
-				err = errors.Errorf(`cannot accept connection: %w, waiting %s`, err, delay)
-				s.logger.Error(ctx, err.Error())
-			}
+			err = errors.Errorf(`cannot accept connection: %w, waiting %s`, err, delay)
+			s.logger.Error(ctx, err.Error())
 			<-time.After(delay)
 			continue
 		}
@@ -203,16 +198,12 @@ func (s *Server) acceptConnectionsLoop(ctx context.Context, listener *kcp.Listen
 	}
 }
 
-func (s *Server) acceptConnection(ctx context.Context, listener *kcp.Listener) error {
+func (s *Server) acceptConnection(ctx context.Context, listener net.Listener) error {
 	// Accept connection
-	conn, err := listener.AcceptKCP()
+	conn, err := s.transport.Accept(listener)
 	if err != nil {
 		return err
 	}
-
-	// Setup connection
-	conn.SetStreamMode(true)
-	conn.SetNoDelay(1, 20, 2, 1)
 
 	// Create multiplexer
 	sess, err := yamux.Server(conn, multiplexerConfig(s.logger, s.config))
@@ -243,12 +234,10 @@ func (s *Server) acceptStreamsLoop(ctx context.Context, sess *yamux.Session) {
 			return
 		}
 
-		if err := s.acceptStream(ctx, sess); err != nil {
+		if err := s.acceptStream(ctx, sess); err != nil && !s.isClosed() && !sess.IsClosed() {
 			delay := b.NextBackOff()
-			if !errors.Is(err, yamux.ErrSessionShutdown) {
-				err = errors.Errorf(`cannot accept stream: %w, waiting %s`, err, delay)
-				s.logger.Error(ctx, err.Error())
-			}
+			err = errors.Errorf(`cannot accept stream: %w, waiting %s`, err, delay)
+			s.logger.Error(ctx, err.Error())
 			<-time.After(delay)
 			continue
 		}

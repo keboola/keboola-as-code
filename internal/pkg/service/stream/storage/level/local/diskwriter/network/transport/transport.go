@@ -7,31 +7,28 @@
 package transport
 
 import (
-	"fmt"
+	"net"
 
-	"github.com/hashicorp/yamux"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func sessionKey(session *yamux.Session) string {
-	return session.RemoteAddr().String()
+type Transport interface {
+	// Listen for connections by the server.
+	Listen() (net.Listener, error)
+	// Accept new connection by the server.
+	Accept(listener net.Listener) (net.Conn, error)
+	// Dial a new connection from the client.
+	Dial(addr string) (net.Conn, error)
 }
 
-func streamKey(stream *yamux.Stream) string {
-	return fmt.Sprintf(`%s-%d`, stream.RemoteAddr(), stream.StreamID())
-}
-
-func multiplexerConfig(logger log.Logger, config network.Config) *yamux.Config {
-	return &yamux.Config{
-		AcceptBacklog:          config.MaxWaitingStreams,
-		EnableKeepAlive:        true,
-		KeepAliveInterval:      config.KeepAliveInterval,
-		ConnectionWriteTimeout: config.StreamWriteTimeout,
-		MaxStreamWindowSize:    uint32(config.StreamMaxWindow.Bytes()),
-		StreamOpenTimeout:      config.StreamOpenTimeout,
-		StreamCloseTimeout:     config.StreamCloseTimeout,
-		Logger:                 log.NewStdErrorLogger(logger.WithComponent("mux")),
+func newTransport(config network.Config) (Transport, error) {
+	switch config.Transport {
+	case network.TransportProtocolKCP:
+		return newKCPTransport(config), nil
+	case network.TransportProtocolTCP:
+		return newTCPTransport(config), nil
+	default:
+		return nil, errors.Errorf(`unexpected transport protocol %q`, config.Transport)
 	}
 }

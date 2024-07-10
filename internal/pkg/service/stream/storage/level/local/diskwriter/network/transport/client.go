@@ -14,9 +14,10 @@ import (
 )
 
 type Client struct {
-	logger log.Logger
-	config network.Config
-	nodeID string
+	logger    log.Logger
+	config    network.Config
+	nodeID    string
+	transport Transport
 
 	closed chan struct{}
 	wg     sync.WaitGroup
@@ -31,14 +32,20 @@ type clientDependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewClient(d clientDependencies, config network.Config, nodeID string) *Client {
+func NewClient(d clientDependencies, config network.Config, nodeID string) (*Client, error) {
+	transport, err := newTransport(config)
+	if err != nil {
+		return nil, err
+	}
+
 	c := &Client{
-		logger:   d.Logger().WithComponent("storage.node.writer.network.client"),
-		config:   config,
-		nodeID:   nodeID,
-		closed:   make(chan struct{}),
-		sessions: make(map[string]*yamux.Session),
-		streams:  make(map[string]*yamux.Stream),
+		logger:    d.Logger().WithComponent("storage.node.writer.network.client"),
+		config:    config,
+		nodeID:    nodeID,
+		transport: transport,
+		closed:    make(chan struct{}),
+		sessions:  make(map[string]*yamux.Session),
+		streams:   make(map[string]*yamux.Stream),
 	}
 
 	// Graceful shutdown
@@ -87,7 +94,7 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) *Clie
 		c.logger.Info(ctx, "closed disk writer client")
 	})
 
-	return c
+	return c, nil
 }
 
 func (c *Client) ConnectTo(targetAddr string) (*ClientConnection, error) {

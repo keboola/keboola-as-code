@@ -8,7 +8,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/yamux"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
-	"github.com/xtaci/kcp-go/v5"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -152,14 +151,10 @@ func (c *ClientConnection) newSession(targetAddr string) (sess *yamux.Session, e
 	}()
 
 	// Create connection
-	conn, err := c.dial(targetAddr)
+	conn, err := c.client.transport.Dial(targetAddr)
 	if err != nil {
 		return nil, errors.PrefixError(err, "cannot dial connection")
 	}
-
-	// Setup connection
-	conn.SetStreamMode(true)
-	conn.SetNoDelay(1, 20, 2, 1)
 
 	// Create multiplexer
 	sess, err = yamux.Client(conn, multiplexerConfig(c.client.logger, c.client.config))
@@ -169,26 +164,6 @@ func (c *ClientConnection) newSession(targetAddr string) (sess *yamux.Session, e
 	}
 
 	return sess, nil
-}
-
-// dial creates a TCP like listener using the kcp-go library.
-//   - No encryption - access limited by the Kubernetes network policy
-//   - No FEC - Forward Error Correction - a reliable network is assumed
-func (c *ClientConnection) dial(addr string) (*kcp.UDPSession, error) {
-	conn, err := kcp.DialWithOptions(addr, nil, 0, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// Setup buffer sizes (reversed as on the server side)
-	if err := conn.SetReadBuffer(int(c.client.config.ResponseBuffer.Bytes())); err != nil {
-		return nil, errors.PrefixError(err, "cannot set read buffer size")
-	}
-	if err := conn.SetWriteBuffer(int(c.client.config.InputBuffer.Bytes())); err != nil {
-		return nil, errors.PrefixError(err, "cannot set write buffer size")
-	}
-
-	return conn, nil
 }
 
 func (c *ClientConnection) session() (*yamux.Session, error) {

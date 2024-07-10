@@ -23,15 +23,16 @@ func TestConfig_Validation(t *testing.T) {
 - "volume.allocation.relative" must be 100 or greater
 - "encoding.compression.type" is a required field
 - "writer.network.listen" is a required field
+- "writer.network.transport" is a required field
 - "writer.network.keepAliveInterval" is a required field
-- "writer.network.inputBuffer" is a required field
-- "writer.network.responseBuffer" is a required field
 - "writer.network.maxWaitingStreamsPerConn" is a required field
 - "writer.network.streamMaxWindow" is a required field
 - "writer.network.streamOpenTimeout" is a required field
 - "writer.network.streamCloseTimeout" is a required field
 - "writer.network.streamWriteTimeout" is a required field
 - "writer.network.shutdownTimeout" is a required field
+- "writer.network.kcpInputBuffer" is a required field
+- "writer.network.kcpResponseBuffer" is a required field
 `,
 			Value: local.Config{},
 		},

@@ -169,24 +169,26 @@ data:
               network:
                 # Listen address of the configuration HTTP API. Validation rules: required,hostname_port
                 #listen: 0.0.0.0:6000
+                # Transport protocol. Validation rules: required,oneof=tcp kcp
+                transport: tcp
                 # Keep alive interval. Validation rules: required,minDuration=1s,maxDuration=60s
                 keepAliveInterval: 5s
-                # Buffer size for transferring data between source and writer nodes. Validation rules: required,minBytes=16kB,maxBytes=100MB
-                inputBuffer: 10MB
-                # Buffer size for transferring responses between writer and source node. Validation rules: required,minBytes=16kB,maxBytes=1MB
-                responseBuffer: 32KB
                 # How many streams may be waiting an accept per connection. Validation rules: required,min=10,max=100000
                 maxWaitingStreamsPerConn: 1024
                 # Validation rules: required,minBytes=256kB,maxBytes=10MB
-                streamMaxWindow: 512KB
+                streamMaxWindow: 8MB
                 # Stream ACK timeout. Validation rules: required,minDuration=1s,maxDuration=30s
-                streamOpenTimeout: 5s
+                streamOpenTimeout: 10s
                 # Stream close timeout. Validation rules: required,minDuration=1s,maxDuration=30s
-                streamCloseTimeout: 5s
+                streamCloseTimeout: 10s
                 # Stream write timeout. Validation rules: required,minDuration=1s,maxDuration=60s
-                streamWriteTimeout: 5s
+                streamWriteTimeout: 10s
                 # How long the server waits for streams closing. Validation rules: required,minDuration=1s,max=600s
-                shutdownTimeout: 5s
+                shutdownTimeout: 30s
+                # Buffer size for transferring data between source and writer nodes (kcp). Validation rules: required,minBytes=16kB,maxBytes=100MB
+                kcpInputBuffer: 8MB
+                # Buffer size for transferring responses between writer and source node (kcp). Validation rules: required,minBytes=16kB,maxBytes=100MB
+                kcpResponseBuffer: 512KB
         staging:
           # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
           maxSlicesPerFile: 100
