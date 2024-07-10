@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	jsonnetWrapper "github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -21,13 +22,13 @@ func NewRenderer() *Renderer {
 	}
 }
 
-func (r *Renderer) CSVValue(c Column, ctx *recordctx.Context) (string, error) {
+func (r *Renderer) CSVValue(c Column, ctx recordctx.Context) (string, error) {
 	switch c := c.(type) {
 	case Body:
-		return ctx.Body, nil
+		return ctx.BodyString()
 	case Datetime:
 		// Time is always in UTC, time format has fixed length
-		return ctx.Now.UTC().Format(TimeFormat), nil
+		return ctx.Timestamp().UTC().Format(TimeFormat), nil
 	case Headers:
 		return json.EncodeString(ctx.HeadersMap(), false)
 	case UUID:
@@ -38,7 +39,7 @@ func (r *Renderer) CSVValue(c Column, ctx *recordctx.Context) (string, error) {
 
 		return id.String(), err
 	case IP:
-		return ctx.IP.String(), nil
+		return ctx.ClientIP().String(), nil
 	case Template:
 		if c.Template.Language != TemplateLanguageJsonnet {
 			return "", errors.Errorf(`unsupported language "%s", only "jsonnet" is supported`, c.Template.Language)

@@ -207,6 +207,6 @@ type testCase struct {
 	name     string
 	template string
 	result   string
-	reqCtx   *recordctx.Context
+	reqCtx   recordctx.Context
 	err      string
 }

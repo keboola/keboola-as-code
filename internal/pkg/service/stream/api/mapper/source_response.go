@@ -62,7 +62,7 @@ func (m *Mapper) NewSourcesResponse(
 	}, nil
 }
 
-func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definition.Sink, recordCtx *recordctx.Context) (*api.TestResult, error) {
+func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definition.Sink, recordCtx recordctx.Context) (*api.TestResult, error) {
 	result := &api.TestResult{
 		ProjectID: sourceKey.ProjectID,
 		BranchID:  sourceKey.BranchID,

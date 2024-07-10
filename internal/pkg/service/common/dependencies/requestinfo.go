@@ -1,12 +1,10 @@
 package dependencies
 
 import (
-	"net"
 	"net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 )
 
 type requestInfo struct {
@@ -34,12 +32,7 @@ func (v *requestInfo) RequestID() string {
 	return v.requestID
 }
 
-func (v *requestInfo) RequestHeader() http.Header {
+func (v *requestInfo) Request() *http.Request {
 	v.check()
-	return v.request.Header.Clone()
-}
-
-func (v *requestInfo) RequestClientIP() net.IP {
-	v.check()
-	return ip.From(v.request)
+	return v.request
 }
