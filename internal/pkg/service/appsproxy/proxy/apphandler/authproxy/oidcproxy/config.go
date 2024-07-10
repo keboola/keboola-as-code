@@ -1,7 +1,6 @@
 package oidcproxy
 
 import (
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
@@ -13,13 +12,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.OIDC, upstream chain.Handler) (*options.Options, error) {
+func proxyConfig(
+	cfg config.Config,
+	selector *selector.Selector,
+	pageWriter *pagewriter.Writer,
+	app api.AppConfig,
+	authProvider provider.OIDC,
+	upstream chain.Handler,
+) (*options.Options, error) {
 	// Generate unique cookies secret
-	secret, err := m.generateCookieSecret(app, authProvider.ID())
+	secret, err := generateCookieSecret(cfg, app, authProvider.ID())
 	if err != nil {
 		return nil, err
 	}
@@ -34,43 +42,22 @@ func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.OIDC, ups
 	// Connect to the app upstream
 	v.UpstreamHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if err := upstream.ServeHTTPOrError(w, req); err != nil {
-			m.pageWriter.WriteError(w, req, &app, err)
+			pageWriter.WriteError(w, req, &app, err)
 		}
 	})
 
 	// Render the selector page, if login is needed, it is not an internal URL
-	v.OnNeedsLogin = func(w http.ResponseWriter, req *http.Request) (stop bool) {
+	v.OnNeedsLogin = func(rw http.ResponseWriter, req *http.Request) (stop bool) {
 		// Bypass internal paths
 		if strings.HasPrefix(req.URL.Path, v.ProxyPrefix) {
 			return false
 		}
 
-		// Determine, if we should render the selector page using the selector instance from the context
-		if selector, ok := req.Context().Value(selectorHandlerCtxKey).(*SelectorForAppRule); ok {
-			// If there is only one provider, continue to the sing in page
-			if len(selector.handlers) <= 1 {
-				return false
-			}
-
-			// Go back and render the selector page, ignore the cookie value
-			req = req.WithContext(context.WithValue(req.Context(), ignoreProviderCookieCtxKey, true))
-			if err := selector.ServeHTTPOrError(w, req); err != nil {
-				m.pageWriter.WriteError(w, req, &app, err)
-			}
-			return true
-		}
-
-		// Fallback, the selector instance is not found, it shouldn't happen.
-		// Clear the cookie and redirect to the same path, so the selector page is rendered.
-		m.providerSelector.clearCookie(w, req)
-		w.Header().Set("Location", req.URL.Path)
-		w.WriteHeader(http.StatusFound)
-		return true
+		return selector.OnNeedsLogin(&app, pageWriter.WriteError)(rw, req)
 	}
-
 	// Setup
-	domain := app.CookieDomain(m.config.API.PublicURL)
-	redirectURL := m.config.API.PublicURL.Scheme + "://" + domain + config.InternalPrefix + "/callback"
+	domain := app.CookieDomain(cfg.API.PublicURL)
+	redirectURL := cfg.API.PublicURL.Scheme + "://" + domain + config.InternalPrefix + "/callback"
 	v.Logging.RequestIDHeader = config.RequestIDHeader
 	v.Logging.RequestEnabled = false // we have log middleware for all requests
 	v.Cookie.Secret = secret
@@ -102,13 +89,13 @@ func (m *Manager) proxyConfig(app api.AppConfig, authProvider provider.OIDC, ups
 // generateCookieSecret creates a unique cookie secret for each app and provider.
 // This is necessary because otherwise cookies created by provider A would also be valid in a section that requires provider B but not A.
 // To solve this we use the combination of the provider id and our salt.
-func (m *Manager) generateCookieSecret(app api.AppConfig, providerID provider.ID) (string, error) {
-	if m.config.CookieSecretSalt == "" {
+func generateCookieSecret(cfg config.Config, app api.AppConfig, providerID provider.ID) (string, error) {
+	if cfg.CookieSecretSalt == "" {
 		return "", errors.New("missing cookie secret salt")
 	}
 
 	h := sha256.New()
-	h.Write([]byte(app.ID.String() + "/" + providerID.String() + "/" + m.config.CookieSecretSalt))
+	h.Write([]byte(app.ID.String() + "/" + providerID.String() + "/" + cfg.CookieSecretSalt))
 	bs := h.Sum(nil)
 
 	// Result must be 32 chars, 2 hex chars for each byte

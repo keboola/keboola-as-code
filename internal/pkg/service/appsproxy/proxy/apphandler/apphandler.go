@@ -13,8 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/oidcproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
@@ -33,7 +33,7 @@ type appHandler struct {
 
 type ruleIndex int
 
-func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handler, authHandlers map[provider.ID]*oidcproxy.Handler) (http.Handler, error) {
+func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handler, authHandlers map[provider.ID]selector.Handler) (http.Handler, error) {
 	handler := &appHandler{
 		manager:            manager,
 		app:                app,
@@ -45,7 +45,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 
 	// Create handler with all auth handlers, to route internal URLs
 	if len(authHandlers) > 0 {
-		if h, err := manager.oidcProxyManager.ProviderSelector().For(app, authHandlers); err == nil {
+		if h, err := manager.authProxyManager.ProviderSelector().For(app, authHandlers); err == nil {
 			handler.allAuthHandlers = h
 		} else {
 			return nil, err
@@ -78,7 +78,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 		}
 
 		// Filter authentication handlers
-		authHandlersPerRule := make(map[provider.ID]*oidcproxy.Handler)
+		authHandlersPerRule := make(map[provider.ID]selector.Handler)
 		for _, providerID := range rule.Auth {
 			if authHandler, found := authHandlers[providerID]; found {
 				authHandlersPerRule[providerID] = authHandler
@@ -88,7 +88,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 		}
 
 		// Merge authentication handlers for the rule to one selector handler
-		if h, err := manager.oidcProxyManager.ProviderSelector().For(app, authHandlersPerRule); err == nil {
+		if h, err := manager.authProxyManager.ProviderSelector().For(app, authHandlersPerRule); err == nil {
 			handler.authHandlerPerRule[index] = h
 		} else {
 			return nil, err

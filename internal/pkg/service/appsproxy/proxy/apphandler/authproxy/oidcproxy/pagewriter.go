@@ -29,7 +29,7 @@ type pageWriter struct {
 	pageWriter   *pagewriter.Writer
 }
 
-func (m *Manager) newPageWriter(logger log.Logger, app api.AppConfig, authProvider provider.Provider, opts *options.Options) (*pageWriter, error) {
+func newPageWriter(logger log.Logger, pw *pagewriter.Writer, app api.AppConfig, authProvider provider.Provider, opts *options.Options) (*pageWriter, error) {
 	parent, err := proxypw.NewWriter(
 		proxypw.Opts{
 			TemplatesPath:    opts.Templates.Path,
@@ -52,7 +52,7 @@ func (m *Manager) newPageWriter(logger log.Logger, app api.AppConfig, authProvid
 		proxyPageWriter: parent,
 		app:             app,
 		authProvider:    authProvider,
-		pageWriter:      m.pageWriter,
+		pageWriter:      pw,
 	}, nil
 }
 

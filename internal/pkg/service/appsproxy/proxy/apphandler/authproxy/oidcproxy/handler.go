@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 
@@ -13,59 +12,41 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type Manager struct {
-	logger           log.Logger
-	config           config.Config
-	pageWriter       *pagewriter.Writer
-	providerSelector *Selector
-}
-
 type Handler struct {
-	provider     provider.Provider
+	providerName string
 	proxyConfig  *proxyOptions.Options
 	proxyHandler *oauthproxy.OAuthProxy
 	initErr      error
 }
 
-type dependencies interface {
-	Logger() log.Logger
-	Clock() clock.Clock
-	Config() config.Config
-	PageWriter() *pagewriter.Writer
-}
-
-func NewManager(d dependencies) *Manager {
-	return &Manager{
-		logger:           d.Logger(),
-		config:           d.Config(),
-		pageWriter:       d.PageWriter(),
-		providerSelector: newSelector(d),
-	}
-}
-
-func (m *Manager) ProviderSelector() *Selector {
-	return m.providerSelector
-}
-
-func (m *Manager) NewHandler(app api.AppConfig, auth provider.OIDC, upstream chain.Handler) *Handler {
+func NewHandler(
+	logger log.Logger,
+	cfg config.Config,
+	selector *selector.Selector,
+	pw *pagewriter.Writer,
+	app api.AppConfig,
+	auth provider.OIDC,
+	upstream chain.Handler,
+) *Handler {
 	var err error
-	handler := &Handler{provider: auth}
+	handler := &Handler{providerName: auth.Name()}
 
 	// Create proxy configuration
-	handler.proxyConfig, err = m.proxyConfig(app, auth, upstream)
+	handler.proxyConfig, err = proxyConfig(cfg, selector, pw, app, auth, upstream)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler
 	}
 
 	// Create proxy page writer adapter
-	pw, err := m.newPageWriter(m.logger, app, auth, handler.proxyConfig)
+	pageWriter, err := newPageWriter(logger, pw, app, auth, handler.proxyConfig)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler
@@ -73,7 +54,7 @@ func (m *Manager) NewHandler(app api.AppConfig, auth provider.OIDC, upstream cha
 
 	// Create proxy HTTP handler
 	authValidator := func(email string) bool { return true } // there is no need to verify individual users
-	handler.proxyHandler, err = oauthproxy.NewOAuthProxyWithPageWriter(handler.proxyConfig, authValidator, pw)
+	handler.proxyHandler, err = oauthproxy.NewOAuthProxyWithPageWriter(handler.proxyConfig, authValidator, pageWriter)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler
@@ -82,16 +63,8 @@ func (m *Manager) NewHandler(app api.AppConfig, auth provider.OIDC, upstream cha
 	return handler
 }
 
-func (h *Handler) ID() provider.ID {
-	return h.provider.ID()
-}
-
 func (h *Handler) Name() string {
-	return h.provider.Name()
-}
-
-func (h *Handler) Provider() provider.Provider {
-	return h.provider
+	return h.providerName
 }
 
 func (h *Handler) CookieExpiration() time.Duration {

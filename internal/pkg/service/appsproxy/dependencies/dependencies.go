@@ -28,7 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/oidcproxy"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport"
@@ -53,7 +53,7 @@ type ServiceScope interface {
 	AppConfigLoader() *appconfig.Loader
 	UpstreamTransport() http.RoundTripper
 	UpstreamManager() *upstream.Manager
-	OidcProxyManager() *oidcproxy.Manager
+	AuthProxyManager() *authproxy.Manager
 	PageWriter() *pagewriter.Writer
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
@@ -73,7 +73,7 @@ type serviceScope struct {
 	appHandlers       *apphandler.Manager
 	upstreamTransport http.RoundTripper
 	upstreamManager   *upstream.Manager
-	oidcProxyManager  *oidcproxy.Manager
+	authProxyManager  *authproxy.Manager
 	pageWriter        *pagewriter.Writer
 	appConfigLoader   *appconfig.Loader
 	notifyManager     *notify.Manager
@@ -154,7 +154,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.appConfigLoader = appconfig.NewLoader(d)
 	d.notifyManager = notify.NewManager(d)
 	d.wakeupManager = wakeup.NewManager(d)
-	d.oidcProxyManager = oidcproxy.NewManager(d)
+	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
 	d.appHandlers = apphandler.NewManager(d)
 
@@ -185,8 +185,8 @@ func (v *serviceScope) UpstreamManager() *upstream.Manager {
 	return v.upstreamManager
 }
 
-func (v *serviceScope) OidcProxyManager() *oidcproxy.Manager {
-	return v.oidcProxyManager
+func (v *serviceScope) AuthProxyManager() *authproxy.Manager {
+	return v.authProxyManager
 }
 
 func (v *serviceScope) PageWriter() *pagewriter.Writer {

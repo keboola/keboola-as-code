@@ -41,6 +41,9 @@ func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies
 	if cfg.CookieSecretSalt == "" {
 		cfg.CookieSecretSalt = "foo"
 	}
+	if cfg.CsrfTokenSalt == "" {
+		cfg.CsrfTokenSalt = "bar"
+	}
 	if cfg.SandboxesAPI.URL == "" {
 		cfg.SandboxesAPI.URL = "http://sandboxes-service-api.default.svc.cluster.local"
 	}

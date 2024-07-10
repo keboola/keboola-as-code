@@ -39,6 +39,7 @@ func TestAppProxyHandler(t *testing.T) {
 	cfg := config.New()
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.SandboxesAPI.URL = appsAPI.URL
+	cfg.CsrfTokenSalt = "abc"
 
 	// Create dependencies
 	d, mocked := proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
