@@ -70,10 +70,10 @@ func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opt
 //   - When a restart occurs, the WatcherStatus.Restarted = true is emitted.
 //   - Restart can be triggered also manually by the RestartableWatchStream.Restart method.
 //   - The operation can be cancelled using the context.
-func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) RestartableWatchStreamT[T] {
+func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) *RestartableWatchStreamT[T] {
 	rawStream := v.prefix.Watch(ctx, client, opts...)
 	decodedStream := v.decodeChannel(ctx, &rawStream.WatchStreamE)
-	return RestartableWatchStreamT[T]{
+	return &RestartableWatchStreamT[T]{
 		WatchStreamT: decodedStream,
 		rawStream:    rawStream,
 	}
