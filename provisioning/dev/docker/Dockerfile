@@ -30,11 +30,11 @@ RUN mkdir -p ~ && \
     echo 'PS1="\w > "' > ~/.bashrc
 
 # Fix permissions
-RUN mkdir -p $GOPATH && chmod -R 777 $GOPATH && \
-    mkdir -p $GOCACHE && chmod -R 777 $GOCACHE && \
-    mkdir -p $GOMODCACHE && chmod -R 777 $GOMODCACHE && \
-    mkdir -p $GOLANGCI_LINT_CACHE && chmod -R 777 $GOLANGCI_LINT_CACHE && \
-    mkdir -p $HOME && chmod -R 777 $HOME
+RUN mkdir -p $GOPATH && chmod -R 1777 $GOPATH && \
+    mkdir -p $GOCACHE && chmod -R 1777 $GOCACHE && \
+    mkdir -p $GOMODCACHE && chmod -R 1777 $GOMODCACHE && \
+    mkdir -p $GOLANGCI_LINT_CACHE && chmod -R 1777 $GOLANGCI_LINT_CACHE && \
+    mkdir -p $HOME && chmod -R 1777 $HOME
 
 WORKDIR /code/
 CMD ["/bin/bash"]
