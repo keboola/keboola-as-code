@@ -7,8 +7,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	jsonnetWrapper "github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
