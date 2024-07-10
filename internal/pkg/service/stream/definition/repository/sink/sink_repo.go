@@ -17,7 +17,7 @@ import (
 )
 
 type Repository struct {
-	client  etcd.KV
+	client  *etcd.Client
 	schema  schema.Sink
 	plugins *plugin.Plugins
 	sources *source.Repository
