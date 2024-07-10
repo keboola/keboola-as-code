@@ -1,7 +1,6 @@
 package key
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -16,7 +15,7 @@ type BranchKey struct {
 }
 
 func (v BranchKey) String() string {
-	return fmt.Sprintf("%s/%s", v.ProjectID.String(), v.BranchID.String())
+	return strconv.Itoa(int(v.ProjectID)) + "/" + v.BranchID.String()
 }
 
 func (v BranchIDOrDefault) Default() bool {
