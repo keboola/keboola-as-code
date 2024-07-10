@@ -9,14 +9,16 @@
 //   - [APIScope] contains long-lived dependencies that exist during the entire run of an API node.
 //   - [PublicRequestScope] contains short-lived dependencies for a public request without authentication.
 //   - [ProjectRequestScope] contains short-lived dependencies for a request with authentication.
-//   - [LocalStorageScope] contains long-lived dependencies for table sink code.
+//   - [SourceScope] contains long-lived dependencies for source nodes.
+//   - [LocalStorageScope] contains long-lived dependencies for local storage writer/reader nodes.
 //
 // Dependency containers creation:
 //   - [ServiceScope] is created during the creation of [APIScope] or [LocalStorageScope].
 //   - [APIScope] is created at startup in the API main.go.
 //   - [PublicRequestScope] is created for each HTTP request by Muxer.Use callback in main.go.
 //   - [ProjectRequestScope] is created for each authenticated HTTP request in the service.APIKeyAuth method.
-//   - [LocalStorageScope] .....
+//   - [SourceScope] is created at startup of a source node.
+//   - [LocalStorageScope] is created at startup of a local storage writer/reader node.
 //
 // The package also provides mocked dependency implementations for tests:
 //   - [NewMockedServiceScope]
@@ -43,6 +45,7 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -103,6 +106,11 @@ type SourceRequestScope interface {
 type SinkRequestScope interface {
 	SourceRequestScope
 	SinkKey() key.SinkKey
+}
+
+type SourceScope interface {
+	ServiceScope
+	SinkRouter() sinkRouter.Router
 }
 
 type LocalStorageScope interface {

@@ -117,6 +117,21 @@ func NewMockedBranchRequestScope(t *testing.T, branchInput key.BranchIDOrDefault
 	return branchReqScp, mocked
 }
 
+func NewMockedSourceScope(t *testing.T, opts ...dependencies.MockedOption) (SourceScope, Mocked) {
+	t.Helper()
+	return NewMockedSourceScopeWithConfig(t, nil, opts...)
+}
+
+func NewMockedSourceScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (SourceScope, Mocked) {
+	t.Helper()
+	svcScp, mock := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
+	d, err := newSourceScope(sourceParentScopesImpl{
+		ServiceScope: svcScp,
+	}, mock.TestConfig())
+	require.NoError(t, err)
+	return d, mock
+}
+
 func NewMockedLocalStorageScope(t *testing.T, opts ...dependencies.MockedOption) (LocalStorageScope, Mocked) {
 	t.Helper()
 	return NewMockedLocalStorageScopeWithConfig(t, nil, opts...)
@@ -125,12 +140,11 @@ func NewMockedLocalStorageScope(t *testing.T, opts ...dependencies.MockedOption)
 func NewMockedLocalStorageScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (LocalStorageScope, Mocked) {
 	t.Helper()
 	svcScp, mock := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
-	cfg := mock.TestConfig()
 	d, err := newLocalStorageScope(localStorageParentScopesImpl{
 		ServiceScope:         svcScp,
 		DistributionScope:    mock,
 		DistributedLockScope: mock,
-	}, cfg)
+	}, mock.TestConfig())
 	require.NoError(t, err)
 	return d, mock
 }
