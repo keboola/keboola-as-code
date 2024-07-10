@@ -45,7 +45,7 @@ type router struct {
 	sinks *etcdop.Mirror[definition.Sink, *sinkData]
 	// closed channel block new writer during shutdown
 	closed chan struct{}
-	// wg waits for all goroutines
+	// wg waits for all writes/goroutines
 	wg sync.WaitGroup
 	// lock protects the pipelines map.
 	lock sync.Mutex

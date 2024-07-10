@@ -1,0 +1,167 @@
+package dispatcher
+
+import (
+	"context"
+	"strconv"
+	"sync"
+	"time"
+
+	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/valyala/fasthttp"
+	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
+)
+
+// Dispatcher decides whether the request is to be accepted and dispatches it to all sinks that belong to the given Source entity.
+type Dispatcher struct {
+	logger     log.Logger
+	sinkRouter sinkRouter.Router
+	// sources field contains in-memory snapshot of all active HTTP sources. Only necessary data is saved.
+	sources *etcdop.Mirror[definition.Source, *sourceData]
+	// cancelMirror on shutdown
+	cancelMirror context.CancelFunc
+	// closed channel block new writer during shutdown
+	closed chan struct{}
+	// wg waits for all writes/goroutines
+	wg sync.WaitGroup
+}
+
+type sourceData struct {
+	sourceKey key.SourceKey
+	enabled   bool
+	secret    string
+}
+
+type dependencies interface {
+	Process() *servicectx.Process
+	DefinitionRepository() *definitionRepo.Repository
+	SinkRouter() sinkRouter.Router
+}
+
+func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
+	dp := &Dispatcher{
+		logger:     logger.WithComponent("dispatcher"),
+		sinkRouter: d.SinkRouter(),
+		closed:     make(chan struct{}),
+	}
+
+	// Start sources mirroring, only necessary data is saved
+	{
+		var ctx context.Context
+		ctx, dp.cancelMirror = context.WithCancel(context.Background())
+
+		var errCh <-chan error
+		dp.sources, errCh = etcdop.
+			SetupMirror(
+				dp.logger,
+				d.DefinitionRepository().Source().GetAllAndWatch(ctx, clientv3.WithPrevKV()),
+				func(kv *op.KeyValue, source definition.Source) string {
+					return sourceKey(source.SourceKey)
+				},
+				func(kv *op.KeyValue, source definition.Source) *sourceData {
+					return &sourceData{
+						sourceKey: source.SourceKey,
+						enabled:   source.IsEnabled(),
+						secret:    source.HTTP.Secret,
+					}
+				},
+			).
+			WithFilter(func(event etcdop.WatchEventT[definition.Source]) bool {
+				return event.Value.Type == definition.SourceTypeHTTP
+			}).
+			StartMirroring(ctx, &dp.wg)
+		if err := <-errCh; err != nil {
+			return nil, err
+		}
+	}
+
+	return dp, nil
+}
+
+func (d *Dispatcher) Dispatch(timestamp time.Time, projectID keboola.ProjectID, sourceID key.SourceID, secret string, c *fasthttp.RequestCtx) (sinkRouter.SourcesResult, error) {
+	d.wg.Add(1)
+	defer d.wg.Done()
+
+	// Stop on shutdown - it shouldn't happen - the HTTP server shuts down first
+	if d.isClosed() {
+		return sinkRouter.SourcesResult{}, ShutdownError{}
+	}
+
+	// Get all relevant sources
+	disabled := 0
+	var matchedSources []key.SourceKey
+	d.sources.WalkPrefix(sourceKeyPrefix(projectID, sourceID), func(_ string, source *sourceData) (stop bool) {
+		// Secret is now immutable and should be now same in all branches.
+		// If in the future we would allow secrete to be regenerated in the main/dev branch, it will still work correctly.
+		if source.secret == secret {
+			if source.enabled {
+				matchedSources = append(matchedSources, source.sourceKey)
+			} else {
+				disabled++
+			}
+		}
+		return false
+	})
+
+	// At least one source/branch must be found
+	if len(matchedSources) == 0 {
+		if disabled == 0 {
+			return sinkRouter.SourcesResult{}, NoSourceFoundError{}
+		} else {
+			return sinkRouter.SourcesResult{}, SourceDisabledError{}
+		}
+	}
+
+	return d.sinkRouter.DispatchToSources(matchedSources, recordctx.FromFastHTTP(timestamp, c)), nil
+}
+
+func (d *Dispatcher) Close(ctx context.Context) error {
+	// Block new writes
+	close(d.closed)
+
+	// Stop mirroring
+	d.cancelMirror()
+
+	// Wait for in-flight requests/goroutines
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		d.wg.Wait()
+	}()
+
+	// Check shutdown timeout
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-done:
+		return nil
+	}
+}
+
+func (d *Dispatcher) isClosed() bool {
+	select {
+	case <-d.closed:
+		return true
+	default:
+		return false
+	}
+}
+
+// sourceKeyPrefix - without the branch ID, so that we can easily find all the sources related to the request.
+func sourceKeyPrefix(projectID keboola.ProjectID, sourceID key.SourceID) string {
+	return strconv.Itoa(int(projectID)) + "/" + sourceID.String()
+}
+
+// sourceKey - the branch ID is at the end.
+func sourceKey(k key.SourceKey) string {
+	return sourceKeyPrefix(k.ProjectID, k.SourceID) + "/" + k.BranchID.String()
+}
