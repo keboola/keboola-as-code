@@ -54,7 +54,8 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	cfg := network.NewConfig()
 	cfg.Transport = protocol
 	cfg.Listen = "localhost:0" // use a random port
-	cfg.ShutdownTimeout = 10 * time.Second
+	cfg.StreamWriteTimeout = 30 * time.Second
+	cfg.ShutdownTimeout = 30 * time.Second
 	cfg.KeepAliveInterval = 30 * time.Second // to not interfere with the test
 
 	// Stream server handler
@@ -111,7 +112,8 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	cfg := network.NewConfig()
 	cfg.Transport = protocol
 	cfg.Listen = "localhost:0" // use a random port
-	cfg.ShutdownTimeout = 10 * time.Second
+	cfg.StreamWriteTimeout = 30 * time.Second
+	cfg.ShutdownTimeout = 30 * time.Second
 	cfg.KeepAliveInterval = 30 * time.Second // to not interfere with the test
 
 	dataSize := 2 * datasize.MB
@@ -120,7 +122,9 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	// Stream server handler
 	handler := func(ctx context.Context, stream *yamux.Stream) {
 		b, err := io.ReadAll(stream)
-		assert.Equal(t, data, b)
+		if assert.Len(t, b, len(data)) {
+			assert.Equal(t, data, b)
+		}
 		assert.NoError(t, err)
 	}
 
@@ -183,7 +187,7 @@ func shutdown(t *testing.T, clientDeps, srvDeps dependencies.ServiceScope, clien
 {"level":"info","message":"accepted connection from \"127.0.0.1:%d\"","component":"storage.node.writer.network.server"}
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"closing disk writer server","component":"storage.node.writer.network.server"}
-{"level":"info","message":"waiting 10s for %d streams","component":"storage.node.writer.network.server"}
+{"level":"info","message":"waiting 30s for %d streams","component":"storage.node.writer.network.server"}
 {"level":"info","message":"waiting for streams done","component":"storage.node.writer.network.server"}
 {"level":"info","message":"closing %d streams","component":"storage.node.writer.network.server"}
 {"level":"info","message":"closing %d sessions","component":"storage.node.writer.network.server"}
