@@ -1982,6 +1982,33 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedWakeUps:       map[string]int{},
 		},
 		{
+			name: "public-basic-auth-wrong-login-no-password",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				// Request public basic auth app
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://basic-auth.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Basic Authentication")
+
+				// Fill wrong password into form
+				request, err = http.NewRequestWithContext(context.Background(), http.MethodPost, "https://basic-auth.hub.keboola.local/", bytes.NewBuffer([]byte("password=")))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Please enter a correct password.")
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
 			name: "public-basic-auth-wrong-login",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Request public basic auth app
