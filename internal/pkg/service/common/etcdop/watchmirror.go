@@ -158,7 +158,7 @@ func (s MirrorSetup[T, V]) WithFilter(fn func(event WatchEventT[T]) bool) Mirror
 	return s
 }
 
-func (s MirrorSetup[T, V]) WithOnUpdate(fn func(updateLog MirrorUpdatedKeys[V])) MirrorSetup[T, V] {
+func (s MirrorSetup[T, V]) WithOnUpdate(fn func(changes MirrorUpdatedKeys[V])) MirrorSetup[T, V] {
 	s.onUpdate = append(s.onUpdate, fn)
 	return s
 }
