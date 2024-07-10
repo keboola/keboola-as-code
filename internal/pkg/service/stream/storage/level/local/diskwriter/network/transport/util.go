@@ -27,6 +27,7 @@ func multiplexerConfig(_ log.Logger, config network.Config) *yamux.Config {
 		MaxStreamWindowSize:    uint32(config.StreamMaxWindow.Bytes()),
 		StreamOpenTimeout:      config.StreamOpenTimeout,
 		StreamCloseTimeout:     config.StreamCloseTimeout,
+		// Disable logs, prevent duplicate error logs.
 		// Logger: log.NewStdErrorLogger(logger.WithComponent("mux")),
 		LogOutput: io.Discard,
 	}
