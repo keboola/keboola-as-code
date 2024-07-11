@@ -212,6 +212,7 @@ func dumpTestConfig() TestConfig {
 			Foo: "foo",
 			Bar: 789,
 		},
+		Skipped: true,
 	}
 }
 
@@ -238,5 +239,6 @@ func dumpTestConfigWithValueStruct() TestConfigWithValueStruct {
 			Foo: Value[string]{Value: "foo"},
 			Bar: Value[int]{Value: 789},
 		},
+		Skipped: true,
 	}
 }
