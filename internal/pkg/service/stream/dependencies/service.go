@@ -134,10 +134,12 @@ func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff m
 		return nil, err
 	}
 
-	d.keboolaBridge = keboolaSinkBridge.New(d, func(ctx context.Context) *keboola.AuthorizedAPI {
+	apiCtxProvider := func(ctx context.Context) *keboola.AuthorizedAPI {
 		api, _ := ctx.Value(KeboolaProjectAPICtxKey).(*keboola.AuthorizedAPI)
 		return api
-	})
+	}
+
+	d.keboolaBridge = keboolaSinkBridge.New(d, apiCtxProvider)
 
 	d.storageStatisticsRepository = statsRepo.New(d)
 
