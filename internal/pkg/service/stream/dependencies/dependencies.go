@@ -124,4 +124,5 @@ type LocalStorageScope interface {
 type Mocked interface {
 	dependencies.Mocked
 	TestConfig() config.Config
+	TestSinkPipelineController() *TestSinkPipelineController
 }
