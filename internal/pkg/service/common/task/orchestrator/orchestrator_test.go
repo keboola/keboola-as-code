@@ -325,7 +325,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"received shutdown request","component":"orchestrator"}
 {"level":"info","message":"waiting for orchestrators to finish","component":"orchestrator"}
-{"level":"info","message":"consumer closed: context canceled","task":"some.task","component":"orchestrator.watch.consumer"}
+{"level":"info","message":"watch stream consumer closed: context canceled","task":"some.task","component":"orchestrator.watch.consumer"}
 {"level":"info","message":"shutdown done","component":"orchestrator"}
 {"level":"info","message":"received shutdown request","component":"distribution"}
 {"level":"info","message":"unregistering the node \"node1\"","component":"distribution"}

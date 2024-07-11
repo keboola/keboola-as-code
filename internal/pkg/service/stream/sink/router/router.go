@@ -244,7 +244,7 @@ func (r *router) DispatchToSink(sinkKey key.SinkKey, c recordctx.Context) SinkRe
 	}
 
 	if result.StatusCode == http.StatusInternalServerError {
-		r.logger.Errorf(context.Background(), `error while writing record: %s`, err.Error())
+		r.logger.Errorf(context.Background(), `write record error: %s`, err.Error())
 	}
 
 	return result

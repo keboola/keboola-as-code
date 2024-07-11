@@ -27,7 +27,7 @@ type pipelineRef struct {
 	openRetryAfter time.Time
 }
 
-// pipeline gets or creates sink pipeline.
+// pipeline gets or opens sink pipeline.
 func (r *router) pipeline(ctx context.Context, timestamp time.Time, sinkKey key.SinkKey) (pipeline.Pipeline, error) {
 	// Get or create pipeline reference, with its own lock
 	r.lock.Lock()
@@ -49,6 +49,7 @@ func (r *router) pipeline(ctx context.Context, timestamp time.Time, sinkKey key.
 		}
 
 		// Use plugin system to create the pipeline
+		p.logger.Infof(ctx, `opening sink pipeline %q`, p.sinkKey)
 		p.pipeline, err = p.plugins.OpenSinkPipeline(ctx, sink)
 
 		// Use retry backoff, don't try to open pipeline on each record
@@ -58,9 +59,10 @@ func (r *router) pipeline(ctx context.Context, timestamp time.Time, sinkKey key.
 			}
 			delay := p.openBackoff.NextBackOff()
 			p.openRetryAfter = timestamp.Add(delay)
-			p.openError = errors.Errorf("cannot open pipeline: %w, next attempt after %s", err, utctime.From(p.openRetryAfter).String())
+			p.openError = errors.Errorf("cannot open sink pipeline: %w, next attempt after %s", err, utctime.From(p.openRetryAfter).String())
 		} else {
 			p.openError = nil
+			p.logger.Infof(ctx, `opened sink pipeline %q`, p.sinkKey)
 		}
 	}
 
@@ -108,15 +110,15 @@ func (p *pipelineRef) close(ctx context.Context, reason string) {
 		return
 	}
 
-	p.logger.Infof(ctx, `closing sink %q pipeline: %s`, p.sinkKey, reason)
+	p.logger.Infof(ctx, `closing sink pipeline %q: %s`, p.sinkKey, reason)
 
 	if err := p.pipeline.Close(ctx); err != nil {
-		err := errors.PrefixErrorf(err, "cannot close sink %q pipeline", p.sinkKey)
+		err := errors.PrefixErrorf(err, "cannot close sink pipeline %q", p.sinkKey)
 		p.logger.Error(ctx, err.Error())
 		return
 	}
 
-	p.logger.Infof(ctx, `closed sink %q pipeline: %s`, p.sinkKey, reason)
+	p.logger.Infof(ctx, `closed sink pipeline %q: %s`, p.sinkKey, reason)
 }
 
 func newOpenPipelineBackoff() *backoff.ExponentialBackOff {

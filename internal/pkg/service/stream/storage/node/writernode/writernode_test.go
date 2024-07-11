@@ -82,7 +82,7 @@ func TestStart_Ok(t *testing.T) {
 {"level":"info","message":"closing volumes","component":"storage.node.writer.volumes"}
 {"level":"info","message":"closed volumes","component":"storage.node.writer.volumes"}
 {"level":"info","message":"closing volumes stream","component":"volume.repository"}
-{"level":"info","message":"consumer closed: context canceled","component":"volume.repository"}
+{"level":"info","message":"watch stream consumer closed: context canceled","component":"volume.repository"}
 {"level":"info","message":"closed volumes stream","component":"volume.repository"}
 {"level":"info","message":"received shutdown request","component":"distribution.mutex.provider"}
 {"level":"info","message":"closing etcd session: context canceled","component":"distribution.mutex.provider.etcd.session"}

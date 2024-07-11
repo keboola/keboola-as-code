@@ -114,7 +114,7 @@ func TestStart(t *testing.T) {
 {"level":"info","message":"shutting down HTTP source at \"0.0.0.0:%d\"","component":"http-source"}
 {"level":"info","message":"HTTP source shutdown done","component":"http-source"}
 {"level":"info","message":"shutting down sink router","component":"sink.router"}
-{"level":"info","message":"consumer closed: context canceled","component":"sink.router"}
+{"level":"info","message":"watch stream consumer closed: context canceled","component":"sink.router"}
 {"level":"info","message":"sink router shutdown done","component":"sink.router"}
 {"level":"info","message":"closing volumes stream","component":"volume.repository"}
 {"level":"info","message":"closed volumes stream","component":"volume.repository"}
@@ -233,8 +233,8 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
 				"Content-Type": "application/json",
 			},
 			ExpectedLogs: `
-{"level":"error","message":"error while writing record: cannot open pipeline: some open error, next attempt after %s","component":"sink.router"}
-{"level":"error","message":"error while writing record: cannot open pipeline: some open error, next attempt after %s","component":"sink.router"}
+{"level":"error","message":"write record error: cannot open sink pipeline: some open error, next attempt after %s","component":"sink.router"}
+{"level":"error","message":"write record error: cannot open sink pipeline: some open error, next attempt after %s","component":"sink.router"}
 `,
 			ExpectedBody: `
 {
@@ -254,7 +254,7 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
           "sinkId": "my-sink-1",
           "statusCode": 500,
           "error": "stream.in.genericError",
-          "message": "Cannot open pipeline: some open error, next attempt after %s."
+          "message": "Cannot open sink pipeline: some open error, next attempt after %s."
         }
       ]
     },
@@ -270,7 +270,7 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
           "sinkId": "my-sink-1",
           "statusCode": 500,
           "error": "stream.in.genericError",
-          "message": "Cannot open pipeline: some open error, next attempt after %s."
+          "message": "Cannot open sink pipeline: some open error, next attempt after %s."
         }
       ]
     }
@@ -294,8 +294,8 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
 				"Content-Type": "application/json",
 			},
 			ExpectedLogs: `
-{"level":"error","message":"error while writing record: some write error","component":"sink.router"}
-{"level":"error","message":"error while writing record: some write error","component":"sink.router"}
+{"level":"error","message":"write record error: some write error","component":"sink.router"}
+{"level":"error","message":"write record error: some write error","component":"sink.router"}
 `,
 			ExpectedBody: `
 {

@@ -160,7 +160,7 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 		} else {
 			closeErr = errors.New("unknown cause") // shouldn't happen
 		}
-		c.logger.Infof(ctx, "consumer closed: %s", closeErr.Error())
+		c.logger.Infof(ctx, "watch stream consumer closed: %s", closeErr.Error())
 		if c.onClose != nil {
 			c.onClose(closeErr)
 		}
