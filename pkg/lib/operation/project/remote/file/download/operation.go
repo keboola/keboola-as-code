@@ -3,6 +3,7 @@ package download
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
@@ -23,6 +24,7 @@ import (
 const (
 	StdoutOutput           = "-"
 	GZIPFileExt            = ".gz"
+	CSVFileExt             = ".csv"
 	GetFileSizeParallelism = 100
 )
 
@@ -179,9 +181,22 @@ func (d *downloader) readSliceTo(ctx context.Context, slice string, writer io.Wr
 		}
 	}
 
+	if strings.HasSuffix(d.options.Output, CSVFileExt) && d.options.Header.IsSet() {
+		if err := d.addHeaderToCSV(writer); err != nil {
+			return err
+		}
+	}
+
 	// Copy all
 	_, err := io.Copy(writer, reader)
 	return err
+}
+
+func (d *downloader) addHeaderToCSV(writer io.Writer) error {
+	w := csv.NewWriter(writer)
+	defer w.Flush()
+
+	return w.Write(d.options.Columns)
 }
 
 // getSlices from the file manifest.

@@ -11,6 +11,7 @@ Flags:
       --changed-until string       only export rows imported before this date
       --columns strings            comma-separated list of columns to export
       --format string              output format (json/csv) (default "csv")
+      --header                     first line of the csv file contains the column names
       --limit uint                 limit the number of exported rows
       --order string               order by one or more columns
   -o, --output string              path to the destination file or directory

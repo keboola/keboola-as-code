@@ -4,12 +4,16 @@ import (
 	"path/filepath"
 
 	"github.com/keboola/go-client/pkg/keboola"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
 type Options struct {
 	File        *keboola.FileDownloadCredentials
 	Output      string
 	AllowSliced bool
+	Columns     []string
+	Header      configmap.Value[bool]
 }
 
 func (o *Options) ToStdout() bool {
