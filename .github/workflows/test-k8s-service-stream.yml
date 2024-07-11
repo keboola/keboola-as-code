@@ -10,6 +10,7 @@ on:
       - .github/workflows/test-k8s-service-stream.yml
       - provisioning/stream/**
       - provisioning/common/**
+      # When the config structure is changed it may be necessary to adjust k8s configmap.
       - internal/pkg/service/stream/config/**
 
 env:
