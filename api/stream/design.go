@@ -1399,7 +1399,7 @@ func TaskNotFoundError() {
 }
 
 func ForbiddenProtectedSettingError() {
-	GenericError(StatusNotFound, "forbidden", "Modification of protected settings is forbidden.", `Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".`)
+	GenericError(StatusNotFound, "forbidden", "Modification of protected settings is forbidden.", `Cannot modify protected keys: "storage.level.local.encoding.compression.gzip.blockSize".`)
 }
 
 func fieldValidationRule(targetStruct any, fieldName string, ruleName string) string {

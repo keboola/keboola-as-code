@@ -192,12 +192,12 @@ func (s *service) UpdateSinkSettings(ctx context.Context, d dependencies.SinkReq
 		Type:      "update.sinkSettings",
 		Timeout:   5 * time.Minute,
 		ProjectID: d.ProjectID(),
-		ObjectKey: d.SourceKey(),
+		ObjectKey: d.SinkKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			// Update the source, with retries on a collision
+			// Update the sink, with retries on a collision
 			if err := s.definition.Sink().Update(d.SinkKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err == nil {
 				result := task.OkResult("Sink settings have been updated successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+				result = s.mapper.WithTaskOutputs(result, d.SinkKey())
 				return result
 			} else {
 				return task.ErrResult(err)

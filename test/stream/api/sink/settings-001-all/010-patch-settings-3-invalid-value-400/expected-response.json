@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "stream.api.badRequest",
+  "message": "- Invalid \"storage.level.staging.upload.trigger.size\" value \"bar\": invalid syntax.\n- Invalid \"storage.level.staging.upload.trigger.interval\": time: invalid duration \"foo\"."
+}
