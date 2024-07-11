@@ -102,7 +102,7 @@ func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 					oldKey := newKey
 
 					// Calculate oldKey based on the old value, if it is present.
-					// It can be enabled by watch clientv3.WithPrevKV() option.
+					// It can be enabled by watch etcd.WithPrevKV() option.
 					if event.PrevValue != nil {
 						oldKey = s.mapKey(event.PrevKv, *event.PrevValue)
 					}

@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/valyala/fasthttp"
-	clientv3 "go.etcd.io/etcd/client/v3"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -63,7 +63,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 		dp.sources, errCh = etcdop.
 			SetupMirror(
 				dp.logger,
-				d.DefinitionRepository().Source().GetAllAndWatch(ctx, clientv3.WithPrevKV()),
+				d.DefinitionRepository().Source().GetAllAndWatch(ctx, etcd.WithPrevKV()),
 				func(kv *op.KeyValue, source definition.Source) string {
 					return sourceKey(source.SourceKey)
 				},

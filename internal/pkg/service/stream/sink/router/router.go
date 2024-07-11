@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -100,7 +100,7 @@ func New(d dependencies) (Router, error) {
 		r.sinks, errCh = etcdop.
 			SetupMirror(
 				r.logger,
-				r.definitions.Sink().GetAllAndWatch(ctx, clientv3.WithPrevKV()),
+				r.definitions.Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()),
 				func(kv *op.KeyValue, sink definition.Sink) string {
 					return sink.SinkKey.String()
 				},

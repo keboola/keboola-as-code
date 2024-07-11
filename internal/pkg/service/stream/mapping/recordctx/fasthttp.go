@@ -20,7 +20,7 @@ type fastHTTPContext struct {
 	timestamp     time.Time
 	req           *fasthttp.RequestCtx
 	lock          sync.Mutex
-	ip            net.IP
+	clientIP      net.IP
 	headersMap    *orderedmap.OrderedMap
 	headersString *string
 	bodyString    *string
@@ -50,10 +50,10 @@ func (c *fastHTTPContext) ClientIP() net.IP {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if c.ip == nil {
-		c.ip = c.req.RemoteIP()
+	if c.clientIP == nil {
+		c.clientIP = c.req.RemoteIP()
 	}
-	return c.ip
+	return c.clientIP
 }
 
 func (c *fastHTTPContext) HeadersString() string {

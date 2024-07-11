@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	clientv3 "go.etcd.io/etcd/client/v3"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -43,7 +43,7 @@ func TestMirror(t *testing.T) {
 	logger := log.NewDebugLogger()
 	mirror, errCh := SetupMirror(
 		logger,
-		pfx.GetAllAndWatch(ctx, client, clientv3.WithPrevKV()),
+		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
 		func(kv *op.KeyValue, v testUser) int { return v.Age },
 	).
@@ -138,7 +138,7 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 	logger := log.NewDebugLogger()
 	mirror, errCh := SetupMirror(
 		logger,
-		pfx.GetAllAndWatch(ctx, client, clientv3.WithPrevKV()),
+		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
 		func(kv *op.KeyValue, v testUser) int { return v.Age },
 	).
@@ -238,7 +238,7 @@ func TestFullMirror(t *testing.T) {
 	logger := log.NewDebugLogger()
 	mirror, errCh := SetupFullMirror(
 		logger,
-		pfx.GetAllAndWatch(ctx, client, clientv3.WithPrevKV())).
+		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV())).
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).

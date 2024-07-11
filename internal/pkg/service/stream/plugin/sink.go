@@ -18,9 +18,13 @@ func (p *Plugins) OpenSinkPipeline(ctx context.Context, sink definition.Sink) (p
 		if err != nil {
 			return nil, err
 		}
-		if p != nil {
-			return p, nil
+
+		// If the returned pipeline is nil, it means, the opener cannot handle the sink type, so we continue.
+		if p == nil {
+			continue
 		}
+
+		return p, nil
 	}
 	return nil, errors.Errorf(`no sink pipeline opener found for the sink type %q`, sink.Type)
 }

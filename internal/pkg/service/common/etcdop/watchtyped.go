@@ -14,7 +14,7 @@ type WatchEventT[T any] struct {
 	Kv     *op.KeyValue
 	PrevKv *op.KeyValue
 	Value  T
-	// PrevValue is set only for UpdateEvent if clientv3.WithPrevKV() option is used.
+	// PrevValue is set only for UpdateEvent if etcd.WithPrevKV() option is used.
 	PrevValue *T
 }
 
