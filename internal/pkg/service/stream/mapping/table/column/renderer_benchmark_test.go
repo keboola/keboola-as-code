@@ -1,11 +1,15 @@
 package column_test
 
 import (
+	"io"
 	"net/http"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
 
@@ -17,7 +21,7 @@ func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
 
 	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
-	reqCtx := &recordctx.Context{Body: body, Headers: header}
+	reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))})
 	renderer := column.NewRenderer()
 
 	for i := 0; i < b.N; i++ {
@@ -30,7 +34,7 @@ func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
 func BenchmarkColumn_UUID(b *testing.B) {
 	c := column.UUID{}
 
-	reqCtx := &recordctx.Context{}
+	reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{})
 	renderer := column.NewRenderer()
 
 	for i := 0; i < b.N; i++ {
