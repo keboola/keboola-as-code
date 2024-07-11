@@ -74,6 +74,14 @@ func (h *Handler) CookieExpiration() time.Duration {
 	return 1 * time.Hour
 }
 
+// ServeHTTPOrError serves basic authorization pages based on these conditions:
+// nothing || cookie == nil -> render Login page GET/POST (200), no error
+// form[password=""] -> Please enter a correct password (200), error
+// form[password="b"] -> Please enter a correct password (200), error
+// form[password="a"] -> Authorized, set cookie and redirect to URL of user. (301), no error
+// cookie != nil && not signout && authorized -> Go to upstream (Based on app state), no error
+// cookie != nil && signout -> unset cookie, redirect to Login pageWriter (303), go to _proxy/SignInPath, no error
+// cookie != nil && unauthorized -> Cookie has expired (200), error.
 func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) error {
 	host, _ := util.SplitHostPort(req.Host)
 	if host == "" {
@@ -106,6 +114,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	// Login page first access
 	csrfToken := xsrftoken.Generate(csrfTokenKey, h.csrfTokenSalt, "/")
 	fragment := fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, template.HTMLEscapeString(csrfTokenKey), template.HTMLEscapeString(csrfToken))
+	// This represents `GET` request for `form`
 	if !req.Form.Has("password") && requestCookie == nil {
 		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), nil) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
 		return nil
@@ -146,11 +155,17 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 }
 
 func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {
-	if password != "" && !h.basicAuth.IsAuthorized(password) {
+	// When password was not provided and cookie is set to wrong password, return `Cookie has expired.`
+	if cookie != nil && password == "" {
+		return h.isCookieAuthorized(cookie)
+	}
+
+	// When no password provided, or wrong password is provided against configured one, return error
+	if password == "" || !h.basicAuth.IsAuthorized(password) {
 		return errors.New("Please enter a correct password.")
 	}
 
-	return h.isCookieAuthorized(cookie)
+	return nil
 }
 
 func (h *Handler) isCookieAuthorized(cookie *http.Cookie) error {

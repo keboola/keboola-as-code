@@ -269,6 +269,7 @@ button:is(:hover, :focus):not(:disabled) {
 form:has(input:placeholder-shown) button[type='submit'] {
     opacity: 0.4;
     cursor: not-allowed;
+    pointer-events: none;
 }
 
 .alert {
