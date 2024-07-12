@@ -6,17 +6,17 @@ import (
 	"context"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
@@ -271,6 +271,80 @@ func (r *router) dispatchToSink(sinkKey key.SinkKey, c recordctx.Context) (pipel
 	return p.WriteRecord(c)
 }
 
+// pipeline gets or creates sink pipeline.
+func (r *router) pipeline(ctx context.Context, timestamp time.Time, sinkKey key.SinkKey) (pipeline.Pipeline, error) {
+	// Get or create pipeline reference, with its own lock
+	r.lock.Lock()
+	p := r.pipelines[sinkKey]
+	if p == nil {
+		p = &pipelineRef{router: r, sinkKey: sinkKey}
+		r.pipelines[sinkKey] = p
+	}
+	r.lock.Unlock()
+
+	// Get or open pipeline, other pipelines are not blocked by the lock
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if p.pipeline == nil && (p.openError == nil || timestamp.After(p.openRetryAfter)) {
+		// Local full sink definition from DB
+		sink, err := r.definitions.Sink().Get(sinkKey).Do(ctx).ResultOrErr()
+		if err != nil {
+			return nil, errors.PrefixError(err, "cannot load sink definition")
+		}
+
+		// Use plugin system to create the pipeline
+		p.logger.Infof(ctx, `opening sink pipeline %q`, p.sinkKey)
+		p.pipeline, err = p.plugins.OpenSinkPipeline(ctx, sink)
+
+		// Use retry backoff, don't try to open pipeline on each record
+		if err != nil {
+			if p.openBackoff == nil {
+				p.openBackoff = newOpenPipelineBackoff()
+			}
+			delay := p.openBackoff.NextBackOff()
+			p.openRetryAfter = timestamp.Add(delay)
+			p.openError = errors.Errorf("cannot open sink pipeline: %w, next attempt after %s", err, utctime.From(p.openRetryAfter).String())
+		} else {
+			p.openError = nil
+			p.logger.Infof(ctx, `opened sink pipeline %q`, p.sinkKey)
+		}
+	}
+
+	if p.openError != nil {
+		return nil, p.openError
+	}
+
+	p.openBackoff = nil
+	p.openRetryAfter = time.Time{}
+	return p.pipeline, nil
+}
+
+func (r *router) closeAllPipelines(ctx context.Context, reason string) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	for _, p := range r.pipelines {
+		r.wg.Add(1)
+		go func() {
+			defer r.wg.Done()
+			p.close(ctx, reason)
+		}()
+	}
+}
+
+func (r *router) closePipeline(ctx context.Context, sinkKey key.SinkKey, reason string) {
+	if p, found := r.pipelines[sinkKey]; found {
+		p.lock.Lock()
+		delete(r.pipelines, sinkKey)
+		p.lock.Unlock()
+
+		r.wg.Add(1)
+		go func() {
+			defer r.wg.Done()
+			p.close(ctx, reason)
+		}()
+	}
+}
+
 func (r *router) isClosed() bool {
 	select {
 	case <-r.closed:
@@ -278,61 +352,4 @@ func (r *router) isClosed() bool {
 	default:
 		return false
 	}
-}
-
-func resultStatusCode(status pipeline.RecordStatus, err error) int {
-	switch {
-	case err != nil:
-		var withStatus svcerrors.WithStatusCode
-		if errors.As(err, &withStatus) {
-			return withStatus.StatusCode()
-		}
-		return http.StatusInternalServerError
-	case status == pipeline.RecordProcessed:
-		return http.StatusOK
-	case status == pipeline.RecordAccepted:
-		return http.StatusAccepted
-	default:
-		panic(errors.Errorf(`unexpected record status code %v`, status))
-	}
-}
-
-func resultErrorName(err error) string {
-	if err == nil {
-		return ""
-	}
-
-	var withName svcerrors.WithName
-	if errors.As(err, &withName) {
-		return ErrorNamePrefix + withName.ErrorName()
-	}
-
-	return ErrorNamePrefix + "genericError"
-}
-
-func resultMessage(status pipeline.RecordStatus, err error) string {
-	switch {
-	case err != nil:
-		var withMsg svcerrors.WithUserMessage
-		if errors.As(err, &withMsg) {
-			return withMsg.ErrorUserMessage()
-		}
-		return errors.Format(err, errors.FormatAsSentences())
-	case status == pipeline.RecordProcessed:
-		return "processed"
-	case status == pipeline.RecordAccepted:
-		return "accepted"
-	default:
-		panic(errors.Errorf(`unexpected record status code %v`, status))
-	}
-}
-
-func aggregatedResultMessage(successful, all int) string {
-	if all == 0 {
-		return "No enabled sink found."
-	}
-	if successful == all {
-		return "Successfully written to " + strconv.Itoa(successful) + "/" + strconv.Itoa(all) + " sinks."
-	}
-	return "Written to " + strconv.Itoa(successful) + "/" + strconv.Itoa(all) + " sinks."
 }
