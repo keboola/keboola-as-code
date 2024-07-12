@@ -64,7 +64,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	clk := clock.New()
 	now := clk.Now()
 	volPath := b.TempDir()
-	spec := volume.Spec{NodeID: "my-node", Hostname: "localhost", Path: volPath, Type: "hdd", Label: "1"}
+	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
 	vol, err := diskwriter.Open(ctx, logger, clk, diskwriter.NewConfig(), spec, events.New[diskwriter.Writer]())
 	require.NoError(b, err)
 

@@ -25,6 +25,9 @@ const (
 // ID of the volume.
 type ID string
 
+// RemoteAddr of the disk writer node.
+type RemoteAddr string
+
 // Volume common interface.
 type Volume interface {
 	Path() string
@@ -37,11 +40,13 @@ type Volume interface {
 
 // Spec provides base information about a volume found in volumes path.
 type Spec struct {
-	NodeID   string `json:"nodeId" validate:"required"`
-	Hostname string `json:"hostname" validate:"required"`
-	Path     string `json:"path" validate:"required"`
-	Type     string `json:"type" validate:"required"`
-	Label    string `json:"label" validate:"required"`
+	NodeID string `json:"nodeId" validate:"required"`
+	// NodeAddress is network address (<hostname>:<port>) of the node that manages the volume.
+	// Value is filled in only for disk writer nodes.
+	NodeAddress RemoteAddr `json:"nodeAddress" validate:"hostname_port"`
+	Path        string     `json:"path" validate:"required"`
+	Type        string     `json:"type" validate:"required"`
+	Label       string     `json:"label" validate:"required"`
 }
 
 // Metadata entity contains metadata about an active local volume that is connected to a writer/reader node.
@@ -57,6 +62,13 @@ func GenerateID() ID {
 func (v ID) String() string {
 	if v == "" {
 		panic(errors.New("ID cannot be empty"))
+	}
+	return string(v)
+}
+
+func (v RemoteAddr) String() string {
+	if v == "" {
+		panic(errors.New("Remote address cannot be empty"))
 	}
 	return string(v)
 }
