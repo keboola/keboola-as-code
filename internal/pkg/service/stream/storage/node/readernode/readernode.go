@@ -26,7 +26,7 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 	logger.Info(ctx, `starting storage reader node`)
 
 	// Open volumes
-	_, err := diskreader.OpenVolumes(ctx, d, cfg.NodeID, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Reader)
+	_, err := diskreader.OpenVolumes(ctx, d, cfg.NodeID, cfg.Hostname, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Reader)
 	if err != nil {
 		return err
 	}

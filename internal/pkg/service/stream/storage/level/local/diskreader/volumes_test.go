@@ -45,7 +45,7 @@ func TestVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = diskreader.OpenVolumes(ctx, d, "my-node", volumesPath, mock.TestConfig().Storage.Level.Local.Reader)
+		volumes, err = diskreader.OpenVolumes(ctx, d, "my-node", "hostname", volumesPath, mock.TestConfig().Storage.Level.Local.Reader)
 		assert.NoError(t, err)
 	}()
 

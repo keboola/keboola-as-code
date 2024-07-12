@@ -30,7 +30,7 @@ type Opener[V volume.Volume] func(spec volume.Spec) (V, error)
 
 // OpenVolumes function detects and opens all volumes in the volumesPath.
 // It is an abstract implementation, the opening of volumes is delegated to the Opener.
-func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, nodeID, volumesPath string, opener Opener[V]) (*volume.Collection[V], error) {
+func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, nodeID, hostname, volumesPath string, opener Opener[V]) (*volume.Collection[V], error) {
 	logger.With(attribute.String("volumes.path", volumesPath)).Infof(ctx, "searching for volumes in volumes path")
 
 	lock := &sync.Mutex{}
@@ -70,8 +70,15 @@ func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, nodeID
 					return
 				}
 
+				info := volume.Spec{
+					NodeID:   nodeID,
+					Hostname: hostname,
+					Path:     path,
+					Type:     typ,
+					Label:    label,
+				}
+
 				// Open the volume
-				info := volume.Spec{NodeID: nodeID, Path: path, Type: typ, Label: label}
 				vol, err := opener(info)
 				if err != nil {
 					logger.Errorf(openCtx, `cannot open volume: %s`, err)

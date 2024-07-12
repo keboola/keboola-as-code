@@ -219,17 +219,18 @@ func TestVolume_Close_Errors(t *testing.T) {
 
 // volumeTestCase is a helper to open disk writer volume in tests.
 type volumeTestCase struct {
-	TB           testing.TB
-	Ctx          context.Context
-	Logger       log.DebugLogger
-	Clock        *clock.Mock
-	Events       *events.Events[diskwriter.Writer]
-	Allocator    *allocator
-	Config       diskwriter.Config
-	VolumeNodeID string
-	VolumePath   string
-	VolumeType   string
-	VolumeLabel  string
+	TB                 testing.TB
+	Ctx                context.Context
+	Logger             log.DebugLogger
+	Clock              *clock.Mock
+	Events             *events.Events[diskwriter.Writer]
+	Allocator          *allocator
+	Config             diskwriter.Config
+	VolumeNodeID       string
+	VolumeNodeHostname string
+	VolumePath         string
+	VolumeType         string
+	VolumeLabel        string
 }
 
 func newVolumeTestCase(tb testing.TB) *volumeTestCase {
@@ -248,22 +249,29 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	cfg.Allocator = testAllocator
 
 	return &volumeTestCase{
-		TB:           tb,
-		Ctx:          ctx,
-		Logger:       logger,
-		Clock:        clock.NewMock(),
-		Events:       events.New[diskwriter.Writer](),
-		Allocator:    testAllocator,
-		Config:       cfg,
-		VolumeNodeID: "my-node",
-		VolumePath:   tmpDir,
-		VolumeType:   "hdd",
-		VolumeLabel:  "1",
+		TB:                 tb,
+		Ctx:                ctx,
+		Logger:             logger,
+		Clock:              clock.NewMock(),
+		Events:             events.New[diskwriter.Writer](),
+		Allocator:          testAllocator,
+		Config:             cfg,
+		VolumeNodeID:       "my-node",
+		VolumeNodeHostname: "localhost",
+		VolumePath:         tmpDir,
+		VolumeType:         "hdd",
+		VolumeLabel:        "1",
 	}
 }
 
 func (tc *volumeTestCase) OpenVolume() (*diskwriter.Volume, error) {
-	spec := volumeModel.Spec{NodeID: tc.VolumeNodeID, Path: tc.VolumePath, Type: tc.VolumeType, Label: tc.VolumeLabel}
+	spec := volumeModel.Spec{
+		NodeID:   tc.VolumeNodeID,
+		Hostname: tc.VolumeNodeHostname,
+		Path:     tc.VolumePath,
+		Type:     tc.VolumeType,
+		Label:    tc.VolumeLabel,
+	}
 	return diskwriter.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Config, spec, tc.Events)
 }
 

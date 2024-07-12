@@ -37,37 +37,41 @@ func TestRepository_Volume(t *testing.T) {
 	volume1 := volume.Metadata{
 		ID: volume.ID("my-volume-1"),
 		Spec: volume.Spec{
-			NodeID: "writer-node",
-			Path:   "hdd/001",
-			Type:   "hdd",
-			Label:  "001",
+			NodeID:   "writer-node",
+			Hostname: "localhost",
+			Path:     "hdd/001",
+			Type:     "hdd",
+			Label:    "001",
 		},
 	}
 	volume2 := volume.Metadata{
 		ID: volume.ID("my-volume-2"),
 		Spec: volume.Spec{
-			NodeID: "writer-node",
-			Path:   "hdd/002",
-			Type:   "hdd",
-			Label:  "002",
+			NodeID:   "writer-node",
+			Hostname: "localhost",
+			Path:     "hdd/002",
+			Type:     "hdd",
+			Label:    "002",
 		},
 	}
 	volume3 := volume.Metadata{
 		ID: volume.ID("my-volume-3"),
 		Spec: volume.Spec{
-			NodeID: "reader-node",
-			Path:   "hdd/003",
-			Type:   "hdd",
-			Label:  "003",
+			NodeID:   "reader-node",
+			Hostname: "localhost",
+			Path:     "hdd/003",
+			Type:     "hdd",
+			Label:    "003",
 		},
 	}
 	volume4 := volume.Metadata{
 		ID: volume.ID("my-volume-4"),
 		Spec: volume.Spec{
-			NodeID: "reader-node",
-			Path:   "hdd/004",
-			Type:   "hdd",
-			Label:  "004",
+			NodeID:   "reader-node",
+			Hostname: "localhost",
+			Path:     "hdd/004",
+			Type:     "hdd",
+			Label:    "004",
 		},
 	}
 
