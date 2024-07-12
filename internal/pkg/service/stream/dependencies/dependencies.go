@@ -45,6 +45,7 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
@@ -124,5 +125,5 @@ type LocalStorageScope interface {
 type Mocked interface {
 	dependencies.Mocked
 	TestConfig() config.Config
-	TestSinkPipelineController() *TestSinkPipelineController
+	TestSinkPipelineOpener() *pipeline.TestOpener
 }

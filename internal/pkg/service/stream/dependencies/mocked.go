@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -27,38 +26,16 @@ import (
 // mocked implements Mocked interface.
 type mocked struct {
 	dependencies.Mocked
-	config                 config.Config
-	sinkPipelineController *TestSinkPipelineController
-}
-
-type TestSinkPipelineController struct {
-	OpenError         error
-	WriteRecordStatus pipeline.RecordStatus
-	WriteError        error
-	CloseError        error
-}
-
-type TestSinkPipeline struct {
-	opener *TestSinkPipelineController
-}
-
-func (p *TestSinkPipeline) WriteRecord(_ recordctx.Context) (pipeline.RecordStatus, error) {
-	if err := p.opener.WriteError; err != nil {
-		return pipeline.RecordError, err
-	}
-	return p.opener.WriteRecordStatus, nil
-}
-
-func (p *TestSinkPipeline) Close(_ context.Context) error {
-	return p.opener.CloseError
+	config             config.Config
+	sinkPipelineOpener *pipeline.TestOpener
 }
 
 func (v *mocked) TestConfig() config.Config {
 	return v.config
 }
 
-func (v *mocked) TestSinkPipelineController() *TestSinkPipelineController {
-	return v.sinkPipelineController
+func (v *mocked) TestSinkPipelineOpener() *pipeline.TestOpener {
+	return v.sinkPipelineOpener
 }
 
 func NewMockedServiceScope(t *testing.T, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
@@ -87,7 +64,7 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	}
 
 	// Create service mocked dependencies
-	mock := &mocked{Mocked: commonMock, config: cfg, sinkPipelineController: &TestSinkPipelineController{}}
+	mock := &mocked{Mocked: commonMock, config: cfg, sinkPipelineOpener: pipeline.NewTestOpener()}
 
 	backoff := model.NoRandomizationBackoff()
 	serviceScp, err := newServiceScope(mock, cfg, backoff)
@@ -113,10 +90,7 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	// Register dummy pipeline opener for tests
 	serviceScp.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sink definition.Sink) (pipeline.Pipeline, error) {
 		if sink.Type == test.SinkType {
-			if err := mock.sinkPipelineController.OpenError; err != nil {
-				return nil, err
-			}
-			return &TestSinkPipeline{opener: mock.sinkPipelineController}, nil
+			return mock.sinkPipelineOpener.OpenPipeline()
 		}
 
 		return nil, definition.ErrCannotHandleSinkType

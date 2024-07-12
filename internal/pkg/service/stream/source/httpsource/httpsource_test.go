@@ -222,8 +222,8 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
 
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := mock.TestSinkPipelineController()
-				c.OpenError = errors.New("some open error")
+				o := mock.TestSinkPipelineOpener()
+				o.OpenError = errors.New("some open error")
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + validSecret,
@@ -282,9 +282,9 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
 			Prepare: func(t *testing.T) {
 				t.Helper()
 				clk.Add(10 * time.Second) // skip backoff delay for open pipeline operation
-				c := mock.TestSinkPipelineController()
-				c.OpenError = nil
-				c.WriteError = errors.New("some write error")
+				o := mock.TestSinkPipelineOpener()
+				o.OpenError = nil
+				o.WriteError = errors.New("some write error")
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + validSecret,
@@ -342,9 +342,9 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
 			Name: "stream input - POST - ok - accepted",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := mock.TestSinkPipelineController()
-				c.WriteError = nil
-				c.WriteRecordStatus = pipeline.RecordAccepted
+				o := mock.TestSinkPipelineOpener()
+				o.WriteError = nil
+				o.WriteRecordStatus = pipeline.RecordAccepted
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + validSecret,
@@ -359,9 +359,9 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
 			Name: "stream input - POST - ok - processed",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := mock.TestSinkPipelineController()
-				c.WriteError = nil
-				c.WriteRecordStatus = pipeline.RecordProcessed
+				o := mock.TestSinkPipelineOpener()
+				o.WriteError = nil
+				o.WriteRecordStatus = pipeline.RecordProcessed
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + validSecret,
@@ -376,9 +376,9 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
 			Name: "stream input - POST - ok - accepted - verbose",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := mock.TestSinkPipelineController()
-				c.WriteError = nil
-				c.WriteRecordStatus = pipeline.RecordAccepted
+				o := mock.TestSinkPipelineOpener()
+				o.WriteError = nil
+				o.WriteRecordStatus = pipeline.RecordAccepted
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + validSecret,
@@ -425,9 +425,9 @@ func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSec
 			Name: "stream input - POST - ok - processed - verbose",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := mock.TestSinkPipelineController()
-				c.WriteError = nil
-				c.WriteRecordStatus = pipeline.RecordProcessed
+				o := mock.TestSinkPipelineOpener()
+				o.WriteError = nil
+				o.WriteRecordStatus = pipeline.RecordProcessed
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + validSecret,
