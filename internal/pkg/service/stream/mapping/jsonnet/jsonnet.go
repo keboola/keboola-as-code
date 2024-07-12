@@ -2,7 +2,7 @@
 //
 // # Jsonnet Functions
 //
-//	Ip() string - formatted IP address of the client
+//	Ip() string - formatted ClientIP address of the client
 //	Now() string - current datetime in UTC, in fixed length DefaultTimeFormat, for example "2006-01-01T08:04:05.123Z"
 //	Now("%Y-%m-%d") string - current datetime in UTC timezone, in a custom "strftime" compatible format
 //	HeaderStr() string - request headers as a string, each lines contains one "Header: value", the lines are sorted alphabetically
@@ -23,7 +23,7 @@ import (
 	"github.com/lestrrat-go/strftime"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -39,9 +39,9 @@ const (
 	bodyPathFnName      = "_bodyPath"
 )
 
-func NewPool() *jsonnet.VMPool[receivectx.Context] {
+func NewPool() *jsonnet.VMPool[recordctx.Context] {
 	return jsonnet.NewVMPool(
-		func(vm *jsonnet.VM[receivectx.Context]) *jsonnetLib.VM {
+		func(vm *jsonnet.VM[recordctx.Context]) *jsonnetLib.VM {
 			realVM := jsonnetLib.MakeVM()
 			realVM.Importer(jsonnet.NewNopImporter())
 			registerFunctions(realVM, vm)
@@ -50,7 +50,7 @@ func NewPool() *jsonnet.VMPool[receivectx.Context] {
 	)
 }
 
-func Evaluate(vm *jsonnet.VM[receivectx.Context], reqCtx *receivectx.Context, template string) (string, error) {
+func Evaluate(vm *jsonnet.VM[recordctx.Context], reqCtx recordctx.Context, template string) (string, error) {
 	out, err := vm.Evaluate(template, reqCtx)
 	if err != nil {
 		var jsonnetErr jsonnetLib.RuntimeError
@@ -62,7 +62,7 @@ func Evaluate(vm *jsonnet.VM[receivectx.Context], reqCtx *receivectx.Context, te
 	return out, err
 }
 
-func registerFunctions(realVM *jsonnetLib.VM, vm *jsonnet.VM[receivectx.Context]) {
+func registerFunctions(realVM *jsonnetLib.VM, vm *jsonnet.VM[recordctx.Context]) {
 	// Global functions
 	realVM.NativeFunction(ipFn("Ip", vm))
 	realVM.NativeFunction(headerStrFn("HeaderStr", vm))
@@ -84,7 +84,7 @@ func registerFunctions(realVM *jsonnetLib.VM, vm *jsonnet.VM[receivectx.Context]
 	realVM.NativeFunction(bodyPathInternalFn(vm))
 }
 
-func ipFn(fnName string, vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunction {
+func ipFn(fnName string, vm *jsonnet.VM[recordctx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: fnName,
 		Func: func(params []any) (any, error) {
@@ -93,12 +93,12 @@ func ipFn(fnName string, vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunc
 			}
 
 			reqCtx := vm.Payload()
-			return jsonnet.ValueToJSONType(reqCtx.IP.String()), nil
+			return jsonnet.ValueToJSONType(reqCtx.ClientIP().String()), nil
 		},
 	}
 }
 
-func headerStrFn(fnName string, vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunction {
+func headerStrFn(fnName string, vm *jsonnet.VM[recordctx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: fnName,
 		Func: func(params []any) (any, error) {
@@ -107,12 +107,12 @@ func headerStrFn(fnName string, vm *jsonnet.VM[receivectx.Context]) *jsonnet.Nat
 			}
 
 			reqCtx := vm.Payload()
-			return jsonnet.ValueToJSONType(reqCtx.HeadersStr()), nil
+			return jsonnet.ValueToJSONType(reqCtx.HeadersString()), nil
 		},
 	}
 }
 
-func bodyStrFn(fnName string, vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunction {
+func bodyStrFn(fnName string, vm *jsonnet.VM[recordctx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: fnName,
 		Func: func(params []any) (any, error) {
@@ -120,8 +120,12 @@ func bodyStrFn(fnName string, vm *jsonnet.VM[receivectx.Context]) *jsonnet.Nativ
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			reqCtx := vm.Payload()
-			return jsonnet.ValueToJSONType(reqCtx.Body), nil
+			body, err := vm.Payload().BodyString()
+			if err != nil {
+				return nil, err
+			}
+
+			return jsonnet.ValueToJSONType(body), nil
 		},
 	}
 }
@@ -182,7 +186,7 @@ func bodyFn() ast.Node {
 	return node
 }
 
-func nowInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunction {
+func nowInternalFn(vm *jsonnet.VM[recordctx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   nowFnName,
 		Params: ast.Identifiers{"format"},
@@ -202,12 +206,12 @@ func nowInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunction {
 			}
 
 			reqCtx := vm.Payload()
-			return jsonnet.ValueToJSONType(formatter.FormatString(reqCtx.Now.UTC())), nil
+			return jsonnet.ValueToJSONType(formatter.FormatString(reqCtx.Timestamp().UTC())), nil
 		},
 	}
 }
 
-func headersMapInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunction {
+func headersMapInternalFn(vm *jsonnet.VM[recordctx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: headersMapFnName,
 		Func: func(params []any) (any, error) {
@@ -221,7 +225,7 @@ func headersMapInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFun
 	}
 }
 
-func headerValueInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunction {
+func headerValueInternalFn(vm *jsonnet.VM[recordctx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   headerFnName,
 		Params: ast.Identifiers{"path", "default"},
@@ -237,8 +241,8 @@ func headerValueInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFu
 			}
 
 			reqCtx := vm.Payload()
-			value := reqCtx.Headers.Get(name)
-			if value == "" {
+			value, found := reqCtx.HeadersMap().Get(http.CanonicalHeaderKey(name))
+			if !found {
 				if defaultVal == ThrowErrOnUndefined {
 					return nil, errors.Errorf(`header "%s" not found`, http.CanonicalHeaderKey(name))
 				} else {
@@ -250,7 +254,7 @@ func headerValueInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFu
 	}
 }
 
-func bodyMapInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunction {
+func bodyMapInternalFn(vm *jsonnet.VM[recordctx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name: bodyMapFnName,
 		Func: func(params []any) (any, error) {
@@ -268,7 +272,7 @@ func bodyMapInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFuncti
 	}
 }
 
-func bodyPathInternalFn(vm *jsonnet.VM[receivectx.Context]) *jsonnet.NativeFunction {
+func bodyPathInternalFn(vm *jsonnet.VM[recordctx.Context]) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   bodyPathFnName,
 		Params: ast.Identifiers{"path", "default"},

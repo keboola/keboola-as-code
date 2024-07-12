@@ -1,15 +1,16 @@
 package column_test
 
 import (
-	"net"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/gofrs/uuid/v5"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
 
@@ -19,7 +20,7 @@ func TestRenderer_UUID(t *testing.T) {
 	renderer := column.NewRenderer()
 	c := column.UUID{}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{}))
 	assert.NoError(t, err)
 	id, err := uuid.FromString(val)
 	assert.NoError(t, err)
@@ -33,7 +34,7 @@ func TestRenderer_DateTime(t *testing.T) {
 	c := column.Datetime{}
 
 	now, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-	val, err := renderer.CSVValue(c, &receivectx.Context{Now: now})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(now, &http.Request{}))
 	assert.NoError(t, err)
 	assert.Equal(t, "2006-01-02T08:04:05.000Z", val)
 }
@@ -44,7 +45,7 @@ func TestRenderer_IP(t *testing.T) {
 	renderer := column.NewRenderer()
 	c := column.IP{}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{IP: net.ParseIP("1.2.3.4")})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{RemoteAddr: "1.2.3.4:1234"}))
 	assert.NoError(t, err)
 	assert.Equal(t, "1.2.3.4", val)
 }
@@ -56,7 +57,7 @@ func TestRenderer_Body(t *testing.T) {
 	c := column.Body{}
 
 	body := "a,b,c"
-	val, err := renderer.CSVValue(c, &receivectx.Context{Body: body})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, "a,b,c", val)
 }
@@ -69,7 +70,7 @@ func TestRenderer_Headers(t *testing.T) {
 
 	header := http.Header{"Foo1": []string{"bar1"}, "Foo2": []string{"bar2", "bar3"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	assert.NoError(t, err)
 	assert.Equal(t, `{"Foo1":"bar1","Foo2":"bar2"}`, val)
 }
@@ -86,7 +87,7 @@ func TestRenderer_Template_Json_Scalar(t *testing.T) {
 	body := `{"key1":{"key2":"val2"},"key3":"val3"}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Body: body, Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, "\"val2\"", val)
 }
@@ -103,7 +104,7 @@ func TestRenderer_Template_Json_Object(t *testing.T) {
 	body := `{"key1":{"key2":"val2"},"key3":"val3"}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Body: body, Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, `{"key2":"val2"}`, val)
 }
@@ -120,7 +121,7 @@ func TestRenderer_Template_Json_ArrayOfObjects(t *testing.T) {
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Body: body, Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, `[{"key2":"val2","key3":"val3"}]`, val)
 }
@@ -137,7 +138,7 @@ func TestRenderer_Template_Json_ArrayIndex(t *testing.T) {
 	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Body: body, Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, `"val3"`, val)
 }
@@ -154,7 +155,7 @@ func TestRenderer_Template_Json_Full(t *testing.T) {
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Body: body, Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, `{"key1":[{"key2":"val2","key3":"val3"}]}`, val)
 }
@@ -171,7 +172,7 @@ func TestRenderer_Template_Json_UndefinedKey_Error(t *testing.T) {
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	_, err := renderer.CSVValue(c, &receivectx.Context{Body: body, Headers: header})
+	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.Error(t, err)
 	assert.Equal(t, `path "key1.invalid" not found in the body`, err.Error())
 }
@@ -188,7 +189,7 @@ func TestRenderer_Template_Json_UndefinedKey_DefaultValue(t *testing.T) {
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Body: body, Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, "123", val)
 }
@@ -205,7 +206,7 @@ func TestRenderer_Template_FormData_Full(t *testing.T) {
 	body := `key1=bar1&key2[]=bar2&key2[]=bar3`
 	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Body: body, Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, `{"key1":"bar1","key2[]":["bar2","bar3"]}`, val)
 }
@@ -221,7 +222,7 @@ func TestRenderer_Template_Headers(t *testing.T) {
 
 	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	assert.NoError(t, err)
 	assert.Equal(t, "\"gzip\"", val)
 }
@@ -237,7 +238,7 @@ func TestRenderer_Template_Headers_Case(t *testing.T) {
 
 	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	assert.NoError(t, err)
 	assert.Equal(t, "\"gzip\"", val)
 }
@@ -253,7 +254,7 @@ func TestRenderer_Template_Headers_All(t *testing.T) {
 
 	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	assert.NoError(t, err)
 	assert.Equal(t, `{"Content-Encoding":"gzip","Content-Type":"application/json"}`, val)
 }
@@ -269,7 +270,7 @@ func TestRenderer_Template_Headers_UndefinedKey_Error(t *testing.T) {
 
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	_, err := renderer.CSVValue(c, &receivectx.Context{Headers: header})
+	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	assert.ErrorContains(t, err, `header "Invalid-Key" not found`)
 }
 
@@ -284,7 +285,7 @@ func TestRenderer_Template_Headers_UndefinedKey_DefaultValue(t *testing.T) {
 
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	val, err := renderer.CSVValue(c, &receivectx.Context{Headers: header})
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	assert.NoError(t, err)
 	assert.Equal(t, `"abc"`, val)
 }
@@ -298,6 +299,6 @@ func TestRenderer_Template_InvalidLanguage(t *testing.T) {
 		Content:  `Body("")`,
 	}}
 
-	_, err := renderer.CSVValue(c, &receivectx.Context{})
+	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{}))
 	assert.ErrorContains(t, err, `unsupported language "invalid", only "jsonnet" is supported`)
 }

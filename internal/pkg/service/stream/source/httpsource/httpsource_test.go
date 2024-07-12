@@ -9,15 +9,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -25,8 +29,10 @@ import (
 
 type TestCase struct {
 	Name               string
+	Prepare            func(t *testing.T)
 	Method             string
 	Path               string
+	Query              string
 	Headers            map[string]string
 	Body               io.Reader
 	ExpectedErr        string
@@ -40,21 +46,53 @@ type TestCase struct {
 func TestStart(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
+
 	maxHeaderSize := 2000
 	maxBodySize := 8000
 
+	// Dependencies
 	port := netutils.FreePortForTest(t)
 	listenAddr := fmt.Sprintf("localhost:%d", port)
 	url := fmt.Sprintf(`http://%s`, listenAddr)
+	clk := clock.NewMock()
 	d, mock := dependencies.NewMockedServiceScopeWithConfig(t, func(cfg *config.Config) {
 		cfg.Source.HTTP.Listen = fmt.Sprintf("0.0.0.0:%d", port)
 		cfg.Source.HTTP.ReadBufferSize = datasize.ByteSize(maxHeaderSize) * datasize.B // ReadBufferSize is a limit for headers, not for the body
 		cfg.Source.HTTP.MaxRequestBodySize = datasize.ByteSize(maxBodySize) * datasize.B
-	})
+	}, commonDeps.WithClock(clk))
 	logger := mock.DebugLogger()
 
+	// Create sources and sinks
+	validSecret := strings.Repeat("1", 48)
+	branchAKey := key.BranchKey{ProjectID: 123, BranchID: 111}
+	branchBKey := key.BranchKey{ProjectID: 123, BranchID: 222}
+	branchA := test.NewBranch(branchAKey)
+	branchB := test.NewBranch(branchBKey)
+	source1A := test.NewHTTPSource(key.SourceKey{BranchKey: branchAKey, SourceID: "my-source-1"})
+	source1A.HTTP.Secret = validSecret
+	source1B := test.NewHTTPSource(key.SourceKey{BranchKey: branchBKey, SourceID: "my-source-1"})
+	source1B.HTTP.Secret = validSecret
+	source2Disabled := test.NewHTTPSource(key.SourceKey{BranchKey: branchAKey, SourceID: "my-source-2"})
+	source2Disabled.HTTP.Secret = validSecret
+	sink1A1 := test.NewSink(key.SinkKey{SourceKey: source1A.SourceKey, SinkID: "my-sink-1"})
+	sink1B1 := test.NewSink(key.SinkKey{SourceKey: source1B.SourceKey, SinkID: "my-sink-1"})
+	sink1A2Disabled := test.NewSink(key.SinkKey{SourceKey: source1A.SourceKey, SinkID: "my-sink-2"})
+	sink1B2Disabled := test.NewSink(key.SinkKey{SourceKey: source1B.SourceKey, SinkID: "my-sink-2"})
+	require.NoError(t, d.DefinitionRepository().Branch().Create(&branchA, d.Clock().Now(), test.ByUser()).Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Branch().Create(&branchB, d.Clock().Now(), test.ByUser()).Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Source().Create(&source1A, d.Clock().Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Source().Create(&source1B, d.Clock().Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Source().Create(&source2Disabled, d.Clock().Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Source().Disable(source2Disabled.SourceKey, d.Clock().Now(), test.ByUser(), "reason").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Sink().Create(&sink1A1, d.Clock().Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Sink().Create(&sink1B1, d.Clock().Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Sink().Create(&sink1A2Disabled, d.Clock().Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Sink().Create(&sink1B2Disabled, d.Clock().Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Sink().Disable(sink1A2Disabled.SinkKey, d.Clock().Now(), test.ByUser(), "reason").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Sink().Disable(sink1B2Disabled.SinkKey, d.Clock().Now(), test.ByUser(), "reason").Do(ctx).Err())
+
 	// Start
-	ctx := context.Background()
 	require.NoError(t, stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentHTTPSource))
 
 	// Wait for the HTTP server
@@ -65,7 +103,7 @@ func TestStart(t *testing.T) {
 `)
 
 	// Send testing requests
-	sendTestRequests(t, ctx, logger, url, maxHeaderSize, maxBodySize)
+	sendTestRequests(t, ctx, clk, mock, url, validSecret, maxHeaderSize, maxBodySize)
 
 	// Shutdown
 	logger.Truncate()
@@ -74,7 +112,10 @@ func TestStart(t *testing.T) {
 	logger.AssertJSONMessages(t, `
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"shutting down HTTP source at \"0.0.0.0:%d\"","component":"http-source"}
-{"level":"info","message":"HTTP source shutdown finished","component":"http-source"}
+{"level":"info","message":"HTTP source shutdown done","component":"http-source"}
+{"level":"info","message":"shutting down sink router","component":"sink.router"}
+{"level":"info","message":"consumer closed: context canceled","component":"sink.router"}
+{"level":"info","message":"sink router shutdown done","component":"sink.router"}
 {"level":"info","message":"closing volumes stream","component":"volume.repository"}
 {"level":"info","message":"closed volumes stream","component":"volume.repository"}
 {"level":"info","message":"received shutdown request","component":"distribution.mutex.provider"}
@@ -87,9 +128,10 @@ func TestStart(t *testing.T) {
 `)
 }
 
-func testCases(t *testing.T, maxHeaderSize, maxBodySize int) []TestCase {
+func testCases(t *testing.T, clk *clock.Mock, mock dependencies.Mocked, validSecret string, maxHeaderSize, maxBodySize int) []TestCase {
 	t.Helper()
 
+	invalidSecret := strings.Repeat("0", 48)
 	require.Less(t, maxHeaderSize, maxBodySize)
 
 	return []TestCase{
@@ -105,17 +147,18 @@ func testCases(t *testing.T, maxHeaderSize, maxBodySize int) []TestCase {
 			Method:             http.MethodGet,
 			Path:               "/foo",
 			ExpectedStatusCode: http.StatusNotFound,
-			ExpectedLogs:       `{"level":"info","message":"not found, please send data using POST /stream/<sourceID>/<secret>"}`,
-			ExpectedBody: `{
+			ExpectedLogs:       `{"level":"info","message":"not found, please send data using POST /stream/<projectID>/<sourceID>/<secret>"}`,
+			ExpectedBody: `
+{
   "statusCode": 404,
   "error": "stream.in.routeNotFound",
-  "message": "Not found, please send data using POST /stream/\u003csourceID\u003e/\u003csecret\u003e"
+  "message": "Not found, please send data using POST /stream/\u003cprojectID\u003e/\u003csourceID\u003e/\u003csecret\u003e"
 }`,
 		},
 		{
 			Name:               "stream input - OPTIONS",
 			Method:             http.MethodOptions,
-			Path:               "/stream/my-source/my-secret",
+			Path:               "/stream/1234/my-source/my-secret",
 			ExpectedStatusCode: http.StatusOK,
 			ExpectedHeaders: map[string]string{
 				"Allow":          "OPTIONS, POST",
@@ -123,21 +166,319 @@ func testCases(t *testing.T, maxHeaderSize, maxBodySize int) []TestCase {
 			},
 		},
 		{
-			Name:               "stream input - POST - ok, maximum body size",
+			Name:               "stream input - POST - invalid project ID",
 			Method:             http.MethodPost,
-			Path:               "/stream/my-source/my-secret",
+			Path:               "/stream/foo/my-source/my-secret",
+			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedBody: `
+{
+  "statusCode": 400,
+  "error": "stream.in.badRequest",
+  "message": "Invalid project ID \"foo\"."
+}`,
+		},
+		{
+			Name:               "stream input - POST - not found",
+			Method:             http.MethodPost,
+			Path:               "/stream/1111/my-source/my-secret",
+			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
+			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedBody: `
+{
+  "statusCode": 404,
+  "error": "stream.in.noSourceFound",
+  "message": "The specified combination of projectID, sourceID and secret was not found."
+}`,
+		},
+		{
+			Name:               "stream input - POST - not found - invalid secret",
+			Method:             http.MethodPost,
+			Path:               "/stream/123/my-source-1/" + invalidSecret,
+			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
+			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedBody: `
+{
+  "statusCode": 404,
+  "error": "stream.in.noSourceFound",
+  "message": "The specified combination of projectID, sourceID and secret was not found."
+}`,
+		},
+		{
+			Name:               "stream input - POST - not found - disabled source",
+			Method:             http.MethodPost,
+			Path:               "/stream/123/my-source-2/" + validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
+			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedBody: `
+{
+  "statusCode": 404,
+  "error": "stream.in.disabledSource",
+  "message": "The specified source is disabled in all branches."
+}`,
+		},
+		{
+			Name: "stream input - POST - open pipeline error",
+
+			Prepare: func(t *testing.T) {
+				t.Helper()
+				c := mock.TestSinkPipelineController()
+				c.OpenError = errors.New("some open error")
+			},
+			Method:             http.MethodPost,
+			Path:               "/stream/123/my-source-1/" + validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
+			ExpectedStatusCode: http.StatusInternalServerError,
+			ExpectedHeaders: map[string]string{
+				"Content-Type": "application/json",
+			},
+			ExpectedLogs: `
+{"level":"error","message":"error while writing record: cannot open pipeline: some open error, next attempt after %s","component":"sink.router"}
+{"level":"error","message":"error while writing record: cannot open pipeline: some open error, next attempt after %s","component":"sink.router"}
+`,
+			ExpectedBody: `
+{
+  "statusCode": 500,
+  "error": "stream.in.writeFailed",
+  "message": "Written to 0/2 sinks.",
+  "sources": [
+    {
+      "projectId": 123,
+      "sourceId": "my-source-1",
+      "branchId": 111,
+      "statusCode": 500,
+      "error": "stream.in.writeFailed",
+      "message": "Written to 0/1 sinks.",
+      "sinks": [
+        {
+          "sinkId": "my-sink-1",
+          "statusCode": 500,
+          "error": "stream.in.genericError",
+          "message": "Cannot open pipeline: some open error, next attempt after %s."
+        }
+      ]
+    },
+    {
+      "projectId": 123,
+      "sourceId": "my-source-1",
+      "branchId": 222,
+      "statusCode": 500,
+      "error": "stream.in.writeFailed",
+      "message": "Written to 0/1 sinks.",
+      "sinks": [
+        {
+          "sinkId": "my-sink-1",
+          "statusCode": 500,
+          "error": "stream.in.genericError",
+          "message": "Cannot open pipeline: some open error, next attempt after %s."
+        }
+      ]
+    }
+  ]
+}`,
+		},
+		{
+			Name: "stream input - POST - write error",
+			Prepare: func(t *testing.T) {
+				t.Helper()
+				clk.Add(10 * time.Second) // skip backoff delay for open pipeline operation
+				c := mock.TestSinkPipelineController()
+				c.OpenError = nil
+				c.WriteError = errors.New("some write error")
+			},
+			Method:             http.MethodPost,
+			Path:               "/stream/123/my-source-1/" + validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
+			ExpectedStatusCode: http.StatusInternalServerError,
+			ExpectedHeaders: map[string]string{
+				"Content-Type": "application/json",
+			},
+			ExpectedLogs: `
+{"level":"error","message":"error while writing record: some write error","component":"sink.router"}
+{"level":"error","message":"error while writing record: some write error","component":"sink.router"}
+`,
+			ExpectedBody: `
+{
+  "statusCode": 500,
+  "error": "stream.in.writeFailed",
+  "message": "Written to 0/2 sinks.",
+  "sources": [
+    {
+      "projectId": 123,
+      "sourceId": "my-source-1",
+      "branchId": 111,
+      "statusCode": 500,
+      "error": "stream.in.writeFailed",
+      "message": "Written to 0/1 sinks.",
+      "sinks": [
+        {
+          "sinkId": "my-sink-1",
+          "statusCode": 500,
+          "error": "stream.in.genericError",
+          "message": "Some write error."
+        }
+      ]
+    },
+    {
+      "projectId": 123,
+      "sourceId": "my-source-1",
+      "branchId": 222,
+      "statusCode": 500,
+      "error": "stream.in.writeFailed",
+      "message": "Written to 0/1 sinks.",
+      "sinks": [
+        {
+          "sinkId": "my-sink-1",
+          "statusCode": 500,
+          "error": "stream.in.genericError",
+          "message": "Some write error."
+        }
+      ]
+    }
+  ]
+}`,
+		},
+		{
+			Name: "stream input - POST - ok - accepted",
+			Prepare: func(t *testing.T) {
+				t.Helper()
+				c := mock.TestSinkPipelineController()
+				c.WriteError = nil
+				c.WriteRecordStatus = pipeline.RecordAccepted
+			},
+			Method:             http.MethodPost,
+			Path:               "/stream/123/my-source-1/" + validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
+			ExpectedStatusCode: http.StatusAccepted,
+			ExpectedHeaders: map[string]string{
+				"Content-Type": "text/plain",
+			},
+			ExpectedBody: "OK",
+		},
+		{
+			Name: "stream input - POST - ok - processed",
+			Prepare: func(t *testing.T) {
+				t.Helper()
+				c := mock.TestSinkPipelineController()
+				c.WriteError = nil
+				c.WriteRecordStatus = pipeline.RecordProcessed
+			},
+			Method:             http.MethodPost,
+			Path:               "/stream/123/my-source-1/" + validSecret,
 			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
 			ExpectedStatusCode: http.StatusOK,
-			ExpectedBody:       "not implemented",
+			ExpectedHeaders: map[string]string{
+				"Content-Type": "text/plain",
+			},
+			ExpectedBody: "OK",
+		},
+		{
+			Name: "stream input - POST - ok - accepted - verbose",
+			Prepare: func(t *testing.T) {
+				t.Helper()
+				c := mock.TestSinkPipelineController()
+				c.WriteError = nil
+				c.WriteRecordStatus = pipeline.RecordAccepted
+			},
+			Method:             http.MethodPost,
+			Path:               "/stream/123/my-source-1/" + validSecret,
+			Query:              "verbose=true",
+			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
+			ExpectedStatusCode: http.StatusAccepted,
+			ExpectedBody: `
+{
+  "statusCode": 202,
+  "message": "Successfully written to 2/2 sinks.",
+  "sources": [
+    {
+      "projectId": 123,
+      "sourceId": "my-source-1",
+      "branchId": 111,
+      "statusCode": 202,
+      "message": "Successfully written to 1/1 sinks.",
+      "sinks": [
+        {
+          "sinkId": "my-sink-1",
+          "statusCode": 202,
+          "message": "accepted"
+        }
+      ]
+    },
+    {
+      "projectId": 123,
+      "sourceId": "my-source-1",
+      "branchId": 222,
+      "statusCode": 202,
+      "message": "Successfully written to 1/1 sinks.",
+      "sinks": [
+        {
+          "sinkId": "my-sink-1",
+          "statusCode": 202,
+          "message": "accepted"
+        }
+      ]
+    }
+  ]
+}`,
+		},
+		{
+			Name: "stream input - POST - ok - processed - verbose",
+			Prepare: func(t *testing.T) {
+				t.Helper()
+				c := mock.TestSinkPipelineController()
+				c.WriteError = nil
+				c.WriteRecordStatus = pipeline.RecordProcessed
+			},
+			Method:             http.MethodPost,
+			Path:               "/stream/123/my-source-1/" + validSecret,
+			Query:              "verbose=true",
+			Body:               strings.NewReader(strings.Repeat(".", maxBodySize)),
+			ExpectedStatusCode: http.StatusOK,
+			ExpectedBody: `
+{
+  "statusCode": 200,
+  "message": "Successfully written to 2/2 sinks.",
+  "sources": [
+    {
+      "projectId": 123,
+      "sourceId": "my-source-1",
+      "branchId": 111,
+      "statusCode": 200,
+      "message": "Successfully written to 1/1 sinks.",
+      "sinks": [
+        {
+          "sinkId": "my-sink-1",
+          "statusCode": 200,
+          "message": "processed"
+        }
+      ]
+    },
+    {
+      "projectId": 123,
+      "sourceId": "my-source-1",
+      "branchId": 222,
+      "statusCode": 200,
+      "message": "Successfully written to 1/1 sinks.",
+      "sinks": [
+        {
+          "sinkId": "my-sink-1",
+          "statusCode": 200,
+          "message": "processed"
+        }
+      ]
+    }
+  ]
+}`,
 		},
 		{
 			Name:               "stream input - POST - over maximum header size",
 			Method:             http.MethodPost,
-			Path:               "/stream/my-source/my-secret",
+			Path:               "/stream/123/my-source-1/" + validSecret,
 			Headers:            map[string]string{"foo": strings.Repeat(".", maxHeaderSize+1)},
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
 			ExpectedLogs:       `{"level":"info","message":"request header size is over the maximum \"2000B\"","error.type":"%s/errors.HeaderTooLargeError"}`,
-			ExpectedBody: `{
+			ExpectedBody: `
+{
   "statusCode": 413,
   "error": "stream.in.headerTooLarge",
   "message": "Request header size is over the maximum \"2000B\"."
@@ -146,11 +487,12 @@ func testCases(t *testing.T, maxHeaderSize, maxBodySize int) []TestCase {
 		{
 			Name:               "stream input - POST - over maximum body size",
 			Method:             http.MethodPost,
-			Path:               "/stream/my-source/my-secret",
+			Path:               "/stream/123/my-source/" + validSecret,
 			Body:               strings.NewReader(strings.Repeat(".", maxBodySize+1)),
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
 			ExpectedLogs:       `{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`,
-			ExpectedBody: `{
+			ExpectedBody: `
+{
   "statusCode": 413,
   "error": "stream.in.bodyTooLarge",
   "message": "Request body size is over the maximum \"8000B\"."
@@ -159,16 +501,28 @@ func testCases(t *testing.T, maxHeaderSize, maxBodySize int) []TestCase {
 	}
 }
 
-func sendTestRequests(t *testing.T, ctx context.Context, logger log.DebugLogger, url string, maxHeaderSize, maxBodySize int) {
+func sendTestRequests(t *testing.T, ctx context.Context, clk *clock.Mock, mock dependencies.Mocked, baseURL string, validSecret string, maxHeaderSize, maxBodySize int) {
 	t.Helper()
 
-	for _, tc := range testCases(t, maxHeaderSize, maxBodySize) {
+	logger := mock.DebugLogger()
+
+	for _, tc := range testCases(t, clk, mock, validSecret, maxHeaderSize, maxBodySize) {
 		t.Run(strhelper.NormalizeName(tc.Name), func(t *testing.T) {
+			if tc.Prepare != nil {
+				tc.Prepare(t)
+			}
+
 			logger.Truncate()
+
+			// URL
+			url := baseURL + tc.Path
+			if tc.Query != "" {
+				url += "?" + tc.Query
+			}
 
 			// Method, URL, body
 			require.NotEmpty(t, tc.Method)
-			req, err := http.NewRequestWithContext(ctx, tc.Method, url+tc.Path, tc.Body)
+			req, err := http.NewRequestWithContext(ctx, tc.Method, url, tc.Body)
 			require.NoError(t, err)
 
 			// Headers
@@ -192,11 +546,9 @@ func sendTestRequests(t *testing.T, ctx context.Context, logger log.DebugLogger,
 
 			// Expected headers
 			if len(tc.ExpectedHeaders) > 0 {
-				actualHeaders := make(map[string]string)
-				for k, v := range resp.Header {
-					actualHeaders[k] = v[0]
+				for k, v := range tc.ExpectedHeaders {
+					assert.Equal(t, v, resp.Header.Get(k), fmt.Sprintf("key=%s", k))
 				}
-				assert.Equal(t, tc.ExpectedHeaders, actualHeaders)
 			}
 
 			// Response body

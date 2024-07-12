@@ -57,7 +57,6 @@ package dependencies
 import (
 	"context"
 	"io"
-	"net"
 	"net/http"
 
 	"github.com/benbjohnson/clock"
@@ -119,8 +118,7 @@ type ProjectScope interface {
 // RequestInfo dependencies provides information about received HTTP request.
 type RequestInfo interface {
 	RequestID() string
-	RequestHeader() http.Header
-	RequestClientIP() net.IP
+	Request() *http.Request
 }
 
 // EtcdClientScope dependencies provides etcd client and serialization/deserialization.

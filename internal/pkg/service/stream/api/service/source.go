@@ -10,10 +10,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 )
 
 //nolint:dupl // CreateSink method is similar
@@ -202,7 +202,7 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.TestSourcePayload, req io.ReadCloser) (res *api.TestResult, err error) {
+func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.TestSourcePayload, _ io.ReadCloser) (res *api.TestResult, err error) {
 	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}
@@ -212,18 +212,13 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 		return nil, err
 	}
 
-	body, err := io.ReadAll(req)
-	if err != nil {
-		return nil, err
-	}
+	// Remove X-StorageApi-Token from headers
+	req := d.Request()
+	req.Header.Del("x-storageapi-token")
 
-	// Remove X-StorageApi-Token from the mapped headers column.
-	header := d.RequestHeader()
-	header.Del("x-storageapi-token")
+	recordCtx := recordctx.FromHTTP(d.Clock().Now(), req)
 
-	receiveCtx := receivectx.New(ctx, d.Clock().Now(), d.RequestClientIP(), header, string(body))
-
-	return s.mapper.NewTestResultResponse(d.SourceKey(), sinks, receiveCtx)
+	return s.mapper.NewTestResultResponse(d.SourceKey(), sinks, recordCtx)
 }
 
 func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.SourceRequestScope, payload *api.SourceStatisticsClearPayload) (err error) {

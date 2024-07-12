@@ -1,8 +1,6 @@
 package key
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -21,5 +19,5 @@ func (v SourceID) String() string {
 }
 
 func (v SourceKey) String() string {
-	return fmt.Sprintf("%s/%s", v.BranchKey.String(), v.SourceID.String())
+	return v.BranchKey.String() + "/" + v.SourceID.String()
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
-	clientv3 "go.etcd.io/etcd/client/v3"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -14,7 +14,7 @@ func TestResult(t *testing.T) {
 	t.Parallel()
 
 	expectedHeader := &etcdserverpb.ResponseHeader{}
-	expectedResponse := newRawResponse(nil, nil).WithOpResponse((&clientv3.GetResponse{Header: expectedHeader}).OpResponse())
+	expectedResponse := newRawResponse(nil, nil).WithOpResponse((&etcd.GetResponse{Header: expectedHeader}).OpResponse())
 
 	result := newResult[string](expectedResponse, nil)
 

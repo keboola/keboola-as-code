@@ -5,12 +5,14 @@ package plugin
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 )
 
 type Plugins struct {
-	collection        *Collection
-	executor          *Executor
-	localStorageSinks []func(sink *definition.Sink) bool
+	collection          *Collection
+	executor            *Executor
+	localStorageSinks   []func(sink *definition.Sink) bool
+	sinkPipelineOpeners []pipeline.Opener
 }
 
 type fnList[T any] []T

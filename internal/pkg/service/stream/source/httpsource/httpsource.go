@@ -4,16 +4,22 @@ package httpsource
 import (
 	"context"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/benbjohnson/clock"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/keboola/go-client/pkg/keboola"
 	routing "github.com/qiangxue/fasthttp-routing"
 	"github.com/valyala/fasthttp"
-	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/httpsource/dispatcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -21,11 +27,21 @@ const (
 	gracefulShutdownTimeout = 30 * time.Second
 )
 
+var (
+	// json - replacement of the standard encoding/json library, it is faster for larger responses.
+	json                       = jsoniter.ConfigCompatibleWithStandardLibrary //nolint:gochecknoglobals
+	contentTypeHeader          = []byte("Content-Type")                       //nolint:gochecknoglobals
+	textPlainContentType       = []byte("text/plain")                         //nolint:gochecknoglobals
+	applicationJSONContentType = []byte("application/json")                   //nolint:gochecknoglobals
+	okResponse                 = []byte("OK")                                 //nolint:gochecknoglobals
+)
+
 type dependencies interface {
 	Clock() clock.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
-	EtcdClient() *etcd.Client
+	DefinitionRepository() *definitionRepo.Repository
+	SinkRouter() sinkRouter.Router
 }
 
 func Start(ctx context.Context, d dependencies, cfg Config) error {
@@ -33,20 +49,62 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	logger.Info(ctx, "starting HTTP source node")
 	errorHandler := newErrorHandler(cfg, logger)
 
-	// Routing
+	// Static routes
 	router := routing.New()
 	router.NotFound(routing.MethodNotAllowedHandler, func(c *routing.Context) error {
-		errorHandler(c.RequestCtx, svcErrors.NewRouteNotFound(errors.New("not found, please send data using POST /stream/<sourceID>/<secret>")))
+		errorHandler(c.RequestCtx, svcErrors.NewRouteNotFound(errors.New("not found, please send data using POST /stream/<projectID>/<sourceID>/<secret>")))
 		return nil
 	})
 	router.Get("/health-check", func(c *routing.Context) error {
 		c.SuccessString("text/plain", "OK\n")
 		return nil
 	})
-	router.Post("/stream/<sourceID>/<secret>", func(c *routing.Context) error {
-		_ = c.Param("sourceID")
-		_ = c.Param("secret")
-		c.SuccessString("text/plain", "not implemented\n")
+
+	// Create dispatcher
+	dp, err := dispatcher.New(d, logger)
+	if err != nil {
+		return err
+	}
+
+	// Route import requests to the dispatcher
+	clk := d.Clock()
+	router.Post("/stream/<projectID>/<sourceID>/<secret>", func(c *routing.Context) error {
+		// Get parameters
+		projectIDStr := c.Param("projectID")
+		projectIDInt, err := strconv.Atoi(projectIDStr)
+		if err != nil {
+			errorHandler(c.RequestCtx, svcErrors.NewBadRequestError(errors.Errorf("invalid project ID %q", projectIDStr)))
+			return nil //nolint:nilerr
+		}
+		sourceID := key.SourceID(c.Param("sourceID"))
+		secret := c.Param("secret")
+
+		// Dispatch request to all sinks
+		result, err := dp.Dispatch(clk.Now(), keboola.ProjectID(projectIDInt), sourceID, secret, c.RequestCtx)
+		if err != nil {
+			errorHandler(c.RequestCtx, err)
+			return nil //nolint:nilerr
+		}
+
+		// Write short response, if there is no error, and there is no verbose=true query param
+		verbose := string(c.QueryArgs().Peek("verbose"))
+		if result.FailedSinks == 0 && verbose != "true" {
+			c.Response.Header.SetCanonical(contentTypeHeader, textPlainContentType)
+			c.Response.SetStatusCode(result.StatusCode)
+			c.Response.SetBody(okResponse)
+			return nil
+		}
+
+		// Write verbose response
+		c.Response.Header.SetCanonical(contentTypeHeader, applicationJSONContentType)
+		c.Response.SetStatusCode(result.StatusCode)
+		enc := json.NewEncoder(c)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(result); err != nil {
+			errorHandler(c.RequestCtx, err)
+			return nil //nolint:nilerr
+		}
+
 		return nil
 	})
 
@@ -101,17 +159,23 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	// Register graceful shutdown
 	proc.OnShutdown(func(ctx context.Context) {
 		<-startCtx.Done()
+		logger.Infof(ctx, "shutting down HTTP source at %q", cfg.Listen)
 
 		// Shutdown gracefully with a timeout.
 		ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
 		defer cancel()
 
-		logger.Infof(ctx, "shutting down HTTP source at %q", cfg.Listen)
-
+		// Shutdown HTTP server
 		if err := srv.ShutdownWithContext(ctx); err != nil {
-			logger.Errorf(ctx, `HTTP source shutdown error: %s`, err)
+			logger.Errorf(ctx, `HTTP source server shutdown error: %s`, err)
 		}
-		logger.Info(ctx, "HTTP source shutdown finished")
+
+		// Close dispatcher, wait for in-flight requests
+		if err := dp.Close(ctx); err != nil {
+			logger.Errorf(ctx, `HTTP source dispatcher shutdown error: %s`, err)
+		}
+
+		logger.Info(ctx, "HTTP source shutdown done")
 	})
 
 	return nil

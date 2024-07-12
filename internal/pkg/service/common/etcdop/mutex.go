@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
-	clientv3 "go.etcd.io/etcd/client/v3"
+	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -85,9 +85,9 @@ func (l *Mutex) Header() *etcdserverpb.ResponseHeader {
 
 // IsOwner method match the concurrency.Mutex.IsOwner method.
 // It can be used to check the lock ownership in an etcd transaction.
-func (l *Mutex) IsOwner() clientv3.Cmp {
+func (l *Mutex) IsOwner() etcd.Cmp {
 	if l.locked == nil {
-		return clientv3.Cmp{}
+		return etcd.Cmp{}
 	}
 	return l.locked.dbMutex.IsOwner()
 }

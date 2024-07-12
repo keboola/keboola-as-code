@@ -16,16 +16,16 @@ type VM[T any] struct {
 	lock    sync.Mutex
 	vm      *jsonnet.VM
 	err     error
-	payload *T
+	payload T
 }
 
 // Payload returns the payload of the current evaluation.
 // Can be used by custom functions for request specific values.
-func (vm *VM[T]) Payload() *T {
+func (vm *VM[T]) Payload() T {
 	return vm.payload
 }
 
-func (vm *VM[T]) Evaluate(code string, payload *T) (jsonOut string, err error) {
+func (vm *VM[T]) Evaluate(code string, payload T) (jsonOut string, err error) {
 	if vm.err != nil {
 		return "", vm.err
 	}
@@ -35,7 +35,8 @@ func (vm *VM[T]) Evaluate(code string, payload *T) (jsonOut string, err error) {
 
 	vm.payload = payload
 	defer func() {
-		vm.payload = nil
+		var empty T
+		vm.payload = empty
 	}()
 
 	astNode, err := ToAst(code, "")

@@ -94,7 +94,7 @@ func Listen(d serverDependencies, config network.Config, nodeID string, handler 
 			select {
 			case <-done:
 				s.logger.Info(ctx, `waiting for streams done`)
-			case <-time.After(s.config.StreamCloseTimeout):
+			case <-time.After(s.config.ShutdownTimeout):
 				s.logger.Infof(ctx, `waiting for streams timeout after %s`, s.config.ShutdownTimeout)
 			}
 		}
