@@ -5,16 +5,16 @@ import (
 	"net/url"
 
 	jsonnetWrapper "github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 )
 
 type Mapper struct {
 	config              config.Config
 	apiPublicURL        *url.URL
 	httpSourcePublicURL *url.URL
-	jsonnetPool         *jsonnetWrapper.VMPool[receivectx.Context]
+	jsonnetPool         *jsonnetWrapper.VMPool[recordctx.Context]
 }
 
 type dependencies interface {
