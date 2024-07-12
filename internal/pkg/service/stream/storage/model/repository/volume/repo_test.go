@@ -113,6 +113,7 @@ storage/volume/writer/my-volume-1 (lease)
 {
   "volumeId": "my-volume-1",
   "nodeId": "writer-node",
+  "hostname": "localhost",
   "path": "hdd/001",
   "type": "hdd",
   "label": "001"
@@ -125,6 +126,7 @@ storage/volume/writer/my-volume-2 (lease)
 {
   "volumeId": "my-volume-2",
   "nodeId": "writer-node",
+  "hostname": "localhost",
   "path": "hdd/002",
   "type": "hdd",
   "label": "002"
@@ -137,6 +139,7 @@ storage/volume/reader/my-volume-3 (lease)
 {
   "volumeId": "my-volume-3",
   "nodeId": "reader-node",
+  "hostname": "localhost",
   "path": "hdd/003",
   "type": "hdd",
   "label": "003"
@@ -149,6 +152,7 @@ storage/volume/reader/my-volume-4 (lease)
 {
   "volumeId": "my-volume-4",
   "nodeId": "reader-node",
+  "hostname": "localhost",
   "path": "hdd/004",
   "type": "hdd",
   "label": "004"

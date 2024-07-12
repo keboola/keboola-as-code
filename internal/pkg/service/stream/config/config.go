@@ -20,6 +20,7 @@ type Config struct {
 	DebugHTTPClient bool                `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
 	CPUProfFilePath string              `configKey:"cpuProfilePath" configUsage:"Path where CPU profile is saved."`
 	NodeID          string              `configKey:"nodeID" configUsage:"Unique ID of the node in the cluster." validate:"required"`
+	Hostname        string              `configKey:"hostname" configUsage:"Hostname for communication between nodes." validate:"required"`
 	StorageAPIHost  string              `configKey:"storageApiHost" configUsage:"Storage API host." validate:"required,hostname"`
 	Datadog         datadog.Config      `configKey:"datadog"`
 	Etcd            etcdclient.Config   `configKey:"etcd"`
