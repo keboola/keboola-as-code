@@ -82,11 +82,6 @@ func (s *service) ListSinks(ctx context.Context, d dependencies.SourceRequestSco
 }
 
 func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.UpdateSinkPayload) (*api.Task, error) {
-	// Quick check before the task
-	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
-		return nil, err
-	}
-
 	// Get the change description
 	var changeDesc string
 	if payload.ChangeDescription == nil {
@@ -98,6 +93,15 @@ func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScop
 	// Define update function
 	update := func(sink definition.Sink) (definition.Sink, error) {
 		return s.mapper.UpdateSinkEntity(sink, payload)
+	}
+
+	// Quick validation - without save and associated slow operations
+	sink, err := s.definition.Sink().Get(d.SinkKey()).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := update(sink); err != nil {
+		return nil, err
 	}
 
 	// Update sink in a task
