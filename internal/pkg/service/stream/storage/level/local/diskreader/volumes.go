@@ -28,13 +28,13 @@ type dependencies interface {
 }
 
 // OpenVolumes function detects and opens all volumes in the path.
-func OpenVolumes(ctx context.Context, d dependencies, nodeID, volumesPath string, config Config) (v *Volumes, err error) {
+func OpenVolumes(ctx context.Context, d dependencies, nodeID, hostname, volumesPath string, config Config) (v *Volumes, err error) {
 	v = &Volumes{
 		logger: d.Logger().WithComponent("storage.node.reader.volumes"),
 		events: events.New[Reader](),
 	}
 
-	v.collection, err = opener.OpenVolumes(ctx, v.logger, nodeID, volumesPath, func(spec volume.Spec) (*Volume, error) {
+	v.collection, err = opener.OpenVolumes(ctx, v.logger, nodeID, hostname, volumesPath, func(spec volume.Spec) (*Volume, error) {
 		return Open(ctx, v.logger, d.Clock(), config, v.events.Clone(), spec)
 	})
 	if err != nil {

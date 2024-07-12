@@ -39,6 +39,8 @@ debugHTTPClient: false
 cpuProfilePath: ""
 # Unique ID of the node in the cluster. Validation rules: required
 nodeID: ""
+# Hostname for communication between nodes. Validation rules: required
+hostname: ""
 # Storage API host. Validation rules: required,hostname
 storageApiHost: ""
 datadog:
@@ -234,6 +236,7 @@ storage:
 
 	// Add missing values, and validate it
 	cfg.NodeID = "test-node"
+	cfg.Hostname = "localhost"
 	cfg.StorageAPIHost = "connection.keboola.local"
 	cfg.Storage.VolumesPath = "/tmp/stream-volumes"
 	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")

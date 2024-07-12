@@ -198,6 +198,7 @@ func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
 
 	// Complete configuration
 	cfg.NodeID = "test-node"
+	cfg.Hostname = "hostname"
 	cfg.StorageAPIHost = strings.TrimPrefix(d.StorageAPIHost(), "https://")
 	cfg.Storage.VolumesPath = volumesPath
 	cfg.API.PublicURL, _ = url.Parse("https://stream.keboola.local")

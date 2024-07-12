@@ -59,6 +59,7 @@ func TestStreamApiE2E(t *testing.T) {
 			addEnvs := env.FromMap(map[string]string{
 				"STREAM_DATADOG_ENABLED":        "false",
 				"STREAM_NODE_ID":                "test-node",
+				"STREAM_HOSTNAME":               "test-node.localhost",
 				"STREAM_STORAGE_API_HOST":       test.TestProject().StorageAPIHost(),
 				"STREAM_STORAGE_VOLUMES_PATH":   volumesPath,
 				"STREAM_API_PUBLIC_URL":         "https://stream.keboola.local",

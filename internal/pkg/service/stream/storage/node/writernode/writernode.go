@@ -31,7 +31,7 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 	logger.Info(ctx, `starting storage writer node`)
 
 	// Open volumes
-	volumes, err := diskwriter.OpenVolumes(ctx, d, cfg.NodeID, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
+	volumes, err := diskwriter.OpenVolumes(ctx, d, cfg.NodeID, cfg.Hostname, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
 	if err != nil {
 		return err
 	}

@@ -48,7 +48,7 @@ func TestOpenVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = diskwriter.OpenVolumes(ctx, d, "my-node", volumesPath, mock.TestConfig().Storage.Level.Local.Writer)
+		volumes, err = diskwriter.OpenVolumes(ctx, d, "my-node", "localhost", volumesPath, mock.TestConfig().Storage.Level.Local.Writer)
 		assert.NoError(t, err)
 	}()
 

@@ -37,10 +37,11 @@ type Volume interface {
 
 // Spec provides base information about a volume found in volumes path.
 type Spec struct {
-	NodeID string `json:"nodeId" validate:"required"`
-	Path   string `json:"path" validate:"required"`
-	Type   string `json:"type" validate:"required"`
-	Label  string `json:"label" validate:"required"`
+	NodeID   string `json:"nodeId" validate:"required"`
+	Hostname string `json:"hostname" validate:"required"`
+	Path     string `json:"path" validate:"required"`
+	Type     string `json:"type" validate:"required"`
+	Label    string `json:"label" validate:"required"`
 }
 
 // Metadata entity contains metadata about an active local volume that is connected to a writer/reader node.

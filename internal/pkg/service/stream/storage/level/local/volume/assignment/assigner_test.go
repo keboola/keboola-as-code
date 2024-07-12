@@ -361,9 +361,10 @@ func createVolumesMetadata(t *testing.T, volumes []string) (all []volume.Metadat
 		metadata := volume.Metadata{
 			ID: id,
 			Spec: volume.Spec{
-				NodeID: parts[0],
-				Type:   parts[1],
-				Label:  parts[2],
+				NodeID:   parts[0],
+				Hostname: "localhost",
+				Type:     parts[1],
+				Label:    parts[2],
 			},
 		}
 		byID[id] = metadata

@@ -35,7 +35,7 @@ func TestEventWriter(t *testing.T) {
 
 	// Detect volumes
 	cfg := mock.TestConfig().Storage.Level.Local.Writer
-	volumes, err := diskwriter.OpenVolumes(ctx, d, "my-node", volumesPath, cfg)
+	volumes, err := diskwriter.OpenVolumes(ctx, d, "my-node", "localhost", volumesPath, cfg)
 	assert.NoError(t, err)
 
 	// Register "OnOpen" and "OnClose" events on the "volumes" level
@@ -164,7 +164,7 @@ func TestWriterEvents_OpenError(t *testing.T) {
 
 	// Detect volumes
 	cfg := mock.TestConfig().Storage.Level.Local.Writer
-	volumes, err := diskwriter.OpenVolumes(ctx, d, "my-node", volumesPath, cfg)
+	volumes, err := diskwriter.OpenVolumes(ctx, d, "my-node", "localhost", volumesPath, cfg)
 	assert.NoError(t, err)
 
 	// Register "OnOpen" event on the "volumes" level
@@ -205,7 +205,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 
 	// Detect volumes
 	cfg := mock.TestConfig().Storage.Level.Local.Writer
-	volumes, err := diskwriter.OpenVolumes(ctx, d, "my-node", volumesPath, cfg)
+	volumes, err := diskwriter.OpenVolumes(ctx, d, "my-node", "localhost", volumesPath, cfg)
 	assert.NoError(t, err)
 
 	// Register "OnClose" event on the "volumes" level

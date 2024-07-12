@@ -66,6 +66,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: STREAM_HOSTNAME
+              value: "$(STREAM_NODE_ID).stream.svc.cluster.local"
             - name: STREAM_ETCD_PASSWORD
               valueFrom:
                 secretKeyRef:
