@@ -121,6 +121,9 @@ func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity ta
 		return table.Mapping{}, errors.Errorf(`"table.mapping" must be configured for the "%s" sink type`, definition.SinkTypeTable)
 	}
 
+	vm := m.jsonnetPool.Get()
+	defer m.jsonnetPool.Put(vm)
+
 	// Columns
 	for _, columnPayload := range payload.Columns {
 		columnEntity, err := column.MakeColumn(columnPayload.Type, columnPayload.Name, columnPayload.PrimaryKey)
@@ -134,9 +137,9 @@ func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity ta
 				return table.Mapping{}, svcerrors.NewBadRequestError(errors.Errorf(`column "%s" is missing template`, columnPayload.Name))
 			}
 
-			// if err := m.jsonnetValidator.Validate(columnPayload.Template.Content); err != nil {
-			//	return table.Mapping{}, svcerrors.NewBadRequestError(errors.Errorf(`column "%s" template is invalid: %w`, columnPayload.Name, err))
-			//}
+			if err := vm.Validate(columnPayload.Template.Content); err != nil {
+				return table.Mapping{}, svcerrors.NewBadRequestError(errors.Errorf(`column "%s" template is invalid: %w`, columnPayload.Name, err))
+			}
 
 			tmplColumn.Template.Language = columnPayload.Template.Language
 			tmplColumn.Template.Content = columnPayload.Template.Content

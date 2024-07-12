@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "stream.api.badRequest",
+  "message": "Column \"jsonnet\" template is invalid: 1:1-8 Unknown variable: Invalid."
+}

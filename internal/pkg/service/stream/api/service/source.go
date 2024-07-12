@@ -53,11 +53,6 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 }
 
 func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourcePayload) (*api.Task, error) {
-	// Quick check before the task
-	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
-		return nil, err
-	}
-
 	// Get the change description
 	var changeDesc string
 	if payload.ChangeDescription == nil {
@@ -69,6 +64,15 @@ func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequest
 	// Define update function
 	update := func(source definition.Source) (definition.Source, error) {
 		return s.mapper.UpdateSourceEntity(source, payload)
+	}
+
+	// Quick validation - without save and associated slow operations
+	source, err := s.definition.Source().Get(d.SourceKey()).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := update(source); err != nil {
+		return nil, err
 	}
 
 	// Update source in a task
