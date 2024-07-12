@@ -116,7 +116,8 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 			}
 			return &TestSinkPipeline{opener: mock.sinkPipelineController}, nil
 		}
-		return nil, nil
+
+		return nil, definition.ErrCannotHandleSinkType
 	})
 
 	return serviceScp, mock

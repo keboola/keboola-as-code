@@ -15,13 +15,12 @@ func (p *Plugins) RegisterSinkPipelineOpener(fn pipeline.Opener) {
 func (p *Plugins) OpenSinkPipeline(ctx context.Context, sink definition.Sink) (pipeline.Pipeline, error) {
 	for _, fn := range p.sinkPipelineOpeners {
 		p, err := fn(ctx, sink)
-		if err != nil {
-			return nil, err
+		if errors.Is(err, definition.ErrCannotHandleSinkType) {
+			continue
 		}
 
-		// If the returned pipeline is nil, it means, the opener cannot handle the sink type, so we continue.
-		if p == nil {
-			continue
+		if err != nil {
+			return nil, err
 		}
 
 		return p, nil
