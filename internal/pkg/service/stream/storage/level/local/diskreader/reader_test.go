@@ -28,7 +28,7 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 	t.Parallel()
 	tc := newReaderTestCase(t)
 
-	r, err := tc.NewReader()
+	r, err := tc.NewReader(false)
 	require.NoError(t, err)
 	assert.Len(t, tc.Volume.Readers(), 1)
 
@@ -53,12 +53,12 @@ func TestVolume_NewReaderFor_Duplicate(t *testing.T) {
 	tc := newReaderTestCase(t)
 
 	// Create the writer first time - ok
-	w, err := tc.NewReader()
+	w, err := tc.NewReader(false)
 	require.NoError(t, err)
 	assert.Len(t, tc.Volume.Readers(), 1)
 
 	// Create writer for the same slice again - error
-	_, err = tc.NewReader()
+	_, err = tc.NewReader(false)
 	if assert.Error(t, err) {
 		assert.Equal(t, `reader for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z" already exists`, err.Error())
 	}
@@ -81,7 +81,7 @@ func TestVolume_NewReaderFor_ClosedVolume(t *testing.T) {
 	assert.NoError(t, vol.Close(context.Background()))
 
 	// Try crate a reader
-	_, err = tc.NewReader()
+	_, err = tc.NewReader(false)
 	if assert.Error(t, err) {
 		wildcards.Assert(t, "reader for slice \"%s\" cannot be created: volume is closed:\n- context canceled", err.Error())
 	}
@@ -107,6 +107,7 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 			Name:               "None_To_ZSTD",
 			LocalCompression:   compression.NewNoneConfig(),
 			StagingCompression: compression.NewZSTDConfig(),
+			DisableValidation:  true, // zstd is not currently considered valid
 		},
 		{
 			Name:               "GZIP_To_None",
@@ -117,11 +118,13 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 			Name:               "ZSTD_To_None",
 			LocalCompression:   compression.NewZSTDConfig(),
 			StagingCompression: compression.NewNoneConfig(),
+			DisableValidation:  true, // zstd is not currently considered valid
 		},
 		{
 			Name:               "ZSTD_To_GZIP",
 			LocalCompression:   compression.NewZSTDConfig(),
 			StagingCompression: compression.NewGZIPConfig(),
+			DisableValidation:  true, // zstd is not currently considered valid
 		},
 	}
 
@@ -140,6 +143,7 @@ type compressionTestCase struct {
 	Name               string
 	LocalCompression   compression.Config
 	StagingCompression compression.Config
+	DisableValidation  bool
 }
 
 // TestOk tests successful read chain.
@@ -173,7 +177,7 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Create reader
-	r, err := rtc.NewReader()
+	r, err := rtc.NewReader(tc.DisableValidation)
 	require.NoError(t, err)
 
 	// Read all
@@ -235,7 +239,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 	})
 
 	// Create reader
-	r, err := rtc.NewReader()
+	r, err := rtc.NewReader(tc.DisableValidation)
 	require.NoError(t, err)
 
 	// Read all
@@ -286,7 +290,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 	})
 
 	// Create reader
-	r, err := rtc.NewReader()
+	r, err := rtc.NewReader(tc.DisableValidation)
 	require.NoError(t, err)
 
 	// Read all
@@ -339,7 +343,7 @@ func (tc *readerTestCase) OpenVolume() (*diskreader.Volume, error) {
 	return vol, err
 }
 
-func (tc *readerTestCase) NewReader() (diskreader.Reader, error) {
+func (tc *readerTestCase) NewReader(disableValidation bool) (diskreader.Reader, error) {
 	if tc.Volume == nil {
 		// Open volume
 		vol, err := tc.OpenVolume()
@@ -351,9 +355,11 @@ func (tc *readerTestCase) NewReader() (diskreader.Reader, error) {
 		})
 	}
 
-	// Slice definition must be valid
-	val := validator.New()
-	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
+	if !disableValidation {
+		// Slice definition must be valid
+		val := validator.New()
+		require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
+	}
 
 	// Write slice data
 	path := filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)

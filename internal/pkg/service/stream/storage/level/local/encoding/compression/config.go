@@ -17,9 +17,9 @@ const (
 
 // Config configures compression writer and reader.
 type Config struct {
-	Type Type        `json:"type" configKey:"type" validate:"required,oneof=none gzip zstd"  configUsage:"Compression type."`
+	Type Type        `json:"type" configKey:"type" validate:"required,oneof=none gzip"  configUsage:"Compression type."`
 	GZIP *GZIPConfig `json:"gzip,omitempty" configKey:"gzip" validate:"required_if=Type gzip"`
-	ZSTD *ZSTDConfig `json:"zstd,omitempty" configKey:"" validate:"required_if=Type zstd"` // hidden from the config, not supported by the Keboola platform
+	ZSTD *ZSTDConfig `json:"zstd,omitempty" configKey:"-" validate:"required_if=Type zstd"` // hidden from the config, not supported by the Keboola platform
 }
 
 // ConfigPatch is same as the Config, but with optional/nullable fields.

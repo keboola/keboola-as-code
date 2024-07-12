@@ -25,7 +25,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "invalid type",
-			ExpectedError: `"type" must be one of [none gzip zstd]`,
+			ExpectedError: `"type" must be one of [none gzip]`,
 			Config: Config{
 				Type: "foo",
 			},
@@ -128,7 +128,7 @@ func TestConfig_Validation(t *testing.T) {
 				},
 			},
 		},
-		{
+		/*{
 			Name: "zstd: ok",
 			Config: Config{
 				Type: TypeZSTD,
@@ -190,19 +190,23 @@ func TestConfig_Validation(t *testing.T) {
 					Concurrency: 4,
 				},
 			},
-		},
+		},*/
 	}
 
 	// Run test cases
 	ctx := context.Background()
 	val := validator.New()
 	for _, tc := range cases {
-		err := val.Validate(ctx, tc.Config)
-		if tc.ExpectedError == "" {
-			assert.NoError(t, err, tc.Name)
-		} else if assert.Error(t, err, tc.Name) {
-			assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
-		}
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
+			err := val.Validate(ctx, tc.Config)
+			if tc.ExpectedError == "" {
+				assert.NoError(t, err, tc.Name)
+			} else if assert.Error(t, err, tc.Name) {
+				assert.Equal(t, strings.TrimSpace(tc.ExpectedError), strings.TrimSpace(err.Error()), tc.Name)
+			}
+		})
 	}
 }
 

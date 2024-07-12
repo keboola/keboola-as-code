@@ -29,12 +29,13 @@ import (
 )
 
 type WriterTestCase struct {
-	Name        string
-	FileType    model.FileType
-	Columns     column.Columns
-	Allocate    datasize.ByteSize
-	Sync        writesync.Config
-	Compression compression.Config
+	Name              string
+	FileType          model.FileType
+	Columns           column.Columns
+	Allocate          datasize.ByteSize
+	Sync              writesync.Config
+	Compression       compression.Config
+	DisableValidation bool
 
 	Data        []RowBatch
 	FileDecoder func(t *testing.T, r io.Reader) io.Reader
@@ -178,8 +179,10 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *diskwriter.Volume) *mod
 	s.StagingStorage.Compression = tc.Compression
 
 	// Slice definition must be valid
-	val := validator.New()
-	require.NoError(t, val.Validate(context.Background(), s))
+	if !tc.DisableValidation {
+		val := validator.New()
+		require.NoError(t, val.Validate(context.Background(), s))
+	}
 	return s
 }
 

@@ -61,6 +61,7 @@ type TestConfig struct {
 	Addr             netip.Addr       `configKey:"address"`         // TextUnmarshaler/BinaryUnmarshaler interface
 	AddrNullable     *netip.Addr      `configKey:"addressNullable"` // TextUnmarshaler/BinaryUnmarshaler interface
 	Nested           Nested           `configKey:"nested"`
+	Skipped          bool             `configKey:"-"`
 }
 
 func (c TestConfig) Normalize() {
@@ -89,6 +90,7 @@ type TestConfigWithValueStruct struct {
 	Addr             Value[netip.Addr]       `configKey:"address"`         // TextUnmarshaler/BinaryUnmarshaler interface
 	AddrNullable     Value[*netip.Addr]      `configKey:"addressNullable"` // TextUnmarshaler/BinaryUnmarshaler interface
 	Nested           NestedValue             `configKey:"nested"`
+	Skipped          bool                    `configKey:"-"`
 }
 
 func (c TestConfigWithValueStruct) Normalize() {

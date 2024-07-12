@@ -47,36 +47,7 @@
       "defaultValue": "gzip",
       "overwritten": false,
       "protected": true,
-      "validation": "required,oneof=none gzip zstd"
-    },
-    {
-      "key": "storage.level.local.encoding.compression.zstd.concurrency",
-      "type": "int",
-      "description": "ZSTD concurrency, 0 = auto",
-      "value": 0,
-      "defaultValue": 0,
-      "overwritten": false,
-      "protected": true
-    },
-    {
-      "key": "storage.level.local.encoding.compression.zstd.level",
-      "type": "int",
-      "description": "ZSTD compression level: fastest, default, better, best.",
-      "value": 2,
-      "defaultValue": 2,
-      "overwritten": false,
-      "protected": true,
-      "validation": "min=1,max=4"
-    },
-    {
-      "key": "storage.level.local.encoding.compression.zstd.windowSize",
-      "type": "string",
-      "description": "ZSTD window size.",
-      "value": "4MB",
-      "defaultValue": "4MB",
-      "overwritten": false,
-      "protected": true,
-      "validation": "required,minBytes=1kB,maxBytes=512MB"
+      "validation": "required,oneof=none gzip"
     },
     {
       "key": "storage.level.local.encoding.encoder.concurrency",

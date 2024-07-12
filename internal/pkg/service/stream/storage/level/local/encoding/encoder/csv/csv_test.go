@@ -27,9 +27,10 @@ import (
 )
 
 type fileCompression struct {
-	Name        string
-	Config      compression.Config
-	FileDecoder func(t *testing.T, r io.Reader) io.Reader
+	Name              string
+	Config            compression.Config
+	FileDecoder       func(t *testing.T, r io.Reader) io.Reader
+	DisableValidation bool
 }
 
 func TestCSVWriter_CastToStringError(t *testing.T) {
@@ -83,6 +84,7 @@ func TestCSVWriter(t *testing.T) {
 				require.NoError(t, err)
 				return r
 			},
+			DisableValidation: true,
 		},
 	}
 
@@ -191,11 +193,12 @@ func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, p
 			column.Body{},
 			column.Template{},
 		},
-		Allocate:    1 * datasize.MB,
-		Sync:        syncConfig,
-		Compression: comp.Config,
-		Data:        data,
-		FileDecoder: comp.FileDecoder,
-		Validator:   validateFn,
+		Allocate:          1 * datasize.MB,
+		Sync:              syncConfig,
+		Compression:       comp.Config,
+		Data:              data,
+		FileDecoder:       comp.FileDecoder,
+		DisableValidation: comp.DisableValidation,
+		Validator:         validateFn,
 	}
 }
