@@ -165,6 +165,11 @@ func (s *Server) ListenAddr() net.Addr {
 	return s.listenAddr
 }
 
+func (s *Server) ListenPort() string {
+	_, port, _ := net.SplitHostPort(s.ListenAddr().String())
+	return port
+}
+
 // listen creates a TCP like listener using the kcp-go library.
 //   - No encryption - access limited by the Kubernetes network policy
 //   - No FEC - Forward Error Correction - a reliable network is assumed
