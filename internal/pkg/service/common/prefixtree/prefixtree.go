@@ -21,6 +21,7 @@ type TreeReadOnly[T any] interface {
 	AllFromPrefix(key string) []T
 	FirstFromPrefix(key string) (value T, found bool)
 	LastFromPrefix(key string) (value T, found bool)
+	WalkAll(fn func(key string, value T) (stop bool))
 	WalkPrefix(key string, fn func(key string, value T) (stop bool))
 	ToMap() map[string]T
 }
