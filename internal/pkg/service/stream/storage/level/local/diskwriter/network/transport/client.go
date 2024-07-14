@@ -90,6 +90,8 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) (*Cli
 		}
 		sessWg.Wait()
 
+		// Wait for remaining goroutines
+		c.logger.Info(ctx, "waiting for goroutines")
 		c.wg.Wait()
 		c.logger.Info(ctx, "closed disk writer client")
 	})

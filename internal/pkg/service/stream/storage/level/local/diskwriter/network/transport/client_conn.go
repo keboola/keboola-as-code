@@ -24,7 +24,7 @@ type ClientConnection struct {
 	sess *yamux.Session
 }
 
-func newClientConnection(targetAddr string, c *Client) (*ClientConnection, error) {
+func newClientConnection(remoteAddr string, c *Client) (*ClientConnection, error) {
 	// Stop, if the client is closed
 	if c.isClosed() {
 		return nil, yamux.ErrSessionShutdown
@@ -33,12 +33,12 @@ func newClientConnection(targetAddr string, c *Client) (*ClientConnection, error
 	ctx := ctxattr.ContextWith(
 		context.Background(),
 		attribute.String("nodeId", c.nodeID),
-		attribute.String("targetAddress", targetAddr),
+		attribute.String("targetAddress", remoteAddr),
 	)
 
 	conn := &ClientConnection{
 		client:     c,
-		targetAddr: targetAddr,
+		targetAddr: remoteAddr,
 	}
 
 	// Dial connection
@@ -46,7 +46,7 @@ func newClientConnection(targetAddr string, c *Client) (*ClientConnection, error
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
-		conn.dialLoop(ctx, targetAddr, initDone)
+		conn.dialLoop(ctx, remoteAddr, initDone)
 	}()
 
 	// Wait for the first connect attempt
@@ -54,7 +54,12 @@ func newClientConnection(targetAddr string, c *Client) (*ClientConnection, error
 		return nil, err
 	}
 
-	c.logger.Infof(ctx, `disk writer client connected to %q`, targetAddr)
+	sess, err := conn.session()
+	if err != nil {
+		return nil, err
+	}
+
+	c.logger.Infof(ctx, `disk writer client connected from %q to %q`, sess.LocalAddr().String(), remoteAddr)
 	return conn, nil
 }
 
