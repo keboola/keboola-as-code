@@ -8,8 +8,10 @@ import (
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 )
@@ -22,7 +24,10 @@ type dependencies interface {
 }
 
 func Start(ctx context.Context, d dependencies, cfg config.Config) error {
+	ctx = ctxattr.ContextWith(ctx, attribute.String("nodeId", cfg.NodeID))
+
 	logger := d.Logger().WithComponent("storage.node.coordinator")
 	logger.Info(ctx, `starting storage coordinator node`)
+
 	return nil
 }

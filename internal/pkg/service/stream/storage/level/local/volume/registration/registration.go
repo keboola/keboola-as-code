@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type dependencies interface {
@@ -45,10 +46,18 @@ func RegisterVolumes[V volume.Volume](cfg Config, d dependencies, volumes *volum
 		WithTTLSeconds(cfg.TTLSeconds).
 		WithOnSession(func(session *concurrency.Session) error {
 			txn := op.Txn(client)
-			for _, vol := range volumes.All() {
+			all := volumes.All()
+			for _, vol := range all {
 				txn.Merge(putOpFactory(vol.Metadata(), session.Lease()))
 			}
-			return txn.Do(ctx).Err()
+			if err := txn.Do(ctx).Err(); err != nil {
+				err := errors.PrefixError(err, `cannot register volumes to database`)
+				logger.Error(ctx, err.Error())
+				return err
+			}
+
+			logger.Infof(ctx, `registered "%d" volumes`, len(all))
+			return nil
 		}).
 		Start(ctx, wg, logger, client)
 	return <-errCh
