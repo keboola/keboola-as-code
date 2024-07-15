@@ -83,7 +83,7 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	// Setup client
 	client, err := transport.NewClient(clientDeps, cfg, "client-node")
 	require.NoError(t, err)
-	conn, err := client.ConnectTo(addr)
+	conn, err := client.OpenConnectionOrErr("srv", addr)
 	require.NoError(t, err)
 
 	// Open streams
@@ -156,7 +156,7 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	// Setup client
 	client, err := transport.NewClient(clientDeps, cfg, "client-node")
 	require.NoError(t, err)
-	conn, err := client.ConnectTo(addr)
+	conn, err := client.OpenConnectionOrErr("srv", addr)
 	require.NoError(t, err)
 
 	// Open stream and send data
@@ -199,7 +199,7 @@ func shutdown(t *testing.T, clientDeps, srvDeps dependencies.ServiceScope, clien
 
 	// Check client logs
 	clientLogger.AssertJSONMessages(t, `
-{"level":"info","message":"disk writer client connected from \"%s\" to \"%s\"","component":"storage.node.writer.network.client"}
+{"level":"info","message":"disk writer client connected from \"%s\" to \"srv\" - \"%s\"","component":"storage.node.writer.network.client"}
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"closing disk writer client","component":"storage.node.writer.network.client"}
 {"level":"info","message":"closing %d streams","component":"storage.node.writer.network.client"}

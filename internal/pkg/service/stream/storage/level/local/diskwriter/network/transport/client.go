@@ -99,8 +99,28 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) (*Cli
 	return c, nil
 }
 
-func (c *Client) ConnectTo(targetAddr string) (*ClientConnection, error) {
-	return newClientConnection(targetAddr, c)
+// OpenConnection starts a connection dial loop to the target address.
+// The method does not return an error, if it fails to connect, it tries again.
+// The error is returned only when the client is closed.
+// If the connection is dropped late, it tries to reconnect, until the client or connection Close method is called.
+func (c *Client) OpenConnection(remoteNodeID, remoteAddr string) (*ClientConnection, error) {
+	return newClientConnection(remoteNodeID, remoteAddr, c, nil)
+}
+
+// OpenConnectionOrErr will try to connect to the address and return an error if it fails.
+// If the connection is closed after the initialization, it tries to reconnect, until the client or connection Close method is called.
+func (c *Client) OpenConnectionOrErr(remoteNodeID, remoteAddr string) (*ClientConnection, error) {
+	initDone := make(chan error, 1)
+	conn, err := newClientConnection(remoteNodeID, remoteAddr, c, initDone)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := <-initDone; err != nil {
+		return nil, err
+	}
+
+	return conn, nil
 }
 
 func (c *Client) registerSession(sess *yamux.Session) {
