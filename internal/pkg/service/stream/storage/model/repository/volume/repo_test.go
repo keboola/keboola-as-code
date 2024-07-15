@@ -37,41 +37,41 @@ func TestRepository_Volume(t *testing.T) {
 	volume1 := volume.Metadata{
 		ID: volume.ID("my-volume-1"),
 		Spec: volume.Spec{
-			NodeID:   "writer-node",
-			Hostname: "localhost",
-			Path:     "hdd/001",
-			Type:     "hdd",
-			Label:    "001",
+			NodeID:      "writer-node",
+			NodeAddress: "localhost:1234",
+			Path:        "hdd/001",
+			Type:        "hdd",
+			Label:       "001",
 		},
 	}
 	volume2 := volume.Metadata{
 		ID: volume.ID("my-volume-2"),
 		Spec: volume.Spec{
-			NodeID:   "writer-node",
-			Hostname: "localhost",
-			Path:     "hdd/002",
-			Type:     "hdd",
-			Label:    "002",
+			NodeID:      "writer-node",
+			NodeAddress: "localhost:1234",
+			Path:        "hdd/002",
+			Type:        "hdd",
+			Label:       "002",
 		},
 	}
 	volume3 := volume.Metadata{
 		ID: volume.ID("my-volume-3"),
 		Spec: volume.Spec{
-			NodeID:   "reader-node",
-			Hostname: "localhost",
-			Path:     "hdd/003",
-			Type:     "hdd",
-			Label:    "003",
+			NodeID:      "reader-node",
+			NodeAddress: "localhost:1234",
+			Path:        "hdd/003",
+			Type:        "hdd",
+			Label:       "003",
 		},
 	}
 	volume4 := volume.Metadata{
 		ID: volume.ID("my-volume-4"),
 		Spec: volume.Spec{
-			NodeID:   "reader-node",
-			Hostname: "localhost",
-			Path:     "hdd/004",
-			Type:     "hdd",
-			Label:    "004",
+			NodeID:      "reader-node",
+			NodeAddress: "localhost:1234",
+			Path:        "hdd/004",
+			Type:        "hdd",
+			Label:       "004",
 		},
 	}
 
@@ -117,7 +117,7 @@ storage/volume/writer/my-volume-1 (lease)
 {
   "volumeId": "my-volume-1",
   "nodeId": "writer-node",
-  "hostname": "localhost",
+  "nodeAddress": "localhost:1234",
   "path": "hdd/001",
   "type": "hdd",
   "label": "001"
@@ -130,7 +130,7 @@ storage/volume/writer/my-volume-2 (lease)
 {
   "volumeId": "my-volume-2",
   "nodeId": "writer-node",
-  "hostname": "localhost",
+  "nodeAddress": "localhost:1234",
   "path": "hdd/002",
   "type": "hdd",
   "label": "002"
@@ -143,7 +143,7 @@ storage/volume/reader/my-volume-3 (lease)
 {
   "volumeId": "my-volume-3",
   "nodeId": "reader-node",
-  "hostname": "localhost",
+  "nodeAddress": "localhost:1234",
   "path": "hdd/003",
   "type": "hdd",
   "label": "003"
@@ -156,7 +156,7 @@ storage/volume/reader/my-volume-4 (lease)
 {
   "volumeId": "my-volume-4",
   "nodeId": "reader-node",
-  "hostname": "localhost",
+  "nodeAddress": "localhost:1234",
   "path": "hdd/004",
   "type": "hdd",
   "label": "004"

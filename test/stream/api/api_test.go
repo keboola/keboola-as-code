@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -15,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/runner"
 )
@@ -57,17 +59,18 @@ func TestStreamApiE2E(t *testing.T) {
 			require.NoError(t, os.WriteFile(filepath.Join(volumePath, volume.IDFile), []byte("my-volume"), 0o600))
 
 			addEnvs := env.FromMap(map[string]string{
-				"STREAM_DATADOG_ENABLED":        "false",
-				"STREAM_NODE_ID":                "test-node",
-				"STREAM_HOSTNAME":               "test-node.localhost",
-				"STREAM_STORAGE_API_HOST":       test.TestProject().StorageAPIHost(),
-				"STREAM_STORAGE_VOLUMES_PATH":   volumesPath,
-				"STREAM_API_PUBLIC_URL":         "https://stream.keboola.local",
-				"STREAM_SOURCE_HTTP_PUBLIC_URL": "https://stream-in.keboola.local",
-				"STREAM_ETCD_NAMESPACE":         etcdCfg.Namespace,
-				"STREAM_ETCD_ENDPOINT":          etcdCfg.Endpoint,
-				"STREAM_ETCD_USERNAME":          etcdCfg.Username,
-				"STREAM_ETCD_PASSWORD":          etcdCfg.Password,
+				"STREAM_DATADOG_ENABLED":                           "false",
+				"STREAM_NODE_ID":                                   "test-node",
+				"STREAM_HOSTNAME":                                  "test-node.localhost",
+				"STREAM_STORAGE_API_HOST":                          test.TestProject().StorageAPIHost(),
+				"STREAM_STORAGE_VOLUMES_PATH":                      volumesPath,
+				"STREAM_STORAGE_LEVEL_LOCAL_WRITER_NETWORK_LISTEN": fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(t)),
+				"STREAM_API_PUBLIC_URL":                            "https://stream.keboola.local",
+				"STREAM_SOURCE_HTTP_PUBLIC_URL":                    "https://stream-in.keboola.local",
+				"STREAM_ETCD_NAMESPACE":                            etcdCfg.Namespace,
+				"STREAM_ETCD_ENDPOINT":                             etcdCfg.Endpoint,
+				"STREAM_ETCD_USERNAME":                             etcdCfg.Username,
+				"STREAM_ETCD_PASSWORD":                             etcdCfg.Password,
 			})
 
 			// Run the test

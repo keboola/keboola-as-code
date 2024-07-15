@@ -6,12 +6,14 @@ import (
 	"context"
 
 	"github.com/benbjohnson/clock"
+	"github.com/hashicorp/yamux"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -30,8 +32,18 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 	logger := d.Logger().WithComponent("storage.node.writer")
 	logger.Info(ctx, `starting storage writer node`)
 
+	streamHandler := func(ctx context.Context, stream *yamux.Stream) {
+	}
+
+	// Listen for network connections
+	srv, err := transport.Listen(d, cfg.Storage.Level.Local.Writer.Network, cfg.NodeID, streamHandler)
+	if err != nil {
+		return err
+	}
+
 	// Open volumes
-	volumes, err := diskwriter.OpenVolumes(ctx, d, cfg.NodeID, cfg.Hostname, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
+	nodeAddress := cfg.Hostname + ":" + srv.ListenPort()
+	volumes, err := diskwriter.OpenVolumes(ctx, d, cfg.NodeID, nodeAddress, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
 	if err != nil {
 		return err
 	}

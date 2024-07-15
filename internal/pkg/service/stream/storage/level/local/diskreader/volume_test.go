@@ -272,16 +272,16 @@ func TestVolume_Close_Errors(t *testing.T) {
 
 // volumeTestCase is a helper to open disk reader volume in tests.
 type volumeTestCase struct {
-	TB                 testing.TB
-	Ctx                context.Context
-	Logger             log.DebugLogger
-	Clock              *clock.Mock
-	Config             diskreader.Config
-	VolumeNodeID       string
-	VolumeNodeHostname string
-	VolumePath         string
-	VolumeType         string
-	VolumeLabel        string
+	TB                testing.TB
+	Ctx               context.Context
+	Logger            log.DebugLogger
+	Clock             *clock.Mock
+	Config            diskreader.Config
+	VolumeNodeID      string
+	VolumeNodeAddress volumeModel.RemoteAddr
+	VolumePath        string
+	VolumeType        string
+	VolumeLabel       string
 }
 
 func newVolumeTestCase(tb testing.TB) *volumeTestCase {
@@ -296,26 +296,26 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	tmpDir := tb.TempDir()
 
 	return &volumeTestCase{
-		TB:                 tb,
-		Ctx:                ctx,
-		Logger:             logger,
-		Clock:              clock.NewMock(),
-		Config:             diskreader.NewConfig(),
-		VolumeNodeID:       "my-node",
-		VolumeNodeHostname: "localhost",
-		VolumePath:         tmpDir,
-		VolumeType:         "hdd",
-		VolumeLabel:        "1",
+		TB:                tb,
+		Ctx:               ctx,
+		Logger:            logger,
+		Clock:             clock.NewMock(),
+		Config:            diskreader.NewConfig(),
+		VolumeNodeID:      "my-node",
+		VolumeNodeAddress: "localhost:1234",
+		VolumePath:        tmpDir,
+		VolumeType:        "hdd",
+		VolumeLabel:       "1",
 	}
 }
 
 func (tc *volumeTestCase) OpenVolume() (*diskreader.Volume, error) {
 	info := volumeModel.Spec{
-		NodeID:   tc.VolumeNodeID,
-		Hostname: tc.VolumeNodeHostname,
-		Path:     tc.VolumePath,
-		Type:     tc.VolumeType,
-		Label:    tc.VolumeLabel,
+		NodeID:      tc.VolumeNodeID,
+		NodeAddress: tc.VolumeNodeAddress,
+		Path:        tc.VolumePath,
+		Type:        tc.VolumeType,
+		Label:       tc.VolumeLabel,
 	}
 	return diskreader.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Config, events.New[diskreader.Reader](), info)
 }

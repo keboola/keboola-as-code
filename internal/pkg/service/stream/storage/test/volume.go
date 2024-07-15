@@ -14,13 +14,13 @@ import (
 )
 
 type Volume struct {
-	IDValue       model.ID
-	NodeIDValue   string
-	HostnameValue string
-	PathValue     string
-	TypeValue     string
-	LabelValue    string
-	CloseError    error
+	IDValue          model.ID
+	NodeIDValue      string
+	NodeAddressValue model.RemoteAddr
+	PathValue        string
+	TypeValue        string
+	LabelValue       string
+	CloseError       error
 }
 
 // volumeRepository interface to prevent package import cycles.
@@ -43,23 +43,23 @@ func RegisterWriterVolumes(t *testing.T, ctx context.Context, volumeRepo volumeR
 	volumes := []model.Metadata{
 		{
 			ID:   "my-volume-1",
-			Spec: model.Spec{NodeID: "node-a", Hostname: "localhost", Type: "hdd", Label: "1", Path: "hdd/1"},
+			Spec: model.Spec{NodeID: "node-a", NodeAddress: "localhost:1234", Type: "hdd", Label: "1", Path: "hdd/1"},
 		},
 		{
 			ID:   "my-volume-2",
-			Spec: model.Spec{NodeID: "node-b", Hostname: "localhost", Type: "ssd", Label: "2", Path: "ssd/2"},
+			Spec: model.Spec{NodeID: "node-b", NodeAddress: "localhost:1234", Type: "ssd", Label: "2", Path: "ssd/2"},
 		},
 		{
 			ID:   "my-volume-3",
-			Spec: model.Spec{NodeID: "node-b", Hostname: "localhost", Type: "hdd", Label: "3", Path: "hdd/3"},
+			Spec: model.Spec{NodeID: "node-b", NodeAddress: "localhost:1234", Type: "hdd", Label: "3", Path: "hdd/3"},
 		},
 		{
 			ID:   "my-volume-4",
-			Spec: model.Spec{NodeID: "node-b", Hostname: "localhost", Type: "ssd", Label: "4", Path: "ssd/4"},
+			Spec: model.Spec{NodeID: "node-b", NodeAddress: "localhost:1234", Type: "ssd", Label: "4", Path: "ssd/4"},
 		},
 		{
 			ID:   "my-volume-5",
-			Spec: model.Spec{NodeID: "node-c", Hostname: "localhost", Type: "hdd", Label: "5", Path: "hdd/5"},
+			Spec: model.Spec{NodeID: "node-c", NodeAddress: "localhost:1234", Type: "hdd", Label: "5", Path: "hdd/5"},
 		},
 	}
 
@@ -94,11 +94,11 @@ func (v *Volume) Metadata() model.Metadata {
 	return model.Metadata{
 		ID: v.IDValue,
 		Spec: model.Spec{
-			Path:     v.PathValue,
-			Type:     v.TypeValue,
-			Label:    v.LabelValue,
-			NodeID:   v.NodeIDValue,
-			Hostname: v.HostnameValue,
+			Path:        v.PathValue,
+			Type:        v.TypeValue,
+			Label:       v.LabelValue,
+			NodeID:      v.NodeIDValue,
+			NodeAddress: v.NodeAddressValue,
 		},
 	}
 }
