@@ -3,11 +3,17 @@ package csv_test
 import (
 	"compress/gzip"
 	"context"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/klauspost/compress/zstd"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
@@ -16,15 +22,15 @@ import (
 )
 
 const (
-	benchmarkRowLength  = 1 * datasize.KB
-	benchmarkUniqueRows = 1000
+	benchmarkRecordBodyLength = 1 * datasize.KB
+	benchmarkUniqueRecords    = 1000
 )
 
 // BenchmarkCSVWriter benchmarks different configuration options of the csv.Encoder.
 //
 // Run
 //
-//	go test -p 1 -benchmem ./internal/pkg/service/stream/storage/level/local/diskwriter/format/csv -bench=. -benchtime=500000x -count 1 | tee benchmark.txt
+//	go test -p 1 -benchmem ./internal/pkg/service/stream/storage/level/local/encoding/encoder/csv/ -bench=. -benchtime=500000x -count 1 | tee benchmark.txt
 //
 // Optionally format results
 //
@@ -200,15 +206,9 @@ func BenchmarkCSVWrite(b *testing.B) {
 
 func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.WriterBenchmark {
 	columns := column.Columns{
-		// 8 columns, only the count is important for CSV
 		column.UUID{},
 		column.Datetime{},
 		column.Body{},
-		column.Template{},
-		column.Template{},
-		column.Template{},
-		column.Template{},
-		column.Template{},
 	}
 
 	wb := &benchmark.WriterBenchmark{
@@ -218,33 +218,29 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 		Allocate:    100 * datasize.MB,
 		Sync:        writesync.NewConfig(),
 		Compression: compression.NewNoneConfig(),
-		DataChFactory: func(ctx context.Context, n int, g *benchmark.RandomStringGenerator) <-chan []any {
-			ch := make(chan []any, 1000)
-			columnsCount := len(columns)
-			columnLength := int(benchmarkRowLength.Bytes()) / columnsCount
+		DataChFactory: func(ctx context.Context, n int, g *benchmark.RandomStringGenerator) <-chan recordctx.Context {
+			ch := make(chan recordctx.Context, 1000)
+			bodyLength := int(benchmarkRecordBodyLength.Bytes())
 
-			// Pre-generate unique rows
-			rows := make([][]any, benchmarkUniqueRows)
-			for i := 0; i < benchmarkUniqueRows; i++ {
-				rows[i] = make([]any, columnsCount)
-				for j := 0; j < len(columns); j++ {
-					rows[i][j] = g.RandomString(columnLength)
-				}
+			// Pre-generate unique records
+			records := make([]recordctx.Context, benchmarkUniqueRecords)
+			now := utctime.MustParse("2000-01-01T01:00:00.000Z")
+			for i := 0; i < benchmarkUniqueRecords; i++ {
+				now = now.Add(time.Hour)
+				records[i] = recordctx.FromHTTP(
+					now.Time(),
+					&http.Request{Body: io.NopCloser(strings.NewReader(g.RandomString(bodyLength)))},
+				)
 			}
 
-			// Send the pre-generated rows to the channel over and over
+			// Send the pre-generated records to the channel over and over
 			go func() {
 				defer close(ch)
-				row := 0
 				for i := 0; i < n; i++ {
 					if ctx.Err() != nil {
 						break
 					}
-					ch <- rows[row]
-					row++
-					if row == benchmarkUniqueRows {
-						row = 0
-					}
+					ch <- records[i%benchmarkUniqueRecords]
 				}
 			}()
 

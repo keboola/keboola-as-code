@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
@@ -37,14 +38,14 @@ type WriterTestCase struct {
 	Compression       compression.Config
 	DisableValidation bool
 
-	Data        []RowBatch
+	Data        []RecordsBatch
 	FileDecoder func(t *testing.T, r io.Reader) io.Reader
 	Validator   func(t *testing.T, fileContent string)
 }
 
-type RowBatch struct {
+type RecordsBatch struct {
 	Parallel bool
-	Rows     [][]any
+	Records  []recordctx.Context
 }
 
 // nolint:thelper // false positive
@@ -63,7 +64,6 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	collector.Start(d, pipelineEvents, cfg.Storage.Statistics.Collector, cfg.NodeID)
 
 	// Open volume
-	now := d.Clock().Now()
 	volPath := t.TempDir()
 	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
 	vol, err := diskwriter.Open(ctx, d.Logger(), d.Clock(), cfg.Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
@@ -86,7 +86,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	// Write all rows batches
 	rowsCount := 0
 	for i, batch := range tc.Data {
-		rowsCount += len(batch.Rows)
+		rowsCount += len(batch.Records)
 
 		done := make(chan struct{})
 
@@ -94,11 +94,11 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 		if batch.Parallel {
 			// Write rows from the set in parallel
 			wg := &sync.WaitGroup{}
-			for _, row := range batch.Rows {
+			for _, record := range batch.Records {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					assert.NoError(t, writer.WriteRecord(now, row))
+					assert.NoError(t, writer.WriteRecord(record))
 				}()
 			}
 			go func() {
@@ -109,8 +109,8 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			// Write rows from the set sequentially
 			go func() {
 				defer close(done)
-				for _, row := range batch.Rows {
-					assert.NoError(t, writer.WriteRecord(now, row))
+				for _, record := range batch.Records {
+					assert.NoError(t, writer.WriteRecord(record))
 				}
 			}()
 		}

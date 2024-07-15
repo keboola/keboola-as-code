@@ -2,9 +2,9 @@ package csv_test
 
 import (
 	"compress/gzip"
-	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -15,15 +15,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testcase"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type fileCompression struct {
@@ -31,29 +30,6 @@ type fileCompression struct {
 	Config            compression.Config
 	FileDecoder       func(t *testing.T, r io.Reader) io.Reader
 	DisableValidation bool
-}
-
-func TestCSVWriter_CastToStringError(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-
-	// Create slice
-	slice := test.NewSlice()
-	slice.Type = model.FileTypeCSV
-	slice.Columns = column.Columns{column.UUID{Name: "id"}, column.Body{Name: "body"}} // <<<<< two columns
-	val := validator.New()
-	require.NoError(t, val.Validate(ctx, slice))
-
-	// Create writer
-	w, err := csv.NewEncoder(0, io.Discard, slice)
-	require.NoError(t, err)
-
-	// Write invalid number of values
-	err = w.WriteRecord([]any{struct{}{}})
-	if assert.Error(t, err) {
-		assert.Equal(t, `cannot convert value of the column "id" to the string: unable to cast struct {}{} of type struct {} to string`, err.Error())
-	}
 }
 
 // nolint:tparallel // false positive
@@ -117,14 +93,36 @@ func TestCSVWriter(t *testing.T) {
 
 func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, parallelWrite bool) *testcase.WriterTestCase {
 	// Input rows
-	data := []testcase.RowBatch{
+	columns := column.Columns{
+		column.Datetime{},
+		column.Body{},
+	}
+	data := []testcase.RecordsBatch{
 		{
 			Parallel: parallelWrite,
-			Rows:     [][]any{{"abc", 123}, {`"def"`, 456}},
+			Records: []recordctx.Context{
+				recordctx.FromHTTP(
+					utctime.MustParse("2000-01-01T01:00:00.000Z").Time(),
+					&http.Request{Body: io.NopCloser(strings.NewReader("abc"))},
+				),
+				recordctx.FromHTTP(
+					utctime.MustParse("2000-01-01T02:00:00.000Z").Time(),
+					&http.Request{Body: io.NopCloser(strings.NewReader(`"def"`))},
+				),
+			},
 		},
 		{
 			Parallel: parallelWrite,
-			Rows:     [][]any{{"foo", "bar"}, {`xyz`, false}},
+			Records: []recordctx.Context{
+				recordctx.FromHTTP(
+					utctime.MustParse("2000-01-01T03:00:00.000Z").Time(),
+					&http.Request{Body: io.NopCloser(strings.NewReader("foo"))},
+				),
+				recordctx.FromHTTP(
+					utctime.MustParse("2000-01-01T04:00:00.000Z").Time(),
+					&http.Request{Body: io.NopCloser(strings.NewReader("bar"))},
+				),
+			},
 		},
 	}
 
@@ -134,15 +132,15 @@ func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, p
 		validateFn = func(t *testing.T, fileContent string) {
 			t.Helper()
 			assert.Equal(t, 4, strings.Count(fileContent, "\n"))
-			assert.Contains(t, fileContent, "\"abc\",\"123\"\n")
-			assert.Contains(t, fileContent, "\"\"\"def\"\"\",\"456\"\n")
-			assert.Contains(t, fileContent, "\"foo\",\"bar\"\n")
-			assert.Contains(t, fileContent, "\"xyz\",\"false\"\n")
+			assert.Contains(t, fileContent, "\"2000-01-01T01:00:00.000Z\",\"abc\"\n")
+			assert.Contains(t, fileContent, "\"2000-01-01T02:00:00.000Z\",\"\"\"def\"\"\"\n")
+			assert.Contains(t, fileContent, "\"2000-01-01T03:00:00.000Z\",\"foo\"\n")
+			assert.Contains(t, fileContent, "\"2000-01-01T04:00:00.000Z\",\"bar\"\n")
 		}
 	} else {
 		validateFn = func(t *testing.T, fileContent string) {
 			t.Helper()
-			assert.Equal(t, "\"abc\",\"123\"\n\"\"\"def\"\"\",\"456\"\n\"foo\",\"bar\"\n\"xyz\",\"false\"\n", fileContent)
+			assert.Equal(t, "\"2000-01-01T01:00:00.000Z\",\"abc\"\n\"2000-01-01T02:00:00.000Z\",\"\"\"def\"\"\"\n\"2000-01-01T03:00:00.000Z\",\"foo\"\n\"2000-01-01T04:00:00.000Z\",\"bar\"\n", fileContent)
 		}
 	}
 
@@ -186,13 +184,9 @@ func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, p
 	}
 
 	return &testcase.WriterTestCase{
-		Name:     fmt.Sprintf("compression-%s-sync-%s-wait-%t-parallel-%t", comp.Name, syncMode, syncWait, parallelWrite),
-		FileType: model.FileTypeCSV,
-		Columns: column.Columns{
-			// 2 columns, only the count is important for CSV
-			column.Body{},
-			column.Template{},
-		},
+		Name:              fmt.Sprintf("compression-%s-sync-%s-wait-%t-parallel-%t", comp.Name, syncMode, syncWait, parallelWrite),
+		FileType:          model.FileTypeCSV,
+		Columns:           columns,
 		Allocate:          1 * datasize.MB,
 		Sync:              syncConfig,
 		Compression:       comp.Config,

@@ -15,6 +15,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
@@ -39,7 +40,7 @@ type WriterBenchmark struct {
 	Compression compression.Config
 
 	// DataChFactory must return the channel with table rows, the channel must be closed after the n reads.
-	DataChFactory func(ctx context.Context, n int, g *RandomStringGenerator) <-chan []any
+	DataChFactory func(ctx context.Context, n int, g *RandomStringGenerator) <-chan recordctx.Context
 
 	latencySum   *atomic.Float64
 	latencyCount *atomic.Int64
@@ -62,7 +63,6 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 
 	// Open volume
 	clk := clock.New()
-	now := clk.Now()
 	volPath := b.TempDir()
 	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
 	vol, err := diskwriter.Open(ctx, logger, clk, diskwriter.NewConfig(), spec, events.New[diskwriter.Writer]())
@@ -104,9 +104,9 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 				var latencyCount int64
 
 				// Read from the channel until the N rows are processed, together by all goroutines
-				for row := range dataCh {
+				for record := range dataCh {
 					start := time.Now()
-					assert.NoError(b, writer.WriteRecord(now, row))
+					assert.NoError(b, writer.WriteRecord(record))
 					latencySum += time.Since(start).Seconds()
 					latencyCount++
 				}
@@ -157,8 +157,10 @@ func (wb *WriterBenchmark) newSlice(b *testing.B, volume *diskwriter.Volume) *mo
 	s.LocalStorage.DiskSync = wb.Sync
 	s.StagingStorage.Compression = wb.Compression
 
-	// Slice definition must be valid
-	val := validator.New()
-	require.NoError(b, val.Validate(context.Background(), s))
+	// Slice definition must be valid, except ZSTD compression - it is not enabled/supported in production
+	if s.LocalStorage.Compression.Type != compression.TypeZSTD {
+		val := validator.New()
+		require.NoError(b, val.Validate(context.Background(), s))
+	}
 	return s
 }

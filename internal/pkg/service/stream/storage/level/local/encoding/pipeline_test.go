@@ -4,19 +4,19 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
@@ -47,8 +47,8 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 	assert.Equal(t, slice.SliceKey, w.SliceKey())
 
 	// Test write methods
-	assert.NoError(t, w.WriteRecord(clk.Now(), []any{"123", "456", "789"}))
-	assert.NoError(t, w.WriteRecord(clk.Now(), []any{"abc", "def", "ghj"}))
+	assert.NoError(t, w.WriteRecord(recordctx.FromHTTP(clk.Now(), &http.Request{Body: io.NopCloser(strings.NewReader("foo"))})))
+	assert.NoError(t, w.WriteRecord(recordctx.FromHTTP(clk.Now(), &http.Request{Body: io.NopCloser(strings.NewReader("bar"))})))
 
 	// Test Close method
 	assert.NoError(t, w.Close(ctx))
@@ -60,7 +60,7 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 	}
 
 	// Check output
-	assert.Equal(t, "123,456,789\nabc,def,ghj\n", output.String())
+	assert.Equal(t, "foo\nbar\n", output.String())
 }
 
 func TestEncodingPipeline_FlushError(t *testing.T) {
@@ -145,23 +145,6 @@ func TestEncodingPipeline_Open_Duplicate(t *testing.T) {
 	assert.Len(t, tc.Manager.Pipelines(), 0)
 }
 
-func TestEncodingPipeline__WriteRecord_InvalidNumberOfValues(t *testing.T) {
-	t.Parallel()
-	tc := newEncodingTestCase(t)
-	tc.Slice.Columns = column.Columns{column.UUID{Name: "id"}, column.Body{Name: "body"}} // <<<<< two columns
-
-	// Create the writer first time - ok
-	w, err := tc.OpenPipeline()
-	assert.NoError(t, err)
-	assert.Len(t, tc.Manager.Pipelines(), 1)
-
-	// Write invalid number of values
-	err = w.WriteRecord(time.Now(), []any{"foo"})
-	if assert.Error(t, err) {
-		assert.Equal(t, `expected 2 columns in the row, given 1`, err.Error())
-	}
-}
-
 func TestEncodingPipeline_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	t.Parallel()
 
@@ -169,6 +152,7 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	tc := newEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = true
+
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
 
@@ -179,12 +163,12 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
@@ -195,7 +179,7 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
+		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
@@ -206,7 +190,7 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
 	}()
 	tc.ExpectWritesCount(t, 1)
 
@@ -218,10 +202,10 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 
 	// Check file content
 	assert.Equal(t, strings.TrimSpace(`
-foo,bar,123
-foo,bar,123
-abc,def,456
-ghi,jkl,789
+foo1
+foo1
+foo2
+foo3
 `), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
@@ -271,6 +255,7 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	tc := newEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = true
+
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
 
@@ -281,12 +266,12 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
@@ -297,7 +282,7 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
+		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
@@ -308,7 +293,7 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
 	}()
 	tc.ExpectWritesCount(t, 1)
 
@@ -318,10 +303,10 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 
 	// Check file content
 	assert.Equal(t, strings.TrimSpace(`
-foo,bar,123
-foo,bar,123
-abc,def,456
-ghi,jkl,789
+foo1
+foo1
+foo2
+foo3
 `), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
@@ -362,24 +347,25 @@ func TestEncodingPipeline_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 	tc := newEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeDisk
 	tc.Slice.LocalStorage.DiskSync.Wait = false
+
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
 
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo4")))
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
@@ -387,10 +373,10 @@ func TestEncodingPipeline_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 
 	// Check file content
 	assert.Equal(t, strings.TrimSpace(`
-foo,bar,123
-foo,bar,123
-abc,def,456
-ghi,jkl,789
+foo1
+foo2
+foo3
+foo4
 `), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
@@ -437,24 +423,25 @@ func TestEncodingPipeline_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 	tc := newEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync.Mode = writesync.ModeCache
 	tc.Slice.LocalStorage.DiskSync.Wait = false
+
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
 
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo4")))
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
@@ -462,10 +449,10 @@ func TestEncodingPipeline_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 
 	// Check file content
 	assert.Equal(t, strings.TrimSpace(`
-foo,bar,123
-foo,bar,123
-abc,def,456
-ghi,jkl,789
+foo1
+foo2
+foo3
+foo4
 `), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
@@ -502,22 +489,23 @@ func TestEncodingPipeline_Sync_Disabled(t *testing.T) {
 	ctx := context.Background()
 	tc := newEncodingTestCase(t)
 	tc.Slice.LocalStorage.DiskSync = writesync.Config{Mode: writesync.ModeDisabled}
+
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
 
 	// Writes are NOT BLOCKING, sync is disabled completely
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"foo", "bar", 123}))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
 	tc.ExpectWritesCount(t, 2)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"abc", "def", 456}))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
 	tc.ExpectWritesCount(t, 1)
 
 	// Last write
-	assert.NoError(t, w.WriteRecord(tc.Clock.Now(), []any{"ghi", "jkl", 789}))
+	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo4")))
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer
@@ -525,10 +513,10 @@ func TestEncodingPipeline_Sync_Disabled(t *testing.T) {
 
 	// Check file content
 	assert.Equal(t, strings.TrimSpace(`
-foo,bar,123
-foo,bar,123
-abc,def,456
-ghi,jkl,789
+foo1
+foo2
+foo3
+foo4
 `), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
@@ -609,6 +597,10 @@ func (tc *encodingTestCase) OpenPipeline() (encoding.Pipeline, error) {
 	return w, nil
 }
 
+func (tc *encodingTestCase) TestRecord(body string) recordctx.Context {
+	return recordctx.FromHTTP(tc.Clock.Now(), &http.Request{Body: io.NopCloser(strings.NewReader(body))})
+}
+
 func (tc *encodingTestCase) AssertLogs(expected string) bool {
 	return tc.Logger.AssertJSONMessages(tc.T, expected)
 }
@@ -659,8 +651,7 @@ func (h *writerSyncHelper) TriggerSync(tb testing.TB) {
 }
 
 // dummyEncoder implements the encoder.Encoder for tests.
-// It encodes row values to one line as strings, separated by comma.
-// Row is separated by the new line.
+// It encodes body value, followed by the new line.
 type dummyEncoder struct {
 	out        io.Writer
 	writeDone  chan struct{}
@@ -676,17 +667,13 @@ func newDummyEncoder(_ encoder.Config, out io.Writer, _ *model.Slice, writeDone 
 	return &dummyEncoder{out: out, writeDone: writeDone}
 }
 
-func (w *dummyEncoder) WriteRecord(values []any) error {
-	var s bytes.Buffer
-	for i, v := range values {
-		if i > 0 {
-			s.WriteString(",")
-		}
-		s.WriteString(cast.ToString(v))
+func (w *dummyEncoder) WriteRecord(record recordctx.Context) error {
+	body, err := record.BodyString()
+	if err != nil {
+		return err
 	}
-	s.WriteString("\n")
 
-	_, err := w.out.Write(s.Bytes())
+	_, err = w.out.Write([]byte(body + "\n"))
 	if err == nil && w.writeDone != nil {
 		w.writeDone <- struct{}{}
 	}
