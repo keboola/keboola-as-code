@@ -15,7 +15,7 @@ type WithUserMessage interface {
 }
 
 type WithExceptionID interface {
-	ErrorExceptionId() string
+	ErrorExceptionID() string
 }
 
 type WithLogMessage interface {

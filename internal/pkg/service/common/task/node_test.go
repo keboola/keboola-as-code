@@ -423,6 +423,10 @@ task/123/my-receiver/my-export/some.task/%s
   "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "error": "some error (1) - expected",
+  "userError": {
+    "name": "unknownError",
+    "message": "Unknown error"
+  },
   "outputs": {
     "key": "value"
   },
@@ -467,6 +471,10 @@ task/123/my-receiver/my-export/some.task/%s
   "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "error": "some error (1) - expected",
+  "userError": {
+    "name": "unknownError",
+    "message": "Unknown error"
+  },
   "outputs": {
     "key": "value"
   },
@@ -486,6 +494,10 @@ task/123/my-receiver/my-export/some.task/%s
   "node": "node2",
   "lock": "runtime/lock/task/my-lock",
   "error": "some error (2) - unexpected",
+  "userError": {
+    "name": "unknownError",
+    "message": "Unknown error"
+  },
   "duration": %d
 }
 >>>>>
@@ -715,6 +727,10 @@ task/123/my-receiver/my-export/some.task/%s
   "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "error": "context deadline exceeded",
+  "userError": {
+    "name": "unknownError",
+    "message": "Unknown error"
+  },
   "duration": %d
 }
 >>>>>

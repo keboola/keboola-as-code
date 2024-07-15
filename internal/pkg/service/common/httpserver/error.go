@@ -77,7 +77,7 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 	// Otherwise, generate custom exception ID.
 	var exceptionIDProvider WithExceptionID
 	if errors.As(err, &exceptionIDProvider) {
-		v := exceptionIDProvider.ErrorExceptionId()
+		v := exceptionIDProvider.ErrorExceptionID()
 		response.ExceptionID = &v
 	} else if response.StatusCode > 499 {
 		v := wr.exceptionIDPrefix + requestID
