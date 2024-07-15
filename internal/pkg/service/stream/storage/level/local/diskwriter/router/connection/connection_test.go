@@ -42,6 +42,8 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w1\" - \"l%s\"","component":"storage.node.writer.network.client"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w2\" - \"l%s\"","component":"storage.node.writer.network.client"}`)
+	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
+	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
 	assert.Equal(t, 2, connManager.OpenedConnectionsCount())
 	if conn, found := connManager.Connection("w1"); assert.True(t, found) {
@@ -57,6 +59,8 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w3\" - \"l%s\"","component":"storage.node.writer.network.client"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w4\" - \"l%s\"","component":"storage.node.writer.network.client"}`)
+	waitForLog(t, w3.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
+	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
 	assert.Equal(t, 4, connManager.OpenedConnectionsCount())
 	if conn, found := connManager.Connection("w1"); assert.True(t, found) {
@@ -112,7 +116,6 @@ func TestConnectionManager(t *testing.T) {
 {"level":"info","message":"searching for volumes in volumes path","component":"storage.node.writer.volumes"}
 {"level":"info","message":"found \"2\" volumes","component":"storage.node.writer.volumes"}
 {"level":"info","message":"registered \"2\" volumes","component":"volumes.registry"}
-{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}
 {"level":"info","message":"exiting (bye bye writer %d)"}
 {"level":"info","message":"closing disk writer server","component":"storage.node.writer.network.server"}
 {"level":"info","message":"waiting %s for 0 streams","component":"storage.node.writer.network.server"}
