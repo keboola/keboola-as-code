@@ -93,8 +93,7 @@ func NewManager(ctx context.Context, d dependencies, cfg network.Config, nodeID 
 
 	// Start active volumes mirroring, only necessary data is saved
 	{
-		var errCh <-chan error
-		m.volumes, errCh = etcdop.
+		m.volumes = etcdop.
 			SetupMirror(
 				m.logger,
 				d.StorageRepository().Volume().GetAllWriterVolumesAndWatch(ctx, etcd.WithPrevKV()),
@@ -114,8 +113,8 @@ func NewManager(ctx context.Context, d dependencies, cfg network.Config, nodeID 
 			WithOnUpdate(func(_ etcdop.MirrorUpdatedKeys[*volumeData]) {
 				m.updateConnections(ctx)
 			}).
-			StartMirroring(ctx, &m.wg)
-		if err := <-errCh; err != nil {
+			Build()
+		if err := <-m.volumes.StartMirroring(ctx, &m.wg); err != nil {
 			return nil, err
 		}
 	}

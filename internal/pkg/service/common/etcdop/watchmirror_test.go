@@ -41,7 +41,7 @@ func TestMirror(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
-	mirror, errCh := SetupMirror(
+	mirror := SetupMirror(
 		logger,
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
@@ -50,7 +50,8 @@ func TestMirror(t *testing.T) {
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
-		StartMirroring(ctx, wg)
+		Build()
+	errCh := mirror.StartMirroring(ctx, wg)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -136,7 +137,7 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
-	mirror, errCh := SetupMirror(
+	mirror := SetupMirror(
 		logger,
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
@@ -148,7 +149,8 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 		WithOnUpdate(func(updateLog MirrorUpdatedKeys[int]) {
 			updatedCh <- updateLog
 		}).
-		StartMirroring(ctx, wg)
+		Build()
+	errCh := mirror.StartMirroring(ctx, wg)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -236,13 +238,14 @@ func TestFullMirror(t *testing.T) {
 
 	// Setup full mirroring of the etcd prefix tree to the memory.
 	logger := log.NewDebugLogger()
-	mirror, errCh := SetupFullMirror(
+	mirror := SetupFullMirror(
 		logger,
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV())).
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
-		StartMirroring(ctx, wg)
+		Build()
+	errCh := mirror.StartMirroring(ctx, wg)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header

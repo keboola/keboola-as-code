@@ -15,11 +15,16 @@ import (
 // Key (string) and value (V) are generated from incoming WatchEventT by custom callbacks, see MirrorSetup.
 // Start with SetupMirror function.
 type Mirror[T any, V any] struct {
-	stream       *RestartableWatchStreamT[T]
+	logger   log.Logger
+	stream   *RestartableWatchStreamT[T]
+	filter   func(t WatchEventT[T]) bool
+	mapKey   func(kv *op.KeyValue, value T) string
+	mapValue func(kv *op.KeyValue, value T) V
+	onUpdate []func(updateLog MirrorUpdatedKeys[V])
+
 	tree         *prefixtree.AtomicTree[V]
 	revisionLock *sync.Mutex
 	revision     int64
-	onUpdate     []func(updateLog MirrorUpdatedKeys[V])
 }
 
 type MirrorSetup[T any, V any] struct {
@@ -75,18 +80,25 @@ func SetupMirror[T any, V any](
 	}
 }
 
-func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup) (mirror *Mirror[T, V], initErr <-chan error) {
-	mirror = &Mirror[T, V]{
+func (s MirrorSetup[T, V]) Build() *Mirror[T, V] {
+	return &Mirror[T, V]{
+		logger:       s.logger,
 		stream:       s.stream,
+		filter:       s.filter,
+		mapKey:       s.mapKey,
+		mapValue:     s.mapValue,
 		tree:         prefixtree.New[V](),
 		revisionLock: &sync.Mutex{},
 		onUpdate:     s.onUpdate,
 	}
-	errCh := s.stream.
-		SetupConsumer(s.logger).
+}
+
+func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup) (initErr <-chan error) {
+	errCh := m.stream.
+		SetupConsumer(m.logger).
 		WithForEach(func(events []WatchEventT[T], header *Header, restart bool) {
 			changes := MirrorUpdatedKeys[V]{}
-			mirror.tree.Atomic(func(t *prefixtree.Tree[V]) {
+			m.tree.Atomic(func(t *prefixtree.Tree[V]) {
 				// Reset the tree after receiving the first batch after the restart.
 				if restart {
 					t.Reset()
@@ -94,17 +106,17 @@ func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 
 				// Atomically process all events
 				for _, event := range events {
-					if s.filter != nil && !s.filter(event) {
+					if m.filter != nil && !m.filter(event) {
 						continue
 					}
 
-					newKey := s.mapKey(event.Kv, event.Value)
+					newKey := m.mapKey(event.Kv, event.Value)
 					oldKey := newKey
 
 					// Calculate oldKey based on the old value, if it is present.
 					// It can be enabled by watch etcd.WithPrevKV() option.
 					if event.PrevValue != nil {
-						oldKey = s.mapKey(event.PrevKv, *event.PrevValue)
+						oldKey = m.mapKey(event.PrevKv, *event.PrevValue)
 					}
 
 					switch event.Type {
@@ -114,19 +126,19 @@ func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 								t.Delete(oldKey)
 							}
 						}
-						newValue := s.mapValue(event.Kv, event.Value)
-						if len(mirror.onUpdate) > 0 {
+						newValue := m.mapValue(event.Kv, event.Value)
+						if len(m.onUpdate) > 0 {
 							changes.Updated = append(changes.Updated, MirrorKVPair[V]{Key: newKey, Value: newValue})
 						}
 						t.Insert(newKey, newValue)
 					case CreateEvent:
-						newValue := s.mapValue(event.Kv, event.Value)
-						if len(mirror.onUpdate) > 0 {
+						newValue := m.mapValue(event.Kv, event.Value)
+						if len(m.onUpdate) > 0 {
 							changes.Created = append(changes.Created, MirrorKVPair[V]{Key: newKey, Value: newValue})
 						}
 						t.Insert(newKey, newValue)
 					case DeleteEvent:
-						if len(mirror.onUpdate) > 0 {
+						if len(m.onUpdate) > 0 {
 							oldValue, _ := t.Get(oldKey)
 							changes.Deleted = append(changes.Deleted, MirrorKVPair[V]{Key: oldKey, Value: oldValue})
 						}
@@ -137,19 +149,19 @@ func (s MirrorSetup[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 				}
 
 				// Store the last synced revision
-				mirror.revisionLock.Lock()
-				mirror.revision = header.Revision
-				mirror.revisionLock.Unlock()
-				s.logger.Debugf(ctx, `synced to revision %d`, header.Revision)
+				m.revisionLock.Lock()
+				m.revision = header.Revision
+				m.revisionLock.Unlock()
+				m.logger.Debugf(ctx, `synced to revision %d`, header.Revision)
 			})
 
 			// Call OnUpdate callbacks
-			for _, fn := range mirror.onUpdate {
+			for _, fn := range m.onUpdate {
 				go fn(changes)
 			}
 		}).
 		StartConsumer(ctx, wg)
-	return mirror, errCh
+	return errCh
 }
 
 // WithFilter set a filter, the filter must return true if the event should be processed.

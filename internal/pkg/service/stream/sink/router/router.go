@@ -93,8 +93,7 @@ func New(d dependencies) (Router, error) {
 
 	// Start sinks mirroring, only necessary data is saved
 	{
-		var errCh <-chan error
-		r.sinks, errCh = etcdop.
+		r.sinks = etcdop.
 			SetupMirror(
 				r.logger,
 				r.definitions.Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()),
@@ -123,8 +122,8 @@ func New(d dependencies) (Router, error) {
 					}
 				}
 			}).
-			StartMirroring(ctx, &r.wg)
-		if err := <-errCh; err != nil {
+			Build()
+		if err := <-r.sinks.StartMirroring(ctx, &r.wg); err != nil {
 			return nil, err
 		}
 	}
