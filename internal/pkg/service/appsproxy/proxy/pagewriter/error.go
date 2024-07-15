@@ -104,7 +104,7 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 	var exceptionID string
 	var exceptionIDProvider svcerrors.WithExceptionID
 	if errors.As(err, &exceptionIDProvider) {
-		exceptionID = exceptionIDProvider.ErrorExceptionId()
+		exceptionID = exceptionIDProvider.ErrorExceptionID()
 	} else {
 		exceptionID = svcerrors.GenerateExceptionID()
 	}

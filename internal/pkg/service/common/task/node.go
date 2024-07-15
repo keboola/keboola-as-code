@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -319,6 +320,23 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		task.Result = result.Result
 	} else {
 		task.Error = result.Error.Error()
+		task.UserError = &Error{}
+
+		if errWithName, ok := result.Error.(svcerrors.WithName); ok {
+			task.UserError.Name = errWithName.ErrorName()
+		} else {
+			task.UserError.Name = "unknownError"
+		}
+
+		if errWithUserMessage, ok := result.Error.(svcerrors.WithUserMessage); ok {
+			task.UserError.Message = errWithUserMessage.ErrorUserMessage()
+		} else {
+			task.UserError.Message = "Unknown error"
+		}
+
+		if errWithExceptionID, ok := result.Error.(svcerrors.WithExceptionID); ok {
+			task.UserError.ExceptionID = errWithExceptionID.ErrorExceptionID()
+		}
 	}
 
 	// Update telemetry

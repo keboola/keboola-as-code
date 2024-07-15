@@ -16,8 +16,15 @@ type Task struct {
 	Lock       etcdop.Key       `json:"lock" validate:"required"`
 	Result     string           `json:"result,omitempty"`
 	Error      string           `json:"error,omitempty"`
+	UserError  *Error           `json:"userError,omitempty"`
 	Outputs    Outputs          `json:"outputs,omitempty"`
 	Duration   *time.Duration   `json:"duration,omitempty"`
+}
+
+type Error struct {
+	Name        string `json:"name,omitempty"`
+	Message     string `json:"message,omitempty"`
+	ExceptionID string `json:"exceptionId,omitempty"`
 }
 
 type Outputs map[string]any
