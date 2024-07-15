@@ -2,7 +2,6 @@ package recordctx
 
 import (
 	"context"
-	"io"
 	"net"
 	"net/http"
 	"sort"
@@ -25,8 +24,6 @@ type fastHTTPContext struct {
 	headersString *string
 	bodyString    *string
 	bodyStringErr error
-	bodyBytes     []byte
-	bodyBytesErr  error
 	bodyMap       *orderedmap.OrderedMap
 	bodyMapErr    error
 }
@@ -87,7 +84,7 @@ func (c *fastHTTPContext) BodyString() (string, error) {
 	defer c.lock.Unlock()
 
 	if c.bodyString == nil && c.bodyStringErr == nil {
-		if bytes, err := c.bodyBytesWithoutLock(); err == nil {
+		if bytes, err := c.BodyBytes(); err == nil {
 			v := string(bytes)
 			c.bodyString = &v
 		} else {
@@ -103,9 +100,7 @@ func (c *fastHTTPContext) BodyString() (string, error) {
 }
 
 func (c *fastHTTPContext) BodyBytes() ([]byte, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	return c.bodyBytesWithoutLock()
+	return c.req.Request.Body(), nil // returned buffer is valid until the request is released
 }
 
 func (c *fastHTTPContext) BodyMap() (*orderedmap.OrderedMap, error) {
@@ -113,7 +108,7 @@ func (c *fastHTTPContext) BodyMap() (*orderedmap.OrderedMap, error) {
 	defer c.lock.Unlock()
 
 	if c.bodyMap == nil && c.bodyMapErr == nil {
-		if bodyBytes, err := c.bodyBytesWithoutLock(); err != nil {
+		if bodyBytes, err := c.BodyBytes(); err != nil {
 			c.bodyMapErr = err
 		} else if bodyMap, err := parseBody(string(c.req.Request.Header.ContentType()), bodyBytes); err != nil {
 			c.bodyMapErr = errors.PrefixError(err, "cannot parse request body")
@@ -123,13 +118,6 @@ func (c *fastHTTPContext) BodyMap() (*orderedmap.OrderedMap, error) {
 	}
 
 	return c.bodyMap, c.bodyMapErr
-}
-
-func (c *fastHTTPContext) bodyBytesWithoutLock() ([]byte, error) {
-	if c.bodyBytes == nil && c.bodyBytesErr == nil {
-		c.bodyBytes, c.bodyBytesErr = io.ReadAll(c.req.RequestBodyStream())
-	}
-	return c.bodyBytes, c.bodyBytesErr
 }
 
 func (c *fastHTTPContext) headersToMap() *orderedmap.OrderedMap {

@@ -146,6 +146,7 @@ func Listen(d serverDependencies, config network.Config, nodeID string, handler 
 		}
 
 		// Wait for remaining goroutines
+		s.logger.Info(ctx, "waiting for goroutines")
 		s.listenWg.Wait()
 
 		s.logger.Info(ctx, "closed disk writer server")
@@ -210,6 +211,11 @@ func (s *Server) acceptConnection(ctx context.Context, listener net.Listener) er
 		return err
 	}
 
+	if s.isClosed() {
+		_ = conn.Close()
+		return nil
+	}
+
 	// Create multiplexer
 	sess, err := yamux.Server(conn, multiplexerConfig(s.logger, s.config))
 	if err != nil {
@@ -217,7 +223,7 @@ func (s *Server) acceptConnection(ctx context.Context, listener net.Listener) er
 		return errors.PrefixError(err, "cannot create server multiplexer")
 	}
 
-	s.logger.Infof(ctx, "accepted connection from %q", conn.RemoteAddr().String())
+	s.logger.Infof(ctx, "accepted connection from %q to %q", conn.RemoteAddr().String(), conn.LocalAddr().String())
 
 	// Span goroutine for each connection
 	s.listenWg.Add(1)
@@ -256,6 +262,11 @@ func (s *Server) acceptStream(ctx context.Context, sess *yamux.Session) error {
 	stream, err := sess.AcceptStream()
 	if err != nil {
 		return err
+	}
+
+	if s.isClosed() || sess.IsClosed() {
+		_ = stream.Close()
+		return nil
 	}
 
 	// Spawn a goroutine for each stream

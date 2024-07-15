@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -20,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 )
 
 // mocked implements Mocked interface.
@@ -205,6 +207,7 @@ func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
 	cfg.API.PublicURL, _ = url.Parse("https://stream.keboola.local")
 	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd = d.TestEtcdConfig()
+	cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(t))
 
 	// There are some timers with a few seconds interval.
 	// It causes problems when mocked clock is used.

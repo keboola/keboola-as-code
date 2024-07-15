@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -54,20 +55,24 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	cfg := network.NewConfig()
 	cfg.Transport = protocol
 	cfg.Listen = "localhost:0" // use a random port
-	cfg.StreamWriteTimeout = 30 * time.Second
+	cfg.StreamOpenTimeout = 15 * time.Second
+	cfg.StreamCloseTimeout = 15 * time.Second
+	cfg.StreamWriteTimeout = 15 * time.Second
 	cfg.ShutdownTimeout = 30 * time.Second
 	cfg.KeepAliveInterval = 30 * time.Second // to not interfere with the test
 
 	// Stream server handler
 	var lock sync.Mutex
 	var received []string
+	receivedDone := make(chan struct{}, 2)
 	handler := func(ctx context.Context, stream *yamux.Stream) {
 		b, err := io.ReadAll(stream)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		lock.Lock()
 		defer lock.Unlock()
 		received = append(received, string(b))
+		receivedDone <- struct{}{}
 	}
 
 	// Start Setup
@@ -97,6 +102,17 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	require.NoError(t, err)
 	require.NoError(t, s2.Close())
 
+	// Wait 2x for server handler
+	for range 2 {
+		select {
+		case <-ctx.Done():
+			assert.Fail(t, "timeout")
+		case <-receivedDone:
+		}
+	}
+	sort.Strings(received)
+	assert.Equal(t, []string{"bar", "foo"}, received)
+
 	shutdown(t, clientDeps, srvDeps, clientMock.DebugLogger(), srvMock.DebugLogger())
 }
 
@@ -112,7 +128,9 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	cfg := network.NewConfig()
 	cfg.Transport = protocol
 	cfg.Listen = "localhost:0" // use a random port
-	cfg.StreamWriteTimeout = 30 * time.Second
+	cfg.StreamOpenTimeout = 15 * time.Second
+	cfg.StreamCloseTimeout = 15 * time.Second
+	cfg.StreamWriteTimeout = 15 * time.Second
 	cfg.ShutdownTimeout = 30 * time.Second
 	cfg.KeepAliveInterval = 30 * time.Second // to not interfere with the test
 
@@ -120,12 +138,14 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	data := []byte(strings.Repeat(".", int(dataSize.Bytes())))
 
 	// Stream server handler
+	receivedDone := make(chan struct{}, 1)
 	handler := func(ctx context.Context, stream *yamux.Stream) {
 		b, err := io.ReadAll(stream)
 		if assert.Len(t, b, len(data)) {
 			assert.Equal(t, data, b)
 		}
 		assert.NoError(t, err)
+		receivedDone <- struct{}{}
 	}
 
 	// Start Setup
@@ -148,6 +168,13 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	require.NoError(t, s.Close())
 	t.Logf(`%s: write duration: %s`, protocol, time.Since(startTime).String())
 
+	// Wait for server handler
+	select {
+	case <-ctx.Done():
+		assert.Fail(t, "timeout")
+	case <-receivedDone:
+	}
+
 	shutdown(t, clientDeps, srvDeps, clientMock.DebugLogger(), srvMock.DebugLogger())
 }
 
@@ -156,10 +183,10 @@ func shutdown(t *testing.T, clientDeps, srvDeps dependencies.ServiceScope, clien
 
 	// Don't start shutdown, before the successful connection is logged
 	assert.Eventually(t, func() bool {
-		return srvLogger.CompareJSONMessages(`{"message":"accepted connection from \"127.0.0.1:%d\""}`) == nil
+		return srvLogger.CompareJSONMessages(`{"message":"accepted connection from \"%s\" to \"%s\""}`) == nil
 	}, 5*time.Second, 10*time.Millisecond)
 	assert.Eventually(t, func() bool {
-		return clientLogger.CompareJSONMessages(`{"message":"disk writer client connected to \"127.0.0.1:%d\""}`) == nil
+		return clientLogger.CompareJSONMessages(`{"message":"disk writer client connected from \"%s\" to \"%s\""}`) == nil
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Shutdown client
@@ -172,7 +199,7 @@ func shutdown(t *testing.T, clientDeps, srvDeps dependencies.ServiceScope, clien
 
 	// Check client logs
 	clientLogger.AssertJSONMessages(t, `
-{"level":"info","message":"disk writer client connected to \"127.0.0.1:%d\"","component":"storage.node.writer.network.client"}
+{"level":"info","message":"disk writer client connected from \"%s\" to \"%s\"","component":"storage.node.writer.network.client"}
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"closing disk writer client","component":"storage.node.writer.network.client"}
 {"level":"info","message":"closing %d streams","component":"storage.node.writer.network.client"}
@@ -183,8 +210,8 @@ func shutdown(t *testing.T, clientDeps, srvDeps dependencies.ServiceScope, clien
 
 	// Check server logs
 	srvLogger.AssertJSONMessages(t, `
-{"level":"info","message":"disk writer listening on \"127.0.0.1:%d\"","component":"storage.node.writer.network.server"}
-{"level":"info","message":"accepted connection from \"127.0.0.1:%d\"","component":"storage.node.writer.network.server"}
+{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.network.server"}
+{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"closing disk writer server","component":"storage.node.writer.network.server"}
 {"level":"info","message":"waiting 30s for %d streams","component":"storage.node.writer.network.server"}

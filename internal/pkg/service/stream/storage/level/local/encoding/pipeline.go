@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
@@ -13,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/count"
@@ -32,7 +32,7 @@ type Pipeline interface {
 
 	SliceKey() model.SliceKey
 
-	WriteRecord(timestamp time.Time, values []any) error
+	WriteRecord(record recordctx.Context) error
 	// Events provides listening to the writer lifecycle.
 	Events() *events.Events[Pipeline]
 	// Close the writer and sync data to the disk.
@@ -197,7 +197,9 @@ func NewPipeline(
 	return w, nil
 }
 
-func (w *pipeline) WriteRecord(timestamp time.Time, values []any) error {
+func (w *pipeline) WriteRecord(record recordctx.Context) error {
+	timestamp := record.Timestamp()
+
 	// Block Close method
 	w.writeWg.Add(1)
 	defer w.writeWg.Done()
@@ -207,13 +209,8 @@ func (w *pipeline) WriteRecord(timestamp time.Time, values []any) error {
 		return errors.New(`writer is closed`)
 	}
 
-	// Check values count
-	if len(values) != len(w.slice.Columns) {
-		return errors.Errorf(`expected %d columns in the row, given %d`, len(w.slice.Columns), len(values))
-	}
-
 	// Format and write table row
-	if err := w.encoder.WriteRecord(values); err != nil {
+	if err := w.encoder.WriteRecord(record); err != nil {
 		return err
 	}
 

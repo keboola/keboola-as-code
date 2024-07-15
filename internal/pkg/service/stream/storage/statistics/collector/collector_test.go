@@ -14,6 +14,7 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -156,7 +157,7 @@ func (w *testWriter) UncompressedSize() datasize.ByteSize {
 	return w.UncompressedSizeValue
 }
 
-func (w *testWriter) WriteRecord(_ time.Time, _ []any) error {
+func (w *testWriter) WriteRecord(recordctx.Context) error {
 	panic(errors.New("method should not be called"))
 }
 
