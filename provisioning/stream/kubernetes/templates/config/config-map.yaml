@@ -175,6 +175,8 @@ data:
               transport: tcp
               # Keep alive interval. Validation rules: required,minDuration=1s,maxDuration=60s
               keepAliveInterval: 5s
+              # Minimum number of slices opened per source node, up to the count of assigned volumes. Validation rules: required,min=1,max=20
+              minSlicesPerSourceNode: 2
               # How many streams may be waiting an accept per connection. Validation rules: required,min=10,max=100000
               maxWaitingStreamsPerConn: 1024
               # Validation rules: required,minBytes=256kB,maxBytes=10MB
