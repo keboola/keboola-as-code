@@ -578,7 +578,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 	cfg.SyncerFactory = tc.writerSyncHelper
 
 	var err error
-	tc.Manager, err = encoding.NewManager(d, cfg, encoding.OutputTo(tc.Output))
+	tc.Manager, err = encoding.NewManager(d, cfg)
 	require.NoError(t, err)
 
 	return tc
@@ -589,7 +589,7 @@ func (tc *encodingTestCase) OpenPipeline() (encoding.Pipeline, error) {
 	val := validator.New()
 	require.NoError(tc.T, val.Validate(context.Background(), tc.Slice))
 
-	w, err := tc.Manager.OpenPipeline(tc.Ctx, tc.Slice)
+	w, err := tc.Manager.OpenPipeline(tc.Ctx, tc.Slice, tc.Output)
 	if err != nil {
 		return nil, err
 	}

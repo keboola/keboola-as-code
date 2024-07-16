@@ -10,17 +10,17 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Manager struct {
-	logger       log.Logger
-	clock        clock.Clock
-	events       *events.Events[Pipeline]
-	config       Config
-	outputOpener OutputOpener
+	logger log.Logger
+	clock  clock.Clock
+	events *events.Events[Pipeline]
+	config Config
 
 	pipelinesLock *sync.Mutex
 	pipelines     map[string]*pipelineRef
@@ -36,13 +36,12 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewManager(d dependencies, config Config, outputOpener OutputOpener) (*Manager, error) {
+func NewManager(d dependencies, config Config) (*Manager, error) {
 	m := &Manager{
 		logger:        d.Logger(),
 		clock:         d.Clock(),
 		events:        events.New[Pipeline](),
 		config:        config,
-		outputOpener:  outputOpener,
 		pipelinesLock: &sync.Mutex{},
 		pipelines:     make(map[string]*pipelineRef),
 	}
@@ -78,44 +77,26 @@ func (m *Manager) Pipelines() (out []Pipeline) {
 	return out
 }
 
-func (m *Manager) OpenPipeline(ctx context.Context, slice *model.Slice) (w Pipeline, err error) {
+func (m *Manager) OpenPipeline(ctx context.Context, slice *model.Slice, out writechain.File) (w Pipeline, err error) {
 	// Check if the pipeline already exists, if not, register an empty reference to unlock immediately
 	ref, exists := m.addPipeline(slice.SliceKey)
 	if exists {
 		return nil, errors.Errorf(`encoding pipeline for slice "%s" already exists`, slice.SliceKey.String())
 	}
 
-	// Close resources on a creation error
-	defer func() {
-		// Ok, update reference
-		if err == nil {
-			ref.Pipeline = w
-			return
-		}
-
-		// Remove the pipeline ref
-		m.removePipeline(slice.SliceKey)
-	}()
-
-	// Open output
-	out, err := m.outputOpener.OpenOutput(slice.SliceKey)
-	if err != nil {
-		return nil, err
-	}
-
 	// Create pipeline
-	w, err = NewPipeline(ctx, m.logger, m.clock, m.config, slice, out, m.events)
+	ref.Pipeline, err = NewPipeline(ctx, m.logger, m.clock, m.config, slice, out, m.events)
 	if err != nil {
 		return nil, err
 	}
 
-	// Register PIPELINE close callback
-	w.Events().OnClose(func(w Pipeline, _ error) error {
+	// Register pipeline close callback
+	ref.Pipeline.Events().OnClose(func(w Pipeline, _ error) error {
 		m.removePipeline(w.SliceKey())
 		return nil
 	})
 
-	return w, nil
+	return ref.Pipeline, nil
 }
 
 func (m *Manager) addPipeline(k model.SliceKey) (ref *pipelineRef, exists bool) {
