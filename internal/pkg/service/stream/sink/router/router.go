@@ -108,11 +108,15 @@ func New(d dependencies) (Router, error) {
 				},
 			).
 			WithOnUpdate(func(changes etcdop.MirrorUpdatedKeys[*sinkData]) {
-				// Close updated sinks, the pipeline must be re-created.
-				// Closing the old pipeline blocks the creation of a new one.
+				// If a Sink entity is modified, it may be necessary to reopen the pipeline
 				for _, kv := range changes.Updated {
-					if p := r.pipelineRefOrNil(kv.Value.sinkKey); p != nil {
-						p.close(ctx, "sink updated")
+					sink := kv.Value
+					if p := r.pipelineRefOrNil(sink.sinkKey); p != nil {
+						if !sink.enabled {
+							p.close(ctx, "sink disabled")
+						} else if p.pipeline.ReopenOnSinkModification() {
+							p.close(ctx, "sink updated")
+						}
 					}
 				}
 				// Closed delete sinks
