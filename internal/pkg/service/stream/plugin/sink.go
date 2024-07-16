@@ -15,7 +15,7 @@ func (p *Plugins) RegisterSinkPipelineOpener(fn pipeline.Opener) {
 func (p *Plugins) OpenSinkPipeline(ctx context.Context, sink definition.Sink) (pipeline.Pipeline, error) {
 	for _, fn := range p.sinkPipelineOpeners {
 		p, err := fn(ctx, sink)
-		if errors.Is(err, definition.ErrCannotHandleSinkType) {
+		if errors.As(err, &pipeline.NoOpenerFoundForSink{}) {
 			continue
 		}
 
@@ -25,5 +25,5 @@ func (p *Plugins) OpenSinkPipeline(ctx context.Context, sink definition.Sink) (p
 
 		return p, nil
 	}
-	return nil, errors.Errorf(`no sink pipeline opener found for the sink type %q`, sink.Type)
+	return nil, pipeline.NoOpenerFoundForSink{SinkKey: sink.SinkKey}
 }
