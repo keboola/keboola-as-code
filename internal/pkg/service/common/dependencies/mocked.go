@@ -389,8 +389,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	}
 
 	if cfg.enableDistribution {
-		d.distributionScope, err = newDistributionScope(cfg.ctx, cfg.nodeID, cfg.distributionConfig, d)
-		require.NoError(t, err)
+		d.distributionScope = newDistributionScope(cfg.nodeID, cfg.distributionConfig, d)
 	}
 
 	if cfg.enableDistributedLocks {

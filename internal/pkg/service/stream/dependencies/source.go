@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -19,10 +20,12 @@ type sourceScope struct {
 }
 
 type sourceParentScopes interface {
+	dependencies.DistributionScope
 	ServiceScope
 }
 
 type sourceParentScopesImpl struct {
+	dependencies.DistributionScope
 	ServiceScope
 }
 
@@ -30,8 +33,9 @@ func (v *sourceScope) SinkRouter() *sinkRouter.Router {
 	return v.sinkRouter
 }
 
-func NewSourceScope(d sourceParentScopes, cfg config.Config) (v SourceScope, err error) {
-	return newSourceScope(d, cfg)
+func NewSourceScope(d ServiceScope, cfg config.Config) (v SourceScope, err error) {
+	distScope := dependencies.NewDistributionScope(cfg.NodeID, cfg.Distribution, d)
+	return newSourceScope(sourceParentScopesImpl{ServiceScope: d, DistributionScope: distScope}, cfg)
 }
 
 func newSourceScope(parentScp sourceParentScopes, cfg config.Config) (v SourceScope, err error) {

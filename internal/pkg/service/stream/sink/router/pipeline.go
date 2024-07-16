@@ -2,7 +2,6 @@ package router
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"sync"
 	"time"
 
