@@ -88,12 +88,12 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	})
 
 	// Register dummy pipeline opener for tests
-	serviceScp.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sink definition.Sink) (pipeline.Pipeline, error) {
-		if sink.Type == test.SinkType {
+	serviceScp.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType) (pipeline.Pipeline, error) {
+		if sinkType == test.SinkType {
 			return mock.sinkPipelineOpener.OpenPipeline()
 		}
 
-		return nil, definition.ErrCannotHandleSinkType
+		return nil, pipeline.NoOpenerFoundError{SinkType: sinkType}
 	})
 
 	return serviceScp, mock

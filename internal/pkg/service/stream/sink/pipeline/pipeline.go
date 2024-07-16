@@ -36,4 +36,4 @@ type Pipeline interface {
 // Opener opens Pipeline for the sink.
 // If the returned pipeline is nil, it means, the opener cannot handle the sink type,
 // then the plugin system will try the next opener.
-type Opener func(ctx context.Context, sink definition.Sink) (Pipeline, error)
+type Opener func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType) (Pipeline, error)

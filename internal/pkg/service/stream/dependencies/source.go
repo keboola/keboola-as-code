@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	storageRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router"
@@ -48,11 +49,11 @@ func newSourceScope(parentScp sourceParentScopes, cfg config.Config) (v SourceSc
 		return nil, err
 	}
 
-	d.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sink definition.Sink) (pipeline.Pipeline, error) {
-		if d.Plugins().IsSinkWithLocalStorage(&sink) {
-			return d.storageRouter.OpenPipeline(ctx, sink)
+	d.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType) (pipeline.Pipeline, error) {
+		if d.Plugins().IsSinkWithLocalStorage(sinkType) {
+			return d.storageRouter.OpenPipeline(ctx, sinkKey)
 		}
-		return nil, pipeline.NoOpenerFoundForSink{SinkKey: sink.SinkKey}
+		return nil, pipeline.NoOpenerFoundError{SinkType: sinkType}
 	})
 
 	return d, nil

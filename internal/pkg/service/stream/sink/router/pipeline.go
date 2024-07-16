@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"sync"
 	"time"
 
@@ -16,8 +17,9 @@ import (
 )
 
 type pipelineRef struct {
-	router  *router
-	sinkKey key.SinkKey
+	router   *router
+	sinkKey  key.SinkKey
+	sinkType definition.SinkType
 	// lock protects pipeline field
 	lock sync.Mutex
 	// pipeline to write data to the sink,
@@ -49,7 +51,7 @@ func (p *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) err
 
 		// Use plugin system to create the pipeline
 		p.router.logger.Infof(ctx, `opening sink pipeline %q`, p.sinkKey)
-		p.pipeline, err = p.router.plugins.OpenSinkPipeline(ctx, sink)
+		p.pipeline, err = p.router.plugins.OpenSinkPipeline(ctx, p.sinkKey, p.sinkType)
 
 		// Use retry backoff, don't try to open pipeline on each record
 		if err != nil {

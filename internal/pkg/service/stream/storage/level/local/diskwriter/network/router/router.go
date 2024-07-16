@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
@@ -36,6 +37,6 @@ func New(d dependencies, cfg network.Config, nodeID string) (*Router, error) {
 	return r, nil
 }
 
-func (r *Router) OpenPipeline(ctx context.Context, sinkType definition.SinkType) (pipeline.Pipeline, error) {
+func (r *Router) OpenPipeline(ctx context.Context, sinKey key.SinkKey) (pipeline.Pipeline, error) {
 	return nil, svcErrors.NewNotImplementedError()
 }
