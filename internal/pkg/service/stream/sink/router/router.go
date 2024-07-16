@@ -101,7 +101,7 @@ func New(d dependencies) (*Router, error) {
 					}
 				},
 			).
-			WithOnUpdate(func(changes etcdop.MirrorUpdatedKeys[*sinkData]) {
+			WithOnChanges(func(changes etcdop.MirrorUpdateChanges[*sinkData]) {
 				// If a Sink entity is modified, it may be necessary to reopen the pipeline
 				for _, kv := range changes.Updated {
 					sink := kv.Value

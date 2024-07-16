@@ -110,7 +110,7 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 					}
 				},
 			).
-			WithOnUpdate(func(_ etcdop.MirrorUpdatedKeys[*volumeData]) {
+			WithOnUpdate(func(_ etcdop.MirrorUpdate) {
 				m.updateConnections(ctx)
 			}).
 			Build()
