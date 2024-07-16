@@ -213,9 +213,15 @@ func (m *Manager) closeConnection(ctx context.Context, conn *connection) {
 func (m *Manager) closeAllConnections(ctx context.Context) {
 	m.connectionsLock.Lock()
 	defer m.connectionsLock.Unlock()
+	wg := &sync.WaitGroup{}
 	for _, conn := range m.connections {
-		m.closeConnection(ctx, conn)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			m.closeConnection(ctx, conn)
+		}()
 	}
+	wg.Wait()
 }
 
 // writerNodes returns all active writer nodes.
