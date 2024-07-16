@@ -56,6 +56,7 @@ type nodeData struct {
 }
 
 type connection struct {
+	manager    *Manager
 	Node       *nodeData
 	ClientConn *transport.ClientConnection
 }
@@ -192,7 +193,7 @@ func (m *Manager) updateConnections(ctx context.Context) {
 
 	// Make changes
 	for _, conn := range toClose {
-		m.closeConnection(ctx, conn)
+		conn.close(ctx)
 	}
 	for _, node := range toOpen {
 		m.openConnection(ctx, node)
@@ -200,29 +201,16 @@ func (m *Manager) updateConnections(ctx context.Context) {
 }
 
 func (m *Manager) openConnection(ctx context.Context, node *nodeData) {
-	m.connectionsLock.Lock()
-	defer m.connectionsLock.Unlock()
 	m.logger.Infof(ctx, `opening connection to %q - %q`, node.ID, node.Address)
 	conn, err := m.client.OpenConnection(node.ID, node.Address.String())
 	if err != nil {
 		m.logger.Errorf(ctx, `cannot open connection to %q - %q`, node.ID, node.Address)
 	}
 	m.logger.Infof(ctx, `opened connection to %q - %q`, node.ID, node.Address)
-	m.connections[node.ID] = &connection{
-		Node:       node,
-		ClientConn: conn,
-	}
-}
 
-func (m *Manager) closeConnection(ctx context.Context, conn *connection) {
 	m.connectionsLock.Lock()
-	defer m.connectionsLock.Unlock()
-	delete(m.connections, conn.Node.ID)
-	m.logger.Infof(ctx, `closing connection to %q - %q`, conn.Node.ID, conn.Node.Address)
-	if err := conn.ClientConn.Close(); err != nil {
-		m.logger.Errorf(ctx, `cannot close connection to %q - %q: %s`, conn.Node.ID, conn.Node.Address, err)
-	}
-	m.logger.Infof(ctx, `closed connection to %q - %q`, conn.Node.ID, conn.Node.Address)
+	m.connections[node.ID] = &connection{manager: m, Node: node, ClientConn: conn}
+	m.connectionsLock.Unlock()
 }
 
 func (m *Manager) closeAllConnections(ctx context.Context) {
@@ -232,7 +220,7 @@ func (m *Manager) closeAllConnections(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			m.closeConnection(ctx, conn)
+			conn.close(ctx)
 		}()
 	}
 	m.connectionsLock.Unlock()
@@ -258,4 +246,13 @@ func (m *Manager) isClosed() bool {
 	default:
 		return false
 	}
+}
+
+func (c *connection) close(ctx context.Context) {
+	c.manager.connectionsLock.Lock()
+	delete(c.manager.connections, c.Node.ID)
+	c.manager.connectionsLock.Unlock()
+
+	c.ClientConn.Close(ctx)
+	c.manager.logger.Infof(ctx, `closed connection to %q - %q`, c.Node.ID, c.Node.Address)
 }

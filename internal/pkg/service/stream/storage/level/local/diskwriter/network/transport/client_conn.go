@@ -8,52 +8,59 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/yamux"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ClientConnection struct {
+	id     uint64
 	client *Client
+
 	closed chan struct{}
+	wg     sync.WaitGroup
 
 	remoteNodeID string
 	remoteAddr   string
 
+	lock      sync.Mutex
+	sess      *yamux.Session
 	lastError error
-
-	lock sync.Mutex
-	sess *yamux.Session
+	streams   map[uint32]*ClientStream
 }
 
-func newClientConnection(remoteNodeID, remoteAddr string, c *Client, initDone chan error) (*ClientConnection, error) {
+func newClientConnection(connID uint64, remoteNodeID, remoteAddr string, client *Client, initDone chan error) (*ClientConnection, error) {
 	// Stop, if the client is closed
-	if c.isClosed() {
+	if client.isClosed() {
 		return nil, yamux.ErrSessionShutdown
 	}
 
 	ctx := ctxattr.ContextWith(
 		context.Background(),
-		attribute.String("nodeId", c.nodeID),
+		attribute.String("nodeId", client.nodeID),
 		attribute.String("remoteNodeID", remoteNodeID),
 		attribute.String("remoteAddr", remoteAddr),
 	)
 
-	conn := &ClientConnection{
-		client:       c,
+	c := &ClientConnection{
+		client:       client,
+		id:           connID,
 		closed:       make(chan struct{}),
 		remoteNodeID: remoteNodeID,
 		remoteAddr:   remoteAddr,
+		streams:      make(map[uint32]*ClientStream),
 	}
 
 	// Dial connection
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
-		conn.dialLoop(ctx, initDone)
+		c.dialLoop(ctx, initDone)
 	}()
 
-	return conn, nil
+	client.registerConnection(c)
+	return c, nil
 }
 
 func (c *ClientConnection) RemoteAddr() string {
@@ -91,42 +98,52 @@ func (c *ClientConnection) OpenStream() (*ClientStream, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newClientStream(stream, c.client), nil
+
+	return newClientStream(c, stream), nil
 }
 
-func (c *ClientConnection) Close() (err error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+func (c *ClientConnection) Close(ctx context.Context) {
+	if !c.isClosed() {
+		// Prevent new streams to be opened
+		close(c.closed)
 
-	if c.isClosed() {
-		return nil
+		c.lock.Lock()
+		streams := maps.Values(c.streams)
+		c.lock.Unlock()
+
+		// Close streams
+		wg := &sync.WaitGroup{}
+		for _, s := range streams {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := s.Close(); err != nil {
+					c.client.logger.Errorf(ctx, "cannot close client stream to %q (%d)", c.remoteAddr, s.StreamID())
+				}
+			}()
+		}
+		wg.Wait()
+
+		// Close session
+		if sess, _ := c.session(); sess != nil {
+			select {
+			case <-c.sess.CloseChan():
+			default:
+				if err := c.sess.Close(); err != nil {
+					c.client.logger.Errorf(ctx, "cannot close client session to %q", c.remoteAddr)
+				}
+			}
+		}
+
+		// Wait for the dial loop
+		c.wg.Wait()
+
+		c.client.unregisterConnection(c)
 	}
-
-	close(c.closed)
-
-	if sess := c.sess; sess != nil {
-		err = sess.Close()
-		c.sess = nil
-		c.lastError = nil
-		c.client.unregisterSession(sess)
-	}
-
-	return err
 }
 
 func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
-	// Close connection session on shutdown
-	defer func() {
-		if !c.isClosed() {
-			if err := c.Close(); err != nil {
-				err := errors.PrefixErrorf(err, `cannot close connection %q - %q`, c.remoteNodeID, c.remoteAddr)
-				c.client.logger.Error(ctx, err.Error())
-			}
-		}
-	}()
-
 	b := newClientConnBackoff()
-
 	for {
 		if c.isClosed() || c.client.isClosed() {
 			return
@@ -134,6 +151,12 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 
 		// Create session
 		sess, err := c.newSession()
+
+		// Update internal state
+		c.lock.Lock()
+		c.sess = sess
+		c.lastError = err
+		c.lock.Unlock()
 
 		// Finish initialization after the first connection attempt
 		if initDone != nil {
@@ -159,23 +182,12 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 
 		// Block while the connection is open
 		<-sess.CloseChan()
+
 		c.client.logger.Infof(ctx, `disk writer client disconnected from %q - %q`, c.remoteNodeID, c.remoteAddr)
 	}
 }
 
 func (c *ClientConnection) newSession() (sess *yamux.Session, err error) {
-	defer func() {
-		// Update internal state
-		c.lock.Lock()
-		defer c.lock.Unlock()
-		c.sess = sess
-		c.lastError = err
-
-		if sess != nil {
-			c.client.registerSession(sess)
-		}
-	}()
-
 	// Create connection
 	conn, err := c.client.transport.Dial(c.remoteAddr)
 	if err != nil {
@@ -204,6 +216,18 @@ func (c *ClientConnection) session() (*yamux.Session, error) {
 	}
 
 	return c.sess, nil
+}
+
+func (c *ClientConnection) registerStream(stream *ClientStream) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.streams[stream.StreamID()] = stream
+}
+
+func (c *ClientConnection) unregisterStream(stream *ClientStream) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	delete(c.streams, stream.StreamID())
 }
 
 func (c *ClientConnection) isClosed() bool {

@@ -5,18 +5,24 @@ import (
 )
 
 type ClientStream struct {
+	conn   *ClientConnection
 	stream *yamux.Stream
-	client *Client
 }
 
-func newClientStream(stream *yamux.Stream, c *Client) *ClientStream {
-	c.registerStream(stream)
-	return &ClientStream{stream: stream, client: c}
+func newClientStream(conn *ClientConnection, stream *yamux.Stream) *ClientStream {
+	s := &ClientStream{conn: conn, stream: stream}
+	conn.registerStream(s)
+	return s
+}
+
+func (s *ClientStream) StreamID() uint32 {
+	return s.stream.StreamID()
 }
 
 func (s *ClientStream) Close() error {
-	s.client.unregisterStream(s.stream)
-	return s.stream.Close()
+	err := s.stream.Close()
+	s.conn.unregisterStream(s)
+	return err
 }
 
 func (s *ClientStream) Read(b []byte) (n int, err error) {

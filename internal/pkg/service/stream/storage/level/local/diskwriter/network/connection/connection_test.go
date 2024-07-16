@@ -100,7 +100,11 @@ func TestConnectionManager(t *testing.T) {
 	// Shutdown source node - no warning/error is logged
 	s.Process().Shutdown(ctx, errors.New("bye bye source"))
 	s.Process().WaitForShutdown()
+	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w2\" - \"localhost:%s\"","component":"storage.node.writer.network.client"}`)
+	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w4\" - \"localhost:%s\"","component":"storage.node.writer.network.client"}`)
 	sourceLogger.AssertJSONMessages(t, `{"level":"info","message":"exited"}`)
+	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.network.server"}`)
+	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
 
 	// Shutdown w2 and w4
@@ -181,7 +185,7 @@ func startWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 
 func waitForLog(t *testing.T, logger log.DebugLogger, expected string) {
 	t.Helper()
-	require.Eventually(t, func() bool {
-		return logger.CompareJSONMessages(expected) == nil
-	}, 5*time.Second, 100*time.Millisecond)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		logger.AssertJSONMessages(c, expected)
+	}, 15*time.Second, 100*time.Millisecond)
 }

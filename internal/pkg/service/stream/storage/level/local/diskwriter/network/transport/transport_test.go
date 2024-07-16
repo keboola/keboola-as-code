@@ -202,8 +202,7 @@ func shutdown(t *testing.T, clientDeps, srvDeps dependencies.ServiceScope, clien
 {"level":"info","message":"disk writer client connected from \"%s\" to \"srv\" - \"%s\"","component":"storage.node.writer.network.client"}
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"closing disk writer client","component":"storage.node.writer.network.client"}
-{"level":"info","message":"closing %d streams","component":"storage.node.writer.network.client"}
-{"level":"info","message":"closing %d sessions","component":"storage.node.writer.network.client"}
+{"level":"info","message":"closing %d connections","component":"storage.node.writer.network.client"}
 {"level":"info","message":"closed disk writer client","component":"storage.node.writer.network.client"}
 {"level":"info","message":"exited"}
 `)
