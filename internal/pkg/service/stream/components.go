@@ -59,7 +59,7 @@ func StartComponents(ctx context.Context, d dependencies.ServiceScope, cfg confi
 	}
 
 	if componentsMap[ComponentHTTPSource] {
-		d, err := dependencies.NewSourceScope(d, cfg)
+		d, err := dependencies.NewSourceScope(d, "http-source", cfg)
 		if err != nil {
 			return err
 		}

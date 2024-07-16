@@ -141,10 +141,15 @@ func NewMockedSourceScope(t *testing.T, opts ...dependencies.MockedOption) (Sour
 
 func NewMockedSourceScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (SourceScope, Mocked) {
 	t.Helper()
-	svcScp, mock := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
+	svcScp, mock := NewMockedServiceScopeWithConfig(
+		t,
+		modifyConfig,
+		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution()}, opts...)...,
+	)
 	d, err := newSourceScope(sourceParentScopesImpl{
-		ServiceScope: svcScp,
-	}, mock.TestConfig())
+		ServiceScope:      svcScp,
+		DistributionScope: mock,
+	}, "test-source", mock.TestConfig())
 	require.NoError(t, err)
 	return d, mock
 }

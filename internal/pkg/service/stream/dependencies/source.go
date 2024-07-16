@@ -33,12 +33,12 @@ func (v *sourceScope) SinkRouter() *sinkRouter.Router {
 	return v.sinkRouter
 }
 
-func NewSourceScope(d ServiceScope, cfg config.Config) (v SourceScope, err error) {
+func NewSourceScope(d ServiceScope, sourceType string, cfg config.Config) (v SourceScope, err error) {
 	distScope := dependencies.NewDistributionScope(cfg.NodeID, cfg.Distribution, d)
-	return newSourceScope(sourceParentScopesImpl{ServiceScope: d, DistributionScope: distScope}, cfg)
+	return newSourceScope(sourceParentScopesImpl{ServiceScope: d, DistributionScope: distScope}, sourceType, cfg)
 }
 
-func newSourceScope(parentScp sourceParentScopes, cfg config.Config) (v SourceScope, err error) {
+func newSourceScope(parentScp sourceParentScopes, sourceType string, cfg config.Config) (v SourceScope, err error) {
 	d := &sourceScope{}
 
 	d.sourceParentScopes = parentScp
@@ -48,7 +48,7 @@ func newSourceScope(parentScp sourceParentScopes, cfg config.Config) (v SourceSc
 		return nil, err
 	}
 
-	d.storageRouter, err = storageRouter.New(d, cfg.Storage.Level.Local.Writer.Network, cfg.NodeID)
+	d.storageRouter, err = storageRouter.New(d, sourceType, cfg.Storage.Level.Local.Writer.Network)
 	if err != nil {
 		return nil, err
 	}

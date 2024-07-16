@@ -15,21 +15,30 @@ import (
 )
 
 type Router struct {
-	connections *connection.Manager
+	distribution *distribution.GroupNode
+	connections  *connection.Manager
 }
 
 type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
 	StorageRepository() *storageRepo.Repository
+	DistributionNode() *distribution.Node
 }
 
-func New(d dependencies, cfg network.Config, nodeID string) (*Router, error) {
+func New(d dependencies, sourceType string, cfg network.Config) (*Router, error) {
 	r := &Router{}
 
 	var err error
 
-	r.connections, err = connection.NewManager(d, cfg, nodeID)
+	// Join a distribution group, it contains all source nodes of the same type
+	r.distribution, err = d.DistributionNode().Group("storage.router.sources." + sourceType)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create connections to all disk writer nodes
+	r.connections, err = connection.NewManager(d, cfg, r.distribution.NodeID())
 	if err != nil {
 		return nil, err
 	}
