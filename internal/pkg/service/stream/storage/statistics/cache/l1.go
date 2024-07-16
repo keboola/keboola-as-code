@@ -53,8 +53,8 @@ func NewL1Cache(d dependencies) (*L1, error) {
 	stream := c.repository.GetAllAndWatch(ctx)
 	mapKey := func(kv *op.KeyValue, _ statistics.Value) string { return string(kv.Key) }
 	mapValue := func(_ *op.KeyValue, stats statistics.Value) statistics.Value { return stats }
-	mirror, errCh := etcdop.SetupMirror(c.logger, stream, mapKey, mapValue).StartMirroring(ctx, wg)
-	if err := <-errCh; err == nil {
+	mirror := etcdop.SetupMirror(c.logger, stream, mapKey, mapValue).Build()
+	if err := <-mirror.StartMirroring(ctx, wg); err == nil {
 		c.cache = mirror
 	} else {
 		return nil, err

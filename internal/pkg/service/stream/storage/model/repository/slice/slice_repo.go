@@ -21,7 +21,7 @@ import (
 // Repository provides database operations with the model.Slice entity.
 type Repository struct {
 	logger     log.Logger
-	client     etcd.KV
+	client     *etcd.Client
 	schema     schema.Slice
 	backoff    model.RetryBackoff
 	definition *definitionRepo.Repository

@@ -59,8 +59,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 		var ctx context.Context
 		ctx, dp.cancelMirror = context.WithCancel(context.Background())
 
-		var errCh <-chan error
-		dp.sources, errCh = etcdop.
+		dp.sources = etcdop.
 			SetupMirror(
 				dp.logger,
 				d.DefinitionRepository().Source().GetAllAndWatch(ctx, etcd.WithPrevKV()),
@@ -78,8 +77,8 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 			WithFilter(func(event etcdop.WatchEventT[definition.Source]) bool {
 				return event.Value.Type == definition.SourceTypeHTTP
 			}).
-			StartMirroring(ctx, &dp.wg)
-		if err := <-errCh; err != nil {
+			Build()
+		if err := <-dp.sources.StartMirroring(ctx, &dp.wg); err != nil {
 			return nil, err
 		}
 	}

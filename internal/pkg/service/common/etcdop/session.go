@@ -161,7 +161,10 @@ func (b SessionBuilder) Start(ctx context.Context, wg *sync.WaitGroup, logger lo
 				if !errors.Is(err, context.Canceled) {
 					delay := s.backoff.NextBackOff()
 					s.logger.Infof(ctx, "waiting %s before the retry", delay)
-					<-time.After(delay)
+					select {
+					case <-ctx.Done():
+					case <-time.After(delay):
+					}
 				}
 				continue // retry
 			}

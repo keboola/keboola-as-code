@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -16,14 +15,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -96,8 +93,7 @@ func New(d dependencies) (Router, error) {
 
 	// Start sinks mirroring, only necessary data is saved
 	{
-		var errCh <-chan error
-		r.sinks, errCh = etcdop.
+		r.sinks = etcdop.
 			SetupMirror(
 				r.logger,
 				r.definitions.Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()),
@@ -115,15 +111,19 @@ func New(d dependencies) (Router, error) {
 				// Close updated sinks, the pipeline must be re-created.
 				// Closing the old pipeline blocks the creation of a new one.
 				for _, kv := range changes.Updated {
-					r.closePipeline(ctx, kv.Value.sinkKey, "sink updated")
+					if p := r.pipelineRefOrNil(kv.Value.sinkKey); p != nil {
+						p.close(ctx, "sink updated")
+					}
 				}
 				// Closed delete sinks
 				for _, kv := range changes.Deleted {
-					r.closePipeline(ctx, kv.Value.sinkKey, "sink deleted")
+					if p := r.pipelineRefOrNil(kv.Value.sinkKey); p != nil {
+						p.close(ctx, "sink deleted")
+					}
 				}
 			}).
-			StartMirroring(ctx, &r.wg)
-		if err := <-errCh; err != nil {
+			Build()
+		if err := <-r.sinks.StartMirroring(ctx, &r.wg); err != nil {
 			return nil, err
 		}
 	}
@@ -263,16 +263,11 @@ func (r *router) dispatchToSink(sinkKey key.SinkKey, c recordctx.Context) (pipel
 		return pipeline.RecordError, SinkDisabledError{sinkKey: sinkKey}
 	}
 
-	p, err := r.pipeline(c.Ctx(), c.Timestamp(), sinkKey)
-	if err != nil {
-		return pipeline.RecordError, err
-	}
-
-	return p.WriteRecord(c)
+	return r.pipelineRef(sinkKey).writeRecord(c)
 }
 
-// pipeline gets or creates sink pipeline.
-func (r *router) pipeline(ctx context.Context, timestamp time.Time, sinkKey key.SinkKey) (pipeline.Pipeline, error) {
+// pipelineRef gets or creates sink pipeline.
+func (r *router) pipelineRef(sinkKey key.SinkKey) *pipelineRef {
 	// Get or create pipeline reference, with its own lock
 	r.lock.Lock()
 	p := r.pipelines[sinkKey]
@@ -281,67 +276,23 @@ func (r *router) pipeline(ctx context.Context, timestamp time.Time, sinkKey key.
 		r.pipelines[sinkKey] = p
 	}
 	r.lock.Unlock()
+	return p
+}
 
-	// Get or open pipeline, other pipelines are not blocked by the lock
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	if p.pipeline == nil && (p.openError == nil || timestamp.After(p.openRetryAfter)) {
-		// Local full sink definition from DB
-		sink, err := r.definitions.Sink().Get(sinkKey).Do(ctx).ResultOrErr()
-		if err != nil {
-			return nil, errors.PrefixError(err, "cannot load sink definition")
-		}
-
-		// Use plugin system to create the pipeline
-		p.logger.Infof(ctx, `opening sink pipeline %q`, p.sinkKey)
-		p.pipeline, err = p.plugins.OpenSinkPipeline(ctx, sink)
-
-		// Use retry backoff, don't try to open pipeline on each record
-		if err != nil {
-			if p.openBackoff == nil {
-				p.openBackoff = newOpenPipelineBackoff()
-			}
-			delay := p.openBackoff.NextBackOff()
-			p.openRetryAfter = timestamp.Add(delay)
-			p.openError = errors.Errorf("cannot open sink pipeline: %w, next attempt after %s", err, utctime.From(p.openRetryAfter).String())
-		} else {
-			p.openError = nil
-			p.logger.Infof(ctx, `opened sink pipeline %q`, p.sinkKey)
-		}
-	}
-
-	if p.openError != nil {
-		return nil, p.openError
-	}
-
-	p.openBackoff = nil
-	p.openRetryAfter = time.Time{}
-	return p.pipeline, nil
+// pipelineRefOrNil gets sink pipeline reference if exists.
+func (r *router) pipelineRefOrNil(sinkKey key.SinkKey) *pipelineRef {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	return r.pipelines[sinkKey]
 }
 
 func (r *router) closeAllPipelines(ctx context.Context, reason string) {
 	r.lock.Lock()
-	defer r.lock.Unlock()
-	for _, p := range r.pipelines {
-		r.wg.Add(1)
-		go func() {
-			defer r.wg.Done()
-			p.close(ctx, reason)
-		}()
-	}
-}
+	pipelines := r.pipelines
+	r.lock.Unlock()
 
-func (r *router) closePipeline(ctx context.Context, sinkKey key.SinkKey, reason string) {
-	if p, found := r.pipelines[sinkKey]; found {
-		p.lock.Lock()
-		delete(r.pipelines, sinkKey)
-		p.lock.Unlock()
-
-		r.wg.Add(1)
-		go func() {
-			defer r.wg.Done()
-			p.close(ctx, reason)
-		}()
+	for _, p := range pipelines {
+		p.close(ctx, reason) // non blocking
 	}
 }
 

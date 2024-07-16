@@ -24,7 +24,7 @@ import (
 // Repository provides database operations with the model.File entity.
 type Repository struct {
 	logger     log.Logger
-	client     etcd.KV
+	client     *etcd.Client
 	schema     schema.File
 	config     level.Config
 	backoff    model.RetryBackoff
