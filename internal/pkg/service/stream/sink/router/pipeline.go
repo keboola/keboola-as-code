@@ -17,7 +17,7 @@ import (
 )
 
 type pipelineRef struct {
-	router   *router
+	router   *Router
 	sinkKey  key.SinkKey
 	sinkType definition.SinkType
 	// lock protects pipeline field

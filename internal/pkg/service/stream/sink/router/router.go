@@ -26,13 +26,7 @@ const (
 	ErrorNamePrefix = "stream.in."
 )
 
-// Router routes the record to the desired sink pipeline.
-type Router interface {
-	DispatchToSources(sources []key.SourceKey, c recordctx.Context) SourcesResult
-	DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) SourceResult
-}
-
-type router struct {
+type Router struct {
 	logger      log.Logger
 	plugins     *plugin.Plugins
 	definitions *definitionRepo.Repository
@@ -61,8 +55,8 @@ type dependencies interface {
 	DefinitionRepository() *definitionRepo.Repository
 }
 
-func New(d dependencies) (Router, error) {
-	r := &router{
+func New(d dependencies) (*Router, error) {
+	r := &Router{
 		logger:      d.Logger().WithComponent("sink.router"),
 		plugins:     d.Plugins(),
 		definitions: d.DefinitionRepository(),
@@ -135,7 +129,7 @@ func New(d dependencies) (Router, error) {
 	return r, nil
 }
 
-func (r *router) DispatchToSources(sources []key.SourceKey, c recordctx.Context) SourcesResult {
+func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context) SourcesResult {
 	result := SourcesResult{
 		StatusCode: http.StatusOK,
 	}
@@ -180,7 +174,7 @@ func (r *router) DispatchToSources(sources []key.SourceKey, c recordctx.Context)
 	return result
 }
 
-func (r *router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) SourceResult {
+func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) SourceResult {
 	result := SourceResult{
 		ProjectID:  sourceKey.ProjectID,
 		SourceID:   sourceKey.SourceID,
@@ -238,7 +232,7 @@ func (r *router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	return result
 }
 
-func (r *router) dispatchToSink(sink *sinkData, c recordctx.Context) SinkResult {
+func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) SinkResult {
 	status, err := r.pipelineRef(sink).writeRecord(c)
 	result := SinkResult{
 		SinkID:     sink.sinkKey.SinkID,
@@ -255,7 +249,7 @@ func (r *router) dispatchToSink(sink *sinkData, c recordctx.Context) SinkResult 
 }
 
 // pipelineRef gets or creates sink pipeline.
-func (r *router) pipelineRef(sink *sinkData) *pipelineRef {
+func (r *Router) pipelineRef(sink *sinkData) *pipelineRef {
 	// Get or create pipeline reference, with its own lock
 	r.lock.Lock()
 	p := r.pipelines[sink.sinkKey]
@@ -268,13 +262,13 @@ func (r *router) pipelineRef(sink *sinkData) *pipelineRef {
 }
 
 // pipelineRefOrNil gets sink pipeline reference if exists.
-func (r *router) pipelineRefOrNil(sinkKey key.SinkKey) *pipelineRef {
+func (r *Router) pipelineRefOrNil(sinkKey key.SinkKey) *pipelineRef {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	return r.pipelines[sinkKey]
 }
 
-func (r *router) closeAllPipelines(ctx context.Context, reason string) {
+func (r *Router) closeAllPipelines(ctx context.Context, reason string) {
 	r.lock.Lock()
 	pipelines := r.pipelines
 	r.lock.Unlock()
@@ -284,7 +278,7 @@ func (r *router) closeAllPipelines(ctx context.Context, reason string) {
 	}
 }
 
-func (r *router) isClosed() bool {
+func (r *Router) isClosed() bool {
 	select {
 	case <-r.closed:
 		return true

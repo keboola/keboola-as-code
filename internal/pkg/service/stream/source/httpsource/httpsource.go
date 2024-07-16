@@ -41,7 +41,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
 	DefinitionRepository() *definitionRepo.Repository
-	SinkRouter() sinkRouter.Router
+	SinkRouter() *sinkRouter.Router
 }
 
 func Start(ctx context.Context, d dependencies, cfg Config) error {

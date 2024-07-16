@@ -14,7 +14,7 @@ import (
 // sourceScope implements SourceScope interface.
 type sourceScope struct {
 	sourceParentScopes
-	sinkRouter    sinkRouter.Router
+	sinkRouter    *sinkRouter.Router
 	storageRouter *storageRouter.Router
 }
 
@@ -26,7 +26,7 @@ type sourceParentScopesImpl struct {
 	ServiceScope
 }
 
-func (v *sourceScope) SinkRouter() sinkRouter.Router {
+func (v *sourceScope) SinkRouter() *sinkRouter.Router {
 	return v.sinkRouter
 }
 
