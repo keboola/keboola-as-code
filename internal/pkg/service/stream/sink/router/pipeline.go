@@ -30,6 +30,9 @@ type pipelineRef struct {
 }
 
 func (p *pipelineRef) writeRecord(c recordctx.Context) (pipeline.RecordStatus, error) {
+	if p.router.isClosed() {
+		return pipeline.RecordError, ShutdownError{}
+	}
 	if err := p.ensureOpened(c.Ctx(), c.Timestamp()); err != nil {
 		return pipeline.RecordError, err
 	}
@@ -42,11 +45,7 @@ func (p *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) err
 
 	// Try open, if needed, and there is no retry backoff delay active
 	if p.pipeline == nil && (p.openError == nil || timestamp.After(p.openRetryAfter)) {
-		// Local full sink definition from DB
-		sink, err := p.router.definitions.Sink().Get(p.sinkKey).Do(ctx).ResultOrErr()
-		if err != nil {
-			return errors.PrefixError(err, "cannot load sink definition")
-		}
+		var err error
 
 		// Use plugin system to create the pipeline
 		p.router.logger.Infof(ctx, `opening sink pipeline %q`, p.sinkKey)

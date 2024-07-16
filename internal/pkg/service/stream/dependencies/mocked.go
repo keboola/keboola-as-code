@@ -74,8 +74,8 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	mock.MockedHTTPTransport().Reset()
 
 	// Register dummy sink with local storage support for tests
-	serviceScp.Plugins().RegisterSinkWithLocalStorage(func(sink *definition.Sink) bool {
-		return sink.Type == test.SinkTypeWithLocalStorage
+	serviceScp.Plugins().RegisterSinkWithLocalStorage(func(sinkType definition.SinkType) bool {
+		return sinkType == test.SinkTypeWithLocalStorage
 	})
 	serviceScp.Plugins().Collection().OnFileOpen(func(ctx context.Context, now time.Time, sink definition.Sink, file *model.File) error {
 		if sink.Type == test.SinkTypeWithLocalStorage {

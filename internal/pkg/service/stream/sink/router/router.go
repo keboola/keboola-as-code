@@ -20,7 +20,6 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 )
 
 const (
@@ -31,7 +30,6 @@ const (
 type Router interface {
 	DispatchToSources(sources []key.SourceKey, c recordctx.Context) SourcesResult
 	DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) SourceResult
-	DispatchToSink(sinkKey key.SinkKey, c recordctx.Context) SinkResult
 }
 
 type router struct {
@@ -51,8 +49,9 @@ type router struct {
 }
 
 type sinkData struct {
-	sinkKey key.SinkKey
-	enabled bool
+	sinkKey  key.SinkKey
+	sinkType definition.SinkType
+	enabled  bool
 }
 
 type dependencies interface {
@@ -102,8 +101,9 @@ func New(d dependencies) (Router, error) {
 				},
 				func(kv *op.KeyValue, sink definition.Sink) *sinkData {
 					return &sinkData{
-						sinkKey: sink.SinkKey,
-						enabled: sink.IsEnabled(),
+						sinkKey:  sink.SinkKey,
+						sinkType: sink.Type,
+						enabled:  sink.IsEnabled(),
 					}
 				},
 			).
@@ -198,7 +198,7 @@ func (r *router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 			defer wg.Done()
 			defer r.wg.Done()
 
-			sinkResult := r.DispatchToSink(sink.sinkKey, c)
+			sinkResult := r.dispatchToSink(sink, c)
 
 			// Aggregate result
 			lock.Lock()
@@ -234,10 +234,10 @@ func (r *router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	return result
 }
 
-func (r *router) DispatchToSink(sinkKey key.SinkKey, c recordctx.Context) SinkResult {
-	status, err := r.dispatchToSink(sinkKey, c)
+func (r *router) dispatchToSink(sink *sinkData, c recordctx.Context) SinkResult {
+	status, err := r.pipelineRef(sink).writeRecord(c)
 	result := SinkResult{
-		SinkID:     sinkKey.SinkID,
+		SinkID:     sink.sinkKey.SinkID,
 		StatusCode: resultStatusCode(status, err),
 		ErrorName:  resultErrorName(err),
 		Message:    resultMessage(status, err),
@@ -250,30 +250,14 @@ func (r *router) DispatchToSink(sinkKey key.SinkKey, c recordctx.Context) SinkRe
 	return result
 }
 
-func (r *router) dispatchToSink(sinkKey key.SinkKey, c recordctx.Context) (pipeline.RecordStatus, error) {
-	if r.isClosed() {
-		return pipeline.RecordError, ShutdownError{}
-	}
-
-	sink, found := r.sinks.Get(sinkKey.String())
-	if !found {
-		return pipeline.RecordError, SinkNotFoundError{sinkKey: sinkKey}
-	}
-	if !sink.enabled {
-		return pipeline.RecordError, SinkDisabledError{sinkKey: sinkKey}
-	}
-
-	return r.pipelineRef(sinkKey).writeRecord(c)
-}
-
 // pipelineRef gets or creates sink pipeline.
-func (r *router) pipelineRef(sinkKey key.SinkKey) *pipelineRef {
+func (r *router) pipelineRef(sink *sinkData) *pipelineRef {
 	// Get or create pipeline reference, with its own lock
 	r.lock.Lock()
-	p := r.pipelines[sinkKey]
+	p := r.pipelines[sink.sinkKey]
 	if p == nil {
-		p = &pipelineRef{router: r, sinkKey: sinkKey}
-		r.pipelines[sinkKey] = p
+		p = &pipelineRef{router: r, sinkKey: sink.sinkKey, sinkType: sink.sinkType}
+		r.pipelines[sink.sinkKey] = p
 	}
 	r.lock.Unlock()
 	return p

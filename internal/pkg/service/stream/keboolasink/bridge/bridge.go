@@ -59,8 +59,6 @@ func New(d dependencies, apiProvider apiProvider) *Bridge {
 		createBucketOnce: &singleflight.Group{},
 	}
 
-	b.plugins.RegisterSinkWithLocalStorage(b.isKeboolaTableSink)
-
 	b.setupOnFileOpen()
 	b.deleteCredentialsOnFileDelete()
 	b.deleteTokenOnSinkDeactivation()

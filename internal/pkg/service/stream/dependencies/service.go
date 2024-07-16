@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	aggregationRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/aggregation/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
@@ -133,6 +134,10 @@ func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff m
 	if err != nil {
 		return nil, err
 	}
+
+	d.plugins.RegisterSinkWithLocalStorage(func(sinkType definition.SinkType) bool {
+		return sinkType == definition.SinkTypeTable
+	})
 
 	apiCtxProvider := func(ctx context.Context) *keboola.AuthorizedAPI {
 		api, _ := ctx.Value(KeboolaProjectAPICtxKey).(*keboola.AuthorizedAPI)

@@ -13,7 +13,7 @@ import (
 
 // newFile creates file entity.
 func (r *Repository) newFile(cfg level.Config, k model.FileKey, sink definition.Sink) (f model.File, err error) {
-	if !r.plugins.IsSinkWithLocalStorage(&sink) {
+	if !r.plugins.IsSinkWithLocalStorage(sink.Type) {
 		return model.File{}, errors.Errorf(`sink type "%s" has no local storage support`, sink.Type)
 	}
 
