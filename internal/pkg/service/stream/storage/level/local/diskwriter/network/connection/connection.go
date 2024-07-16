@@ -66,13 +66,13 @@ type dependencies interface {
 	StorageRepository() *storageRepo.Repository
 }
 
-func NewManager(ctx context.Context, d dependencies, cfg network.Config, nodeID string) (*Manager, error) {
+func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, error) {
 	m := &Manager{
 		logger:      d.Logger().WithComponent("storage.router.connections"),
 		connections: make(map[string]*connection),
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
 	m.closed = ctx.Done()
 
 	// Graceful shutdown

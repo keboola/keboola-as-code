@@ -1,14 +1,20 @@
 package dependencies
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
+	storageRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router"
 )
 
 // sourceScope implements SourceScope interface.
 type sourceScope struct {
 	sourceParentScopes
-	sinkRouter sinkRouter.Router
+	sinkRouter    sinkRouter.Router
+	storageRouter *storageRouter.Router
 }
 
 type sourceParentScopes interface {
@@ -27,7 +33,7 @@ func NewSourceScope(d sourceParentScopes, cfg config.Config) (v SourceScope, err
 	return newSourceScope(d, cfg)
 }
 
-func newSourceScope(parentScp sourceParentScopes, _ config.Config) (v SourceScope, err error) {
+func newSourceScope(parentScp sourceParentScopes, cfg config.Config) (v SourceScope, err error) {
 	d := &sourceScope{}
 
 	d.sourceParentScopes = parentScp
@@ -36,6 +42,18 @@ func newSourceScope(parentScp sourceParentScopes, _ config.Config) (v SourceScop
 	if err != nil {
 		return nil, err
 	}
+
+	d.storageRouter, err = storageRouter.New(d, cfg.Storage.Level.Local.Writer.Network, cfg.NodeID)
+	if err != nil {
+		return nil, err
+	}
+
+	d.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sink definition.Sink) (pipeline.Pipeline, error) {
+		if d.Plugins().IsSinkWithLocalStorage(&sink) {
+			return d.storageRouter.OpenPipeline(ctx, sink)
+		}
+		return nil, pipeline.NoOpenerFoundForSink{SinkKey: sink.SinkKey}
+	})
 
 	return d, nil
 }

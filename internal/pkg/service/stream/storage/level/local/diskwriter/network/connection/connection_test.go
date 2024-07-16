@@ -37,7 +37,7 @@ func TestConnectionManager(t *testing.T) {
 	w2 := startWriterNode(t, ctx, etcdCfg, "w2")
 
 	// Start source node
-	connManager, s := startSourceConnManager(t, ctx, etcdCfg, "s1")
+	connManager, s := startSourceConnManager(t, etcdCfg, "s1")
 	sourceLogger := s.DebugLogger()
 	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w1\" - \"l%s\"","component":"storage.node.writer.network.client"}`)
@@ -134,7 +134,7 @@ func TestConnectionManager(t *testing.T) {
 	w4.DebugLogger().AssertJSONMessages(t, expectedWriterLogs)
 }
 
-func startSourceConnManager(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, nodeID string) (*connection.Manager, dependencies.Mocked) {
+func startSourceConnManager(t *testing.T, etcdCfg etcdclient.Config, nodeID string) (*connection.Manager, dependencies.Mocked) {
 	t.Helper()
 
 	d, m := dependencies.NewMockedSourceScopeWithConfig(
@@ -146,7 +146,7 @@ func startSourceConnManager(t *testing.T, ctx context.Context, etcdCfg etcdclien
 		commonDeps.WithEtcdConfig(etcdCfg),
 	)
 
-	connManager, err := connection.NewManager(ctx, d, m.TestConfig().Storage.Level.Local.Writer.Network, m.TestConfig().NodeID)
+	connManager, err := connection.NewManager(d, m.TestConfig().Storage.Level.Local.Writer.Network, m.TestConfig().NodeID)
 	require.NoError(t, err)
 
 	return connManager, m
