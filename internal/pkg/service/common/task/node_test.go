@@ -20,6 +20,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -449,7 +450,8 @@ task/123/my-receiver/my-export/some.task/%s
 			defer close(taskDone)
 			<-taskWork
 			logger.Info(ctx, "some message from the task (2)")
-			return task.ErrResult(errors.New("some error (2) - unexpected"))
+
+			return task.ErrResult(svcerrors.NewInsufficientStorageError(false, errors.New("no space right on device")))
 		},
 	})
 	assert.NoError(t, err)
@@ -493,10 +495,10 @@ task/123/my-receiver/my-export/some.task/%s
   "finishedAt": "%s",
   "node": "node2",
   "lock": "runtime/lock/task/my-lock",
-  "error": "some error (2) - unexpected",
+  "error": "no space right on device",
   "userError": {
-    "name": "unknownError",
-    "message": "Unknown error"
+    "name": "insufficientStorage",
+    "message": "No space right on device."
   },
   "duration": %d
 }
@@ -514,7 +516,7 @@ task/123/my-receiver/my-export/some.task/%s
 {"level":"info","message":"started task","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 {"level":"info","message":"some message from the task (2)","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
-{"level":"warn","message":"task failed (%s): some error (2) - unexpected [%s]","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
+{"level":"warn","message":"task failed (%s): no space right on device","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 {"level":"debug","message":"lock released \"runtime/lock/task/my-lock\"","component":"task","task":"123/my-receiver/my-export/some.task/%s","node":"node2"}
 `, logs.String())
 
@@ -564,7 +566,7 @@ task/123/my-receiver/my-export/some.task/%s
 					SpanID:     tel.SpanID(2),
 					TraceFlags: trace.FlagsSampled,
 				}),
-				Status: tracesdk.Status{Code: codes.Error, Description: "some error (2) - unexpected"},
+				Status: tracesdk.Status{Code: codes.Error, Description: "no space right on device"},
 				Attributes: []attribute.KeyValue{
 					attribute.String("resource.name", "some.task"),
 					attribute.String("task_id", "<dynamic>"),
@@ -577,15 +579,15 @@ task/123/my-receiver/my-export/some.task/%s
 					attribute.String("finished_at", "<dynamic>"),
 					attribute.Bool("is_success", false),
 					attribute.Bool("is_application_error", true),
-					attribute.String("error", "some error (2) - unexpected"),
+					attribute.String("error", "no space right on device"),
 					attribute.String("error_type", "other"),
 				},
 				Events: []tracesdk.Event{
 					{
 						Name: "exception",
 						Attributes: []attribute.KeyValue{
-							attribute.String("exception.type", "*errors.withStack"),
-							attribute.String("exception.message", "some error (2) - unexpected"),
+							attribute.String("exception.type", "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors.InsufficientStorageError"),
+							attribute.String("exception.message", "no space right on device"),
 						},
 					},
 				},
