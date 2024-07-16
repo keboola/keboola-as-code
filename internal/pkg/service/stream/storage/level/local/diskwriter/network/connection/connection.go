@@ -122,7 +122,15 @@ func NewManager(ctx context.Context, d dependencies, cfg network.Config, nodeID 
 	return m, nil
 }
 
-func (m *Manager) Connection(nodeID string) (*transport.ClientConnection, bool) {
+func (m *Manager) ConnectionToVolume(volumeID volume.ID) (*transport.ClientConnection, bool) {
+	vol, found := m.volumes.Get(volumeID.String())
+	if !found {
+		return nil, false
+	}
+	return m.ConnectionToNode(vol.Node.ID)
+}
+
+func (m *Manager) ConnectionToNode(nodeID string) (*transport.ClientConnection, bool) {
 	m.connectionsLock.Lock()
 	defer m.connectionsLock.Unlock()
 

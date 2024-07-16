@@ -46,10 +46,10 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
 	assert.Equal(t, 2, connManager.OpenedConnectionsCount())
-	if conn, found := connManager.Connection("w1"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w1"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w2"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w2"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
 
@@ -63,16 +63,16 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
 	assert.Equal(t, 4, connManager.OpenedConnectionsCount())
-	if conn, found := connManager.Connection("w1"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w1"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w2"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w2"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w3"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w3"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w4"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w4"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
 
@@ -86,14 +86,14 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w3\" - \"localhost:%s\"","component":"storage.node.writer.network.client"}`)
 	sourceLogger.Truncate()
 	assert.Equal(t, 2, connManager.OpenedConnectionsCount())
-	_, found := connManager.Connection("w1")
+	_, found := connManager.ConnectionToNode("w1")
 	assert.False(t, found)
-	_, found = connManager.Connection("w3")
+	_, found = connManager.ConnectionToNode("w3")
 	assert.False(t, found)
-	if conn, found := connManager.Connection("w2"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToVolume("w2-1"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w4"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToVolume("w4-2"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
 
