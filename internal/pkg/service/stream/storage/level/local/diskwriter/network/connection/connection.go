@@ -161,7 +161,6 @@ func (m *Manager) updateConnections(ctx context.Context) {
 	activeNodes := m.writerNodes()
 
 	m.connectionsLock.Lock()
-	defer m.connectionsLock.Unlock()
 
 	// Detect new nodes - to open connection
 	var toOpen []*nodeData
@@ -174,9 +173,6 @@ func (m *Manager) updateConnections(ctx context.Context) {
 		slices.SortStableFunc(toOpen, func(a, b *nodeData) int {
 			return strings.Compare(a.ID, b.ID)
 		})
-		for _, node := range toOpen {
-			m.openConnection(ctx, node)
-		}
 	}
 
 	// Detect inactive nodes - to close connection
@@ -190,13 +186,22 @@ func (m *Manager) updateConnections(ctx context.Context) {
 		slices.SortStableFunc(toClose, func(a, b *connection) int {
 			return strings.Compare(a.Node.ID, b.Node.ID)
 		})
-		for _, conn := range toClose {
-			m.closeConnection(ctx, conn)
-		}
+	}
+
+	m.connectionsLock.Unlock()
+
+	// Make changes
+	for _, conn := range toClose {
+		m.closeConnection(ctx, conn)
+	}
+	for _, node := range toOpen {
+		m.openConnection(ctx, node)
 	}
 }
 
 func (m *Manager) openConnection(ctx context.Context, node *nodeData) {
+	m.connectionsLock.Lock()
+	defer m.connectionsLock.Unlock()
 	m.logger.Infof(ctx, `opening connection to %q - %q`, node.ID, node.Address)
 	conn, err := m.client.OpenConnection(node.ID, node.Address.String())
 	if err != nil {
@@ -210,6 +215,8 @@ func (m *Manager) openConnection(ctx context.Context, node *nodeData) {
 }
 
 func (m *Manager) closeConnection(ctx context.Context, conn *connection) {
+	m.connectionsLock.Lock()
+	defer m.connectionsLock.Unlock()
 	delete(m.connections, conn.Node.ID)
 	m.logger.Infof(ctx, `closing connection to %q - %q`, conn.Node.ID, conn.Node.Address)
 	if err := conn.ClientConn.Close(); err != nil {
@@ -219,9 +226,8 @@ func (m *Manager) closeConnection(ctx context.Context, conn *connection) {
 }
 
 func (m *Manager) closeAllConnections(ctx context.Context) {
-	m.connectionsLock.Lock()
-	defer m.connectionsLock.Unlock()
 	wg := &sync.WaitGroup{}
+	m.connectionsLock.Lock()
 	for _, conn := range m.connections {
 		wg.Add(1)
 		go func() {
@@ -229,6 +235,7 @@ func (m *Manager) closeAllConnections(ctx context.Context) {
 			m.closeConnection(ctx, conn)
 		}()
 	}
+	m.connectionsLock.Unlock()
 	wg.Wait()
 }
 
