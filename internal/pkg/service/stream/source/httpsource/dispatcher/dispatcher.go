@@ -98,7 +98,7 @@ func (d *Dispatcher) Dispatch(timestamp time.Time, projectID keboola.ProjectID, 
 	// Get all relevant sources
 	disabled := 0
 	var matchedSources []key.SourceKey
-	d.sources.WalkPrefix(sourceKeyPrefix(projectID, sourceID), func(_ string, source *sourceData) (stop bool) {
+	for _, source := range d.sources.AllFromPrefix(sourceKeyPrefix(projectID, sourceID)) {
 		// Secret is now immutable and should be now same in all branches.
 		// If in the future we would allow secrete to be regenerated in the main/dev branch, it will still work correctly.
 		if source.secret == secret {
@@ -108,8 +108,7 @@ func (d *Dispatcher) Dispatch(timestamp time.Time, projectID keboola.ProjectID, 
 				disabled++
 			}
 		}
-		return false
-	})
+	}
 
 	// At least one source/branch must be found
 	if len(matchedSources) == 0 {
