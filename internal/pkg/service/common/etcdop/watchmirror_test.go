@@ -123,7 +123,7 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 	require.NoError(t, pfx.Key("key1").Put(client, testUser{FirstName: "John", LastName: "Brown", Age: 10}).Do(ctx).Err())
 	require.NoError(t, pfx.Key("key2").Put(client, testUser{FirstName: "Paul", LastName: "Green", Age: 20}).Do(ctx).Err())
 
-	// Create a channel for onChanges results
+	// Create a channel for onUpdate results
 	updateCh := make(chan MirrorUpdate)
 	waitForUpdate := func() MirrorUpdate {
 		select {
