@@ -79,8 +79,8 @@ func TestWatchConsumer(t *testing.T) {
 	assert.NoError(t, pfx.Key("key1").Put(watchClient, "value1").Do(ctx).Err())
 
 	// Expect forEach event
-	assert.Eventually(t, func() bool {
-		return strings.Count(logger.AllMessages(), "ForEach:") == 1
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, 1, strings.Count(logger.AllMessages(), "ForEach:"))
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.AssertJSONMessages(t, `
 {"level":"info","message":"ForEach: restart=false, events(1): create \"my/prefix/key1\""}
@@ -90,8 +90,8 @@ func TestWatchConsumer(t *testing.T) {
 	// Close watcher connection and block a new one
 	watchMember.Bridge().PauseConnections()
 	watchMember.Bridge().DropConnections()
-	assert.Eventually(t, func() bool {
-		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, connectivity.Connecting, watchClient.ActiveConnection().GetState())
 	}, 5*time.Second, 100*time.Millisecond)
 
 	// Add some other keys, during the watcher is disconnected
@@ -109,8 +109,8 @@ func TestWatchConsumer(t *testing.T) {
 
 	// Expect restart event, followed with all 3 keys.
 	// The restart flag is true.
-	assert.Eventually(t, func() bool {
-		return strings.Count(logger.AllMessages(), "my/prefix/key") == 3
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, 3, strings.Count(logger.AllMessages(), "my/prefix/key"))
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.AssertJSONMessages(t, `
 {"level":"warn","message":"watch error: etcdserver: mvcc: required revision has been compacted"}
@@ -122,8 +122,8 @@ func TestWatchConsumer(t *testing.T) {
 
 	// The restart flag is false in further events.
 	assert.NoError(t, pfx.Key("key4").Put(testClient, "value4").Do(ctx).Err())
-	assert.Eventually(t, func() bool {
-		return strings.Count(logger.AllMessages(), "ForEach:") == 1
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, 1, strings.Count(logger.AllMessages(), "ForEach:"))
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.AssertJSONMessages(t, `
 {"level":"info","message":"ForEach: restart=false, events(1): create \"my/prefix/key4\""}

@@ -99,13 +99,13 @@ func TestOrchestrator(t *testing.T) {
 	assert.NoError(t, pfx.Key("key1").Put(client, v).Do(ctx).Err())
 
 	// Wait for task on the node 2
-	assert.Eventually(t, func() bool {
-		return d2.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		d2.DebugLogger().AssertJSONMessages(c, `{"level":"debug","message":"lock released%s"}`)
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	// Wait for "not assigned" message form the node 1
-	assert.Eventually(t, func() bool {
-		return d1.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"not assigned%s"}`) == nil
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		d1.DebugLogger().AssertJSONMessages(c, `{"level":"debug","message":"not assigned%s"}`)
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	d1.Process().Shutdown(ctx, errors.New("bye bye 1"))
@@ -193,8 +193,8 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	v2 := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "GoodID"}
 	assert.NoError(t, pfx.Key("key1").Put(client, v1).Do(ctx).Err())
 	assert.NoError(t, pfx.Key("key2").Put(client, v2).Do(ctx).Err())
-	assert.Eventually(t, func() bool {
-		return d.DebugLogger().CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		d.DebugLogger().AssertJSONMessages(c, `{"level":"debug","message":"lock released%s"}`)
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	d.Process().Shutdown(ctx, errors.New("bye bye 1"))
@@ -275,8 +275,8 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	{
 		v := testResource{ProjectID: 1000, DistributionKey: "foo", ID: "ResourceID"}
 		assert.NoError(t, pfx.Key("key1").Put(client, v).Do(ctx).Err())
-		assert.Eventually(t, func() bool {
-			return logger.CompareJSONMessages(`{"level":"debug","message":"lock released%s"}`) == nil
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			logger.AssertJSONMessages(c, `{"level":"debug","message":"lock released%s"}`)
 		}, 5*time.Second, 10*time.Millisecond, "timeout")
 		logger.AssertJSONMessages(t, `
 {"message":"watcher created","task":"some.task","component":"orchestrator.watch.consumer"}
@@ -293,11 +293,11 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	// Trigger task by the restart
 	{
 		clk.Add(restartInterval)
-		assert.Eventually(t, func() bool {
-			return logger.CompareJSONMessages(`
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			logger.AssertJSONMessages(c, `
 {"level":"info","message":"consumer restarted: restarted by timer","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"debug","message":"lock released%s"}
-`) == nil
+`)
 		}, 5*time.Second, 10*time.Millisecond, "timeout")
 		logger.AssertJSONMessages(t, `
 {"level":"info","message":"consumer restarted: restarted by timer","component":"orchestrator.watch.consumer"}
@@ -312,8 +312,8 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 
 	// Watch for the watcher init, for the watch phase, after getAll phase
 	{
-		assert.Eventually(t, func() bool {
-			return logger.CompareJSONMessages(`{"level":"info","message":"watcher created","task":"some.task","component":"orchestrator.watch.consumer"}`) == nil
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			logger.AssertJSONMessages(c, `{"level":"info","message":"watcher created","task":"some.task","component":"orchestrator.watch.consumer"}`)
 		}, 5*time.Second, 10*time.Millisecond, "timeout")
 	}
 

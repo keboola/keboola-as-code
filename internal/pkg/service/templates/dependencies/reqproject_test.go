@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
@@ -110,19 +109,19 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 
 	// Request 2 finished -> old FS is deleted (nobody uses it)
 	req2CancelFn()
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		// NoDirExists
 		_, err := os.Stat(repo2.Fs().BasePath()) // nolint: forbidigo
-		return errors.Is(err, os.ErrNotExist)
+		assert.ErrorIs(c, err, os.ErrNotExist)
 	}, 10*time.Second, 100*time.Millisecond)
 	assert.DirExists(t, repo3.Fs().BasePath())
 
 	// Request 3 finished -> the latest FS state is kept for next requests
 	req3CancelFn()
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		// NoDirExists
 		_, err := os.Stat(repo1.Fs().BasePath()) // nolint: forbidigo
-		return errors.Is(err, os.ErrNotExist)
+		assert.ErrorIs(c, err, os.ErrNotExist)
 	}, 10*time.Second, 100*time.Millisecond)
 	assert.DirExists(t, repo3.Fs().BasePath())
 
@@ -136,10 +135,10 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	mock.DebugLogger().Truncate()
 
 	// Old FS is deleted (nobody uses it)
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		// NoDirExists
 		_, err := os.Stat(repo3.Fs().BasePath()) // nolint: forbidigo
-		return errors.Is(err, os.ErrNotExist)
+		assert.ErrorIs(c, err, os.ErrNotExist)
 	}, 10*time.Second, 100*time.Millisecond)
 }
 

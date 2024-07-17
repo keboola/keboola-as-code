@@ -609,8 +609,8 @@ func sendTestRequests(t *testing.T, f *fixtures) {
 
 			// Error + logs
 			resp, err := http.DefaultClient.Do(req)
-			assert.Eventually(t, func() bool {
-				return logger.CompareJSONMessages(tc.ExpectedLogs) == nil
+			assert.EventuallyWithT(t, func(c *assert.CollectT) {
+				logger.AssertJSONMessages(c, tc.ExpectedLogs)
 			}, 5*time.Second, 10*time.Millisecond)
 			logger.AssertJSONMessages(t, tc.ExpectedLogs)
 			if tc.ExpectedErr != "" {

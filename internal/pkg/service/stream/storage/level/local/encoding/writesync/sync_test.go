@@ -812,8 +812,8 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 	syncerWriter.TriggerSync(ctx, false)
 
 	// Wait for sync start
-	assert.Eventually(t, func() bool {
-		return tc.Logger.CompareJSONMessages(`{"level":"info","message":"TEST: sync started"}`) == nil
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(c, `{"level":"info","message":"TEST: sync started"}`)
 	}, time.Second, 10*time.Millisecond)
 
 	// Write more data

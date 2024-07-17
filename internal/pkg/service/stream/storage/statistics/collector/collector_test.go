@@ -39,8 +39,8 @@ func TestCollector(t *testing.T) {
 	triggerSyncAndWait := func() {
 		syncCounter++
 		clk.Add(cfg.SyncInterval.Duration())
-		assert.Eventually(t, func() bool {
-			return strings.Count(mock.DebugLogger().AllMessages(), "sync done") == syncCounter
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			assert.Equal(c, syncCounter, strings.Count(mock.DebugLogger().AllMessages(), "sync done"))
 		}, time.Second, 10*time.Millisecond)
 	}
 

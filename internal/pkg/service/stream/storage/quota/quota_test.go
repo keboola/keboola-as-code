@@ -58,8 +58,8 @@ func TestQuota_Check(t *testing.T) {
 		})
 
 		// Wait for L1 cache update
-		assert.Eventually(t, func() bool {
-			return d.StatisticsL1Cache().Revision() == header.Revision
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			assert.Equal(c, header.Revision, d.StatisticsL1Cache().Revision())
 		}, 1*time.Second, 100*time.Millisecond)
 
 		// Clear L2 cache

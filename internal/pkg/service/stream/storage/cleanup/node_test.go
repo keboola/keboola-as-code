@@ -67,8 +67,8 @@ func TestNode(t *testing.T) {
 		doCleanup = func() {
 			cleanupAttempt++
 			clk.Set(startTime.Add(time.Duration(cleanupAttempt) * cleanupInterval))
-			assert.Eventually(t, func() bool {
-				return logger.CompareJSONMessages(`{"level":"info","message":"deleted \"%d\" files"}`) == nil
+			assert.EventuallyWithT(t, func(c *assert.CollectT) {
+				logger.AssertJSONMessages(c, `{"level":"info","message":"deleted \"%d\" files"}`)
 			}, 2*time.Second, 100*time.Millisecond)
 		}
 	}

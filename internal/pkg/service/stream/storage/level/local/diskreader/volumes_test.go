@@ -50,8 +50,8 @@ func TestVolumes(t *testing.T) {
 	}()
 
 	// Three volumes are waiting for volume ID file
-	assert.Eventually(t, func() bool {
-		return strings.Count(logger.AllMessages(), "waiting for volume ID file") == 3
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, 3, strings.Count(logger.AllMessages(), "waiting for volume ID file"))
 	}, time.Second, 5*time.Millisecond)
 
 	// Create remaining volume ID files
