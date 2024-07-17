@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder/csv/fastcsv"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -22,13 +22,18 @@ var columnRenderer = column.NewRenderer() //nolint:gochecknoglobals // contains 
 // NewEncoder creates CSV writers pool and implements encoder.Encoder
 // The order of the lines is not preserved, because we use the writers pool,
 // but also because there are several source nodes with a load balancer in front of them.
-func NewEncoder(concurrency int, out io.Writer, slice *model.Slice) (*Encoder, error) {
+func NewEncoder(concurrency int, mapping any, out io.Writer) (*Encoder, error) {
+	tableMapping, ok := mapping.(table.Mapping)
+	if !ok {
+		return nil, errors.Errorf("csv encoder supports only table mapping, given %v", mapping)
+	}
+
 	return &Encoder{
-		columns:     slice.Columns,
+		columns:     tableMapping.Columns,
 		writersPool: fastcsv.NewWritersPool(out, concurrency),
 		valuesPool: &sync.Pool{
 			New: func() any {
-				v := make([]any, len(slice.Columns))
+				v := make([]any, len(tableMapping.Columns))
 				return &v
 			},
 		},

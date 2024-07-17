@@ -167,11 +167,17 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 		v.removeReader(slice.SliceKey)
 	}()
 
+	// Get file opener
+	var opener FileOpener = DefaultFileOpener{}
+	if v.config.OverwriteFileOpener != nil {
+		opener = v.config.OverwriteFileOpener
+	}
+
 	// Open file
 	dirPath := filepath.Join(v.Path(), slice.LocalStorage.Dir)
 	filePath := filepath.Join(dirPath, slice.LocalStorage.Filename)
 	logger = logger.With(attribute.String("file.path", filePath))
-	file, err = v.config.FileOpener.OpenFile(filePath)
+	file, err = opener.OpenFile(filePath)
 	if err == nil {
 		logger.Debug(v.ctx, "opened file")
 	} else {
@@ -180,7 +186,7 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 	}
 
 	// Init reader and chain
-	r, err = New(v.ctx, logger, slice, file, v.readerEvents)
+	r, err = New(v.ctx, logger, slice.SliceKey, slice.LocalStorage.Encoding.Compression, slice.StagingStorage.Compression, file, v.readerEvents)
 	if err != nil {
 		return nil, err
 	}

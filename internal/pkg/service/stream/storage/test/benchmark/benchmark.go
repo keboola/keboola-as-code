@@ -16,6 +16,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
@@ -33,7 +34,6 @@ import (
 type WriterBenchmark struct {
 	// Parallelism is number of parallel write operations.
 	Parallelism int
-	FileType    model.FileType
 	Columns     column.Columns
 	Allocate    datasize.ByteSize
 	Sync        writesync.Config
@@ -77,8 +77,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	require.NoError(b, err)
 
 	// Create encoder pipeline
-	cfg := encoding.NewConfig()
-	writer, err := encoding.NewPipeline(ctx, logger, clk, cfg, slice, diskWriter, events.New[encoding.Pipeline]())
+	writer, err := encoding.NewPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, diskWriter, events.New[encoding.Pipeline]())
 	require.NoError(b, err)
 
 	// Create data channel
@@ -150,15 +149,14 @@ func (wb *WriterBenchmark) newSlice(b *testing.B, volume *diskwriter.Volume) *mo
 
 	s := test.NewSlice()
 	s.VolumeID = volume.ID()
-	s.Type = wb.FileType
-	s.Columns = wb.Columns
+	s.Mapping = table.Mapping{Columns: wb.Columns}
 	s.LocalStorage.AllocatedDiskSpace = wb.Allocate
-	s.LocalStorage.Compression = wb.Compression
-	s.LocalStorage.DiskSync = wb.Sync
+	s.LocalStorage.Encoding.Sync = wb.Sync
+	s.LocalStorage.Encoding.Compression = wb.Compression
 	s.StagingStorage.Compression = wb.Compression
 
 	// Slice definition must be valid, except ZSTD compression - it is not enabled/supported in production
-	if s.LocalStorage.Compression.Type != compression.TypeZSTD {
+	if s.LocalStorage.Encoding.Compression.Type != compression.TypeZSTD {
 		val := validator.New()
 		require.NoError(b, val.Validate(context.Background(), s))
 	}

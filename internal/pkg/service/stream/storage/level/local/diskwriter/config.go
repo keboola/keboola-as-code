@@ -12,21 +12,17 @@ type Config struct {
 	// Default Linux OS limit is 128 inotify watchers = 128 volumes.
 	// The value is sufficient for production but insufficient parallel for tests.
 	WatchDrainFile bool
-	// Allocator allocates a free disk space for a file.
+	// Allocation configures allocation of the disk space for file slices.
+	Allocation diskalloc.Config `configKey:"allocation"`
+	// OverwriteFileOpener overwrites file opening.
 	// A custom implementation can be useful for tests.
-	Allocator diskalloc.Allocator
-	// FileOpener provides file opening.
-	// A custom implementation can be useful for tests.
-	FileOpener FileOpener
+	OverwriteFileOpener FileOpener
 }
-
-type ConfigPatch struct{}
 
 func NewConfig() Config {
 	return Config{
 		Network:        network.NewConfig(),
 		WatchDrainFile: true,
-		Allocator:      diskalloc.DefaultAllocator{},
-		FileOpener:     DefaultFileOpener{},
+		Allocation:     diskalloc.NewConfig(),
 	}
 }

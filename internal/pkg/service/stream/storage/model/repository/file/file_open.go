@@ -56,10 +56,10 @@ func (r *Repository) openFileForSink(k key.SinkKey, now time.Time, source *defin
 		}
 
 		// Assign volumes
-		file.Assignment = r.volumes.AssignVolumes(cfg.Local.Volume.Assignment, file.OpenedAt().Time())
+		file.LocalStorage.Assignment = r.volumes.AssignVolumes(cfg.Local.Volume.Assignment, file.OpenedAt().Time())
 
 		// At least one volume must be assigned
-		if len(file.Assignment.Volumes) == 0 {
+		if len(file.LocalStorage.Assignment.Volumes) == 0 {
 			return op.ErrorOp(errors.New(`no volume is available for the file`))
 		}
 

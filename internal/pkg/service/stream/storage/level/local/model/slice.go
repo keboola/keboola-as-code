@@ -3,8 +3,7 @@ package model
 import (
 	"github.com/c2h5oh/datasize"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 )
 
 type Slice struct {
@@ -15,10 +14,8 @@ type Slice struct {
 	Filename string `json:"filename" validate:"required"`
 	// IsEmpty is set if the upload was skipped because we did not receive any data.
 	IsEmpty bool `json:"isEmpty,omitempty"`
-	// Compression of the local file.
-	Compression compression.Config `json:"compression"`
-	// DiskSync writer configuration.
-	DiskSync writesync.Config `json:"diskSync"`
 	// AllocatedDiskSpace defines the disk size that is pre-allocated when creating the slice.
 	AllocatedDiskSpace datasize.ByteSize `json:"allocatedDiskSpace"`
+	// Encoding defines how is the  result format encoded, for example tabular data to CSV.
+	Encoding config.Config `json:"encoding"`
 }

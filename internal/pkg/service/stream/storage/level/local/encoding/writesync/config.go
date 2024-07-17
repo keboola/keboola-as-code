@@ -57,6 +57,9 @@ type Config struct {
 	CompressedBytesTrigger datasize.ByteSize `json:"compressedBytesTrigger,omitempty" configKey:"compressedBytesTrigger" validate:"maxBytes=100MB,required_if=Mode disk,required_if=Mode cache" configUsage:"Size of buffered compressed data to trigger sync."`
 	// IntervalTrigger defines the interval from the last sync after the sync will be triggered.
 	IntervalTrigger duration.Duration `json:"intervalTrigger,omitempty" configKey:"intervalTrigger" validate:"min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache" configUsage:"Interval from the last sync to trigger sync."`
+	// OverwriteSyncerFactory overwrites the DefaultSyncerFactory.
+	// A custom implementation can be useful for tests.
+	OverwriteSyncerFactory SyncerFactory `json:"-"`
 }
 
 // ConfigPatch is same as the Config, but with optional/nullable fields.
