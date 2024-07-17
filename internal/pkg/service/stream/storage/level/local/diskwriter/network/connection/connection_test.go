@@ -45,7 +45,7 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
-	assert.Equal(t, 2, connManager.OpenedConnectionsCount())
+	assert.Equal(t, 2, connManager.ConnectionsCount())
 	if conn, found := connManager.ConnectionToNode("w1"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
@@ -62,7 +62,7 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, w3.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
-	assert.Equal(t, 4, connManager.OpenedConnectionsCount())
+	assert.Equal(t, 4, connManager.ConnectionsCount())
 	if conn, found := connManager.ConnectionToNode("w1"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
@@ -85,7 +85,7 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w1\" - \"localhost:%s\"","component":"storage.node.writer.network.client"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w3\" - \"localhost:%s\"","component":"storage.node.writer.network.client"}`)
 	sourceLogger.Truncate()
-	assert.Equal(t, 2, connManager.OpenedConnectionsCount())
+	assert.Equal(t, 2, connManager.ConnectionsCount())
 	_, found := connManager.ConnectionToNode("w1")
 	assert.False(t, found)
 	_, found = connManager.ConnectionToNode("w3")

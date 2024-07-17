@@ -37,12 +37,6 @@ type Manager struct {
 	// volumes field contains in-memory snapshot of all active disk writer volumes.
 	// It is used to get info about active disk writers, to open/close connections.
 	volumes *etcdop.Mirror[volume.Metadata, *volumeData]
-
-	closed <-chan struct{}
-	wg     sync.WaitGroup
-
-	connectionsLock sync.Mutex
-	connections     map[string]*connection
 }
 
 type volumeData struct {
@@ -55,12 +49,6 @@ type nodeData struct {
 	Address volume.RemoteAddr
 }
 
-type connection struct {
-	manager    *Manager
-	Node       *nodeData
-	ClientConn *transport.ClientConnection
-}
-
 type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
@@ -69,19 +57,16 @@ type dependencies interface {
 
 func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, error) {
 	m := &Manager{
-		logger:      d.Logger().WithComponent("storage.router.connections"),
-		connections: make(map[string]*connection),
+		logger: d.Logger().WithComponent("storage.router.connections"),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	m.closed = ctx.Done()
-
 	// Graceful shutdown
+	wg := &sync.WaitGroup{}
+	ctx, cancel := context.WithCancel(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		m.logger.Info(ctx, "closing connections")
 		cancel()
-		m.wg.Wait()
-		m.closeAllConnections(ctx)
+		wg.Wait()
 		m.logger.Info(ctx, "closed connections")
 	})
 
@@ -112,10 +97,12 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 				},
 			).
 			WithOnUpdate(func(_ etcdop.MirrorUpdate) {
+				wg.Add(1)
+				defer wg.Done()
 				m.updateConnections(ctx)
 			}).
 			Build()
-		if err := <-m.volumes.StartMirroring(ctx, &m.wg); err != nil {
+		if err := <-m.volumes.StartMirroring(ctx, wg); err != nil {
 			return nil, err
 		}
 	}
@@ -128,46 +115,27 @@ func (m *Manager) ConnectionToVolume(volumeID volume.ID) (*transport.ClientConne
 	if !found {
 		return nil, false
 	}
-	return m.ConnectionToNode(vol.Node.ID)
+	return m.client.Connection(vol.Node.ID)
 }
 
 func (m *Manager) ConnectionToNode(nodeID string) (*transport.ClientConnection, bool) {
-	m.connectionsLock.Lock()
-	defer m.connectionsLock.Unlock()
-
-	conn, found := m.connections[nodeID]
-	if !found {
-		return nil, false
-	}
-
-	return conn.ClientConn, true
+	return m.client.Connection(nodeID)
 }
 
-func (m *Manager) OpenedConnectionsCount() int {
-	m.connectionsLock.Lock()
-	defer m.connectionsLock.Unlock()
-	return len(m.connections)
+func (m *Manager) ConnectionsCount() int {
+	return m.client.ConnectionsCount()
 }
 
 func (m *Manager) updateConnections(ctx context.Context) {
-	m.wg.Add(1)
-	defer m.wg.Done()
-
-	if m.isClosed() {
-		return
-	}
-
 	m.logger.Infof(ctx, `the list of volumes has changed, updating connections`)
 
 	activeNodes := m.writerNodes()
-
-	m.connectionsLock.Lock()
 
 	// Detect new nodes - to open connection
 	var toOpen []*nodeData
 	{
 		for _, node := range activeNodes {
-			if _, found := m.connections[node.ID]; !found {
+			if _, found := m.client.Connection(node.ID); !found {
 				toOpen = append(toOpen, node)
 			}
 		}
@@ -177,82 +145,36 @@ func (m *Manager) updateConnections(ctx context.Context) {
 	}
 
 	// Detect inactive nodes - to close connection
-	var toClose []*connection
+	var toClose []*transport.ClientConnection
 	{
-		for _, conn := range m.connections {
-			if _, found := activeNodes[conn.Node.Address]; !found {
+		for _, conn := range m.client.Connections() {
+			if _, found := activeNodes[conn.RemoteNodeID()]; !found {
 				toClose = append(toClose, conn)
 			}
 		}
-		slices.SortStableFunc(toClose, func(a, b *connection) int {
-			return strings.Compare(a.Node.ID, b.Node.ID)
+		slices.SortStableFunc(toClose, func(a, b *transport.ClientConnection) int {
+			return strings.Compare(a.RemoteNodeID(), b.RemoteNodeID())
 		})
 	}
 
-	m.connectionsLock.Unlock()
-
 	// Make changes
 	for _, conn := range toClose {
-		conn.close(ctx)
+		conn.Close(ctx)
 	}
 	for _, node := range toOpen {
-		m.openConnection(ctx, node)
+		// Start dial loop, errors are logged
+		_, _ = m.client.OpenConnection(ctx, node.ID, node.Address.String())
 	}
-}
-
-func (m *Manager) openConnection(ctx context.Context, node *nodeData) {
-	m.logger.Infof(ctx, `opening connection to %q - %q`, node.ID, node.Address)
-	conn, err := m.client.OpenConnection(node.ID, node.Address.String())
-	if err != nil {
-		m.logger.Errorf(ctx, `cannot open connection to %q - %q`, node.ID, node.Address)
-	}
-	m.logger.Infof(ctx, `opened connection to %q - %q`, node.ID, node.Address)
-
-	m.connectionsLock.Lock()
-	m.connections[node.ID] = &connection{manager: m, Node: node, ClientConn: conn}
-	m.connectionsLock.Unlock()
-}
-
-func (m *Manager) closeAllConnections(ctx context.Context) {
-	wg := &sync.WaitGroup{}
-	m.connectionsLock.Lock()
-	for _, conn := range m.connections {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			conn.close(ctx)
-		}()
-	}
-	m.connectionsLock.Unlock()
-	wg.Wait()
 }
 
 // writerNodes returns all active writer nodes.
-func (m *Manager) writerNodes() map[volume.RemoteAddr]*nodeData {
-	out := make(map[volume.RemoteAddr]*nodeData)
+func (m *Manager) writerNodes() map[string]*nodeData {
+	out := make(map[string]*nodeData)
 	m.volumes.Atomic(func(t prefixtree.TreeReadOnly[*volumeData]) {
 		t.WalkAll(func(key string, vol *volumeData) (stop bool) {
-			out[vol.Node.Address] = vol.Node
+			out[vol.Node.ID] = vol.Node
 			return false
 		})
 	})
 	return out
-}
-
-func (m *Manager) isClosed() bool {
-	select {
-	case <-m.closed:
-		return true
-	default:
-		return false
-	}
-}
-
-func (c *connection) close(ctx context.Context) {
-	c.manager.connectionsLock.Lock()
-	delete(c.manager.connections, c.Node.ID)
-	c.manager.connectionsLock.Unlock()
-
-	c.ClientConn.Close(ctx)
-	c.manager.logger.Infof(ctx, `closed connection to %q - %q`, c.Node.ID, c.Node.Address)
 }

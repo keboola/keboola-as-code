@@ -2,9 +2,10 @@ package transport
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"sync"
 
-	"go.uber.org/atomic"
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -20,10 +21,8 @@ type Client struct {
 
 	closed chan struct{}
 
-	connIDCounter *atomic.Uint64
-
-	lock        sync.Mutex
-	connections map[uint64]*ClientConnection
+	lock        sync.RWMutex
+	connections map[string]*ClientConnection
 }
 
 type clientDependencies interface {
@@ -38,13 +37,12 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) (*Cli
 	}
 
 	c := &Client{
-		logger:        d.Logger().WithComponent("storage.node.writer.network.client"),
-		config:        config,
-		nodeID:        nodeID,
-		transport:     transport,
-		closed:        make(chan struct{}),
-		connIDCounter: atomic.NewUint64(0),
-		connections:   make(map[uint64]*ClientConnection),
+		logger:      d.Logger().WithComponent("storage.node.writer.network.client"),
+		config:      config,
+		nodeID:      nodeID,
+		transport:   transport,
+		closed:      make(chan struct{}),
+		connections: make(map[string]*ClientConnection),
 	}
 
 	// Graceful shutdown
@@ -79,15 +77,15 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) (*Cli
 // The method does not return an error, if it fails to connect, it tries again.
 // The error is returned only when the client is closed.
 // If the connection is dropped late, it tries to reconnect, until the client or connection Close method is called.
-func (c *Client) OpenConnection(remoteNodeID, remoteAddr string) (*ClientConnection, error) {
-	return newClientConnection(c.connIDCounter.Inc(), remoteNodeID, remoteAddr, c, nil)
+func (c *Client) OpenConnection(ctx context.Context, remoteNodeID, remoteAddr string) (*ClientConnection, error) {
+	return openClientConnection(ctx, remoteNodeID, remoteAddr, c, nil)
 }
 
 // OpenConnectionOrErr will try to connect to the address and return an error if it fails.
 // If the connection is closed after the initialization, it tries to reconnect, until the client or connection Close method is called.
-func (c *Client) OpenConnectionOrErr(remoteNodeID, remoteAddr string) (*ClientConnection, error) {
+func (c *Client) OpenConnectionOrErr(ctx context.Context, remoteNodeID, remoteAddr string) (*ClientConnection, error) {
 	initDone := make(chan error, 1)
-	conn, err := newClientConnection(c.connIDCounter.Inc(), remoteNodeID, remoteAddr, c, initDone)
+	conn, err := openClientConnection(ctx, remoteNodeID, remoteAddr, c, initDone)
 	if err != nil {
 		return nil, err
 	}
@@ -99,16 +97,39 @@ func (c *Client) OpenConnectionOrErr(remoteNodeID, remoteAddr string) (*ClientCo
 	return conn, nil
 }
 
+func (c *Client) Connection(remoteNodeID string) (*ClientConnection, bool) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	conn, found := c.connections[remoteNodeID]
+	return conn, found
+}
+
+func (c *Client) Connections() []*ClientConnection {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	out := maps.Values(c.connections)
+	slices.SortStableFunc(out, func(a, b *ClientConnection) int {
+		return strings.Compare(a.remoteNodeID, b.remoteNodeID)
+	})
+	return out
+}
+
+func (c *Client) ConnectionsCount() int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return len(c.connections)
+}
+
 func (c *Client) registerConnection(conn *ClientConnection) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.connections[conn.id] = conn
+	c.connections[conn.remoteNodeID] = conn
 }
 
 func (c *Client) unregisterConnection(conn *ClientConnection) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	delete(c.connections, conn.id)
+	delete(c.connections, conn.remoteNodeID)
 }
 
 func (c *Client) isClosed() bool {

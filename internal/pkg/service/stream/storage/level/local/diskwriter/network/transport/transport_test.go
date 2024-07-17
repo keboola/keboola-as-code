@@ -83,7 +83,7 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	// Setup client
 	client, err := transport.NewClient(clientDeps, cfg, "client-node")
 	require.NoError(t, err)
-	conn, err := client.OpenConnectionOrErr("srv", addr)
+	conn, err := client.OpenConnectionOrErr(ctx, "srv", addr)
 	require.NoError(t, err)
 
 	// Open streams
@@ -156,7 +156,7 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	// Setup client
 	client, err := transport.NewClient(clientDeps, cfg, "client-node")
 	require.NoError(t, err)
-	conn, err := client.OpenConnectionOrErr("srv", addr)
+	conn, err := client.OpenConnectionOrErr(ctx, "srv", addr)
 	require.NoError(t, err)
 
 	// Open stream and send data
