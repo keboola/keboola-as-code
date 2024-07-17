@@ -57,19 +57,7 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) (*Cli
 		c.lock.Lock()
 		connections := maps.Values(c.connections)
 		c.lock.Unlock()
-
-		// Close all connections
-		c.logger.Infof(ctx, "closing %d connections", len(connections))
-		wg := &sync.WaitGroup{}
-		for _, conn := range connections {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				conn.Close(ctx)
-			}()
-		}
-		wg.Wait()
-		c.logger.Info(ctx, "closed disk writer client")
+		c.closeAllConnections(ctx, connections)
 	})
 
 	return c, nil
@@ -109,6 +97,21 @@ func (c *Client) unregisterConnection(conn *ClientConnection) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	delete(c.connections, conn.id)
+}
+
+func (c *Client) closeAllConnections(ctx context.Context, connections []*ClientConnection) {
+	// Close all connections
+	c.logger.Infof(ctx, "closing %d connections", len(connections))
+	wg := &sync.WaitGroup{}
+	for _, conn := range connections {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			conn.Close(ctx)
+		}()
+	}
+	wg.Wait()
+	c.logger.Info(ctx, "closed disk writer client")
 }
 
 func (c *Client) isClosed() bool {

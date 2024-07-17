@@ -158,13 +158,22 @@ func (m *Manager) updateConnections(ctx context.Context) {
 	}
 
 	m.logger.Infof(ctx, `the list of volumes has changed, updating connections`)
-
 	activeNodes := m.writerNodes()
+	toOpen, toClose := m.getConnections(activeNodes)
+	// Make changes
+	for _, conn := range toClose {
+		conn.close(ctx)
+	}
+	for _, node := range toOpen {
+		m.openConnection(ctx, node)
+	}
+}
 
+func (m *Manager) getConnections(activeNodes map[volume.RemoteAddr]*nodeData) (toOpen []*nodeData, toClose []*connection) {
 	m.connectionsLock.Lock()
+	defer m.connectionsLock.Unlock()
 
 	// Detect new nodes - to open connection
-	var toOpen []*nodeData
 	{
 		for _, node := range activeNodes {
 			if _, found := m.connections[node.ID]; !found {
@@ -177,7 +186,6 @@ func (m *Manager) updateConnections(ctx context.Context) {
 	}
 
 	// Detect inactive nodes - to close connection
-	var toClose []*connection
 	{
 		for _, conn := range m.connections {
 			if _, found := activeNodes[conn.Node.Address]; !found {
@@ -189,15 +197,7 @@ func (m *Manager) updateConnections(ctx context.Context) {
 		})
 	}
 
-	m.connectionsLock.Unlock()
-
-	// Make changes
-	for _, conn := range toClose {
-		conn.close(ctx)
-	}
-	for _, node := range toOpen {
-		m.openConnection(ctx, node)
-	}
+	return
 }
 
 func (m *Manager) openConnection(ctx context.Context, node *nodeData) {
