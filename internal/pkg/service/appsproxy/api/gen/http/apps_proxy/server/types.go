@@ -68,3 +68,13 @@ func NewValidatePayload(storageAPIToken string) *appsproxy.ValidatePayload {
 
 	return v
 }
+
+// NewProxyPathProxyRequest builds a apps-proxy service ProxyPath endpoint
+// payload.
+func NewProxyPathProxyRequest(path string) *appsproxy.ProxyRequest {
+	v := &appsproxy.ProxyRequest{}
+	tmppath := appsproxy.PathRequestOrDefault(path)
+	v.Path = &tmppath
+
+	return v
+}

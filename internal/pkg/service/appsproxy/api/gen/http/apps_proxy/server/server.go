@@ -25,6 +25,8 @@ type Server struct {
 	APIVersionIndex http.Handler
 	HealthCheck     http.Handler
 	Validate        http.Handler
+	ProxyPath       http.Handler
+	Proxy           http.Handler
 	CORS            http.Handler
 	OpenapiJSON     http.Handler
 	OpenapiYaml     http.Handler
@@ -81,13 +83,29 @@ func New(
 	return &Server{
 		Mounts: []*MountPoint{
 			{"APIRootIndex", "GET", "/"},
-			{"APIVersionIndex", "GET", "/v1"},
+			{"APIVersionIndex", "GET", "/v1/"},
 			{"HealthCheck", "GET", "/health-check"},
 			{"Validate", "GET", "/v1/validate"},
+			{"ProxyPath", "GET", "/_proxy/{*path}"},
+			{"ProxyPath", "POST", "/_proxy/{*path}"},
+			{"ProxyPath", "PUT", "/_proxy/{*path}"},
+			{"ProxyPath", "DELETE", "/_proxy/{*path}"},
+			{"ProxyPath", "TRACE", "/_proxy/{*path}"},
+			{"ProxyPath", "CONNECT", "/_proxy/{*path}"},
+			{"ProxyPath", "PATCH", "/_proxy/{*path}"},
+			{"Proxy", "GET", "/_proxy"},
+			{"Proxy", "POST", "/_proxy"},
+			{"Proxy", "PUT", "/_proxy"},
+			{"Proxy", "DELETE", "/_proxy"},
+			{"Proxy", "TRACE", "/_proxy"},
+			{"Proxy", "CONNECT", "/_proxy"},
+			{"Proxy", "PATCH", "/_proxy"},
 			{"CORS", "OPTIONS", "/"},
-			{"CORS", "OPTIONS", "/v1"},
+			{"CORS", "OPTIONS", "/v1/"},
 			{"CORS", "OPTIONS", "/health-check"},
 			{"CORS", "OPTIONS", "/v1/validate"},
+			{"CORS", "OPTIONS", "/_proxy/{*path}"},
+			{"CORS", "OPTIONS", "/_proxy"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi3.json"},
@@ -103,6 +121,8 @@ func New(
 		APIVersionIndex: NewAPIVersionIndexHandler(e.APIVersionIndex, mux, decoder, encoder, errhandler, formatter),
 		HealthCheck:     NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
 		Validate:        NewValidateHandler(e.Validate, mux, decoder, encoder, errhandler, formatter),
+		ProxyPath:       NewProxyPathHandler(e.ProxyPath, mux, decoder, encoder, errhandler, formatter),
+		Proxy:           NewProxyHandler(e.Proxy, mux, decoder, encoder, errhandler, formatter),
 		CORS:            NewCORSHandler(),
 		OpenapiJSON:     http.FileServer(fileSystemOpenapiJSON),
 		OpenapiYaml:     http.FileServer(fileSystemOpenapiYaml),
@@ -121,6 +141,8 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.APIVersionIndex = m(s.APIVersionIndex)
 	s.HealthCheck = m(s.HealthCheck)
 	s.Validate = m(s.Validate)
+	s.ProxyPath = m(s.ProxyPath)
+	s.Proxy = m(s.Proxy)
 	s.CORS = m(s.CORS)
 }
 
@@ -133,6 +155,8 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountAPIVersionIndexHandler(mux, h.APIVersionIndex)
 	MountHealthCheckHandler(mux, h.HealthCheck)
 	MountValidateHandler(mux, h.Validate)
+	MountProxyPathHandler(mux, h.ProxyPath)
+	MountProxyHandler(mux, h.Proxy)
 	MountCORSHandler(mux, h.CORS)
 	MountOpenapiJSON(mux, goahttp.Replace("", "/openapi.json", h.OpenapiJSON))
 	MountOpenapiYaml(mux, goahttp.Replace("", "/openapi.yaml", h.OpenapiYaml))
@@ -172,7 +196,7 @@ func NewAPIRootIndexHandler(
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "ApiRootIndex")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "apps-proxy")
-		http.Redirect(w, r, "/v1", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/_proxy", http.StatusMovedPermanently)
 	})
 }
 
@@ -185,7 +209,7 @@ func MountAPIVersionIndexHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/v1", f)
+	mux.Handle("GET", "/v1/", f)
 }
 
 // NewAPIVersionIndexHandler creates a HTTP handler which loads the HTTP
@@ -315,6 +339,113 @@ func NewValidateHandler(
 	})
 }
 
+// MountProxyPathHandler configures the mux to serve the "apps-proxy" service
+// "ProxyPath" endpoint.
+func MountProxyPathHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleAppsProxyOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/_proxy/{*path}", f)
+	mux.Handle("POST", "/_proxy/{*path}", f)
+	mux.Handle("PUT", "/_proxy/{*path}", f)
+	mux.Handle("DELETE", "/_proxy/{*path}", f)
+	mux.Handle("TRACE", "/_proxy/{*path}", f)
+	mux.Handle("CONNECT", "/_proxy/{*path}", f)
+	mux.Handle("PATCH", "/_proxy/{*path}", f)
+}
+
+// NewProxyPathHandler creates a HTTP handler which loads the HTTP request and
+// calls the "apps-proxy" service "ProxyPath" endpoint.
+func NewProxyPathHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeProxyPathRequest(mux, decoder)
+		encodeResponse = EncodeProxyPathResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "ProxyPath")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "apps-proxy")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountProxyHandler configures the mux to serve the "apps-proxy" service
+// "Proxy" endpoint.
+func MountProxyHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleAppsProxyOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/_proxy", f)
+	mux.Handle("POST", "/_proxy", f)
+	mux.Handle("PUT", "/_proxy", f)
+	mux.Handle("DELETE", "/_proxy", f)
+	mux.Handle("TRACE", "/_proxy", f)
+	mux.Handle("CONNECT", "/_proxy", f)
+	mux.Handle("PATCH", "/_proxy", f)
+}
+
+// NewProxyHandler creates a HTTP handler which loads the HTTP request and
+// calls the "apps-proxy" service "Proxy" endpoint.
+func NewProxyHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		encodeResponse = EncodeProxyResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "Proxy")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "apps-proxy")
+		var err error
+		res, err := endpoint(ctx, nil)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountOpenapiJSON configures the mux to serve GET request made to
 // "/v1/documentation/openapi.json".
 func MountOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
@@ -351,9 +482,11 @@ func MountSwaggerUI(mux goahttp.Muxer, h http.Handler) {
 func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	h = HandleAppsProxyOrigin(h)
 	mux.Handle("OPTIONS", "/", h.ServeHTTP)
-	mux.Handle("OPTIONS", "/v1", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/health-check", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/validate", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/_proxy/{*path}", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/_proxy", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi3.json", h.ServeHTTP)

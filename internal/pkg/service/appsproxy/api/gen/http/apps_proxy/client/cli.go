@@ -24,3 +24,17 @@ func BuildValidatePayload(appsProxyValidateStorageAPIToken string) (*appsproxy.V
 
 	return v, nil
 }
+
+// BuildProxyPathPayload builds the payload for the apps-proxy ProxyPath
+// endpoint from CLI flags.
+func BuildProxyPathPayload(appsProxyProxyPathPath string) (*appsproxy.ProxyRequest, error) {
+	var path string
+	{
+		path = appsProxyProxyPathPath
+	}
+	v := &appsproxy.ProxyRequest{}
+	tmppath := appsproxy.PathRequestOrDefault(path)
+	v.Path = &tmppath
+
+	return v, nil
+}

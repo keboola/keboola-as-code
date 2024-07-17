@@ -46,7 +46,6 @@ var _ = API("appsproxy", func() {
 	Description("A service for proxing requests/authorization to data applications using Keboola components.")
 	Version("1.0")
 	HTTP(func() {
-		Path("v1")
 		Consumes("application/json")
 		Produces("application/json")
 	})
@@ -81,14 +80,14 @@ var _ = Service("apps-proxy", func() {
 	// Auxiliary endpoints ---------------------------------------------------------------------------------------------
 
 	Method("ApiRootIndex", func() {
-		Meta("openapi:summary", "Redirect to /v1")
-		Description("Redirect to /v1.")
+		Meta("openapi:summary", "Redirect to /_proxy")
+		Description("Redirect to /_proxy.")
 		NoSecurity()
 		HTTP(func() {
-			// Redirect / -> /v1
+			// Redirect / -> /_proxy
 			GET("//")
-			Meta("openapi:tag:documentation")
-			Redirect("/v1", StatusMovedPermanently)
+			Meta("openapi:tag:appsproxy")
+			Redirect("/_proxy", StatusMovedPermanently)
 		})
 	})
 
@@ -98,7 +97,7 @@ var _ = Service("apps-proxy", func() {
 		NoSecurity()
 		Result(ServiceDetail)
 		HTTP(func() {
-			GET("")
+			GET("v1/")
 			Meta("openapi:tag:documentation")
 			Response(StatusOK)
 		})
@@ -118,23 +117,23 @@ var _ = Service("apps-proxy", func() {
 		})
 	})
 
-	Files("/documentation/openapi.json", "openapi.json", func() {
+	Files("v1/documentation/openapi.json", "openapi.json", func() {
 		Meta("openapi:summary", "Swagger 2.0 JSON Specification")
 		Meta("openapi:tag:documentation")
 	})
-	Files("/documentation/openapi.yaml", "openapi.yaml", func() {
+	Files("v1/documentation/openapi.yaml", "openapi.yaml", func() {
 		Meta("openapi:summary", "Swagger 2.0 YAML Specification")
 		Meta("openapi:tag:documentation")
 	})
-	Files("/documentation/openapi3.json", "openapi3.json", func() {
+	Files("v1/documentation/openapi3.json", "openapi3.json", func() {
 		Meta("openapi:summary", "OpenAPI 3.0 JSON Specification")
 		Meta("openapi:tag:documentation")
 	})
-	Files("/documentation/openapi3.yaml", "openapi3.yaml", func() {
+	Files("v1/documentation/openapi3.yaml", "openapi3.yaml", func() {
 		Meta("openapi:summary", "OpenAPI 3.0 YAML Specification")
 		Meta("openapi:tag:documentation")
 	})
-	Files("/documentation/{*path}", "swagger-ui", func() {
+	Files("v1/documentation/{*path}", "swagger-ui", func() {
 		Meta("openapi:generate", "false")
 		Meta("openapi:summary", "Swagger UI")
 		Meta("openapi:tag:documentation")
@@ -147,9 +146,43 @@ var _ = Service("apps-proxy", func() {
 		Description("Validation endpoint of OIDC authorization provider configuration.")
 		Result(Configurations)
 		HTTP(func() {
-			GET("/validate")
-			Meta("openapi:tag:template")
+			GET("v1/validate")
+			Meta("openapi:tag:appsproxy")
 			Response(StatusOK)
+		})
+	})
+
+	Method("ProxyPath", func() {
+		NoSecurity()
+		Meta("openapi:summary", "Proxying endpoint for data applications")
+		Description("This endpoint proxies (accepts) all requests and redirects them to the data application.")
+		Payload(ProxyRequest)
+		Result(Any)
+		HTTP(func() {
+			GET("/_proxy/{*path}")
+			POST("/_proxy/{*path}")
+			PUT("/_proxy/{*path}")
+			DELETE("/_proxy/{*path}")
+			TRACE("/_proxy/{*path}")
+			CONNECT("/_proxy/{*path}")
+			PATCH("/_proxy/{*path}")
+			Meta("openapi:tag:appsproxy")
+		})
+	})
+	Method("Proxy", func() {
+		NoSecurity()
+		Meta("openapi:summary", "Proxying endpoint for data applications")
+		Description("This endpoint proxies (accepts) all requests and redirects them to the data application.")
+		Result(Any)
+		HTTP(func() {
+			GET("/_proxy")
+			POST("/_proxy")
+			PUT("/_proxy")
+			DELETE("/_proxy")
+			TRACE("/_proxy")
+			CONNECT("/_proxy")
+			PATCH("/_proxy")
+			Meta("openapi:tag:appsproxy")
 		})
 	})
 
@@ -210,6 +243,15 @@ var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 })
 
 // Types --------------------------------------------------------------------------------------------------------------
+
+var ProxyRequest = Type("ProxyRequest", func() {
+	Attribute("path", PathRequestOrDefault)
+})
+
+var PathRequestOrDefault = Type("PathRequestOrDefault", String, func() {
+	Description(`"Path that proxies to data application".`)
+	Example("")
+})
 
 var ServiceDetail = Type("ServiceDetail", func() {
 	Description("Information about the service")

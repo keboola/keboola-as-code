@@ -12,16 +12,168 @@ paths:
     /:
         get:
             tags:
-                - documentation
-            summary: Redirect to /v1
-            description: Redirect to /v1.
+                - appsproxy
+            summary: Redirect to /_proxy
+            description: Redirect to /_proxy.
             operationId: ApiRootIndex
             responses:
                 "301":
                     description: Moved Permanently response.
             schemes:
                 - https
-    /v1:
+    /_proxy:
+        get:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: Proxy
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+        put:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: "2"
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+        post:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: "1"
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+        delete:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: "3"
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+        patch:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: "6"
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+    /_proxy/{path}:
+        get:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: ProxyPath
+            parameters:
+                - name: path
+                  in: path
+                  description: '"Path that proxies to data application".'
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+        put:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: "2"
+            parameters:
+                - name: path
+                  in: path
+                  description: '"Path that proxies to data application".'
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+        post:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: "1"
+            parameters:
+                - name: path
+                  in: path
+                  description: '"Path that proxies to data application".'
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+        delete:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: "3"
+            parameters:
+                - name: path
+                  in: path
+                  description: '"Path that proxies to data application".'
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+        patch:
+            tags:
+                - appsproxy
+            summary: Proxying endpoint for data applications
+            description: This endpoint proxies (accepts) all requests and redirects them to the data application.
+            operationId: "6"
+            parameters:
+                - name: path
+                  in: path
+                  description: '"Path that proxies to data application".'
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema: {}
+            schemes:
+                - https
+    /v1/:
         get:
             tags:
                 - documentation
@@ -97,7 +249,7 @@ paths:
     /v1/validate:
         get:
             tags:
-                - template
+                - appsproxy
             summary: Validation of OIDC authorization provider configuration
             description: Validation endpoint of OIDC authorization provider configuration.
             operationId: Validate

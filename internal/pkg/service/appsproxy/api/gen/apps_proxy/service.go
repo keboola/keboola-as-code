@@ -18,7 +18,7 @@ import (
 // Service for proxing requests/authorization to data applications using
 // Keboola data app component.
 type Service interface {
-	// Redirect to /v1.
+	// Redirect to /_proxy.
 	APIRootIndex(context.Context, dependencies.PublicRequestScope) (err error)
 	// List API name and link to documentation.
 	APIVersionIndex(context.Context, dependencies.PublicRequestScope) (res *ServiceDetail, err error)
@@ -26,6 +26,12 @@ type Service interface {
 	HealthCheck(context.Context, dependencies.PublicRequestScope) (res string, err error)
 	// Validation endpoint of OIDC authorization provider configuration.
 	Validate(context.Context, dependencies.ProjectRequestScope, *ValidatePayload) (res *Validations, err error)
+	// This endpoint proxies (accepts) all requests and redirects them to the data
+	// application.
+	ProxyPath(context.Context, dependencies.PublicRequestScope, *ProxyRequest) (res any, err error)
+	// This endpoint proxies (accepts) all requests and redirects them to the data
+	// application.
+	Proxy(context.Context, dependencies.PublicRequestScope) (res any, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -48,7 +54,7 @@ const ServiceName = "apps-proxy"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [4]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "Validate"}
+var MethodNames = [6]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "Validate", "ProxyPath", "Proxy"}
 
 // The configuration that is part of the auth providers section.
 type Configuration struct {
@@ -58,6 +64,14 @@ type Configuration struct {
 	ClientID string
 	// Client secret provided by OIDC provider.
 	ClientSecret string
+}
+
+// "Path that proxies to data application".
+type PathRequestOrDefault string
+
+// ProxyRequest is the payload type of the apps-proxy service ProxyPath method.
+type ProxyRequest struct {
+	Path *PathRequestOrDefault
 }
 
 // ServiceDetail is the result type of the apps-proxy service ApiVersionIndex

@@ -81,6 +81,46 @@ func DecodeValidateRequest(mux goahttp.Muxer, decoder func(*http.Request) goahtt
 	}
 }
 
+// EncodeProxyPathResponse returns an encoder for responses returned by the
+// apps-proxy ProxyPath endpoint.
+func EncodeProxyPathResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(any)
+		enc := encoder(ctx, w)
+		body := res
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeProxyPathRequest returns a decoder for requests sent to the apps-proxy
+// ProxyPath endpoint.
+func DecodeProxyPathRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			path string
+
+			params = mux.Vars(r)
+		)
+		path = params["path"]
+		payload := NewProxyPathProxyRequest(path)
+
+		return payload, nil
+	}
+}
+
+// EncodeProxyResponse returns an encoder for responses returned by the
+// apps-proxy Proxy endpoint.
+func EncodeProxyResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(any)
+		enc := encoder(ctx, w)
+		body := res
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
 // marshalAppsproxyConfigurationToConfigurationResponseBody builds a value of
 // type *ConfigurationResponseBody from a value of type
 // *appsproxy.Configuration.

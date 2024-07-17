@@ -237,6 +237,118 @@ func DecodeValidateResponse(decoder func(*http.Response) goahttp.Decoder, restor
 	}
 }
 
+// BuildProxyPathRequest instantiates a HTTP request object with method and
+// path set to call the "apps-proxy" service "ProxyPath" endpoint
+func (c *Client) BuildProxyPathRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		path string
+	)
+	{
+		p, ok := v.(*appsproxy.ProxyRequest)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("apps-proxy", "ProxyPath", "*appsproxy.ProxyRequest", v)
+		}
+		if p.Path != nil {
+			path = string(*p.Path)
+		}
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ProxyPathAppsProxyPath(path)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("apps-proxy", "ProxyPath", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeProxyPathResponse returns a decoder for responses returned by the
+// apps-proxy ProxyPath endpoint. restoreBody controls whether the response
+// body should be restored after having been read.
+func DecodeProxyPathResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body any
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("apps-proxy", "ProxyPath", err)
+			}
+			return body, nil
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("apps-proxy", "ProxyPath", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildProxyRequest instantiates a HTTP request object with method and path
+// set to call the "apps-proxy" service "Proxy" endpoint
+func (c *Client) BuildProxyRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ProxyAppsProxyPath()}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("apps-proxy", "Proxy", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeProxyResponse returns a decoder for responses returned by the
+// apps-proxy Proxy endpoint. restoreBody controls whether the response body
+// should be restored after having been read.
+func DecodeProxyResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body any
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("apps-proxy", "Proxy", err)
+			}
+			return body, nil
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("apps-proxy", "Proxy", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // unmarshalConfigurationResponseBodyToAppsproxyConfiguration builds a value of
 // type *appsproxy.Configuration from a value of type
 // *ConfigurationResponseBody.

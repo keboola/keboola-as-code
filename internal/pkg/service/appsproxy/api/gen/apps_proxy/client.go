@@ -20,15 +20,19 @@ type Client struct {
 	APIVersionIndexEndpoint goa.Endpoint
 	HealthCheckEndpoint     goa.Endpoint
 	ValidateEndpoint        goa.Endpoint
+	ProxyPathEndpoint       goa.Endpoint
+	ProxyEndpoint           goa.Endpoint
 }
 
 // NewClient initializes a "apps-proxy" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, validate goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, validate, proxyPath, proxy goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:    aPIRootIndex,
 		APIVersionIndexEndpoint: aPIVersionIndex,
 		HealthCheckEndpoint:     healthCheck,
 		ValidateEndpoint:        validate,
+		ProxyPathEndpoint:       proxyPath,
+		ProxyEndpoint:           proxy,
 	}
 }
 
@@ -67,4 +71,24 @@ func (c *Client) Validate(ctx context.Context, p *ValidatePayload) (res *Validat
 		return
 	}
 	return ires.(*Validations), nil
+}
+
+// ProxyPath calls the "ProxyPath" endpoint of the "apps-proxy" service.
+func (c *Client) ProxyPath(ctx context.Context, p *ProxyRequest) (res any, err error) {
+	var ires any
+	ires, err = c.ProxyPathEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(any), nil
+}
+
+// Proxy calls the "Proxy" endpoint of the "apps-proxy" service.
+func (c *Client) Proxy(ctx context.Context) (res any, err error) {
+	var ires any
+	ires, err = c.ProxyEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.(any), nil
 }

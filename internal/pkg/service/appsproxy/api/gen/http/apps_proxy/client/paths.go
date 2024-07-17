@@ -8,6 +8,10 @@
 
 package client
 
+import (
+	"fmt"
+)
+
 // APIRootIndexAppsProxyPath returns the URL path to the apps-proxy service ApiRootIndex HTTP endpoint.
 func APIRootIndexAppsProxyPath() string {
 	return "/"
@@ -15,7 +19,7 @@ func APIRootIndexAppsProxyPath() string {
 
 // APIVersionIndexAppsProxyPath returns the URL path to the apps-proxy service ApiVersionIndex HTTP endpoint.
 func APIVersionIndexAppsProxyPath() string {
-	return "/v1"
+	return "/v1/"
 }
 
 // HealthCheckAppsProxyPath returns the URL path to the apps-proxy service HealthCheck HTTP endpoint.
@@ -26,4 +30,74 @@ func HealthCheckAppsProxyPath() string {
 // ValidateAppsProxyPath returns the URL path to the apps-proxy service Validate HTTP endpoint.
 func ValidateAppsProxyPath() string {
 	return "/v1/validate"
+}
+
+// ProxyPathAppsProxyPath returns the URL path to the apps-proxy service ProxyPath HTTP endpoint.
+func ProxyPathAppsProxyPath(path string) string {
+	return fmt.Sprintf("/_proxy/%v", path)
+}
+
+// ProxyPathAppsProxyPath2 returns the URL path to the apps-proxy service ProxyPath HTTP endpoint.
+func ProxyPathAppsProxyPath2(path string) string {
+	return fmt.Sprintf("/_proxy/%v", path)
+}
+
+// ProxyPathAppsProxyPath3 returns the URL path to the apps-proxy service ProxyPath HTTP endpoint.
+func ProxyPathAppsProxyPath3(path string) string {
+	return fmt.Sprintf("/_proxy/%v", path)
+}
+
+// ProxyPathAppsProxyPath4 returns the URL path to the apps-proxy service ProxyPath HTTP endpoint.
+func ProxyPathAppsProxyPath4(path string) string {
+	return fmt.Sprintf("/_proxy/%v", path)
+}
+
+// ProxyPathAppsProxyPath5 returns the URL path to the apps-proxy service ProxyPath HTTP endpoint.
+func ProxyPathAppsProxyPath5(path string) string {
+	return fmt.Sprintf("/_proxy/%v", path)
+}
+
+// ProxyPathAppsProxyPath6 returns the URL path to the apps-proxy service ProxyPath HTTP endpoint.
+func ProxyPathAppsProxyPath6(path string) string {
+	return fmt.Sprintf("/_proxy/%v", path)
+}
+
+// ProxyPathAppsProxyPath7 returns the URL path to the apps-proxy service ProxyPath HTTP endpoint.
+func ProxyPathAppsProxyPath7(path string) string {
+	return fmt.Sprintf("/_proxy/%v", path)
+}
+
+// ProxyAppsProxyPath returns the URL path to the apps-proxy service Proxy HTTP endpoint.
+func ProxyAppsProxyPath() string {
+	return "/_proxy"
+}
+
+// ProxyAppsProxyPath2 returns the URL path to the apps-proxy service Proxy HTTP endpoint.
+func ProxyAppsProxyPath2() string {
+	return "/_proxy"
+}
+
+// ProxyAppsProxyPath3 returns the URL path to the apps-proxy service Proxy HTTP endpoint.
+func ProxyAppsProxyPath3() string {
+	return "/_proxy"
+}
+
+// ProxyAppsProxyPath4 returns the URL path to the apps-proxy service Proxy HTTP endpoint.
+func ProxyAppsProxyPath4() string {
+	return "/_proxy"
+}
+
+// ProxyAppsProxyPath5 returns the URL path to the apps-proxy service Proxy HTTP endpoint.
+func ProxyAppsProxyPath5() string {
+	return "/_proxy"
+}
+
+// ProxyAppsProxyPath6 returns the URL path to the apps-proxy service Proxy HTTP endpoint.
+func ProxyAppsProxyPath6() string {
+	return "/_proxy"
+}
+
+// ProxyAppsProxyPath7 returns the URL path to the apps-proxy service Proxy HTTP endpoint.
+func ProxyAppsProxyPath7() string {
+	return "/_proxy"
 }

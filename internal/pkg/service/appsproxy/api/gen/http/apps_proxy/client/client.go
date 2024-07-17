@@ -34,6 +34,13 @@ type Client struct {
 	// endpoint.
 	ValidateDoer goahttp.Doer
 
+	// ProxyPath Doer is the HTTP client used to make requests to the ProxyPath
+	// endpoint.
+	ProxyPathDoer goahttp.Doer
+
+	// Proxy Doer is the HTTP client used to make requests to the Proxy endpoint.
+	ProxyDoer goahttp.Doer
+
 	// CORS Doer is the HTTP client used to make requests to the  endpoint.
 	CORSDoer goahttp.Doer
 
@@ -61,6 +68,8 @@ func NewClient(
 		APIVersionIndexDoer: doer,
 		HealthCheckDoer:     doer,
 		ValidateDoer:        doer,
+		ProxyPathDoer:       doer,
+		ProxyDoer:           doer,
 		CORSDoer:            doer,
 		RestoreResponseBody: restoreBody,
 		scheme:              scheme,
@@ -146,6 +155,44 @@ func (c *Client) Validate() goa.Endpoint {
 		resp, err := c.ValidateDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("apps-proxy", "Validate", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// ProxyPath returns an endpoint that makes HTTP requests to the apps-proxy
+// service ProxyPath server.
+func (c *Client) ProxyPath() goa.Endpoint {
+	var (
+		decodeResponse = DecodeProxyPathResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildProxyPathRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ProxyPathDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("apps-proxy", "ProxyPath", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// Proxy returns an endpoint that makes HTTP requests to the apps-proxy service
+// Proxy server.
+func (c *Client) Proxy() goa.Endpoint {
+	var (
+		decodeResponse = DecodeProxyResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildProxyRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ProxyDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("apps-proxy", "Proxy", err)
 		}
 		return decodeResponse(resp)
 	}

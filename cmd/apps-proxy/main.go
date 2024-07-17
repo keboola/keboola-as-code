@@ -109,7 +109,7 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 			middleware.WithRedactedHeader("X-StorageAPI-Token"),
 			middleware.WithPropagators(propagation.TraceContext{}),
 			middleware.WithFilter(func(req *http.Request) bool {
-				return req.URL.Path != "/health-check"
+				return req.URL.Path != "/health-check" && req.URL.Path != "/robots.txt"
 			}),
 		},
 		Mount: func(c httpserver.Components) {

@@ -22,6 +22,8 @@ type Endpoints struct {
 	APIVersionIndex goa.Endpoint
 	HealthCheck     goa.Endpoint
 	Validate        goa.Endpoint
+	ProxyPath       goa.Endpoint
+	Proxy           goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "apps-proxy" service with endpoints.
@@ -33,6 +35,8 @@ func NewEndpoints(s Service) *Endpoints {
 		APIVersionIndex: NewAPIVersionIndexEndpoint(s),
 		HealthCheck:     NewHealthCheckEndpoint(s),
 		Validate:        NewValidateEndpoint(s, a.APIKeyAuth),
+		ProxyPath:       NewProxyPathEndpoint(s),
+		Proxy:           NewProxyEndpoint(s),
 	}
 }
 
@@ -42,6 +46,8 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.APIVersionIndex = m(e.APIVersionIndex)
 	e.HealthCheck = m(e.HealthCheck)
 	e.Validate = m(e.Validate)
+	e.ProxyPath = m(e.ProxyPath)
+	e.Proxy = m(e.Proxy)
 }
 
 // NewAPIRootIndexEndpoint returns an endpoint function that calls the method
@@ -88,5 +94,24 @@ func NewValidateEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.En
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.Validate(ctx, deps, p)
+	}
+}
+
+// NewProxyPathEndpoint returns an endpoint function that calls the method
+// "ProxyPath" of service "apps-proxy".
+func NewProxyPathEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ProxyRequest)
+		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
+		return s.ProxyPath(ctx, deps, p)
+	}
+}
+
+// NewProxyEndpoint returns an endpoint function that calls the method "Proxy"
+// of service "apps-proxy".
+func NewProxyEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
+		return s.Proxy(ctx, deps)
 	}
 }
