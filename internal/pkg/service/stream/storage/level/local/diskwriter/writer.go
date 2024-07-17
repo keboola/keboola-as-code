@@ -78,8 +78,8 @@ func New(
 
 	// Get file opener
 	var opener FileOpener = DefaultFileOpener{}
-	if cfg.OverwriteFileOpener != nil {
-		opener = cfg.OverwriteFileOpener
+	if cfg.OverrideFileOpener != nil {
+		opener = cfg.OverrideFileOpener
 	}
 
 	// Open file
@@ -101,8 +101,8 @@ func New(
 
 	// Get allocator
 	var allocator diskalloc.Allocator = diskalloc.DefaultAllocator{}
-	if cfg.Allocation.OverwriteAllocator != nil {
-		allocator = cfg.Allocation.OverwriteAllocator
+	if cfg.Allocation.OverrideAllocator != nil {
+		allocator = cfg.Allocation.OverrideAllocator
 	}
 
 	// Allocate disk space

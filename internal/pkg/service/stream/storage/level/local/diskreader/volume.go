@@ -169,8 +169,8 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 
 	// Get file opener
 	var opener FileOpener = DefaultFileOpener{}
-	if v.config.OverwriteFileOpener != nil {
-		opener = v.config.OverwriteFileOpener
+	if v.config.OverrideFileOpener != nil {
+		opener = v.config.OverrideFileOpener
 	}
 
 	// Open file

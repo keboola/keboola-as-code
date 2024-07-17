@@ -177,8 +177,8 @@ func newPipeline(
 	// Create syncer to trigger sync based on counter and meters from the previous steps
 	{
 		var syncerFactory writesync.SyncerFactory = writesync.DefaultSyncerFactory{}
-		if cfg.Sync.OverwriteSyncerFactory != nil {
-			syncerFactory = cfg.Sync.OverwriteSyncerFactory
+		if cfg.Sync.OverrideSyncerFactory != nil {
+			syncerFactory = cfg.Sync.OverrideSyncerFactory
 		}
 		w.syncer = syncerFactory.NewSyncer(ctx, logger, clk, cfg.Sync, w.chain, w)
 	}

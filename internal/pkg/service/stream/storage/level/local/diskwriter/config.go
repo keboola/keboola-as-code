@@ -14,9 +14,9 @@ type Config struct {
 	WatchDrainFile bool
 	// Allocation configures allocation of the disk space for file slices.
 	Allocation diskalloc.Config `configKey:"allocation"`
-	// OverwriteFileOpener overwrites file opening.
+	// OverrideFileOpener overrides file opening.
 	// A custom implementation can be useful for tests.
-	OverwriteFileOpener FileOpener
+	OverrideFileOpener FileOpener
 }
 
 func NewConfig() Config {

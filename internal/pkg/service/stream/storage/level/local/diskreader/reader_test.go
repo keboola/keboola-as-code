@@ -232,7 +232,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 
 	// Replace file opener
 	readError := errors.New("some read error")
-	rtc.Config.OverwriteFileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
+	rtc.Config.OverrideFileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
 		f := newTestFile(localData)
 		f.ReadError = readError
 		return f, nil
@@ -283,7 +283,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 
 	// Replace file opener
 	closeError := errors.New("some close error")
-	rtc.Config.OverwriteFileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
+	rtc.Config.OverrideFileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
 		f := newTestFile(localData)
 		f.CloseError = closeError
 		return f, nil

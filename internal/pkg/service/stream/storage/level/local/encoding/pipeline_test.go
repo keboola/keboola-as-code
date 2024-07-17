@@ -560,7 +560,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 
 	slice := test.NewSlice()
 	slice.LocalStorage.Encoding.Encoder.Factory = helper
-	slice.LocalStorage.Encoding.Sync.OverwriteSyncerFactory = helper
+	slice.LocalStorage.Encoding.Sync.OverrideSyncerFactory = helper
 
 	tc := &encodingTestCase{
 		T:                t,

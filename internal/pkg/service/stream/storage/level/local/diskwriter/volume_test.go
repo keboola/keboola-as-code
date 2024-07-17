@@ -188,7 +188,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	t.Parallel()
 
 	tc := newVolumeTestCase(t)
-	tc.Config.OverwriteFileOpener = diskwriter.FileOpenerFn(func(filePath string) (diskwriter.File, error) {
+	tc.Config.OverrideFileOpener = diskwriter.FileOpenerFn(func(filePath string) (diskwriter.File, error) {
 		f := test.NewWriterTestFile(t, filePath)
 		f.CloseError = errors.New("some close error")
 		return f, nil
@@ -246,7 +246,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	testAllocator := &allocator{}
 	cfg := diskwriter.NewConfig()
 	cfg.WatchDrainFile = false
-	cfg.Allocation.OverwriteAllocator = testAllocator
+	cfg.Allocation.OverrideAllocator = testAllocator
 
 	return &volumeTestCase{
 		TB:                tb,

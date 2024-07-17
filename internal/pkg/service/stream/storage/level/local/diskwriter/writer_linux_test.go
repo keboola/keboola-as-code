@@ -18,7 +18,7 @@ func TestWriter_AllocateSpace_Enabled(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	tc.Config.Allocation.OverwriteAllocator = nil // reset test case allocator, use default allocator
+	tc.Config.Allocation.OverrideAllocator = nil // reset test case allocator, use default allocator
 
 	expectedSize := 10 * datasize.KB
 	tc.Slice.LocalStorage.AllocatedDiskSpace = expectedSize
