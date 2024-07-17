@@ -85,7 +85,7 @@ func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, cfg
 	}
 
 	// Create pipeline
-	ref.Pipeline, err = NewPipeline(ctx, m.logger, m.clock, cfg, sliceKey, mapping, out, m.events)
+	ref.Pipeline, err = newPipeline(ctx, m.logger, m.clock, cfg, sliceKey, mapping, out, m.events)
 	if err != nil {
 		return nil, err
 	}

@@ -78,7 +78,7 @@ type pipeline struct {
 	uncompressedMeter *size.Meter
 }
 
-func NewPipeline(
+func newPipeline(
 	ctx context.Context,
 	logger log.Logger,
 	clk clock.Clock,

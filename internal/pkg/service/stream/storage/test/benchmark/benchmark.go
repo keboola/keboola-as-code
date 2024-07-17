@@ -77,7 +77,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	require.NoError(b, err)
 
 	// Create encoder pipeline
-	writer, err := encoding.NewPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, diskWriter, events.New[encoding.Pipeline]())
+	writer, err := encoding.newPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, diskWriter, events.New[encoding.Pipeline]())
 	require.NoError(b, err)
 
 	// Create data channel

@@ -39,7 +39,7 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 
 	output := newDummyOutput()
 
-	w, err := encoding.NewPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, output, events.New[encoding.Pipeline]())
+	w, err := encoding.newPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, output, events.New[encoding.Pipeline]())
 	require.NoError(t, err)
 
 	// Test getters
@@ -76,7 +76,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 		return w, nil
 	})
 
-	w, err := encoding.NewPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, newDummyOutput(), events.New[encoding.Pipeline]())
+	w, err := encoding.newPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, newDummyOutput(), events.New[encoding.Pipeline]())
 	require.NoError(t, err)
 
 	// Test Close method
@@ -100,7 +100,7 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 		return w, nil
 	})
 
-	w, err := encoding.NewPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, newDummyOutput(), events.New[encoding.Pipeline]())
+	w, err := encoding.newPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, newDummyOutput(), events.New[encoding.Pipeline]())
 	require.NoError(t, err)
 
 	// Test Close method

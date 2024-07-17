@@ -77,7 +77,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	openPipeline := func() encoding.Pipeline {
 		diskWriter, err := vol.OpenWriter(slice)
 		require.NoError(t, err)
-		pipeline, err := encoding.NewPipeline(ctx, d.Logger(), d.Clock(), slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, diskWriter, pipelineEvents)
+		pipeline, err := encoding.newPipeline(ctx, d.Logger(), d.Clock(), slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, diskWriter, pipelineEvents)
 		require.NoError(t, err)
 		return pipeline
 	}
