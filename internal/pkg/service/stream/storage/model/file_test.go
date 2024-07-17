@@ -10,10 +10,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
@@ -90,11 +91,18 @@ func TestFile_Validation(t *testing.T) {
 	t.Parallel()
 
 	// Following values have own validation
+	volumeAssignment := assignment.Assignment{
+		Config: assignment.Config{
+			Count:          2,
+			PreferredTypes: []string{"foo", "bar"},
+		},
+		Volumes: []volume.ID{"my-volume-1", "my-volume-2"},
+	}
 	localStorage := localModel.File{
-		Dir:            "my-dir",
-		Compression:    compression.NewConfig(),
-		DiskSync:       writesync.NewConfig(),
-		DiskAllocation: diskalloc.NewConfig(),
+		Dir:        "my-dir",
+		Encoding:   encoding.NewConfig(),
+		Allocation: diskalloc.NewConfig(),
+		Assignment: volumeAssignment,
 	}
 	stagingStorage := stagingModel.File{
 		Provider:    "foo",
@@ -103,13 +111,6 @@ func TestFile_Validation(t *testing.T) {
 	}
 	targetStorage := targetModel.Target{
 		Provider: "foo",
-	}
-	volumeAssignment := assignment.Assignment{
-		Config: assignment.Config{
-			Count:          2,
-			PreferredTypes: []string{"foo", "bar"},
-		},
-		Volumes: []volume.ID{"my-volume-1", "my-volume-2"},
 	}
 
 	// Test cases
@@ -126,17 +127,17 @@ func TestFile_Validation(t *testing.T) {
 - "sourceId" is a required field
 - "sinkId" is a required field
 - "fileOpenedAt" is a required field
-- "type" is a required field
 - "state" is a required field
-- "columns" is a required field
-- "assignment.config.count" is a required field
-- "assignment.config.preferredTypes" is a required field
-- "assignment.volumes" must contain at least 1 item
+- "mapping.columns" is a required field
 - "local.dir" is a required field
-- "local.compression.type" is a required field
-- "local.diskSync.mode" is a required field
-- "local.diskAllocation.static" is a required field
-- "local.diskAllocation.relative" must be 100 or greater
+- "local.assignment.config.count" is a required field
+- "local.assignment.config.preferredTypes" is a required field
+- "local.assignment.volumes" must contain at least 1 item
+- "local.allocation.static" is a required field
+- "local.allocation.relative" must be 100 or greater
+- "local.encoding.encoder.type" is a required field
+- "local.encoding.compression.type" is a required field
+- "local.encoding.sync.mode" is a required field
 - "staging.provider" is a required field
 - "staging.compression" is a required field
 - "staging.expiration" is a required field
@@ -146,13 +147,11 @@ func TestFile_Validation(t *testing.T) {
 		},
 		{
 			Name:          "empty columns",
-			ExpectedError: ` "columns" must contain at least 1 item`,
+			ExpectedError: ` "mapping.columns" must contain at least 1 item`,
 			Value: File{
 				FileKey:        testFileKey(),
-				Type:           FileTypeCSV,
 				State:          FileWriting,
-				Columns:        column.Columns{},
-				Assignment:     volumeAssignment,
+				Mapping:        table.Mapping{Columns: column.Columns{}},
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -162,14 +161,14 @@ func TestFile_Validation(t *testing.T) {
 			Name: "file state writing",
 			Value: File{
 				FileKey: testFileKey(),
-				Type:    FileTypeCSV,
 				State:   FileWriting,
-				Columns: column.Columns{
-					column.UUID{},
-					column.Headers{},
-					column.Body{},
+				Mapping: table.Mapping{
+					Columns: column.Columns{
+						column.UUID{Name: "uuid"},
+						column.Headers{Name: "headers"},
+						column.Body{Name: "body"},
+					},
 				},
-				Assignment:     volumeAssignment,
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -179,15 +178,15 @@ func TestFile_Validation(t *testing.T) {
 			Name: "file state closing",
 			Value: File{
 				FileKey:   testFileKey(),
-				Type:      FileTypeCSV,
 				State:     FileClosing,
 				ClosingAt: ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				Columns: column.Columns{
-					column.UUID{},
-					column.Headers{},
-					column.Body{},
+				Mapping: table.Mapping{
+					Columns: column.Columns{
+						column.UUID{Name: "uuid"},
+						column.Headers{Name: "headers"},
+						column.Body{Name: "body"},
+					},
 				},
-				Assignment:     volumeAssignment,
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -197,16 +196,16 @@ func TestFile_Validation(t *testing.T) {
 			Name: "file state importing",
 			Value: File{
 				FileKey:     testFileKey(),
-				Type:        FileTypeCSV,
 				State:       FileImporting,
 				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				ImportingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
-				Columns: column.Columns{
-					column.UUID{},
-					column.Headers{},
-					column.Body{},
+				Mapping: table.Mapping{
+					Columns: column.Columns{
+						column.UUID{Name: "uuid"},
+						column.Headers{Name: "headers"},
+						column.Body{Name: "body"},
+					},
 				},
-				Assignment:     volumeAssignment,
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -216,17 +215,17 @@ func TestFile_Validation(t *testing.T) {
 			Name: "file state imported",
 			Value: File{
 				FileKey:     testFileKey(),
-				Type:        FileTypeCSV,
 				State:       FileImported,
 				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				ImportingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
 				ImportedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
-				Columns: column.Columns{
-					column.UUID{},
-					column.Headers{},
-					column.Body{},
+				Mapping: table.Mapping{
+					Columns: column.Columns{
+						column.UUID{Name: "uuid"},
+						column.Headers{Name: "headers"},
+						column.Body{Name: "body"},
+					},
 				},
-				Assignment:     volumeAssignment,
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,

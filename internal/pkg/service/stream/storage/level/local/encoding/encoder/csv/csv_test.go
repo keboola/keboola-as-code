@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testcase"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -94,8 +93,8 @@ func TestCSVWriter(t *testing.T) {
 func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, parallelWrite bool) *testcase.WriterTestCase {
 	// Input rows
 	columns := column.Columns{
-		column.Datetime{},
-		column.Body{},
+		column.Datetime{Name: "datetime"},
+		column.Body{Name: "body"},
 	}
 	data := []testcase.RecordsBatch{
 		{
@@ -185,7 +184,6 @@ func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, p
 
 	return &testcase.WriterTestCase{
 		Name:              fmt.Sprintf("compression-%s-sync-%s-wait-%t-parallel-%t", comp.Name, syncMode, syncWait, parallelWrite),
-		FileType:          model.FileTypeCSV,
 		Columns:           columns,
 		Allocate:          1 * datasize.MB,
 		Sync:              syncConfig,

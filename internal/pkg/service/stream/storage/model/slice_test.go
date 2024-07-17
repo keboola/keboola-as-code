@@ -10,9 +10,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -146,10 +147,9 @@ func TestSlice_Validation(t *testing.T) {
 
 	// Following values have own validation
 	localStorage := localModel.Slice{
-		Dir:         "my-dir",
-		Filename:    "slice.csv",
-		Compression: compression.NewConfig(),
-		DiskSync:    writesync.NewConfig(),
+		Dir:      "my-dir",
+		Filename: "slice.csv",
+		Encoding: encoding.NewConfig(),
 	}
 	stagingStorage := stagingModel.Slice{
 		Path:        "slice.csv.gzip",
@@ -172,23 +172,27 @@ func TestSlice_Validation(t *testing.T) {
 - "fileOpenedAt" is a required field
 - "volumeId" is a required field
 - "sliceOpenedAt" is a required field
-- "type" is a required field
 - "state" is a required field
-- "columns" is a required field
+- "mapping.columns" is a required field
+- "local.dir" is a required field
+- "local.filename" is a required field
+- "local.encoding.encoder.type" is a required field
+- "local.encoding.compression.type" is a required field
+- "local.encoding.sync.mode" is a required field
+- "staging.path" is a required field
+- "staging.compression.type" is a required field
 `,
-			Value: Slice{
-				LocalStorage:   localStorage,
-				StagingStorage: stagingStorage,
-			},
+			Value: Slice{},
 		},
 		{
 			Name:          "empty columns",
-			ExpectedError: ` "columns" must contain at least 1 item`,
+			ExpectedError: ` "mapping.columns" must contain at least 1 item`,
 			Value: Slice{
-				SliceKey:       testSliceKey(),
-				Type:           FileTypeCSV,
-				State:          SliceWriting,
-				Columns:        column.Columns{},
+				SliceKey: testSliceKey(),
+				State:    SliceWriting,
+				Mapping: table.Mapping{
+					Columns: column.Columns{},
+				},
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 			},
@@ -197,12 +201,13 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "slice state writing",
 			Value: Slice{
 				SliceKey: testSliceKey(),
-				Type:     FileTypeCSV,
 				State:    SliceWriting,
-				Columns: column.Columns{
-					column.UUID{},
-					column.Headers{},
-					column.Body{},
+				Mapping: table.Mapping{
+					Columns: column.Columns{
+						column.UUID{Name: "uuid"},
+						column.Headers{Name: "headers"},
+						column.Body{Name: "body"},
+					},
 				},
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
@@ -212,13 +217,14 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "slice state closing",
 			Value: Slice{
 				SliceKey:  testSliceKey(),
-				Type:      FileTypeCSV,
 				State:     SliceClosing,
 				ClosingAt: ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				Columns: column.Columns{
-					column.UUID{},
-					column.Headers{},
-					column.Body{},
+				Mapping: table.Mapping{
+					Columns: column.Columns{
+						column.UUID{Name: "uuid"},
+						column.Headers{Name: "headers"},
+						column.Body{Name: "body"},
+					},
 				},
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
@@ -228,14 +234,15 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "slice state uploading",
 			Value: Slice{
 				SliceKey:    testSliceKey(),
-				Type:        FileTypeCSV,
 				State:       SliceUploading,
 				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				UploadingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
-				Columns: column.Columns{
-					column.UUID{},
-					column.Headers{},
-					column.Body{},
+				Mapping: table.Mapping{
+					Columns: column.Columns{
+						column.UUID{Name: "uuid"},
+						column.Headers{Name: "headers"},
+						column.Body{Name: "body"},
+					},
 				},
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
@@ -245,15 +252,16 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "slice state uploaded",
 			Value: Slice{
 				SliceKey:    testSliceKey(),
-				Type:        FileTypeCSV,
 				State:       SliceUploaded,
 				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				UploadingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
 				UploadedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
-				Columns: column.Columns{
-					column.UUID{},
-					column.Headers{},
-					column.Body{},
+				Mapping: table.Mapping{
+					Columns: column.Columns{
+						column.UUID{Name: "uuid"},
+						column.Headers{Name: "headers"},
+						column.Body{Name: "body"},
+					},
 				},
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
@@ -263,16 +271,17 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "slice state imported",
 			Value: Slice{
 				SliceKey:    testSliceKey(),
-				Type:        FileTypeCSV,
 				State:       SliceImported,
 				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				UploadingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
 				UploadedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
 				ImportedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T18:04:05.000Z")),
-				Columns: column.Columns{
-					column.UUID{},
-					column.Headers{},
-					column.Body{},
+				Mapping: table.Mapping{
+					Columns: column.Columns{
+						column.UUID{Name: "uuid"},
+						column.Headers{Name: "headers"},
+						column.Body{Name: "body"},
+					},
 				},
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,

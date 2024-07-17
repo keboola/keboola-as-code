@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -80,7 +81,7 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	serviceScp.Plugins().Collection().OnFileOpen(func(ctx context.Context, now time.Time, sink definition.Sink, file *model.File) error {
 		if sink.Type == test.SinkTypeWithLocalStorage {
 			// Set required fields
-			file.Columns = column.Columns{column.Body{Name: "body"}}
+			file.Mapping = table.Mapping{Columns: column.Columns{column.Body{Name: "body"}}}
 			file.StagingStorage.Provider = "test"
 			file.TargetStorage.Provider = "test"
 		}

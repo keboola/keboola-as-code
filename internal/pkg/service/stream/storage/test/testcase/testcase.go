@@ -16,6 +16,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
@@ -31,7 +32,6 @@ import (
 
 type WriterTestCase struct {
 	Name              string
-	FileType          model.FileType
 	Columns           column.Columns
 	Allocate          datasize.ByteSize
 	Sync              writesync.Config
@@ -77,7 +77,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	openPipeline := func() encoding.Pipeline {
 		diskWriter, err := vol.OpenWriter(slice)
 		require.NoError(t, err)
-		pipeline, err := encoding.NewPipeline(ctx, d.Logger(), d.Clock(), cfg.Storage.Level.Local.Encoding, slice, diskWriter, pipelineEvents)
+		pipeline, err := encoding.NewPipeline(ctx, d.Logger(), d.Clock(), slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, diskWriter, pipelineEvents)
 		require.NoError(t, err)
 		return pipeline
 	}
@@ -171,11 +171,10 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *diskwriter.Volume) *mod
 	t.Helper()
 
 	s := NewTestSlice(volume)
-	s.Type = model.FileTypeCSV
-	s.Columns = tc.Columns
+	s.Mapping = table.Mapping{Columns: tc.Columns}
 	s.LocalStorage.AllocatedDiskSpace = tc.Allocate
-	s.LocalStorage.DiskSync = tc.Sync
-	s.LocalStorage.Compression = tc.Compression
+	s.LocalStorage.Encoding.Sync = tc.Sync
+	s.LocalStorage.Encoding.Compression = tc.Compression
 	s.StagingStorage.Compression = tc.Compression
 
 	// Slice definition must be valid
@@ -183,6 +182,7 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *diskwriter.Volume) *mod
 		val := validator.New()
 		require.NoError(t, val.Validate(context.Background(), s))
 	}
+
 	return s
 }
 

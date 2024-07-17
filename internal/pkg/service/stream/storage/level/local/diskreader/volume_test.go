@@ -236,7 +236,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	t.Parallel()
 
 	tc := newVolumeTestCase(t)
-	tc.Config.FileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
+	tc.Config.OverwriteFileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
 		f := newTestFile(strings.NewReader("foo bar"))
 		f.CloseError = errors.New("some close error")
 		return f, nil

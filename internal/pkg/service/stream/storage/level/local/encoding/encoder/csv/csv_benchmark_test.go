@@ -17,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/benchmark"
 )
 
@@ -206,14 +205,13 @@ func BenchmarkCSVWrite(b *testing.B) {
 
 func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.WriterBenchmark {
 	columns := column.Columns{
-		column.UUID{},
-		column.Datetime{},
-		column.Body{},
+		column.UUID{Name: "uuid"},
+		column.Datetime{Name: "datetime"},
+		column.Body{Name: "body"},
 	}
 
 	wb := &benchmark.WriterBenchmark{
 		Parallelism: 10000,
-		FileType:    model.FileTypeCSV,
 		Columns:     columns,
 		Allocate:    100 * datasize.MB,
 		Sync:        writesync.NewConfig(),

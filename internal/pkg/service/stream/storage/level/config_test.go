@@ -13,9 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
@@ -89,7 +88,7 @@ func TestConfig_With(t *testing.T) {
 
 	// Second patch
 	localConfigPatch2 := &local.ConfigPatch{
-		Volume: &volume.ConfigPatch{
+		Encoding: &encoding.ConfigPatch{
 			Sync: &writesync.ConfigPatch{
 				Mode:                     ptr.Ptr(writesync.ModeCache),
 				Wait:                     ptr.Ptr(true),
@@ -99,14 +98,9 @@ func TestConfig_With(t *testing.T) {
 				CompressedBytesTrigger:   ptr.Ptr(1 * datasize.MB),
 				IntervalTrigger:          ptr.Ptr(duration.From(100 * time.Millisecond)),
 			},
-			Allocation: &diskalloc.ConfigPatch{
-				Enabled:  ptr.Ptr(true),
-				Static:   ptr.Ptr(10 * datasize.MB),
-				Relative: ptr.Ptr(150),
-			},
 		},
 	}
-	expectedCfg.Local.Volume.Sync = writesync.Config{
+	expectedCfg.Local.Encoding.Sync = writesync.Config{
 		Mode:                     writesync.ModeCache,
 		Wait:                     true,
 		CheckInterval:            duration.From(10 * time.Millisecond),
@@ -116,11 +110,6 @@ func TestConfig_With(t *testing.T) {
 		IntervalTrigger:          duration.From(100 * time.Millisecond),
 	}
 
-	expectedCfg.Local.Volume.Allocation = diskalloc.Config{
-		Enabled:  true,
-		Static:   10 * datasize.MB,
-		Relative: 150,
-	}
 	targetConfigPatch := &target.ConfigPatch{
 		Import: &target.ImportConfigPatch{
 			Trigger: &target.ImportTriggerPatch{

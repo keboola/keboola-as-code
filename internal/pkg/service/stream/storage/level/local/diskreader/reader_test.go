@@ -173,7 +173,7 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 	// Setup slice
 	rtc := newReaderTestCase(t)
 	rtc.SliceData = localData.Bytes()
-	rtc.Slice.LocalStorage.Compression = tc.LocalCompression
+	rtc.Slice.LocalStorage.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Create reader
@@ -227,12 +227,12 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
-	rtc.Slice.LocalStorage.Compression = tc.LocalCompression
+	rtc.Slice.LocalStorage.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Replace file opener
 	readError := errors.New("some read error")
-	rtc.Config.FileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
+	rtc.Config.OverwriteFileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
 		f := newTestFile(localData)
 		f.ReadError = readError
 		return f, nil
@@ -278,12 +278,12 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
-	rtc.Slice.LocalStorage.Compression = tc.LocalCompression
+	rtc.Slice.LocalStorage.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Replace file opener
 	closeError := errors.New("some close error")
-	rtc.Config.FileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
+	rtc.Config.OverwriteFileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
 		f := newTestFile(localData)
 		f.CloseError = closeError
 		return f, nil

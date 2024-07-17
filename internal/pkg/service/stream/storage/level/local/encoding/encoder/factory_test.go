@@ -9,7 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
@@ -34,17 +34,15 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 
 	ctx := context.Background()
 
-	d, mock := dependencies.NewMockedLocalStorageScope(t)
+	d, _ := dependencies.NewMockedLocalStorageScope(t)
 
-	cfg := mock.TestConfig().Storage.Level.Local.Encoding
-
-	v, err := encoding.NewManager(d, cfg)
+	v, err := encoding.NewManager(d)
 	require.NoError(t, err)
 
 	slice := test.NewSlice()
-	slice.Type = model.FileTypeCSV
+	slice.LocalStorage.Encoding.Encoder.Type = encoder.TypeCSV
 
-	w, err := v.OpenPipeline(ctx, slice, discardOutput{})
+	w, err := v.OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, discardOutput{})
 	require.NoError(t, err)
 	assert.NotNil(t, w)
 }
@@ -55,18 +53,16 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 
 	ctx := context.Background()
 
-	d, mock := dependencies.NewMockedLocalStorageScope(t)
+	d, _ := dependencies.NewMockedLocalStorageScope(t)
 
-	cfg := mock.TestConfig().Storage.Level.Local.Encoding
-
-	v, err := encoding.NewManager(d, cfg)
+	v, err := encoding.NewManager(d)
 	require.NoError(t, err)
 
 	slice := test.NewSlice()
-	slice.Type = "invalid"
+	slice.LocalStorage.Encoding.Encoder.Type = "invalid"
 
-	_, err = v.OpenPipeline(ctx, slice, discardOutput{})
+	_, err = v.OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, discardOutput{})
 	if assert.Error(t, err) {
-		assert.Equal(t, `unexpected file type "invalid"`, err.Error())
+		assert.Equal(t, `unexpected encoder type "invalid"`, err.Error())
 	}
 }
