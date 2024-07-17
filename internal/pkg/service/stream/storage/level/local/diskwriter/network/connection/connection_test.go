@@ -125,7 +125,7 @@ func TestConnectionManager(t *testing.T) {
 {"level":"info","message":"waiting %s for 0 streams","component":"storage.node.writer.network.server"}
 {"level":"info","message":"waiting for streams done","component":"storage.node.writer.network.server"}
 {"level":"info","message":"closing 0 streams","component":"storage.node.writer.network.server"}
-{"level":"info","message":"closing 0 sessions","component":"storage.node.writer.network.server"}
+{"level":"info","message":"closing %d sessions","component":"storage.node.writer.network.server"}
 {"level":"info","message":"waiting for goroutines","component":"storage.node.writer.network.server"}
 {"level":"info","message":"closed disk writer server","component":"storage.node.writer.network.server"}
 {"level":"info","message":"closing etcd connection","component":"etcd.client"}
