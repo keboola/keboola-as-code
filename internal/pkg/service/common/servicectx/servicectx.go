@@ -125,11 +125,11 @@ func New(opts ...Option) *Process {
 	return v
 }
 
-func NewForTest(t *testing.T, opts ...Option) *Process {
-	t.Helper()
+func NewForTest(tb testing.TB, opts ...Option) *Process {
+	tb.Helper()
 
 	proc := New(opts...)
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		proc.Shutdown(context.Background(), errors.New("test cleanup"))
 		proc.WaitForShutdown()
 	})

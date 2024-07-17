@@ -44,11 +44,11 @@ func NewMockedServiceScope(t *testing.T, opts ...dependencies.MockedOption) (Ser
 	return NewMockedServiceScopeWithConfig(t, nil, opts...)
 }
 
-func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
-	t.Helper()
+func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	tb.Helper()
 
 	// Create common mocked dependencies
-	commonMock := dependencies.NewMocked(t, append(
+	commonMock := dependencies.NewMocked(tb, append(
 		[]dependencies.MockedOption{
 			dependencies.WithEnabledEtcdClient(),
 			dependencies.WithEnabledDistribution(),
@@ -59,7 +59,7 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 	)...)
 
 	// Get and modify test config
-	cfg := testConfig(t, commonMock)
+	cfg := testConfig(tb, commonMock)
 	if modifyConfig != nil {
 		modifyConfig(&cfg)
 	}
@@ -69,7 +69,7 @@ func NewMockedServiceScopeWithConfig(t *testing.T, modifyConfig func(*config.Con
 
 	backoff := model.NoRandomizationBackoff()
 	serviceScp, err := newServiceScope(mock, cfg, backoff)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	mock.DebugLogger().Truncate()
 	mock.MockedHTTPTransport().Reset()
@@ -135,15 +135,15 @@ func NewMockedBranchRequestScope(t *testing.T, branchInput key.BranchIDOrDefault
 	return branchReqScp, mocked
 }
 
-func NewMockedSourceScope(t *testing.T, opts ...dependencies.MockedOption) (SourceScope, Mocked) {
-	t.Helper()
-	return NewMockedSourceScopeWithConfig(t, nil, opts...)
+func NewMockedSourceScope(tb testing.TB, opts ...dependencies.MockedOption) (SourceScope, Mocked) {
+	tb.Helper()
+	return NewMockedSourceScopeWithConfig(tb, nil, opts...)
 }
 
-func NewMockedSourceScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (SourceScope, Mocked) {
-	t.Helper()
+func NewMockedSourceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (SourceScope, Mocked) {
+	tb.Helper()
 	svcScp, mock := NewMockedServiceScopeWithConfig(
-		t,
+		tb,
 		modifyConfig,
 		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution()}, opts...)...,
 	)
@@ -151,7 +151,7 @@ func NewMockedSourceScopeWithConfig(t *testing.T, modifyConfig func(*config.Conf
 		ServiceScope:      svcScp,
 		DistributionScope: mock,
 	}, "test-source", mock.TestConfig())
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return d, mock
 }
 
@@ -160,24 +160,24 @@ func NewMockedLocalStorageScope(t *testing.T, opts ...dependencies.MockedOption)
 	return NewMockedLocalStorageScopeWithConfig(t, nil, opts...)
 }
 
-func NewMockedLocalStorageScopeWithConfig(t *testing.T, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (LocalStorageScope, Mocked) {
-	t.Helper()
-	svcScp, mock := NewMockedServiceScopeWithConfig(t, modifyConfig, opts...)
+func NewMockedLocalStorageScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (LocalStorageScope, Mocked) {
+	tb.Helper()
+	svcScp, mock := NewMockedServiceScopeWithConfig(tb, modifyConfig, opts...)
 	d, err := newLocalStorageScope(localStorageParentScopesImpl{
 		ServiceScope:         svcScp,
 		DistributionScope:    mock,
 		DistributedLockScope: mock,
 	}, mock.TestConfig())
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return d, mock
 }
 
-func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
-	t.Helper()
+func testConfig(tb testing.TB, d dependencies.Mocked) config.Config {
+	tb.Helper()
 	cfg := config.New()
 
 	// Create empty volumes dir
-	volumesPath := t.TempDir()
+	volumesPath := tb.TempDir()
 
 	// Complete configuration
 	cfg.NodeID = "test-node"
@@ -187,7 +187,7 @@ func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
 	cfg.API.PublicURL, _ = url.Parse("https://stream.keboola.local")
 	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd = d.TestEtcdConfig()
-	cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(t))
+	cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(tb))
 
 	// There are some timers with a few seconds interval.
 	// It causes problems when mocked clock is used.
@@ -197,7 +197,7 @@ func testConfig(t *testing.T, d dependencies.Mocked) config.Config {
 	}
 
 	// Validate configuration
-	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
+	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
 	return cfg
 }

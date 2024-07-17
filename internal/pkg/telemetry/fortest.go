@@ -126,12 +126,12 @@ func newAssertMeterConfig(opts []TestMeterOption) assertMetricConfig {
 	return cnf
 }
 
-func NewForTest(t *testing.T) ForTest {
-	t.Helper()
+func NewForTest(tb testing.TB) ForTest {
+	tb.Helper()
 	idGenerator := &testIDGenerator{}
 	spanExporter := tracetest.NewInMemoryExporter()
 	metricExporter, err := export.New()
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	tp := &filterTraceProvider{
 		provider: tracesdk.NewTracerProvider(
 			tracesdk.WithSyncer(spanExporter),

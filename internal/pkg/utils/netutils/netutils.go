@@ -14,28 +14,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func FreePortForTest(t *testing.T) int {
-	t.Helper()
+func FreePortForTest(tb testing.TB) int {
+	tb.Helper()
 
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	for {
 		listener, err := net.ListenTCP("tcp", addr)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 		port := listener.Addr().(*net.TCPAddr).Port
 
 		lockFile := filepath.Join(os.TempDir(), fmt.Sprintf(`keboola_go_test_port_lock_%d`, port)) //nolint:forbidigo
 		lock := flock.New(lockFile)
 		locked, err := lock.TryLock()
-		require.NoError(t, err)
+		require.NoError(tb, err)
 
 		_ = listener.Close()
 
 		if locked {
-			t.Cleanup(func() {
-				require.NoError(t, lock.Unlock())
-				require.NoError(t, os.Remove(lockFile)) //nolint:forbidigo
+			tb.Cleanup(func() {
+				require.NoError(tb, lock.Unlock())
+				require.NoError(tb, os.Remove(lockFile)) //nolint:forbidigo
 			})
 			return port
 		}
