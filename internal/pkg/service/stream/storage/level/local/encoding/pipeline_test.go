@@ -31,23 +31,22 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	logger := log.NewDebugLogger()
-	clk := clock.New()
+	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
 	slice.LocalStorage.Encoding.Encoder.Factory = encoder.FactoryFn(dummyEncoderFactory)
 
 	output := newDummyOutput()
 
-	w, err := encoding.newPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, output, events.New[encoding.Pipeline]())
+	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, output)
 	require.NoError(t, err)
 
 	// Test getters
 	assert.Equal(t, slice.SliceKey, w.SliceKey())
 
 	// Test write methods
-	assert.NoError(t, w.WriteRecord(recordctx.FromHTTP(clk.Now(), &http.Request{Body: io.NopCloser(strings.NewReader("foo"))})))
-	assert.NoError(t, w.WriteRecord(recordctx.FromHTTP(clk.Now(), &http.Request{Body: io.NopCloser(strings.NewReader("bar"))})))
+	assert.NoError(t, w.WriteRecord(recordctx.FromHTTP(d.Clock().Now(), &http.Request{Body: io.NopCloser(strings.NewReader("foo"))})))
+	assert.NoError(t, w.WriteRecord(recordctx.FromHTTP(d.Clock().Now(), &http.Request{Body: io.NopCloser(strings.NewReader("bar"))})))
 
 	// Test Close method
 	assert.NoError(t, w.Close(ctx))
@@ -66,8 +65,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	logger := log.NewDebugLogger()
-	clk := clock.NewMock()
+	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
 	slice.LocalStorage.Encoding.Encoder.Factory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
@@ -76,7 +74,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 		return w, nil
 	})
 
-	w, err := encoding.newPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, newDummyOutput(), events.New[encoding.Pipeline]())
+	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, newDummyOutput())
 	require.NoError(t, err)
 
 	// Test Close method
@@ -90,8 +88,7 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	logger := log.NewDebugLogger()
-	clk := clock.NewMock()
+	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
 	slice.LocalStorage.Encoding.Encoder.Factory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
@@ -100,7 +97,7 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 		return w, nil
 	})
 
-	w, err := encoding.newPipeline(ctx, logger, clk, slice.LocalStorage.Encoding, slice.SliceKey, slice.Mapping, newDummyOutput(), events.New[encoding.Pipeline]())
+	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, newDummyOutput())
 	require.NoError(t, err)
 
 	// Test Close method
@@ -557,7 +554,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 		cancel()
 	})
 
-	d, mock := dependencies.NewMockedServiceScope(t)
+	d, mock := dependencies.NewMockedSourceScope(t)
 
 	helper := &writerSyncHelper{writeDone: make(chan struct{}, 100)}
 
@@ -574,12 +571,8 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 		Events:           events.New[encoding.Pipeline](),
 		Output:           newDummyOutput(),
 		Slice:            slice,
+		Manager:          d.EncodingManager(),
 	}
-
-	var err error
-	tc.Manager, err = encoding.NewManager(d)
-	require.NoError(t, err)
-
 	return tc
 }
 

@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// Manager opens and closes encoding pipelines.
 type Manager struct {
 	logger log.Logger
 	clock  clock.Clock
@@ -37,7 +38,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewManager(d dependencies) (*Manager, error) {
+func NewManager(d dependencies) *Manager {
 	m := &Manager{
 		logger:        d.Logger(),
 		clock:         d.Clock(),
@@ -56,7 +57,11 @@ func NewManager(d dependencies) (*Manager, error) {
 		m.logger.Info(ctx, "closed encoding pipelines")
 	})
 
-	return m, nil
+	return m
+}
+
+func (m *Manager) Events() *events.Events[Pipeline] {
+	return m.events
 }
 
 func (m *Manager) Pipelines() (out []Pipeline) {
@@ -85,7 +90,7 @@ func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, cfg
 	}
 
 	// Create pipeline
-	ref.Pipeline, err = newPipeline(ctx, m.logger, m.clock, cfg, sliceKey, mapping, out, m.events)
+	ref.Pipeline, err = newPipeline(ctx, m.logger, m.clock, sliceKey, cfg, mapping, out, m.events)
 	if err != nil {
 		return nil, err
 	}

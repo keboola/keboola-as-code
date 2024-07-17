@@ -47,6 +47,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -112,6 +113,7 @@ type SinkRequestScope interface {
 type SourceScope interface {
 	ServiceScope
 	dependencies.DistributionScope
+	EncodingManager() *encoding.Manager
 	SinkRouter() *sinkRouter.Router
 }
 
