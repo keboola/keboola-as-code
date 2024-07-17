@@ -119,7 +119,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 
 	// Wait for 2 checks
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.Equal(t, 1, strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file"))
+		assert.Equal(c, 1, strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file"))
 	}, 5*time.Second, 10*time.Millisecond)
 	tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
