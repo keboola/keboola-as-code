@@ -81,11 +81,11 @@ func TestAssignSlices(t *testing.T) {
 		{
 			Name:        "3 sources, 2 volumes",
 			SourceNodes: []string{"source1", "source2", "source3"},
-			Volumes:     []volume.ID{"volume1", "volume2", "volume3"},
+			Volumes:     []volume.ID{"volume1", "volume2"},
 			ExpectedAssignment: map[string][]volume.ID{
 				"source1": {"volume1"},
 				"source2": {"volume2"},
-				"source3": {"volume3"},
+				"source3": {"volume1"},
 			},
 		},
 		{
