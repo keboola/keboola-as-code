@@ -2413,8 +2413,8 @@ func ValidateTableColumnRequestBody(body *TableColumnRequestBody, errContext []s
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}
 	if body.Type != nil {
-		if !(*body.Type == "uuid-v7" || *body.Type == "datetime" || *body.Type == "ip" || *body.Type == "body" || *body.Type == "headers" || *body.Type == "template") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"uuid-v7", "datetime", "ip", strings.Join(errContext, "."), "headers", "template"}))
+		if !(*body.Type == "uuid" || *body.Type == "datetime" || *body.Type == "ip" || *body.Type == "body" || *body.Type == "headers" || *body.Type == "template") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"uuid", "datetime", "ip", strings.Join(errContext, "."), "headers", "template"}))
 		}
 	}
 	if body.Template != nil {

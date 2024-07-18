@@ -155,7 +155,7 @@ paths:
                                             tableId: in.c-bucket.table
                                             mapping:
                                                 columns:
-                                                    - type: uuid-v7
+                                                    - type: uuid
                                                       name: id-col
                                                       primaryKey: true
                                                     - type: datetime
@@ -863,7 +863,7 @@ paths:
                                         tableId: in.c-bucket.table
                                         mapping:
                                             columns:
-                                                - type: uuid-v7
+                                                - type: uuid
                                                   name: id-col
                                                   primaryKey: true
                                                 - type: datetime
@@ -968,7 +968,7 @@ paths:
                                 tableId: in.c-bucket.table
                                 mapping:
                                     columns:
-                                        - type: uuid-v7
+                                        - type: uuid
                                           name: id-col
                                           primaryKey: true
                                         - type: datetime
@@ -1167,7 +1167,7 @@ paths:
                                     tableId: in.c-bucket.table
                                     mapping:
                                         columns:
-                                            - type: uuid-v7
+                                            - type: uuid
                                               name: id-col
                                               primaryKey: true
                                             - type: datetime
@@ -1282,7 +1282,7 @@ paths:
                                 tableId: in.c-bucket.table
                                 mapping:
                                     columns:
-                                        - type: uuid-v7
+                                        - type: uuid
                                           name: id-col
                                           primaryKey: true
                                         - type: datetime
@@ -1946,7 +1946,7 @@ components:
                     tableId: in.c-bucket.table
                     mapping:
                         columns:
-                            - type: uuid-v7
+                            - type: uuid
                               name: id-col
                               primaryKey: true
                             - type: datetime
@@ -2108,7 +2108,7 @@ components:
                             tableId: in.c-bucket.table
                             mapping:
                                 columns:
-                                    - type: uuid-v7
+                                    - type: uuid
                                       name: id-col
                                       primaryKey: true
                                     - type: datetime
@@ -2284,7 +2284,7 @@ components:
                         tableId: in.c-bucket.table
                         mapping:
                             columns:
-                                - type: uuid-v7
+                                - type: uuid
                                   name: id-col
                                   primaryKey: true
                                 - type: datetime
@@ -2474,7 +2474,7 @@ components:
                                 tableId: in.c-bucket.table
                                 mapping:
                                     columns:
-                                        - type: uuid-v7
+                                        - type: uuid
                                           name: id-col
                                           primaryKey: true
                                         - type: datetime
@@ -2645,7 +2645,7 @@ components:
                             tableId: in.c-bucket.table
                             mapping:
                                 columns:
-                                    - type: uuid-v7
+                                    - type: uuid
                                       name: id-col
                                       primaryKey: true
                                     - type: datetime
@@ -2926,7 +2926,7 @@ components:
                     tableId: in.c-bucket.table
                     mapping:
                         columns:
-                            - type: uuid-v7
+                            - type: uuid
                               name: id-col
                               primaryKey: true
                             - type: datetime
@@ -3330,7 +3330,7 @@ components:
                     tableId: in.c-bucket.table
                     mapping:
                         columns:
-                            - type: uuid-v7
+                            - type: uuid
                               name: id-col
                               primaryKey: true
                             - type: datetime
@@ -3603,7 +3603,7 @@ components:
                             tableId: in.c-bucket.table
                             mapping:
                                 columns:
-                                    - type: uuid-v7
+                                    - type: uuid
                                       name: id-col
                                       primaryKey: true
                                     - type: datetime
@@ -3682,7 +3682,7 @@ components:
                         tableId: in.c-bucket.table
                         mapping:
                             columns:
-                                - type: uuid-v7
+                                - type: uuid
                                   name: id-col
                                   primaryKey: true
                                 - type: datetime
@@ -3976,7 +3976,7 @@ components:
                     description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
                     example: body
                     enum:
-                        - uuid-v7
+                        - uuid
                         - datetime
                         - ip
                         - body
@@ -4021,7 +4021,7 @@ components:
                     items:
                         $ref: '#/components/schemas/TableColumn'
                     example:
-                        - type: uuid-v7
+                        - type: uuid
                           name: id-col
                           primaryKey: true
                         - type: datetime
@@ -4042,7 +4042,7 @@ components:
             description: Table mapping definition.
             example:
                 columns:
-                    - type: uuid-v7
+                    - type: uuid
                       name: id-col
                       primaryKey: true
                     - type: datetime
@@ -4079,7 +4079,7 @@ components:
                 tableId: in.c-bucket.table
                 mapping:
                     columns:
-                        - type: uuid-v7
+                        - type: uuid
                           name: id-col
                           primaryKey: true
                         - type: datetime
@@ -4118,7 +4118,7 @@ components:
                 tableId: in.c-bucket.table
                 mapping:
                     columns:
-                        - type: uuid-v7
+                        - type: uuid
                           name: id-col
                           primaryKey: true
                         - type: datetime
@@ -4390,7 +4390,7 @@ components:
                     tableId: in.c-bucket.table
                     mapping:
                         columns:
-                            - type: uuid-v7
+                            - type: uuid
                               name: id-col
                               primaryKey: true
                             - type: datetime

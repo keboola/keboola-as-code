@@ -17,7 +17,7 @@ export function setup() {
         tableId: "in.c-bucket.test-sink",
         mapping: {
           columns: [
-            { type: "uuid-v7", name: "id", primaryKey: true },
+            { type: "uuid", name: "id", primaryKey: true },
             { type: "datetime", name: "datetime" },
             { type: "ip", name: "ip" },
             { type: "body", name: "body" },

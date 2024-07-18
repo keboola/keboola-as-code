@@ -27,7 +27,7 @@ func TestMappedColumns_Serde(t *testing.T) {
 		},
 	}
 
-	expectedJSON := `[{"type":"uuid-v7","name":"id","primaryKey":true},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","template":{"language":"jsonnet","content":"Body('my.key')+':'+Body('my.value')'"}}]`
+	expectedJSON := `[{"type":"uuid","name":"id","primaryKey":true},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","template":{"language":"jsonnet","content":"Body('my.key')+':'+Body('my.value')'"}}]`
 
 	bytes, err := json.Marshal(&typed)
 	assert.NoError(t, err)
