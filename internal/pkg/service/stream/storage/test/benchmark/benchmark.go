@@ -66,7 +66,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	filePath := slice.LocalStorage.FileName(vol.Path())
 
 	// Create writer
-	diskWriter, err := vol.OpenWriter(slice)
+	diskWriter, err := vol.OpenWriter(slice.SliceKey, slice.LocalStorage)
 	require.NoError(b, err)
 
 	// Create encoder pipeline

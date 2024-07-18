@@ -66,7 +66,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	// Open encoder pipeline
 	openPipeline := func() encoding.Pipeline {
-		w, err := vol.OpenWriter(slice)
+		w, err := vol.OpenWriter(slice.SliceKey, slice.LocalStorage)
 		require.NoError(t, err)
 		pipeline, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, w)
 		require.NoError(t, err)

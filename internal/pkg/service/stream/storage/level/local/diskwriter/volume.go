@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -176,16 +177,16 @@ func (v *Volume) Metadata() volume.Metadata {
 	}
 }
 
-func (v *Volume) OpenWriter(slice *model.Slice) (w Writer, err error) {
+func (v *Volume) OpenWriter(sliceKey model.SliceKey, slice localModel.Slice) (w Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
-		return nil, errors.PrefixErrorf(err, `disk writer for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
+		return nil, errors.PrefixErrorf(err, `disk writer for slice "%s" cannot be created: volume is closed`, sliceKey.String())
 	}
 
 	// Check if the writer already exists, if not, register an empty reference to unlock immediately
-	ref, exists := v.addWriter(slice.SliceKey)
+	ref, exists := v.addWriter(sliceKey)
 	if exists {
-		return nil, errors.Errorf(`disk writer for slice "%s" already exists`, slice.SliceKey.String())
+		return nil, errors.Errorf(`disk writer for slice "%s" already exists`, sliceKey.String())
 	}
 
 	// Close resources on a creation error
@@ -197,11 +198,11 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w Writer, err error) {
 		}
 
 		// Unregister the writer
-		v.removeWriter(slice.SliceKey)
+		v.removeWriter(sliceKey)
 	}()
 
 	// Create writer
-	w, err = newWriter(v.ctx, v.logger, v.Path(), v.fileOpener, v.allocator, slice.SliceKey, slice.LocalStorage, v.writerEvents)
+	w, err = newWriter(v.ctx, v.logger, v.Path(), v.fileOpener, v.allocator, sliceKey, slice, v.writerEvents)
 	if err != nil {
 		return nil, err
 	}

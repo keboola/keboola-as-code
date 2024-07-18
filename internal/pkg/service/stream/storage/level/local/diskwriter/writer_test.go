@@ -63,7 +63,8 @@ func TestOpenWriter_ClosedVolume(t *testing.T) {
 
 	assert.NoError(t, vol.Close(context.Background()))
 
-	_, err = vol.OpenWriter(test.NewSlice())
+	slice := test.NewSlice()
+	_, err = vol.OpenWriter(slice.SliceKey, slice.LocalStorage)
 	if assert.Error(t, err) {
 		wildcards.Assert(t, "disk writer for slice \"%s\" cannot be created: volume is closed:\n- context canceled", err.Error())
 	}
@@ -243,7 +244,7 @@ func (tc *writerTestCase) NewWriter() (diskwriter.Writer, error) {
 	val := validator.New()
 	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
 
-	w, err := tc.Volume.OpenWriter(tc.Slice)
+	w, err := tc.Volume.OpenWriter(tc.Slice.SliceKey, tc.Slice.LocalStorage)
 	if err != nil {
 		return nil, err
 	}
