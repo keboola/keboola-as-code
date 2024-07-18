@@ -246,6 +246,7 @@ func TestSlice_Validation(t *testing.T) {
 						column.Body{Name: "body"},
 					},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 			},

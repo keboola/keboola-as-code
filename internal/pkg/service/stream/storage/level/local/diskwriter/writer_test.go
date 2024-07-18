@@ -33,7 +33,7 @@ func TestWriter_Basic(t *testing.T) {
 	slice := test.NewSlice()
 	writerEvents := events.New[diskwriter.Writer]()
 
-	w, err := diskwriter.New(ctx, logger, diskwriter.NewConfig(), volumePath, slice, writerEvents)
+	w, err := diskwriter.New(ctx, logger, volumePath, diskwriter.DefaultFileOpener{}, diskalloc.DefaultAllocator{}, slice.SliceKey, slice.LocalStorage, writerEvents)
 	require.NoError(t, err)
 
 	// Test getters

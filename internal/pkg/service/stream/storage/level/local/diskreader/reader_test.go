@@ -227,7 +227,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
-	rtc.Slice.LocalStorage.Encoding.Compression = tc.LocalCompression
+	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Replace file opener
@@ -278,7 +278,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
-	rtc.Slice.LocalStorage.Encoding.Compression = tc.LocalCompression
+	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Replace file opener
