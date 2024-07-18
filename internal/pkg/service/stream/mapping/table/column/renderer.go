@@ -40,6 +40,34 @@ func (r *Renderer) CSVValue(c Column, ctx recordctx.Context) (string, error) {
 		return id.String(), err
 	case IP:
 		return ctx.ClientIP().String(), nil
+	case Path:
+		bodyMap, err := ctx.BodyMap()
+		if err != nil {
+			return "", err
+		}
+
+		var value any
+
+		if c.Path == "" {
+			value = bodyMap
+		} else {
+			value, _, err = bodyMap.GetNested(c.Path)
+			if err != nil {
+				if c.DefaultValue != nil {
+					value = *c.DefaultValue
+				} else {
+					return "", errors.Wrapf(err, `path "%s" not found in the body`, c.Path)
+				}
+			}
+		}
+
+		if c.RawString {
+			if stringValue, ok := value.(string); ok {
+				return stringValue, nil
+			}
+		}
+
+		return json.EncodeString(value, false)
 	case Template:
 		if c.Template.Language != TemplateLanguageJsonnet {
 			return "", errors.Errorf(`unsupported language "%s", only "jsonnet" is supported`, c.Template.Language)

@@ -10,6 +10,7 @@ import (
 	"github.com/gofrs/uuid/v5"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
@@ -75,6 +76,199 @@ func TestRenderer_Headers(t *testing.T) {
 	assert.Equal(t, `{"Foo1":"bar1","Foo2":"bar2"}`, val)
 }
 
+func TestRenderer_Path_Json_Scalar(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key1.key2",
+	}
+
+	body := `{"key1":{"key2":"val2"},"key3":"val3"}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `"val2"`, val)
+}
+
+func TestRenderer_Path_Json_Object(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key1",
+	}
+
+	body := `{"key1":{"key2":"val2"},"key3":"val3"}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `{"key2":"val2"}`, val)
+}
+
+func TestRenderer_Path_Json_ArrayOfObjects(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key1",
+	}
+
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `[{"key2":"val2","key3":"val3"}]`, val)
+}
+
+func TestRenderer_Path_Json_ArrayIndex(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key1[1].key3",
+	}
+
+	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `"val3"`, val)
+}
+
+func TestRenderer_Path_Json_ArrayIndex_RawString(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path:      "key1[1].key3",
+		RawString: true,
+	}
+
+	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, "val3", val)
+}
+
+func TestRenderer_Path_Json_Full(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{}
+
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `{"key1":[{"key2":"val2","key3":"val3"}]}`, val)
+}
+
+func TestRenderer_Path_Json_UndefinedKey_Error(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key1.invalid",
+	}
+
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.Error(t, err)
+	assert.Equal(t, `path "key1.invalid" not found in the body`, err.Error())
+}
+
+func TestRenderer_Path_Json_UndefinedIndex_Error(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key1[1]",
+	}
+
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.Error(t, err)
+	assert.Equal(t, `path "key1[1]" not found in the body`, err.Error())
+}
+
+func TestRenderer_Path_Json_UndefinedKey_DefaultValue(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path:         "key1.invalid",
+		DefaultValue: ptr.Ptr("123"),
+	}
+
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `"123"`, val)
+}
+
+func TestRenderer_Path_Json_UndefinedIndex_DefaultValue(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path:         "key1[1]",
+		DefaultValue: ptr.Ptr("123"),
+	}
+
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `"123"`, val)
+}
+
+func TestRenderer_Path_Json_UndefinedKey_DefaultValue_RawString(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path:         "key1.invalid",
+		DefaultValue: ptr.Ptr("123"),
+		RawString:    true,
+	}
+
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, "123", val)
+}
+
+func TestRenderer_Path_FormData_Full(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{}
+
+	body := `key1=bar1&key2[]=bar2&key2[]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `{"key1":"bar1","key2[]":["bar2","bar3"]}`, val)
+}
+
 func TestRenderer_Template_Json_Scalar(t *testing.T) {
 	t.Parallel()
 
@@ -89,7 +283,7 @@ func TestRenderer_Template_Json_Scalar(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
-	assert.Equal(t, "\"val2\"", val)
+	assert.Equal(t, `"val2"`, val)
 }
 
 func TestRenderer_Template_Json_Object(t *testing.T) {
