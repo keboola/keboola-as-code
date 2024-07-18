@@ -48,12 +48,12 @@ type readerRef struct {
 	Reader
 }
 
-// Open volume for writing.
+// OpenVolume for reading.
 //   - It is checked that the volume path exists.
 //   - The IDFile is loaded.
 //   - If the IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The LockFile ensures only one opening of the volume for reading.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, readerEvents *events.Events[Reader], spec volume.Spec) (*Volume, error) {
+func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, readerEvents *events.Events[Reader], spec volume.Spec) (*Volume, error) {
 	v := &Volume{
 		spec:         spec,
 		config:       config,
