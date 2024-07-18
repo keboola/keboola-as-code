@@ -16,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/router/connection"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -37,7 +37,7 @@ func TestConnectionManager(t *testing.T) {
 	w2 := startWriterNode(t, ctx, etcdCfg, "w2")
 
 	// Start source node
-	connManager, s := startSourceConnManager(t, ctx, etcdCfg, "s1")
+	connManager, s := startSourceConnManager(t, etcdCfg, "s1")
 	sourceLogger := s.DebugLogger()
 	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w1\" - \"l%s\"","component":"storage.node.writer.network.client"}`)
@@ -45,11 +45,11 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
-	assert.Equal(t, 2, connManager.OpenedConnectionsCount())
-	if conn, found := connManager.Connection("w1"); assert.True(t, found) {
+	assert.Equal(t, 2, connManager.ConnectionsCount())
+	if conn, found := connManager.ConnectionToNode("w1"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w2"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w2"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
 
@@ -62,17 +62,17 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, w3.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
-	assert.Equal(t, 4, connManager.OpenedConnectionsCount())
-	if conn, found := connManager.Connection("w1"); assert.True(t, found) {
+	assert.Equal(t, 4, connManager.ConnectionsCount())
+	if conn, found := connManager.ConnectionToNode("w1"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w2"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w2"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w3"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w3"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w4"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToNode("w4"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
 
@@ -85,22 +85,26 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w1\" - \"localhost:%s\"","component":"storage.node.writer.network.client"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w3\" - \"localhost:%s\"","component":"storage.node.writer.network.client"}`)
 	sourceLogger.Truncate()
-	assert.Equal(t, 2, connManager.OpenedConnectionsCount())
-	_, found := connManager.Connection("w1")
+	assert.Equal(t, 2, connManager.ConnectionsCount())
+	_, found := connManager.ConnectionToNode("w1")
 	assert.False(t, found)
-	_, found = connManager.Connection("w3")
+	_, found = connManager.ConnectionToNode("w3")
 	assert.False(t, found)
-	if conn, found := connManager.Connection("w2"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToVolume("w2-1"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
-	if conn, found := connManager.Connection("w4"); assert.True(t, found) {
+	if conn, found := connManager.ConnectionToVolume("w4-2"); assert.True(t, found) {
 		assert.True(t, conn.IsConnected())
 	}
 
 	// Shutdown source node - no warning/error is logged
 	s.Process().Shutdown(ctx, errors.New("bye bye source"))
 	s.Process().WaitForShutdown()
+	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w2\" - \"localhost:%s\"","component":"storage.node.writer.network.client"}`)
+	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w4\" - \"localhost:%s\"","component":"storage.node.writer.network.client"}`)
 	sourceLogger.AssertJSONMessages(t, `{"level":"info","message":"exited"}`)
+	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.network.server"}`)
+	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.network.server"}`)
 	sourceLogger.Truncate()
 
 	// Shutdown w2 and w4
@@ -134,7 +138,7 @@ func TestConnectionManager(t *testing.T) {
 	w4.DebugLogger().AssertJSONMessages(t, expectedWriterLogs)
 }
 
-func startSourceConnManager(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, nodeID string) (*connection.Manager, dependencies.Mocked) {
+func startSourceConnManager(t *testing.T, etcdCfg etcdclient.Config, nodeID string) (*connection.Manager, dependencies.Mocked) {
 	t.Helper()
 
 	d, m := dependencies.NewMockedSourceScopeWithConfig(
@@ -146,7 +150,7 @@ func startSourceConnManager(t *testing.T, ctx context.Context, etcdCfg etcdclien
 		commonDeps.WithEtcdConfig(etcdCfg),
 	)
 
-	connManager, err := connection.NewManager(ctx, d, m.TestConfig().Storage.Level.Local.Writer.Network, m.TestConfig().NodeID)
+	connManager, err := connection.NewManager(d, m.TestConfig().Storage.Level.Local.Writer.Network, m.TestConfig().NodeID)
 	require.NoError(t, err)
 
 	return connManager, m
@@ -181,7 +185,7 @@ func startWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 
 func waitForLog(t *testing.T, logger log.DebugLogger, expected string) {
 	t.Helper()
-	require.Eventually(t, func() bool {
-		return logger.CompareJSONMessages(expected) == nil
-	}, 5*time.Second, 100*time.Millisecond)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		logger.AssertJSONMessages(c, expected)
+	}, 15*time.Second, 100*time.Millisecond)
 }

@@ -22,7 +22,7 @@ func (r *Repository) Rotate(k key.SinkKey, now time.Time) *op.AtomicOp[model.Fil
 func (r *Repository) rotateFileOnSinkModification() {
 	r.plugins.Collection().OnSinkModification(func(ctx context.Context, now time.Time, by definition.By, old, sink *definition.Sink) error {
 		// Check is the sink type has support for files
-		if !r.plugins.IsSinkWithLocalStorage(sink) {
+		if !r.plugins.IsSinkWithLocalStorage(sink.Type) {
 			return nil
 		}
 

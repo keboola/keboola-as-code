@@ -15,12 +15,13 @@ import (
 // Key (string) and value (V) are generated from incoming WatchEventT by custom callbacks, see MirrorSetup.
 // Start with SetupMirror function.
 type Mirror[T any, V any] struct {
-	logger   log.Logger
-	stream   *RestartableWatchStreamT[T]
-	filter   func(t WatchEventT[T]) bool
-	mapKey   func(kv *op.KeyValue, value T) string
-	mapValue func(kv *op.KeyValue, value T) V
-	onUpdate []func(updateLog MirrorUpdatedKeys[V])
+	logger    log.Logger
+	stream    *RestartableWatchStreamT[T]
+	filter    func(t WatchEventT[T]) bool
+	mapKey    func(kv *op.KeyValue, value T) string
+	mapValue  func(kv *op.KeyValue, value T) V
+	onUpdate  []func(update MirrorUpdate)
+	onChanges []func(changes MirrorUpdateChanges[V])
 
 	tree         *prefixtree.AtomicTree[V]
 	revisionLock *sync.Mutex
@@ -28,15 +29,22 @@ type Mirror[T any, V any] struct {
 }
 
 type MirrorSetup[T any, V any] struct {
-	logger   log.Logger
-	stream   *RestartableWatchStreamT[T]
-	filter   func(t WatchEventT[T]) bool
-	mapKey   func(kv *op.KeyValue, value T) string
-	mapValue func(kv *op.KeyValue, value T) V
-	onUpdate []func(updateLog MirrorUpdatedKeys[V])
+	logger    log.Logger
+	stream    *RestartableWatchStreamT[T]
+	filter    func(t WatchEventT[T]) bool
+	mapKey    func(kv *op.KeyValue, value T) string
+	mapValue  func(kv *op.KeyValue, value T) V
+	onUpdate  []func(update MirrorUpdate)
+	onChanges []func(changes MirrorUpdateChanges[V])
 }
 
-type MirrorUpdatedKeys[V any] struct {
+type MirrorUpdate struct {
+	Header  *Header
+	Restart bool
+}
+
+type MirrorUpdateChanges[V any] struct {
+	MirrorUpdate
 	Created []MirrorKVPair[V]
 	Updated []MirrorKVPair[V]
 	Deleted []MirrorKVPair[V]
@@ -90,6 +98,7 @@ func (s MirrorSetup[T, V]) Build() *Mirror[T, V] {
 		tree:         prefixtree.New[V](),
 		revisionLock: &sync.Mutex{},
 		onUpdate:     s.onUpdate,
+		onChanges:    s.onChanges,
 	}
 }
 
@@ -97,7 +106,8 @@ func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup) (
 	errCh := m.stream.
 		SetupConsumer(m.logger).
 		WithForEach(func(events []WatchEventT[T], header *Header, restart bool) {
-			changes := MirrorUpdatedKeys[V]{}
+			update := MirrorUpdate{Header: header, Restart: restart}
+			changes := MirrorUpdateChanges[V]{MirrorUpdate: update}
 			m.tree.Atomic(func(t *prefixtree.Tree[V]) {
 				// Reset the tree after receiving the first batch after the restart.
 				if restart {
@@ -127,18 +137,18 @@ func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup) (
 							}
 						}
 						newValue := m.mapValue(event.Kv, event.Value)
-						if len(m.onUpdate) > 0 {
+						if len(m.onChanges) > 0 {
 							changes.Updated = append(changes.Updated, MirrorKVPair[V]{Key: newKey, Value: newValue})
 						}
 						t.Insert(newKey, newValue)
 					case CreateEvent:
 						newValue := m.mapValue(event.Kv, event.Value)
-						if len(m.onUpdate) > 0 {
+						if len(m.onChanges) > 0 {
 							changes.Created = append(changes.Created, MirrorKVPair[V]{Key: newKey, Value: newValue})
 						}
 						t.Insert(newKey, newValue)
 					case DeleteEvent:
-						if len(m.onUpdate) > 0 {
+						if len(m.onChanges) > 0 {
 							oldValue, _ := t.Get(oldKey)
 							changes.Deleted = append(changes.Deleted, MirrorKVPair[V]{Key: oldKey, Value: oldValue})
 						}
@@ -155,8 +165,11 @@ func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup) (
 				m.logger.Debugf(ctx, `synced to revision %d`, header.Revision)
 			})
 
-			// Call OnUpdate callbacks
+			// Call callbacks
 			for _, fn := range m.onUpdate {
+				go fn(update)
+			}
+			for _, fn := range m.onChanges {
 				go fn(changes)
 			}
 		}).
@@ -170,8 +183,19 @@ func (s MirrorSetup[T, V]) WithFilter(fn func(event WatchEventT[T]) bool) Mirror
 	return s
 }
 
-func (s MirrorSetup[T, V]) WithOnUpdate(fn func(changes MirrorUpdatedKeys[V])) MirrorSetup[T, V] {
+// WithOnUpdate callback is triggered on each atomic tree update.
+// The update argument contains actual etcd revision,
+// on which the mirror is synchronized.
+func (s MirrorSetup[T, V]) WithOnUpdate(fn func(update MirrorUpdate)) MirrorSetup[T, V] {
 	s.onUpdate = append(s.onUpdate, fn)
+	return s
+}
+
+// WithOnChanges callback is triggered on each atomic tree update.
+// The changes argument contains actual etcd revision,
+// on which the mirror is synchronized and also a list of changes.
+func (s MirrorSetup[T, V]) WithOnChanges(fn func(changes MirrorUpdateChanges[V])) MirrorSetup[T, V] {
+	s.onChanges = append(s.onChanges, fn)
 	return s
 }
 

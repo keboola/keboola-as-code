@@ -24,7 +24,7 @@ import (
 // Dispatcher decides whether the request is to be accepted and dispatches it to all sinks that belong to the given Source entity.
 type Dispatcher struct {
 	logger     log.Logger
-	sinkRouter sinkRouter.Router
+	sinkRouter *sinkRouter.Router
 	// sources field contains in-memory snapshot of all active HTTP sources. Only necessary data is saved.
 	sources *etcdop.Mirror[definition.Source, *sourceData]
 	// cancelMirror on shutdown
@@ -44,7 +44,7 @@ type sourceData struct {
 type dependencies interface {
 	Process() *servicectx.Process
 	DefinitionRepository() *definitionRepo.Repository
-	SinkRouter() sinkRouter.Router
+	SinkRouter() *sinkRouter.Router
 }
 
 func New(d dependencies, logger log.Logger) (*Dispatcher, error) {

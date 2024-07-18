@@ -11,7 +11,7 @@ import (
 type Plugins struct {
 	collection          *Collection
 	executor            *Executor
-	localStorageSinks   []func(sink *definition.Sink) bool
+	localStorageSinks   []func(sinkType definition.SinkType) bool
 	sinkPipelineOpeners []pipeline.Opener
 }
 

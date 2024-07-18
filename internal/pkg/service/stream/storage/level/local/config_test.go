@@ -25,6 +25,7 @@ func TestConfig_Validation(t *testing.T) {
 - "writer.network.listen" is a required field
 - "writer.network.transport" is a required field
 - "writer.network.keepAliveInterval" is a required field
+- "writer.network.minSlicesPerSourceNode" is a required field
 - "writer.network.maxWaitingStreamsPerConn" is a required field
 - "writer.network.streamMaxWindow" is a required field
 - "writer.network.streamOpenTimeout" is a required field

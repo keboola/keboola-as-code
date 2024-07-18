@@ -1,8 +1,6 @@
 package dependencies
 
 import (
-	"context"
-
 	distributionPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -18,17 +16,12 @@ type distributionScopeDeps interface {
 	TaskScope
 }
 
-func NewDistributionScope(ctx context.Context, nodeID string, cfg distributionPkg.Config, d distributionScopeDeps) (DistributionScope, error) {
-	return newDistributionScope(ctx, nodeID, cfg, d)
+func NewDistributionScope(nodeID string, cfg distributionPkg.Config, d distributionScopeDeps) DistributionScope {
+	return newDistributionScope(nodeID, cfg, d)
 }
 
-func newDistributionScope(ctx context.Context, nodeID string, cfg distributionPkg.Config, d distributionScopeDeps) (v *distributionScope, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewDistributionScope")
-	defer span.End(&err)
-
-	node := distributionPkg.NewNode(nodeID, cfg, d)
-
-	return &distributionScope{node: node}, nil
+func newDistributionScope(nodeID string, cfg distributionPkg.Config, d distributionScopeDeps) (v *distributionScope) {
+	return &distributionScope{node: distributionPkg.NewNode(nodeID, cfg, d)}
 }
 
 func (v *distributionScope) check() {

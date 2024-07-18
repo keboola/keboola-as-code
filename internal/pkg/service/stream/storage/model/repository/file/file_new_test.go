@@ -30,7 +30,7 @@ func TestNewFile_InvalidCompressionType(t *testing.T) {
 	fileKey := model.FileKey{SinkKey: sinkKey, FileID: model.FileID{OpenedAt: utctime.From(now)}}
 	sink := test.NewSinkWithLocalStorage(sinkKey)
 	plugins := plugin.New(log.NewNopLogger())
-	plugins.RegisterSinkWithLocalStorage(func(sink *definition.Sink) bool {
+	plugins.RegisterSinkWithLocalStorage(func(sinkType definition.SinkType) bool {
 		return true
 	})
 

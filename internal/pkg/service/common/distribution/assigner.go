@@ -39,6 +39,13 @@ func (a *Assigner) Nodes() []string {
 	return out
 }
 
+// NodesCount method returns count of known nodes.
+func (a *Assigner) NodesCount() int {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+	return len(a.nodes.Hosts())
+}
+
 // NodeFor returns ID of the key's owner node.
 // The consistent.ErrNoHosts may occur if there is no node in the list.
 func (a *Assigner) NodeFor(key string) (string, error) {

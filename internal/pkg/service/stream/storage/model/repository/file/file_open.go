@@ -19,7 +19,7 @@ import (
 
 func (r *Repository) openFileOnSinkActivation() {
 	r.plugins.Collection().OnSinkActivation(func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
-		if r.plugins.IsSinkWithLocalStorage(sink) {
+		if r.plugins.IsSinkWithLocalStorage(sink.Type) {
 			op.AtomicOpFromCtx(ctx).AddFrom(r.openFileForSink(sink.SinkKey, now, plugin.SourceFromContext(ctx, sink.SourceKey), sink))
 		}
 		return nil

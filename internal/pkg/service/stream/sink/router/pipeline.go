@@ -8,6 +8,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
@@ -15,8 +16,9 @@ import (
 )
 
 type pipelineRef struct {
-	router  *router
-	sinkKey key.SinkKey
+	router   *Router
+	sinkKey  key.SinkKey
+	sinkType definition.SinkType
 	// lock protects pipeline field
 	lock sync.Mutex
 	// pipeline to write data to the sink,
@@ -29,6 +31,9 @@ type pipelineRef struct {
 }
 
 func (p *pipelineRef) writeRecord(c recordctx.Context) (pipeline.RecordStatus, error) {
+	if p.router.isClosed() {
+		return pipeline.RecordError, ShutdownError{}
+	}
 	if err := p.ensureOpened(c.Ctx(), c.Timestamp()); err != nil {
 		return pipeline.RecordError, err
 	}
@@ -41,15 +46,11 @@ func (p *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) err
 
 	// Try open, if needed, and there is no retry backoff delay active
 	if p.pipeline == nil && (p.openError == nil || timestamp.After(p.openRetryAfter)) {
-		// Local full sink definition from DB
-		sink, err := p.router.definitions.Sink().Get(p.sinkKey).Do(ctx).ResultOrErr()
-		if err != nil {
-			return errors.PrefixError(err, "cannot load sink definition")
-		}
+		var err error
 
 		// Use plugin system to create the pipeline
 		p.router.logger.Infof(ctx, `opening sink pipeline %q`, p.sinkKey)
-		p.pipeline, err = p.router.plugins.OpenSinkPipeline(ctx, sink)
+		p.pipeline, err = p.router.plugins.OpenSinkPipeline(ctx, p.sinkKey, p.sinkType)
 
 		// Use retry backoff, don't try to open pipeline on each record
 		if err != nil {

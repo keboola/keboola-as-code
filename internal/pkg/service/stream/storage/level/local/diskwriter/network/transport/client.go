@@ -2,15 +2,15 @@ package transport
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"sync"
 
-	"github.com/hashicorp/yamux"
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Client struct {
@@ -20,11 +20,9 @@ type Client struct {
 	transport Transport
 
 	closed chan struct{}
-	wg     sync.WaitGroup
 
-	lock     sync.Mutex
-	sessions map[string]*yamux.Session
-	streams  map[string]*yamux.Stream
+	lock        sync.RWMutex
+	connections map[string]*ClientConnection
 }
 
 type clientDependencies interface {
@@ -39,13 +37,12 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) (*Cli
 	}
 
 	c := &Client{
-		logger:    d.Logger().WithComponent("storage.node.writer.network.client"),
-		config:    config,
-		nodeID:    nodeID,
-		transport: transport,
-		closed:    make(chan struct{}),
-		sessions:  make(map[string]*yamux.Session),
-		streams:   make(map[string]*yamux.Stream),
+		logger:      d.Logger().WithComponent("storage.node.writer.network.client"),
+		config:      config,
+		nodeID:      nodeID,
+		transport:   transport,
+		closed:      make(chan struct{}),
+		connections: make(map[string]*ClientConnection),
 	}
 
 	// Graceful shutdown
@@ -56,43 +53,20 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) (*Cli
 		close(c.closed)
 
 		c.lock.Lock()
-		streams := maps.Values(c.streams)
-		sessions := maps.Values(c.sessions)
+		connections := maps.Values(c.connections)
 		c.lock.Unlock()
 
-		// Close all streams
-		c.logger.Infof(ctx, "closing %d streams", len(streams))
-		streamsWg := &sync.WaitGroup{}
-		for _, stream := range streams {
-			streamsWg.Add(1)
+		// Close all connections
+		c.logger.Infof(ctx, "closing %d connections", len(connections))
+		wg := &sync.WaitGroup{}
+		for _, conn := range connections {
+			wg.Add(1)
 			go func() {
-				defer streamsWg.Done()
-				if err := stream.Close(); err != nil {
-					err = errors.PrefixError(err, "cannot close client stream")
-					c.logger.Error(ctx, err.Error())
-				}
+				defer wg.Done()
+				conn.Close(ctx)
 			}()
 		}
-		streamsWg.Wait()
-
-		// Close all sessions
-		c.logger.Infof(ctx, "closing %d sessions", len(sessions))
-		sessWg := &sync.WaitGroup{}
-		for _, sess := range sessions {
-			sessWg.Add(1)
-			go func() {
-				defer sessWg.Done()
-				if err := sess.Close(); err != nil {
-					err = errors.PrefixError(err, "cannot close client session")
-					c.logger.Error(ctx, err.Error())
-				}
-			}()
-		}
-		sessWg.Wait()
-
-		// Wait for remaining goroutines
-		c.logger.Info(ctx, "waiting for goroutines")
-		c.wg.Wait()
+		wg.Wait()
 		c.logger.Info(ctx, "closed disk writer client")
 	})
 
@@ -103,15 +77,15 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) (*Cli
 // The method does not return an error, if it fails to connect, it tries again.
 // The error is returned only when the client is closed.
 // If the connection is dropped late, it tries to reconnect, until the client or connection Close method is called.
-func (c *Client) OpenConnection(remoteNodeID, remoteAddr string) (*ClientConnection, error) {
-	return newClientConnection(remoteNodeID, remoteAddr, c, nil)
+func (c *Client) OpenConnection(ctx context.Context, remoteNodeID, remoteAddr string) (*ClientConnection, error) {
+	return openClientConnection(ctx, remoteNodeID, remoteAddr, c, nil)
 }
 
 // OpenConnectionOrErr will try to connect to the address and return an error if it fails.
 // If the connection is closed after the initialization, it tries to reconnect, until the client or connection Close method is called.
-func (c *Client) OpenConnectionOrErr(remoteNodeID, remoteAddr string) (*ClientConnection, error) {
+func (c *Client) OpenConnectionOrErr(ctx context.Context, remoteNodeID, remoteAddr string) (*ClientConnection, error) {
 	initDone := make(chan error, 1)
-	conn, err := newClientConnection(remoteNodeID, remoteAddr, c, initDone)
+	conn, err := openClientConnection(ctx, remoteNodeID, remoteAddr, c, initDone)
 	if err != nil {
 		return nil, err
 	}
@@ -123,28 +97,39 @@ func (c *Client) OpenConnectionOrErr(remoteNodeID, remoteAddr string) (*ClientCo
 	return conn, nil
 }
 
-func (c *Client) registerSession(sess *yamux.Session) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	c.sessions[sessionKey(sess)] = sess
+func (c *Client) Connection(remoteNodeID string) (*ClientConnection, bool) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	conn, found := c.connections[remoteNodeID]
+	return conn, found
 }
 
-func (c *Client) unregisterSession(sess *yamux.Session) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	delete(c.sessions, sessionKey(sess))
+func (c *Client) Connections() []*ClientConnection {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	out := maps.Values(c.connections)
+	slices.SortStableFunc(out, func(a, b *ClientConnection) int {
+		return strings.Compare(a.remoteNodeID, b.remoteNodeID)
+	})
+	return out
 }
 
-func (c *Client) registerStream(stream *yamux.Stream) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	c.streams[streamKey(stream)] = stream
+func (c *Client) ConnectionsCount() int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return len(c.connections)
 }
 
-func (c *Client) unregisterStream(stream *yamux.Stream) {
+func (c *Client) registerConnection(conn *ClientConnection) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	delete(c.streams, streamKey(stream))
+	c.connections[conn.remoteNodeID] = conn
+}
+
+func (c *Client) unregisterConnection(conn *ClientConnection) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	delete(c.connections, conn.remoteNodeID)
 }
 
 func (c *Client) isClosed() bool {

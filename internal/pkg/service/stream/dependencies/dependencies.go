@@ -111,7 +111,8 @@ type SinkRequestScope interface {
 
 type SourceScope interface {
 	ServiceScope
-	SinkRouter() sinkRouter.Router
+	dependencies.DistributionScope
+	SinkRouter() *sinkRouter.Router
 }
 
 type LocalStorageScope interface {
