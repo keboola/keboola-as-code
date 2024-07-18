@@ -272,7 +272,8 @@ func (tc *volumeTestCase) OpenVolume() (*diskwriter.Volume, error) {
 		Type:        tc.VolumeType,
 		Label:       tc.VolumeLabel,
 	}
-	return diskwriter.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Config, spec, tc.Events)
+
+	return diskwriter.OpenVolume(tc.Ctx, tc.Logger, tc.Clock, tc.Config, spec, tc.Events)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {

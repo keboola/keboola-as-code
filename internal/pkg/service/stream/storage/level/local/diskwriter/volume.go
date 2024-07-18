@@ -60,12 +60,12 @@ type writerRef struct {
 	Writer
 }
 
-// Open volume for writing.
+// OpenVolume for writing.
 //   - It is checked that the volume path exists.
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The IDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, spec volume.Spec, writerEvents *events.Events[Writer]) (*Volume, error) {
+func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, spec volume.Spec, writerEvents *events.Events[Writer]) (*Volume, error) {
 	v := &Volume{
 		spec:          spec,
 		logger:        logger,

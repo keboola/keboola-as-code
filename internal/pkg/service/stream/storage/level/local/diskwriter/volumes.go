@@ -36,7 +36,7 @@ func OpenVolumes(ctx context.Context, d dependencies, nodeID, nodeAddress, volum
 	}
 
 	v.collection, err = opener.OpenVolumes(ctx, v.logger, nodeID, nodeAddress, volumesPath, func(spec volume.Spec) (*Volume, error) {
-		return Open(ctx, v.logger, v.clock, config, spec, v.events)
+		return OpenVolume(ctx, v.logger, v.clock, config, spec, v.events)
 	})
 	if err != nil {
 		return nil, err

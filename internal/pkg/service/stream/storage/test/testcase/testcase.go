@@ -194,7 +194,7 @@ func (tc *WriterTestCase) startDiskWriterNode(t *testing.T, ctx context.Context)
 	// Open volume
 	volPath := t.TempDir()
 	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := diskwriter.Open(ctx, d.Logger(), d.Clock(), mock.TestConfig().Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
+	vol, err := diskwriter.OpenVolume(ctx, d.Logger(), d.Clock(), mock.TestConfig().Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
 	require.NoError(t, err)
 
 	return vol
