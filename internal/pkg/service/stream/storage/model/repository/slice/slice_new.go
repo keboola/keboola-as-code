@@ -26,6 +26,7 @@ func (r *Repository) newSlice(now time.Time, file model.File, volumeID volume.ID
 	s.SliceKey = sliceKey
 	s.State = model.SliceWriting
 	s.Mapping = file.Mapping
+	s.Encoding = file.Encoding
 	if s.LocalStorage, err = local.NewSlice(localDir, file.LocalStorage); err != nil {
 		return model.Slice{}, err
 	}

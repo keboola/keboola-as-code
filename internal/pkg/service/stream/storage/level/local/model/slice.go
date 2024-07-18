@@ -2,8 +2,6 @@ package model
 
 import (
 	"github.com/c2h5oh/datasize"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 )
 
 type Slice struct {
@@ -16,6 +14,4 @@ type Slice struct {
 	IsEmpty bool `json:"isEmpty,omitempty"`
 	// AllocatedDiskSpace defines the disk size that is pre-allocated when creating the slice.
 	AllocatedDiskSpace datasize.ByteSize `json:"allocatedDiskSpace"`
-	// Encoding defines how is the  result format encoded, for example tabular data to CSV.
-	Encoding config.Config `json:"encoding"`
 }

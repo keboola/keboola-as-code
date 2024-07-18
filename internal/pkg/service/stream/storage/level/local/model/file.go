@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 )
 
@@ -13,6 +12,4 @@ type File struct {
 	Assignment assignment.Assignment `json:"assignment"`
 	// Allocation configures pre-allocation of the filesystem free space.
 	Allocation diskalloc.Config `json:"allocation"`
-	// Encoding defines how is the  result format encoded, for example tabular data to CSV.
-	Encoding encoding.Config `json:"encoding"`
 }
