@@ -9,8 +9,8 @@ ENV GOFLAGS="-mod=mod"
 ENV GOLANGCI_LINT_CACHE=/tmp/cache/golangci-lint
 ENV PATH="$PATH:$GOBIN"
 
-# Install editor
-RUN apt-get update && apt-get install -y nano
+# Install packages
+RUN apt-get update && apt-get install -y nano protobuf-compiler
 ENV EDITOR=nano
 
 # Install tools

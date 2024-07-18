@@ -87,3 +87,13 @@ if ! command -v goa &> /dev/null
 then
   go install goa.design/goa/v3/cmd/goa@v3.16.0
 fi
+
+if ! command -v protoc-gen-go &> /dev/null
+then
+  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+fi
+
+if ! command -v protoc-gen-go-grpc &> /dev/null
+then
+  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+fi
