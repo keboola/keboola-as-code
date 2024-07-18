@@ -20,7 +20,7 @@ func (r *Repository) estimateSliceSizeOnSliceOpen() {
 	r.plugins.Collection().OnSliceOpen(func(ctx context.Context, now time.Time, file model.File, slice *model.Slice) error {
 		// Optional: If Sink is new, we can skip calculation, there is no previous slice/statistics
 		if sink := plugin.SinkFromContext(ctx, file.SinkKey); sink != nil && sink.CreatedAt().Time().Equal(now) {
-			slice.LocalStorage.AllocatedDiskSpace = file.LocalStorage.DiskAllocation.ForNextSlice(0)
+			slice.LocalStorage.AllocatedDiskSpace = file.LocalStorage.Allocation.ForNextSlice(0)
 			return nil
 		}
 
@@ -44,7 +44,7 @@ func (r *Repository) estimateSliceSize(ctx context.Context, file model.File, sli
 	}
 
 	// Calculate allocated disk space for the new slice
-	slice.LocalStorage.AllocatedDiskSpace = file.LocalStorage.DiskAllocation.ForNextSlice(size)
+	slice.LocalStorage.AllocatedDiskSpace = file.LocalStorage.Allocation.ForNextSlice(size)
 	return nil
 }
 

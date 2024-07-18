@@ -57,7 +57,9 @@ func TestMirror(t *testing.T) {
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
 	waitForSync := func() {
-		assert.Eventually(t, func() bool { return mirror.Revision() >= header.Revision }, time.Second, 100*time.Millisecond)
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			assert.GreaterOrEqual(c, mirror.Revision(), header.Revision)
+		}, time.Second, 100*time.Millisecond)
 	}
 
 	// Wait for initialization
@@ -157,7 +159,9 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
 	waitForSync := func() {
-		assert.Eventually(t, func() bool { return mirror.Revision() >= header.Revision }, time.Second, 100*time.Millisecond)
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			assert.GreaterOrEqual(c, mirror.Revision(), header.Revision)
+		}, time.Second, 100*time.Millisecond)
 	}
 
 	// Wait for initialization
@@ -245,7 +249,9 @@ func TestMirror_WithOnChanges(t *testing.T) {
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
 	waitForSync := func() {
-		assert.Eventually(t, func() bool { return mirror.Revision() >= header.Revision }, time.Second, 100*time.Millisecond)
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			assert.GreaterOrEqual(c, mirror.Revision(), header.Revision)
+		}, time.Second, 100*time.Millisecond)
 	}
 
 	// Wait for initialization
@@ -359,7 +365,9 @@ func TestFullMirror(t *testing.T) {
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
 	waitForSync := func() {
-		assert.Eventually(t, func() bool { return mirror.Revision() >= header.Revision }, 5*time.Second, 100*time.Millisecond)
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			assert.GreaterOrEqual(c, mirror.Revision(), header.Revision)
+		}, time.Second, 100*time.Millisecond)
 	}
 
 	// Wait for initialization

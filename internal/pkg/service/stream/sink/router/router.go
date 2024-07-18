@@ -185,9 +185,9 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	// Write to sinks in parallel
 	var lock sync.Mutex
 	var wg sync.WaitGroup
-	r.sinks.WalkPrefix(sourceKey.String(), func(_ string, sink *sinkData) (stop bool) {
+	for _, sink := range r.sinks.AllFromPrefix(sourceKey.String()) {
 		if !sink.enabled {
-			return false
+			continue
 		}
 
 		r.wg.Add(1)
@@ -214,9 +214,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 				result.FailedSinks++
 			}
 		}()
-
-		return false
-	})
+	}
 
 	// Wait for all writes
 	wg.Wait()

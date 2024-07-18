@@ -182,11 +182,11 @@ func shutdown(t *testing.T, clientDeps, srvDeps dependencies.ServiceScope, clien
 	t.Helper()
 
 	// Don't start shutdown, before the successful connection is logged
-	assert.Eventually(t, func() bool {
-		return srvLogger.CompareJSONMessages(`{"message":"accepted connection from \"%s\" to \"%s\""}`) == nil
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		srvLogger.AssertJSONMessages(c, `{"message":"accepted connection from \"%s\" to \"%s\""}`)
 	}, 5*time.Second, 10*time.Millisecond)
-	assert.Eventually(t, func() bool {
-		return clientLogger.CompareJSONMessages(`{"message":"disk writer client connected from \"%s\" to \"%s\""}`) == nil
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		clientLogger.AssertJSONMessages(c, `{"message":"disk writer client connected from \"%s\" to \"%s\""}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Shutdown client

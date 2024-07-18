@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -75,10 +76,16 @@ func New(
 		return nil, errors.PrefixErrorf(err, `cannot create slice directory "%s"`, dirPath)
 	}
 
+	// Get file opener
+	var opener FileOpener = DefaultFileOpener{}
+	if cfg.OverrideFileOpener != nil {
+		opener = cfg.OverrideFileOpener
+	}
+
 	// Open file
 	filePath := filepath.Join(dirPath, slice.LocalStorage.Filename)
 	logger = logger.With(attribute.String("file.path", filePath))
-	w.file, err = cfg.FileOpener.OpenFile(filePath)
+	w.file, err = opener.OpenFile(filePath)
 	if err == nil {
 		logger.Debug(ctx, "opened file")
 	} else {
@@ -92,10 +99,16 @@ func New(
 		return nil, err
 	}
 
+	// Get allocator
+	var allocator diskalloc.Allocator = diskalloc.DefaultAllocator{}
+	if cfg.Allocation.OverrideAllocator != nil {
+		allocator = cfg.Allocation.OverrideAllocator
+	}
+
 	// Allocate disk space
 	if isNew := stat.Size() == 0; isNew {
 		if size := slice.LocalStorage.AllocatedDiskSpace; size != 0 {
-			if ok, err := cfg.Allocator.Allocate(w.file, size); ok {
+			if ok, err := allocator.Allocate(w.file, size); ok {
 				logger.Debugf(ctx, `allocated disk space "%s"`, size)
 			} else if err != nil {
 				// The error is not fatal

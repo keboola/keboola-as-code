@@ -19,53 +19,67 @@ storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
   "sourceId": "my-source",
   "sinkId": "my-sink",
   "fileOpenedAt": "2000-01-01T01:00:00.000Z",
-  "type": "csv",
   "state": "writing",
-  "columns": [
-    {
-      "type": "datetime",
-      "name": "datetime"
-    },
-    {
-      "type": "body",
-      "name": "body"
-    }
-  ],
-  "assignment": {
-    "config": {
-      "count": 1,
-      "preferredTypes": [
-        "default"
-      ]
-    },
-    "volumes": [
-      "my-volume-1"
+  "mapping": {
+    "columns": [
+      {
+        "type": "datetime",
+        "name": "datetime"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
     ]
   },
   "local": {
     "dir": "123/456/my-source/my-sink/2000-01-01T01-00-00-000Z",
-    "compression": {
-      "type": "gzip",
-      "gzip": {
-        "level": 1,
-        "implementation": "parallel",
-        "blockSize": "256KB",
-        "concurrency": 0
-      }
+    "assignment": {
+      "config": {
+        "count": 1,
+        "preferredTypes": [
+          "default"
+        ]
+      },
+      "volumes": [
+        "my-volume-1"
+      ]
     },
-    "diskSync": {
-      "mode": "disk",
-      "wait": true,
-      "checkInterval": "5ms",
-      "countTrigger": 10000,
-      "uncompressedBytesTrigger": "1MB",
-      "compressedBytesTrigger": "256KB",
-      "intervalTrigger": "50ms"
-    },
-    "diskAllocation": {
+    "allocation": {
       "enabled": true,
       "static": "100MB",
       "relative": 110
+    },
+    "encoding": {
+      "encoder": {
+        "type": "csv",
+        "concurrency": 0
+      },
+      "inputBuffer": "1MB",
+      "outputBuffer": "1MB",
+      "compression": {
+        "type": "gzip",
+        "gzip": {
+          "level": 1,
+          "implementation": "parallel",
+          "blockSize": "256KB",
+          "concurrency": 0
+        },
+        "zstd": {
+          "level": 2,
+          "windowSize": "4MB",
+          "concurrency": 0
+        }
+      },
+      "sync": {
+        "mode": "disk",
+        "wait": true,
+        "checkInterval": "5ms",
+        "countTrigger": 10000,
+        "uncompressedBytesTrigger": "1MB",
+        "compressedBytesTrigger": "256KB",
+        "intervalTrigger": "50ms"
+      }
     }
   },
   "staging": {
@@ -76,6 +90,11 @@ storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
         "level": 1,
         "implementation": "parallel",
         "blockSize": "256KB",
+        "concurrency": 0
+      },
+      "zstd": {
+        "level": 2,
+        "windowSize": "4MB",
         "concurrency": 0
       }
     },
@@ -98,40 +117,49 @@ storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-
   "fileOpenedAt": "2000-01-01T01:00:00.000Z",
   "volumeId": "my-volume-1",
   "sliceOpenedAt": "2000-01-01T01:00:00.000Z",
-  "type": "csv",
   "state": "writing",
-  "columns": [
-    {
-      "type": "datetime",
-      "name": "datetime"
-    },
-    {
-      "type": "body",
-      "name": "body"
-    }
-  ],
+  "mapping": {
+    "columns": [
+      {
+        "type": "datetime",
+        "name": "datetime"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
   "local": {
     "dir": "123/456/my-source/my-sink/2000-01-01T01-00-00-000Z/2000-01-01T01-00-00-000Z",
     "filename": "slice.csv.gz",
-    "compression": {
-      "type": "gzip",
-      "gzip": {
-        "level": 1,
-        "implementation": "parallel",
-        "blockSize": "256KB",
+    "allocatedDiskSpace": "100MB",
+    "encoding": {
+      "encoder": {
+        "type": "csv",
         "concurrency": 0
+      },
+      "inputBuffer": "1MB",
+      "outputBuffer": "1MB",
+      "compression": {
+        "type": "gzip",
+        "gzip": {
+          "level": 1,
+          "implementation": "parallel",
+          "blockSize": "256KB",
+          "concurrency": 0
+        }
+      },
+      "sync": {
+        "mode": "disk",
+        "wait": true,
+        "checkInterval": "5ms",
+        "countTrigger": 10000,
+        "uncompressedBytesTrigger": "1MB",
+        "compressedBytesTrigger": "256KB",
+        "intervalTrigger": "50ms"
       }
-    },
-    "diskSync": {
-      "mode": "disk",
-      "wait": true,
-      "checkInterval": "5ms",
-      "countTrigger": 10000,
-      "uncompressedBytesTrigger": "1MB",
-      "compressedBytesTrigger": "256KB",
-      "intervalTrigger": "50ms"
-    },
-    "allocatedDiskSpace": "100MB"
+    }
   },
   "staging": {
     "path": "2000-01-01T01:00:00.000Z_my-volume-1.gz",

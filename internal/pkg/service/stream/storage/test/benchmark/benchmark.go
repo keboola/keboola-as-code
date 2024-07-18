@@ -8,24 +8,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -33,7 +32,6 @@ import (
 type WriterBenchmark struct {
 	// Parallelism is number of parallel write operations.
 	Parallelism int
-	FileType    model.FileType
 	Columns     column.Columns
 	Allocate    datasize.ByteSize
 	Sync        writesync.Config
@@ -58,27 +56,22 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Init random string generator
 	gen := newRandomStringGenerator()
 
-	// Setup logger
-	logger := log.NewServiceLogger(testhelper.VerboseStdout(), false)
+	// Start source node
+	sourceNode := wb.startSourceNode(b)
 
-	// Open volume
-	clk := clock.New()
-	volPath := b.TempDir()
-	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := diskwriter.Open(ctx, logger, clk, diskwriter.NewConfig(), spec, events.New[diskwriter.Writer]())
-	require.NoError(b, err)
+	// Start disk in node
+	vol := wb.startDiskWriterNode(b, ctx)
 
 	// Create slice
 	slice := wb.newSlice(b, vol)
-	filePath := filepath.Join(volPath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
+	filePath := filepath.Join(vol.Path(), slice.LocalStorage.Dir, slice.LocalStorage.Filename)
 
 	// Create writer
 	diskWriter, err := vol.OpenWriter(slice)
 	require.NoError(b, err)
 
 	// Create encoder pipeline
-	cfg := encoding.NewConfig()
-	writer, err := encoding.NewPipeline(ctx, logger, clk, cfg, slice, diskWriter, events.New[encoding.Pipeline]())
+	writer, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, diskWriter)
 	require.NoError(b, err)
 
 	// Create data channel
@@ -150,17 +143,39 @@ func (wb *WriterBenchmark) newSlice(b *testing.B, volume *diskwriter.Volume) *mo
 
 	s := test.NewSlice()
 	s.VolumeID = volume.ID()
-	s.Type = wb.FileType
-	s.Columns = wb.Columns
+	s.Mapping = table.Mapping{Columns: wb.Columns}
 	s.LocalStorage.AllocatedDiskSpace = wb.Allocate
-	s.LocalStorage.Compression = wb.Compression
-	s.LocalStorage.DiskSync = wb.Sync
+	s.LocalStorage.Encoding.Sync = wb.Sync
+	s.LocalStorage.Encoding.Compression = wb.Compression
 	s.StagingStorage.Compression = wb.Compression
 
 	// Slice definition must be valid, except ZSTD compression - it is not enabled/supported in production
-	if s.LocalStorage.Compression.Type != compression.TypeZSTD {
+	if s.LocalStorage.Encoding.Compression.Type != compression.TypeZSTD {
 		val := validator.New()
 		require.NoError(b, val.Validate(context.Background(), s))
 	}
 	return s
+}
+
+func (wb *WriterBenchmark) startSourceNode(b *testing.B) dependencies.SourceScope {
+	b.Helper()
+
+	d, _ := dependencies.NewMockedSourceScope(b)
+	return d
+}
+
+func (wb *WriterBenchmark) startDiskWriterNode(b *testing.B, ctx context.Context) *diskwriter.Volume {
+	b.Helper()
+
+	d, mock := dependencies.NewMockedLocalStorageScopeWithConfig(b, func(cfg *config.Config) {
+		cfg.Storage.Level.Local.Writer.WatchDrainFile = false
+	})
+
+	// Open volume
+	volPath := b.TempDir()
+	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
+	vol, err := diskwriter.Open(ctx, d.Logger(), d.Clock(), mock.TestConfig().Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
+	require.NoError(b, err)
+
+	return vol
 }

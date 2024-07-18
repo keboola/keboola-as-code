@@ -35,8 +35,8 @@ func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 
 	// Remove the file
 	assert.NoError(t, os.Remove(drainFilePath))
-	assert.Eventually(t, func() bool {
-		return vol.Drained() == false
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.False(c, vol.Drained())
 	}, time.Second, 5*time.Millisecond)
 
 	// Close volume
@@ -62,8 +62,8 @@ func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 	// Create an empty drain file
 	drainFilePath := filepath.Join(tc.VolumePath, diskwriter.DrainFile)
 	assert.NoError(t, os.WriteFile(drainFilePath, nil, 0o640))
-	assert.Eventually(t, func() bool {
-		return vol.Drained() == true
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.True(c, vol.Drained())
 	}, time.Second, 5*time.Millisecond)
 
 	// Close volume

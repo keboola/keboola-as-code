@@ -7,9 +7,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
@@ -38,28 +40,32 @@ func NewSlice() *model.Slice {
 }
 
 func NewSliceOpenedAt(openedAt string) *model.Slice {
+	encodingCfg := encoding.NewConfig()
+	encodingCfg.Compression = compression.NewNoneConfig()
+	encodingCfg.Sync = writesync.Config{
+		Mode:                     writesync.ModeDisk,
+		Wait:                     true,
+		CheckInterval:            duration.From(1 * time.Millisecond),
+		CountTrigger:             500,
+		UncompressedBytesTrigger: 10 * datasize.MB,
+		CompressedBytesTrigger:   1 * datasize.MB,
+		IntervalTrigger:          duration.From(50 * time.Millisecond),
+	}
+
 	return &model.Slice{
 		SliceKey: NewSliceKeyOpenedAt(openedAt),
-		Type:     model.FileTypeCSV,
 		State:    model.SliceWriting,
-		Columns: column.Columns{
-			column.Datetime{},
-			column.Body{},
+		Mapping: table.Mapping{
+			Columns: column.Columns{
+				column.Datetime{Name: "datetime"},
+				column.Body{Name: "body"},
+			},
 		},
 		LocalStorage: localModel.Slice{
 			Dir:                local.NormalizeDirPath(openedAt),
 			Filename:           "slice.csv",
 			AllocatedDiskSpace: 10 * datasize.KB,
-			Compression:        compression.NewNoneConfig(),
-			DiskSync: writesync.Config{
-				Mode:                     writesync.ModeDisk,
-				Wait:                     true,
-				CheckInterval:            duration.From(1 * time.Millisecond),
-				CountTrigger:             500,
-				UncompressedBytesTrigger: 10 * datasize.MB,
-				CompressedBytesTrigger:   1 * datasize.MB,
-				IntervalTrigger:          duration.From(50 * time.Millisecond),
-			},
+			Encoding:           encodingCfg,
 		},
 		StagingStorage: stagingModel.Slice{
 			Path:        "slice.csv",

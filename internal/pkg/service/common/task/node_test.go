@@ -694,12 +694,11 @@ func TestTaskTimeout(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for the task
-	assert.Eventually(t, func() bool {
-		err := logger.CompareJSONMessages(`
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		logger.AssertJSONMessages(c, `
 {"level":"warn","message":"task failed (%s): context deadline exceeded"}
 {"level":"debug","message":"lock released%s"}
 `)
-		return err == nil
 	}, 5*time.Second, 100*time.Millisecond, logger.AllMessages())
 
 	// Check etcd state after task

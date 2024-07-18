@@ -118,13 +118,13 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	}()
 
 	// Wait for 2 checks
-	assert.Eventually(t, func() bool {
-		return strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file") == 1
-	}, time.Second, 5*time.Millisecond)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, 1, strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file"))
+	}, 5*time.Second, 10*time.Millisecond)
 	tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
-	assert.Eventually(t, func() bool {
-		return strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file") == 2
-	}, time.Second, 5*time.Millisecond)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, 2, strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file"))
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// Create the volume ID file
 	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
@@ -184,8 +184,8 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 
 	// Simulate multiple check attempts and then timeout
 	for i := 1; i <= intervals; i++ {
-		assert.Eventually(t, func() bool {
-			return strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file") == i
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			assert.Equal(c, i, strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file"))
 		}, time.Second, 5*time.Millisecond)
 		tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
 	}
@@ -236,7 +236,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	t.Parallel()
 
 	tc := newVolumeTestCase(t)
-	tc.Config.FileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
+	tc.Config.OverrideFileOpener = diskreader.FileOpenerFn(func(filePath string) (diskreader.File, error) {
 		f := newTestFile(strings.NewReader("foo bar"))
 		f.CloseError = errors.New("some close error")
 		return f, nil

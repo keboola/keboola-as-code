@@ -13,7 +13,7 @@ import (
 func NewFile(localFile localModel.File, openedAt time.Time) stagingModel.File {
 	// Note: Compression in the staging storage is same as in the local storage, but it can be modified in the future.
 	return stagingModel.File{
-		Compression: localFile.Compression,
+		Compression: localFile.Encoding.Compression,
 		Expiration:  utctime.From(openedAt.Add(stagingModel.DefaultFileExpiration)),
 	}
 }
@@ -31,6 +31,6 @@ func NewSlice(path string, f stagingModel.File, localSlice localModel.Slice) (st
 
 	return stagingModel.Slice{
 		Path:        path,
-		Compression: localSlice.Compression,
+		Compression: localSlice.Encoding.Compression.Simplify(),
 	}, nil
 }

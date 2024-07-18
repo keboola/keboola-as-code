@@ -125,30 +125,10 @@ data:
             registration:
               # Number of seconds after the volume registration expires if the node is not available. Validation rules: required,min=1,max=60
               ttlSeconds: 10
-            sync:
-              # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
-              mode: disk
-              # Wait for sync to disk OS cache or to disk hardware, depending on the mode.
-              wait: true
-              # Minimal interval between syncs to disk. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
-              checkInterval: 5ms
-              # Written records count to trigger sync. Validation rules: min=0,max=1000000,required_if=Mode disk,required_if=Mode cache
-              countTrigger: 10000
-              # Size of buffered uncompressed data to trigger sync. Validation rules: maxBytes=500MB,required_if=Mode disk,required_if=Mode cache
-              uncompressedBytesTrigger: 1MB
-              # Size of buffered compressed data to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
-              compressedBytesTrigger: 256KB
-              # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
-              intervalTrigger: 50ms
-            allocation:
-              # Allocate disk space for each slice.
-              enabled: true
-              # Size of allocated disk space for a slice. Validation rules: required
-              static: 100MB
-              # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
-              relative: 110
           encoding:
             encoder:
+              # Encoder type. Validation rules: required,oneof=csv
+              type: csv
               # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
               concurrency: 0
             # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
@@ -167,6 +147,21 @@ data:
                 blockSize: 256KB
                 # GZIP parallel concurrency, 0 = auto.
                 concurrency: 0
+            sync:
+              # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
+              mode: disk
+              # Wait for sync to disk OS cache or to disk hardware, depending on the mode.
+              wait: true
+              # Minimal interval between syncs to disk. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
+              checkInterval: 5ms
+              # Written records count to trigger sync. Validation rules: min=0,max=1000000,required_if=Mode disk,required_if=Mode cache
+              countTrigger: 10000
+              # Size of buffered uncompressed data to trigger sync. Validation rules: maxBytes=500MB,required_if=Mode disk,required_if=Mode cache
+              uncompressedBytesTrigger: 1MB
+              # Size of buffered compressed data to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
+              compressedBytesTrigger: 256KB
+              # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
+              intervalTrigger: 50ms
           writer:
             network:
               # Listen address of the configuration HTTP API. Validation rules: required,hostname_port
@@ -193,6 +188,13 @@ data:
               kcpInputBuffer: 8MB
               # Buffer size for transferring responses between writer and source node (kcp). Validation rules: required,minBytes=16kB,maxBytes=100MB
               kcpResponseBuffer: 512KB
+            allocation:
+              # Allocate disk space for each slice.
+              enabled: true
+              # Size of allocated disk space for a slice. Validation rules: required
+              static: 100MB
+              # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
+              relative: 110
         staging:
           # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
           maxSlicesPerFile: 100

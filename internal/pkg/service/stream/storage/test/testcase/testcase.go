@@ -14,8 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
@@ -24,14 +26,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type WriterTestCase struct {
 	Name              string
-	FileType          model.FileType
 	Columns           column.Columns
 	Allocate          datasize.ByteSize
 	Sync              writesync.Config
@@ -55,33 +55,25 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mock := dependencies.NewMockedLocalStorageScope(t)
-	cfg := mock.TestConfig()
-	cfg.Storage.Level.Local.Writer.WatchDrainFile = false
+	// Start source node
+	sourceNode := tc.startSourceNode(t)
 
-	// Start statistics collector
-	pipelineEvents := events.New[encoding.Pipeline]()
-	collector.Start(d, pipelineEvents, cfg.Storage.Statistics.Collector, cfg.NodeID)
-
-	// Open volume
-	volPath := t.TempDir()
-	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := diskwriter.Open(ctx, d.Logger(), d.Clock(), cfg.Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
-	require.NoError(t, err)
+	// Start disk in node
+	vol := tc.startDiskWriterNode(t, ctx)
 
 	// Create a test slice
 	slice := tc.newSlice(t, vol)
-	filePath := filepath.Join(volPath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
+	filePath := filepath.Join(vol.Path(), slice.LocalStorage.Dir, slice.LocalStorage.Filename)
 
-	// Create encoder pipeline
+	// Open encoder pipeline
 	openPipeline := func() encoding.Pipeline {
-		diskWriter, err := vol.OpenWriter(slice)
+		w, err := vol.OpenWriter(slice)
 		require.NoError(t, err)
-		pipeline, err := encoding.NewPipeline(ctx, d.Logger(), d.Clock(), cfg.Storage.Level.Local.Encoding, slice, diskWriter, pipelineEvents)
+		pipeline, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, w)
 		require.NoError(t, err)
 		return pipeline
 	}
-	writer := openPipeline()
+	pipeline := openPipeline()
 
 	// Write all rows batches
 	rowsCount := 0
@@ -98,7 +90,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					assert.NoError(t, writer.WriteRecord(record))
+					assert.NoError(t, pipeline.WriteRecord(record))
 				}()
 			}
 			go func() {
@@ -110,7 +102,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			go func() {
 				defer close(done)
 				for _, record := range batch.Records {
-					assert.NoError(t, writer.WriteRecord(record))
+					assert.NoError(t, pipeline.WriteRecord(record))
 				}
 			}()
 		}
@@ -123,13 +115,13 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			t.Logf(`set %02d written`, i+1)
 		}
 
-		// Simulate pod failure, restart writer
-		require.NoError(t, writer.Close(ctx))
-		writer = openPipeline()
+		// Simulate pod failure, restart in
+		require.NoError(t, pipeline.Close(ctx))
+		pipeline = openPipeline()
 	}
 
-	// Close the writer
-	require.NoError(t, writer.Close(ctx))
+	// Close the in
+	require.NoError(t, pipeline.Close(ctx))
 
 	// Close volume
 	assert.NoError(t, vol.Close(ctx))
@@ -159,7 +151,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	// Check statistics
-	sliceStats, err := d.StatisticsRepository().SliceStats(ctx, slice.SliceKey)
+	sliceStats, err := sourceNode.StatisticsRepository().SliceStats(ctx, slice.SliceKey)
 	if assert.NoError(t, err) {
 		assert.Equal(t, int(sliceStats.Total.RecordsCount), rowsCount, "records count doesn't match")
 		assert.Equal(t, int64(sliceStats.Total.CompressedSize.Bytes()), fileStat.Size(), "compressed file size doesn't match")
@@ -171,11 +163,10 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *diskwriter.Volume) *mod
 	t.Helper()
 
 	s := NewTestSlice(volume)
-	s.Type = model.FileTypeCSV
-	s.Columns = tc.Columns
+	s.Mapping = table.Mapping{Columns: tc.Columns}
 	s.LocalStorage.AllocatedDiskSpace = tc.Allocate
-	s.LocalStorage.DiskSync = tc.Sync
-	s.LocalStorage.Compression = tc.Compression
+	s.LocalStorage.Encoding.Sync = tc.Sync
+	s.LocalStorage.Encoding.Compression = tc.Compression
 	s.StagingStorage.Compression = tc.Compression
 
 	// Slice definition must be valid
@@ -183,7 +174,31 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *diskwriter.Volume) *mod
 		val := validator.New()
 		require.NoError(t, val.Validate(context.Background(), s))
 	}
+
 	return s
+}
+
+func (tc *WriterTestCase) startSourceNode(t *testing.T) dependencies.SourceScope {
+	t.Helper()
+
+	d, _ := dependencies.NewMockedSourceScope(t)
+	return d
+}
+
+func (tc *WriterTestCase) startDiskWriterNode(t *testing.T, ctx context.Context) *diskwriter.Volume {
+	t.Helper()
+
+	d, mock := dependencies.NewMockedLocalStorageScopeWithConfig(t, func(cfg *config.Config) {
+		cfg.Storage.Level.Local.Writer.WatchDrainFile = false
+	})
+
+	// Open volume
+	volPath := t.TempDir()
+	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
+	vol, err := diskwriter.Open(ctx, d.Logger(), d.Clock(), mock.TestConfig().Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
+	require.NoError(t, err)
+
+	return vol
 }
 
 func NewTestSlice(volume *diskwriter.Volume) *model.Slice {

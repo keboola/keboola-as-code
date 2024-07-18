@@ -156,8 +156,8 @@ func TestRepository_EstimateSliceSizeOnSliceCreate(t *testing.T) {
 		file4, err := fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		rotateEtcdLogs = etcdLogs.String()
-		assert.True(t, file4.LocalStorage.DiskAllocation.Enabled)
-		assert.Equal(t, 110, file4.LocalStorage.DiskAllocation.Relative)
+		assert.True(t, file4.LocalStorage.Allocation.Enabled)
+		assert.Equal(t, 110, file4.LocalStorage.Allocation.Relative)
 
 		slices, err := sliceRepo.ListIn(file4.FileKey).Do(ctx).All()
 		require.NoError(t, err)

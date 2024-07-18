@@ -3,7 +3,7 @@ package local
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
 )
 
@@ -18,10 +18,8 @@ type Config struct {
 // ConfigPatch is same as the Config, but with optional/nullable fields.
 // It may be part of a Sink definition to allow modification of the default configuration.
 type ConfigPatch struct {
-	Volume   *volume.ConfigPatch     `json:"volume,omitempty"`
-	Encoding *encoding.ConfigPatch   `json:"encoding,omitempty"`
-	Reader   *diskreader.ConfigPatch `json:"reader,omitempty"`
-	Writer   *diskwriter.ConfigPatch `json:"writer,omitempty"`
+	Volume   *volume.ConfigPatch   `json:"volume,omitempty"`
+	Encoding *encoding.ConfigPatch `json:"encoding,omitempty"`
 }
 
 // NewConfig provides default configuration.

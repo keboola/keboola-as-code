@@ -527,8 +527,8 @@ func TestStatisticsProviders(t *testing.T) {
 
 		// Wait for cache sync
 		if expectedRevision > 0 {
-			assert.Eventually(t, func() bool {
-				return l1Cache.Revision() >= expectedRevision
+			assert.EventuallyWithT(t, func(c *assert.CollectT) {
+				assert.GreaterOrEqual(c, l1Cache.Revision(), expectedRevision)
 			}, 5*time.Second, 100*time.Millisecond)
 		}
 
@@ -538,8 +538,8 @@ func TestStatisticsProviders(t *testing.T) {
 		// Invalidate L2
 		clk.Add(mock.TestConfig().Storage.Statistics.Cache.L2.InvalidationInterval.Duration())
 		if expectedRevision > 0 {
-			assert.Eventually(t, func() bool {
-				return l2Cache.Revision() >= expectedRevision
+			assert.EventuallyWithT(t, func(c *assert.CollectT) {
+				assert.GreaterOrEqual(c, l2Cache.Revision(), expectedRevision)
 			}, 5*time.Second, 100*time.Millisecond)
 		}
 

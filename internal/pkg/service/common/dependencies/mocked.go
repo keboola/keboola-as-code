@@ -48,7 +48,7 @@ type mocked struct {
 	*distributionScope
 	*distributedLockScope
 	*orchestratorScope
-	t                   *testing.T
+	t                   testing.TB
 	config              *MockedConfig
 	mockedHTTPTransport *httpmock.MockTransport
 	testEtcdClient      *etcdPkg.Client
@@ -265,13 +265,13 @@ func WithRealHTTPClient() MockedOption {
 	}
 }
 
-func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
-	t.Helper()
+func newMockedConfig(tb testing.TB, opts []MockedOption) *MockedConfig {
+	tb.Helper()
 
 	cfg := &MockedConfig{
 		ctx:                context.Background(),
 		clock:              clock.New(),
-		telemetry:          telemetry.NewForTest(t),
+		telemetry:          telemetry.NewForTest(tb),
 		nodeID:             "local-node",
 		distributionConfig: distribution.NewConfig(),
 		useRealAPIs:        false,
@@ -322,11 +322,11 @@ func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 	return cfg
 }
 
-func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
-	t.Helper()
+func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
+	tb.Helper()
 
 	// Default values
-	cfg := newMockedConfig(t, opts)
+	cfg := newMockedConfig(tb, opts)
 
 	// Logger
 	var logger log.Logger = cfg.debugLogger
@@ -334,7 +334,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 	// Cancel context after the test
 	var cancel context.CancelFunc
 	cfg.ctx, cancel = context.WithCancel(cfg.ctx)
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		cancel()
 	})
 
@@ -343,16 +343,16 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 
 	// Create service process
 	cfg.procOpts = append([]servicectx.Option{servicectx.WithLogger(logger)}, cfg.procOpts...)
-	proc := servicectx.NewForTest(t, cfg.procOpts...)
+	proc := servicectx.NewForTest(tb, cfg.procOpts...)
 
 	// Create dependencies container
 	var err error
-	d := &mocked{config: cfg, t: t, mockedHTTPTransport: mockedHTTPTransport}
+	d := &mocked{config: cfg, t: tb, mockedHTTPTransport: mockedHTTPTransport}
 	d.baseScope = newBaseScope(cfg.ctx, logger, cfg.telemetry, cfg.stdout, cfg.stderr, cfg.clock, proc, httpClient)
 	d.publicScope, err = newPublicScope(cfg.ctx, d, cfg.storageAPIHost, WithPreloadComponents(true))
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	d.projectScope, err = newProjectScope(cfg.ctx, d, cfg.storageAPIToken)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	d.requestInfo = newRequestInfo(&http.Request{RemoteAddr: "1.2.3.4:789", Header: make(http.Header)})
 
 	// Use real APIs
@@ -369,7 +369,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 
 	if cfg.enableEtcdClient {
 		if cfg.etcdConfig.Endpoint == "" {
-			cfg.etcdConfig = etcdhelper.TmpNamespace(t)
+			cfg.etcdConfig = etcdhelper.TmpNamespace(tb)
 		}
 
 		etcdCfg := cfg.etcdConfig
@@ -380,12 +380,12 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 		}
 
 		d.etcdClientScope, err = newEtcdClientScope(cfg.ctx, d, etcdCfg)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 	}
 
 	if cfg.enableTasks {
 		d.taskScope, err = newTaskScope(cfg.ctx, cfg.nodeID, d)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 	}
 
 	if cfg.enableDistribution {
@@ -394,7 +394,7 @@ func NewMocked(t *testing.T, opts ...MockedOption) Mocked {
 
 	if cfg.enableDistributedLocks {
 		d.distributedLockScope, err = newDistributedLockScope(cfg.ctx, distlock.NewConfig(), d)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 	}
 
 	if cfg.enableOrchestrator {

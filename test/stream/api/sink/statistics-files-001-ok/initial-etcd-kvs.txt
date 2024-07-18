@@ -12,57 +12,66 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my
   "closingAt": "2000-01-01T05:00:00.000Z",
   "importingAt": "2000-01-01T12:00:00.000Z",
   "importedAt": "2000-01-01T13:00:00.000Z",
-  "columns": [
-    {
-      "type": "datetime",
-      "name": "datetime"
-    },
-    {
-      "type": "body",
-      "name": "body"
-    }
-  ],
-  "assignment": {
-    "config": {
-      "count": 3,
-      "preferredTypes": [
-        "hdd"
-      ]
-    },
-    "volumes": [
-      "my-volume-5",
-      "my-volume-3",
-      "my-volume-1"
+  "mapping": {
+    "columns": [
+      {
+        "type": "body",
+        "name": "body"
+      }
     ]
   },
   "local": {
-    "dir": "%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/2000-01-01T02-00-00-000Z",
-    "compression": {
-      "type": "gzip",
-      "gzip": {
-        "level": 1,
-        "implementation": "parallel",
-        "blockSize": "256KB",
-        "concurrency": 0
-      }
+    "dir": "123/456/my-source/my-sink/2000-01-01T02-00-00-000Z",
+    "assignment": {
+      "config": {
+        "count": 1,
+        "preferredTypes": [
+          "default"
+        ]
+      },
+      "volumes": [
+        "my-volume-1"
+      ]
     },
-    "diskSync": {
-      "mode": "disk",
-      "wait": true,
-      "checkInterval": "5ms",
-      "countTrigger": 500,
-      "compressedBytesTrigger": "256KB",
-      "uncompressedBytesTrigger": "1MB",
-      "intervalTrigger": "50ms"
-    },
-    "diskAllocation": {
+    "allocation": {
       "enabled": true,
       "static": "100MB",
       "relative": 110
+    },
+    "encoding": {
+      "encoder": {
+        "type": "csv",
+        "concurrency": 0
+      },
+      "inputBuffer": "1MB",
+      "outputBuffer": "1MB",
+      "compression": {
+        "type": "gzip",
+        "gzip": {
+          "level": 1,
+          "implementation": "parallel",
+          "blockSize": "256KB",
+          "concurrency": 0
+        },
+        "zstd": {
+          "level": 2,
+          "windowSize": "4MB",
+          "concurrency": 0
+        }
+      },
+      "sync": {
+        "mode": "disk",
+        "wait": true,
+        "checkInterval": "5ms",
+        "countTrigger": 10000,
+        "uncompressedBytesTrigger": "1MB",
+        "compressedBytesTrigger": "256KB",
+        "intervalTrigger": "50ms"
+      }
     }
   },
   "staging": {
-    "provider": "keboola",
+    "provider": "test",
     "compression": {
       "type": "gzip",
       "gzip": {
@@ -70,12 +79,17 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my
         "implementation": "parallel",
         "blockSize": "256KB",
         "concurrency": 0
+      },
+      "zstd": {
+        "level": 2,
+        "windowSize": "4MB",
+        "concurrency": 0
       }
     },
-    "expiration": "2000-01-01T03:00:00.000Z"
+    "expiration": "2000-01-02T02:00:00.000Z"
   },
   "target": {
-    "provider": "keboola"
+    "provider": "test"
   }
 }
 >>>>>

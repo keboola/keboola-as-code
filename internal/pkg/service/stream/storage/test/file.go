@@ -4,10 +4,12 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
@@ -39,20 +41,22 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 	fileKey := NewFileKeyOpenedAt(openedAtStr)
 	return model.File{
 		FileKey: fileKey,
-		Type:    model.FileTypeCSV,
 		State:   model.FileWriting,
-		Columns: column.Columns{column.Body{}},
-		Assignment: assignment.Assignment{
-			Config: assignment.Config{
-				Count:          1,
-				PreferredTypes: []string{},
-			},
-			Volumes: []volume.ID{"my-volume"},
+		Mapping: table.Mapping{
+			Columns: column.Columns{column.Body{Name: "body"}},
 		},
+
 		LocalStorage: localModel.File{
-			Dir:         local.NormalizeDirPath(fileKey.String()),
-			Compression: compression.NewNoneConfig(),
-			DiskSync:    writesync.NewConfig(),
+			Dir:        local.NormalizeDirPath(fileKey.String()),
+			Allocation: diskalloc.NewConfig(),
+			Assignment: assignment.Assignment{
+				Config: assignment.Config{
+					Count:          1,
+					PreferredTypes: []string{},
+				},
+				Volumes: []volume.ID{"my-volume"},
+			},
+			Encoding: encoding.NewConfig(),
 		},
 		StagingStorage: stagingModel.File{
 			Compression: compression.NewNoneConfig(),

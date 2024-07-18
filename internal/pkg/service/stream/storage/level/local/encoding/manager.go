@@ -10,17 +10,19 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// Manager opens and closes encoding pipelines.
 type Manager struct {
 	logger log.Logger
 	clock  clock.Clock
 	events *events.Events[Pipeline]
-	config Config
 
 	pipelinesLock *sync.Mutex
 	pipelines     map[string]*pipelineRef
@@ -36,12 +38,11 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewManager(d dependencies, config Config) (*Manager, error) {
+func NewManager(d dependencies) *Manager {
 	m := &Manager{
 		logger:        d.Logger(),
 		clock:         d.Clock(),
 		events:        events.New[Pipeline](),
-		config:        config,
 		pipelinesLock: &sync.Mutex{},
 		pipelines:     make(map[string]*pipelineRef),
 	}
@@ -56,7 +57,11 @@ func NewManager(d dependencies, config Config) (*Manager, error) {
 		m.logger.Info(ctx, "closed encoding pipelines")
 	})
 
-	return m, nil
+	return m
+}
+
+func (m *Manager) Events() *events.Events[Pipeline] {
+	return m.events
 }
 
 func (m *Manager) Pipelines() (out []Pipeline) {
@@ -77,15 +82,15 @@ func (m *Manager) Pipelines() (out []Pipeline) {
 	return out
 }
 
-func (m *Manager) OpenPipeline(ctx context.Context, slice *model.Slice, out writechain.File) (w Pipeline, err error) {
+func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, cfg config.Config, mapping table.Mapping, out writechain.File) (w Pipeline, err error) {
 	// Check if the pipeline already exists, if not, register an empty reference to unlock immediately
-	ref, exists := m.addPipeline(slice.SliceKey)
+	ref, exists := m.addPipeline(sliceKey)
 	if exists {
-		return nil, errors.Errorf(`encoding pipeline for slice "%s" already exists`, slice.SliceKey.String())
+		return nil, errors.Errorf(`encoding pipeline for slice "%s" already exists`, sliceKey.String())
 	}
 
 	// Create pipeline
-	ref.Pipeline, err = NewPipeline(ctx, m.logger, m.clock, m.config, slice, out, m.events)
+	ref.Pipeline, err = newPipeline(ctx, m.logger, m.clock, sliceKey, cfg, mapping, out, m.events)
 	if err != nil {
 		return nil, err
 	}

@@ -18,10 +18,9 @@ func TestConfig_Validation(t *testing.T) {
 - "volume.assignment.count" is a required field
 - "volume.assignment.preferredTypes" is a required field
 - "volume.registration.ttlSeconds" is a required field
-- "volume.sync.mode" is a required field
-- "volume.allocation.static" is a required field
-- "volume.allocation.relative" must be 100 or greater
+- "encoding.encoder.type" is a required field
 - "encoding.compression.type" is a required field
+- "encoding.sync.mode" is a required field
 - "writer.network.listen" is a required field
 - "writer.network.transport" is a required field
 - "writer.network.keepAliveInterval" is a required field
@@ -34,6 +33,8 @@ func TestConfig_Validation(t *testing.T) {
 - "writer.network.shutdownTimeout" is a required field
 - "writer.network.kcpInputBuffer" is a required field
 - "writer.network.kcpResponseBuffer" is a required field
+- "writer.allocation.static" is a required field
+- "writer.allocation.relative" must be 100 or greater
 `,
 			Value: local.Config{},
 		},

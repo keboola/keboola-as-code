@@ -36,10 +36,10 @@ type Reader interface {
 type readChain = readchain.Chain
 
 type reader struct {
-	logger log.Logger
-	chain  *readChain
-	slice  *model.Slice
-	events *events.Events[Reader]
+	logger   log.Logger
+	chain    *readChain
+	sliceKey model.SliceKey
+	events   *events.Events[Reader]
 
 	// closed blocks new reads
 	closed chan struct{}
@@ -50,19 +50,21 @@ type reader struct {
 func New(
 	ctx context.Context,
 	logger log.Logger,
-	slice *model.Slice,
+	sliceKey model.SliceKey,
+	localCompression compression.Config,
+	targetCompression compression.Config,
 	file readchain.File,
 	readerEvents *events.Events[Reader],
 ) (out Reader, err error) {
 	r := &reader{
-		logger: logger,
-		slice:  slice,
-		events: readerEvents.Clone(), // clone events passed from the volume, so additional reader specific events can be attached
-		closed: make(chan struct{}),
-		readWg: &sync.WaitGroup{},
+		logger:   logger,
+		sliceKey: sliceKey,
+		events:   readerEvents.Clone(), // clone events passed from the volume, so additional reader specific events can be attached
+		closed:   make(chan struct{}),
+		readWg:   &sync.WaitGroup{},
 	}
 
-	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", slice.SliceKey.String()))
+	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", sliceKey.String()))
 	r.logger.Debug(ctx, "opening disk reader")
 
 	// Init readers chain
@@ -78,11 +80,11 @@ func New(
 	// Add compression to the reader chain, if the local and staging compression is not the same.
 	// Preferred way is to use the same compression, then an internal Go optimization and "zero CPU copy" can be used,
 	// Read more about "sendfile" syscall and see the UnwrapFile method.
-	if slice.LocalStorage.Compression.Type != slice.StagingStorage.Compression.Type {
+	if localCompression.Type != targetCompression.Type {
 		// Decompress the file stream on-the-fly, when reading, if needed.
-		if slice.LocalStorage.Compression.Type != compression.TypeNone {
+		if localCompression.Type != compression.TypeNone {
 			_, err := r.chain.PrependReaderOrErr(func(r io.Reader) (io.Reader, error) {
-				return compressionReader.New(r, slice.LocalStorage.Compression)
+				return compressionReader.New(r, localCompression)
 			})
 			if err != nil {
 				return nil, errors.PrefixError(err, `cannot create compression reader`)
@@ -90,10 +92,10 @@ func New(
 		}
 
 		// Compress the file stream on-the-fly, when reading.
-		if slice.StagingStorage.Compression.Type != compression.TypeNone {
+		if targetCompression.Type != compression.TypeNone {
 			// Convert compression writer to a reader using pipe
 			pipeR, pipeW := io.Pipe()
-			compressionW, err := compressionWriter.New(pipeW, slice.StagingStorage.Compression)
+			compressionW, err := compressionWriter.New(pipeW, targetCompression)
 			if err != nil {
 				return nil, errors.PrefixError(err, `cannot create compression writer`)
 			}
@@ -143,7 +145,7 @@ func (r *reader) WriteTo(w io.Writer) (n int64, err error) {
 }
 
 func (r *reader) SliceKey() model.SliceKey {
-	return r.slice.SliceKey
+	return r.sliceKey
 }
 
 func (r *reader) Events() *events.Events[Reader] {

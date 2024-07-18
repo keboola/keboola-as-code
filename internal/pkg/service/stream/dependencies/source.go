@@ -10,13 +10,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	storageRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
+	statsCollector "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
 )
 
 // sourceScope implements SourceScope interface.
 type sourceScope struct {
 	sourceParentScopes
-	sinkRouter    *sinkRouter.Router
-	storageRouter *storageRouter.Router
+	encodingManager *encoding.Manager
+	sinkRouter      *sinkRouter.Router
+	storageRouter   *storageRouter.Router
 }
 
 type sourceParentScopes interface {
@@ -27,6 +30,10 @@ type sourceParentScopes interface {
 type sourceParentScopesImpl struct {
 	dependencies.DistributionScope
 	ServiceScope
+}
+
+func (v *sourceScope) EncodingManager() *encoding.Manager {
+	return v.encodingManager
 }
 
 func (v *sourceScope) SinkRouter() *sinkRouter.Router {
@@ -42,6 +49,10 @@ func newSourceScope(parentScp sourceParentScopes, sourceType string, cfg config.
 	d := &sourceScope{}
 
 	d.sourceParentScopes = parentScp
+
+	d.encodingManager = encoding.NewManager(d)
+
+	statsCollector.Start(d, d.encodingManager.Events(), cfg.Storage.Statistics.Collector, cfg.NodeID)
 
 	d.sinkRouter, err = sinkRouter.New(d)
 	if err != nil {

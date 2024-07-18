@@ -18,8 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -140,30 +139,10 @@ storage:
                 registration:
                     # Number of seconds after the volume registration expires if the node is not available. Validation rules: required,min=1,max=60
                     ttlSeconds: 10
-                sync:
-                    # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
-                    mode: disk
-                    # Wait for sync to disk OS cache or to disk hardware, depending on the mode.
-                    wait: true
-                    # Minimal interval between syncs to disk. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
-                    checkInterval: 5ms
-                    # Written records count to trigger sync. Validation rules: min=0,max=1000000,required_if=Mode disk,required_if=Mode cache
-                    countTrigger: 10000
-                    # Size of buffered uncompressed data to trigger sync. Validation rules: maxBytes=500MB,required_if=Mode disk,required_if=Mode cache
-                    uncompressedBytesTrigger: 1MB
-                    # Size of buffered compressed data to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
-                    compressedBytesTrigger: 256KB
-                    # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
-                    intervalTrigger: 50ms
-                allocation:
-                    # Allocate disk space for each slice.
-                    enabled: true
-                    # Size of allocated disk space for a slice. Validation rules: required
-                    static: 100MB
-                    # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
-                    relative: 110
             encoding:
                 encoder:
+                    # Encoder type. Validation rules: required,oneof=csv
+                    type: csv
                     # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
                     concurrency: 0
                 # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
@@ -182,6 +161,21 @@ storage:
                         blockSize: 256KB
                         # GZIP parallel concurrency, 0 = auto.
                         concurrency: 0
+                sync:
+                    # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
+                    mode: disk
+                    # Wait for sync to disk OS cache or to disk hardware, depending on the mode.
+                    wait: true
+                    # Minimal interval between syncs to disk. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
+                    checkInterval: 5ms
+                    # Written records count to trigger sync. Validation rules: min=0,max=1000000,required_if=Mode disk,required_if=Mode cache
+                    countTrigger: 10000
+                    # Size of buffered uncompressed data to trigger sync. Validation rules: maxBytes=500MB,required_if=Mode disk,required_if=Mode cache
+                    uncompressedBytesTrigger: 1MB
+                    # Size of buffered compressed data to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
+                    compressedBytesTrigger: 256KB
+                    # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
+                    intervalTrigger: 50ms
             writer:
                 network:
                     # Listen address of the configuration HTTP API. Validation rules: required,hostname_port
@@ -208,6 +202,13 @@ storage:
                     kcpInputBuffer: 8MB
                     # Buffer size for transferring responses between writer and source node (kcp). Validation rules: required,minBytes=16kB,maxBytes=100MB
                     kcpResponseBuffer: 512KB
+                allocation:
+                    # Allocate disk space for each slice.
+                    enabled: true
+                    # Size of allocated disk space for a slice. Validation rules: required
+                    static: 100MB
+                    # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
+                    relative: 110
         staging:
             # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
             maxSlicesPerFile: 100
@@ -256,10 +257,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
 			Storage: &storage.ConfigPatch{
 				Level: &level.ConfigPatch{
 					Local: &local.ConfigPatch{
-						Volume: &volume.ConfigPatch{
-							Allocation: &diskalloc.ConfigPatch{
-								Static: ptr.Ptr(456 * datasize.MB),
-							},
+						Encoding: &encoding.ConfigPatch{
+							OutputBuffer: ptr.Ptr(123 * datasize.KB),
 						},
 					},
 				},
@@ -331,6 +330,16 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "min=0,max=256"
   },
   {
+    "key": "storage.level.local.encoding.encoder.type",
+    "type": "string",
+    "description": "Encoder type.",
+    "value": "csv",
+    "defaultValue": "csv",
+    "overwritten": false,
+    "protected": true,
+    "validation": "required,oneof=csv"
+  },
+  {
     "key": "storage.level.local.encoding.inputBuffer",
     "type": "string",
     "description": "Max size of the buffer before compression, if compression is enabled. 0 = disabled",
@@ -344,40 +353,80 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.local.encoding.outputBuffer",
     "type": "string",
     "description": "Max size of the buffer before the output. 0 = disabled",
-    "value": "1MB",
+    "value": "123KB",
     "defaultValue": "1MB",
-    "overwritten": false,
+    "overwritten": true,
     "protected": true,
     "validation": "maxBytes=16MB"
   },
   {
-    "key": "storage.level.local.volume.allocation.enabled",
+    "key": "storage.level.local.encoding.sync.checkInterval",
+    "type": "string",
+    "description": "Minimal interval between syncs to disk.",
+    "value": "5ms",
+    "defaultValue": "5ms",
+    "overwritten": false,
+    "protected": true,
+    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
+    "key": "storage.level.local.encoding.sync.compressedBytesTrigger",
+    "type": "string",
+    "description": "Size of buffered compressed data to trigger sync.",
+    "value": "256KB",
+    "defaultValue": "256KB",
+    "overwritten": false,
+    "protected": true,
+    "validation": "maxBytes=100MB,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
+    "key": "storage.level.local.encoding.sync.countTrigger",
+    "type": "uint",
+    "description": "Written records count to trigger sync.",
+    "value": 10000,
+    "defaultValue": 10000,
+    "overwritten": false,
+    "protected": true,
+    "validation": "min=0,max=1000000,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
+    "key": "storage.level.local.encoding.sync.intervalTrigger",
+    "type": "string",
+    "description": "Interval from the last sync to trigger sync.",
+    "value": "50ms",
+    "defaultValue": "50ms",
+    "overwritten": false,
+    "protected": true,
+    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
+    "key": "storage.level.local.encoding.sync.mode",
+    "type": "string",
+    "description": "Sync mode: \"disabled\", \"cache\" or \"disk\".",
+    "value": "disk",
+    "defaultValue": "disk",
+    "overwritten": false,
+    "protected": true,
+    "validation": "required,oneof=disabled disk cache"
+  },
+  {
+    "key": "storage.level.local.encoding.sync.uncompressedBytesTrigger",
+    "type": "string",
+    "description": "Size of buffered uncompressed data to trigger sync.",
+    "value": "1MB",
+    "defaultValue": "1MB",
+    "overwritten": false,
+    "protected": true,
+    "validation": "maxBytes=500MB,required_if=Mode disk,required_if=Mode cache"
+  },
+  {
+    "key": "storage.level.local.encoding.sync.wait",
     "type": "bool",
-    "description": "Allocate disk space for each slice.",
+    "description": "Wait for sync to disk OS cache or to disk hardware, depending on the mode.",
     "value": true,
     "defaultValue": true,
     "overwritten": false,
     "protected": true
-  },
-  {
-    "key": "storage.level.local.volume.allocation.relative",
-    "type": "int",
-    "description": "Allocate disk space as % from the previous slice size.",
-    "value": 110,
-    "defaultValue": 110,
-    "overwritten": false,
-    "protected": true,
-    "validation": "min=100,max=500"
-  },
-  {
-    "key": "storage.level.local.volume.allocation.static",
-    "type": "string",
-    "description": "Size of allocated disk space for a slice.",
-    "value": "456MB",
-    "defaultValue": "100MB",
-    "overwritten": true,
-    "protected": true,
-    "validation": "required"
   },
   {
     "key": "storage.level.local.volume.assignment.count",
@@ -402,75 +451,6 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "overwritten": false,
     "protected": true,
     "validation": "required,min=1"
-  },
-  {
-    "key": "storage.level.local.volume.sync.checkInterval",
-    "type": "string",
-    "description": "Minimal interval between syncs to disk.",
-    "value": "5ms",
-    "defaultValue": "5ms",
-    "overwritten": false,
-    "protected": true,
-    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
-  },
-  {
-    "key": "storage.level.local.volume.sync.compressedBytesTrigger",
-    "type": "string",
-    "description": "Size of buffered compressed data to trigger sync.",
-    "value": "256KB",
-    "defaultValue": "256KB",
-    "overwritten": false,
-    "protected": true,
-    "validation": "maxBytes=100MB,required_if=Mode disk,required_if=Mode cache"
-  },
-  {
-    "key": "storage.level.local.volume.sync.countTrigger",
-    "type": "uint",
-    "description": "Written records count to trigger sync.",
-    "value": 10000,
-    "defaultValue": 10000,
-    "overwritten": false,
-    "protected": true,
-    "validation": "min=0,max=1000000,required_if=Mode disk,required_if=Mode cache"
-  },
-  {
-    "key": "storage.level.local.volume.sync.intervalTrigger",
-    "type": "string",
-    "description": "Interval from the last sync to trigger sync.",
-    "value": "50ms",
-    "defaultValue": "50ms",
-    "overwritten": false,
-    "protected": true,
-    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
-  },
-  {
-    "key": "storage.level.local.volume.sync.mode",
-    "type": "string",
-    "description": "Sync mode: \"disabled\", \"cache\" or \"disk\".",
-    "value": "disk",
-    "defaultValue": "disk",
-    "overwritten": false,
-    "protected": true,
-    "validation": "required,oneof=disabled disk cache"
-  },
-  {
-    "key": "storage.level.local.volume.sync.uncompressedBytesTrigger",
-    "type": "string",
-    "description": "Size of buffered uncompressed data to trigger sync.",
-    "value": "1MB",
-    "defaultValue": "1MB",
-    "overwritten": false,
-    "protected": true,
-    "validation": "maxBytes=500MB,required_if=Mode disk,required_if=Mode cache"
-  },
-  {
-    "key": "storage.level.local.volume.sync.wait",
-    "type": "bool",
-    "description": "Wait for sync to disk OS cache or to disk hardware, depending on the mode.",
-    "value": true,
-    "defaultValue": true,
-    "overwritten": false,
-    "protected": true
   },
   {
     "key": "storage.level.staging.maxSlicesPerFile",
@@ -552,8 +532,8 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 	patch := config.Patch{}
 	require.NoError(t, configpatch.BindKVs(&patch, []configpatch.PatchKV{
 		{
-			KeyPath: "storage.level.local.volume.allocation.static",
-			Value:   "456MB",
+			KeyPath: "storage.level.local.encoding.outputBuffer",
+			Value:   "456kB",
 		},
 	}))
 
@@ -561,10 +541,8 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 		Storage: &storage.ConfigPatch{
 			Level: &level.ConfigPatch{
 				Local: &local.ConfigPatch{
-					Volume: &volume.ConfigPatch{
-						Allocation: &diskalloc.ConfigPatch{
-							Static: ptr.Ptr(456 * datasize.MB),
-						},
+					Encoding: &encoding.ConfigPatch{
+						OutputBuffer: ptr.Ptr(456 * datasize.KB),
 					},
 				},
 			},
@@ -592,12 +570,12 @@ func TestConfig_BindKVs_InvalidValue(t *testing.T) {
 
 	err := configpatch.BindKVs(&config.Patch{}, []configpatch.PatchKV{
 		{
-			KeyPath: "storage.level.local.volume.allocation.static",
+			KeyPath: "storage.level.local.encoding.outputBuffer",
 			Value:   "foo",
 		},
 	})
 
 	if assert.Error(t, err) {
-		assert.Equal(t, `invalid "storage.level.local.volume.allocation.static" value "foo": invalid syntax`, err.Error())
+		assert.Equal(t, `invalid "storage.level.local.encoding.outputBuffer" value "foo": invalid syntax`, err.Error())
 	}
 }

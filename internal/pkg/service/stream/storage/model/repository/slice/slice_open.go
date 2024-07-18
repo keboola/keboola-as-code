@@ -26,7 +26,7 @@ func (r *Repository) openSlicesForFile(file model.File, now time.Time) *op.Atomi
 	return op.Atomic(r.client, &newSlices).
 		Write(func(ctx context.Context) op.Op {
 			txn := op.Txn(r.client)
-			for _, volumeID := range file.Assignment.Volumes {
+			for _, volumeID := range file.LocalStorage.Assignment.Volumes {
 				txn.Merge(r.openSlice(ctx, now, file, volumeID).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
 					newSlices = append(newSlices, r.Result())
 				}))

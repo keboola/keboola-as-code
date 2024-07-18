@@ -8,16 +8,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-)
-
-const (
-	FileTypeCSV = FileType("csv")
 )
 
 // File represents a file prepared in the staging storage to be imported into the target storage.
@@ -25,20 +20,16 @@ const (
 type File struct {
 	FileKey
 	Retryable
-	Deleted        bool                  `json:"-"` // internal field to mark the entity for deletion, there is no soft delete
-	Type           FileType              `json:"type" validate:"required,oneof=csv"`
-	State          FileState             `json:"state" validate:"required,oneof=writing closing importing imported"`
-	ClosingAt      *utctime.UTCTime      `json:"closingAt,omitempty" validate:"excluded_if=State writing,required_if=State closing,required_if=State importing,required_if=State imported"`
-	ImportingAt    *utctime.UTCTime      `json:"importingAt,omitempty" validate:"excluded_if=State writing,excluded_if=State closing,required_if=State importing,required_if=State imported"`
-	ImportedAt     *utctime.UTCTime      `json:"importedAt,omitempty"  validate:"excluded_if=State writing,excluded_if=State closing,excluded_if=State importing,required_if=State imported"`
-	Columns        column.Columns        `json:"columns" validate:"required,min=1"`
-	Assignment     assignment.Assignment `json:"assignment"`
-	LocalStorage   localModel.File       `json:"local"`
-	StagingStorage stagingModel.File     `json:"staging"`
-	TargetStorage  targetModel.Target    `json:"target"`
+	Deleted        bool               `json:"-"` // internal field to mark the entity for deletion, there is no soft delete
+	State          FileState          `json:"state" validate:"required,oneof=writing closing importing imported"`
+	ClosingAt      *utctime.UTCTime   `json:"closingAt,omitempty" validate:"excluded_if=State writing,required_if=State closing,required_if=State importing,required_if=State imported"`
+	ImportingAt    *utctime.UTCTime   `json:"importingAt,omitempty" validate:"excluded_if=State writing,excluded_if=State closing,required_if=State importing,required_if=State imported"`
+	ImportedAt     *utctime.UTCTime   `json:"importedAt,omitempty"  validate:"excluded_if=State writing,excluded_if=State closing,excluded_if=State importing,required_if=State imported"`
+	Mapping        table.Mapping      `json:"mapping"` // in the future, here can be an interface - multiple mapping ways
+	LocalStorage   localModel.File    `json:"local"`
+	StagingStorage stagingModel.File  `json:"staging"`
+	TargetStorage  targetModel.Target `json:"target"`
 }
-
-type FileType string
 
 type FileKey struct {
 	key.SinkKey

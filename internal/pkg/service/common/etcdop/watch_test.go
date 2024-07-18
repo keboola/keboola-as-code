@@ -331,8 +331,8 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	// Close watcher connection and block a new one
 	watchMember.Bridge().PauseConnections()
 	watchMember.Bridge().DropConnections()
-	assert.Eventually(t, func() bool {
-		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, connectivity.Connecting, watchClient.ActiveConnection().GetState())
 	}, 5*time.Second, 100*time.Millisecond)
 
 	// Add some other keys, during the watcher is disconnected
@@ -371,8 +371,8 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	// And let's try compact operation again, in the same way
 	watchMember.Bridge().PauseConnections()
 	watchMember.Bridge().DropConnections()
-	assert.Eventually(t, func() bool {
-		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, connectivity.Connecting, watchClient.ActiveConnection().GetState())
 	}, 5*time.Second, 100*time.Millisecond)
 	assert.NoError(t, pfx.Key("key05").Put(testClient, value).Do(ctx).Err())
 	assert.NoError(t, pfx.Key("key06").Put(testClient, value).Do(ctx).Err())
@@ -449,8 +449,8 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	// Close watcher connection and block a new one
 	watchMember.Bridge().PauseConnections()
 	watchMember.Bridge().DropConnections()
-	assert.Eventually(t, func() bool {
-		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, connectivity.Connecting, watchClient.ActiveConnection().GetState())
 	}, 5*time.Second, 100*time.Millisecond)
 
 	// Add some other keys, during the watcher is disconnected
@@ -499,8 +499,8 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	// And let's try compact operation again, in the same way
 	watchMember.Bridge().PauseConnections()
 	watchMember.Bridge().DropConnections()
-	assert.Eventually(t, func() bool {
-		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, connectivity.Connecting, watchClient.ActiveConnection().GetState())
 	}, 5*time.Second, 100*time.Millisecond)
 	assert.NoError(t, pfx.Key("key05").Put(testClient, value).Do(ctx).Err())
 	assert.NoError(t, pfx.Key("key06").Put(testClient, value).Do(ctx).Err())

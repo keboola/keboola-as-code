@@ -13,8 +13,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/count"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/limitbuffer"
@@ -57,9 +59,9 @@ type StatisticsProvider interface {
 // pipeline implements Pipeline interface, it wraps common logic for all file types.
 // For conversion between record values and bytes, the encoder.Encoder is used.
 type pipeline struct {
-	logger log.Logger
-	slice  *model.Slice
-	events *events.Events[Pipeline]
+	logger   log.Logger
+	sliceKey model.SliceKey
+	events   *events.Events[Pipeline]
 
 	encoder encoder.Encoder
 	chain   *writechain.Chain
@@ -76,24 +78,25 @@ type pipeline struct {
 	uncompressedMeter *size.Meter
 }
 
-func NewPipeline(
+func newPipeline(
 	ctx context.Context,
 	logger log.Logger,
 	clk clock.Clock,
-	cfg Config,
-	slice *model.Slice,
+	sliceKey model.SliceKey,
+	cfg config.Config,
+	mapping table.Mapping,
 	output writechain.File,
 	events *events.Events[Pipeline],
 ) (out Pipeline, err error) {
 	w := &pipeline{
-		logger:  logger.WithComponent("slice-writer"),
-		slice:   slice,
-		events:  events.Clone(), // clone passed events, so additional pipeline specific listeners can be added
-		closed:  make(chan struct{}),
-		writeWg: &sync.WaitGroup{},
+		logger:   logger.WithComponent("slice-writer"),
+		sliceKey: sliceKey,
+		events:   events.Clone(), // clone passed events, so additional pipeline specific listeners can be added
+		closed:   make(chan struct{}),
+		writeWg:  &sync.WaitGroup{},
 	}
 
-	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", slice.SliceKey.String()))
+	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", sliceKey.String()))
 	w.logger.Debug(ctx, "opening encoding pipeline")
 
 	// Close resources on error
@@ -144,17 +147,17 @@ func NewPipeline(
 
 	// Add compression if enabled
 	{
-		if compConfig := slice.LocalStorage.Compression; compConfig.Type != compression.TypeNone {
+		if cfg.Compression.Type != compression.TypeNone {
 			// Add compression writer
 			_, err = w.chain.PrependWriterOrErr(func(writer io.Writer) (io.Writer, error) {
-				return compressionWriter.New(writer, compConfig)
+				return compressionWriter.New(writer, cfg.Compression)
 			})
 			if err != nil {
 				return nil, err
 			}
 
 			// Add a buffer before compression writer, if it is not included in the writer itself
-			if cfg.InputBuffer > 0 && !compConfig.HasWriterInputBuffer() {
+			if cfg.InputBuffer > 0 && !cfg.Compression.HasWriterInputBuffer() {
 				w.chain.PrependWriter(func(w io.Writer) io.Writer {
 					return limitbuffer.New(w, int(cfg.InputBuffer.Bytes()))
 				})
@@ -173,13 +176,17 @@ func NewPipeline(
 
 	// Create syncer to trigger sync based on counter and meters from the previous steps
 	{
-		w.syncer = cfg.SyncerFactory.NewSyncer(ctx, logger, clk, slice.LocalStorage.DiskSync, w.chain, w)
+		var syncerFactory writesync.SyncerFactory = writesync.DefaultSyncerFactory{}
+		if cfg.Sync.OverrideSyncerFactory != nil {
+			syncerFactory = cfg.Sync.OverrideSyncerFactory
+		}
+		w.syncer = syncerFactory.NewSyncer(ctx, logger, clk, cfg.Sync, w.chain, w)
 	}
 
 	// Create file format writer.
 	// It is entrypoint of the writers chain.
 	{
-		w.encoder, err = cfg.Encoder.Factory.NewEncoder(cfg.Encoder, w.chain, w.slice)
+		w.encoder, err = cfg.Encoder.Factory.NewEncoder(cfg.Encoder, mapping, w.chain)
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +237,7 @@ func (w *pipeline) WriteRecord(record recordctx.Context) error {
 }
 
 func (w *pipeline) SliceKey() model.SliceKey {
-	return w.slice.SliceKey
+	return w.sliceKey
 }
 
 func (w *pipeline) Events() *events.Events[Pipeline] {

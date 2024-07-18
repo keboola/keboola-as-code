@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
@@ -24,11 +25,7 @@ func StorageConfigPatch() configpatch.PatchKVs {
 			Storage: &storage.ConfigPatch{
 				Level: &level.ConfigPatch{
 					Local: &local.ConfigPatch{
-						Volume: &volume.ConfigPatch{
-							Assignment: &assignment.ConfigPatch{
-								Count:          ptr.Ptr(1),
-								PreferredTypes: ptr.Ptr([]string{"default"}),
-							},
+						Encoding: &encoding.ConfigPatch{
 							Sync: &writesync.ConfigPatch{
 								Mode:                     ptr.Ptr(writesync.ModeDisk),
 								Wait:                     ptr.Ptr(false),
@@ -37,6 +34,12 @@ func StorageConfigPatch() configpatch.PatchKVs {
 								UncompressedBytesTrigger: ptr.Ptr(200 * datasize.KB),
 								CompressedBytesTrigger:   ptr.Ptr(100 * datasize.KB),
 								IntervalTrigger:          ptr.Ptr(duration.From(100 * time.Millisecond)),
+							},
+						},
+						Volume: &volume.ConfigPatch{
+							Assignment: &assignment.ConfigPatch{
+								Count:          ptr.Ptr(1),
+								PreferredTypes: ptr.Ptr([]string{"default"}),
 							},
 						},
 					},

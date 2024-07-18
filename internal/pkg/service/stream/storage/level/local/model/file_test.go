@@ -8,13 +8,22 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
+	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func TestFile_Validation(t *testing.T) {
 	t.Parallel()
+
+	volumeAssignment := assignment.Assignment{
+		Config: assignment.Config{
+			Count:          2,
+			PreferredTypes: []string{"foo", "bar"},
+		},
+		Volumes: []volume.ID{"my-volume-1", "my-volume-2"},
+	}
 
 	cases := []struct {
 		Name          string
@@ -24,20 +33,20 @@ func TestFile_Validation(t *testing.T) {
 		{
 			Name: "ok",
 			Value: File{
-				Dir:            "my-dir",
-				Compression:    compression.NewConfig(),
-				DiskSync:       writesync.NewConfig(),
-				DiskAllocation: diskalloc.NewConfig(),
+				Dir:        "my-dir",
+				Assignment: volumeAssignment,
+				Allocation: diskalloc.NewConfig(),
+				Encoding:   encoding.NewConfig(),
 			},
 		},
 		{
 			Name:          "empty dir",
 			ExpectedError: `"dir" is a required field`,
 			Value: File{
-				Dir:            "",
-				Compression:    compression.NewConfig(),
-				DiskSync:       writesync.NewConfig(),
-				DiskAllocation: diskalloc.NewConfig(),
+				Dir:        "",
+				Assignment: volumeAssignment,
+				Allocation: diskalloc.NewConfig(),
+				Encoding:   encoding.NewConfig(),
 			},
 		},
 	}

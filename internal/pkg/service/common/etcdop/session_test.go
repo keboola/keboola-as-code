@@ -62,13 +62,13 @@ func TestSession_Retries(t *testing.T) {
 
 	// Drop connection
 	proxy.Stop()
-	assert.Eventually(t, func() bool {
-		return logger.CompareJSONMessages(`
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		logger.AssertJSONMessages(c, `
 {"level":"info","message":"etcd session canceled"}
 {"level":"info","message":"creating etcd session"}
 {"level":"info","message":"cannot create etcd session: context deadline exceeded"}
 {"level":"info","message":"waiting %s before the retry"}
-`) == nil
+`)
 	}, 30*time.Second, 100*time.Millisecond)
 
 	// There is no active session
