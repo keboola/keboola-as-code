@@ -43,7 +43,7 @@ type writer struct {
 	writeWg *sync.WaitGroup
 }
 
-func New(
+func newWriter(
 	ctx context.Context,
 	logger log.Logger,
 	volumePath string,

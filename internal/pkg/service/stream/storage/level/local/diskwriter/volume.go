@@ -201,7 +201,7 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w Writer, err error) {
 	}()
 
 	// Create writer
-	w, err = New(v.ctx, v.logger, v.Path(), v.fileOpener, v.allocator, slice.SliceKey, slice.LocalStorage, v.writerEvents)
+	w, err = newWriter(v.ctx, v.logger, v.Path(), v.fileOpener, v.allocator, slice.SliceKey, slice.LocalStorage, v.writerEvents)
 	if err != nil {
 		return nil, err
 	}

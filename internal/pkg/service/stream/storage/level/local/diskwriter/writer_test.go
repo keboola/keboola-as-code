@@ -12,10 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -27,17 +25,12 @@ func TestWriter_Basic(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-
-	logger := log.NewDebugLogger()
-	volumePath := t.TempDir()
-	slice := test.NewSlice()
-	writerEvents := events.New[diskwriter.Writer]()
-
-	w, err := diskwriter.New(ctx, logger, volumePath, diskwriter.DefaultFileOpener{}, diskalloc.DefaultAllocator{}, slice.SliceKey, slice.LocalStorage, writerEvents)
+	tc := newWriterTestCase(t)
+	w, err := tc.NewWriter()
 	require.NoError(t, err)
 
 	// Test getters
-	assert.Equal(t, slice.SliceKey, w.SliceKey())
+	assert.Equal(t, tc.Slice.SliceKey, w.SliceKey())
 
 	// Test write methods
 	n, err := w.Write([]byte("123,456,789\n"))
@@ -57,7 +50,7 @@ func TestWriter_Basic(t *testing.T) {
 	}
 
 	// Check file content
-	content, err := os.ReadFile(slice.LocalStorage.FileName(volumePath))
+	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath))
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("123,456,789\nabc,def,ghj\n"), content)
 }
