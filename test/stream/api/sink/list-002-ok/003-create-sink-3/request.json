@@ -14,7 +14,7 @@
       "mapping": {
         "columns": [
           {
-            "type": "uuid-v7",
+            "type": "uuid",
             "name": "id",
             "primaryKey": true
           },

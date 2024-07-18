@@ -1,7 +1,7 @@
 package column
 
 const (
-	ColumnUUIDType Type = "uuid-v7"
+	ColumnUUIDType Type = "uuid"
 )
 
 type UUID struct {

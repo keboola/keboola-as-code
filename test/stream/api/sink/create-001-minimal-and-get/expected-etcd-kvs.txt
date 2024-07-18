@@ -39,7 +39,7 @@ definition/sink/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-sou
     "mapping": {
       "columns": [
         {
-          "type": "uuid-v7",
+          "type": "uuid",
           "name": "id",
           "primaryKey": true
         },
