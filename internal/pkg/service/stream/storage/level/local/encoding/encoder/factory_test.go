@@ -18,7 +18,15 @@ func (discardOutput) Write([]byte) (n int, err error) {
 	return 0, nil
 }
 
-func (discardOutput) Sync() error {
+func (discardOutput) IsReady() bool {
+	return true
+}
+
+func (discardOutput) Flush(ctx context.Context) error {
+	return nil
+}
+
+func (discardOutput) Sync(ctx context.Context) error {
 	return nil
 }
 

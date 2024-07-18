@@ -47,11 +47,10 @@ type Chain struct {
 	closers []io.Closer
 }
 
-// File defines used method from the *os.File.
-// It makes it possible to mock the file in the tests.
 type File interface {
-	io.Writer
-	Sync() error
+	Write(p []byte) (n int, err error)
+	Flush(ctx context.Context) error
+	Sync(ctx context.Context) error
 	Close(ctx context.Context) error
 }
 
@@ -239,7 +238,7 @@ func (c *Chain) PrependCloseFn(info any, fn func() error) {
 func (c *Chain) syncFile(ctx context.Context) error {
 	c.logger.Debug(ctx, "syncing file")
 
-	if err := c.file.Sync(); err != nil {
+	if err := c.file.Sync(ctx); err != nil {
 		err = errors.Errorf(`cannot sync file: %w`, err)
 		c.logger.Debug(ctx, err.Error())
 		return err

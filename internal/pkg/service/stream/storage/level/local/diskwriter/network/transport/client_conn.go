@@ -29,7 +29,7 @@ type ClientConnection struct {
 	streams   map[uint32]*ClientStream
 }
 
-func openClientConnection(ctx context.Context, remoteNodeID, remoteAddr string, client *Client, initDone chan error) (*ClientConnection, error) {
+func newClientConnection(ctx context.Context, remoteNodeID, remoteAddr string, client *Client, initDone chan error) (*ClientConnection, error) {
 	// Stop, if the client is closed
 	if client.isClosed() {
 		return nil, yamux.ErrSessionShutdown
@@ -57,7 +57,7 @@ func openClientConnection(ctx context.Context, remoteNodeID, remoteAddr string, 
 		c.dialLoop(ctx, initDone)
 	}()
 
-	client.registerConnection(c)
+	client.registerConnection(ctx, c)
 	return c, nil
 }
 
@@ -104,52 +104,56 @@ func (c *ClientConnection) OpenStream() (*ClientStream, error) {
 	return newClientStream(c, stream), nil
 }
 
-func (c *ClientConnection) Close(ctx context.Context) {
-	if !c.isClosed() {
-		// Prevent new streams to be opened
-		close(c.closed)
+func (c *ClientConnection) Close(ctx context.Context) error {
+	if c.isClosed() {
+		return errors.New("client connection is already closed")
+	}
 
-		c.lock.Lock()
-		streams := maps.Values(c.streams)
-		c.lock.Unlock()
+	// Prevent new streams to be opened
+	close(c.closed)
 
-		// Close streams
-		wg := &sync.WaitGroup{}
-		for _, s := range streams {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				if err := s.Close(); err != nil {
-					c.client.logger.Errorf(ctx, "disk writer client cannot close stream to %q (%d)", c.remoteAddr, s.StreamID())
-				}
-			}()
-		}
-		wg.Wait()
+	c.lock.Lock()
+	streams := maps.Values(c.streams)
+	c.lock.Unlock()
 
-		// Close session
-		if sess, _ := c.session(); sess != nil {
-			select {
-			case <-c.sess.CloseChan():
-			default:
-				if err := c.sess.Close(); err != nil {
-					c.client.logger.Errorf(ctx, "disk writer client cannot close session to %q", c.remoteAddr)
-				}
+	// Close streams
+	wg := &sync.WaitGroup{}
+	for _, s := range streams {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := s.Close(); err != nil {
+				c.client.logger.Errorf(ctx, "disk writer client cannot close stream to %q (%d)", c.remoteAddr, s.StreamID())
+			}
+		}()
+	}
+	wg.Wait()
+
+	// Close session
+	if sess, _ := c.session(); sess != nil {
+		select {
+		case <-c.sess.CloseChan():
+		default:
+			if err := c.sess.Close(); err != nil {
+				c.client.logger.Errorf(ctx, "disk writer client cannot close session to %q", c.remoteAddr)
 			}
 		}
-
-		// Wait for the dial loop
-		c.wg.Wait()
-
-		c.client.unregisterConnection(c)
-
-		c.client.logger.Infof(ctx, `disk writer client closed connection to %q - %q`, c.remoteNodeID, c.remoteAddr)
 	}
+
+	// Wait for the dial loop
+	c.wg.Wait()
+
+	c.client.unregisterConnection(ctx, c)
+
+	c.client.logger.Infof(ctx, `disk writer client closed connection to %q - %q`, c.remoteNodeID, c.remoteAddr)
+	return nil
 }
 
 func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 	b := newClientConnBackoff()
 	for {
 		if c.isClosed() || c.client.isClosed() {
+			c.client.logger.Debugf(ctx, "dial loop closed %q - %q", c.remoteNodeID, c.remoteAddr)
 			return
 		}
 

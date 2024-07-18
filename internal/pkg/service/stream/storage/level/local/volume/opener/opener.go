@@ -71,6 +71,7 @@ func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, volume
 				}
 
 				info := volume.Spec{
+					// Node ID and address is set later, on registration
 					Path:  path,
 					Type:  typ,
 					Label: label,

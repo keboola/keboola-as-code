@@ -14,7 +14,7 @@ func sessionKey(session *yamux.Session) string {
 	return session.RemoteAddr().String()
 }
 
-func streamKey(stream *yamux.Stream) string {
+func streamKey(stream *ServerStream) string {
 	return fmt.Sprintf(`%s-%d`, stream.RemoteAddr(), stream.StreamID())
 }
 

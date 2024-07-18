@@ -694,14 +694,22 @@ func (o *dummyOutput) String() string {
 	return o.bytes.String()
 }
 
+func (o *dummyOutput) IsReady() bool {
+	return true
+}
+
 func (o *dummyOutput) Write(p []byte) (n int, err error) {
 	return o.bytes.Write(p)
 }
 
-func (o *dummyOutput) Sync() error {
+func (o *dummyOutput) Flush(context.Context) error {
 	return o.SyncError
 }
 
-func (o *dummyOutput) Close(_ context.Context) error {
+func (o *dummyOutput) Sync(context.Context) error {
+	return o.SyncError
+}
+
+func (o *dummyOutput) Close(context.Context) error {
 	return o.CloseError
 }

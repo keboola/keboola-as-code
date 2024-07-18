@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -11,13 +12,10 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/hashicorp/yamux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -49,9 +47,6 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	srvDeps, srvMock := dependencies.NewMockedServiceScope(t, commonDeps.WithCtx(ctx))
-	clientDeps, clientMock := dependencies.NewMockedServiceScope(t, commonDeps.WithCtx(ctx))
-
 	cfg := network.NewConfig()
 	cfg.Transport = protocol
 	cfg.Listen = "localhost:0" // use a random port
@@ -61,27 +56,45 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	cfg.ShutdownTimeout = 30 * time.Second
 	cfg.KeepAliveInterval = 30 * time.Second // to not interfere with the test
 
+	// Start server
+	srvLogger := log.NewDebugLogger()
+	srvLogger.ConnectTo(os.Stdout)
+	srv, err := transport.Listen(srvLogger, cfg, "server-node")
+	require.NoError(t, err)
+	addr := srv.Addr().String()
+
 	// Stream server handler
-	var lock sync.Mutex
+	var receivedLock sync.Mutex
 	var received []string
 	receivedDone := make(chan struct{}, 2)
-	handler := func(ctx context.Context, stream *yamux.Stream) {
-		b, err := io.ReadAll(stream)
-		assert.NoError(t, err)
+	go func() {
+		for {
+			// Accept stream
+			stream, err := srv.Accept()
+			if errors.Is(err, io.ErrClosedPipe) {
+				return
+			}
+			assert.NoError(t, err)
 
-		lock.Lock()
-		defer lock.Unlock()
-		received = append(received, string(b))
-		receivedDone <- struct{}{}
-	}
+			// Read all
+			b, err := io.ReadAll(stream)
+			assert.NoError(t, err)
 
-	// Start Setup
-	srv, err := transport.Listen(srvDeps, cfg, "server-node", handler)
-	require.NoError(t, err)
-	addr := srv.ListenAddr().String()
+			// Close stream
+			assert.NoError(t, stream.Close())
+
+			// Collect result
+			receivedLock.Lock()
+			received = append(received, string(b))
+			receivedLock.Unlock()
+			receivedDone <- struct{}{}
+		}
+	}()
 
 	// Setup client
-	client, err := transport.NewClient(clientDeps, cfg, "client-node")
+	clientLogger := log.NewDebugLogger()
+	clientLogger.ConnectTo(os.Stdout)
+	client, err := transport.NewClient(clientLogger, cfg, "client-node")
 	require.NoError(t, err)
 	conn, err := client.OpenConnectionOrErr(ctx, "srv", addr)
 	require.NoError(t, err)
@@ -113,7 +126,7 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	sort.Strings(received)
 	assert.Equal(t, []string{"bar", "foo"}, received)
 
-	shutdown(t, clientDeps, srvDeps, clientMock.DebugLogger(), srvMock.DebugLogger())
+	shutdown(t, srv, client, srvLogger, clientLogger)
 }
 
 func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
@@ -121,9 +134,6 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-
-	srvDeps, srvMock := dependencies.NewMockedServiceScope(t, commonDeps.WithCtx(ctx))
-	clientDeps, clientMock := dependencies.NewMockedServiceScope(t, commonDeps.WithCtx(ctx))
 
 	cfg := network.NewConfig()
 	cfg.Transport = protocol
@@ -137,24 +147,40 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	dataSize := 2 * datasize.MB
 	data := []byte(strings.Repeat(".", int(dataSize.Bytes())))
 
+	// Start Setup
+	srvLogger := log.NewDebugLogger()
+	srv, err := transport.Listen(srvLogger, cfg, "server-node")
+	require.NoError(t, err)
+	addr := srv.Addr().String()
+
 	// Stream server handler
 	receivedDone := make(chan struct{}, 1)
-	handler := func(ctx context.Context, stream *yamux.Stream) {
-		b, err := io.ReadAll(stream)
-		if assert.Len(t, b, len(data)) {
-			assert.Equal(t, data, b)
-		}
-		assert.NoError(t, err)
-		receivedDone <- struct{}{}
-	}
+	go func() {
+		for {
+			// Accept stream
+			stream, err := srv.Accept()
+			if errors.Is(err, io.ErrClosedPipe) {
+				return
+			}
+			assert.NoError(t, err)
 
-	// Start Setup
-	srv, err := transport.Listen(srvDeps, cfg, "server-node", handler)
-	require.NoError(t, err)
-	addr := srv.ListenAddr().String()
+			// Read all
+			b, err := io.ReadAll(stream)
+			if assert.Len(t, b, len(data)) {
+				assert.Equal(t, data, b)
+			}
+			assert.NoError(t, err)
+
+			// Close stream
+			assert.NoError(t, stream.Close())
+
+			receivedDone <- struct{}{}
+		}
+	}()
 
 	// Setup client
-	client, err := transport.NewClient(clientDeps, cfg, "client-node")
+	clientLogger := log.NewDebugLogger()
+	client, err := transport.NewClient(clientLogger, cfg, "client-node")
 	require.NoError(t, err)
 	conn, err := client.OpenConnectionOrErr(ctx, "srv", addr)
 	require.NoError(t, err)
@@ -175,10 +201,10 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	case <-receivedDone:
 	}
 
-	shutdown(t, clientDeps, srvDeps, clientMock.DebugLogger(), srvMock.DebugLogger())
+	shutdown(t, srv, client, srvLogger, clientLogger)
 }
 
-func shutdown(t *testing.T, clientDeps, srvDeps dependencies.ServiceScope, clientLogger, srvLogger log.DebugLogger) {
+func shutdown(t *testing.T, srv *transport.Server, client *transport.Client, srvLogger, clientLogger log.DebugLogger) {
 	t.Helper()
 
 	// Don't start shutdown, before the successful connection is logged
@@ -189,35 +215,29 @@ func shutdown(t *testing.T, clientDeps, srvDeps dependencies.ServiceScope, clien
 		clientLogger.AssertJSONMessages(c, `{"message":"disk writer client connected from \"%s\" to \"%s\""}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
-	// Shutdown client
-	clientDeps.Process().Shutdown(context.Background(), errors.New("bye bye"))
-	clientDeps.Process().WaitForShutdown()
+	// Close client
+	require.NoError(t, client.Close())
 
-	// Shutdown server
-	srvDeps.Process().Shutdown(context.Background(), errors.New("bye bye"))
-	srvDeps.Process().WaitForShutdown()
+	// Close server
+	require.NoError(t, srv.Close())
 
 	// Check client logs
 	clientLogger.AssertJSONMessages(t, `
-{"level":"info","message":"disk writer client connected from \"%s\" to \"srv\" - \"%s\"","component":"storage.node.writer.network.client"}
-{"level":"info","message":"exiting (bye bye)"}
-{"level":"info","message":"closing disk writer client","component":"storage.node.writer.network.client"}
-{"level":"info","message":"closing %d connections","component":"storage.node.writer.network.client"}
-{"level":"info","message":"closed disk writer client","component":"storage.node.writer.network.client"}
-{"level":"info","message":"exited"}
+{"level":"info","message":"disk writer client connected from \"%s\" to \"srv\" - \"%s\""}
+{"level":"info","message":"closing disk writer client"}
+{"level":"info","message":"closing %d connections"}
+{"level":"info","message":"closed disk writer client"}
 `)
 
 	// Check server logs
 	srvLogger.AssertJSONMessages(t, `
-{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.network.server"}
-{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network.server"}
-{"level":"info","message":"exiting (bye bye)"}
-{"level":"info","message":"closing disk writer server","component":"storage.node.writer.network.server"}
-{"level":"info","message":"waiting 30s for %d streams","component":"storage.node.writer.network.server"}
-{"level":"info","message":"waiting for streams done","component":"storage.node.writer.network.server"}
-{"level":"info","message":"closing %d streams","component":"storage.node.writer.network.server"}
-{"level":"info","message":"closing %d sessions","component":"storage.node.writer.network.server"}
-{"level":"info","message":"closed disk writer server","component":"storage.node.writer.network.server"}
-{"level":"info","message":"exited"}
+{"level":"info","message":"disk writer listening on \"%s\""}
+{"level":"info","message":"accepted connection from \"%s\" to \"%s\""}
+{"level":"info","message":"closing disk writer server"}
+{"level":"info","message":"waiting 30s for %d streams"}
+{"level":"info","message":"waiting for streams done"}
+{"level":"info","message":"closing %d streams"}
+{"level":"info","message":"closing %d sessions"}
+{"level":"info","message":"closed disk writer server"}
 `)
 }

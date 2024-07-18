@@ -1,34 +1,41 @@
 package transport
 
 import (
+	"sync"
+
 	"github.com/hashicorp/yamux"
 )
 
+// ClientStream implements net.Conn.
 type ClientStream struct {
-	conn   *ClientConnection
-	stream *yamux.Stream
+	*yamux.Stream
+	conn *ClientConnection
+
+	closeLock sync.Mutex
+	closed    bool
 }
 
 func newClientStream(conn *ClientConnection, stream *yamux.Stream) *ClientStream {
-	s := &ClientStream{conn: conn, stream: stream}
+	s := &ClientStream{conn: conn, Stream: stream}
 	conn.registerStream(s)
 	return s
 }
 
-func (s *ClientStream) StreamID() uint32 {
-	return s.stream.StreamID()
+func (s *ClientStream) IsConnected() bool {
+	return s.conn.IsConnected()
 }
 
 func (s *ClientStream) Close() error {
-	err := s.stream.Close()
+	s.closeLock.Lock()
+	defer s.closeLock.Unlock()
+
+	if s.closed {
+		return nil
+	}
+
+	s.closed = true
+
+	err := s.Stream.Close()
 	s.conn.unregisterStream(s)
 	return err
-}
-
-func (s *ClientStream) Read(b []byte) (n int, err error) {
-	return s.stream.Read(b)
-}
-
-func (s *ClientStream) Write(b []byte) (n int, err error) {
-	return s.stream.Write(b)
 }
