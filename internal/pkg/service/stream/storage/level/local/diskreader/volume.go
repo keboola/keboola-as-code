@@ -185,7 +185,7 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 	}
 
 	// Init reader and chain
-	r, err = New(v.ctx, logger, slice.SliceKey, slice.Encoding.Compression, slice.StagingStorage.Compression, file, v.readerEvents)
+	r, err = newReader(v.ctx, logger, slice.SliceKey, slice.Encoding.Compression, slice.StagingStorage.Compression, file, v.readerEvents)
 	if err != nil {
 		return nil, err
 	}
