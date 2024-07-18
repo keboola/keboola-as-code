@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -82,7 +82,7 @@ func (m *Manager) Pipelines() (out []Pipeline) {
 	return out
 }
 
-func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, cfg config.Config, mapping table.Mapping, out writechain.File) (w Pipeline, err error) {
+func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, mappingCfg table.Mapping, encodingCfg encoding.Config, out writechain.File) (w Pipeline, err error) {
 	// Check if the pipeline already exists, if not, register an empty reference to unlock immediately
 	ref, exists := m.addPipeline(sliceKey)
 	if exists {
@@ -90,7 +90,7 @@ func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, cfg
 	}
 
 	// Create pipeline
-	ref.Pipeline, err = newPipeline(ctx, m.logger, m.clock, sliceKey, cfg, mapping, out, m.events)
+	ref.Pipeline, err = newPipeline(ctx, m.logger, m.clock, sliceKey, mappingCfg, encodingCfg, out, m.events)
 	if err != nil {
 		return nil, err
 	}

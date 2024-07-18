@@ -149,7 +149,6 @@ func TestSlice_Validation(t *testing.T) {
 	localStorage := localModel.Slice{
 		Dir:      "my-dir",
 		Filename: "slice.csv",
-		Encoding: encoding.NewConfig(),
 	}
 	stagingStorage := stagingModel.Slice{
 		Path:        "slice.csv.gzip",
@@ -174,11 +173,11 @@ func TestSlice_Validation(t *testing.T) {
 - "sliceOpenedAt" is a required field
 - "state" is a required field
 - "mapping.columns" is a required field
+- "encoding.encoder.type" is a required field
+- "encoding.compression.type" is a required field
+- "encoding.sync.mode" is a required field
 - "local.dir" is a required field
 - "local.filename" is a required field
-- "local.encoding.encoder.type" is a required field
-- "local.encoding.compression.type" is a required field
-- "local.encoding.sync.mode" is a required field
 - "staging.path" is a required field
 - "staging.compression.type" is a required field
 `,
@@ -193,6 +192,7 @@ func TestSlice_Validation(t *testing.T) {
 				Mapping: table.Mapping{
 					Columns: column.Columns{},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 			},
@@ -209,6 +209,7 @@ func TestSlice_Validation(t *testing.T) {
 						column.Body{Name: "body"},
 					},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 			},
@@ -226,6 +227,7 @@ func TestSlice_Validation(t *testing.T) {
 						column.Body{Name: "body"},
 					},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 			},
@@ -263,6 +265,7 @@ func TestSlice_Validation(t *testing.T) {
 						column.Body{Name: "body"},
 					},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 			},
@@ -283,6 +286,7 @@ func TestSlice_Validation(t *testing.T) {
 						column.Body{Name: "body"},
 					},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 			},

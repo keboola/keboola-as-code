@@ -8,7 +8,6 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 
-	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -26,7 +25,6 @@ func TestSlice_Validation(t *testing.T) {
 				Dir:                "my-dir",
 				Filename:           "slice.csv.gzip",
 				AllocatedDiskSpace: 10 * datasize.KB,
-				Encoding:           encoding.NewConfig(),
 			},
 		},
 		{
@@ -36,7 +34,6 @@ func TestSlice_Validation(t *testing.T) {
 				Filename:           "slice.csv.gzip",
 				IsEmpty:            true,
 				AllocatedDiskSpace: 10 * datasize.KB,
-				Encoding:           encoding.NewConfig(),
 			},
 		},
 		{
@@ -45,7 +42,6 @@ func TestSlice_Validation(t *testing.T) {
 				Dir:                "my-dir",
 				Filename:           "slice.csv.gzip",
 				AllocatedDiskSpace: 0,
-				Encoding:           encoding.NewConfig(),
 			},
 		},
 		{
@@ -55,7 +51,6 @@ func TestSlice_Validation(t *testing.T) {
 				Dir:                "",
 				Filename:           "slice.csv.gzip",
 				AllocatedDiskSpace: 0,
-				Encoding:           encoding.NewConfig(),
 			},
 		},
 		{
@@ -65,7 +60,6 @@ func TestSlice_Validation(t *testing.T) {
 				Dir:                "my-dir",
 				Filename:           "",
 				AllocatedDiskSpace: 0,
-				Encoding:           encoding.NewConfig(),
 			},
 		},
 	}

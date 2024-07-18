@@ -173,7 +173,7 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 	// Setup slice
 	rtc := newReaderTestCase(t)
 	rtc.SliceData = localData.Bytes()
-	rtc.Slice.LocalStorage.Encoding.Compression = tc.LocalCompression
+	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Create reader

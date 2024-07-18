@@ -15,6 +15,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -39,6 +40,8 @@ type Volume struct {
 	clock        clock.Clock
 	writerEvents *events.Events[Writer]
 	config       Config
+	fileOpener   FileOpener
+	allocator    diskalloc.Allocator
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -69,11 +72,21 @@ func Open(ctx context.Context, logger log.Logger, clock clock.Clock, config Conf
 		clock:         clock,
 		writerEvents:  writerEvents.Clone(), // clone events passed from volumes collection, so volume specific listeners can be added
 		config:        config,
+		fileOpener:    DefaultFileOpener{},
+		allocator:     diskalloc.DefaultAllocator{},
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
 		drainFilePath: filepath.Join(spec.Path, DrainFile),
 		writersLock:   &sync.Mutex{},
 		writers:       make(map[string]*writerRef),
+	}
+
+	if config.OverrideFileOpener != nil {
+		v.fileOpener = config.OverrideFileOpener
+	}
+
+	if config.Allocation.OverrideAllocator != nil {
+		v.allocator = config.Allocation.OverrideAllocator
 	}
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
@@ -188,7 +201,7 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w Writer, err error) {
 	}()
 
 	// Create writer
-	w, err = New(v.ctx, v.logger, v.config, v.Path(), slice, v.writerEvents)
+	w, err = New(v.ctx, v.logger, v.Path(), v.fileOpener, v.allocator, slice.SliceKey, slice.LocalStorage, v.writerEvents)
 	if err != nil {
 		return nil, err
 	}

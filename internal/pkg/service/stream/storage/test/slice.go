@@ -61,11 +61,11 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 				column.Body{Name: "body"},
 			},
 		},
+		Encoding: encodingCfg,
 		LocalStorage: localModel.Slice{
 			Dir:                local.NormalizeDirPath(openedAt),
 			Filename:           "slice.csv",
 			AllocatedDiskSpace: 10 * datasize.KB,
-			Encoding:           encodingCfg,
 		},
 		StagingStorage: stagingModel.Slice{
 			Path:        "slice.csv",

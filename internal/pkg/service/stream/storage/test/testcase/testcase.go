@@ -69,7 +69,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	openPipeline := func() encoding.Pipeline {
 		w, err := vol.OpenWriter(slice)
 		require.NoError(t, err)
-		pipeline, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, w)
+		pipeline, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Encoding, slice.Mapping, w)
 		require.NoError(t, err)
 		return pipeline
 	}
@@ -164,9 +164,9 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *diskwriter.Volume) *mod
 
 	s := NewTestSlice(volume)
 	s.Mapping = table.Mapping{Columns: tc.Columns}
+	s.Encoding.Sync = tc.Sync
+	s.Encoding.Compression = tc.Compression
 	s.LocalStorage.AllocatedDiskSpace = tc.Allocate
-	s.LocalStorage.Encoding.Sync = tc.Sync
-	s.LocalStorage.Encoding.Compression = tc.Compression
 	s.StagingStorage.Compression = tc.Compression
 
 	// Slice definition must be valid

@@ -11,13 +11,12 @@ func NewFile(path string, c Config) model.File {
 	return model.File{
 		Dir:        NormalizeDirPath(path),
 		Allocation: c.Writer.Allocation,
-		Encoding:   c.Encoding,
 	}
 }
 
-func NewSlice(path string, f model.File) (model.Slice, error) {
+func NewSlice(path string, f model.File, compressionCfg compression.Config) (model.Slice, error) {
 	// Create filename according to the compression type
-	filename, err := compression.Filename("slice.csv", f.Encoding.Compression.Type)
+	filename, err := compression.Filename("slice.csv", compressionCfg.Type)
 	if err != nil {
 		return model.Slice{}, err
 	}
@@ -25,10 +24,7 @@ func NewSlice(path string, f model.File) (model.Slice, error) {
 	s := model.Slice{
 		Dir:      filepath.Join(f.Dir, NormalizeDirPath(path)),
 		Filename: filename,
-		Encoding: f.Encoding,
 	}
-
-	s.Encoding.Compression = s.Encoding.Compression.Simplify()
 
 	return s, nil
 }

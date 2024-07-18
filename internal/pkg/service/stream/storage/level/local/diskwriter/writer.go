@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -33,10 +34,10 @@ type Writer interface {
 }
 
 type writer struct {
-	logger log.Logger
-	slice  *model.Slice
-	file   File
-	events *events.Events[Writer]
+	logger   log.Logger
+	sliceKey model.SliceKey
+	file     File
+	events   *events.Events[Writer]
 	// closed blocks new writes
 	closed chan struct{}
 	// writeWg waits for in-progress writes before Close
@@ -46,44 +47,40 @@ type writer struct {
 func New(
 	ctx context.Context,
 	logger log.Logger,
-	cfg Config,
 	volumePath string,
-	slice *model.Slice,
+	opener FileOpener,
+	allocator diskalloc.Allocator,
+	sliceKey model.SliceKey,
+	slice localModel.Slice,
 	events *events.Events[Writer],
 ) (out Writer, err error) {
 	logger = logger.With(
-		attribute.String("projectId", slice.ProjectID.String()),
-		attribute.String("branchId", slice.BranchID.String()),
-		attribute.String("sourceId", slice.SourceID.String()),
-		attribute.String("sinkId", slice.SinkID.String()),
-		attribute.String("fileId", slice.FileID.String()),
-		attribute.String("sliceId", slice.SliceID.String()),
+		attribute.String("projectId", sliceKey.ProjectID.String()),
+		attribute.String("branchId", sliceKey.BranchID.String()),
+		attribute.String("sourceId", sliceKey.SourceID.String()),
+		attribute.String("sinkId", sliceKey.SinkID.String()),
+		attribute.String("fileId", sliceKey.FileID.String()),
+		attribute.String("sliceId", sliceKey.SliceID.String()),
 	)
 
 	w := &writer{
-		logger:  logger,
-		slice:   slice,
-		events:  events.Clone(), // clone passed events, so additional writer specific listeners can be added
-		closed:  make(chan struct{}),
-		writeWg: &sync.WaitGroup{},
+		logger:   logger,
+		sliceKey: sliceKey,
+		events:   events.Clone(), // clone passed events, so additional writer specific listeners can be added
+		closed:   make(chan struct{}),
+		writeWg:  &sync.WaitGroup{},
 	}
 
 	w.logger.Debug(ctx, "opening disk writer")
 
 	// Create directory if not exists
-	dirPath := filepath.Join(volumePath, slice.LocalStorage.Dir)
+	dirPath := filepath.Join(volumePath, slice.Dir)
 	if err = os.Mkdir(dirPath, sliceDirPerm); err != nil && !errors.Is(err, os.ErrExist) {
 		return nil, errors.PrefixErrorf(err, `cannot create slice directory "%s"`, dirPath)
 	}
 
-	// Get file opener
-	var opener FileOpener = DefaultFileOpener{}
-	if cfg.OverrideFileOpener != nil {
-		opener = cfg.OverrideFileOpener
-	}
-
 	// Open file
-	filePath := filepath.Join(dirPath, slice.LocalStorage.Filename)
+	filePath := filepath.Join(dirPath, slice.Filename)
 	logger = logger.With(attribute.String("file.path", filePath))
 	w.file, err = opener.OpenFile(filePath)
 	if err == nil {
@@ -99,15 +96,9 @@ func New(
 		return nil, err
 	}
 
-	// Get allocator
-	var allocator diskalloc.Allocator = diskalloc.DefaultAllocator{}
-	if cfg.Allocation.OverrideAllocator != nil {
-		allocator = cfg.Allocation.OverrideAllocator
-	}
-
 	// Allocate disk space
 	if isNew := stat.Size() == 0; isNew {
-		if size := slice.LocalStorage.AllocatedDiskSpace; size != 0 {
+		if size := slice.AllocatedDiskSpace; size != 0 {
 			if ok, err := allocator.Allocate(w.file, size); ok {
 				logger.Debugf(ctx, `allocated disk space "%s"`, size)
 			} else if err != nil {
@@ -131,7 +122,7 @@ func New(
 }
 
 func (w *writer) SliceKey() model.SliceKey {
-	return w.slice.SliceKey
+	return w.sliceKey
 }
 
 func (w *writer) Write(p []byte) (n int, err error) {

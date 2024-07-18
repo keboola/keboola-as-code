@@ -71,7 +71,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	require.NoError(b, err)
 
 	// Create encoder pipeline
-	writer, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, diskWriter)
+	writer, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, diskWriter)
 	require.NoError(b, err)
 
 	// Create data channel
@@ -144,13 +144,13 @@ func (wb *WriterBenchmark) newSlice(b *testing.B, volume *diskwriter.Volume) *mo
 	s := test.NewSlice()
 	s.VolumeID = volume.ID()
 	s.Mapping = table.Mapping{Columns: wb.Columns}
+	s.Encoding.Sync = wb.Sync
+	s.Encoding.Compression = wb.Compression
 	s.LocalStorage.AllocatedDiskSpace = wb.Allocate
-	s.LocalStorage.Encoding.Sync = wb.Sync
-	s.LocalStorage.Encoding.Compression = wb.Compression
 	s.StagingStorage.Compression = wb.Compression
 
 	// Slice definition must be valid, except ZSTD compression - it is not enabled/supported in production
-	if s.LocalStorage.Encoding.Compression.Type != compression.TypeZSTD {
+	if s.Encoding.Compression.Type != compression.TypeZSTD {
 		val := validator.New()
 		require.NoError(b, val.Validate(context.Background(), s))
 	}
