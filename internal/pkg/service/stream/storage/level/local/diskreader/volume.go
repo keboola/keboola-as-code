@@ -174,8 +174,7 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 	}
 
 	// Open file
-	dirPath := filepath.Join(v.Path(), slice.LocalStorage.Dir)
-	filePath := filepath.Join(dirPath, slice.LocalStorage.Filename)
+	filePath := slice.LocalStorage.FileName(v.Path())
 	logger = logger.With(attribute.String("file.path", filePath))
 	file, err = opener.OpenFile(filePath)
 	if err == nil {

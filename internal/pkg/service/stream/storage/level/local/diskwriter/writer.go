@@ -3,7 +3,6 @@ package diskwriter
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -74,13 +73,13 @@ func New(
 	w.logger.Debug(ctx, "opening disk writer")
 
 	// Create directory if not exists
-	dirPath := filepath.Join(volumePath, slice.Dir)
+	dirPath := slice.DirName(volumePath)
 	if err = os.Mkdir(dirPath, sliceDirPerm); err != nil && !errors.Is(err, os.ErrExist) {
 		return nil, errors.PrefixErrorf(err, `cannot create slice directory "%s"`, dirPath)
 	}
 
 	// Open file
-	filePath := filepath.Join(dirPath, slice.Filename)
+	filePath := slice.FileName(volumePath)
 	logger = logger.With(attribute.String("file.path", filePath))
 	w.file, err = opener.OpenFile(filePath)
 	if err == nil {

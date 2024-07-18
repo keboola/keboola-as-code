@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -63,7 +62,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	// Create a test slice
 	slice := tc.newSlice(t, vol)
-	filePath := filepath.Join(vol.Path(), slice.LocalStorage.Dir, slice.LocalStorage.Filename)
+	filePath := slice.LocalStorage.FileName(vol.Path())
 
 	// Open encoder pipeline
 	openPipeline := func() encoding.Pipeline {

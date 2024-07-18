@@ -11,7 +11,8 @@ storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-
 %A
   "local": {
     "dir": "123/456/my-source/my-sink/2000-01-01T01-00-00-000Z/2000-01-01T01-00-00-000Z",
-    "filename": "slice.csv.gz",
+    "filenamePrefix": "slice",
+    "filenameExtension": "csv.gz",
     "allocatedDiskSpace": "100MB"
   },
 %A

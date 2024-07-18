@@ -57,8 +57,7 @@ func TestWriter_Basic(t *testing.T) {
 	}
 
 	// Check file content
-	filePath := filepath.Join(volumePath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
-	content, err := os.ReadFile(filePath)
+	content, err := os.ReadFile(slice.LocalStorage.FileName(volumePath))
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("123,456,789\nabc,def,ghj\n"), content)
 }
@@ -260,5 +259,5 @@ func (tc *writerTestCase) NewWriter() (diskwriter.Writer, error) {
 }
 
 func (tc *writerTestCase) FilePath() string {
-	return filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
+	return tc.Slice.LocalStorage.FileName(tc.VolumePath)
 }

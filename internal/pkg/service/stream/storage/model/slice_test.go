@@ -147,8 +147,9 @@ func TestSlice_Validation(t *testing.T) {
 
 	// Following values have own validation
 	localStorage := localModel.Slice{
-		Dir:      "my-dir",
-		Filename: "slice.csv",
+		Dir:               "my-dir",
+		FilenamePrefix:    "slice",
+		FilenameExtension: "csv",
 	}
 	stagingStorage := stagingModel.Slice{
 		Path:        "slice.csv.gzip",
@@ -177,7 +178,8 @@ func TestSlice_Validation(t *testing.T) {
 - "encoding.compression.type" is a required field
 - "encoding.sync.mode" is a required field
 - "local.dir" is a required field
-- "local.filename" is a required field
+- "local.filenamePrefix" is a required field
+- "local.filenameExtension" is a required field
 - "staging.path" is a required field
 - "staging.compression.type" is a required field
 `,

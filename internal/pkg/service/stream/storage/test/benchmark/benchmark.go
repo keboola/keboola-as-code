@@ -3,7 +3,6 @@ package benchmark
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -64,7 +63,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 
 	// Create slice
 	slice := wb.newSlice(b, vol)
-	filePath := filepath.Join(vol.Path(), slice.LocalStorage.Dir, slice.LocalStorage.Filename)
+	filePath := slice.LocalStorage.FileName(vol.Path())
 
 	// Create writer
 	diskWriter, err := vol.OpenWriter(slice)

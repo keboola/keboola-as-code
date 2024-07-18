@@ -362,9 +362,8 @@ func (tc *readerTestCase) NewReader(disableValidation bool) (diskreader.Reader, 
 	}
 
 	// Write slice data
-	path := filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
-	assert.NoError(tc.TB, os.MkdirAll(filepath.Dir(path), 0o750))
-	assert.NoError(tc.TB, os.WriteFile(path, tc.SliceData, 0o640))
+	assert.NoError(tc.TB, os.MkdirAll(tc.Slice.LocalStorage.DirName(tc.VolumePath), 0o750))
+	assert.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileName(tc.VolumePath), tc.SliceData, 0o640))
 
 	r, err := tc.Volume.OpenReader(tc.Slice)
 	if err != nil {

@@ -15,15 +15,16 @@ func NewFile(path string, c Config) model.File {
 }
 
 func NewSlice(path string, f model.File, compressionCfg compression.Config) (model.Slice, error) {
-	// Create filename according to the compression type
-	filename, err := compression.Filename("slice.csv", compressionCfg.Type)
+	// Filename extension according to the compression type
+	extension, err := compression.Filename("csv", compressionCfg.Type)
 	if err != nil {
 		return model.Slice{}, err
 	}
 
 	s := model.Slice{
-		Dir:      filepath.Join(f.Dir, NormalizeDirPath(path)),
-		Filename: filename,
+		Dir:               filepath.Join(f.Dir, NormalizeDirPath(path)),
+		FilenamePrefix:    "slice",
+		FilenameExtension: extension,
 	}
 
 	return s, nil

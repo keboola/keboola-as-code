@@ -23,7 +23,8 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "ok",
 			Value: Slice{
 				Dir:                "my-dir",
-				Filename:           "slice.csv.gzip",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "csv.gzip",
 				AllocatedDiskSpace: 10 * datasize.KB,
 			},
 		},
@@ -31,7 +32,8 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "ok: IsEmpty=true",
 			Value: Slice{
 				Dir:                "my-dir",
-				Filename:           "slice.csv.gzip",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "csv.gzip",
 				IsEmpty:            true,
 				AllocatedDiskSpace: 10 * datasize.KB,
 			},
@@ -40,7 +42,8 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "ok: disk space allocation disabled",
 			Value: Slice{
 				Dir:                "my-dir",
-				Filename:           "slice.csv.gzip",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "csv.gzip",
 				AllocatedDiskSpace: 0,
 			},
 		},
@@ -49,16 +52,28 @@ func TestSlice_Validation(t *testing.T) {
 			ExpectedError: `"dir" is a required field`,
 			Value: Slice{
 				Dir:                "",
-				Filename:           "slice.csv.gzip",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "csv.gzip",
 				AllocatedDiskSpace: 0,
 			},
 		},
 		{
-			Name:          "empty filename",
-			ExpectedError: `"filename" is a required field`,
+			Name:          "empty filenamePrefix",
+			ExpectedError: `"filenamePrefix" is a required field`,
 			Value: Slice{
 				Dir:                "my-dir",
-				Filename:           "",
+				FilenamePrefix:     "",
+				FilenameExtension:  "csv",
+				AllocatedDiskSpace: 0,
+			},
+		},
+		{
+			Name:          "empty filenameExtension",
+			ExpectedError: `"filenameExtension" is a required field`,
+			Value: Slice{
+				Dir:                "my-dir",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "",
 				AllocatedDiskSpace: 0,
 			},
 		},
