@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
@@ -39,13 +40,29 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 	logger.Info(ctx, `starting storage writer node`)
 
 	// Listen for network connections
-	srv, err := transport.Listen(d, cfg.Storage.Level.Local.Writer.Network, cfg.NodeID)
+	listener, err := transport.Listen(logger.WithComponent("server"), cfg.Storage.Level.Local.Writer.Network, cfg.NodeID)
 	if err != nil {
 		return err
 	}
+	d.Process().OnShutdown(func(ctx context.Context) {
+		_ = listener.Close()
+	})
+
+	srv, err := rpc.NewNetworkFileServer(d)
+	if err != nil {
+		return err
+	}
+	d.Process().Add(func(shutdown servicectx.ShutdownFn) {
+		shutdown(context.Background(), srv.Serve(listener))
+	})
+	d.Process().OnShutdown(func(ctx context.Context) {
+		if err := listener.Close(); err != nil {
+			logger.Error(ctx, err.Error())
+		}
+	})
 
 	// Register volumes to database
-	nodeAddress := model.RemoteAddr(fmt.Sprintf("%s:%s", cfg.Hostname, srv.Port()))
+	nodeAddress := model.RemoteAddr(fmt.Sprintf("%s:%s", cfg.Hostname, listener.Port()))
 	regCfg := cfg.Storage.Level.Local.Volume.Registration
 	err = registration.RegisterVolumes(regCfg, d, cfg.NodeID, nodeAddress, d.Volumes().Collection(), d.StorageRepository().Volume().RegisterWriterVolume)
 	if err != nil {
