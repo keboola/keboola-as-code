@@ -31,6 +31,7 @@ func AllTypes() Types {
 		ColumnIPType,
 		ColumnBodyType,
 		ColumnHeadersType,
+		ColumnPathType,
 		ColumnTemplateType,
 	}
 }
@@ -48,6 +49,8 @@ func MakeColumn(typ Type, name string, primaryKey bool) (Column, error) {
 		v = Body{Name: name, PrimaryKey: primaryKey}
 	case ColumnHeadersType:
 		v = Headers{Name: name, PrimaryKey: primaryKey}
+	case ColumnPathType:
+		v = Path{Name: name, PrimaryKey: primaryKey}
 	case ColumnTemplateType:
 		v = Template{Name: name, PrimaryKey: primaryKey}
 	default:

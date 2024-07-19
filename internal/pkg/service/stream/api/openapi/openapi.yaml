@@ -1096,7 +1096,7 @@ definitions:
                 tableId: in.c-bucket.table
                 mapping:
                     columns:
-                        - type: uuid-v7
+                        - type: uuid
                           name: id-col
                           primaryKey: true
                         - type: datetime
@@ -1259,7 +1259,7 @@ definitions:
                         tableId: in.c-bucket.table
                         mapping:
                             columns:
-                                - type: uuid-v7
+                                - type: uuid
                                   name: id-col
                                   primaryKey: true
                                 - type: datetime
@@ -1435,7 +1435,7 @@ definitions:
                     tableId: in.c-bucket.table
                     mapping:
                         columns:
-                            - type: uuid-v7
+                            - type: uuid
                               name: id-col
                               primaryKey: true
                             - type: datetime
@@ -2114,7 +2114,7 @@ definitions:
                 tableId: in.c-bucket.table
                 mapping:
                     columns:
-                        - type: uuid-v7
+                        - type: uuid
                           name: id-col
                           primaryKey: true
                         - type: datetime
@@ -2368,7 +2368,7 @@ definitions:
                             tableId: in.c-bucket.table
                             mapping:
                                 columns:
-                                    - type: uuid-v7
+                                    - type: uuid
                                       name: id-col
                                       primaryKey: true
                                     - type: datetime
@@ -2539,7 +2539,7 @@ definitions:
                         tableId: in.c-bucket.table
                         mapping:
                             columns:
-                                - type: uuid-v7
+                                - type: uuid
                                   name: id-col
                                   primaryKey: true
                                 - type: datetime
@@ -2687,7 +2687,7 @@ definitions:
                 tableId: in.c-bucket.table
                 mapping:
                     columns:
-                        - type: uuid-v7
+                        - type: uuid
                           name: id-col
                           primaryKey: true
                         - type: datetime
@@ -3305,7 +3305,7 @@ definitions:
                 tableId: in.c-bucket.table
                 mapping:
                     columns:
-                        - type: uuid-v7
+                        - type: uuid
                           name: id-col
                           primaryKey: true
                         - type: datetime
@@ -3805,7 +3805,7 @@ definitions:
                         tableId: in.c-bucket.table
                         mapping:
                             columns:
-                                - type: uuid-v7
+                                - type: uuid
                                   name: id-col
                                   primaryKey: true
                                 - type: datetime
@@ -3884,7 +3884,7 @@ definitions:
                     tableId: in.c-bucket.table
                     mapping:
                         columns:
-                            - type: uuid-v7
+                            - type: uuid
                               name: id-col
                               primaryKey: true
                             - type: datetime
@@ -4484,7 +4484,7 @@ definitions:
                 tableId: in.c-bucket.table
                 mapping:
                     columns:
-                        - type: uuid-v7
+                        - type: uuid
                           name: id-col
                           primaryKey: true
                         - type: datetime
@@ -4689,7 +4689,7 @@ definitions:
         example:
             statusCode: 404
             error: stream.api.forbidden
-            message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
+            message: 'Cannot modify protected keys: "storage.level.local.encoding.compression.gzip.blockSize".'
         required:
             - statusCode
             - error
@@ -5016,7 +5016,7 @@ definitions:
         example:
             statusCode: 404
             error: stream.api.forbidden
-            message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
+            message: 'Cannot modify protected keys: "storage.level.local.encoding.compression.gzip.blockSize".'
         required:
             - statusCode
             - error
@@ -5093,11 +5093,12 @@ definitions:
                 description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
                 example: body
                 enum:
-                    - uuid-v7
+                    - uuid
                     - datetime
                     - ip
                     - body
                     - headers
+                    - path
                     - template
         description: An output mapping defined by a template.
         example:
@@ -5130,11 +5131,12 @@ definitions:
                 description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
                 example: body
                 enum:
-                    - uuid-v7
+                    - uuid
                     - datetime
                     - ip
                     - body
                     - headers
+                    - path
                     - template
         description: An output mapping defined by a template.
         example:
@@ -5198,7 +5200,7 @@ definitions:
                 items:
                     $ref: '#/definitions/TableColumnRequestBody'
                 example:
-                    - type: uuid-v7
+                    - type: uuid
                       name: id-col
                       primaryKey: true
                     - type: datetime
@@ -5219,7 +5221,7 @@ definitions:
         description: Table mapping definition.
         example:
             columns:
-                - type: uuid-v7
+                - type: uuid
                   name: id-col
                   primaryKey: true
                 - type: datetime
@@ -5246,7 +5248,7 @@ definitions:
                 items:
                     $ref: '#/definitions/TableColumnResponseBody'
                 example:
-                    - type: uuid-v7
+                    - type: uuid
                       name: id-col
                       primaryKey: true
                     - type: datetime
@@ -5267,7 +5269,7 @@ definitions:
         description: Table mapping definition.
         example:
             columns:
-                - type: uuid-v7
+                - type: uuid
                   name: id-col
                   primaryKey: true
                 - type: datetime
@@ -5305,7 +5307,7 @@ definitions:
             tableId: in.c-bucket.table
             mapping:
                 columns:
-                    - type: uuid-v7
+                    - type: uuid
                       name: id-col
                       primaryKey: true
                     - type: datetime
@@ -5345,7 +5347,7 @@ definitions:
             tableId: in.c-bucket.table
             mapping:
                 columns:
-                    - type: uuid-v7
+                    - type: uuid
                       name: id-col
                       primaryKey: true
                     - type: datetime
@@ -5385,7 +5387,7 @@ definitions:
             tableId: in.c-bucket.table
             mapping:
                 columns:
-                    - type: uuid-v7
+                    - type: uuid
                       name: id-col
                       primaryKey: true
                     - type: datetime

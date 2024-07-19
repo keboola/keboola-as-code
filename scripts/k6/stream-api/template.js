@@ -17,7 +17,7 @@ export function setup() {
         tableId: "in.c-stream-template.data",
         mapping: {
           columns: [
-            { type: "uuid-v7", name: "id", primaryKey: true },
+            { type: "uuid", name: "id", primaryKey: true },
             {
               type: "template",
               name: "template",
