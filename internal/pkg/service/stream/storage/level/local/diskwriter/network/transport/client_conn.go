@@ -132,9 +132,9 @@ func (c *ClientConnection) Close(ctx context.Context) error {
 	// Close session
 	if sess, _ := c.session(); sess != nil {
 		select {
-		case <-c.sess.CloseChan():
+		case <-sess.CloseChan():
 		default:
-			if err := c.sess.Close(); err != nil {
+			if err := sess.Close(); err != nil {
 				c.client.logger.Errorf(ctx, "disk writer client cannot close session to %q", c.remoteAddr)
 			}
 		}
