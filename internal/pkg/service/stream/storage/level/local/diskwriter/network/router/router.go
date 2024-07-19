@@ -28,14 +28,17 @@ type Router struct {
 	logger       log.Logger
 	balancer     Balancer
 	connections  *connection.Manager
-	distribution *distribution.GroupNode
 	encoding     *encoding.Manager
+	distribution *distribution.GroupNode
 
 	// slices field contains in-memory snapshot of all opened storage file slices
 	slices *etcdop.Mirror[storage.Slice, *sliceData]
 
 	closed <-chan struct{}
 	wg     sync.WaitGroup
+
+	pipelinesLock sync.Mutex
+	pipelines     map[key.SinkKey]*balancedPipeline
 }
 
 type sliceData struct {
@@ -51,6 +54,7 @@ type dependencies interface {
 	DistributionNode() *distribution.Node
 	StorageRepository() *storageRepo.Repository
 	ConnectionManager() *connection.Manager
+	EncodingManager() *encoding.Manager
 }
 
 func New(d dependencies, sourceType string, config network.Config) (r *Router, err error) {
@@ -59,6 +63,8 @@ func New(d dependencies, sourceType string, config network.Config) (r *Router, e
 		logger:      d.Logger().WithComponent("storage.router"),
 		balancer:    NewRandomBalancer(),
 		connections: d.ConnectionManager(),
+		encoding:    d.EncodingManager(),
+		pipelines:   make(map[key.SinkKey]*balancedPipeline),
 	}
 
 	// Graceful shutdown
@@ -66,8 +72,26 @@ func New(d dependencies, sourceType string, config network.Config) (r *Router, e
 	r.closed = ctx.Done()
 	d.Process().OnShutdown(func(_ context.Context) {
 		r.logger.Info(ctx, "closing storage router")
+
+		// Stop mirroring
 		cancel()
 		r.wg.Wait()
+
+		// Close pipelines
+		r.pipelinesLock.Lock()
+		defer r.pipelinesLock.Unlock()
+		wg := &sync.WaitGroup{}
+		for _, p := range r.pipelines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := p.Close(context.Background()); err != nil {
+					r.logger.Errorf(context.Background(), "cannot close balanced pipeline: %s", err)
+				}
+			}()
+		}
+		wg.Wait()
+
 		r.logger.Info(ctx, "closed storage router")
 	})
 
@@ -103,28 +127,36 @@ func New(d dependencies, sourceType string, config network.Config) (r *Router, e
 		}
 	}
 
-	// Update slices on distribution change
-	r.wg.Add(1)
-	go func() {
-		defer r.wg.Done()
-
-		listener := r.distribution.OnChangeListener()
-		defer listener.Stop()
-
-		for {
-			select {
-			case <-listener.C:
-			case <-r.closed:
-				return
-			}
-		}
-	}()
+	//// Update slices on distribution change
+	// r.wg.Add(1)
+	// go func() {
+	//	defer r.wg.Done()
+	//
+	//	listener := r.distribution.OnChangeListener()
+	//	defer listener.Stop()
+	//
+	//	for {
+	//		select {
+	//		case <-listener.C:
+	//		case <-r.closed:
+	//			return
+	//		}
+	//	}
+	//}()
 
 	return r, nil
 }
 
 func (r *Router) OpenPipeline(ctx context.Context, sinkKey key.SinkKey) (pipeline.Pipeline, error) {
-	return newBalancedPipeline(ctx, r, sinkKey)
+	p, err := newBalancedPipeline(ctx, r, sinkKey)
+	if err != nil {
+		return nil, err
+	}
+	r.pipelinesLock.Lock()
+	r.pipelines[sinkKey] = p
+	r.pipelinesLock.Unlock()
+
+	return p, nil
 }
 
 // sinkOpenedSlices method gets all slices in SliceWriting state for the sink.
