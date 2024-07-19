@@ -6,8 +6,6 @@ import (
 	"sync"
 
 	"github.com/benbjohnson/clock"
-	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
@@ -51,7 +49,7 @@ func NewManager(d dependencies) *Manager {
 		m.logger.Info(ctx, "closing encoding pipelines")
 		if err := m.close(ctx); err != nil {
 			err := errors.PrefixError(err, "cannot close encoding pipelines")
-			logger.Error(ctx, err.Error())
+			m.logger.Error(ctx, err.Error())
 		}
 		m.logger.Info(ctx, "closed encoding pipelines")
 	})
