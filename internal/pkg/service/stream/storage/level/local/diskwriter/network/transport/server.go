@@ -314,7 +314,7 @@ func (s *Server) registerStream(ctx context.Context, stream *ServerStream) {
 	defer s.lock.Unlock()
 	s.streamsWg.Add(1)
 	s.streams[streamKey(stream)] = stream
-	s.logger.Debugf(ctx, "registered stream %q to %q, total streams count %d", stream.StreamID(), stream.RemoteAddr(), len(s.streams))
+	s.logger.Debugf(ctx, `registered stream "%d" to %q, total streams count %d`, stream.StreamID(), stream.RemoteAddr(), len(s.streams))
 }
 
 func (s *Server) unregisterStream(ctx context.Context, stream *ServerStream) {
@@ -322,7 +322,7 @@ func (s *Server) unregisterStream(ctx context.Context, stream *ServerStream) {
 	defer s.lock.Unlock()
 	delete(s.streams, streamKey(stream))
 	s.streamsWg.Done()
-	s.logger.Debugf(ctx, "unregistered stream %q to %q, total streams count %d", stream.StreamID(), stream.RemoteAddr(), len(s.streams))
+	s.logger.Debugf(ctx, `unregistered stream "%d" to %q, total streams count %d`, stream.StreamID(), stream.RemoteAddr(), len(s.streams))
 }
 
 func (s *Server) isClosed() bool {
