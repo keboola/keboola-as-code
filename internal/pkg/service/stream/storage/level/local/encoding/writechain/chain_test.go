@@ -487,8 +487,16 @@ func (w *testFile) WriteString(s string) (int, error) {
 	return w.OsFile.WriteString(s)
 }
 
-func (w *testFile) Sync() error {
-	w.Logger.Info(context.Background(), "TEST: sync file")
+func (w *testFile) Flush(ctx context.Context) error {
+	w.Logger.Info(ctx, "TEST: sync file")
+	if w.SyncError != nil {
+		return w.SyncError
+	}
+	return w.OsFile.Sync()
+}
+
+func (w *testFile) Sync(ctx context.Context) error {
+	w.Logger.Info(ctx, "TEST: sync file")
 	if w.SyncError != nil {
 		return w.SyncError
 	}

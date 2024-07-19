@@ -1,6 +1,7 @@
 package diskwriter
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"sync"
@@ -23,9 +24,13 @@ const (
 // Thw Writer.Write method is called by the network.Listener, which received bytes from the network.Writer/encoding.Writer.
 type Writer interface {
 	SliceKey() model.SliceKey
-	Write(p []byte) (n int, err error)
-	// Sync data from OS cache to the disk.
-	Sync() error
+	// Write bytes to the buffer in the disk writer node.
+	Write(ctx context.Context, p []byte) (n int, err error)
+	// Flush buffered bytes to the OS disk cache,
+	// so only completed parts are passed to the disk.
+	Flush(ctx context.Context) error
+	// Sync OS disk cache to the physical disk.
+	Sync(ctx context.Context) error
 	// Events provides listening to the writer lifecycle.
 	Events() *events.Events[Writer]
 	// Close the writer and sync data to the disk.
@@ -36,11 +41,12 @@ type writer struct {
 	logger   log.Logger
 	sliceKey model.SliceKey
 	file     File
+	buffer   *bytes.Buffer
 	events   *events.Events[Writer]
 	// closed blocks new writes
 	closed chan struct{}
-	// writeWg waits for in-progress writes before Close
-	writeWg *sync.WaitGroup
+	// wg waits for in-progress writes before Close
+	wg *sync.WaitGroup
 }
 
 func newWriter(
@@ -67,14 +73,14 @@ func newWriter(
 		sliceKey: sliceKey,
 		events:   events.Clone(), // clone passed events, so additional writer specific listeners can be added
 		closed:   make(chan struct{}),
-		writeWg:  &sync.WaitGroup{},
+		wg:       &sync.WaitGroup{},
 	}
 
 	w.logger.Debug(ctx, "opening disk writer")
 
 	// Create directory if not exists
 	dirPath := slice.DirName(volumePath)
-	if err = os.Mkdir(dirPath, sliceDirPerm); err != nil && !errors.Is(err, os.ErrExist) {
+	if err = os.MkdirAll(dirPath, sliceDirPerm); err != nil && !errors.Is(err, os.ErrExist) {
 		return nil, errors.PrefixErrorf(err, `cannot create slice directory "%s"`, dirPath)
 	}
 
@@ -88,6 +94,9 @@ func newWriter(
 		logger.Errorf(ctx, `cannot open file "%s": %s`, filePath, err)
 		return nil, err
 	}
+
+	// Create buffer
+	w.buffer = bytes.NewBuffer(nil)
 
 	// Get file info
 	stat, err := w.file.Stat()
@@ -124,16 +133,42 @@ func (w *writer) SliceKey() model.SliceKey {
 	return w.sliceKey
 }
 
-func (w *writer) Write(p []byte) (n int, err error) {
-	// Block Close method
-	w.writeWg.Add(1)
-	defer w.writeWg.Done()
-
-	return w.file.Write(p)
+func (w *writer) Write(ctx context.Context, p []byte) (n int, err error) {
+	w.wg.Add(1)
+	defer w.wg.Done()
+	return w.buffer.Write(p)
 }
 
-func (w *writer) Sync() error {
-	return w.file.Sync()
+func (w *writer) Flush(ctx context.Context) error {
+	w.wg.Add(1)
+	defer w.wg.Done()
+	err := w.flush()
+	w.buffer.Reset()
+	return err
+}
+
+func (w *writer) flush() error {
+	_, err := w.file.Write(w.buffer.Bytes())
+	w.buffer.Reset()
+	return err
+}
+
+func (w *writer) Sync(ctx context.Context) error {
+	w.wg.Add(1)
+	defer w.wg.Done()
+
+	flushErr := w.flush()
+	syncErr := w.file.Sync()
+
+	if flushErr != nil {
+		return flushErr
+	}
+
+	if syncErr != nil {
+		return syncErr
+	}
+
+	return nil
 }
 
 func (w *writer) Events() *events.Events[Writer] {
@@ -152,10 +187,10 @@ func (w *writer) Close(ctx context.Context) error {
 	errs := errors.NewMultiError()
 
 	// Wait for running writes
-	w.writeWg.Wait()
+	w.wg.Wait()
 
 	// Sync file
-	if err := w.file.Sync(); err != nil {
+	if err := w.Sync(ctx); err != nil {
 		errs.Append(errors.Errorf(`cannot sync file: %w`, err))
 	}
 
