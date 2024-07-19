@@ -322,19 +322,22 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		task.Error = result.Error.Error()
 		task.UserError = &Error{}
 
-		if errWithName, ok := result.Error.(svcerrors.WithName); ok {
+		var errWithName svcerrors.WithName
+		if errors.As(result.Error, &errWithName) {
 			task.UserError.Name = errWithName.ErrorName()
 		} else {
 			task.UserError.Name = "unknownError"
 		}
 
-		if errWithUserMessage, ok := result.Error.(svcerrors.WithUserMessage); ok {
+		var errWithUserMessage svcerrors.WithUserMessage
+		if errors.As(result.Error, &errWithUserMessage) {
 			task.UserError.Message = errWithUserMessage.ErrorUserMessage()
 		} else {
 			task.UserError.Message = "Unknown error"
 		}
 
-		if errWithExceptionID, ok := result.Error.(svcerrors.WithExceptionID); ok {
+		var errWithExceptionID svcerrors.WithExceptionID
+		if errors.As(result.Error, &errWithExceptionID) {
 			task.UserError.ExceptionID = errWithExceptionID.ErrorExceptionID()
 		}
 	}
