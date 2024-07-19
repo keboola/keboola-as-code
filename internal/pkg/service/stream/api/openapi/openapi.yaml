@@ -4689,7 +4689,7 @@ definitions:
         example:
             statusCode: 404
             error: stream.api.forbidden
-            message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
+            message: 'Cannot modify protected keys: "storage.level.local.encoding.compression.gzip.blockSize".'
         required:
             - statusCode
             - error
@@ -5016,7 +5016,7 @@ definitions:
         example:
             statusCode: 404
             error: stream.api.forbidden
-            message: 'Cannot modify protected keys: "storage.level.local.compression.gzip.blockSize".'
+            message: 'Cannot modify protected keys: "storage.level.local.encoding.compression.gzip.blockSize".'
         required:
             - statusCode
             - error
@@ -5098,6 +5098,7 @@ definitions:
                     - ip
                     - body
                     - headers
+                    - path
                     - template
         description: An output mapping defined by a template.
         example:
@@ -5135,6 +5136,7 @@ definitions:
                     - ip
                     - body
                     - headers
+                    - path
                     - template
         description: An output mapping defined by a template.
         example:
