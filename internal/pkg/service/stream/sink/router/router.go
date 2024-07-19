@@ -79,7 +79,6 @@ func New(d dependencies) (*Router, error) {
 
 		// Wait for closing all pipelines
 		r.closeAllPipelines(ctx, "shutdown")
-		r.wg.Wait()
 
 		r.logger.Infof(ctx, "sink router shutdown done")
 	})
