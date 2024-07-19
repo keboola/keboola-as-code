@@ -81,12 +81,12 @@ func newSourceScope(parentScp sourceParentScopes, sourceType string, cfg config.
 
 	d.sourceParentScopes = parentScp
 
-	d.encodingManager = encoding.NewManager(d)
-
 	d.connectionManager, err = connection.NewManager(d, cfg.Storage.Level.Local.Writer.Network, cfg.NodeID)
 	if err != nil {
 		return nil, err
 	}
+
+	d.encodingManager = encoding.NewManager(d)
 
 	statsCollector.Start(d, d.encodingManager.Events(), cfg.Storage.Statistics.Collector, cfg.NodeID)
 
