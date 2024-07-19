@@ -32,7 +32,7 @@ type slicePipeline struct {
 	pipeline encoding.Pipeline
 }
 
-func newSlicePipeline(ctx context.Context, router *Router, slice *sliceData) *slicePipeline {
+func newSlicePipeline(ctx context.Context, ready *readyNotifier, router *Router, slice *sliceData) *slicePipeline {
 	p := &slicePipeline{router: router, slice: slice}
 	p.ctx, p.cancel = context.WithCancel(context.WithoutCancel(ctx))
 
@@ -56,6 +56,7 @@ func newSlicePipeline(ctx context.Context, router *Router, slice *sliceData) *sl
 			}
 
 			// Pipeline opened, close goroutine
+			ready.Ready()
 			return
 		}
 	}()
@@ -140,8 +141,9 @@ func newOpenPipelineBackoff() *backoff.ExponentialBackOff {
 	b := backoff.NewExponentialBackOff()
 	b.RandomizationFactor = 0.1
 	b.Multiplier = 4
-	b.InitialInterval = 5 * time.Second
+	b.InitialInterval = 100 * time.Millisecond
 	b.MaxInterval = 60 * time.Second
 	b.MaxElapsedTime = 0 // don't stop
+	b.Reset()
 	return b
 }
