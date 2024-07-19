@@ -34,7 +34,7 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
-	slice.Encoding.Encoder.Factory = encoder.FactoryFn(dummyEncoderFactory)
+	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(dummyEncoderFactory)
 
 	output := newDummyOutput()
 
@@ -68,7 +68,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
-	slice.Encoding.Encoder.Factory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
+	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
 		w := newDummyEncoder(out, nil)
 		w.FlushError = errors.New("some error")
 		return w, nil
@@ -91,7 +91,7 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
-	slice.Encoding.Encoder.Factory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
+	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
 		w := newDummyEncoder(out, nil)
 		w.CloseError = errors.New("some error")
 		return w, nil
@@ -559,7 +559,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 	helper := &writerSyncHelper{writeDone: make(chan struct{}, 100)}
 
 	slice := test.NewSlice()
-	slice.Encoding.Encoder.Factory = helper
+	slice.Encoding.Encoder.OverrideEncoderFactory = helper
 	slice.Encoding.Sync.OverrideSyncerFactory = helper
 
 	tc := &encodingTestCase{

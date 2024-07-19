@@ -206,7 +206,14 @@ func newPipeline(
 	// Create file format writer.
 	// It is entrypoint of the writers chain.
 	{
-		p.encoder, err = encodingCfg.Encoder.Factory.NewEncoder(encodingCfg.Encoder, mappingCfg, p.chain)
+		// Get factory
+		var encoderFactory encoder.Factory = encoder.DefaultFactory{}
+		if encodingCfg.Encoder.OverrideEncoderFactory != nil {
+			encoderFactory = encodingCfg.Encoder.OverrideEncoderFactory
+		}
+
+		// Create encoder
+		p.encoder, err = encoderFactory.NewEncoder(encodingCfg.Encoder, mappingCfg, p.chain)
 		if err != nil {
 			return nil, err
 		}
@@ -303,7 +310,7 @@ func (p *pipeline) Close(ctx context.Context) error {
 
 	// Close only once
 	if p.isClosed() {
-		return errors.New(`writer is already closed`)
+		return nil
 	}
 	close(p.closed)
 
