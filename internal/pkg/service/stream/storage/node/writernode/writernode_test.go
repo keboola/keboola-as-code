@@ -69,9 +69,9 @@ func TestStart_Ok(t *testing.T) {
 
 	// Logs
 	mock.DebugLogger().AssertJSONMessages(t, `
-{"level":"info","message":"starting storage writer node","component":"storage.node.writer"}
 {"level":"info","message":"searching for volumes in volumes path","component":"storage.node.writer.volumes"}
 {"level":"info","message":"found \"2\" volumes","component":"storage.node.writer.volumes"}
+{"level":"info","message":"starting storage writer node","component":"storage.node.writer"}
 {"level":"info","message":"creating etcd session","component":"volumes.registry.etcd.session"}
 {"level":"info","message":"created etcd session","component":"volumes.registry.etcd.session"}
 {"level":"info","message":"exiting (bye bye)"}
@@ -84,10 +84,6 @@ func TestStart_Ok(t *testing.T) {
 {"level":"info","message":"closing volumes stream","component":"volume.repository"}
 {"level":"info","message":"watch stream consumer closed: context canceled","component":"volume.repository"}
 {"level":"info","message":"closed volumes stream","component":"volume.repository"}
-{"level":"info","message":"received shutdown request","component":"distribution.mutex.provider"}
-{"level":"info","message":"closing etcd session: context canceled","component":"distribution.mutex.provider.etcd.session"}
-{"level":"info","message":"closed etcd session","component":"distribution.mutex.provider.etcd.session"}
-{"level":"info","message":"shutdown done","component":"distribution.mutex.provider"}
 {"level":"info","message":"closing etcd connection","component":"etcd.client"}
 {"level":"info","message":"closed etcd connection","component":"etcd.client"}
 {"level":"info","message":"exited"}

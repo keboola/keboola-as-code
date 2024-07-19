@@ -36,9 +36,9 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
-	slice.LocalStorage.Encoding.Encoder.Type = encoder.TypeCSV
+	slice.Encoding.Encoder.Type = encoder.TypeCSV
 
-	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, discardOutput{})
+	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, discardOutput{})
 	require.NoError(t, err)
 	assert.NotNil(t, w)
 }
@@ -51,9 +51,9 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 
 	d, _ := dependencies.NewMockedSourceScope(t)
 	slice := test.NewSlice()
-	slice.LocalStorage.Encoding.Encoder.Type = "invalid"
+	slice.Encoding.Encoder.Type = "invalid"
 
-	_, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, discardOutput{})
+	_, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, discardOutput{})
 	if assert.Error(t, err) {
 		assert.Equal(t, `unexpected encoder type "invalid"`, err.Error())
 	}

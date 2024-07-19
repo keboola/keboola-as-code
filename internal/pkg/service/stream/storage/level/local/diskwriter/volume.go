@@ -15,7 +15,9 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -39,6 +41,8 @@ type Volume struct {
 	clock        clock.Clock
 	writerEvents *events.Events[Writer]
 	config       Config
+	fileOpener   FileOpener
+	allocator    diskalloc.Allocator
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -57,23 +61,33 @@ type writerRef struct {
 	Writer
 }
 
-// Open volume for writing.
+// OpenVolume for writing.
 //   - It is checked that the volume path exists.
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The IDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, spec volume.Spec, writerEvents *events.Events[Writer]) (*Volume, error) {
+func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, spec volume.Spec, writerEvents *events.Events[Writer]) (*Volume, error) {
 	v := &Volume{
 		spec:          spec,
 		logger:        logger,
 		clock:         clock,
 		writerEvents:  writerEvents.Clone(), // clone events passed from volumes collection, so volume specific listeners can be added
 		config:        config,
+		fileOpener:    DefaultFileOpener{},
+		allocator:     diskalloc.DefaultAllocator{},
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
 		drainFilePath: filepath.Join(spec.Path, DrainFile),
 		writersLock:   &sync.Mutex{},
 		writers:       make(map[string]*writerRef),
+	}
+
+	if config.OverrideFileOpener != nil {
+		v.fileOpener = config.OverrideFileOpener
+	}
+
+	if config.Allocation.OverrideAllocator != nil {
+		v.allocator = config.Allocation.OverrideAllocator
 	}
 
 	v.ctx, v.cancel = context.WithCancel(context.Background())
@@ -163,16 +177,16 @@ func (v *Volume) Metadata() volume.Metadata {
 	}
 }
 
-func (v *Volume) OpenWriter(slice *model.Slice) (w Writer, err error) {
+func (v *Volume) OpenWriter(sliceKey model.SliceKey, slice localModel.Slice) (w Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
-		return nil, errors.PrefixErrorf(err, `disk writer for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
+		return nil, errors.PrefixErrorf(err, `disk writer for slice "%s" cannot be created: volume is closed`, sliceKey.String())
 	}
 
 	// Check if the writer already exists, if not, register an empty reference to unlock immediately
-	ref, exists := v.addWriter(slice.SliceKey)
+	ref, exists := v.addWriter(sliceKey)
 	if exists {
-		return nil, errors.Errorf(`disk writer for slice "%s" already exists`, slice.SliceKey.String())
+		return nil, errors.Errorf(`disk writer for slice "%s" already exists`, sliceKey.String())
 	}
 
 	// Close resources on a creation error
@@ -184,11 +198,11 @@ func (v *Volume) OpenWriter(slice *model.Slice) (w Writer, err error) {
 		}
 
 		// Unregister the writer
-		v.removeWriter(slice.SliceKey)
+		v.removeWriter(sliceKey)
 	}()
 
 	// Create writer
-	w, err = New(v.ctx, v.logger, v.config, v.Path(), slice, v.writerEvents)
+	w, err = newWriter(v.ctx, v.logger, v.Path(), v.fileOpener, v.allocator, sliceKey, slice, v.writerEvents)
 	if err != nil {
 		return nil, err
 	}

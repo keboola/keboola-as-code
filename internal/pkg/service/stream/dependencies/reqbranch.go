@@ -2,9 +2,12 @@ package dependencies
 
 import (
 	"context"
+	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -21,6 +24,14 @@ func NewBranchRequestScope(ctx context.Context, prjReqScp ProjectRequestScope, b
 	ctx, span := prjReqScp.Telemetry().Tracer().Start(ctx, "keboola.go.stream.dependencies.NewBranchRequestScope")
 	defer span.End(&err)
 	return newBranchRequestScope(ctx, prjReqScp, branch)
+}
+
+func NewMockedBranchRequestScope(t *testing.T, branchInput key.BranchIDOrDefault, opts ...dependencies.MockedOption) (ProjectRequestScope, Mocked) {
+	t.Helper()
+	prjReqScp, mocked := NewMockedProjectRequestScope(t, opts...)
+	branchReqScp, err := newBranchRequestScope(mocked.TestContext(), prjReqScp, branchInput)
+	require.NoError(t, err)
+	return branchReqScp, mocked
 }
 
 func newBranchRequestScope(ctx context.Context, prjReqScp ProjectRequestScope, branchInput key.BranchIDOrDefault) (*branchRequestScope, error) {

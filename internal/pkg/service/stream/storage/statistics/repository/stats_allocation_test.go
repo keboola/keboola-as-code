@@ -42,7 +42,7 @@ func TestRepository_EstimateSliceSizeOnSliceCreate(t *testing.T) {
 	ignoredKeys := etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/volume/|storage/stats/")
 
 	// Get services
-	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()

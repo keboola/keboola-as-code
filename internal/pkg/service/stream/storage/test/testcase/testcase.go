@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -63,13 +62,13 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	// Create a test slice
 	slice := tc.newSlice(t, vol)
-	filePath := filepath.Join(vol.Path(), slice.LocalStorage.Dir, slice.LocalStorage.Filename)
+	filePath := slice.LocalStorage.FileName(vol.Path())
 
 	// Open encoder pipeline
 	openPipeline := func() encoding.Pipeline {
-		w, err := vol.OpenWriter(slice)
+		w, err := vol.OpenWriter(slice.SliceKey, slice.LocalStorage)
 		require.NoError(t, err)
-		pipeline, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, w)
+		pipeline, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, w)
 		require.NoError(t, err)
 		return pipeline
 	}
@@ -164,9 +163,9 @@ func (tc *WriterTestCase) newSlice(t *testing.T, volume *diskwriter.Volume) *mod
 
 	s := NewTestSlice(volume)
 	s.Mapping = table.Mapping{Columns: tc.Columns}
+	s.Encoding.Sync = tc.Sync
+	s.Encoding.Compression = tc.Compression
 	s.LocalStorage.AllocatedDiskSpace = tc.Allocate
-	s.LocalStorage.Encoding.Sync = tc.Sync
-	s.LocalStorage.Encoding.Compression = tc.Compression
 	s.StagingStorage.Compression = tc.Compression
 
 	// Slice definition must be valid
@@ -188,14 +187,14 @@ func (tc *WriterTestCase) startSourceNode(t *testing.T) dependencies.SourceScope
 func (tc *WriterTestCase) startDiskWriterNode(t *testing.T, ctx context.Context) *diskwriter.Volume {
 	t.Helper()
 
-	d, mock := dependencies.NewMockedLocalStorageScopeWithConfig(t, func(cfg *config.Config) {
+	d, mock := dependencies.NewMockedStorageScopeWithConfig(t, func(cfg *config.Config) {
 		cfg.Storage.Level.Local.Writer.WatchDrainFile = false
 	})
 
 	// Open volume
 	volPath := t.TempDir()
 	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := diskwriter.Open(ctx, d.Logger(), d.Clock(), mock.TestConfig().Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
+	vol, err := diskwriter.OpenVolume(ctx, d.Logger(), d.Clock(), mock.TestConfig().Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
 	require.NoError(t, err)
 
 	return vol

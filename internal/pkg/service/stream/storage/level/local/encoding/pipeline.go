@@ -16,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
+	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/count"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/limitbuffer"
@@ -83,8 +83,8 @@ func newPipeline(
 	logger log.Logger,
 	clk clock.Clock,
 	sliceKey model.SliceKey,
-	cfg config.Config,
-	mapping table.Mapping,
+	mappingCfg table.Mapping,
+	encodingCfg encoding.Config,
 	output writechain.File,
 	events *events.Events[Pipeline],
 ) (out Pipeline, err error) {
@@ -130,9 +130,9 @@ func newPipeline(
 
 	// Add a buffer before the file
 	{
-		if cfg.OutputBuffer > 0 {
+		if encodingCfg.OutputBuffer > 0 {
 			w.chain.PrependWriter(func(w io.Writer) io.Writer {
-				return limitbuffer.New(w, int(cfg.OutputBuffer.Bytes()))
+				return limitbuffer.New(w, int(encodingCfg.OutputBuffer.Bytes()))
 			})
 		}
 	}
@@ -147,19 +147,19 @@ func newPipeline(
 
 	// Add compression if enabled
 	{
-		if cfg.Compression.Type != compression.TypeNone {
+		if encodingCfg.Compression.Type != compression.TypeNone {
 			// Add compression writer
 			_, err = w.chain.PrependWriterOrErr(func(writer io.Writer) (io.Writer, error) {
-				return compressionWriter.New(writer, cfg.Compression)
+				return compressionWriter.New(writer, encodingCfg.Compression)
 			})
 			if err != nil {
 				return nil, err
 			}
 
 			// Add a buffer before compression writer, if it is not included in the writer itself
-			if cfg.InputBuffer > 0 && !cfg.Compression.HasWriterInputBuffer() {
+			if encodingCfg.InputBuffer > 0 && !encodingCfg.Compression.HasWriterInputBuffer() {
 				w.chain.PrependWriter(func(w io.Writer) io.Writer {
-					return limitbuffer.New(w, int(cfg.InputBuffer.Bytes()))
+					return limitbuffer.New(w, int(encodingCfg.InputBuffer.Bytes()))
 				})
 			}
 
@@ -177,16 +177,16 @@ func newPipeline(
 	// Create syncer to trigger sync based on counter and meters from the previous steps
 	{
 		var syncerFactory writesync.SyncerFactory = writesync.DefaultSyncerFactory{}
-		if cfg.Sync.OverrideSyncerFactory != nil {
-			syncerFactory = cfg.Sync.OverrideSyncerFactory
+		if encodingCfg.Sync.OverrideSyncerFactory != nil {
+			syncerFactory = encodingCfg.Sync.OverrideSyncerFactory
 		}
-		w.syncer = syncerFactory.NewSyncer(ctx, logger, clk, cfg.Sync, w.chain, w)
+		w.syncer = syncerFactory.NewSyncer(ctx, logger, clk, encodingCfg.Sync, w.chain, w)
 	}
 
 	// Create file format writer.
 	// It is entrypoint of the writers chain.
 	{
-		w.encoder, err = cfg.Encoder.Factory.NewEncoder(cfg.Encoder, mapping, w.chain)
+		w.encoder, err = encodingCfg.Encoder.Factory.NewEncoder(encodingCfg.Encoder, mappingCfg, w.chain)
 		if err != nil {
 			return nil, err
 		}

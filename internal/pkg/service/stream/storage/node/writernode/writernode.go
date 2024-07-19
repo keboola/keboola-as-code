@@ -4,6 +4,7 @@ package writernode
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/benbjohnson/clock"
 	"github.com/hashicorp/yamux"
@@ -16,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -26,6 +28,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
+	Volumes() *diskwriter.Volumes
 	StorageRepository() *storageRepo.Repository
 	StatisticsRepository() *statsRepo.Repository
 }
@@ -45,16 +48,10 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 		return err
 	}
 
-	// Open volumes
-	nodeAddress := cfg.Hostname + ":" + srv.ListenPort()
-	volumes, err := diskwriter.OpenVolumes(ctx, d, cfg.NodeID, nodeAddress, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
-	if err != nil {
-		return err
-	}
-
 	// Register volumes to database
+	nodeAddress := model.RemoteAddr(fmt.Sprintf("%s:%s", cfg.Hostname, srv.ListenPort()))
 	regCfg := cfg.Storage.Level.Local.Volume.Registration
-	err = registration.RegisterVolumes(regCfg, d, volumes.Collection(), d.StorageRepository().Volume().RegisterWriterVolume)
+	err = registration.RegisterVolumes(regCfg, d, cfg.NodeID, nodeAddress, d.Volumes().Collection(), d.StorageRepository().Volume().RegisterWriterVolume)
 	if err != nil {
 		return err
 	}

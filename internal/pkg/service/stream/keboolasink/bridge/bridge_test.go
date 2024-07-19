@@ -42,7 +42,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 	ignoredKeys := etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/volume/")
 
 	// Get services
-	d, mocked := dependencies.NewMockedLocalStorageScope(t, deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedStorageScope(t, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()

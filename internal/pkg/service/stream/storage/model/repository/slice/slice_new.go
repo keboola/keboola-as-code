@@ -26,10 +26,11 @@ func (r *Repository) newSlice(now time.Time, file model.File, volumeID volume.ID
 	s.SliceKey = sliceKey
 	s.State = model.SliceWriting
 	s.Mapping = file.Mapping
-	if s.LocalStorage, err = local.NewSlice(localDir, file.LocalStorage); err != nil {
+	s.Encoding = file.Encoding
+	if s.LocalStorage, err = local.NewSlice(localDir, file.LocalStorage, file.Encoding.Compression); err != nil {
 		return model.Slice{}, err
 	}
-	if s.StagingStorage, err = staging.NewSlice(stagingPath, file.StagingStorage, s.LocalStorage); err != nil {
+	if s.StagingStorage, err = staging.NewSlice(stagingPath, file.StagingStorage); err != nil {
 		return model.Slice{}, err
 	}
 

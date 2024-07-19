@@ -1,56 +1,51 @@
 package dependencies
 
 import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 )
 
-// localStorageScope implements LocalStorageScope interface.
-type localStorageScope struct {
-	localStorageParentScopes
-	statisticsL1Cache *cache.L1
-	statisticsL2Cache *cache.L2
+// storageScope implements StorageScope interface.
+type storageScope struct {
+	storageParentScopes
 }
 
-type localStorageParentScopes interface {
+type storageParentScopes interface {
 	ServiceScope
-	dependencies.DistributionScope
-	dependencies.DistributedLockScope
 }
 
-type localStorageParentScopesImpl struct {
+type storageParentScopesImpl struct {
 	ServiceScope
-	dependencies.DistributionScope
-	dependencies.DistributedLockScope
 }
 
-func (v *localStorageScope) StatisticsL1Cache() *cache.L1 {
-	return v.statisticsL1Cache
+func NewStorageScope(ctx context.Context, d storageParentScopes, cfg config.Config) (v StorageScope, err error) {
+	return newStorageScope(ctx, d, cfg)
 }
 
-func (v *localStorageScope) StatisticsL2Cache() *cache.L2 {
-	return v.statisticsL2Cache
+func NewMockedStorageScope(t *testing.T, opts ...dependencies.MockedOption) (StorageScope, Mocked) {
+	t.Helper()
+	return NewMockedStorageScopeWithConfig(t, nil, opts...)
 }
 
-func NewLocalStorageScope(d localStorageParentScopes, cfg config.Config) (v LocalStorageScope, err error) {
-	return newLocalStorageScope(d, cfg)
+func NewMockedStorageScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (StorageScope, Mocked) {
+	tb.Helper()
+	svcScp, mock := NewMockedServiceScopeWithConfig(tb, modifyConfig, opts...)
+	d, err := newStorageScope(mock.TestContext(), storageParentScopesImpl{
+		ServiceScope: svcScp,
+	}, mock.TestConfig())
+	require.NoError(tb, err)
+	return d, mock
 }
 
-func newLocalStorageScope(parentScp localStorageParentScopes, cfg config.Config) (v LocalStorageScope, err error) {
-	d := &localStorageScope{}
+func newStorageScope(_ context.Context, parentScp storageParentScopes, _ config.Config) (v StorageScope, err error) {
+	d := &storageScope{}
 
-	d.localStorageParentScopes = parentScp
-
-	d.statisticsL1Cache, err = cache.NewL1Cache(d)
-	if err != nil {
-		return nil, err
-	}
-
-	d.statisticsL2Cache, err = cache.NewL2Cache(d, d.statisticsL1Cache, cfg.Storage.Statistics.Cache.L2)
-	if err != nil {
-		return nil, err
-	}
+	d.storageParentScopes = parentScp
 
 	return d, nil
 }

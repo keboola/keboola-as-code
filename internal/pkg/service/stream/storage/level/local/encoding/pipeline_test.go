@@ -34,11 +34,11 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
-	slice.LocalStorage.Encoding.Encoder.Factory = encoder.FactoryFn(dummyEncoderFactory)
+	slice.Encoding.Encoder.Factory = encoder.FactoryFn(dummyEncoderFactory)
 
 	output := newDummyOutput()
 
-	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, output)
+	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, output)
 	require.NoError(t, err)
 
 	// Test getters
@@ -68,13 +68,13 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
-	slice.LocalStorage.Encoding.Encoder.Factory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
+	slice.Encoding.Encoder.Factory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
 		w := newDummyEncoder(out, nil)
 		w.FlushError = errors.New("some error")
 		return w, nil
 	})
 
-	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, newDummyOutput())
+	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, newDummyOutput())
 	require.NoError(t, err)
 
 	// Test Close method
@@ -91,13 +91,13 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t)
 
 	slice := test.NewSlice()
-	slice.LocalStorage.Encoding.Encoder.Factory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
+	slice.Encoding.Encoder.Factory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
 		w := newDummyEncoder(out, nil)
 		w.CloseError = errors.New("some error")
 		return w, nil
 	})
 
-	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, newDummyOutput())
+	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, newDummyOutput())
 	require.NoError(t, err)
 
 	// Test Close method
@@ -144,8 +144,8 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDisk(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newEncodingTestCase(t)
-	tc.Slice.LocalStorage.Encoding.Sync.Mode = writesync.ModeDisk
-	tc.Slice.LocalStorage.Encoding.Sync.Wait = true
+	tc.Slice.Encoding.Sync.Mode = writesync.ModeDisk
+	tc.Slice.Encoding.Sync.Wait = true
 
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
@@ -247,8 +247,8 @@ func TestEncodingPipeline_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newEncodingTestCase(t)
-	tc.Slice.LocalStorage.Encoding.Sync.Mode = writesync.ModeCache
-	tc.Slice.LocalStorage.Encoding.Sync.Wait = true
+	tc.Slice.Encoding.Sync.Mode = writesync.ModeCache
+	tc.Slice.Encoding.Sync.Wait = true
 
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
@@ -339,8 +339,8 @@ func TestEncodingPipeline_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newEncodingTestCase(t)
-	tc.Slice.LocalStorage.Encoding.Sync.Mode = writesync.ModeDisk
-	tc.Slice.LocalStorage.Encoding.Sync.Wait = false
+	tc.Slice.Encoding.Sync.Mode = writesync.ModeDisk
+	tc.Slice.Encoding.Sync.Wait = false
 
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
@@ -415,8 +415,8 @@ func TestEncodingPipeline_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newEncodingTestCase(t)
-	tc.Slice.LocalStorage.Encoding.Sync.Mode = writesync.ModeCache
-	tc.Slice.LocalStorage.Encoding.Sync.Wait = false
+	tc.Slice.Encoding.Sync.Mode = writesync.ModeCache
+	tc.Slice.Encoding.Sync.Wait = false
 
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
@@ -482,7 +482,7 @@ func TestEncodingPipeline_Sync_Disabled(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newEncodingTestCase(t)
-	tc.Slice.LocalStorage.Encoding.Sync = writesync.Config{Mode: writesync.ModeDisabled}
+	tc.Slice.Encoding.Sync = writesync.Config{Mode: writesync.ModeDisabled}
 
 	w, err := tc.OpenPipeline()
 	assert.NoError(t, err)
@@ -559,8 +559,8 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 	helper := &writerSyncHelper{writeDone: make(chan struct{}, 100)}
 
 	slice := test.NewSlice()
-	slice.LocalStorage.Encoding.Encoder.Factory = helper
-	slice.LocalStorage.Encoding.Sync.OverrideSyncerFactory = helper
+	slice.Encoding.Encoder.Factory = helper
+	slice.Encoding.Sync.OverrideSyncerFactory = helper
 
 	tc := &encodingTestCase{
 		T:                t,
@@ -581,7 +581,7 @@ func (tc *encodingTestCase) OpenPipeline() (encoding.Pipeline, error) {
 	val := validator.New()
 	require.NoError(tc.T, val.Validate(context.Background(), tc.Slice))
 
-	w, err := tc.Manager.OpenPipeline(tc.Ctx, tc.Slice.SliceKey, tc.Slice.LocalStorage.Encoding, tc.Slice.Mapping, tc.Output)
+	w, err := tc.Manager.OpenPipeline(tc.Ctx, tc.Slice.SliceKey, tc.Slice.Mapping, tc.Slice.Encoding, tc.Output)
 	if err != nil {
 		return nil, err
 	}

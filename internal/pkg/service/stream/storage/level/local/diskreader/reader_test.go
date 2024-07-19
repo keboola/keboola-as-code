@@ -173,7 +173,7 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 	// Setup slice
 	rtc := newReaderTestCase(t)
 	rtc.SliceData = localData.Bytes()
-	rtc.Slice.LocalStorage.Encoding.Compression = tc.LocalCompression
+	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Create reader
@@ -227,7 +227,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
-	rtc.Slice.LocalStorage.Encoding.Compression = tc.LocalCompression
+	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Replace file opener
@@ -278,7 +278,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
-	rtc.Slice.LocalStorage.Encoding.Compression = tc.LocalCompression
+	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
 	// Replace file opener
@@ -362,9 +362,8 @@ func (tc *readerTestCase) NewReader(disableValidation bool) (diskreader.Reader, 
 	}
 
 	// Write slice data
-	path := filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
-	assert.NoError(tc.TB, os.MkdirAll(filepath.Dir(path), 0o750))
-	assert.NoError(tc.TB, os.WriteFile(path, tc.SliceData, 0o640))
+	assert.NoError(tc.TB, os.MkdirAll(tc.Slice.LocalStorage.DirName(tc.VolumePath), 0o750))
+	assert.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileName(tc.VolumePath), tc.SliceData, 0o640))
 
 	r, err := tc.Volume.OpenReader(tc.Slice)
 	if err != nil {

@@ -3,7 +3,6 @@ package benchmark
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -64,14 +63,14 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 
 	// Create slice
 	slice := wb.newSlice(b, vol)
-	filePath := filepath.Join(vol.Path(), slice.LocalStorage.Dir, slice.LocalStorage.Filename)
+	filePath := slice.LocalStorage.FileName(vol.Path())
 
 	// Create writer
-	diskWriter, err := vol.OpenWriter(slice)
+	diskWriter, err := vol.OpenWriter(slice.SliceKey, slice.LocalStorage)
 	require.NoError(b, err)
 
 	// Create encoder pipeline
-	writer, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.LocalStorage.Encoding, slice.Mapping, diskWriter)
+	writer, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, diskWriter)
 	require.NoError(b, err)
 
 	// Create data channel
@@ -144,13 +143,13 @@ func (wb *WriterBenchmark) newSlice(b *testing.B, volume *diskwriter.Volume) *mo
 	s := test.NewSlice()
 	s.VolumeID = volume.ID()
 	s.Mapping = table.Mapping{Columns: wb.Columns}
+	s.Encoding.Sync = wb.Sync
+	s.Encoding.Compression = wb.Compression
 	s.LocalStorage.AllocatedDiskSpace = wb.Allocate
-	s.LocalStorage.Encoding.Sync = wb.Sync
-	s.LocalStorage.Encoding.Compression = wb.Compression
 	s.StagingStorage.Compression = wb.Compression
 
 	// Slice definition must be valid, except ZSTD compression - it is not enabled/supported in production
-	if s.LocalStorage.Encoding.Compression.Type != compression.TypeZSTD {
+	if s.Encoding.Compression.Type != compression.TypeZSTD {
 		val := validator.New()
 		require.NoError(b, val.Validate(context.Background(), s))
 	}
@@ -167,14 +166,14 @@ func (wb *WriterBenchmark) startSourceNode(b *testing.B) dependencies.SourceScop
 func (wb *WriterBenchmark) startDiskWriterNode(b *testing.B, ctx context.Context) *diskwriter.Volume {
 	b.Helper()
 
-	d, mock := dependencies.NewMockedLocalStorageScopeWithConfig(b, func(cfg *config.Config) {
+	d, mock := dependencies.NewMockedStorageScopeWithConfig(b, func(cfg *config.Config) {
 		cfg.Storage.Level.Local.Writer.WatchDrainFile = false
 	})
 
 	// Open volume
 	volPath := b.TempDir()
 	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := diskwriter.Open(ctx, d.Logger(), d.Clock(), mock.TestConfig().Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
+	vol, err := diskwriter.OpenVolume(ctx, d.Logger(), d.Clock(), mock.TestConfig().Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
 	require.NoError(b, err)
 
 	return vol

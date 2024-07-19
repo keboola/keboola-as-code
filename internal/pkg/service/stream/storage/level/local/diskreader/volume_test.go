@@ -317,7 +317,7 @@ func (tc *volumeTestCase) OpenVolume() (*diskreader.Volume, error) {
 		Type:        tc.VolumeType,
 		Label:       tc.VolumeLabel,
 	}
-	return diskreader.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Config, events.New[diskreader.Reader](), info)
+	return diskreader.OpenVolume(tc.Ctx, tc.Logger, tc.Clock, tc.Config, events.New[diskreader.Reader](), info)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {

@@ -12,10 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -27,17 +25,12 @@ func TestWriter_Basic(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-
-	logger := log.NewDebugLogger()
-	volumePath := t.TempDir()
-	slice := test.NewSlice()
-	writerEvents := events.New[diskwriter.Writer]()
-
-	w, err := diskwriter.New(ctx, logger, diskwriter.NewConfig(), volumePath, slice, writerEvents)
+	tc := newWriterTestCase(t)
+	w, err := tc.NewWriter()
 	require.NoError(t, err)
 
 	// Test getters
-	assert.Equal(t, slice.SliceKey, w.SliceKey())
+	assert.Equal(t, tc.Slice.SliceKey, w.SliceKey())
 
 	// Test write methods
 	n, err := w.Write([]byte("123,456,789\n"))
@@ -57,8 +50,7 @@ func TestWriter_Basic(t *testing.T) {
 	}
 
 	// Check file content
-	filePath := filepath.Join(volumePath, slice.LocalStorage.Dir, slice.LocalStorage.Filename)
-	content, err := os.ReadFile(filePath)
+	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath))
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("123,456,789\nabc,def,ghj\n"), content)
 }
@@ -71,7 +63,8 @@ func TestOpenWriter_ClosedVolume(t *testing.T) {
 
 	assert.NoError(t, vol.Close(context.Background()))
 
-	_, err = vol.OpenWriter(test.NewSlice())
+	slice := test.NewSlice()
+	_, err = vol.OpenWriter(slice.SliceKey, slice.LocalStorage)
 	if assert.Error(t, err) {
 		wildcards.Assert(t, "disk writer for slice \"%s\" cannot be created: volume is closed:\n- context canceled", err.Error())
 	}
@@ -251,7 +244,7 @@ func (tc *writerTestCase) NewWriter() (diskwriter.Writer, error) {
 	val := validator.New()
 	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
 
-	w, err := tc.Volume.OpenWriter(tc.Slice)
+	w, err := tc.Volume.OpenWriter(tc.Slice.SliceKey, tc.Slice.LocalStorage)
 	if err != nil {
 		return nil, err
 	}
@@ -260,5 +253,5 @@ func (tc *writerTestCase) NewWriter() (diskwriter.Writer, error) {
 }
 
 func (tc *writerTestCase) FilePath() string {
-	return filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir, tc.Slice.LocalStorage.Filename)
+	return tc.Slice.LocalStorage.FileName(tc.VolumePath)
 }

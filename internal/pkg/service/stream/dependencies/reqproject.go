@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -25,6 +26,13 @@ func NewProjectRequestScope(ctx context.Context, pubReqScp PublicRequestScope, t
 	}
 
 	return newProjectRequestScope(pubReqScp, prjScp), nil
+}
+
+func NewMockedProjectRequestScope(t *testing.T, opts ...dependencies.MockedOption) (ProjectRequestScope, Mocked) {
+	t.Helper()
+	pubReqScp, mock := NewMockedPublicRequestScope(t, opts...)
+	prjReqScp := newProjectRequestScope(pubReqScp, mock)
+	return prjReqScp, mock
 }
 
 func newProjectRequestScope(pubReqScp PublicRequestScope, prjScp dependencies.ProjectScope) *projectRequestScope {

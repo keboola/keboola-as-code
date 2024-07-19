@@ -37,7 +37,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	by := test.ByUser()
 
 	// Get services
-	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()

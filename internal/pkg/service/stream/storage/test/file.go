@@ -45,7 +45,7 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 		Mapping: table.Mapping{
 			Columns: column.Columns{column.Body{Name: "body"}},
 		},
-
+		Encoding: encoding.NewConfig(),
 		LocalStorage: localModel.File{
 			Dir:        local.NormalizeDirPath(fileKey.String()),
 			Allocation: diskalloc.NewConfig(),
@@ -56,7 +56,6 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 				},
 				Volumes: []volume.ID{"my-volume"},
 			},
-			Encoding: encoding.NewConfig(),
 		},
 		StagingStorage: stagingModel.File{
 			Compression: compression.NewNoneConfig(),

@@ -115,10 +115,10 @@ func TestConnectionManager(t *testing.T) {
 
 	// Check writer nodes logs
 	expectedWriterLogs := `
-{"level":"info","message":"starting storage writer node","component":"storage.node.writer"}
-{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.network.server"}
 {"level":"info","message":"searching for volumes in volumes path","component":"storage.node.writer.volumes"}
 {"level":"info","message":"found \"2\" volumes","component":"storage.node.writer.volumes"}
+{"level":"info","message":"starting storage writer node","component":"storage.node.writer"}
+{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.network.server"}
 {"level":"info","message":"registered \"2\" volumes","component":"volumes.registry"}
 {"level":"info","message":"exiting (bye bye writer %d)"}
 {"level":"info","message":"closing disk writer server","component":"storage.node.writer.network.server"}
@@ -167,7 +167,7 @@ func startWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 	require.NoError(t, os.MkdirAll(volumePath2, 0o700))
 	require.NoError(t, os.WriteFile(filepath.Join(volumePath2, volume.IDFile), []byte(fmt.Sprintf("%s-2", nodeID)), 0o600))
 
-	d, m := dependencies.NewMockedLocalStorageScopeWithConfig(
+	d, m := dependencies.NewMockedStorageWriterScopeWithConfig(
 		t,
 		func(cfg *config.Config) {
 			cfg.NodeID = nodeID

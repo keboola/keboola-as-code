@@ -100,7 +100,6 @@ func TestFile_Validation(t *testing.T) {
 	}
 	localStorage := localModel.File{
 		Dir:        "my-dir",
-		Encoding:   encoding.NewConfig(),
 		Allocation: diskalloc.NewConfig(),
 		Assignment: volumeAssignment,
 	}
@@ -129,15 +128,15 @@ func TestFile_Validation(t *testing.T) {
 - "fileOpenedAt" is a required field
 - "state" is a required field
 - "mapping.columns" is a required field
+- "encoding.encoder.type" is a required field
+- "encoding.compression.type" is a required field
+- "encoding.sync.mode" is a required field
 - "local.dir" is a required field
 - "local.assignment.config.count" is a required field
 - "local.assignment.config.preferredTypes" is a required field
 - "local.assignment.volumes" must contain at least 1 item
 - "local.allocation.static" is a required field
 - "local.allocation.relative" must be 100 or greater
-- "local.encoding.encoder.type" is a required field
-- "local.encoding.compression.type" is a required field
-- "local.encoding.sync.mode" is a required field
 - "staging.provider" is a required field
 - "staging.compression" is a required field
 - "staging.expiration" is a required field
@@ -152,6 +151,7 @@ func TestFile_Validation(t *testing.T) {
 				FileKey:        testFileKey(),
 				State:          FileWriting,
 				Mapping:        table.Mapping{Columns: column.Columns{}},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -169,6 +169,7 @@ func TestFile_Validation(t *testing.T) {
 						column.Body{Name: "body"},
 					},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -187,6 +188,7 @@ func TestFile_Validation(t *testing.T) {
 						column.Body{Name: "body"},
 					},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -206,6 +208,7 @@ func TestFile_Validation(t *testing.T) {
 						column.Body{Name: "body"},
 					},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,
@@ -226,6 +229,7 @@ func TestFile_Validation(t *testing.T) {
 						column.Body{Name: "body"},
 					},
 				},
+				Encoding:       encoding.NewConfig(),
 				LocalStorage:   localStorage,
 				StagingStorage: stagingStorage,
 				TargetStorage:  targetStorage,

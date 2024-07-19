@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
-	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -36,7 +35,6 @@ func TestFile_Validation(t *testing.T) {
 				Dir:        "my-dir",
 				Assignment: volumeAssignment,
 				Allocation: diskalloc.NewConfig(),
-				Encoding:   encoding.NewConfig(),
 			},
 		},
 		{
@@ -46,7 +44,6 @@ func TestFile_Validation(t *testing.T) {
 				Dir:        "",
 				Assignment: volumeAssignment,
 				Allocation: diskalloc.NewConfig(),
-				Encoding:   encoding.NewConfig(),
 			},
 		},
 	}

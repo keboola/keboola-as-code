@@ -20,7 +20,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, _ := dependencies.NewMockedLocalStorageScope(t)
+	d, _ := dependencies.NewMockedStorageScope(t)
 	repo := d.StatisticsRepository()
 
 	// Add 2 records

@@ -199,9 +199,11 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Open two writers
-	_, err = vol.OpenWriter(test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z"))
+	slice1 := test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z")
+	slice2 := test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z")
+	_, err = vol.OpenWriter(slice1.SliceKey, slice1.LocalStorage)
 	require.NoError(t, err)
-	_, err = vol.OpenWriter(test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z"))
+	_, err = vol.OpenWriter(slice2.SliceKey, slice2.LocalStorage)
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
@@ -272,7 +274,8 @@ func (tc *volumeTestCase) OpenVolume() (*diskwriter.Volume, error) {
 		Type:        tc.VolumeType,
 		Label:       tc.VolumeLabel,
 	}
-	return diskwriter.Open(tc.Ctx, tc.Logger, tc.Clock, tc.Config, spec, tc.Events)
+
+	return diskwriter.OpenVolume(tc.Ctx, tc.Logger, tc.Clock, tc.Config, spec, tc.Events)
 }
 
 func (tc *volumeTestCase) AssertLogs(expected string) bool {

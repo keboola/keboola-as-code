@@ -2,6 +2,9 @@ package dependencies
 
 import (
 	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
@@ -40,9 +43,31 @@ func (v *sourceScope) SinkRouter() *sinkRouter.Router {
 	return v.sinkRouter
 }
 
-func NewSourceScope(d ServiceScope, sourceType string, cfg config.Config) (v SourceScope, err error) {
-	distScope := dependencies.NewDistributionScope(cfg.NodeID, cfg.Distribution, d)
-	return newSourceScope(sourceParentScopesImpl{ServiceScope: d, DistributionScope: distScope}, sourceType, cfg)
+func NewSourceScope(serviceScp ServiceScope, distScp dependencies.DistributionScope, sourceType string, cfg config.Config) (v SourceScope, err error) {
+	return newSourceScope(sourceParentScopesImpl{
+		ServiceScope:      serviceScp,
+		DistributionScope: distScp,
+	}, sourceType, cfg)
+}
+
+func NewMockedSourceScope(tb testing.TB, opts ...dependencies.MockedOption) (SourceScope, Mocked) {
+	tb.Helper()
+	return NewMockedSourceScopeWithConfig(tb, nil, opts...)
+}
+
+func NewMockedSourceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (SourceScope, Mocked) {
+	tb.Helper()
+	svcScp, mock := NewMockedServiceScopeWithConfig(
+		tb,
+		modifyConfig,
+		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution()}, opts...)...,
+	)
+	d, err := newSourceScope(sourceParentScopesImpl{
+		ServiceScope:      svcScp,
+		DistributionScope: mock,
+	}, "test-source", mock.TestConfig())
+	require.NoError(tb, err)
+	return d, mock
 }
 
 func newSourceScope(parentScp sourceParentScopes, sourceType string, cfg config.Config) (v SourceScope, err error) {

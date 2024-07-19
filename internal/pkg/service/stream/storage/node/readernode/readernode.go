@@ -21,6 +21,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
+	Volumes() *diskreader.Volumes
 }
 
 func Start(ctx context.Context, d dependencies, cfg config.Config) error {
@@ -28,12 +29,6 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 
 	logger := d.Logger().WithComponent("storage.node.reader")
 	logger.Info(ctx, `starting storage reader node`)
-
-	// Open volumes
-	_, err := diskreader.OpenVolumes(ctx, d, cfg.NodeID, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Reader)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }

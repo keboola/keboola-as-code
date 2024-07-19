@@ -1,7 +1,7 @@
 // Package diskreader provides reading of tabular data from local storage for upload to staging storage.
 // Data may be compressed on-tly-fly according to the configuration.
 // Regarding creating a reader, see:
-//   - The New function.
+//   - The newReader function.
 //   - The "volume" package and the volume.OpenReader method in the package.
 package diskreader
 
@@ -47,7 +47,7 @@ type reader struct {
 	readWg *sync.WaitGroup
 }
 
-func New(
+func newReader(
 	ctx context.Context,
 	logger log.Logger,
 	sliceKey model.SliceKey,

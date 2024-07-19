@@ -14,7 +14,7 @@ import (
 func TestStart_Ok(t *testing.T) {
 	t.Parallel()
 
-	d, mock := dependencies.NewMockedServiceScope(t)
+	d, mock := dependencies.NewMockedCoordinatorScope(t)
 
 	// Start
 	ctx := context.Background()

@@ -22,7 +22,7 @@ func TestVolumes(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mock := dependencies.NewMockedLocalStorageScope(t)
+	d, mock := dependencies.NewMockedStorageScope(t)
 	logger := mock.DebugLogger()
 
 	// Create volumes directories
@@ -45,7 +45,7 @@ func TestVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = diskreader.OpenVolumes(ctx, d, "my-node", volumesPath, mock.TestConfig().Storage.Level.Local.Reader)
+		volumes, err = diskreader.OpenVolumes(ctx, d, volumesPath, mock.TestConfig().Storage.Level.Local.Reader)
 		assert.NoError(t, err)
 	}()
 

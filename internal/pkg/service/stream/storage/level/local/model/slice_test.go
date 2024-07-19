@@ -8,7 +8,6 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 
-	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -24,28 +23,28 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "ok",
 			Value: Slice{
 				Dir:                "my-dir",
-				Filename:           "slice.csv.gzip",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "csv.gzip",
 				AllocatedDiskSpace: 10 * datasize.KB,
-				Encoding:           encoding.NewConfig(),
 			},
 		},
 		{
 			Name: "ok: IsEmpty=true",
 			Value: Slice{
 				Dir:                "my-dir",
-				Filename:           "slice.csv.gzip",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "csv.gzip",
 				IsEmpty:            true,
 				AllocatedDiskSpace: 10 * datasize.KB,
-				Encoding:           encoding.NewConfig(),
 			},
 		},
 		{
 			Name: "ok: disk space allocation disabled",
 			Value: Slice{
 				Dir:                "my-dir",
-				Filename:           "slice.csv.gzip",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "csv.gzip",
 				AllocatedDiskSpace: 0,
-				Encoding:           encoding.NewConfig(),
 			},
 		},
 		{
@@ -53,19 +52,29 @@ func TestSlice_Validation(t *testing.T) {
 			ExpectedError: `"dir" is a required field`,
 			Value: Slice{
 				Dir:                "",
-				Filename:           "slice.csv.gzip",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "csv.gzip",
 				AllocatedDiskSpace: 0,
-				Encoding:           encoding.NewConfig(),
 			},
 		},
 		{
-			Name:          "empty filename",
-			ExpectedError: `"filename" is a required field`,
+			Name:          "empty filenamePrefix",
+			ExpectedError: `"filenamePrefix" is a required field`,
 			Value: Slice{
 				Dir:                "my-dir",
-				Filename:           "",
+				FilenamePrefix:     "",
+				FilenameExtension:  "csv",
 				AllocatedDiskSpace: 0,
-				Encoding:           encoding.NewConfig(),
+			},
+		},
+		{
+			Name:          "empty filenameExtension",
+			ExpectedError: `"filenameExtension" is a required field`,
+			Value: Slice{
+				Dir:                "my-dir",
+				FilenamePrefix:     "slice",
+				FilenameExtension:  "",
+				AllocatedDiskSpace: 0,
 			},
 		},
 	}

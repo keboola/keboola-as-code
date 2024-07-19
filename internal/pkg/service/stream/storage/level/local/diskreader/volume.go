@@ -48,12 +48,12 @@ type readerRef struct {
 	Reader
 }
 
-// Open volume for writing.
+// OpenVolume for reading.
 //   - It is checked that the volume path exists.
 //   - The IDFile is loaded.
 //   - If the IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The LockFile ensures only one opening of the volume for reading.
-func Open(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, readerEvents *events.Events[Reader], spec volume.Spec) (*Volume, error) {
+func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, readerEvents *events.Events[Reader], spec volume.Spec) (*Volume, error) {
 	v := &Volume{
 		spec:         spec,
 		config:       config,
@@ -174,8 +174,7 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 	}
 
 	// Open file
-	dirPath := filepath.Join(v.Path(), slice.LocalStorage.Dir)
-	filePath := filepath.Join(dirPath, slice.LocalStorage.Filename)
+	filePath := slice.LocalStorage.FileName(v.Path())
 	logger = logger.With(attribute.String("file.path", filePath))
 	file, err = opener.OpenFile(filePath)
 	if err == nil {
@@ -186,7 +185,7 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 	}
 
 	// Init reader and chain
-	r, err = New(v.ctx, logger, slice.SliceKey, slice.LocalStorage.Encoding.Compression, slice.StagingStorage.Compression, file, v.readerEvents)
+	r, err = newReader(v.ctx, logger, slice.SliceKey, slice.Encoding.Compression, slice.StagingStorage.Compression, file, v.readerEvents)
 	if err != nil {
 		return nil, err
 	}

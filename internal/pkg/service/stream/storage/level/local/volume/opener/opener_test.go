@@ -157,8 +157,6 @@ func TestOpenVolumes_CloseError(t *testing.T) {
 
 type openTestCase struct {
 	Logger      log.DebugLogger
-	NodeID      string
-	NodeAddress string
 	VolumesPath string
 	Opener      opener.Opener[*test.Volume]
 }
@@ -168,7 +166,6 @@ func newVolumesTestCase(t *testing.T) *openTestCase {
 	return &openTestCase{
 		Logger:      log.NewDebugLogger(),
 		VolumesPath: t.TempDir(),
-		NodeAddress: "localhost:1234",
 		Opener: func(info volume.Spec) (*test.Volume, error) {
 			return test.NewTestVolume("my-volume", "my-node", info), nil
 		},
@@ -176,5 +173,5 @@ func newVolumesTestCase(t *testing.T) *openTestCase {
 }
 
 func (tc *openTestCase) OpenVolumes() (*volume.Collection[*test.Volume], error) {
-	return opener.OpenVolumes[*test.Volume](context.Background(), tc.Logger, tc.NodeID, tc.NodeAddress, tc.VolumesPath, tc.Opener)
+	return opener.OpenVolumes[*test.Volume](context.Background(), tc.Logger, tc.VolumesPath, tc.Opener)
 }
