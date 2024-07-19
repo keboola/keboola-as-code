@@ -13,7 +13,7 @@ import (
 func TestRepository_ObjectPrefix(t *testing.T) {
 	t.Parallel()
 
-	d, _ := dependencies.NewMockedLocalStorageScope(t)
+	d, _ := dependencies.NewMockedStorageScope(t)
 	repo := d.StatisticsRepository()
 
 	expected := "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z/"

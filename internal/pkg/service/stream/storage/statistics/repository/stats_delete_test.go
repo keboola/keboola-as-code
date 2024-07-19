@@ -45,7 +45,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelLocalStaging(t *testing.T)
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
@@ -190,7 +190,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedStorageScope(t, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()

@@ -145,10 +145,6 @@ func TestStart(t *testing.T) {
 {"level":"info","message":"sink router shutdown done","component":"sink.router"}
 {"level":"info","message":"closing volumes stream","component":"volume.repository"}
 {"level":"info","message":"closed volumes stream","component":"volume.repository"}
-{"level":"info","message":"received shutdown request","component":"distribution.mutex.provider"}
-{"level":"info","message":"closing etcd session: context canceled","component":"distribution.mutex.provider.etcd.session"}
-{"level":"info","message":"closed etcd session","component":"distribution.mutex.provider.etcd.session"}
-{"level":"info","message":"shutdown done","component":"distribution.mutex.provider"}
 {"level":"info","message":"closing etcd connection","component":"etcd.client"}
 {"level":"info","message":"closed etcd connection","component":"etcd.client"}
 {"level":"info","message":"exited"}

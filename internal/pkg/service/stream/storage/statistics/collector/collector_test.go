@@ -31,7 +31,7 @@ func TestCollector(t *testing.T) {
 	clk := clock.NewMock()
 	cfg := statistics.NewConfig().Collector
 
-	d, mock := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedStorageScope(t, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	writerEvents := &testEvents{}
 

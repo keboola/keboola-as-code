@@ -20,7 +20,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedLocalStorageScope(t, commonDeps.WithCtx(ctx))
+	d, mock := dependencies.NewMockedStorageScope(t, commonDeps.WithCtx(ctx))
 	client := mock.TestEtcdClient()
 	repo := d.StorageRepository().Volume()
 
@@ -66,7 +66,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 
 	// Register volumes
 	cfg := mock.TestConfig().Storage.Level.Local.Volume.Registration
-	require.NoError(t, registration.RegisterVolumes(cfg, d, collection, repo.RegisterWriterVolume))
+	require.NoError(t, registration.RegisterVolumes(cfg, d, "node-1", "localhost:1234", collection, repo.RegisterWriterVolume))
 
 	// List
 	result, err := repo.ListWriterVolumes().Do(ctx).All()

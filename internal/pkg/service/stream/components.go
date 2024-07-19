@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -27,26 +29,62 @@ type Components []Component
 
 type Component string
 
-func StartComponents(ctx context.Context, d dependencies.ServiceScope, cfg config.Config, components ...Component) error {
+func StartComponents(ctx context.Context, d dependencies.ServiceScope, cfg config.Config, components ...Component) (err error) {
 	componentsMap := make(map[Component]bool)
 	for _, c := range components {
 		componentsMap[c] = true
 	}
 
+	// Common distribution scope
+	var distScp commonDeps.DistributionScope
+	if componentsMap[ComponentStorageWriter] || componentsMap[ComponentHTTPSource] || componentsMap[ComponentStorageCoordinator] {
+		distScp = commonDeps.NewDistributionScope(cfg.NodeID, cfg.Distribution, d)
+	}
+
+	// Common distribution locks scope
+	var distLocksScp commonDeps.DistributedLockScope
+	if componentsMap[ComponentStorageCoordinator] {
+		distLocksScp, err = commonDeps.NewDistributedLockScope(ctx, distlock.NewConfig(), d)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Common storage scope
+	var storageScp dependencies.StorageScope
+	if componentsMap[ComponentStorageWriter] || componentsMap[ComponentStorageReader] {
+		storageScp, err = dependencies.NewStorageScope(ctx, d, cfg)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Start components, always in the same order
 	if componentsMap[ComponentStorageCoordinator] {
+		d, err := dependencies.NewCoordinatorScope(ctx, d, distScp, distLocksScp, cfg)
+		if err != nil {
+			return err
+		}
 		if err := coordinator.Start(ctx, d, cfg); err != nil {
 			return err
 		}
 	}
 
 	if componentsMap[ComponentStorageWriter] {
+		d, err := dependencies.NewStorageWriterScope(ctx, storageScp, distScp, cfg)
+		if err != nil {
+			return err
+		}
 		if err := writernode.Start(ctx, d, cfg); err != nil {
 			return err
 		}
 	}
 
 	if componentsMap[ComponentStorageReader] {
+		d, err := dependencies.NewStorageReaderScope(ctx, storageScp, cfg)
+		if err != nil {
+			return err
+		}
 		if err := readernode.Start(ctx, d, cfg); err != nil {
 			return err
 		}
@@ -59,7 +97,7 @@ func StartComponents(ctx context.Context, d dependencies.ServiceScope, cfg confi
 	}
 
 	if componentsMap[ComponentHTTPSource] {
-		d, err := dependencies.NewSourceScope(d, "http-source", cfg)
+		d, err := dependencies.NewSourceScope(d, distScp, "http-source", cfg)
 		if err != nil {
 			return err
 		}

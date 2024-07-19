@@ -2,8 +2,10 @@ package dependencies
 
 import (
 	"net/url"
+	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 )
 
@@ -17,6 +19,18 @@ type apiScope struct {
 
 func NewAPIScope(serviceScp ServiceScope, cfg config.Config) (v APIScope, err error) {
 	return newAPIScope(serviceScp, cfg), nil
+}
+
+func NewMockedAPIScope(t *testing.T, opts ...dependencies.MockedOption) (APIScope, Mocked) {
+	t.Helper()
+
+	opts = append(opts, dependencies.WithEnabledTasks())
+	serviceScp, mock := NewMockedServiceScope(t, opts...)
+
+	apiScp := newAPIScope(serviceScp, mock.TestConfig())
+
+	mock.DebugLogger().Truncate()
+	return apiScp, mock
 }
 
 func newAPIScope(svcScope ServiceScope, cfg config.Config) APIScope {

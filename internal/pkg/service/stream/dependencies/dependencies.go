@@ -10,22 +10,28 @@
 //   - [PublicRequestScope] contains short-lived dependencies for a public request without authentication.
 //   - [ProjectRequestScope] contains short-lived dependencies for a request with authentication.
 //   - [SourceScope] contains long-lived dependencies for source nodes.
-//   - [LocalStorageScope] contains long-lived dependencies for local storage writer/reader nodes.
+//   - [StorageScope] contains long-lived dependencies for local storage writer/reader nodes.
 //
 // Dependency containers creation:
-//   - [ServiceScope] is created during the creation of [APIScope] or [LocalStorageScope].
+//   - [ServiceScope] is created during the creation of [APIScope] or [StorageScope].
 //   - [APIScope] is created at startup in the API main.go.
 //   - [PublicRequestScope] is created for each HTTP request by Muxer.Use callback in main.go.
 //   - [ProjectRequestScope] is created for each authenticated HTTP request in the service.APIKeyAuth method.
 //   - [SourceScope] is created at startup of a source node.
-//   - [LocalStorageScope] is created at startup of a local storage writer/reader node.
+//   - [CoordinatorScope] is created at startup of a coordinator node.
+//   - [StorageScope] is created at startup of a local storage writer/reader node.
+//   - [StorageWriterScope] is created at startup of a local storage writer node.
+//   - [StorageReaderScope] is created at startup of a local storage reader node.
 //
 // The package also provides mocked dependency implementations for tests:
 //   - [NewMockedServiceScope]
 //   - [NewMockedAPIScope]
 //   - [NewMockedPublicRequestScope]
 //   - [NewMockedProjectRequestScope]
-//   - [NewMockedLocalStorageScope]
+//   - [NewMockedCoordinatorScope]
+//   - [NewMockedStorageScope]
+//   - [NewMockedStorageWriterScope]
+//   - [NewMockedStorageReaderScope]
 //
 // Dependencies injection to service endpoints:
 //   - Each service endpoint method gets [PublicRequestScope] as a parameter.
@@ -47,6 +53,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
@@ -117,12 +125,27 @@ type SourceScope interface {
 	SinkRouter() *sinkRouter.Router
 }
 
-type LocalStorageScope interface {
+type CoordinatorScope interface {
 	ServiceScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 	StatisticsL1Cache() *cache.L1
 	StatisticsL2Cache() *cache.L2
+}
+
+type StorageScope interface {
+	ServiceScope
+}
+
+type StorageWriterScope interface {
+	StorageScope
+	dependencies.DistributionScope
+	Volumes() *diskwriter.Volumes
+}
+
+type StorageReaderScope interface {
+	StorageScope
+	Volumes() *diskreader.Volumes
 }
 
 type Mocked interface {

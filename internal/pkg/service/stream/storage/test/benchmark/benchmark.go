@@ -166,7 +166,7 @@ func (wb *WriterBenchmark) startSourceNode(b *testing.B) dependencies.SourceScop
 func (wb *WriterBenchmark) startDiskWriterNode(b *testing.B, ctx context.Context) *diskwriter.Volume {
 	b.Helper()
 
-	d, mock := dependencies.NewMockedLocalStorageScopeWithConfig(b, func(cfg *config.Config) {
+	d, mock := dependencies.NewMockedStorageScopeWithConfig(b, func(cfg *config.Config) {
 		cfg.Storage.Level.Local.Writer.WatchDrainFile = false
 	})
 

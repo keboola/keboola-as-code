@@ -23,7 +23,7 @@ func TestOpenVolumes(t *testing.T) {
 	defer cancel()
 
 	process := servicectx.New()
-	d, mock := dependencies.NewMockedLocalStorageScope(t)
+	d, mock := dependencies.NewMockedStorageScope(t)
 
 	// Create volumes directories
 	volumesPath := t.TempDir()
@@ -48,7 +48,7 @@ func TestOpenVolumes(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		volumes, err = diskwriter.OpenVolumes(ctx, d, "my-node", "localhost", volumesPath, mock.TestConfig().Storage.Level.Local.Writer)
+		volumes, err = diskwriter.OpenVolumes(ctx, d, volumesPath, mock.TestConfig().Storage.Level.Local.Writer)
 		assert.NoError(t, err)
 	}()
 

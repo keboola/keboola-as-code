@@ -3,9 +3,12 @@ package dependencies
 import (
 	"context"
 	"io"
+	"testing"
+	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -14,12 +17,17 @@ import (
 	aggregationRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/aggregation/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -117,6 +125,65 @@ func newParentScopes(
 	}
 
 	return d, nil
+}
+
+func NewMockedServiceScope(t *testing.T, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	t.Helper()
+	return NewMockedServiceScopeWithConfig(t, nil, opts...)
+}
+
+func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	tb.Helper()
+
+	// Create common mocked dependencies
+	commonMock := dependencies.NewMocked(tb, append(
+		[]dependencies.MockedOption{
+			dependencies.WithEnabledEtcdClient(),
+			dependencies.WithMockedStorageAPIHost("connection.keboola.local"),
+		},
+		opts...,
+	)...)
+
+	// Get and modify test config
+	cfg := testConfig(tb, commonMock)
+	if modifyConfig != nil {
+		modifyConfig(&cfg)
+	}
+
+	// Create service mocked dependencies
+	mock := &mocked{Mocked: commonMock, config: cfg, sinkPipelineOpener: pipeline.NewTestOpener()}
+
+	backoff := model.NoRandomizationBackoff()
+	serviceScp, err := newServiceScope(mock, cfg, backoff)
+	require.NoError(tb, err)
+
+	mock.DebugLogger().Truncate()
+	mock.MockedHTTPTransport().Reset()
+
+	// Register dummy sink with local storage support for tests
+	serviceScp.Plugins().RegisterSinkWithLocalStorage(func(sinkType definition.SinkType) bool {
+		return sinkType == test.SinkTypeWithLocalStorage
+	})
+	serviceScp.Plugins().Collection().OnFileOpen(func(ctx context.Context, now time.Time, sink definition.Sink, file *model.File) error {
+		if sink.Type == test.SinkTypeWithLocalStorage {
+			// Set required fields
+			file.Mapping = table.Mapping{Columns: column.Columns{column.Body{Name: "body"}}}
+			file.StagingStorage.Provider = "test"
+			file.TargetStorage.Provider = "test"
+		}
+		return nil
+	})
+
+	// Register dummy pipeline opener for tests
+	serviceScp.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType) (pipeline.Pipeline, error) {
+		if sinkType == test.SinkType {
+			return mock.sinkPipelineOpener.OpenPipeline()
+		}
+
+		return nil, pipeline.NoOpenerFoundError{SinkType: sinkType}
+	})
+
+	return serviceScp, mock
 }
 
 func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff model.RetryBackoff) (ServiceScope, error) {
