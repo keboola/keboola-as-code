@@ -58,7 +58,8 @@ type ShutdownFn func(context.Context, error)
 type Option func(c *config)
 
 type config struct {
-	logger log.Logger
+	logger            log.Logger
+	shutdownOnSignals bool
 }
 
 func WithLogger(v log.Logger) Option {
@@ -67,9 +68,15 @@ func WithLogger(v log.Logger) Option {
 	}
 }
 
+func WithoutSignals() Option {
+	return func(c *config) {
+		c.shutdownOnSignals = false
+	}
+}
+
 func New(opts ...Option) *Process {
 	// Apply options
-	c := config{}
+	c := config{shutdownOnSignals: true}
 	for _, o := range opts {
 		o(&c)
 	}
@@ -108,19 +115,21 @@ func New(opts ...Option) *Process {
 	}()
 
 	// Setup interrupt handler, so SIGINT and SIGTERM signals trigger shutdown.
-	go func() {
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	if c.shutdownOnSignals {
+		go func() {
+			sigCh := make(chan os.Signal, 1)
+			signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-		select {
-		case sig := <-sigCh:
-			// Trigger shutdown on signal
-			v.Shutdown(context.Background(), errors.Errorf("%s", sig))
-		case <-v.terminating:
-			// The Process was shut down by another trigger, stop goroutine
-			return
-		}
-	}()
+			select {
+			case sig := <-sigCh:
+				// Trigger shutdown on signal
+				v.Shutdown(context.Background(), errors.Errorf("%s", sig))
+			case <-v.terminating:
+				// The Process was shut down by another trigger, stop goroutine
+				return
+			}
+		}()
+	}
 
 	return v
 }
