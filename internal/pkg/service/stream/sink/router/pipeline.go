@@ -20,7 +20,7 @@ type pipelineRef struct {
 	sinkKey  key.SinkKey
 	sinkType definition.SinkType
 	// lock protects pipeline field
-	lock sync.Mutex
+	lock sync.RWMutex
 	// pipeline to write data to the sink,
 	// it is initialized when the first record is received.
 	pipeline pipeline.Pipeline
@@ -41,10 +41,17 @@ func (p *pipelineRef) writeRecord(c recordctx.Context) (pipeline.RecordStatus, e
 }
 
 func (p *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) error {
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	// Fast check
+	p.lock.RLock()
+	opened := p.pipeline != nil
+	p.lock.RUnlock()
+	if opened {
+		return nil
+	}
 
 	// Try open, if needed, and there is no retry backoff delay active
+	p.lock.Lock()
+	defer p.lock.Unlock()
 	if p.pipeline == nil && (p.openError == nil || timestamp.After(p.openRetryAfter)) {
 		var err error
 
