@@ -33,10 +33,10 @@ func TestWriter_Basic(t *testing.T) {
 	assert.Equal(t, tc.Slice.SliceKey, w.SliceKey())
 
 	// Test write methods
-	n, err := w.Write([]byte("123,456,789\n"))
+	n, err := w.Write(ctx, []byte("123,456,789\n"))
 	assert.Equal(t, 12, n)
 	assert.NoError(t, err)
-	n, err = w.Write([]byte("abc,def,ghj\n"))
+	n, err = w.Write(ctx, []byte("abc,def,ghj\n"))
 	assert.Equal(t, 12, n)
 	assert.NoError(t, err)
 

@@ -60,22 +60,30 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 		logger: d.Logger().WithComponent("storage.router.connections"),
 	}
 
+	// Create transport client
+	var err error
+	m.client, err = transport.NewClient(m.logger.WithComponent("client"), cfg, nodeID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		m.logger.Info(ctx, "closing connections")
+
+		// Stop mirroring
 		cancel()
 		wg.Wait()
+
+		// Close connections
+		if err := m.client.Close(); err != nil {
+			m.logger.Error(ctx, err.Error())
+		}
+
 		m.logger.Info(ctx, "closed connections")
 	})
-
-	// Create transport client
-	var err error
-	m.client, err = transport.NewClient(d, cfg, nodeID)
-	if err != nil {
-		return nil, err
-	}
 
 	// Start active volumes mirroring, only necessary data is saved
 	{
@@ -136,6 +144,7 @@ func (m *Manager) updateConnections(ctx context.Context) {
 	{
 		for _, node := range activeNodes {
 			if _, found := m.client.Connection(node.ID); !found {
+				m.logger.Debugf(ctx, "new disk writer node %q", node.ID)
 				toOpen = append(toOpen, node)
 			}
 		}
@@ -149,6 +158,7 @@ func (m *Manager) updateConnections(ctx context.Context) {
 	{
 		for _, conn := range m.client.Connections() {
 			if _, found := activeNodes[conn.RemoteNodeID()]; !found {
+				m.logger.Debugf(ctx, "disk writer node gone %q ", conn.RemoteNodeID())
 				toClose = append(toClose, conn)
 			}
 		}
@@ -159,11 +169,15 @@ func (m *Manager) updateConnections(ctx context.Context) {
 
 	// Make changes
 	for _, conn := range toClose {
-		conn.Close(ctx)
+		if err := conn.Close(ctx); err != nil {
+			m.logger.Errorf(ctx, "cannot close connection to %q - %q: %s", conn.RemoteNodeID(), conn.RemoteAddr(), err)
+		}
 	}
 	for _, node := range toOpen {
 		// Start dial loop, errors are logged
-		_, _ = m.client.OpenConnection(ctx, node.ID, node.Address.String())
+		if _, err := m.client.OpenConnection(ctx, node.ID, node.Address.String()); err != nil {
+			m.logger.Errorf(ctx, "cannot open connection to %q - %q: %s", node.ID, node.Address, err)
+		}
 	}
 }
 

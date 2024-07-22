@@ -19,8 +19,15 @@ func TestConfig_Validation(t *testing.T) {
 - "volume.assignment.preferredTypes" is a required field
 - "volume.registration.ttlSeconds" is a required field
 - "encoding.encoder.type" is a required field
+- "encoding.maxChunkSize" is a required field
+- "encoding.failedChunksThreshold" is a required field
 - "encoding.compression.type" is a required field
 - "encoding.sync.mode" is a required field
+- "encoding.sync.checkInterval" is a required field
+- "encoding.sync.countTrigger" is a required field
+- "encoding.sync.uncompressedBytesTrigger" is a required field
+- "encoding.sync.compressedBytesTrigger" is a required field
+- "encoding.sync.intervalTrigger" is a required field
 - "writer.network.listen" is a required field
 - "writer.network.transport" is a required field
 - "writer.network.keepAliveInterval" is a required field

@@ -15,16 +15,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Syncer according to the Config calls the Chain.Flush() or Chain.Sync().
+// Syncer according to the Config calls the Pipeline.Flush() or Pipeline.Sync().
 // Regarding waiting for sync, see Notifier methods.
 type Syncer struct {
-	logger log.Logger
-	clock  clock.Clock
-	config Config
-	chain  Chain
+	logger   log.Logger
+	clock    clock.Clock
+	config   Config
+	pipeline Pipeline
 
-	stopped chan struct{}
-	wg      *sync.WaitGroup
+	cancel    context.CancelFunc
+	cancelled <-chan struct{}
+	wg        *sync.WaitGroup
 
 	statistics StatisticsProvider
 
@@ -42,22 +43,22 @@ type Syncer struct {
 	notifierLock *sync.RWMutex
 	notifier     *notify.Notifier
 
-	// opFn is operation triggered on sync
-	opFn func(ctx context.Context) error
+	// syncFn is operation triggered on sync
+	syncFn func(ctx context.Context) error
 }
 
 type SyncerFactory interface {
-	NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, chain Chain, statistics StatisticsProvider) *Syncer
+	NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, pipeline Pipeline, statistics StatisticsProvider) *Syncer
 }
 
 type DefaultSyncerFactory struct{}
 
-func (DefaultSyncerFactory) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, chain Chain, statistics StatisticsProvider) *Syncer {
-	return NewSyncer(ctx, logger, clock, config, chain, statistics)
+func (DefaultSyncerFactory) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, pipeline Pipeline, statistics StatisticsProvider) *Syncer {
+	return NewSyncer(ctx, logger, clock, config, pipeline, statistics)
 }
 
-// Chain is a resource that should be synchronized.
-type Chain interface {
+// Pipeline is a resource that should be synchronized.
+type Pipeline interface {
 	// Flush data from memory to OS disk cache. Used if Config.Mode=ModeToCache.
 	Flush(ctx context.Context) error
 	// Sync data from memory to disk. Used if Config.Mode=ModeToDisk.
@@ -78,23 +79,16 @@ func NewSyncer(
 	logger log.Logger,
 	clock clock.Clock,
 	config Config,
-	chain Chain,
+	pipeline Pipeline,
 	statistics StatisticsProvider,
 ) *Syncer {
-	// Validate config, it should be already validated
-	if err := config.Validate(); err != nil {
-		panic(err)
-	}
-
 	// Select sync function
-	var opFn func(ctx context.Context) error
+	var syncFn func(ctx context.Context) error
 	switch config.Mode {
-	case ModeDisabled:
-		opFn = nil
 	case ModeDisk:
-		opFn = chain.Sync
+		syncFn = pipeline.Sync
 	case ModeCache:
-		opFn = chain.Flush
+		syncFn = pipeline.Flush
 	default:
 		panic(errors.Errorf(`unexpected sync mode "%s"`, config.Mode))
 	}
@@ -103,8 +97,7 @@ func NewSyncer(
 		logger:                   logger,
 		clock:                    clock,
 		config:                   config,
-		chain:                    chain,
-		stopped:                  make(chan struct{}),
+		pipeline:                 pipeline,
 		wg:                       &sync.WaitGroup{},
 		statistics:               statistics,
 		acceptedWritesSnapshot:   atomic.NewUint64(0),
@@ -114,28 +107,24 @@ func NewSyncer(
 		syncLock:                 &sync.Mutex{},
 		notifierLock:             &sync.RWMutex{},
 		notifier:                 notify.New(),
-		opFn:                     opFn,
+		syncFn:                   syncFn,
 	}
 
 	// Syncer must be stopped by the Stop method
-	ctx = context.WithoutCancel(ctx)
+	ctx, s.cancel = context.WithCancel(ctx)
+	s.cancelled = ctx.Done()
 
-	if opFn != nil {
-		s.logger.Infof(
-			ctx,
-			`sync is enabled, mode=%s, sync each {count=%d or uncompressed=%s or compressed=%s or interval=%s}, check each %s`,
-			config.Mode,
-			config.CountTrigger,
-			config.UncompressedBytesTrigger,
-			config.CompressedBytesTrigger,
-			config.IntervalTrigger,
-			config.CheckInterval,
-		)
-		s.syncLoop(ctx)
-	} else {
-		logger.Info(ctx, "sync is disabled")
-	}
-
+	s.logger.Infof(
+		ctx,
+		`sync is enabled, mode=%s, sync each {count=%d or uncompressed=%s or compressed=%s or interval=%s}, check each %s`,
+		config.Mode,
+		config.CountTrigger,
+		config.UncompressedBytesTrigger,
+		config.CompressedBytesTrigger,
+		config.IntervalTrigger,
+		config.CheckInterval,
+	)
+	s.syncLoop()
 	return s
 }
 
@@ -157,12 +146,7 @@ func (s *Syncer) Notifier() *notify.Notifier {
 // If force=false, is doesn't wait, a notifier for the running synchronization returns.
 // In both cases, the method doesn't wait for the synchronization to complete,
 // you can use the Wait() method of the returned *notify.Notifier for waiting.
-func (s *Syncer) TriggerSync(ctx context.Context, force bool) *notify.Notifier {
-	// Check if the sync is disabled
-	if s.opFn == nil {
-		return nil
-	}
-
+func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
 	// Acquire the syncLock
 	if force {
 		s.syncLock.Lock()
@@ -177,34 +161,37 @@ func (s *Syncer) TriggerSync(ctx context.Context, force bool) *notify.Notifier {
 	// At this point the syncLock is locked.
 	// It is released at the end of the goroutine bellow.
 
-	// Update counters
-	s.acceptedWritesSnapshot.Store(s.statistics.AcceptedWrites())
-	s.uncompressedSizeSnapshot.Store(uint64(s.statistics.UncompressedSize()))
-	s.compressedSizeSnapshot.Store(uint64(s.statistics.CompressedSize()))
-	s.lastSyncAt.Store(s.clock.Now())
-
 	// Swap sync notifier, split old and new writes
 	s.notifierLock.Lock()
 	notifier := s.notifier
 	s.notifier = notify.New()
 	s.notifierLock.Unlock()
 
+	acceptedWritesSnapshot := s.statistics.AcceptedWrites()
+	uncompressedSizeSnapshot := uint64(s.statistics.UncompressedSize())
+	compressedSizeSnapshot := uint64(s.statistics.CompressedSize())
+
 	// Run sync in the background
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
+		defer s.syncLock.Unlock()
+
+		ctx := context.Background()
 
 		// Invoke the operation
 		s.logger.Debugf(ctx, `starting sync to %s`, s.config.Mode)
-		err := s.opFn(ctx)
+		err := s.syncFn(ctx)
 		if err == nil {
+			// Update counters
+			s.acceptedWritesSnapshot.Store(acceptedWritesSnapshot)
+			s.uncompressedSizeSnapshot.Store(uncompressedSizeSnapshot)
+			s.compressedSizeSnapshot.Store(compressedSizeSnapshot)
+			s.lastSyncAt.Store(s.clock.Now())
 			s.logger.Debugf(ctx, `sync to %s done`, s.config.Mode)
 		} else {
 			s.logger.Errorf(ctx, `sync to %s failed: %s`, s.config.Mode, err)
 		}
-
-		// Release the lock
-		s.syncLock.Unlock()
 
 		// Unblock waiting operations, see Notifier.Wait() method
 		notifier.Done(err)
@@ -218,13 +205,13 @@ func (s *Syncer) Stop(ctx context.Context) error {
 	s.logger.Debug(ctx, `stopping syncer`)
 
 	// Prevent new syncs
-	if s.isStopped() {
+	if s.isCancelled() {
 		return errors.New(`syncer is already stopped`)
 	}
-	close(s.stopped)
+	s.cancel()
 
 	// Run the last sync
-	err := s.TriggerSync(ctx, true).Wait()
+	err := s.TriggerSync(true).Wait()
 
 	// Wait for sync loop and running sync, if any
 	s.wg.Wait()
@@ -233,16 +220,16 @@ func (s *Syncer) Stop(ctx context.Context) error {
 	return err
 }
 
-func (s *Syncer) isStopped() bool {
+func (s *Syncer) isCancelled() bool {
 	select {
-	case <-s.stopped:
+	case <-s.cancelled:
 		return true
 	default:
 		return false
 	}
 }
 
-func (s *Syncer) syncLoop(ctx context.Context) {
+func (s *Syncer) syncLoop() {
 	ticker := s.clock.Ticker(s.config.CheckInterval.Duration())
 
 	s.wg.Add(1)
@@ -253,12 +240,12 @@ func (s *Syncer) syncLoop(ctx context.Context) {
 		// Periodically check the conditions and start synchronization if any condition is met
 		for {
 			select {
-			case <-s.stopped:
+			case <-s.cancelled:
 				// The Close method has been called
 				return
 			case <-ticker.C:
 				if s.checkSyncConditions() {
-					s.TriggerSync(ctx, false)
+					s.TriggerSync(false)
 				}
 			}
 		}

@@ -23,10 +23,16 @@ services:
       - TEMPLATES_API_PUBLIC_URL=http://localhost:8000
       - TEMPLATES_METRICS_LISTEN_ADDRESS=0.0.0.0:9000
       # For Stream Service
+      - STREAM_NODE_ID=my-node
+      - STREAM_HOSTNAME=localhost
+      - STREAM_API_STORAGE_API_HOST=connection.keboola.com
+      - STREAM_API_LISTEN=0.0.0.0:8001
+      - STREAM_API_PUBLIC_URL=http://localhost:8001
+      - STREAM_SOURCE_HTTP_LISTEN=0.0.0.0:8010
+      - STREAM_SOURCE_HTTP_PUBLIC_URL=http://localhost:8010
+      - STREAM_STORAGE_VOLUMES_PATH=/tmp/volumes
       - STREAM_STORAGE_API_HOST=connection.keboola.com
-      - STREAM_LISTEN_ADDRESS=0.0.0.0:8001
       - STREAM_METRICS_LISTEN_ADDRESS=0.0.0.0:9001
-      - STREAM_PUBLIC_ADDRESS=http://localhost:8001
       # Apps Proxy
       - APPS_PROXY_LISTEN_ADDRESS=0.0.0.0:8002
       - APPS_PROXY_METRICS_LISTEN_ADDRESS=0.0.0.0:9002

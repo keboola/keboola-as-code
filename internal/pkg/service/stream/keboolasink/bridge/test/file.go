@@ -13,8 +13,8 @@ import (
 	"go.uber.org/atomic"
 )
 
-func MockFileStorageAPICalls(t *testing.T, clk clock.Clock, transport *httpmock.MockTransport) {
-	t.Helper()
+func MockFileStorageAPICalls(tb testing.TB, clk clock.Clock, transport *httpmock.MockTransport) {
+	tb.Helper()
 
 	fileID := atomic.NewInt32(1000)
 

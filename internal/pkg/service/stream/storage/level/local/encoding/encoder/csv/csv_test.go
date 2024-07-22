@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -50,23 +49,23 @@ func TestCSVWriter(t *testing.T) {
 				return r
 			},
 		},
-		{
-			Name:   "zstd",
-			Config: compression.NewZSTDConfig(),
-			FileDecoder: func(t *testing.T, r io.Reader) io.Reader {
-				t.Helper()
-				r, err := zstd.NewReader(r)
-				require.NoError(t, err)
-				return r
-			},
-			DisableValidation: true,
-		},
+		// ZSTD compression is not fully supported, we cannot test it, config/entities validation fails.
+		//{
+		//	Name:   "zstd",
+		//	Config: compression.NewZSTDConfig(),
+		//	FileDecoder: func(t *testing.T, r io.Reader) io.Reader {
+		//		t.Helper()
+		//		r, err := zstd.NewReader(r)
+		//		require.NoError(t, err)
+		//		return r
+		//	},
+		//	DisableValidation: true,
+		// },
 	}
 
 	syncModes := []writesync.Mode{
-		writesync.ModeDisabled,
-		writesync.ModeDisk,
 		writesync.ModeCache,
+		writesync.ModeDisk,
 	}
 
 	// Generate all possible combinations of the parameters
@@ -75,11 +74,6 @@ func TestCSVWriter(t *testing.T) {
 		for _, syncMode := range syncModes {
 			for _, syncWait := range []bool{false, true} {
 				for _, parallelWrite := range []bool{false, true} {
-					// Skip invalid combination
-					if syncMode == writesync.ModeDisabled && syncWait {
-						continue
-					}
-
 					// Run test case
 					if tc := newTestCase(comp, syncMode, syncWait, parallelWrite); tc != nil {
 						t.Run(tc.Name, tc.Run)
@@ -130,11 +124,12 @@ func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, p
 	if parallelWrite {
 		validateFn = func(t *testing.T, fileContent string) {
 			t.Helper()
-			assert.Equal(t, 4, strings.Count(fileContent, "\n"))
-			assert.Contains(t, fileContent, "\"2000-01-01T01:00:00.000Z\",\"abc\"\n")
-			assert.Contains(t, fileContent, "\"2000-01-01T02:00:00.000Z\",\"\"\"def\"\"\"\n")
-			assert.Contains(t, fileContent, "\"2000-01-01T03:00:00.000Z\",\"foo\"\n")
-			assert.Contains(t, fileContent, "\"2000-01-01T04:00:00.000Z\",\"bar\"\n")
+			if assert.Equal(t, 4, strings.Count(fileContent, "\n")) {
+				assert.Contains(t, fileContent, "\"2000-01-01T01:00:00.000Z\",\"abc\"\n")
+				assert.Contains(t, fileContent, "\"2000-01-01T02:00:00.000Z\",\"\"\"def\"\"\"\n")
+				assert.Contains(t, fileContent, "\"2000-01-01T03:00:00.000Z\",\"foo\"\n")
+				assert.Contains(t, fileContent, "\"2000-01-01T04:00:00.000Z\",\"bar\"\n")
+			}
 		}
 	} else {
 		validateFn = func(t *testing.T, fileContent string) {
@@ -156,8 +151,6 @@ func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, p
 	// Sync config
 	var syncConfig writesync.Config
 	switch syncMode {
-	case writesync.ModeDisabled:
-		syncConfig = writesync.Config{Mode: writesync.ModeDisabled}
 	case writesync.ModeDisk:
 		syncConfig = writesync.Config{
 			Mode:                     writesync.ModeDisk,

@@ -341,8 +341,8 @@ func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
 	// Mock APIs
 	httpClient, mockedHTTPTransport := defaultMockedResponses(cfg)
 
-	// Create service process
-	cfg.procOpts = append([]servicectx.Option{servicectx.WithLogger(logger)}, cfg.procOpts...)
+	// Create service process, WithoutSignals - so it doesn't block Ctrl+C in tests
+	cfg.procOpts = append([]servicectx.Option{servicectx.WithLogger(logger), servicectx.WithoutSignals()}, cfg.procOpts...)
 	proc := servicectx.NewForTest(tb, cfg.procOpts...)
 
 	// Create dependencies container

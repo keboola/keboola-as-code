@@ -97,6 +97,6 @@ func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definiti
 
 func (m *Mapper) formatHTTPSourceURL(entity definition.Source) string {
 	return m.httpSourcePublicURL.
-		JoinPath("projects", entity.ProjectID.String(), "sources", entity.SourceID.String(), entity.HTTP.Secret).
+		JoinPath("stream", entity.ProjectID.String(), entity.SourceID.String(), entity.HTTP.Secret).
 		String()
 }

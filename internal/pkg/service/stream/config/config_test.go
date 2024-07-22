@@ -147,8 +147,10 @@ storage:
                     concurrency: 0
                 # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
                 inputBuffer: 1MB
-                # Max size of the buffer before the output. 0 = disabled. Validation rules: maxBytes=16MB
-                outputBuffer: 1MB
+                # Max size of a chunk sent over the network to a disk writer node. Validation rules: required,minBytes=64kB,maxBytes=1MB
+                maxChunkSize: 512KB
+                # If the defined number of chunks cannot be sent, the pipeline is marked as not ready. Validation rules: required,min=1,max=100
+                failedChunksThreshold: 3
                 compression:
                     # Compression type. Validation rules: required,oneof=none gzip
                     type: gzip
@@ -162,19 +164,19 @@ storage:
                         # GZIP parallel concurrency, 0 = auto.
                         concurrency: 0
                 sync:
-                    # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
+                    # Sync mode: "cache" or "disk". Validation rules: required,oneof=disk cache
                     mode: disk
                     # Wait for sync to disk OS cache or to disk hardware, depending on the mode.
                     wait: true
-                    # Minimal interval between syncs to disk. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
+                    # Minimal interval between syncs to disk. Validation rules: required,minDuration=1ms,maxDuration=30s
                     checkInterval: 5ms
-                    # Written records count to trigger sync. Validation rules: min=0,max=1000000,required_if=Mode disk,required_if=Mode cache
+                    # Written records count to trigger sync. Validation rules: required,min=1,max=1000000
                     countTrigger: 10000
-                    # Size of buffered uncompressed data to trigger sync. Validation rules: maxBytes=500MB,required_if=Mode disk,required_if=Mode cache
+                    # Size of buffered uncompressed data to trigger sync. Validation rules: required,minBytes=100B,maxBytes=500MB
                     uncompressedBytesTrigger: 1MB
-                    # Size of buffered compressed data to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
+                    # Size of buffered compressed data to trigger sync. Validation rules: required,minBytes=100B,maxBytes=100MB
                     compressedBytesTrigger: 256KB
-                    # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
+                    # Interval from the last sync to trigger sync. Validation rules: required,minDuration=10ms,maxDuration=30s
                     intervalTrigger: 50ms
             writer:
                 network:
@@ -258,7 +260,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
 				Level: &level.ConfigPatch{
 					Local: &local.ConfigPatch{
 						Encoding: &encoding.ConfigPatch{
-							OutputBuffer: ptr.Ptr(123 * datasize.KB),
+							MaxChunkSize: ptr.Ptr(123 * datasize.KB),
 						},
 					},
 				},
@@ -340,6 +342,16 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "required,oneof=csv"
   },
   {
+    "key": "storage.level.local.encoding.failedChunksThreshold",
+    "type": "int",
+    "description": "If the defined number of chunks cannot be sent, the pipeline is marked as not ready.",
+    "value": 3,
+    "defaultValue": 3,
+    "overwritten": false,
+    "protected": true,
+    "validation": "required,min=1,max=100"
+  },
+  {
     "key": "storage.level.local.encoding.inputBuffer",
     "type": "string",
     "description": "Max size of the buffer before compression, if compression is enabled. 0 = disabled",
@@ -350,14 +362,14 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "maxBytes=16MB"
   },
   {
-    "key": "storage.level.local.encoding.outputBuffer",
+    "key": "storage.level.local.encoding.maxChunkSize",
     "type": "string",
-    "description": "Max size of the buffer before the output. 0 = disabled",
+    "description": "Max size of a chunk sent over the network to a disk writer node.",
     "value": "123KB",
-    "defaultValue": "1MB",
+    "defaultValue": "512KB",
     "overwritten": true,
     "protected": true,
-    "validation": "maxBytes=16MB"
+    "validation": "required,minBytes=64kB,maxBytes=1MB"
   },
   {
     "key": "storage.level.local.encoding.sync.checkInterval",
@@ -367,7 +379,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "defaultValue": "5ms",
     "overwritten": false,
     "protected": true,
-    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
+    "validation": "required,minDuration=1ms,maxDuration=30s"
   },
   {
     "key": "storage.level.local.encoding.sync.compressedBytesTrigger",
@@ -377,7 +389,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "defaultValue": "256KB",
     "overwritten": false,
     "protected": true,
-    "validation": "maxBytes=100MB,required_if=Mode disk,required_if=Mode cache"
+    "validation": "required,minBytes=100B,maxBytes=100MB"
   },
   {
     "key": "storage.level.local.encoding.sync.countTrigger",
@@ -387,7 +399,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "defaultValue": 10000,
     "overwritten": false,
     "protected": true,
-    "validation": "min=0,max=1000000,required_if=Mode disk,required_if=Mode cache"
+    "validation": "required,min=1,max=1000000"
   },
   {
     "key": "storage.level.local.encoding.sync.intervalTrigger",
@@ -397,17 +409,17 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "defaultValue": "50ms",
     "overwritten": false,
     "protected": true,
-    "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
+    "validation": "required,minDuration=10ms,maxDuration=30s"
   },
   {
     "key": "storage.level.local.encoding.sync.mode",
     "type": "string",
-    "description": "Sync mode: \"disabled\", \"cache\" or \"disk\".",
+    "description": "Sync mode: \"cache\" or \"disk\".",
     "value": "disk",
     "defaultValue": "disk",
     "overwritten": false,
     "protected": true,
-    "validation": "required,oneof=disabled disk cache"
+    "validation": "required,oneof=disk cache"
   },
   {
     "key": "storage.level.local.encoding.sync.uncompressedBytesTrigger",
@@ -417,7 +429,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "defaultValue": "1MB",
     "overwritten": false,
     "protected": true,
-    "validation": "maxBytes=500MB,required_if=Mode disk,required_if=Mode cache"
+    "validation": "required,minBytes=100B,maxBytes=500MB"
   },
   {
     "key": "storage.level.local.encoding.sync.wait",
@@ -532,7 +544,7 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 	patch := config.Patch{}
 	require.NoError(t, configpatch.BindKVs(&patch, []configpatch.PatchKV{
 		{
-			KeyPath: "storage.level.local.encoding.outputBuffer",
+			KeyPath: "storage.level.local.encoding.maxChunkSize",
 			Value:   "456kB",
 		},
 	}))
@@ -542,7 +554,7 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 			Level: &level.ConfigPatch{
 				Local: &local.ConfigPatch{
 					Encoding: &encoding.ConfigPatch{
-						OutputBuffer: ptr.Ptr(456 * datasize.KB),
+						MaxChunkSize: ptr.Ptr(456 * datasize.KB),
 					},
 				},
 			},
@@ -570,12 +582,12 @@ func TestConfig_BindKVs_InvalidValue(t *testing.T) {
 
 	err := configpatch.BindKVs(&config.Patch{}, []configpatch.PatchKV{
 		{
-			KeyPath: "storage.level.local.encoding.outputBuffer",
+			KeyPath: "storage.level.local.encoding.maxChunkSize",
 			Value:   "foo",
 		},
 	})
 
 	if assert.Error(t, err) {
-		assert.Equal(t, `invalid "storage.level.local.encoding.outputBuffer" value "foo": invalid syntax`, err.Error())
+		assert.Equal(t, `invalid "storage.level.local.encoding.maxChunkSize" value "foo": invalid syntax`, err.Error())
 	}
 }

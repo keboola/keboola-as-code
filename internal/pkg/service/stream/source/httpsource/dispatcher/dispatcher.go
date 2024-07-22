@@ -86,19 +86,19 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 	return dp, nil
 }
 
-func (d *Dispatcher) Dispatch(timestamp time.Time, projectID keboola.ProjectID, sourceID key.SourceID, secret string, c *fasthttp.RequestCtx) (sinkRouter.SourcesResult, error) {
+func (d *Dispatcher) Dispatch(timestamp time.Time, projectID keboola.ProjectID, sourceID key.SourceID, secret string, c *fasthttp.RequestCtx) (*sinkRouter.SourcesResult, error) {
 	d.wg.Add(1)
 	defer d.wg.Done()
 
 	// Stop on shutdown - it shouldn't happen - the HTTP server shuts down first
 	if d.isClosed() {
-		return sinkRouter.SourcesResult{}, ShutdownError{}
+		return nil, ShutdownError{}
 	}
 
 	// Get all relevant sources
 	disabled := 0
 	var matchedSources []key.SourceKey
-	for _, source := range d.sources.AllFromPrefix(sourceKeyPrefix(projectID, sourceID)) {
+	d.sources.WalkPrefix(sourceKeyPrefix(projectID, sourceID), func(key string, source *sourceData) (stop bool) {
 		// Secret is now immutable and should be now same in all branches.
 		// If in the future we would allow secrete to be regenerated in the main/dev branch, it will still work correctly.
 		if source.secret == secret {
@@ -108,14 +108,15 @@ func (d *Dispatcher) Dispatch(timestamp time.Time, projectID keboola.ProjectID, 
 				disabled++
 			}
 		}
-	}
+		return false
+	})
 
 	// At least one source/branch must be found
 	if len(matchedSources) == 0 {
 		if disabled == 0 {
-			return sinkRouter.SourcesResult{}, NoSourceFoundError{}
+			return nil, NoSourceFoundError{}
 		} else {
-			return sinkRouter.SourcesResult{}, SourceDisabledError{}
+			return nil, SourceDisabledError{}
 		}
 	}
 

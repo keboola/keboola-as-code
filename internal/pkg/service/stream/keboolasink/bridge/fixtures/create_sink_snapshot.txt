@@ -38,7 +38,8 @@ storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
       "concurrency": 0
     },
     "inputBuffer": "1MB",
-    "outputBuffer": "1MB",
+    "maxChunkSize": "512KB",
+    "failedChunksThreshold": 3,
     "compression": {
       "type": "gzip",
       "gzip": {
@@ -126,7 +127,8 @@ storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-
       "concurrency": 0
     },
     "inputBuffer": "1MB",
-    "outputBuffer": "1MB",
+    "maxChunkSize": "512KB",
+    "failedChunksThreshold": 3,
     "compression": {
       "type": "gzip",
       "gzip": {

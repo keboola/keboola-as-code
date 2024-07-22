@@ -14,11 +14,15 @@ import (
 
 type discardOutput struct{}
 
-func (discardOutput) Write([]byte) (n int, err error) {
+func (discardOutput) Write(ctx context.Context, aligned bool, b []byte) (n int, err error) {
 	return 0, nil
 }
 
-func (discardOutput) Sync() error {
+func (discardOutput) IsReady() bool {
+	return true
+}
+
+func (discardOutput) Sync(ctx context.Context) error {
 	return nil
 }
 

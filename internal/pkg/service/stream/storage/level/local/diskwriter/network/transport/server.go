@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -13,36 +14,32 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type serverDependencies interface {
-	Logger() log.Logger
-	Process() *servicectx.Process
-}
-
 type Server struct {
-	logger     log.Logger
-	config     network.Config
-	transport  Transport
-	handler    StreamHandler
-	listenAddr net.Addr
+	logger    log.Logger
+	config    network.Config
+	transport Transport
+	listener  net.Listener
 
-	closed    chan struct{}
+	accept    chan *ServerStream
 	listenWg  sync.WaitGroup
 	streamsWg sync.WaitGroup
 
+	closeLock sync.Mutex
+	closed    chan struct{}
+
 	lock     sync.Mutex
 	sessions map[string]*yamux.Session
-	streams  map[string]*yamux.Stream
+	streams  map[string]*ServerStream
 }
 
 type StreamHandler func(ctx context.Context, stream *yamux.Stream)
 
 // Listen function is called by the Writer node, to listen for slices data.
-func Listen(d serverDependencies, config network.Config, nodeID string, handler StreamHandler) (*Server, error) {
+func Listen(logger log.Logger, config network.Config, nodeID string) (*Server, error) {
 	ctx := ctxattr.ContextWith(
 		context.Background(),
 		attribute.String("nodeId", nodeID),
@@ -55,144 +52,161 @@ func Listen(d serverDependencies, config network.Config, nodeID string, handler 
 	}
 
 	s := &Server{
-		logger:    d.Logger().WithComponent("storage.node.writer.network.server"),
+		logger:    logger,
 		config:    config,
 		transport: transport,
-		handler:   handler,
+		accept:    make(chan *ServerStream),
 		closed:    make(chan struct{}),
 		sessions:  make(map[string]*yamux.Session),
-		streams:   make(map[string]*yamux.Stream),
+		streams:   make(map[string]*ServerStream),
 	}
 
 	// Create listener
-	listener, err := s.listen(ctx)
-	if err != nil {
+	if err := s.listen(ctx); err != nil {
 		return nil, err
 	}
-
-	// Graceful shutdown
-	d.Process().OnShutdown(func(_ context.Context) {
-		s.logger.Info(ctx, "closing disk writer server")
-
-		// Prevent new connections and streams to be opened
-		close(s.closed)
-
-		// Waiting for streams
-		{
-			s.lock.Lock()
-			streamsCount := len(s.streams)
-			s.lock.Unlock()
-
-			s.logger.Infof(ctx, "waiting %s for %d streams", s.config.ShutdownTimeout, streamsCount)
-
-			done := make(chan struct{})
-			go func() {
-				defer close(done)
-				s.streamsWg.Wait()
-			}()
-
-			select {
-			case <-done:
-				s.logger.Info(ctx, `waiting for streams done`)
-			case <-time.After(s.config.ShutdownTimeout):
-				s.logger.Infof(ctx, `waiting for streams timeout after %s`, s.config.ShutdownTimeout)
-			}
-		}
-
-		// Close streams
-		{
-			s.lock.Lock()
-			streams := maps.Values(s.streams)
-			s.lock.Unlock()
-			s.logger.Infof(ctx, "closing %d streams", len(streams))
-			wg := &sync.WaitGroup{}
-			for _, stream := range streams {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					if err := stream.Close(); err != nil {
-						err = errors.PrefixError(err, "cannot close server stream")
-						s.logger.Error(ctx, err.Error())
-					}
-				}()
-			}
-			wg.Wait()
-		}
-
-		// Close sessions
-		{
-			s.lock.Lock()
-			sessions := maps.Values(s.sessions)
-			s.lock.Unlock()
-			s.logger.Infof(ctx, "closing %d sessions", len(sessions))
-			wg := &sync.WaitGroup{}
-			for _, sess := range sessions {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					if err := sess.Close(); err != nil {
-						err = errors.PrefixError(err, "cannot close server session")
-						s.logger.Error(ctx, err.Error())
-					}
-				}()
-			}
-			wg.Wait()
-		}
-
-		// Close listener
-		if err := listener.Close(); err != nil {
-			err = errors.PrefixError(err, "cannot close listener")
-			s.logger.Error(ctx, err.Error())
-		}
-
-		// Wait for remaining goroutines
-		s.logger.Info(ctx, "waiting for goroutines")
-		s.listenWg.Wait()
-
-		s.logger.Info(ctx, "closed disk writer server")
-	})
 
 	// Accept connections in background
 	s.listenWg.Add(1)
 	go func() {
 		defer s.listenWg.Done()
-		s.acceptConnectionsLoop(ctx, listener)
+		s.acceptConnectionsLoop(ctx)
 	}()
 
 	return s, nil
 }
 
-func (s *Server) ListenAddr() net.Addr {
-	return s.listenAddr
+func (s *Server) Accept() (net.Conn, error) {
+	for {
+		select {
+		case stream := <-s.accept:
+			return stream, nil
+		case <-s.closed:
+			return nil, io.ErrClosedPipe
+		}
+	}
 }
 
-func (s *Server) ListenPort() string {
-	_, port, _ := net.SplitHostPort(s.ListenAddr().String())
+func (s *Server) Addr() net.Addr {
+	return s.listener.Addr()
+}
+
+func (s *Server) Close() error {
+	s.closeLock.Lock()
+	defer s.closeLock.Unlock()
+
+	if s.isClosed() {
+		return nil
+	}
+
+	// Prevent new connections and streams to be opened.
+	// Unblock the Accept method, see net.Listener interface for details.
+	close(s.closed)
+
+	ctx := context.Background()
+
+	s.logger.Info(ctx, "closing disk writer server")
+
+	// Waiting for streams
+	{
+		s.lock.Lock()
+		streamsCount := len(s.streams)
+		s.lock.Unlock()
+
+		s.logger.Infof(ctx, "waiting %s for %d streams", s.config.ShutdownTimeout, streamsCount)
+
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			s.streamsWg.Wait()
+		}()
+
+		select {
+		case <-done:
+			s.logger.Info(ctx, `waiting for streams done`)
+		case <-time.After(s.config.ShutdownTimeout):
+			s.logger.Infof(ctx, `waiting for streams timeout after %s`, s.config.ShutdownTimeout)
+		}
+	}
+
+	// Close streams
+	{
+		s.lock.Lock()
+		streams := maps.Values(s.streams)
+		s.lock.Unlock()
+		s.logger.Infof(ctx, "closing %d streams", len(streams))
+		wg := &sync.WaitGroup{}
+		for _, stream := range streams {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := stream.Close(); err != nil {
+					err = errors.PrefixError(err, "cannot close server stream")
+					s.logger.Error(ctx, err.Error())
+				}
+			}()
+		}
+		wg.Wait()
+	}
+
+	// Close sessions
+	{
+		s.lock.Lock()
+		sessions := maps.Values(s.sessions)
+		s.lock.Unlock()
+		s.logger.Infof(ctx, "closing %d sessions", len(sessions))
+		wg := &sync.WaitGroup{}
+		for _, sess := range sessions {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := sess.Close(); err != nil {
+					err = errors.PrefixError(err, "cannot close server session")
+					s.logger.Error(ctx, err.Error())
+				}
+			}()
+		}
+		wg.Wait()
+	}
+
+	// Close listener
+	if err := s.listener.Close(); err != nil {
+		err = errors.PrefixError(err, "cannot close listener")
+		s.logger.Error(ctx, err.Error())
+	}
+
+	// Wait for remaining goroutines
+	s.logger.Info(ctx, "waiting for goroutines")
+	s.listenWg.Wait()
+
+	s.logger.Info(ctx, "closed disk writer server")
+	return nil
+}
+
+func (s *Server) Port() string {
+	_, port, _ := net.SplitHostPort(s.Addr().String())
 	return port
 }
 
-// listen creates a TCP like listener using the kcp-go library.
-//   - No encryption - access limited by the Kubernetes network policy
-//   - No FEC - Forward Error Correction - a reliable network is assumed
-func (s *Server) listen(ctx context.Context) (net.Listener, error) {
+func (s *Server) listen(ctx context.Context) error {
 	listener, err := s.transport.Listen()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	s.listenAddr = listener.Addr()
-	s.logger.Infof(ctx, `disk writer listening on %q`, s.listenAddr.String())
-	return listener, nil
+	s.listener = listener
+	s.logger.Infof(ctx, `disk writer listening on %q`, s.listener.Addr().String())
+	return nil
 }
 
-func (s *Server) acceptConnectionsLoop(ctx context.Context, listener net.Listener) {
+func (s *Server) acceptConnectionsLoop(ctx context.Context) {
 	b := newServerBackoff()
 	for {
 		if s.isClosed() {
 			return
 		}
 
-		if err := s.acceptConnection(ctx, listener); err != nil && !s.isClosed() {
+		if err := s.acceptConnection(ctx); err != nil && !s.isClosed() {
 			delay := b.NextBackOff()
 			err = errors.Errorf(`cannot accept connection: %w, waiting %s`, err, delay)
 			s.logger.Error(ctx, err.Error())
@@ -204,9 +218,9 @@ func (s *Server) acceptConnectionsLoop(ctx context.Context, listener net.Listene
 	}
 }
 
-func (s *Server) acceptConnection(ctx context.Context, listener net.Listener) error {
+func (s *Server) acceptConnection(ctx context.Context) error {
 	// Accept connection
-	conn, err := s.transport.Accept(listener)
+	conn, err := s.transport.Accept(s.listener)
 	if err != nil {
 		return err
 	}
@@ -227,11 +241,11 @@ func (s *Server) acceptConnection(ctx context.Context, listener net.Listener) er
 
 	// Span goroutine for each connection
 	s.listenWg.Add(1)
-	s.registerSession(sess)
+	s.registerSession(ctx, sess)
 	go func() {
 		defer s.listenWg.Done()
 		s.acceptStreamsLoop(ctx, sess)
-		s.unregisterSession(sess)
+		s.unregisterSession(ctx, sess)
 		s.logger.Infof(ctx, "closed connection from %q", conn.RemoteAddr().String())
 	}()
 
@@ -245,7 +259,7 @@ func (s *Server) acceptStreamsLoop(ctx context.Context, sess *yamux.Session) {
 			return
 		}
 
-		if err := s.acceptStream(ctx, sess); err != nil && !s.isClosed() && !sess.IsClosed() {
+		if err := s.acceptStream(sess); err != nil && !s.isClosed() && !sess.IsClosed() {
 			delay := b.NextBackOff()
 			err = errors.Errorf(`cannot accept stream: %w, waiting %s`, err, delay)
 			s.logger.Error(ctx, err.Error())
@@ -257,58 +271,58 @@ func (s *Server) acceptStreamsLoop(ctx context.Context, sess *yamux.Session) {
 	}
 }
 
-func (s *Server) acceptStream(ctx context.Context, sess *yamux.Session) error {
+func (s *Server) acceptStream(sess *yamux.Session) error {
 	// Accept stream
-	stream, err := sess.AcceptStream()
+	ys, err := sess.AcceptStream()
 	if err != nil {
 		return err
 	}
 
 	if s.isClosed() || sess.IsClosed() {
-		_ = stream.Close()
+		_ = ys.Close()
 		return nil
 	}
 
 	// Spawn a goroutine for each stream
-	s.listenWg.Add(1)
-	s.registerStream(stream)
-	go func() {
-		defer s.listenWg.Done()
-		s.handler(ctx, stream)
-		if err := stream.Close(); err != nil {
-			err = errors.PrefixError(err, "cannot close stream")
-			s.logger.Error(ctx, err.Error())
-		}
-		s.unregisterStream(stream)
-	}()
+	stream := newServerStream(ys, s)
+	select {
+	case <-s.closed:
+		_ = stream.Close()
+	case s.accept <- stream:
+		// ok
+	}
 
 	return nil
 }
 
-func (s *Server) registerSession(sess *yamux.Session) {
+func (s *Server) registerSession(ctx context.Context, sess *yamux.Session) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.sessions[sessionKey(sess)] = sess
+	s.logger.Debugf(ctx, "registered session to %q, total sessions count %d", sess.RemoteAddr(), len(s.sessions))
 }
 
-func (s *Server) unregisterSession(sess *yamux.Session) {
+func (s *Server) unregisterSession(ctx context.Context, sess *yamux.Session) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	delete(s.sessions, sessionKey(sess))
+	s.logger.Debugf(ctx, "unregistered session to %q, total sessions count %d", sess.RemoteAddr(), len(s.sessions))
 }
 
-func (s *Server) registerStream(stream *yamux.Stream) {
+func (s *Server) registerStream(ctx context.Context, stream *ServerStream) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.streamsWg.Add(1)
 	s.streams[streamKey(stream)] = stream
+	s.logger.Debugf(ctx, `registered stream "%d" to %q, total streams count %d`, stream.StreamID(), stream.RemoteAddr(), len(s.streams))
 }
 
-func (s *Server) unregisterStream(stream *yamux.Stream) {
+func (s *Server) unregisterStream(ctx context.Context, stream *ServerStream) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	delete(s.streams, streamKey(stream))
 	s.streamsWg.Done()
+	s.logger.Debugf(ctx, `unregistered stream "%d" to %q, total streams count %d`, stream.StreamID(), stream.RemoteAddr(), len(s.streams))
 }
 
 func (s *Server) isClosed() bool {

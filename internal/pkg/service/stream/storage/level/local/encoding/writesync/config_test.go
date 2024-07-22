@@ -27,15 +27,15 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			Name:          "invalid mode",
-			ExpectedError: `"mode" must be one of [disabled disk cache]`,
+			ExpectedError: `"mode" must be one of [disk cache]`,
 			Config: Config{
-				Mode: "invalid",
-			},
-		},
-		{
-			Name: "disabled: ok",
-			Config: Config{
-				Mode: ModeDisabled,
+				Mode:                     "invalid",
+				Wait:                     false,
+				CheckInterval:            duration.From(10 * time.Second),
+				CountTrigger:             100,
+				UncompressedBytesTrigger: 100,
+				CompressedBytesTrigger:   100,
+				IntervalTrigger:          duration.From(10 * time.Millisecond),
 			},
 		},
 		{
@@ -88,11 +88,11 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			Name:          "check interval: over max",
-			ExpectedError: `"checkInterval" must be 2s or less`,
+			ExpectedError: `"checkInterval" must be 30s or less`,
 			Config: Config{
 				Mode:                     ModeDisk,
 				Wait:                     true,
-				CheckInterval:            duration.From(10 * time.Second),
+				CheckInterval:            duration.From(100 * time.Second),
 				CountTrigger:             100,
 				UncompressedBytesTrigger: 100,
 				CompressedBytesTrigger:   100,
@@ -140,7 +140,7 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			Name:          "interval trigger: negative",
-			ExpectedError: `"intervalTrigger" must be 0 or greater`,
+			ExpectedError: `"intervalTrigger" must be 10ms or greater`,
 			Config: Config{
 				Mode:                     ModeDisk,
 				Wait:                     true,
@@ -153,15 +153,15 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			Name:          "interval trigger: over max",
-			ExpectedError: `"intervalTrigger" must be 2s or less`,
+			ExpectedError: `"intervalTrigger" must be 30s or less`,
 			Config: Config{
 				Mode:                     ModeDisk,
 				Wait:                     true,
-				CheckInterval:            duration.From(10 * time.Millisecond),
+				CheckInterval:            duration.From(100 * time.Millisecond),
 				CountTrigger:             123,
 				UncompressedBytesTrigger: 100,
 				CompressedBytesTrigger:   100,
-				IntervalTrigger:          duration.From(10 * time.Second),
+				IntervalTrigger:          duration.From(100 * time.Second),
 			},
 		},
 	}

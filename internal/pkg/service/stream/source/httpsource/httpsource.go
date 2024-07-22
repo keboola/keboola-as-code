@@ -96,6 +96,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		}
 
 		// Write verbose response
+		result.Finalize() // generate messages
 		c.Response.Header.SetCanonical(contentTypeHeader, applicationJSONContentType)
 		c.Response.SetStatusCode(result.StatusCode)
 		enc := json.NewEncoder(c)

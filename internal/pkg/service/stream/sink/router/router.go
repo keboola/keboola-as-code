@@ -5,21 +5,20 @@ package router
 import (
 	"context"
 	"net/http"
-	"slices"
-	"strings"
 	"sync"
 
 	etcd "go.etcd.io/etcd/client/v3"
+	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -30,22 +29,15 @@ type Router struct {
 	logger      log.Logger
 	plugins     *plugin.Plugins
 	definitions *definitionRepo.Repository
-	// sinks field contains in-memory snapshot of all active sinks. Only necessary data is saved.
-	sinks *etcdop.Mirror[definition.Sink, *sinkData]
+	collection  *collection
+
+	pipelinesLock sync.Mutex
+	pipelines     map[key.SinkKey]*pipelineRef
+
 	// closed channel block new writer during shutdown
 	closed chan struct{}
 	// wg waits for all writes/goroutines
 	wg sync.WaitGroup
-	// lock protects the pipelines map.
-	lock sync.Mutex
-	// pipelines - map of active pipelines per sink
-	pipelines map[key.SinkKey]*pipelineRef
-}
-
-type sinkData struct {
-	sinkKey  key.SinkKey
-	sinkType definition.SinkType
-	enabled  bool
 }
 
 type dependencies interface {
@@ -60,68 +52,82 @@ func New(d dependencies) (*Router, error) {
 		logger:      d.Logger().WithComponent("sink.router"),
 		plugins:     d.Plugins(),
 		definitions: d.DefinitionRepository(),
+		collection:  newCollection(),
 		closed:      make(chan struct{}),
 		pipelines:   make(map[key.SinkKey]*pipelineRef),
 	}
 
-	ctx, cancelMirror := context.WithCancel(context.Background())
+	ctx, cancelStream := context.WithCancel(context.Background())
 	d.Process().OnShutdown(func(ctx context.Context) {
 		r.logger.Infof(ctx, "shutting down sink router")
 
 		// Block new writes
 		close(r.closed)
 
-		// Stop mirroring
-		cancelMirror()
+		// Stop watch stream
+		cancelStream()
 
 		// Wait for in-flight writes
 		r.wg.Wait()
 
 		// Wait for closing all pipelines
 		r.closeAllPipelines(ctx, "shutdown")
-		r.wg.Wait()
 
 		r.logger.Infof(ctx, "sink router shutdown done")
 	})
 
 	// Start sinks mirroring, only necessary data is saved
 	{
-		r.sinks = etcdop.
-			SetupMirror(
-				r.logger,
-				r.definitions.Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()),
-				func(kv *op.KeyValue, sink definition.Sink) string {
-					return sink.SinkKey.String()
-				},
-				func(kv *op.KeyValue, sink definition.Sink) *sinkData {
-					return &sinkData{
-						sinkKey:  sink.SinkKey,
-						sinkType: sink.Type,
-						enabled:  sink.IsEnabled(),
-					}
-				},
-			).
-			WithOnChanges(func(changes etcdop.MirrorUpdateChanges[*sinkData]) {
-				// If a Sink entity is modified, it may be necessary to reopen the pipeline
-				for _, kv := range changes.Updated {
-					sink := kv.Value
-					if p := r.pipelineRefOrNil(sink.sinkKey); p != nil {
-						if !sink.enabled {
-							p.close(ctx, "sink disabled")
-						} else if p.pipeline.ReopenOnSinkModification() {
-							p.close(ctx, "sink updated")
+		errCh := r.definitions.Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()).
+			SetupConsumer(r.logger).
+			WithForEach(func(events []etcdop.WatchEventT[definition.Sink], header *etcdop.Header, restart bool) {
+				// On stream restart, for example some network outage, we have to reset our internal state
+				if restart {
+					r.collection.reset()
+				}
+
+				for _, event := range events {
+					sink := event.Value
+
+					switch event.Type {
+					case etcdop.CreateEvent, etcdop.UpdateEvent:
+						r.collection.addSink(sink)
+
+						// If a Sink entity is modified, it may be necessary to reopen the pipeline
+						if p := r.pipelineRefOrNil(sink.SinkKey); p != nil {
+							if sink.IsEnabled() && p.pipeline.ReopenOnSinkModification() {
+								p.close(ctx, "sink updated")
+							}
 						}
+					case etcdop.DeleteEvent:
+						r.collection.deleteSink(sink.SinkKey)
+					default:
+						panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
 					}
 				}
-				// Closed delete sinks
-				for _, kv := range changes.Deleted {
-					if p := r.pipelineRefOrNil(kv.Value.sinkKey); p != nil {
-						p.close(ctx, "sink deleted")
+
+				// Check that all opened pipeline match an active sink
+				var deleted, disabled []*pipelineRef
+				r.pipelinesLock.Lock()
+				for _, p := range r.pipelines {
+					if sink, _ := r.collection.sink(p.sinkKey); sink == nil {
+						deleted = append(deleted, p)
+					} else if !sink.enabled {
+						disabled = append(disabled, p)
 					}
 				}
+				r.pipelinesLock.Unlock()
+				for _, p := range deleted {
+					p.close(ctx, "sink deleted")
+				}
+				for _, p := range disabled {
+					p.close(ctx, "sink disabled")
+				}
+
+				r.logger.Debugf(ctx, "synced to revision %d", header.Revision)
 			}).
-			Build()
-		if err := <-r.sinks.StartMirroring(ctx, &r.wg); err != nil {
+			StartConsumer(ctx, &r.wg)
+		if err := <-errCh; err != nil {
 			return nil, err
 		}
 	}
@@ -129,8 +135,8 @@ func New(d dependencies) (*Router, error) {
 	return r, nil
 }
 
-func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context) SourcesResult {
-	result := SourcesResult{
+func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context) *SourcesResult {
+	result := &SourcesResult{
 		StatusCode: http.StatusOK,
 	}
 
@@ -163,29 +169,27 @@ func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context)
 	// Wait for all writes
 	wg.Wait()
 
-	// Finalize result
-	if result.FailedSinks > 0 {
-		result.ErrorName = ErrorNamePrefix + "writeFailed"
-	}
-	result.Message = aggregatedResultMessage(result.SuccessfulSinks, result.AllSinks)
-	slices.SortStableFunc(result.Sources, func(a, b SourceResult) int {
-		return int(a.BranchID - b.BranchID)
-	})
 	return result
 }
 
-func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) SourceResult {
-	result := SourceResult{
+func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) *SourceResult {
+	result := &SourceResult{
 		ProjectID:  sourceKey.ProjectID,
 		SourceID:   sourceKey.SourceID,
 		BranchID:   sourceKey.BranchID,
 		StatusCode: http.StatusOK,
 	}
 
+	// Get source
+	source, found := r.collection.source(sourceKey)
+	if !found {
+		return result
+	}
+
 	// Write to sinks in parallel
 	var lock sync.Mutex
 	var wg sync.WaitGroup
-	for _, sink := range r.sinks.AllFromPrefix(sourceKey.String()) {
+	for _, sink := range source.sinks {
 		if !sink.enabled {
 			continue
 		}
@@ -208,7 +212,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 			}
 
 			result.AllSinks++
-			if sinkResult.ErrorName == "" {
+			if sinkResult.error == nil {
 				result.SuccessfulSinks++
 			} else {
 				result.FailedSinks++
@@ -219,24 +223,16 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	// Wait for all writes
 	wg.Wait()
 
-	// Finalize result
-	if result.FailedSinks > 0 {
-		result.ErrorName = ErrorNamePrefix + "writeFailed"
-	}
-	result.Message = aggregatedResultMessage(result.SuccessfulSinks, result.AllSinks)
-	slices.SortStableFunc(result.Sinks, func(a, b SinkResult) int {
-		return strings.Compare(a.SinkID.String(), b.SinkID.String())
-	})
 	return result
 }
 
-func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) SinkResult {
+func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult {
 	status, err := r.pipelineRef(sink).writeRecord(c)
-	result := SinkResult{
+	result := &SinkResult{
 		SinkID:     sink.sinkKey.SinkID,
 		StatusCode: resultStatusCode(status, err),
-		ErrorName:  resultErrorName(err),
-		Message:    resultMessage(status, err),
+		status:     status,
+		error:      err,
 	}
 
 	if result.StatusCode == http.StatusInternalServerError {
@@ -249,27 +245,27 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) SinkResult 
 // pipelineRef gets or creates sink pipeline.
 func (r *Router) pipelineRef(sink *sinkData) *pipelineRef {
 	// Get or create pipeline reference, with its own lock
-	r.lock.Lock()
+	r.pipelinesLock.Lock()
+	defer r.pipelinesLock.Unlock()
 	p := r.pipelines[sink.sinkKey]
 	if p == nil {
 		p = &pipelineRef{router: r, sinkKey: sink.sinkKey, sinkType: sink.sinkType}
 		r.pipelines[sink.sinkKey] = p
 	}
-	r.lock.Unlock()
 	return p
 }
 
 // pipelineRefOrNil gets sink pipeline reference if exists.
 func (r *Router) pipelineRefOrNil(sinkKey key.SinkKey) *pipelineRef {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+	r.pipelinesLock.Lock()
+	defer r.pipelinesLock.Unlock()
 	return r.pipelines[sinkKey]
 }
 
 func (r *Router) closeAllPipelines(ctx context.Context, reason string) {
-	r.lock.Lock()
-	pipelines := r.pipelines
-	r.lock.Unlock()
+	r.pipelinesLock.Lock()
+	pipelines := maps.Values(r.pipelines)
+	r.pipelinesLock.Unlock()
 
 	for _, p := range pipelines {
 		p.close(ctx, reason) // non blocking

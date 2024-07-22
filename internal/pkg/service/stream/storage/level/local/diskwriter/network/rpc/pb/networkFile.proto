@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "pb/";
+
+import "google/protobuf/timestamp.proto";
+
+service NetworkFile {
+  rpc Open(OpenRequest) returns (OpenResponse) {}
+  rpc Write(WriteRequest) returns (WriteResponse) {}
+  rpc Sync(SyncRequest) returns (SyncResponse) {}
+  rpc Close(CloseRequest) returns (CloseResponse) {}
+}
+
+message OpenRequest {
+  SliceKey slice_key = 1;
+}
+
+message OpenResponse{
+  uint64 file_id = 1;
+}
+
+message WriteRequest {
+  uint64 file_id = 1;
+  // The "aligned" is true after the pipeline Flush or Close operation.
+  // It means that a complete block of data has been written so far.
+  bool aligned = 2;
+  bytes data = 3;
+}
+
+message WriteResponse{
+  int64 n = 2;
+}
+
+message SyncRequest {
+  uint64 file_id = 1;
+}
+
+message SyncResponse{}
+
+message CloseRequest {
+  uint64 file_id = 1;
+}
+
+message CloseResponse{}
+
+message SliceKey {
+  int64 project_id = 1;
+  int64 branch_id = 2;
+  string source_id = 3;
+  string sink_id = 4;
+  google.protobuf.Timestamp file_id = 5;
+  string volume_id = 6;
+  google.protobuf.Timestamp slice_id = 7;
+}

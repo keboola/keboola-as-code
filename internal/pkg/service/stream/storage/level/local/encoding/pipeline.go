@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
@@ -14,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/chunk"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
@@ -34,6 +36,9 @@ type Pipeline interface {
 
 	SliceKey() model.SliceKey
 
+	// IsReady is used for load balancing, to detect health pipelines.
+	IsReady() bool
+	// WriteRecord blocks until the record is written and synced to the local storage, if the wait is enabled.
 	WriteRecord(record recordctx.Context) error
 	// Events provides listening to the writer lifecycle.
 	Events() *events.Events[Pipeline]
@@ -56,6 +61,19 @@ type StatisticsProvider interface {
 	UncompressedSize() datasize.ByteSize
 }
 
+// NetworkOutput represent a file on a disk writer node, connected via network.
+type NetworkOutput interface {
+	// IsReady returns true if the underlying network is working.
+	IsReady() bool
+	// Write bytes to a file in disk writer node.
+	// The operation is used on Flush of the encoding pipeline.
+	Write(ctx context.Context, aligned bool, p []byte) (n int, err error)
+	// Sync OS disk cache to the physical disk.
+	Sync(ctx context.Context) error
+	// Close the underlying OS file and network connection.
+	Close(ctx context.Context) error
+}
+
 // pipeline implements Pipeline interface, it wraps common logic for all file types.
 // For conversion between record values and bytes, the encoder.Encoder is used.
 type pipeline struct {
@@ -66,11 +84,18 @@ type pipeline struct {
 	encoder encoder.Encoder
 	chain   *writechain.Chain
 	syncer  *writesync.Syncer
+	chunks  *chunk.Writer
+	network NetworkOutput
+
+	readyLock sync.RWMutex
+	ready     bool
 
 	// closed blocks new writes
 	closed chan struct{}
 	// writeWg waits for in-progress writes before Close
-	writeWg *sync.WaitGroup
+	writeWg sync.WaitGroup
+	// writeWg waits for in-progress writes before Close
+	chunksWg sync.WaitGroup
 
 	acceptedWrites    *count.Counter
 	completedWrites   *count.Counter
@@ -85,28 +110,29 @@ func newPipeline(
 	sliceKey model.SliceKey,
 	mappingCfg table.Mapping,
 	encodingCfg encoding.Config,
-	output writechain.File,
+	network NetworkOutput,
 	events *events.Events[Pipeline],
 ) (out Pipeline, err error) {
-	w := &pipeline{
-		logger:   logger.WithComponent("slice-writer"),
+	p := &pipeline{
+		logger:   logger.WithComponent("encoding.pipeline"),
 		sliceKey: sliceKey,
+		network:  network,
 		events:   events.Clone(), // clone passed events, so additional pipeline specific listeners can be added
+		ready:    true,
 		closed:   make(chan struct{}),
-		writeWg:  &sync.WaitGroup{},
 	}
 
 	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", sliceKey.String()))
-	w.logger.Debug(ctx, "opening encoding pipeline")
+	p.logger.Debug(ctx, "opening encoding pipeline")
 
 	// Close resources on error
 	defer func() {
 		if err != nil {
-			if w.syncer != nil {
-				_ = w.syncer.Stop(ctx)
+			if p.syncer != nil {
+				_ = p.syncer.Stop(ctx)
 			}
-			if w.chain != nil {
-				_ = w.chain.Close(ctx)
+			if p.chain != nil {
+				_ = p.chain.Close(ctx)
 			}
 		}
 	}()
@@ -114,34 +140,38 @@ func newPipeline(
 	// Create counters
 	{
 		// In progress writes counter
-		w.acceptedWrites = count.NewCounter()
+		p.acceptedWrites = count.NewCounter()
 
 		// Successful writes counter, the value backup is periodically saved to disk.
 		// In the case of non-graceful node shutdown, the initial state is loaded from the disk after the node is restarted.
 		// In that case, the statistics may not be accurate, but this should not happen, and we prefer throughput over the atomicity of statistics.
-		w.completedWrites = count.NewCounter()
+		p.completedWrites = count.NewCounter()
+	}
+
+	// Setup chunks sending to the network file
+	{
+		p.chunks = chunk.NewWriter(p.logger, int(encodingCfg.MaxChunkSize.Bytes()))
+
+		// Process each completed chunk.
+		// Block the close until all chunks are written to the network output.
+		p.chunksWg.Add(1)
+		go func() {
+			defer p.chunksWg.Done()
+			p.processChunks(ctx, clk, encodingCfg)
+		}()
 	}
 
 	// Create empty chain of writers to the file
-	// The chain is built from the end, from the output file, to the CSV writer at the start
+	// The chain is built from the end, from the chunks buffer, to the CSV writer at the start
 	{
-		w.chain = writechain.New(logger, output)
-	}
-
-	// Add a buffer before the file
-	{
-		if encodingCfg.OutputBuffer > 0 {
-			w.chain.PrependWriter(func(w io.Writer) io.Writer {
-				return limitbuffer.New(w, int(encodingCfg.OutputBuffer.Bytes()))
-			})
-		}
+		p.chain = writechain.New(logger, p.chunks)
 	}
 
 	// Measure size of compressed data
 	{
-		w.chain.PrependWriter(func(writer io.Writer) io.Writer {
-			w.compressedMeter = size.NewMeter(writer)
-			return w.compressedMeter
+		p.chain.PrependWriter(func(writer io.Writer) io.Writer {
+			p.compressedMeter = size.NewMeter(writer)
+			return p.compressedMeter
 		})
 	}
 
@@ -149,7 +179,7 @@ func newPipeline(
 	{
 		if encodingCfg.Compression.Type != compression.TypeNone {
 			// Add compression writer
-			_, err = w.chain.PrependWriterOrErr(func(writer io.Writer) (io.Writer, error) {
+			_, err = p.chain.PrependWriterOrErr(func(writer io.Writer) (io.Writer, error) {
 				return compressionWriter.New(writer, encodingCfg.Compression)
 			})
 			if err != nil {
@@ -158,19 +188,19 @@ func newPipeline(
 
 			// Add a buffer before compression writer, if it is not included in the writer itself
 			if encodingCfg.InputBuffer > 0 && !encodingCfg.Compression.HasWriterInputBuffer() {
-				w.chain.PrependWriter(func(w io.Writer) io.Writer {
+				p.chain.PrependWriter(func(w io.Writer) io.Writer {
 					return limitbuffer.New(w, int(encodingCfg.InputBuffer.Bytes()))
 				})
 			}
 
 			// Measure size of uncompressed CSV data
-			w.chain.PrependWriter(func(writer io.Writer) io.Writer {
-				w.uncompressedMeter = size.NewMeter(writer)
-				return w.uncompressedMeter
+			p.chain.PrependWriter(func(writer io.Writer) io.Writer {
+				p.uncompressedMeter = size.NewMeter(writer)
+				return p.uncompressedMeter
 			})
 		} else {
 			// Size of the compressed and uncompressed data is same
-			w.uncompressedMeter = w.compressedMeter
+			p.uncompressedMeter = p.compressedMeter
 		}
 	}
 
@@ -180,51 +210,70 @@ func newPipeline(
 		if encodingCfg.Sync.OverrideSyncerFactory != nil {
 			syncerFactory = encodingCfg.Sync.OverrideSyncerFactory
 		}
-		w.syncer = syncerFactory.NewSyncer(ctx, logger, clk, encodingCfg.Sync, w.chain, w)
+		p.syncer = syncerFactory.NewSyncer(ctx, logger, clk, encodingCfg.Sync, p, p)
 	}
 
-	// Create file format writer.
+	// Create encoder.
 	// It is entrypoint of the writers chain.
 	{
-		w.encoder, err = encodingCfg.Encoder.Factory.NewEncoder(encodingCfg.Encoder, mappingCfg, w.chain)
+		// Get factory
+		var encoderFactory encoder.Factory = encoder.DefaultFactory{}
+		if encodingCfg.Encoder.OverrideEncoderFactory != nil {
+			encoderFactory = encodingCfg.Encoder.OverrideEncoderFactory
+		}
+
+		// Create encoder
+		p.encoder, err = encoderFactory.NewEncoder(encodingCfg.Encoder, mappingCfg, p.chain)
 		if err != nil {
 			return nil, err
 		}
 
 		// Flush/Close the file format writer at first
-		w.chain.PrependFlusherCloser(w.encoder)
+		p.chain.PrependFlusherCloser(p.encoder)
 	}
 
 	// Dispatch "open" event
-	if err = w.events.DispatchOnOpen(w); err != nil {
+	if err = p.events.DispatchOnOpen(p); err != nil {
 		return nil, err
 	}
 
-	w.logger.Debug(ctx, "opened encoding pipeline")
-	return w, nil
+	p.logger.Debug(ctx, "opened encoding pipeline")
+	return p, nil
 }
 
-func (w *pipeline) WriteRecord(record recordctx.Context) error {
+func (p *pipeline) IsReady() bool {
+	// Network is not working
+	if !p.network.IsReady() {
+		return false
+	}
+
+	// ready == false means: too many failed Flush ops
+	p.readyLock.RLock()
+	defer p.readyLock.RUnlock()
+	return p.ready
+}
+
+func (p *pipeline) WriteRecord(record recordctx.Context) error {
 	timestamp := record.Timestamp()
 
 	// Block Close method
-	w.writeWg.Add(1)
-	defer w.writeWg.Done()
+	p.writeWg.Add(1)
+	defer p.writeWg.Done()
 
 	// Check if the writer is closed
-	if w.isClosed() {
+	if p.isClosed() {
 		return errors.New(`writer is closed`)
 	}
 
 	// Format and write table row
-	if err := w.encoder.WriteRecord(record); err != nil {
+	if err := p.encoder.WriteRecord(record); err != nil {
 		return err
 	}
 
-	notifier := w.syncer.Notifier()
+	notifier := p.syncer.Notifier()
 
 	// Increments number of high-level writes in progress
-	w.acceptedWrites.Add(timestamp, 1)
+	p.acceptedWrites.Add(timestamp, 1)
 
 	// Wait for sync and return sync error, if any
 	if err := notifier.Wait(); err != nil {
@@ -232,85 +281,162 @@ func (w *pipeline) WriteRecord(record recordctx.Context) error {
 	}
 
 	// Increase the count of successful writes
-	w.completedWrites.Add(timestamp, 1)
+	p.completedWrites.Add(timestamp, 1)
 	return nil
 }
 
-func (w *pipeline) SliceKey() model.SliceKey {
-	return w.sliceKey
+func (p *pipeline) SliceKey() model.SliceKey {
+	return p.sliceKey
 }
 
-func (w *pipeline) Events() *events.Events[Pipeline] {
-	return w.events
+func (p *pipeline) Events() *events.Events[Pipeline] {
+	return p.events
 }
 
 // AcceptedWrites returns count of write operations waiting for the sync.
-func (w *pipeline) AcceptedWrites() uint64 {
-	return w.acceptedWrites.Count()
+func (p *pipeline) AcceptedWrites() uint64 {
+	return p.acceptedWrites.Count()
 }
 
 // CompletedWrites returns count of successfully written and synced writes.
-func (w *pipeline) CompletedWrites() uint64 {
-	return w.completedWrites.Count()
+func (p *pipeline) CompletedWrites() uint64 {
+	return p.completedWrites.Count()
 }
 
 // FirstRecordAt returns timestamp of receiving the first row for processing.
-func (w *pipeline) FirstRecordAt() utctime.UTCTime {
-	return w.completedWrites.FirstAt()
+func (p *pipeline) FirstRecordAt() utctime.UTCTime {
+	return p.completedWrites.FirstAt()
 }
 
 // LastRecordAt returns timestamp of receiving the last row for processing.
-func (w *pipeline) LastRecordAt() utctime.UTCTime {
-	return w.completedWrites.LastAt()
+func (p *pipeline) LastRecordAt() utctime.UTCTime {
+	return p.completedWrites.LastAt()
 }
 
 // CompressedSize written to the file, measured after compression writer.
-func (w *pipeline) CompressedSize() datasize.ByteSize {
-	return w.compressedMeter.Size()
+func (p *pipeline) CompressedSize() datasize.ByteSize {
+	return p.compressedMeter.Size()
 }
 
 // UncompressedSize written to the file, measured before compression writer.
-func (w *pipeline) UncompressedSize() datasize.ByteSize {
-	return w.uncompressedMeter.Size()
+func (p *pipeline) UncompressedSize() datasize.ByteSize {
+	return p.uncompressedMeter.Size()
 }
 
-func (w *pipeline) Close(ctx context.Context) error {
-	w.logger.Debug(ctx, "closing encoding pipeline")
+// Flush all internal buffers to the NetworkOutput.
+// The method is called periodically by the writesync.Syncer.
+func (p *pipeline) Flush(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Flush internal buffers, the active chunk is completed.
+	if err := p.chain.Flush(ctx); err != nil {
+		return err
+	}
+
+	// We have chunks, what next?
+	select {
+	case <-p.chunks.WaitAllProcessedCh():
+		return nil
+	case <-ctx.Done():
+		return errors.PrefixErrorf(ctx.Err(), "cannot flush pipeline %d chunks", p.chunks.CompletedChunks())
+	}
+}
+
+// Sync at first Flush all internal buffers to the NetworkOutput.
+// And then calls NetworkOutput.Sync to sync OS cache to the physical disk, in the disk writer node.
+// The method is called periodically by the writesync.Syncer.
+func (p *pipeline) Sync(ctx context.Context) error {
+	if err := p.Flush(ctx); err != nil {
+		return err
+	}
+	return p.network.Sync(ctx)
+}
+
+func (p *pipeline) Close(ctx context.Context) error {
+	p.logger.Debug(ctx, "closing encoding pipeline")
 
 	// Close only once
-	if w.isClosed() {
-		return errors.New(`writer is already closed`)
+	if p.isClosed() {
+		return errors.New("encoding pipeline is already closed")
 	}
-	close(w.closed)
+	close(p.closed)
 
 	errs := errors.NewMultiError()
 
-	// Stop syncer, it triggers also the last sync.
-	// Returns "syncer is already stopped" error, if called multiple times.
-	if err := w.syncer.Stop(ctx); err != nil {
-		errs.Append(err)
-	}
-
 	// Wait for running writes
-	w.writeWg.Wait()
+	p.writeWg.Wait()
 
-	// Close writers  chain, it closes all writers, and then sync/close the file.
-	if err := w.chain.Close(ctx); err != nil {
+	// Stop syncer, it triggers also the last sync.
+	if err := p.syncer.Stop(ctx); err != nil {
 		errs.Append(err)
 	}
+
+	// Close writers  chain, it closes all writers and generates the last chunk.
+	if err := p.chain.Close(ctx); err != nil {
+		errs.Append(err)
+	}
+
+	// Wait until all chunks are written
+	p.chunksWg.Wait()
 
 	// Dispatch "close"" event
-	if err := w.events.DispatchOnClose(w, errs.ErrorOrNil()); err != nil {
+	if err := p.events.DispatchOnClose(p, errs.ErrorOrNil()); err != nil {
 		errs.Append(err)
 	}
 
-	w.logger.Debug(ctx, "closed encoding pipeline")
+	p.logger.Debug(ctx, "closed encoding pipeline")
 	return errs.ErrorOrNil()
 }
 
-func (w *pipeline) isClosed() bool {
+func (p *pipeline) processChunks(ctx context.Context, clk clock.Clock, encodingCfg encoding.Config) {
+	b := newChunkBackoff()
+	for {
+		// The channel is unblocked if there is an unprocessed chunk,
+		// or all chunks have been processed and the writer is closed.
+		<-p.chunks.WaitForChunkCh()
+
+		// All done
+		if p.chunks.CompletedChunks() == 0 {
+			return
+		}
+
+		// Write all chunks to the network output
+		err := p.chunks.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
+			l := datasize.ByteSize(chunk.Len())
+			if _, err := p.network.Write(ctx, chunk.Aligned(), chunk.Bytes()); err != nil {
+				p.logger.Debugf(ctx, "chunk write failed, size %q: %s", l.String(), err)
+				return err
+			}
+			p.logger.Debugf(ctx, "chunk written, size %q", l.String())
+			return nil
+		})
+		if err != nil {
+			// Mark the pipeline not ready
+			cnt := p.chunks.CompletedChunks()
+			if cnt >= encodingCfg.FailedChunksThreshold {
+				p.readyLock.Lock()
+				p.ready = false
+				p.readyLock.Unlock()
+			}
+
+			// Wait before retry
+			delay := b.NextBackOff()
+			p.logger.Warnf(ctx, "chunks write failed: %s, waiting %s, chunks count = %d", err, delay, cnt)
+			<-clk.After(delay)
+			continue
+		}
+
+		// All chunks have been written, mark the pipeline ready
+		p.readyLock.Lock()
+		p.ready = true
+		p.readyLock.Unlock()
+	}
+}
+
+func (p *pipeline) isClosed() bool {
 	select {
-	case <-w.closed:
+	case <-p.closed:
 		return true
 	default:
 		return false

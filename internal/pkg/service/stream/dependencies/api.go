@@ -21,11 +21,16 @@ func NewAPIScope(serviceScp ServiceScope, cfg config.Config) (v APIScope, err er
 	return newAPIScope(serviceScp, cfg), nil
 }
 
-func NewMockedAPIScope(t *testing.T, opts ...dependencies.MockedOption) (APIScope, Mocked) {
-	t.Helper()
+func NewMockedAPIScope(tb testing.TB, opts ...dependencies.MockedOption) (APIScope, Mocked) {
+	tb.Helper()
+	return NewMockedAPIScopeWithConfig(tb, nil, opts...)
+}
+
+func NewMockedAPIScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (APIScope, Mocked) {
+	tb.Helper()
 
 	opts = append(opts, dependencies.WithEnabledTasks())
-	serviceScp, mock := NewMockedServiceScope(t, opts...)
+	serviceScp, mock := NewMockedServiceScopeWithConfig(tb, modifyConfig, opts...)
 
 	apiScp := newAPIScope(serviceScp, mock.TestConfig())
 

@@ -1,7 +1,6 @@
-FROM golang:1.22.3
+FROM golang:1.22.5
 
 ENV HOME=/my-home
-ENV GOMEMLIMIT=512MiB
 ENV GOCACHE=/tmp/cache/go
 ENV GOMODCACHE=/tmp/cache/go-mod
 ENV GOBIN=$GOPATH/bin
@@ -9,15 +8,15 @@ ENV GOFLAGS="-mod=mod"
 ENV GOLANGCI_LINT_CACHE=/tmp/cache/golangci-lint
 ENV PATH="$PATH:$GOBIN"
 
-# Install editor
-RUN apt-get update && apt-get install -y nano
+# Install packages
+RUN apt-get update && apt-get install -y nano protobuf-compiler
 ENV EDITOR=nano
 
 # Install tools
 RUN mkdir -p /tmp/build
 COPY Makefile /tmp/build/Makefile
 COPY scripts  /tmp/build/scripts
-RUN cd /tmp/build && make tools && rm -rf /tmp/build
+RUN cd /tmp/build && make tools && cd / && rm -rf /tmp/build && go clean -cache -modcache
 RUN apt update && apt install -y graphviz
 
 # Install envsubstr and helm
@@ -30,8 +29,7 @@ RUN mkdir -p ~ && \
     echo 'PS1="\w > "' > ~/.bashrc
 
 # Fix permissions
-RUN mkdir -p $GOPATH && chmod -R 1777 $GOPATH && \
-    mkdir -p $GOCACHE && chmod -R 1777 $GOCACHE && \
+RUN mkdir -p $GOCACHE && chmod -R 1777 $GOCACHE && \
     mkdir -p $GOMODCACHE && chmod -R 1777 $GOMODCACHE && \
     mkdir -p $GOLANGCI_LINT_CACHE && chmod -R 1777 $GOLANGCI_LINT_CACHE && \
     mkdir -p $HOME && chmod -R 1777 $HOME

@@ -35,28 +35,20 @@ import (
 //   - Close method calls the Close method on all closers in the Chain and then the File.Close().
 type Chain struct {
 	logger log.Logger
-	// file at the end of the chain
-	file File
 	// beginning contains the first writer in the chain
 	beginning io.Writer
 	// writers - list of writers in the chain, before the file.
-	writers []io.Writer
+	writers []*safeWriter
 	// flushers - list of resources which must be flushed before the File.Sync.
 	flushers []flusher
 	// closers - list of resources which must be closed before the File.Close.
 	closers []io.Closer
 }
 
-// File defines used method from the *os.File.
-// It makes it possible to mock the file in the tests.
-type File interface {
-	io.Writer
-	Sync() error
-	Close(ctx context.Context) error
-}
-
-func New(logger log.Logger, file File) *Chain {
-	return &Chain{logger: logger, file: file, beginning: file}
+func New(logger log.Logger, end io.Writer) *Chain {
+	c := &Chain{logger: logger}
+	c.PrependWriter(func(_ io.Writer) io.Writer { return end })
+	return c
 }
 
 // Write to the Chain beginning.
@@ -64,7 +56,7 @@ func (c *Chain) Write(p []byte) (n int, err error) {
 	return c.beginning.Write(p)
 }
 
-// Flush data from writers internal buffers, see also Sync method.
+// Flush data from writers internal buffers.
 func (c *Chain) Flush(ctx context.Context) error {
 	c.logger.Debug(ctx, "flushing writers")
 	errs := errors.NewMultiError()
@@ -86,29 +78,6 @@ func (c *Chain) Flush(ctx context.Context) error {
 	return nil
 }
 
-// Sync method flushes data from writers internal buffers and
-// then sync the in-memory copy of written data from the OS disk cache to the disk.
-func (c *Chain) Sync(ctx context.Context) error {
-	c.logger.Debug(ctx, "syncing file")
-	errs := errors.NewMultiError()
-
-	// Flush all writers in the Chain before the underlying file
-	if err := c.Flush(ctx); err != nil {
-		errs.Append(err)
-	}
-
-	// Force sync of the in-memory data to the disk or OS disk cache
-	if err := c.syncFile(ctx); err != nil {
-		errs.Append(err)
-	}
-
-	if err := errs.ErrorOrNil(); err != nil {
-		return errors.PrefixError(err, "chain sync error")
-	}
-
-	return nil
-}
-
 // Close method flushes and closes all writers in the Chain and finally the underlying file.
 func (c *Chain) Close(ctx context.Context) error {
 	c.logger.Debug(ctx, "closing chain")
@@ -121,18 +90,6 @@ func (c *Chain) Close(ctx context.Context) error {
 			c.logger.Error(ctx, err.Error())
 			errs.Append(err)
 		}
-	}
-
-	// Force sync of the in-memory data to the disk or OS disk cache
-	if err := c.syncFile(ctx); err != nil {
-		errs.Append(err)
-	}
-
-	// Close the underlying file
-	if err := c.file.Close(ctx); err != nil {
-		err = errors.Errorf(`cannot close file: %w`, err)
-		c.logger.Error(ctx, err.Error())
-		errs.Append(err)
 	}
 
 	c.logger.Debug(ctx, "chain closed")
@@ -169,10 +126,10 @@ func (c *Chain) PrependWriterOrErr(factory func(w io.Writer) (io.Writer, error))
 	same := newWriter == nil || newWriter == oldWriter
 
 	if !same {
-		c.writers = append([]io.Writer{newWriter}, c.writers...)
-
 		// Protect asynchronous Flush with a lock, add WriteString method if needed
 		safe := newSafeWriter(newWriter)
+
+		c.writers = append([]*safeWriter{safe}, c.writers...)
 
 		// Register flusher for periodical sync
 		if _, ok := newWriter.(flusher); ok {
@@ -234,19 +191,6 @@ func (c *Chain) AppendCloseFn(info any, fn func() error) {
 // Info is a value used for identification of the function in the Chain.Dump, for example a related structure.
 func (c *Chain) PrependCloseFn(info any, fn func() error) {
 	c.addCloser(true, newCloseFn(info, fn))
-}
-
-func (c *Chain) syncFile(ctx context.Context) error {
-	c.logger.Debug(ctx, "syncing file")
-
-	if err := c.file.Sync(); err != nil {
-		err = errors.Errorf(`cannot sync file: %w`, err)
-		c.logger.Debug(ctx, err.Error())
-		return err
-	}
-
-	c.logger.Debug(ctx, "file synced")
-	return nil
 }
 
 func (c *Chain) addFlusherCloser(prepend bool, v any) {

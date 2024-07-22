@@ -40,7 +40,7 @@ run-stream-service:
 	air -c ./provisioning/stream/dev/.air.toml
 
 run-stream-service-once: build-stream-service
-	./target/stream/service
+	./target/stream/service api http-source storage-writer
 
 build-apps-proxy:
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/apps-proxy/proxy)" ./cmd/apps-proxy

@@ -161,6 +161,18 @@ func (w *testWriter) WriteRecord(recordctx.Context) error {
 	panic(errors.New("method should not be called"))
 }
 
+func (w *testWriter) IsReady() bool {
+	panic(errors.New("method should not be called"))
+}
+
+func (w *testWriter) Sync(context.Context) error {
+	panic(errors.New("method should not be called"))
+}
+
+func (w *testWriter) Flush(context.Context) error {
+	panic(errors.New("method should not be called"))
+}
+
 func (w *testWriter) Close(context.Context) error {
 	panic(errors.New("method should not be called"))
 }

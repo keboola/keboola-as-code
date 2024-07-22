@@ -92,6 +92,7 @@ func TestChain_SetupMethods(t *testing.T) {
 Writers:
   W2 writer
   W1 writer
+  *writechain.testFile
 
 Flushers:
   FC1 flusher closer
@@ -113,6 +114,7 @@ Closers:
   F2 flusher
   F1 flusher
   W2 writer
+  *writechain.testFile
   F3 flusher
   F4 flusher
   fn2
@@ -150,17 +152,11 @@ func TestChain_Complex_Ok(t *testing.T) {
 	assert.NoError(t, tc.Chain.Flush(ctx))
 	tc.AssertFileContent("foobar")
 
-	// Sync
+	// Close
 	tc.WriteData([]string{"123", "456"})
 	tc.AssertFileContent("foobar")
-	assert.NoError(t, tc.Chain.Sync(ctx))
-	tc.AssertFileContent("foobar123456")
-
-	// Close
-	tc.WriteData([]string{"abc", "def"})
-	tc.AssertFileContent("foobar123456")
 	assert.NoError(t, tc.Chain.Close(ctx))
-	tc.AssertFileContent("foobar123456abcdef")
+	tc.AssertFileContent("foobar123456")
 
 	// Check logs
 	tc.AssertLogs(`
@@ -184,40 +180,16 @@ func TestChain_Complex_Ok(t *testing.T) {
 {"level":"info","message":"TEST: write \"foobar\" to writer \"last\""}
 {"level":"info","message":"TEST: write \"foobar\" to file"}
 {"level":"debug","message":"writers flushed"}
-{"level":"info","message":"TEST: write \"123\" to writer \"simple\""}
-{"level":"info","message":"TEST: write \"123\" to writer \"flusher-closer\""}
-{"level":"info","message":"TEST: write \"123\" to writer \"flusher\""}
-{"level":"info","message":"TEST: write \"123\" to writer \"closer\""}
-{"level":"info","message":"TEST: write \"123\" to writer \"buffer1\""}
-{"level":"info","message":"TEST: write \"456\" to writer \"simple\""}
-{"level":"info","message":"TEST: write \"456\" to writer \"flusher-closer\""}
-{"level":"info","message":"TEST: write \"456\" to writer \"flusher\""}
-{"level":"info","message":"TEST: write \"456\" to writer \"closer\""}
-{"level":"info","message":"TEST: write \"456\" to writer \"buffer1\""}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"flushing writers"}
-{"level":"info","message":"TEST: flush writer \"flusher-closer\""}
-{"level":"info","message":"TEST: flush writer \"flusher\""}
-{"level":"info","message":"TEST: flush \"func\""}
-{"level":"info","message":"TEST: flush writer \"buffer1\""}
-{"level":"info","message":"TEST: write \"123456\" to writer \"buffer2\""}
-{"level":"info","message":"TEST: flush writer \"buffer2\""}
-{"level":"info","message":"TEST: write \"123456\" to writer \"last\""}
-{"level":"info","message":"TEST: write \"123456\" to file"}
-{"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"syncing file"}
-{"level":"info","message":"TEST: sync file"}
-{"level":"debug","message":"file synced"}
-{"level":"info","message":"TEST: write \"abc\" to writer \"simple\""}
-{"level":"info","message":"TEST: write \"abc\" to writer \"flusher-closer\""}
-{"level":"info","message":"TEST: write \"abc\" to writer \"flusher\""}
-{"level":"info","message":"TEST: write \"abc\" to writer \"closer\""}
-{"level":"info","message":"TEST: write \"abc\" to writer \"buffer1\""}
-{"level":"info","message":"TEST: write \"def\" to writer \"simple\""}
-{"level":"info","message":"TEST: write \"def\" to writer \"flusher-closer\""}
-{"level":"info","message":"TEST: write \"def\" to writer \"flusher\""}
-{"level":"info","message":"TEST: write \"def\" to writer \"closer\""}
-{"level":"info","message":"TEST: write \"def\" to writer \"buffer1\""}
+{"level":"info","message":"TEST: write \"123\" to writer \"simple\""}                       
+{"level":"info","message":"TEST: write \"123\" to writer \"flusher-closer\""}               
+{"level":"info","message":"TEST: write \"123\" to writer \"flusher\""}                      
+{"level":"info","message":"TEST: write \"123\" to writer \"closer\""}                       
+{"level":"info","message":"TEST: write \"123\" to writer \"buffer1\""}                      
+{"level":"info","message":"TEST: write \"456\" to writer \"simple\""}                
+{"level":"info","message":"TEST: write \"456\" to writer \"flusher-closer\""}               
+{"level":"info","message":"TEST: write \"456\" to writer \"flusher\""}                      
+{"level":"info","message":"TEST: write \"456\" to writer \"closer\""}                       
+{"level":"info","message":"TEST: write \"456\" to writer \"buffer1\""}      
 {"level":"debug","message":"closing chain"}
 {"level":"info","message":"TEST: close writer \"flusher-closer\""}
 {"level":"info","message":"TEST: flush writer \"flusher\""}
@@ -225,13 +197,10 @@ func TestChain_Complex_Ok(t *testing.T) {
 {"level":"info","message":"TEST: flush \"func\""}
 {"level":"info","message":"TEST: close \"func\""}
 {"level":"info","message":"TEST: flush writer \"buffer1\""}
-{"level":"info","message":"TEST: write \"abcdef\" to writer \"buffer2\""}
+{"level":"info","message":"TEST: write \"123456\" to writer \"buffer2\""}
 {"level":"info","message":"TEST: flush writer \"buffer2\""}
-{"level":"info","message":"TEST: write \"abcdef\" to writer \"last\""}
-{"level":"info","message":"TEST: write \"abcdef\" to file"}
-{"level":"debug","message":"syncing file"}
-{"level":"info","message":"TEST: sync file"}
-{"level":"debug","message":"file synced"}
+{"level":"info","message":"TEST: write \"123456\" to writer \"last\""}
+{"level":"info","message":"TEST: write \"123456\" to file"}
 {"level":"info","message":"TEST: close file"}
 {"level":"debug","message":"chain closed"}
 `)
@@ -258,16 +227,6 @@ chain flush error:
 `), err.Error())
 	}
 
-	// Sync
-	err = tc.Chain.Sync(ctx)
-	if assert.Error(t, err) {
-		assert.Equal(t, strings.TrimSpace(`
-chain sync error:
-- chain flush error:
-  - cannot flush "flusher-closer writer": flush error
-`), err.Error())
-	}
-
 	// Close
 	assert.NoError(t, tc.Chain.Close(ctx))
 
@@ -279,21 +238,9 @@ chain sync error:
 {"level":"info","message":"TEST: flush writer \"buffer\""}
 {"level":"info","message":"TEST: write \"foobar\" to file"}
 {"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"flushing writers"}
-{"level":"info","message":"TEST: flush writer \"flusher-closer\""}
-{"level":"error","message":"cannot flush \"flusher-closer writer\": flush error"}
-{"level":"info","message":"TEST: flush writer \"buffer\""}
-{"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"syncing file"}
-{"level":"info","message":"TEST: sync file"}
-{"level":"debug","message":"file synced"}
 {"level":"debug","message":"closing chain"}
 {"level":"info","message":"TEST: close writer \"flusher-closer\""}
 {"level":"info","message":"TEST: flush writer \"buffer\""}
-{"level":"debug","message":"syncing file"}
-{"level":"info","message":"TEST: sync file"}
-{"level":"debug","message":"file synced"}
 {"level":"info","message":"TEST: close file"}
 {"level":"debug","message":"chain closed"}
 `)
@@ -327,59 +274,9 @@ chain close error:
 {"level":"error","message":"cannot close \"flusher-closer writer\": some close error"}
 {"level":"info","message":"TEST: flush writer \"buffer\""}
 {"level":"info","message":"TEST: write \"foobar\" to file"}
-{"level":"debug","message":"syncing file"}
-{"level":"info","message":"TEST: sync file"}
-{"level":"debug","message":"file synced"}
 {"level":"info","message":"TEST: close file"}
 {"level":"debug","message":"chain closed"}
 
-`)
-}
-
-// TestChain_FileSyncError test an errror reported by the File.Sync().
-func TestChain_FileSyncError(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	tc := newChainTestCase(t)
-
-	tc.File.SyncError = errors.New("file sync error")
-
-	tc.SetupSimpleChain()
-
-	tc.WriteData([]string{"foo", "bar"})
-
-	// Sync
-	err := tc.Chain.Sync(ctx)
-	if assert.Error(t, err) {
-		assert.Equal(t, strings.TrimSpace(`chain sync error: cannot sync file: file sync error`), err.Error())
-	}
-
-	// Close
-	err = tc.Chain.Close(ctx)
-	if assert.Error(t, err) {
-		assert.Equal(t, strings.TrimSpace(`chain close error: cannot sync file: file sync error`), err.Error())
-	}
-
-	// Check logs
-	tc.AssertLogs(`
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"flushing writers"}
-{"level":"info","message":"TEST: flush writer \"flusher-closer\""}
-{"level":"info","message":"TEST: flush writer \"buffer\""}
-{"level":"info","message":"TEST: write \"foobar\" to file"}
-{"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"syncing file"}
-{"level":"info","message":"TEST: sync file"}
-{"level":"debug","message":"cannot sync file: file sync error"}
-{"level":"debug","message":"closing chain"}
-{"level":"info","message":"TEST: close writer \"flusher-closer\""}
-{"level":"info","message":"TEST: flush writer \"buffer\""}
-{"level":"debug","message":"syncing file"}
-{"level":"info","message":"TEST: sync file"}
-{"level":"debug","message":"cannot sync file: file sync error"}
-{"level":"info","message":"TEST: close file"}
-{"level":"debug","message":"chain closed"}
 `)
 }
 
@@ -399,7 +296,7 @@ func TestChain_FileCloseError(t *testing.T) {
 	// Close
 	err := tc.Chain.Close(ctx)
 	if assert.Error(t, err) {
-		assert.Equal(t, strings.TrimSpace(`chain close error: cannot close file: file close error`), err.Error())
+		assert.Equal(t, "chain close error:\n- cannot close \"*writechain.testFile\": file close error", err.Error())
 	}
 
 	// Check logs
@@ -408,11 +305,8 @@ func TestChain_FileCloseError(t *testing.T) {
 {"level":"info","message":"TEST: close writer \"flusher-closer\""}
 {"level":"info","message":"TEST: flush writer \"buffer\""}
 {"level":"info","message":"TEST: write \"foobar\" to file"}
-{"level":"debug","message":"syncing file"}
-{"level":"info","message":"TEST: sync file"}
-{"level":"debug","message":"file synced"}
 {"level":"info","message":"TEST: close file"}
-{"level":"error","message":"cannot close file: file close error"}
+{"level":"error","message":"cannot close \"*writechain.testFile\": file close error"}
 {"level":"debug","message":"chain closed"}
 `)
 }
@@ -420,7 +314,6 @@ func TestChain_FileCloseError(t *testing.T) {
 type testFile struct {
 	OsFile     *os.File
 	Logger     log.Logger
-	SyncError  error
 	CloseError error
 }
 
@@ -487,16 +380,8 @@ func (w *testFile) WriteString(s string) (int, error) {
 	return w.OsFile.WriteString(s)
 }
 
-func (w *testFile) Sync() error {
-	w.Logger.Info(context.Background(), "TEST: sync file")
-	if w.SyncError != nil {
-		return w.SyncError
-	}
-	return w.OsFile.Sync()
-}
-
-func (w *testFile) Close(ctx context.Context) error {
-	w.Logger.Info(ctx, "TEST: close file")
+func (w *testFile) Close() error {
+	w.Logger.Info(context.Background(), "TEST: close file")
 	if w.CloseError != nil {
 		return w.CloseError
 	}
@@ -684,6 +569,7 @@ Writers:
   simple writer
   flusher-closer writer
   buffer
+  *writechain.testFile
 
 Flushers:
   flusher-closer writer
@@ -692,6 +578,7 @@ Flushers:
 Closers:
   flusher-closer writer
   buffer
+  *writechain.testFile
 `, "\n"+tc.Chain.Dump())
 
 	return out
@@ -751,6 +638,7 @@ Writers:
   buffer1
   buffer2
   last writer
+  *writechain.testFile
 
 Flushers:
   flusher-closer writer
@@ -767,6 +655,7 @@ Closers:
   fn1
   buffer1
   buffer2
+  *writechain.testFile
 `, "\n"+tc.Chain.Dump())
 
 	return out

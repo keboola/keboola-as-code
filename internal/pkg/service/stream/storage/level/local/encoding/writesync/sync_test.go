@@ -28,72 +28,12 @@ const (
 	testWaitTimeout = 2 * time.Second
 )
 
-func TestNewSyncWriter_ModeDisabled(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	tc := newWriterTestCase(t)
-	tc.Config.Mode = ModeDisabled
-
-	syncerWriter := tc.NewSyncerWriter()
-	assert.Nil(t, syncerWriter.TriggerSync(ctx, false))
-	assert.Nil(t, syncerWriter.TriggerSync(ctx, true))
-	assert.NoError(t, syncerWriter.Stop(ctx))
-
-	// Check logs
-	tc.AssertLogs(`
-{"level":"info","message":"sync is disabled"}
-{"level":"debug","message":"stopping syncer"}
-{"level":"debug","message":"syncer stopped"}
-`)
-}
-
 func TestNewSyncWriter_ModeInvalid(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = "invalid"
 	assert.Panics(t, func() {
 		tc.Config.IntervalTrigger = 0
-		tc.NewSyncerWriter()
-	})
-}
-
-// TestNewSyncWriter_NoCheckInterval tests that Config.CheckInterval field must be > 0.
-func TestNewSyncWriter_NoCheckInterval(t *testing.T) {
-	t.Parallel()
-	tc := newWriterTestCase(t)
-	assert.Panics(t, func() {
-		tc.Config.CheckInterval = 0
-		tc.NewSyncerWriter()
-	})
-}
-
-// TestNewSyncWriter_NoIntervalTrigger tests that Config.IntervalTrigger field must be > 0.
-func TestNewSyncWriter_NoIntervalTrigger(t *testing.T) {
-	t.Parallel()
-	tc := newWriterTestCase(t)
-	assert.Panics(t, func() {
-		tc.Config.IntervalTrigger = 0
-		tc.NewSyncerWriter()
-	})
-}
-
-// TestNewSyncWriter_NoUncompressedBytesTrigger tests that Config.BytesTrigger field must be > 0.
-func TestNewSyncWriter_NoUncompressedBytesTrigger(t *testing.T) {
-	t.Parallel()
-	tc := newWriterTestCase(t)
-	assert.Panics(t, func() {
-		tc.Config.UncompressedBytesTrigger = 0
-		tc.NewSyncerWriter()
-	})
-}
-
-// TestNewSyncWriter_NoCompressedBytesTriggertests that Config.BytesTrigger field must be > 0.
-func TestNewSyncWriter_NoCompressedBytesTrigger(t *testing.T) {
-	t.Parallel()
-	tc := newWriterTestCase(t)
-	assert.Panics(t, func() {
-		tc.Config.CompressedBytesTrigger = 0
 		tc.NewSyncerWriter()
 	})
 }
@@ -142,7 +82,7 @@ func TestSyncWriter_Write_Wait(t *testing.T) {
 	}()
 
 	// Wait for sync
-	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
 	wg.Wait()
 
 	// Check output
@@ -193,7 +133,7 @@ func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 	assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 
 	// Wait for sync
-	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
@@ -230,7 +170,7 @@ func TestSyncWriter_SkipEmptySync(t *testing.T) {
 	syncerWriter := tc.NewSyncerWriter()
 
 	// Wait for sync
-	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
 
 	// Check output
 	assert.Equal(t, "", tc.Chain.Buffer.String())
@@ -283,7 +223,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	}
 
 	// Wait for sync 1
-	syncerWriter.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(false)
 	wg.Wait()
 
 	// Write data
@@ -302,7 +242,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	}
 
 	// Wait for sync 2
-	syncerWriter.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(false)
 	wg.Wait()
 
 	// Check output
@@ -375,7 +315,7 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 	}
 
 	// Wait for sync
-	syncerWriter.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(false)
 	wg.Wait()
 
 	// Check output
@@ -432,7 +372,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 	}
 
 	// Sync
-	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
@@ -483,7 +423,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 	}
 
 	// Sync
-	err := syncerWriter.TriggerSync(ctx, false).Wait()
+	err := syncerWriter.TriggerSync(false).Wait()
 	if assert.Error(t, err) {
 		assert.Equal(t, "some sync error", err.Error())
 	}
@@ -545,7 +485,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	}
 
 	// Wait for sync 1
-	syncerWriter.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(false)
 	wg.Wait()
 
 	// Write data
@@ -564,7 +504,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	}
 
 	// Wait for sync 2
-	syncerWriter.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(false)
 	wg.Wait()
 
 	// Check output
@@ -637,7 +577,7 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 	}
 
 	// Wait for sync
-	syncerWriter.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(false)
 	wg.Wait()
 
 	// Check output
@@ -694,7 +634,7 @@ func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 	}
 
 	// Sync
-	assert.NoError(t, syncerWriter.TriggerSync(ctx, false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
@@ -745,7 +685,7 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 	}
 
 	// Sync
-	err := syncerWriter.TriggerSync(ctx, false).Wait()
+	err := syncerWriter.TriggerSync(false).Wait()
 	if assert.Error(t, err) {
 		assert.Equal(t, "some flush error", err.Error())
 	}
@@ -809,7 +749,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 	tc.Chain.SyncLock.Lock()
 
 	// Trigger sync
-	syncerWriter.TriggerSync(ctx, false)
+	syncerWriter.TriggerSync(false)
 
 	// Wait for sync start
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -889,7 +829,7 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 	go func() {
 		tc.Chain.SyncLock.Lock() // block sync completion
 		for i := 0; i < 20; i++ {
-			syncerWriter.TriggerSync(ctx, false)
+			syncerWriter.TriggerSync(false)
 		}
 		tc.Chain.SyncLock.Unlock()
 	}()

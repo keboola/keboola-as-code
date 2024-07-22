@@ -9,8 +9,8 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Client struct {
@@ -25,52 +25,20 @@ type Client struct {
 	connections map[string]*ClientConnection
 }
 
-type clientDependencies interface {
-	Logger() log.Logger
-	Process() *servicectx.Process
-}
-
-func NewClient(d clientDependencies, config network.Config, nodeID string) (*Client, error) {
+func NewClient(logger log.Logger, config network.Config, nodeID string) (*Client, error) {
 	transport, err := newTransport(config)
 	if err != nil {
 		return nil, err
 	}
 
-	c := &Client{
-		logger:      d.Logger().WithComponent("storage.node.writer.network.client"),
+	return &Client{
+		logger:      logger,
 		config:      config,
 		nodeID:      nodeID,
 		transport:   transport,
 		closed:      make(chan struct{}),
 		connections: make(map[string]*ClientConnection),
-	}
-
-	// Graceful shutdown
-	d.Process().OnShutdown(func(ctx context.Context) {
-		c.logger.Info(ctx, "closing disk writer client")
-
-		// Prevent new connections and streams to be opened
-		close(c.closed)
-
-		c.lock.Lock()
-		connections := maps.Values(c.connections)
-		c.lock.Unlock()
-
-		// Close all connections
-		c.logger.Infof(ctx, "closing %d connections", len(connections))
-		wg := &sync.WaitGroup{}
-		for _, conn := range connections {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				conn.Close(ctx)
-			}()
-		}
-		wg.Wait()
-		c.logger.Info(ctx, "closed disk writer client")
-	})
-
-	return c, nil
+	}, nil
 }
 
 // OpenConnection starts a connection dial loop to the target address.
@@ -78,14 +46,14 @@ func NewClient(d clientDependencies, config network.Config, nodeID string) (*Cli
 // The error is returned only when the client is closed.
 // If the connection is dropped late, it tries to reconnect, until the client or connection Close method is called.
 func (c *Client) OpenConnection(ctx context.Context, remoteNodeID, remoteAddr string) (*ClientConnection, error) {
-	return openClientConnection(ctx, remoteNodeID, remoteAddr, c, nil)
+	return newClientConnection(ctx, remoteNodeID, remoteAddr, c, nil)
 }
 
 // OpenConnectionOrErr will try to connect to the address and return an error if it fails.
 // If the connection is closed after the initialization, it tries to reconnect, until the client or connection Close method is called.
 func (c *Client) OpenConnectionOrErr(ctx context.Context, remoteNodeID, remoteAddr string) (*ClientConnection, error) {
 	initDone := make(chan error, 1)
-	conn, err := openClientConnection(ctx, remoteNodeID, remoteAddr, c, initDone)
+	conn, err := newClientConnection(ctx, remoteNodeID, remoteAddr, c, initDone)
 	if err != nil {
 		return nil, err
 	}
@@ -120,16 +88,53 @@ func (c *Client) ConnectionsCount() int {
 	return len(c.connections)
 }
 
-func (c *Client) registerConnection(conn *ClientConnection) {
+func (c *Client) Close() error {
+	if c.isClosed() {
+		return errors.New("client is already closed")
+	}
+
+	ctx := context.Background()
+
+	c.logger.Info(ctx, "closing disk writer client")
+
+	// Prevent new connections and streams to be opened
+	close(c.closed)
+
+	c.lock.Lock()
+	connections := maps.Values(c.connections)
+	c.lock.Unlock()
+
+	// Close all connections
+	c.logger.Infof(ctx, "closing %d connections", len(connections))
+	wg := &sync.WaitGroup{}
+	for _, conn := range connections {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if !conn.isClosed() {
+				if err := conn.Close(ctx); err != nil {
+					c.logger.Error(ctx, err.Error())
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	c.logger.Info(ctx, "closed disk writer client")
+	return nil
+}
+
+func (c *Client) registerConnection(ctx context.Context, conn *ClientConnection) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.connections[conn.remoteNodeID] = conn
+	c.logger.Debugf(ctx, "registered connection to %q, total connections count %d", conn.RemoteNodeID(), len(c.connections))
 }
 
-func (c *Client) unregisterConnection(conn *ClientConnection) {
+func (c *Client) unregisterConnection(ctx context.Context, conn *ClientConnection) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	delete(c.connections, conn.remoteNodeID)
+	c.logger.Debugf(ctx, "unregistered connection to %q, total connections count %d", conn.RemoteNodeID(), len(c.connections))
 }
 
 func (c *Client) isClosed() bool {

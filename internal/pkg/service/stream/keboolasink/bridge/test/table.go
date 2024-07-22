@@ -17,8 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func MockTableStorageAPICalls(t *testing.T, transport *httpmock.MockTransport) {
-	t.Helper()
+func MockTableStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) {
+	tb.Helper()
 	lock := &sync.Mutex{}
 
 	// Get table - not found

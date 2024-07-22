@@ -54,6 +54,7 @@ func newBackoff() *backoff.ExponentialBackOff {
 	b.InitialInterval = 2 * time.Minute
 	b.MaxInterval = 3 * time.Hour
 	b.MaxElapsedTime = 0 // don't stop
+	b.Reset()
 	return b
 }
 
