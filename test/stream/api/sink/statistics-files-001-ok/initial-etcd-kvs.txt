@@ -26,7 +26,8 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my
       "concurrency": 0
     },
     "inputBuffer": "1MB",
-    "outputBuffer": "1MB",
+    "maxChunkSize": "512KB",
+    "failedChunksThreshold": 3,
     "compression": {
       "type": "gzip",
       "gzip": {

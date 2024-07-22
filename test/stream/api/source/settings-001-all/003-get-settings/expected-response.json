@@ -70,6 +70,16 @@
       "validation": "required,oneof=csv"
     },
     {
+      "key": "storage.level.local.encoding.failedChunksThreshold",
+      "type": "int",
+      "description": "If the defined number of chunks cannot be sent, the pipeline is marked as not ready.",
+      "value": 3,
+      "defaultValue": 3,
+      "overwritten": false,
+      "protected": true,
+      "validation": "required,min=1,max=100"
+    },
+    {
       "key": "storage.level.local.encoding.inputBuffer",
       "type": "string",
       "description": "Max size of the buffer before compression, if compression is enabled. 0 = disabled",
@@ -80,14 +90,14 @@
       "validation": "maxBytes=16MB"
     },
     {
-      "key": "storage.level.local.encoding.outputBuffer",
+      "key": "storage.level.local.encoding.maxChunkSize",
       "type": "string",
-      "description": "Max size of the buffer before the output. 0 = disabled",
-      "value": "1MB",
-      "defaultValue": "1MB",
+      "description": "Max size of a chunk sent over the network to a disk writer node.",
+      "value": "512KB",
+      "defaultValue": "512KB",
       "overwritten": false,
       "protected": true,
-      "validation": "maxBytes=16MB"
+      "validation": "required,minBytes=64kB,maxBytes=1MB"
     },
     {
       "key": "storage.level.local.encoding.sync.checkInterval",
@@ -97,7 +107,7 @@
       "defaultValue": "5ms",
       "overwritten": false,
       "protected": true,
-      "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
+      "validation": "required,minDuration=1ms,maxDuration=30s"
     },
     {
       "key": "storage.level.local.encoding.sync.compressedBytesTrigger",
@@ -107,7 +117,7 @@
       "defaultValue": "256KB",
       "overwritten": false,
       "protected": true,
-      "validation": "maxBytes=100MB,required_if=Mode disk,required_if=Mode cache"
+      "validation": "required,minBytes=100B,maxBytes=100MB"
     },
     {
       "key": "storage.level.local.encoding.sync.countTrigger",
@@ -117,7 +127,7 @@
       "defaultValue": 10000,
       "overwritten": false,
       "protected": true,
-      "validation": "min=0,max=1000000,required_if=Mode disk,required_if=Mode cache"
+      "validation": "required,min=1,max=1000000"
     },
     {
       "key": "storage.level.local.encoding.sync.intervalTrigger",
@@ -127,17 +137,17 @@
       "defaultValue": "50ms",
       "overwritten": false,
       "protected": true,
-      "validation": "min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache"
+      "validation": "required,minDuration=10ms,maxDuration=30s"
     },
     {
       "key": "storage.level.local.encoding.sync.mode",
       "type": "string",
-      "description": "Sync mode: \"disabled\", \"cache\" or \"disk\".",
+      "description": "Sync mode: \"cache\" or \"disk\".",
       "value": "disk",
       "defaultValue": "disk",
       "overwritten": false,
       "protected": true,
-      "validation": "required,oneof=disabled disk cache"
+      "validation": "required,oneof=disk cache"
     },
     {
       "key": "storage.level.local.encoding.sync.uncompressedBytesTrigger",
@@ -147,7 +157,7 @@
       "defaultValue": "1MB",
       "overwritten": false,
       "protected": true,
-      "validation": "maxBytes=500MB,required_if=Mode disk,required_if=Mode cache"
+      "validation": "required,minBytes=100B,maxBytes=500MB"
     },
     {
       "key": "storage.level.local.encoding.sync.wait",
