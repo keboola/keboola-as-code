@@ -88,9 +88,9 @@ func (p *pipelineRef) close(ctx context.Context, reason string) {
 
 	// Detach pipeline from the router,
 	// so new pipeline can be created for next record, if any.
-	p.router.lock.Lock()
+	p.router.pipelinesLock.Lock()
 	delete(p.router.pipelines, p.sinkKey)
-	p.router.lock.Unlock()
+	p.router.pipelinesLock.Unlock()
 
 	// Stop if the pipeline was not successfully opened
 	if p.pipeline == nil {
