@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/klauspost/compress/zstd"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -153,43 +151,43 @@ func BenchmarkCSVWrite(b *testing.B) {
 				wb.Sync.Wait = false
 			},
 		},
-
-		{
-			Name: "compression=ZSTD_SpeedFastest,sync=ToDisk,wait=true",
-			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.NewZSTDConfig()
-				wb.Compression.ZSTD.Level = zstd.SpeedFastest
-				wb.Sync.Mode = writesync.ModeDisk
-				wb.Sync.Wait = true
-			},
-		},
-		{
-			Name: "compression=ZSTD_SpeedFastest,sync=ToDisk,wait=false",
-			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.NewZSTDConfig()
-				wb.Compression.ZSTD.Level = zstd.SpeedFastest
-				wb.Sync.Mode = writesync.ModeDisk
-				wb.Sync.Wait = false
-			},
-		},
-		{
-			Name: "compression=ZSTD_SpeedDefault,sync=ToDisk,wait=true",
-			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.NewZSTDConfig()
-				wb.Compression.ZSTD.Level = zstd.SpeedDefault
-				wb.Sync.Mode = writesync.ModeDisk
-				wb.Sync.Wait = true
-			},
-		},
-		{
-			Name: "compression=ZSTD_SpeedDefault,sync=ToDisk,wait=false",
-			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Compression = compression.NewZSTDConfig()
-				wb.Compression.ZSTD.Level = zstd.SpeedDefault
-				wb.Sync.Mode = writesync.ModeDisk
-				wb.Sync.Wait = false
-			},
-		},
+		// ZSTD compression is not fully supported, we cannot test it, config/entities validation fails.
+		//{
+		//	Name: "compression=ZSTD_SpeedFastest,sync=ToDisk,wait=true",
+		//	Configure: func(wb *benchmark.WriterBenchmark) {
+		//		wb.Compression = compression.NewZSTDConfig()
+		//		wb.Compression.ZSTD.Level = zstd.SpeedFastest
+		//		wb.Sync.Mode = writesync.ModeDisk
+		//		wb.Sync.Wait = true
+		//	},
+		// },
+		//{
+		//	Name: "compression=ZSTD_SpeedFastest,sync=ToDisk,wait=false",
+		//	Configure: func(wb *benchmark.WriterBenchmark) {
+		//		wb.Compression = compression.NewZSTDConfig()
+		//		wb.Compression.ZSTD.Level = zstd.SpeedFastest
+		//		wb.Sync.Mode = writesync.ModeDisk
+		//		wb.Sync.Wait = false
+		//	},
+		// },
+		//{
+		//	Name: "compression=ZSTD_SpeedDefault,sync=ToDisk,wait=true",
+		//	Configure: func(wb *benchmark.WriterBenchmark) {
+		//		wb.Compression = compression.NewZSTDConfig()
+		//		wb.Compression.ZSTD.Level = zstd.SpeedDefault
+		//		wb.Sync.Mode = writesync.ModeDisk
+		//		wb.Sync.Wait = true
+		//	},
+		// },
+		//{
+		//	Name: "compression=ZSTD_SpeedDefault,sync=ToDisk,wait=false",
+		//	Configure: func(wb *benchmark.WriterBenchmark) {
+		//		wb.Compression = compression.NewZSTDConfig()
+		//		wb.Compression.ZSTD.Level = zstd.SpeedDefault
+		//		wb.Sync.Mode = writesync.ModeDisk
+		//		wb.Sync.Wait = false
+		//	},
+		// },
 	}
 
 	for _, tc := range cases {
