@@ -21,7 +21,6 @@ const _ = grpc.SupportPackageIsVersion8
 const (
 	NetworkFile_Open_FullMethodName  = "/pb.NetworkFile/Open"
 	NetworkFile_Write_FullMethodName = "/pb.NetworkFile/Write"
-	NetworkFile_Flush_FullMethodName = "/pb.NetworkFile/Flush"
 	NetworkFile_Sync_FullMethodName  = "/pb.NetworkFile/Sync"
 	NetworkFile_Close_FullMethodName = "/pb.NetworkFile/Close"
 )
@@ -32,7 +31,6 @@ const (
 type NetworkFileClient interface {
 	Open(ctx context.Context, in *OpenRequest, opts ...grpc.CallOption) (*OpenResponse, error)
 	Write(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error)
-	Flush(ctx context.Context, in *FlushRequest, opts ...grpc.CallOption) (*FlushResponse, error)
 	Sync(ctx context.Context, in *SyncRequest, opts ...grpc.CallOption) (*SyncResponse, error)
 	Close(ctx context.Context, in *CloseRequest, opts ...grpc.CallOption) (*CloseResponse, error)
 }
@@ -65,16 +63,6 @@ func (c *networkFileClient) Write(ctx context.Context, in *WriteRequest, opts ..
 	return out, nil
 }
 
-func (c *networkFileClient) Flush(ctx context.Context, in *FlushRequest, opts ...grpc.CallOption) (*FlushResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FlushResponse)
-	err := c.cc.Invoke(ctx, NetworkFile_Flush_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *networkFileClient) Sync(ctx context.Context, in *SyncRequest, opts ...grpc.CallOption) (*SyncResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SyncResponse)
@@ -101,7 +89,6 @@ func (c *networkFileClient) Close(ctx context.Context, in *CloseRequest, opts ..
 type NetworkFileServer interface {
 	Open(context.Context, *OpenRequest) (*OpenResponse, error)
 	Write(context.Context, *WriteRequest) (*WriteResponse, error)
-	Flush(context.Context, *FlushRequest) (*FlushResponse, error)
 	Sync(context.Context, *SyncRequest) (*SyncResponse, error)
 	Close(context.Context, *CloseRequest) (*CloseResponse, error)
 	mustEmbedUnimplementedNetworkFileServer()
@@ -116,9 +103,6 @@ func (UnimplementedNetworkFileServer) Open(context.Context, *OpenRequest) (*Open
 }
 func (UnimplementedNetworkFileServer) Write(context.Context, *WriteRequest) (*WriteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Write not implemented")
-}
-func (UnimplementedNetworkFileServer) Flush(context.Context, *FlushRequest) (*FlushResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Flush not implemented")
 }
 func (UnimplementedNetworkFileServer) Sync(context.Context, *SyncRequest) (*SyncResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Sync not implemented")
@@ -175,24 +159,6 @@ func _NetworkFile_Write_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _NetworkFile_Flush_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FlushRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NetworkFileServer).Flush(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: NetworkFile_Flush_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NetworkFileServer).Flush(ctx, req.(*FlushRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _NetworkFile_Sync_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SyncRequest)
 	if err := dec(in); err != nil {
@@ -243,10 +209,6 @@ var NetworkFile_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Write",
 			Handler:    _NetworkFile_Write_Handler,
-		},
-		{
-			MethodName: "Flush",
-			Handler:    _NetworkFile_Flush_Handler,
 		},
 		{
 			MethodName: "Sync",
