@@ -35,6 +35,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
+const exceptionIDPrefix = "keboola-mocked-task-"
+
 // mocked dependencies container implements Mocked interface.
 type mocked struct {
 	*baseScope

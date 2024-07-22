@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	userAgent = "keboola-templates-api"
+	userAgent         = "keboola-templates-api"
+	exceptionIDPrefix = "keboola-templates-task-"
 )
 
 // apiScope implements APIScope interface.
@@ -108,7 +109,7 @@ func newParentScopes(
 		return nil, err
 	}
 
-	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, d)
+	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, exceptionIDPrefix, d)
 	if err != nil {
 		return nil, err
 	}

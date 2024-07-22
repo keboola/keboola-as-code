@@ -426,7 +426,8 @@ task/123/my-receiver/my-export/some.task/%s
   "error": "some error (1) - expected",
   "userError": {
     "name": "unknownError",
-    "message": "Unknown error"
+    "message": "Unknown error",
+    "exceptionId": "test-node-%s"
   },
   "outputs": {
     "key": "value"
@@ -475,7 +476,8 @@ task/123/my-receiver/my-export/some.task/%s
   "error": "some error (1) - expected",
   "userError": {
     "name": "unknownError",
-    "message": "Unknown error"
+    "message": "Unknown error",
+    "exceptionId": "test-node-%s"
   },
   "outputs": {
     "key": "value"
@@ -498,7 +500,8 @@ task/123/my-receiver/my-export/some.task/%s
   "error": "no space right on device",
   "userError": {
     "name": "insufficientStorage",
-    "message": "No space right on device."
+    "message": "No space right on device.",
+    "exceptionId": "test-node-%s"
   },
   "duration": %d
 }
@@ -731,7 +734,8 @@ task/123/my-receiver/my-export/some.task/%s
   "error": "context deadline exceeded",
   "userError": {
     "name": "unknownError",
-    "message": "Unknown error"
+    "message": "Unknown error",
+    "exceptionId": "test-node-%s"
   },
   "duration": %d
 }
@@ -955,7 +959,7 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 func createNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
 	d := createDeps(t, ctx, etcdCfg, logs, tel)
-	node, err := task.NewNode(nodeID, d)
+	node, err := task.NewNode(nodeID, "test-node-", d)
 	require.NoError(t, err)
 	d.DebugLogger().Truncate()
 	return node, d
