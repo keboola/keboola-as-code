@@ -148,24 +148,24 @@ data:
                 # GZIP parallel concurrency, 0 = auto.
                 concurrency: 0
             sync:
-              # Sync mode: "disabled", "cache" or "disk". Validation rules: required,oneof=disabled disk cache
+              # Sync mode: "cache" or "disk". Validation rules: required,oneof=disk cache
               mode: disk
               # Wait for sync to disk OS cache or to disk hardware, depending on the mode.
               wait: true
-              # Minimal interval between syncs to disk. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
+              # Minimal interval between syncs to disk. Validation rules: required,minDuration=1ms,maxDuration=30s
               checkInterval: 5ms
-              # Written records count to trigger sync. Validation rules: min=0,max=1000000,required_if=Mode disk,required_if=Mode cache
+              # Written records count to trigger sync. Validation rules: required,min=1,max=1000000
               countTrigger: 10000
-              # Size of buffered uncompressed data to trigger sync. Validation rules: maxBytes=500MB,required_if=Mode disk,required_if=Mode cache
+              # Size of buffered uncompressed data to trigger sync. Validation rules: required,minBytes=100B,maxBytes=500MB
               uncompressedBytesTrigger: 1MB
-              # Size of buffered compressed data to trigger sync. Validation rules: maxBytes=100MB,required_if=Mode disk,required_if=Mode cache
+              # Size of buffered compressed data to trigger sync. Validation rules: required,minBytes=100B,maxBytes=100MB
               compressedBytesTrigger: 256KB
-              # Interval from the last sync to trigger sync. Validation rules: min=0,maxDuration=2s,required_if=Mode disk,required_if=Mode cache
+              # Interval from the last sync to trigger sync. Validation rules: required,minDuration=10ms,maxDuration=30s
               intervalTrigger: 50ms
           writer:
             network:
               # Listen address of the configuration HTTP API. Validation rules: required,hostname_port
-              #listen: 0.0.0.0:6000
+              listen: 0.0.0.0:6000
               # Transport protocol. Validation rules: required,oneof=tcp kcp
               transport: tcp
               # Keep alive interval. Validation rules: required,minDuration=1s,maxDuration=60s
