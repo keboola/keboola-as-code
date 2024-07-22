@@ -2,7 +2,11 @@ package benchmark
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -12,19 +16,26 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 // WriterBenchmark is a generic benchmark for writer.Writer.
@@ -39,42 +50,73 @@ type WriterBenchmark struct {
 	// DataChFactory must return the channel with table rows, the channel must be closed after the n reads.
 	DataChFactory func(ctx context.Context, n int, g *RandomStringGenerator) <-chan recordctx.Context
 
+	failedCount  *atomic.Int64
 	latencySum   *atomic.Float64
 	latencyCount *atomic.Int64
+
+	logger log.DebugLogger
 }
 
 func (wb *WriterBenchmark) Run(b *testing.B) {
 	b.Helper()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	wb.logger = log.NewDebugLogger()
+	wb.logger.ConnectTo(testhelper.VerboseStdout())
+	wb.failedCount = atomic.NewInt64(0)
 	wb.latencySum = atomic.NewFloat64(0)
 	wb.latencyCount = atomic.NewInt64(0)
+	etcdCfg := etcdhelper.TmpNamespace(b)
 
-	// Init random string generator
-	gen := newRandomStringGenerator()
+	// Create volume directory, with volume ID file
+	volumeID := volume.ID("my-volume")
+	volumesPath := b.TempDir()
+	volumePath := filepath.Join(volumesPath, "hdd", "001")
+	require.NoError(b, os.MkdirAll(volumePath, 0o700))
+	require.NoError(b, os.WriteFile(filepath.Join(volumePath, volume.IDFile), []byte(volumeID), 0o600))
 
-	// Start source node
-	sourceNode := wb.startSourceNode(b)
+	// Start nodes
+	diskWriterNode, sourceNode := wb.startNodes(b, ctx, etcdCfg, volumesPath)
+	sinkRouter := sourceNode.SinkRouter()
 
-	// Start disk in node
-	vol := wb.startDiskWriterNode(b, ctx)
+	// Create resource in an API node
+	apiScp, apiMock := wb.startAPINode(b, etcdCfg)
+	apiCtx := context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, apiMock.KeboolaProjectAPI())
+	apiCtx = rollback.ContextWith(apiCtx, rollback.New(apiScp.Logger()))
+	transport := apiMock.MockedHTTPTransport()
+	bridgeTest.MockTokenStorageAPICalls(b, transport)
+	bridgeTest.MockBucketStorageAPICalls(b, transport)
+	bridgeTest.MockTableStorageAPICalls(b, transport)
+	bridgeTest.MockFileStorageAPICalls(b, apiMock.Clock(), transport)
+	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
+	branch := test.NewBranch(branchKey)
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	source := test.NewHTTPSource(sourceKey)
+	source.HTTP.Secret = strings.Repeat("1", 48)
+	sink := test.NewKeboolaTableSink(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
+	sink.Table.Mapping = table.Mapping{Columns: wb.Columns}
+	require.NoError(b, apiScp.DefinitionRepository().Branch().Create(&branch, apiScp.Clock().Now(), test.ByUser()).Do(apiCtx).Err())
+	require.NoError(b, apiScp.DefinitionRepository().Source().Create(&source, apiScp.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
+	require.NoError(b, apiScp.DefinitionRepository().Sink().Create(&sink, apiScp.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
 
-	// Create slice
-	slice := wb.newSlice(b, vol)
-	filePath := slice.LocalStorage.FileName(vol.Path())
-
-	// Create writer
-	diskWriter, err := vol.OpenWriter(slice.SliceKey, slice.LocalStorage)
+	// Load created slice
+	slices, err := apiScp.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
 	require.NoError(b, err)
+	require.Len(b, slices, 1)
+	slice := slices[0]
+	filePath := slice.LocalStorage.FileName(volumePath)
 
-	// Create encoder pipeline
-	writer, err := sourceNode.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, diskWriter)
-	require.NoError(b, err)
+	// Wait for pipeline initialization
+	assert.EventuallyWithT(b, func(c *assert.CollectT) {
+		// Messages order can be random
+		wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"synced to revision %s","component":"sink.router"}`)
+		// wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"synced to revision %s","component":"storage.router"}`)
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// Create data channel
-	dataCh := wb.DataChFactory(ctx, b.N, gen)
+	dataCh := wb.DataChFactory(ctx, b.N, newRandomStringGenerator())
 
 	// Run benchmark
 	b.ResetTimer()
@@ -92,17 +134,22 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 			go func() {
 				defer wg.Done()
 
+				var failedCount int64
 				var latencySum float64
 				var latencyCount int64
 
 				// Read from the channel until the N rows are processed, together by all goroutines
 				for record := range dataCh {
 					start := time.Now()
-					assert.NoError(b, writer.WriteRecord(record))
+					result := sinkRouter.DispatchToSource(sourceKey, record)
+					if result.StatusCode != http.StatusOK && result.StatusCode != http.StatusAccepted {
+						failedCount++
+					}
 					latencySum += time.Since(start).Seconds()
 					latencyCount++
 				}
 
+				wb.failedCount.Add(failedCount)
 				wb.latencySum.Add(latencySum)
 				wb.latencyCount.Add(latencyCount)
 			}()
@@ -110,71 +157,132 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	}()
 	wg.Wait()
 	end := time.Now()
+	duration := end.Sub(start)
 
-	// Close encoder
-	require.NoError(b, writer.Close(ctx))
+	// There should be no failed write
+	assert.Equal(b, int64(0), wb.failedCount.Load(), "failed writes")
 
-	// Close volume
-	require.NoError(b, vol.Close(ctx))
+	// Shutdown nodes
+	wb.shutdownNodes(b, ctx, diskWriterNode, sourceNode)
+
+	// Get file size
+	fileStat, err := os.Stat(filePath)
+	require.NoError(b, err)
+
+	// Open file
+	f, err := os.OpenFile(filePath, os.O_RDONLY, 0o640)
+	require.NoError(b, err)
+
+	// Close file
+	assert.NoError(b, f.Close())
+
+	// Check statistics
+	sliceStats, err := apiScp.StatisticsRepository().SliceStats(ctx, slice.SliceKey)
+	if assert.NoError(b, err) {
+		assert.Equal(b, int(sliceStats.Total.RecordsCount), b.N, "records count doesn't match")
+		assert.Equal(b, int64(sliceStats.Total.CompressedSize.Bytes()), fileStat.Size(), "compressed file size doesn't match")
+	}
 
 	// Report extra metrics
-	duration := end.Sub(start)
 	b.ReportMetric(float64(b.N)/duration.Seconds(), "wr/s")
 	b.ReportMetric(wb.latencySum.Load()/float64(wb.latencyCount.Load())*1000, "ms/wr")
-	b.ReportMetric(writer.UncompressedSize().MBytes()/duration.Seconds(), "in_MB/s")
-	b.ReportMetric(writer.CompressedSize().MBytes()/duration.Seconds(), "out_MB/s")
-	b.ReportMetric(float64(writer.UncompressedSize())/float64(writer.CompressedSize()), "ratio")
+	b.ReportMetric(sliceStats.Total.UncompressedSize.MBytes()/duration.Seconds(), "in_MB/s")
+	b.ReportMetric(sliceStats.Total.CompressedSize.MBytes()/duration.Seconds(), "out_MB/s")
+	b.ReportMetric(float64(sliceStats.Total.UncompressedSize)/float64(sliceStats.Total.CompressedSize), "ratio")
 
-	// Check rows count
-	assert.Equal(b, uint64(b.N), writer.CompletedWrites())
+	// Shutdown API node
+	apiScp.Process().Shutdown(ctx, errors.New("bye bye API"))
+	apiScp.Process().WaitForShutdown()
 
-	// Check file real size
-	if wb.Compression.Type == compression.TypeNone {
-		assert.Equal(b, writer.CompressedSize(), writer.UncompressedSize())
-	}
-	stat, err := os.Stat(filePath)
-	assert.NoError(b, err)
-	assert.Equal(b, writer.CompressedSize(), datasize.ByteSize(stat.Size()))
+	// No error should be logged
+	wb.logger.AssertJSONMessages(b, "")
 }
 
-func (wb *WriterBenchmark) newSlice(b *testing.B, volume *diskwriter.Volume) *model.Slice {
+func (wb *WriterBenchmark) startNodes(b *testing.B, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) (dependencies.StorageWriterScope, dependencies.SourceScope) {
 	b.Helper()
 
-	s := test.NewSlice()
-	s.VolumeID = volume.ID()
-	s.Mapping = table.Mapping{Columns: wb.Columns}
-	s.Encoding.Sync = wb.Sync
-	s.Encoding.Compression = wb.Compression
-	s.LocalStorage.AllocatedDiskSpace = wb.Allocate
-	s.StagingStorage.Compression = wb.Compression
+	wb.logger.Truncate()
 
-	// Slice definition must be valid, except ZSTD compression - it is not enabled/supported in production
-	if s.Encoding.Compression.Type != compression.TypeZSTD {
-		val := validator.New()
-		require.NoError(b, val.Validate(context.Background(), s))
-	}
-	return s
+	// Start disk in node
+	diskWriterNode := wb.startDiskWriterNode(b, ctx, etcdCfg, volumesPath)
+
+	// Start source node
+	sourceNode := wb.startSourceNode(b, etcdCfg)
+
+	// Wait for connection between nodes
+	assert.EventuallyWithT(b, func(c *assert.CollectT) {
+		wb.logger.AssertJSONMessages(c, `{"level":"info","message":"disk writer client connected from \"%s\" to \"disk-writer\" - \"%s\"","component":"storage.router.connections.client"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	return diskWriterNode, sourceNode
 }
 
-func (wb *WriterBenchmark) startSourceNode(b *testing.B) dependencies.SourceScope {
+func (wb *WriterBenchmark) shutdownNodes(b *testing.B, ctx context.Context, diskWriterNode dependencies.StorageWriterScope, sourceNode dependencies.SourceScope) {
 	b.Helper()
 
-	d, _ := dependencies.NewMockedSourceScope(b)
+	// Close source node
+	sourceNode.Process().Shutdown(ctx, errors.New("bye bye source"))
+	sourceNode.Process().WaitForShutdown()
+
+	// Close disk writer node
+	diskWriterNode.Process().Shutdown(ctx, errors.New("bye bye disk writer"))
+	diskWriterNode.Process().WaitForShutdown()
+}
+
+func (wb *WriterBenchmark) startAPINode(b *testing.B, etcdCfg etcdclient.Config) (dependencies.APIScope, dependencies.Mocked) {
+	b.Helper()
+
+	return dependencies.NewMockedAPIScopeWithConfig(
+		b,
+		func(cfg *config.Config) {
+			wb.updateServiceConfig(cfg)
+			cfg.NodeID = "api"
+			cfg.API.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(b))
+		},
+		commonDeps.WithDebugLogger(wb.logger),
+		commonDeps.WithEtcdConfig(etcdCfg),
+	)
+}
+
+func (wb *WriterBenchmark) startSourceNode(b *testing.B, etcdCfg etcdclient.Config) dependencies.SourceScope {
+	b.Helper()
+
+	d, _ := dependencies.NewMockedSourceScopeWithConfig(
+		b,
+		func(cfg *config.Config) {
+			wb.updateServiceConfig(cfg)
+			cfg.NodeID = "source"
+		},
+		commonDeps.WithDebugLogger(wb.logger),
+		commonDeps.WithEtcdConfig(etcdCfg),
+	)
+
 	return d
 }
 
-func (wb *WriterBenchmark) startDiskWriterNode(b *testing.B, ctx context.Context) *diskwriter.Volume {
+func (wb *WriterBenchmark) startDiskWriterNode(b *testing.B, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) dependencies.StorageWriterScope {
 	b.Helper()
 
-	d, mock := dependencies.NewMockedStorageScopeWithConfig(b, func(cfg *config.Config) {
-		cfg.Storage.Level.Local.Writer.WatchDrainFile = false
-	})
+	d, mock := dependencies.NewMockedStorageWriterScopeWithConfig(
+		b,
+		func(cfg *config.Config) {
+			wb.updateServiceConfig(cfg)
+			cfg.NodeID = "disk-writer"
+			cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(b))
+			cfg.Storage.VolumesPath = volumesPath
+		},
+		// commonDeps.WithDebugLogger(wb.logger),
+		commonDeps.WithEtcdConfig(etcdCfg),
+	)
 
-	// Open volume
-	volPath := b.TempDir()
-	spec := volume.Spec{NodeID: "my-node", NodeAddress: "localhost:1234", Path: volPath, Type: "hdd", Label: "1"}
-	vol, err := diskwriter.OpenVolume(ctx, d.Logger(), d.Clock(), mock.TestConfig().Storage.Level.Local.Writer, spec, events.New[diskwriter.Writer]())
-	require.NoError(b, err)
+	require.NoError(b, writernode.Start(ctx, d, mock.TestConfig()))
 
-	return vol
+	return d
+}
+
+func (wb *WriterBenchmark) updateServiceConfig(cfg *config.Config) {
+	cfg.Hostname = "localhost"
+	cfg.Storage.Level.Local.Writer.WatchDrainFile = false
+	cfg.Storage.Level.Local.Encoding.Sync = wb.Sync
+	cfg.Storage.Level.Local.Encoding.Compression = wb.Compression
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -38,22 +39,9 @@ func BenchmarkCSVWrite(b *testing.B) {
 		Configure func(wb *benchmark.WriterBenchmark)
 	}{
 		{
-			Name: "compression=None,sync=None",
+			Name: "compression=None,sync=ToCache,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Sync = writesync.Config{Mode: writesync.ModeDisabled}
-			},
-		},
-		{
-			Name: "compression=None,sync=ToDisk,wait=true",
-			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Sync.Mode = writesync.ModeDisk
-				wb.Sync.Wait = true
-			},
-		},
-		{
-			Name: "compression=None,sync=ToDisk,wait=false",
-			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Sync.Mode = writesync.ModeDisk
+				wb.Sync.Mode = writesync.ModeCache
 				wb.Sync.Wait = false
 			},
 		},
@@ -65,10 +53,17 @@ func BenchmarkCSVWrite(b *testing.B) {
 			},
 		},
 		{
-			Name: "compression=None,sync=ToCache,wait=false",
+			Name: "compression=None,sync=ToDisk,wait=false",
 			Configure: func(wb *benchmark.WriterBenchmark) {
-				wb.Sync.Mode = writesync.ModeCache
+				wb.Sync.Mode = writesync.ModeDisk
 				wb.Sync.Wait = false
+			},
+		},
+		{
+			Name: "compression=None,sync=ToDisk,wait=true",
+			Configure: func(wb *benchmark.WriterBenchmark) {
+				wb.Sync.Mode = writesync.ModeDisk
+				wb.Sync.Wait = true
 			},
 		},
 		{
