@@ -129,8 +129,15 @@ func TestFile_Validation(t *testing.T) {
 - "state" is a required field
 - "mapping.columns" is a required field
 - "encoding.encoder.type" is a required field
+- "encoding.maxChunkSize" is a required field
+- "encoding.failedChunksThreshold" is a required field
 - "encoding.compression.type" is a required field
 - "encoding.sync.mode" is a required field
+- "encoding.sync.checkInterval" is a required field
+- "encoding.sync.countTrigger" is a required field
+- "encoding.sync.uncompressedBytesTrigger" is a required field
+- "encoding.sync.compressedBytesTrigger" is a required field
+- "encoding.sync.intervalTrigger" is a required field
 - "local.dir" is a required field
 - "local.assignment.config.count" is a required field
 - "local.assignment.config.preferredTypes" is a required field

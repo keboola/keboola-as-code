@@ -258,7 +258,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
 				Level: &level.ConfigPatch{
 					Local: &local.ConfigPatch{
 						Encoding: &encoding.ConfigPatch{
-							OutputBuffer: ptr.Ptr(123 * datasize.KB),
+							MaxChunkSize: ptr.Ptr(123 * datasize.KB),
 						},
 					},
 				},
@@ -542,7 +542,7 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 			Level: &level.ConfigPatch{
 				Local: &local.ConfigPatch{
 					Encoding: &encoding.ConfigPatch{
-						OutputBuffer: ptr.Ptr(456 * datasize.KB),
+						MaxChunkSize: ptr.Ptr(456 * datasize.KB),
 					},
 				},
 			},
