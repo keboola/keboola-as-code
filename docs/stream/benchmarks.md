@@ -1,6 +1,7 @@
-### Stream API Benchmarks
+# Stream API Benchmarks
 
-1. Start the server:
+## Start the server
+
 ```
 export STREAM_NODE_ID=my-node
 export STREAM_HOSTNAME=localhost
@@ -12,30 +13,32 @@ export STREAM_SOURCE_HTTP_PUBLIC_URL=http://localhost:10001
 export STREAM_STORAGE_VOLUMES_PATH=/tmp/k6/volumes
 mkdir -p "$STREAM_STORAGE_VOLUMES_PATH/hdd/001"
 docker compose run \
--u "$UID:$GID" \
--p 10000:10000 \
--p 10001:10001 \
--v "$STREAM_STORAGE_VOLUMES_PATH:$STREAM_STORAGE_VOLUMES_PATH" \
--e STREAM_NODE_ID \
--e STREAM_HOSTNAME \
--e STREAM_API_STORAGE_API_HOST \
--e STREAM_API_LISTEN \
--e STREAM_API_PUBLIC_URL \
--e STREAM_SOURCE_HTTP_LISTEN \
--e STREAM_SOURCE_HTTP_PUBLIC_URL \
--e STREAM_STORAGE_VOLUMES_PATH \
---rm \
+    -u "$UID:$GID" \
+    -p 10000:10000 \
+    -p 10001:10001 \
+    -v "$STREAM_STORAGE_VOLUMES_PATH:$STREAM_STORAGE_VOLUMES_PATH" \
+    -e STREAM_NODE_ID \
+    -e STREAM_HOSTNAME \
+    -e STREAM_API_STORAGE_API_HOST \
+    -e STREAM_API_LISTEN \
+    -e STREAM_API_PUBLIC_URL \
+    -e STREAM_SOURCE_HTTP_LISTEN \
+    -e STREAM_SOURCE_HTTP_PUBLIC_URL \
+    -e STREAM_STORAGE_VOLUMES_PATH \
+    --rm \
 dev make run-stream-service-once
 ```
-2. Run the benchmark:
+
+## Run the benchmark
+
 ```
 export API_TOKEN=<token>
-export API_HOST=$STREAM_API_PUBLIC_ADDRESS
+export API_HOST=$STREAM_API_PUBLIC_URL
 docker compose run -u "$UID:$GID" k6 run /scripts/k6/stream-api/<name>
 ```
 
 Where `<name>` is one of the following benchmark names:
-- `static.js` - Source with a signle sink. Sink only has static columns.
+- `static.js` - Source with a single sink. Sink only has static columns.
 - `template.js` - source with a single sink. Sink has a template column.
 
 Available environment variables:
