@@ -9,7 +9,6 @@ import "google/protobuf/timestamp.proto";
 service NetworkFile {
   rpc Open(OpenRequest) returns (OpenResponse) {}
   rpc Write(WriteRequest) returns (WriteResponse) {}
-  rpc Flush(FlushRequest) returns (FlushResponse) {}
   rpc Sync(SyncRequest) returns (SyncResponse) {}
   rpc Close(CloseRequest) returns (CloseResponse) {}
 }
@@ -24,18 +23,15 @@ message OpenResponse{
 
 message WriteRequest {
   uint64 file_id = 1;
-  bytes data = 2;
+  // The "aligned" is true after the pipeline Flush or Close operation.
+  // It means that a complete block of data has been written so far.
+  bool aligned = 2;
+  bytes data = 3;
 }
 
 message WriteResponse{
   int64 n = 2;
 }
-
-message FlushRequest {
-  uint64 file_id = 1;
-}
-
-message FlushResponse{}
 
 message SyncRequest {
   uint64 file_id = 1;

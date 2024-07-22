@@ -1,7 +1,6 @@
 package diskwriter
 
 import (
-	"bytes"
 	"context"
 	"os"
 	"sync"
@@ -26,9 +25,6 @@ type Writer interface {
 	SliceKey() model.SliceKey
 	// Write bytes to the buffer in the disk writer node.
 	Write(ctx context.Context, p []byte) (n int, err error)
-	// Flush buffered bytes to the OS disk cache,
-	// so only completed parts are passed to the disk.
-	Flush(ctx context.Context) error
 	// Sync OS disk cache to the physical disk.
 	Sync(ctx context.Context) error
 	// Events provides listening to the writer lifecycle.
@@ -41,7 +37,6 @@ type writer struct {
 	logger   log.Logger
 	sliceKey model.SliceKey
 	file     File
-	buffer   *bytes.Buffer
 	events   *events.Events[Writer]
 	// closed blocks new writes
 	closed chan struct{}
@@ -95,9 +90,6 @@ func newWriter(
 		return nil, err
 	}
 
-	// Create buffer
-	w.buffer = bytes.NewBuffer(nil)
-
 	// Get file info
 	stat, err := w.file.Stat()
 	if err != nil {
@@ -136,39 +128,13 @@ func (w *writer) SliceKey() model.SliceKey {
 func (w *writer) Write(ctx context.Context, p []byte) (n int, err error) {
 	w.wg.Add(1)
 	defer w.wg.Done()
-	return w.buffer.Write(p)
-}
-
-func (w *writer) Flush(ctx context.Context) error {
-	w.wg.Add(1)
-	defer w.wg.Done()
-	err := w.flush()
-	w.buffer.Reset()
-	return err
-}
-
-func (w *writer) flush() error {
-	_, err := w.file.Write(w.buffer.Bytes())
-	w.buffer.Reset()
-	return err
+	return w.file.Write(p)
 }
 
 func (w *writer) Sync(ctx context.Context) error {
 	w.wg.Add(1)
 	defer w.wg.Done()
-
-	flushErr := w.flush()
-	syncErr := w.file.Sync()
-
-	if flushErr != nil {
-		return flushErr
-	}
-
-	if syncErr != nil {
-		return syncErr
-	}
-
-	return nil
+	return w.file.Sync()
 }
 
 func (w *writer) Events() *events.Events[Writer] {

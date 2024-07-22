@@ -112,7 +112,9 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 }
 
 func (s *NetworkFileServer) Serve(listener net.Listener) error {
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(
+		grpc.SharedWriteBuffer(true),
+	)
 	pb.RegisterNetworkFileServer(srv, s)
 	return srv.Serve(listener)
 }
@@ -160,14 +162,6 @@ func (s *NetworkFileServer) Write(ctx context.Context, req *pb.WriteRequest) (*p
 	}
 
 	return &pb.WriteResponse{N: int64(n)}, nil
-}
-
-func (s *NetworkFileServer) Flush(ctx context.Context, req *pb.FlushRequest) (*pb.FlushResponse, error) {
-	w, err := s.writer(req.FileId)
-	if err != nil {
-		return nil, err
-	}
-	return nil, w.Flush(ctx)
 }
 
 func (s *NetworkFileServer) Sync(ctx context.Context, req *pb.SyncRequest) (*pb.SyncResponse, error) {

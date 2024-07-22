@@ -26,7 +26,7 @@ type networkFile struct {
 	fileID   uint64
 }
 
-func OpenNetworkFile(ctx context.Context, conn *transport.ClientConnection, sliceKey model.SliceKey) (encoding.NetworkFile, error) {
+func OpenNetworkFile(ctx context.Context, conn *transport.ClientConnection, sliceKey model.SliceKey) (encoding.NetworkOutput, error) {
 	// Use transport layer with multiplexer for connection
 	dialer := func(_ context.Context, _ string) (net.Conn, error) {
 		stream, err := conn.OpenStream()
@@ -38,11 +38,11 @@ func OpenNetworkFile(ctx context.Context, conn *transport.ClientConnection, slic
 
 	// https://grpc.io/docs/guides/retry/
 	// https://grpc.io/docs/guides/service-config/
-	retryPolicy := `{
+	serviceConfig := `{
 		"methodConfig": [{
-		  "name": [{"service": "pb.NetworkFile"}],
+		  "name": [{}],
 		  "waitForReady": true,
-          "timeout": "5s",
+          "timeout": "10s",
 		  "retryPolicy": {
 			  "MaxAttempts": 5,
 			  "InitialBackoff": ".01s",
@@ -62,9 +62,10 @@ func OpenNetworkFile(ctx context.Context, conn *transport.ClientConnection, slic
 	// Create gRPC client
 	clientConn, err := grpc.NewClient(
 		"127.0.0.1",
+		grpc.WithSharedWriteBuffer(true),
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithDefaultServiceConfig(retryPolicy),
+		grpc.WithDefaultServiceConfig(serviceConfig),
 		grpc.WithKeepaliveParams(kacp),
 	)
 	if err != nil {
@@ -108,21 +109,14 @@ func (f *networkFile) IsReady() bool {
 }
 
 // Write bytes to the buffer in the disk writer node.
-func (f *networkFile) Write(p []byte) (int, error) {
-	ctx := context.Background()
-	resp, err := f.rpc.Write(ctx, &pb.WriteRequest{FileId: f.fileID, Data: p})
+func (f *networkFile) Write(ctx context.Context, aligned bool, p []byte) (int, error) {
+	// grpc.CallContentSubtype("pb.WriteRequest")
+	resp, err := f.rpc.Write(ctx, &pb.WriteRequest{FileId: f.fileID, Aligned: aligned, Data: p})
 	if err != nil {
 		return 0, err
 	}
 
 	return int(resp.N), nil
-}
-
-// Flush buffered bytes to the OS disk cache,
-// so only completed parts are passed to the disk.
-func (f *networkFile) Flush(ctx context.Context) error {
-	_, err := f.rpc.Flush(ctx, &pb.FlushRequest{FileId: f.fileID})
-	return err
 }
 
 // Sync OS disk cache to the physical disk.

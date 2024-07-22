@@ -68,15 +68,12 @@ func TestNetworkFile(t *testing.T) {
 	assert.True(t, file.IsReady())
 
 	// Write
-	n, err := file.Write([]byte("foo\n"))
+	n, err := file.Write(ctx, true, []byte("foo\n"))
 	assert.Equal(t, 4, n)
 	assert.NoError(t, err)
-	n, err = file.Write([]byte("bar\n"))
+	n, err = file.Write(ctx, true, []byte("bar\n"))
 	assert.Equal(t, 4, n)
 	assert.NoError(t, err)
-
-	// Flush
-	assert.NoError(t, file.Flush(ctx))
 
 	// Sync
 	assert.NoError(t, file.Sync(ctx))
@@ -116,7 +113,7 @@ func startDiskWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.C
 	return m
 }
 
-func openNetworkFileOnSourceNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, sourceNodeID string, sliceKey model.SliceKey) (encoding.NetworkFile, dependencies.Mocked) {
+func openNetworkFileOnSourceNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, sourceNodeID string, sliceKey model.SliceKey) (encoding.NetworkOutput, dependencies.Mocked) {
 	t.Helper()
 
 	d, m := dependencies.NewMockedSourceScopeWithConfig(
