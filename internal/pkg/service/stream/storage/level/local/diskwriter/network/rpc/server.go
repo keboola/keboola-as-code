@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
+	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -205,10 +206,11 @@ func (s *NetworkFileServer) closeWriters(ctx context.Context) {
 	s.logger.Infof(ctx, "closing %d disk writers", len(s.writers))
 
 	wg := &sync.WaitGroup{}
-	for id, w := range s.writers {
+	for _, id := range maps.Keys(s.writers) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			w := s.writers[id]
 			delete(s.writers, id)
 			if err := w.Close(ctx); err != nil {
 				s.logger.Errorf(ctx, "cannot close disk writer %q: %s", w.SliceKey(), err)
