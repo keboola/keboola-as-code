@@ -143,7 +143,6 @@ func New(d dependencies, sourceType string, config network.Config) (r *Router, e
 	//		}
 	//	}
 	//}()
-
 	return r, nil
 }
 

@@ -97,7 +97,7 @@ func (p *slicePipeline) Close(ctx context.Context) (err error) {
 	if p.pipeline != nil {
 		err = p.pipeline.Close(ctx)
 		if err != nil {
-			p.router.logger.Errorf(ctx, "cannot close encoding pipeline for the slice %q", p.slice.SliceKey)
+			p.router.logger.Errorf(ctx, "cannot close encoding pipeline for the slice %q: %s", p.slice.SliceKey, err)
 		} else {
 			p.router.logger.Infof(ctx, "closed encoding pipeline for the slice %q", p.slice.SliceKey)
 		}

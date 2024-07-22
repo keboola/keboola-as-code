@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/benbjohnson/clock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
@@ -79,7 +80,7 @@ func (m *Manager) Pipelines() (out []Pipeline) {
 	return out
 }
 
-func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, mappingCfg table.Mapping, encodingCfg encoding.Config, out NetworkFile) (w Pipeline, err error) {
+func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, mappingCfg table.Mapping, encodingCfg encoding.Config, out NetworkOutput) (w Pipeline, err error) {
 	// Check if the pipeline already exists, if not, register an empty reference to unlock immediately
 	ref, exists := m.addPipeline(sliceKey)
 	if exists {

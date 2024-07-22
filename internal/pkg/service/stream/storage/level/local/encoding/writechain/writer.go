@@ -6,15 +6,14 @@ import (
 )
 
 // safeWriter add locks to an io.Writer.
-// Write, WriteString and Flush are protected by the lock, because Flush is triggered asynchronously.
+// Write and Flush are protected by the lock, because Flush is triggered asynchronously.
 type safeWriter struct {
 	w io.Writer
-	// lock synchronizes calls of the Write, WriteString, and Flush methods.
+	// lock synchronizes calls of the Write and Flush methods.
 	lock *sync.Mutex
 }
 
 func newSafeWriter(w io.Writer) *safeWriter {
-	// Setup Write/Flush lock
 	return &safeWriter{
 		w:    w,
 		lock: &sync.Mutex{},

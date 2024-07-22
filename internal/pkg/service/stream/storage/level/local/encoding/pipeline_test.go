@@ -54,10 +54,10 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 	// Try Close again
 	err = w.Close(ctx)
 	if assert.Error(t, err) {
-		assert.Equal(t, "writer is already closed", err.Error())
+		assert.Equal(t, "encoding pipeline is already closed", err.Error())
 	}
 
-	// Check output
+	// Check chunks
 	assert.Equal(t, "foo\nbar\n", output.String())
 }
 
@@ -80,7 +80,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 	// Test Close method
 	err = w.Close(ctx)
 	if assert.Error(t, err) {
-		assert.Equal(t, "chain sync error:\n- chain flush error:\n  - cannot flush \"*encoding_test.dummyEncoder\": some error", err.Error())
+		assert.Equal(t, "chain flush error:\n- cannot flush \"*encoding_test.dummyEncoder\": some error", err.Error())
 	}
 }
 
@@ -139,7 +139,7 @@ func TestEncodingPipeline_Open_Duplicate(t *testing.T) {
 	assert.Len(t, tc.Manager.Pipelines(), 0)
 }
 
-func TestEncodingPipeline_Sync_Enabled_Wait_ToDisk(t *testing.T) {
+func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -207,42 +207,38 @@ foo3
 {"level":"debug","message":"opening encoding pipeline"}
 {"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"opened encoding pipeline"}
-{"level":"debug","message":"starting sync to disk"}         
-{"level":"debug","message":"syncing file"}                  
-{"level":"debug","message":"flushing writers"}              
-{"level":"debug","message":"writers flushed"}               
-{"level":"debug","message":"syncing file"}                  
-{"level":"debug","message":"file synced"}                   
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"10B\""}
+{"level":"debug","message":"writers flushed"}                 
 {"level":"debug","message":"sync to disk done"}             
 {"level":"info","message":"TEST: write unblocked"}          
 {"level":"info","message":"TEST: write unblocked"}          
-{"level":"debug","message":"starting sync to disk"}         
-{"level":"debug","message":"syncing file"}                  
+{"level":"debug","message":"starting sync to disk"}          
 {"level":"debug","message":"flushing writers"}              
-{"level":"debug","message":"writers flushed"}               
-{"level":"debug","message":"syncing file"}                  
-{"level":"debug","message":"file synced"}                   
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}        
+{"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to disk done"}             
-{"level":"info","message":"TEST: write unblocked"}           
-{"level":"debug","message":"closing encoding pipeline"}                  
+{"level":"info","message":"TEST: write unblocked"}
+{"level":"debug","message":"closing encoding pipeline"}
+{"level":"debug","message":"starting sync to disk"}          
+{"level":"debug","message":"flushing writers"}              
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}        
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to disk done"} 
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to disk"}
-{"level":"debug","message":"syncing file"}
 {"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"file synced"}
 {"level":"debug","message":"sync to disk done"}
 {"level":"debug","message":"syncer stopped"}
 {"level":"debug","message":"closing chain"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
 {"level":"debug","message":"closed encoding pipeline"}
 `)
 }
 
-func TestEncodingPipeline_Sync_Enabled_Wait_ToDiskCache(t *testing.T) {
+func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -310,16 +306,23 @@ foo3
 {"level":"debug","message":"opened encoding pipeline"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"10B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"closing encoding pipeline"}
+{"level":"debug","message":"starting sync to cache"}          
+{"level":"debug","message":"flushing writers"}              
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to cache done"} 
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
@@ -327,14 +330,12 @@ foo3
 {"level":"debug","message":"sync to cache done"}
 {"level":"debug","message":"syncer stopped"}
 {"level":"debug","message":"closing chain"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
 {"level":"debug","message":"closed encoding pipeline"}
 `)
 }
 
-func TestEncodingPipeline_Sync_Enabled_NoWait_ToDisk(t *testing.T) {
+func TestEncodingPipeline_Sync_NoWait_ToDisk(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -379,38 +380,30 @@ foo4
 {"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"opened encoding pipeline"}
 {"level":"debug","message":"starting sync to disk"}
-{"level":"debug","message":"syncing file"}
 {"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"10B\""}
 {"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"file synced"}
 {"level":"debug","message":"sync to disk done"}
 {"level":"debug","message":"starting sync to disk"}
-{"level":"debug","message":"syncing file"}
 {"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"file synced"}
 {"level":"debug","message":"sync to disk done"}
 {"level":"debug","message":"closing encoding pipeline"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to disk"}
-{"level":"debug","message":"syncing file"}
 {"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"file synced"}
 {"level":"debug","message":"sync to disk done"}
 {"level":"debug","message":"syncer stopped"}
 {"level":"debug","message":"closing chain"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
 {"level":"debug","message":"closed encoding pipeline"}
 `)
 }
 
-func TestEncodingPipeline_Sync_Enabled_NoWait_ToDiskCache(t *testing.T) {
+func TestEncodingPipeline_Sync_NoWait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -456,74 +449,23 @@ foo4
 {"level":"debug","message":"opened encoding pipeline"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"10B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
 {"level":"debug","message":"closing encoding pipeline"}
 {"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
 {"level":"debug","message":"syncer stopped"}
 {"level":"debug","message":"closing chain"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"file synced"}
-{"level":"debug","message":"chain closed"}
-{"level":"debug","message":"closed encoding pipeline"}
-`)
-}
-
-func TestEncodingPipeline_Sync_Disabled(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	tc := newEncodingTestCase(t)
-	tc.Slice.Encoding.Sync = writesync.Config{Mode: writesync.ModeDisabled}
-
-	w, err := tc.OpenPipeline()
-	assert.NoError(t, err)
-
-	// Writes are NOT BLOCKING, sync is disabled completely
-
-	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
-	tc.ExpectWritesCount(t, 2)
-
-	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
-	tc.ExpectWritesCount(t, 1)
-
-	// Last write
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo4")))
-	tc.ExpectWritesCount(t, 1)
-
-	// Close writer
-	assert.NoError(t, w.Close(ctx))
-
-	// Check file content
-	assert.Equal(t, strings.TrimSpace(`
-foo1
-foo2
-foo3
-foo4
-`), strings.TrimSpace(tc.Output.String()))
-
-	// Check logs
-	tc.AssertLogs(`
-{"level":"debug","message":"opening encoding pipeline"}
-{"level":"info","message":"sync is disabled"}
-{"level":"debug","message":"opened encoding pipeline"}
-{"level":"debug","message":"closing encoding pipeline"}
-{"level":"debug","message":"stopping syncer"}
-{"level":"debug","message":"syncer stopped"}
-{"level":"debug","message":"closing chain"}
-{"level":"debug","message":"syncing file"}
-{"level":"debug","message":"file synced"}
 {"level":"debug","message":"chain closed"}
 {"level":"debug","message":"closed encoding pipeline"}
 `)
@@ -603,7 +545,7 @@ func (h *writerSyncHelper) NewEncoder(cfg encoder.Config, mapping any, out io.Wr
 
 // NewSyncer implements writesync.SyncerFactory.
 // See also ExpectWritesCount and TriggerSync methods.
-func (h *writerSyncHelper) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config writesync.Config, chain writesync.Chain, statistics writesync.StatisticsProvider,
+func (h *writerSyncHelper) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config writesync.Config, chain writesync.Pipeline, statistics writesync.StatisticsProvider,
 ) *writesync.Syncer {
 	s := writesync.NewSyncer(ctx, logger, clock, config, chain, statistics)
 	h.syncers = append(h.syncers, s)
@@ -634,7 +576,7 @@ func (h *writerSyncHelper) TriggerSync(tb testing.TB) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(tb, s.TriggerSync(context.Background(), true).Wait())
+			assert.NoError(tb, s.TriggerSync(true).Wait())
 		}()
 	}
 	wg.Wait()
@@ -698,7 +640,7 @@ func (o *dummyOutput) IsReady() bool {
 	return true
 }
 
-func (o *dummyOutput) Write(p []byte) (n int, err error) {
+func (o *dummyOutput) Write(ctx context.Context, aligned bool, p []byte) (n int, err error) {
 	return o.bytes.Write(p)
 }
 
