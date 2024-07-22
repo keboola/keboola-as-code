@@ -13,7 +13,7 @@ import (
 	openapiv3 "goa.design/goa/v3/http/codegen/openapi/v3"
 )
 
-// nolint: gochecknoinits
+//nolint:gochecknoinits
 func init() {
 	codegen.RegisterPluginFirst("storage-api-token", "gen", nil, generate)
 }
