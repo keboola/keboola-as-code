@@ -53,6 +53,7 @@ type AppUpstream struct {
 	target    *url.URL
 	handler   *chain.Chain
 	wsHandler *chain.Chain
+	cancelWs  context.CancelFunc
 }
 
 type dependencies interface {
@@ -148,6 +149,10 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, true))
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
+
+			ctx, c := context.WithCancel(ctx)
+			u.cancelWs = c
+
 			proxy.ServeHTTP(w, req.WithContext(ctx))
 			return nil
 		})).
@@ -218,4 +223,8 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 		err := u.manager.wakeup.Wakeup(wakeupCtx, u.app.ID) //nolint:contextcheck
 		span.End(&err)
 	}()
+}
+
+func (u *AppUpstream) Cancel() {
+	u.cancelWs()
 }
