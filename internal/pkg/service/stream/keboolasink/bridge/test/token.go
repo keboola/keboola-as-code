@@ -14,8 +14,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func MockTokenStorageAPICalls(t *testing.T, transport *httpmock.MockTransport) {
-	t.Helper()
+func MockTokenStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) {
+	tb.Helper()
 	lock := &sync.Mutex{}
 
 	tokenCounter := 1000

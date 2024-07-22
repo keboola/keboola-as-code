@@ -15,8 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func MockBucketStorageAPICalls(t *testing.T, transport *httpmock.MockTransport) {
-	t.Helper()
+func MockBucketStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) {
+	tb.Helper()
 	lock := &sync.Mutex{}
 
 	// Get bucket - not found
