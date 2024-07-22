@@ -52,7 +52,7 @@ export function setupSource() {
   }
 
   const createSourceTimeoutSec = 60
-  const taskUrl = stripUrlHost(res.json().url)
+  const taskUrl = res.json().url
   for (let retries = createSourceTimeoutSec; retries > 0; retries--) {
     res = get(taskUrl)
     if (res.status !== 200) {
@@ -73,7 +73,7 @@ export function setupSource() {
     throw new Error("failed to get source");
   }
 
-  const sourceUrl = stripUrlHost(res.json().http.url)
+  const sourceUrl = res.json().http.url
   if (!sourceUrl) {
     throw new Error("source url is not set");
   }
@@ -92,7 +92,7 @@ export function setupSink(sourceId, body) {
   }
 
   const createSinkTimeoutSec = 60
-  const taskUrl = stripUrlHost(res.json().url)
+  const taskUrl = res.json().url
   for (let retries = createSinkTimeoutSec; retries > 0; retries--) {
     res = get(taskUrl)
     if (res.status !== 200) {
@@ -122,13 +122,9 @@ export function setupSink(sourceId, body) {
   return { id: sinkId }
 }
 
-export function stripUrlHost(url) {
-  return (new URL(url)).pathname
-}
-
 export function teardownSource(sourceId) {
   const res = del(`v1/branches/default/sources/${sourceId}`);
-  if (res.status !== 200) {
+  if (res.status !== 202) {
     console.error(res);
     throw new Error("failed to delete source");
   }
