@@ -164,3 +164,15 @@ export function checkResponse(res) {
     errors_metrics.add(1, { url: res.request.url });
   }
 }
+
+export function randomStrings() {
+  let strings = []
+  for (let i = 0; i < 100; i++) {
+    strings.push(randomString(10))
+  }
+  return strings
+}
+
+export function randomElement(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
