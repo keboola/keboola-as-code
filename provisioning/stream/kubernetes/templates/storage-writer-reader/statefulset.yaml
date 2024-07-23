@@ -8,11 +8,11 @@ metadata:
     app: stream-storage-writer-reader
     releaseId: $RELEASE_ID
 spec:
-  serviceName: "stream-storage-writer-reader"
   replicas: $STREAM_STORAGE_READER_WRITER_REPLICAS
   selector:
     matchLabels:
       app: stream-storage-writer-reader
+  serviceName: "stream-storage-writer-reader"
   template:
     metadata:
       labels:
@@ -67,7 +67,12 @@ spec:
             limits:
               memory: "$STREAM_STORAGE_WRITER_MEMORY_HARD_LIMIT"
           ports:
-            - containerPort: 6000 # disk writer listener
+            - name: writer-tcp
+              containerPort: 6000
+              protocol: TCP
+            - name: writer-udp
+              containerPort: 6000
+              protocol: UDP
             - containerPort: 9001 # metrics
           volumeMounts:
             - name: config
@@ -93,7 +98,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: STREAM_HOSTNAME
-              value: "$(STREAM_NODE_ID).stream.pod.cluster.local"
+              value: "$(STREAM_NODE_ID).stream-storage-writer-reader.stream.svc.cluster.local"
             - name: STREAM_ETCD_PASSWORD
               valueFrom:
                 secretKeyRef:

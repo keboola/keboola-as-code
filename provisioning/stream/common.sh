@@ -106,6 +106,7 @@ kubectl apply -f ./kubernetes/deploy/http-source/deployment.yaml
 # Storage writer/reader
 kubectl apply -f ./kubernetes/deploy/storage-writer-reader/network-policy.yaml
 kubectl apply -f ./kubernetes/deploy/storage-writer-reader/statefulset.yaml
+kubectl apply -f ./kubernetes/deploy/storage-writer-reader/service.yaml
 
 # Storage coordinator
 kubectl apply -f ./kubernetes/deploy/storage-coordinator/pdb.yaml
