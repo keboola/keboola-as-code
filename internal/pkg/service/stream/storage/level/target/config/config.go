@@ -1,4 +1,4 @@
-package target
+package config
 
 import (
 	"time"
@@ -32,12 +32,10 @@ func NewConfig() Config {
 	}
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-
 // ImportConfig configures the file import.
 type ImportConfig struct {
-	MinInterval duration.Duration `configKey:"minInterval" configUsage:"Minimal interval between imports." validate:"required,minDuration=30s,maxDuration=30m"`
-	Trigger     ImportTrigger     `configKey:"trigger"`
+	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Minimal interval between imports." validate:"required,minDuration=30s,maxDuration=30m"`
+	Trigger     ImportTrigger     `json:"trigger" configKey:"trigger"`
 }
 
 // ImportConfigPatch is same as the ImportConfig, but with optional/nullable fields.
@@ -45,8 +43,6 @@ type ImportConfig struct {
 type ImportConfigPatch struct {
 	Trigger *ImportTriggerPatch `json:"trigger,omitempty"`
 }
-
-// ---------------------------------------------------------------------------------------------------------------------
 
 // ImportTrigger configures file import conditions, at least one must be met.
 type ImportTrigger struct {

@@ -1,9 +1,9 @@
 package level
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
+	local "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
+	staging "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
+	target "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 )
 
 // Config contains default configuration for the storage.

@@ -1,4 +1,4 @@
-package staging
+package config
 
 import (
 	"time"
@@ -37,12 +37,10 @@ func NewConfig() Config {
 	}
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-
 // UploadConfig configures the slice upload.
 type UploadConfig struct {
-	MinInterval duration.Duration `configKey:"minInterval" configUsage:"Minimal interval between uploads." validate:"required,minDuration=1s,maxDuration=5m"`
-	Trigger     UploadTrigger     `configKey:"trigger"`
+	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Minimal interval between uploads." validate:"required,minDuration=1s,maxDuration=5m"`
+	Trigger     UploadTrigger     `json:"trigger" configKey:"trigger"`
 }
 
 // UploadConfigPatch is same as the UploadConfig, but with optional/nullable fields.
@@ -50,8 +48,6 @@ type UploadConfig struct {
 type UploadConfigPatch struct {
 	Trigger *UploadTriggerPatch `json:"trigger,omitempty"`
 }
-
-// ---------------------------------------------------------------------------------------------------------------------
 
 // UploadTrigger configures slice upload conditions, at least one must be met.
 type UploadTrigger struct {
