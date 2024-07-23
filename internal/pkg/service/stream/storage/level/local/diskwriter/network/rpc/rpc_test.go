@@ -88,7 +88,7 @@ func TestNetworkFile(t *testing.T) {
 	sourceNode.Process().WaitForShutdown()
 
 	// Check file content
-	filePath := slice.LocalStorage.FileName(volumePath)
+	filePath := slice.LocalStorage.FileName(volumePath, "source")
 	content, err := os.ReadFile(filePath)
 	require.NoError(t, err)
 	assert.Equal(t, "foo\nbar\n", string(content))
@@ -130,7 +130,7 @@ func openNetworkFileOnSourceNode(t *testing.T, ctx context.Context, etcdCfg etcd
 	require.True(t, found)
 
 	// Open network file
-	file, err := rpc.OpenNetworkFile(ctx, conn, sliceKey)
+	file, err := rpc.OpenNetworkFile(ctx, sourceNodeID, conn, sliceKey)
 	require.NoError(t, err)
 
 	return file, m

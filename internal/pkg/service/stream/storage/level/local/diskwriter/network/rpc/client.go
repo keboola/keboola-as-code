@@ -26,7 +26,7 @@ type networkFile struct {
 	fileID   uint64
 }
 
-func OpenNetworkFile(ctx context.Context, conn *transport.ClientConnection, sliceKey model.SliceKey) (encoding.NetworkOutput, error) {
+func OpenNetworkFile(ctx context.Context, sourceNodeID string, conn *transport.ClientConnection, sliceKey model.SliceKey) (encoding.NetworkOutput, error) {
 	// Use transport layer with multiplexer for connection
 	dialer := func(_ context.Context, _ string) (net.Conn, error) {
 		stream, err := conn.OpenStream()
@@ -74,7 +74,7 @@ func OpenNetworkFile(ctx context.Context, conn *transport.ClientConnection, slic
 
 	// Try to open remote file
 	f := &networkFile{conn: clientConn, rpc: pb.NewNetworkFileClient(clientConn), sliceKey: sliceKey}
-	if err := f.open(ctx); err != nil {
+	if err := f.open(ctx, sourceNodeID); err != nil {
 		_ = clientConn.Close()
 		return nil, err
 	}
@@ -82,8 +82,9 @@ func OpenNetworkFile(ctx context.Context, conn *transport.ClientConnection, slic
 	return f, nil
 }
 
-func (f *networkFile) open(ctx context.Context) error {
+func (f *networkFile) open(ctx context.Context, sourceNodeID string) error {
 	resp, err := f.rpc.Open(ctx, &pb.OpenRequest{
+		SourceNodeId: sourceNodeID,
 		SliceKey: &pb.SliceKey{
 			ProjectId: int64(f.sliceKey.ProjectID),
 			BranchId:  int64(f.sliceKey.BranchID),
