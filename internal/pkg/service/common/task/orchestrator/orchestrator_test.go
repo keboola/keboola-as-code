@@ -144,7 +144,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithNodeID("node1"),
-		dependencies.WithEnabledOrchestrator(),
+		dependencies.WithEnabledOrchestrator("test-node"),
 	)
 
 	dist, err := d.DistributionNode().Group("my-group")
@@ -229,7 +229,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		dependencies.WithClock(clk),
 		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithNodeID("node1"),
-		dependencies.WithEnabledOrchestrator(),
+		dependencies.WithEnabledOrchestrator("test-node"),
 	)
 	logger := d.DebugLogger()
 	dist, err := d.DistributionNode().Group("my-group")
