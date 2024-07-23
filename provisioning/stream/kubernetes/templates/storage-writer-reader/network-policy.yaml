@@ -16,7 +16,11 @@ spec:
   ingress:
     # Writer ingress
     - ports:
-        - port: 6000 # writer ingress
+        - # writer ingress
+        - port: 6000
+          protocol: TCP
+        - port: 6000
+          protocol: UDP
       from:
        - podSelector:
            matchLabels:

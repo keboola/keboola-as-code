@@ -35,6 +35,7 @@ envsubst < templates/http-source/deployment.yaml          > deploy/http-source/d
 mkdir deploy/storage-writer-reader
 envsubst < templates/storage-writer-reader/network-policy.yaml  > deploy/storage-writer-reader/network-policy.yaml
 envsubst < templates/storage-writer-reader/statefulset.yaml     > deploy/storage-writer-reader/statefulset.yaml
+envsubst < templates/storage-writer-reader/service.yaml         > deploy/storage-writer-reader/service.yaml
 
 # Storage coordinator
 mkdir deploy/storage-coordinator

@@ -70,7 +70,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: STREAM_HOSTNAME
-              value: "$(STREAM_NODE_ID).stream.pod.cluster.local"
+              value: "localhost"
             - name: STREAM_ETCD_PASSWORD
               valueFrom:
                 secretKeyRef:
