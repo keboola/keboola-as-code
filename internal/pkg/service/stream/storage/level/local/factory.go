@@ -3,11 +3,12 @@ package local
 import (
 	"path/filepath"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 )
 
-func NewFile(path string, c Config) model.File {
+func NewFile(path string, c config.Config) model.File {
 	return model.File{
 		Dir:        NormalizeDirPath(path),
 		Allocation: c.Writer.Allocation,

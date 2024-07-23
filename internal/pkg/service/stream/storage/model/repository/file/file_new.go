@@ -23,8 +23,8 @@ func (r *Repository) newFile(cfg level.Config, k model.FileKey, sink definition.
 	f.Encoding = cfg.Local.Encoding
 	f.Encoding.Compression = f.Encoding.Compression.Simplify()
 	f.LocalStorage = local.NewFile(localDir, cfg.Local)
-	f.StagingStorage = staging.NewFile(f.Encoding, k.OpenedAt().Time())
-	f.TargetStorage = target.NewTarget()
+	f.StagingStorage = staging.NewFile(f.Encoding, cfg.Staging.Upload, k.OpenedAt().Time())
+	f.TargetStorage = target.NewTarget(cfg.Target.Import)
 	f.LocalStorage.Assignment.Config = cfg.Local.Volume.Assignment
 
 	return f, nil
