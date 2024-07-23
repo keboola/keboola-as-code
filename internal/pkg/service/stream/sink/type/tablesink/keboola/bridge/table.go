@@ -16,6 +16,12 @@ import (
 )
 
 func (b *Bridge) ensureTableExists(ctx context.Context, api *keboola.AuthorizedAPI, tableKey keboola.TableKey, sink definition.Sink) error {
+	// Create bucket in a blocking way if not exists
+	b.logger.Infof(ctx, "branchID %s, key %v", tableKey.BranchID, tableKey)
+	if err := b.ensureBucketExistsBlocking(ctx, api, tableKey); err != nil {
+		return err
+	}
+
 	// Get table
 	tab, err := b.getTable(ctx, api, tableKey)
 

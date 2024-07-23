@@ -111,6 +111,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 		sink := test.NewKeboolaTableSink(sinkKey)
 		etcdLogs.Reset()
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(apiCtx).Err())
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(apiCtx).Err())
 		createSinkEtcdLogs = etcdLogs.String()
 	}
 	{

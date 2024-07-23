@@ -11,14 +11,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (b *Bridge) ensureBucketExists(ctx context.Context, api *keboola.AuthorizedAPI, bucketKey keboola.BucketKey) error {
+func (b *Bridge) ensureBucketExistsBlocking(ctx context.Context, api *keboola.AuthorizedAPI, tableKey keboola.TableKey) error {
 	// Check if the bucket exists
-	_, err := b.getBucket(ctx, api, bucketKey)
+	_, err := b.getBucket(ctx, api, tableKey.BucketKey())
 
 	// Try to create bucket, if not exists
 	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.buckets.notFound" {
-		_, err = b.createBucket(ctx, api, bucketKey)
+		_, err = b.createBucket(ctx, api, tableKey.BucketKey())
 	}
 
 	return err

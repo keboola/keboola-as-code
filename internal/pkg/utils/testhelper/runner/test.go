@@ -98,6 +98,7 @@ func WithRunAPIServerAndRequests(
 	path string,
 	args []string,
 	envs *env.Map,
+	httpClientTimeout time.Duration,
 	requestDecoratorFn func(request *APIRequestDef),
 ) Options {
 	return func(c *runConfig) {
@@ -105,6 +106,7 @@ func WithRunAPIServerAndRequests(
 			path:               path,
 			args:               args,
 			envs:               envs,
+			httpClientTimeout:  httpClientTimeout,
 			requestDecoratorFn: requestDecoratorFn,
 		}
 	}
@@ -195,6 +197,7 @@ func (t *Test) Run(opts ...Options) {
 			c.apiServerConfig.path,
 			c.apiServerConfig.args,
 			c.apiServerConfig.envs,
+			c.apiServerConfig.httpClientTimeout,
 			c.apiServerConfig.requestDecoratorFn,
 		)
 	}
@@ -324,6 +327,7 @@ type apiServerConfig struct {
 	path               string
 	args               []string
 	envs               *env.Map
+	httpClientTimeout  time.Duration
 	requestDecoratorFn func(request *APIRequestDef)
 }
 
@@ -331,6 +335,7 @@ func (t *Test) runAPIServer(
 	path string,
 	addArgs []string,
 	addEnvs *env.Map,
+	httpClientTimeout time.Duration,
 	requestDecoratorFn func(request *APIRequestDef),
 ) {
 	// Get a free port
@@ -388,7 +393,7 @@ func (t *Test) runAPIServer(
 	}
 
 	// Run the requests
-	requestsOk := t.runRequests(apiURL, requestDecoratorFn)
+	requestsOk := t.runRequests(apiURL, httpClientTimeout, requestDecoratorFn)
 
 	// Shutdown API server
 	_ = cmd.Process.Signal(syscall.SIGTERM)
@@ -431,8 +436,11 @@ type APIRequestRepeat struct {
 	Wait    int    `json:"wait,omitempty"`
 }
 
-func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef)) bool {
-	t.apiClient = resty.New()
+func (t *Test) runRequests(apiURL string, timeout time.Duration, requestDecoratorFn func(*APIRequestDef)) bool {
+	client := &http.Client{
+		Timeout: timeout,
+	}
+	t.apiClient = resty.NewWithClient(client)
 	t.apiClient.SetBaseURL(apiURL)
 
 	// Dump raw HTTP request

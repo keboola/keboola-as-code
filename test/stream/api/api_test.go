@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,6 +81,7 @@ func TestStreamApiE2E(t *testing.T) {
 					binaryPath,
 					[]string{"api", "storage-writer"}, // start api component and storage-writer to detect the volume
 					addEnvs,
+					2*time.Minute,
 					nil,
 				),
 				runner.WithAssertProjectState(),
