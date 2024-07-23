@@ -177,7 +177,7 @@ func (v *Volume) Metadata() volume.Metadata {
 	}
 }
 
-func (v *Volume) OpenWriter(sliceKey model.SliceKey, slice localModel.Slice) (w Writer, err error) {
+func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice localModel.Slice) (w Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.PrefixErrorf(err, `disk writer for slice "%s" cannot be created: volume is closed`, sliceKey.String())
@@ -202,7 +202,7 @@ func (v *Volume) OpenWriter(sliceKey model.SliceKey, slice localModel.Slice) (w 
 	}()
 
 	// Create writer
-	w, err = newWriter(v.ctx, v.logger, v.Path(), v.fileOpener, v.allocator, sliceKey, slice, v.writerEvents)
+	w, err = newWriter(v.ctx, v.logger, v.Path(), sourceNodeID, v.fileOpener, v.allocator, sliceKey, slice, v.writerEvents)
 	if err != nil {
 		return nil, err
 	}

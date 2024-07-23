@@ -48,6 +48,7 @@ func newWriter(
 	ctx context.Context,
 	logger log.Logger,
 	volumePath string,
+	sourceNodeID string,
 	opener FileOpener,
 	allocator diskalloc.Allocator,
 	sliceKey model.SliceKey,
@@ -80,7 +81,7 @@ func newWriter(
 	}
 
 	// Open file
-	filePath := slice.FileName(volumePath)
+	filePath := slice.FileName(volumePath, sourceNodeID)
 	logger = logger.With(attribute.String("file.path", filePath))
 	w.file, err = opener.OpenFile(filePath)
 	if err == nil {

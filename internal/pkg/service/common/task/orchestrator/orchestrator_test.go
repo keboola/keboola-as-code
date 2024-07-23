@@ -39,7 +39,7 @@ func TestOrchestrator(t *testing.T) {
 	d1 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
-		dependencies.WithEnabledOrchestrator(),
+		dependencies.WithEnabledOrchestrator("node1"),
 		dependencies.WithNodeID("node1"),
 	)
 	grp1, err := d1.DistributionNode().Group("my-group")
@@ -49,7 +49,7 @@ func TestOrchestrator(t *testing.T) {
 	d2 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
-		dependencies.WithEnabledOrchestrator(),
+		dependencies.WithEnabledOrchestrator("node2"),
 		dependencies.WithNodeID("node2"),
 	)
 	grp2, err := d2.DistributionNode().Group("my-group")
@@ -144,7 +144,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithNodeID("node1"),
-		dependencies.WithEnabledOrchestrator(),
+		dependencies.WithEnabledOrchestrator("test-node"),
 	)
 
 	dist, err := d.DistributionNode().Group("my-group")
@@ -229,7 +229,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		dependencies.WithClock(clk),
 		dependencies.WithEtcdConfig(etcdCfg),
 		dependencies.WithNodeID("node1"),
-		dependencies.WithEnabledOrchestrator(),
+		dependencies.WithEnabledOrchestrator("test-node"),
 	)
 	logger := d.DebugLogger()
 	dist, err := d.DistributionNode().Group("my-group")
@@ -328,18 +328,18 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 {"level":"info","message":"watch stream consumer closed: context canceled","task":"some.task","component":"orchestrator.watch.consumer"}
 {"level":"info","message":"shutdown done","component":"orchestrator"}
 {"level":"info","message":"received shutdown request","component":"distribution"}
-{"level":"info","message":"unregistering the node \"node1\"","component":"distribution"}
-{"level":"info","message":"the node \"node1\" unregistered","component":"distribution"}
+{"level":"info","message":"unregistering the node \"test-node\"","component":"distribution"}
+{"level":"info","message":"the node \"test-node\" unregistered","component":"distribution"}
 {"level":"info","message":"closing etcd session: context canceled","distribution.group":"my-group","component":"distribution.etcd.session"}
 {"level":"info","message":"closed etcd session","distribution.group":"my-group","component":"distribution.etcd.session"}
 {"level":"info","message":"shutdown done","component":"distribution"}
 {"level":"info","message":"received shutdown request","component":"orchestrator"}
 {"level":"info","message":"waiting for orchestrators to finish","component":"orchestrator"}
 {"level":"info","message":"shutdown done","component":"orchestrator"}
-{"level":"info","message":"received shutdown request","node":"node1","component":"task"}
-{"level":"info","message":"closing etcd session: context canceled","node":"node1","component":"task.etcd.session"}
-{"level":"info","message":"closed etcd session","node":"node1","component":"task.etcd.session"}
-{"level":"info","message":"shutdown done","node":"node1","component":"task"}
+{"level":"info","message":"received shutdown request","node":"test-node","component":"task"}
+{"level":"info","message":"closing etcd session: context canceled","node":"test-node","component":"task.etcd.session"}
+{"level":"info","message":"closed etcd session","node":"test-node","component":"task.etcd.session"}
+{"level":"info","message":"shutdown done","node":"test-node","component":"task"}
 {"level":"info","message":"closing etcd connection","component":"etcd.client"}
 {"level":"info","message":"closed etcd connection","component":"etcd.client"}
 `)

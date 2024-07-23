@@ -50,7 +50,7 @@ func TestWriter_Basic(t *testing.T) {
 	}
 
 	// Check file content
-	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath))
+	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, tc.SourceNodeID))
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("123,456,789\nabc,def,ghj\n"), content)
 }
@@ -64,7 +64,7 @@ func TestOpenWriter_ClosedVolume(t *testing.T) {
 	assert.NoError(t, vol.Close(context.Background()))
 
 	slice := test.NewSlice()
-	_, err = vol.OpenWriter(slice.SliceKey, slice.LocalStorage)
+	_, err = vol.OpenWriter(tc.SourceNodeID, slice.SliceKey, slice.LocalStorage)
 	if assert.Error(t, err) {
 		wildcards.Assert(t, "disk writer for slice \"%s\" cannot be created: volume is closed:\n- context canceled", err.Error())
 	}
@@ -207,14 +207,16 @@ func TestWriter_AllocateSpace_Disabled(t *testing.T) {
 // writerTestCase is a helper to open disk writer in tests.
 type writerTestCase struct {
 	*volumeTestCase
-	Volume *diskwriter.Volume
-	Slice  *model.Slice
+	SourceNodeID string
+	Volume       *diskwriter.Volume
+	Slice        *model.Slice
 }
 
 func newWriterTestCase(tb testing.TB) *writerTestCase {
 	tb.Helper()
 	tc := &writerTestCase{}
 	tc.volumeTestCase = newVolumeTestCase(tb)
+	tc.SourceNodeID = "source-node-id"
 	tc.Slice = test.NewSlice()
 	return tc
 }
@@ -244,7 +246,7 @@ func (tc *writerTestCase) NewWriter() (diskwriter.Writer, error) {
 	val := validator.New()
 	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
 
-	w, err := tc.Volume.OpenWriter(tc.Slice.SliceKey, tc.Slice.LocalStorage)
+	w, err := tc.Volume.OpenWriter(tc.SourceNodeID, tc.Slice.SliceKey, tc.Slice.LocalStorage)
 	if err != nil {
 		return nil, err
 	}
@@ -253,5 +255,5 @@ func (tc *writerTestCase) NewWriter() (diskwriter.Writer, error) {
 }
 
 func (tc *writerTestCase) FilePath() string {
-	return tc.Slice.LocalStorage.FileName(tc.VolumePath)
+	return tc.Slice.LocalStorage.FileName(tc.VolumePath, tc.SourceNodeID)
 }

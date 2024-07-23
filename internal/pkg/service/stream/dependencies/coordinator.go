@@ -56,7 +56,7 @@ func NewMockedCoordinatorScopeWithConfig(tb testing.TB, modifyConfig func(*confi
 	svcScp, mock := NewMockedServiceScopeWithConfig(
 		tb,
 		modifyConfig,
-		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution(), dependencies.WithEnabledDistributedLocks()}, opts...)...,
+		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution("test-node"), dependencies.WithEnabledDistributedLocks()}, opts...)...,
 	)
 	d, err := newCoordinatorScope(mock.TestContext(), coordinatorParentScopesImpl{
 		ServiceScope:         svcScp,

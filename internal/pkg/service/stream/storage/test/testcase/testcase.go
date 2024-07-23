@@ -52,6 +52,11 @@ type WriterTestCase struct {
 	FileDecoder func(t *testing.T, r io.Reader) io.Reader
 	Validator   func(t *testing.T, fileContent string)
 
+	sourceNode     dependencies.SourceScope
+	sourceNodeMock dependencies.Mocked
+	writerNode     dependencies.StorageWriterScope
+	writerNodeMock dependencies.Mocked
+
 	logger log.DebugLogger
 }
 
@@ -79,8 +84,8 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(volumePath, volume.IDFile), []byte(volumeID), 0o600))
 
 	// Start nodes
-	diskWriterNode, sourceNode := tc.startNodes(t, ctx, etcdCfg, volumesPath)
-	sinkRouter := sourceNode.SinkRouter()
+	tc.startNodes(t, ctx, etcdCfg, volumesPath)
+	sinkRouter := tc.sourceNode.SinkRouter()
 
 	// Create resource in an API node
 	apiScp, apiMock := tc.startAPINode(t, etcdCfg)
@@ -107,7 +112,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, slices, 1)
 	slice := slices[0]
-	filePath := slice.LocalStorage.FileName(volumePath)
+	filePath := slice.LocalStorage.FileName(volumePath, tc.sourceNodeMock.TestConfig().NodeID)
 
 	// Wait for pipeline initialization
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -165,7 +170,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	}
 
 	// Shutdown nodes
-	tc.shutdownNodes(t, ctx, diskWriterNode, sourceNode)
+	tc.shutdownNodes(t, ctx)
 
 	// Get file size
 	fileStat, err := os.Stat(filePath)
@@ -224,35 +229,33 @@ func (tc *WriterTestCase) assertResult(t *testing.T, result *router.SourceResult
 	}
 }
 
-func (tc *WriterTestCase) startNodes(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) (dependencies.StorageWriterScope, dependencies.SourceScope) {
+func (tc *WriterTestCase) startNodes(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) {
 	t.Helper()
 
 	tc.logger.Truncate()
 
 	// Start disk in node
-	diskWriterNode := tc.startDiskWriterNode(t, ctx, etcdCfg, volumesPath)
+	tc.startWriterNode(t, ctx, etcdCfg, volumesPath)
 
 	// Start source node
-	sourceNode := tc.startSourceNode(t, etcdCfg)
+	tc.startSourceNode(t, etcdCfg)
 
 	// Wait for connection between nodes
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		tc.logger.AssertJSONMessages(c, `{"level":"info","message":"disk writer client connected from \"%s\" to \"disk-writer\" - \"%s\"","component":"storage.router.connections.client"}`)
 	}, 5*time.Second, 10*time.Millisecond)
-
-	return diskWriterNode, sourceNode
 }
 
-func (tc *WriterTestCase) shutdownNodes(t *testing.T, ctx context.Context, diskWriterNode dependencies.StorageWriterScope, sourceNode dependencies.SourceScope) {
+func (tc *WriterTestCase) shutdownNodes(t *testing.T, ctx context.Context) {
 	t.Helper()
 
 	// Close source node
-	sourceNode.Process().Shutdown(ctx, errors.New("bye bye source"))
-	sourceNode.Process().WaitForShutdown()
+	tc.sourceNode.Process().Shutdown(ctx, errors.New("bye bye source"))
+	tc.sourceNode.Process().WaitForShutdown()
 
 	// Close disk writer node
-	diskWriterNode.Process().Shutdown(ctx, errors.New("bye bye disk writer"))
-	diskWriterNode.Process().WaitForShutdown()
+	tc.writerNode.Process().Shutdown(ctx, errors.New("bye bye disk writer"))
+	tc.writerNode.Process().WaitForShutdown()
 }
 
 func (tc *WriterTestCase) startAPINode(t *testing.T, etcdCfg etcdclient.Config) (dependencies.APIScope, dependencies.Mocked) {
@@ -270,10 +273,10 @@ func (tc *WriterTestCase) startAPINode(t *testing.T, etcdCfg etcdclient.Config) 
 	)
 }
 
-func (tc *WriterTestCase) startSourceNode(t *testing.T, etcdCfg etcdclient.Config) dependencies.SourceScope {
+func (tc *WriterTestCase) startSourceNode(t *testing.T, etcdCfg etcdclient.Config) {
 	t.Helper()
 
-	d, _ := dependencies.NewMockedSourceScopeWithConfig(
+	tc.sourceNode, tc.sourceNodeMock = dependencies.NewMockedSourceScopeWithConfig(
 		t,
 		func(cfg *config.Config) {
 			tc.updateServiceConfig(cfg)
@@ -282,14 +285,12 @@ func (tc *WriterTestCase) startSourceNode(t *testing.T, etcdCfg etcdclient.Confi
 		commonDeps.WithDebugLogger(tc.logger),
 		commonDeps.WithEtcdConfig(etcdCfg),
 	)
-
-	return d
 }
 
-func (tc *WriterTestCase) startDiskWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) dependencies.StorageWriterScope {
+func (tc *WriterTestCase) startWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) {
 	t.Helper()
 
-	d, mock := dependencies.NewMockedStorageWriterScopeWithConfig(
+	tc.writerNode, tc.writerNodeMock = dependencies.NewMockedStorageWriterScopeWithConfig(
 		t,
 		func(cfg *config.Config) {
 			tc.updateServiceConfig(cfg)
@@ -301,9 +302,7 @@ func (tc *WriterTestCase) startDiskWriterNode(t *testing.T, ctx context.Context,
 		commonDeps.WithEtcdConfig(etcdCfg),
 	)
 
-	require.NoError(t, writernode.Start(ctx, d, mock.TestConfig()))
-
-	return d
+	require.NoError(t, writernode.Start(ctx, tc.writerNode, tc.writerNodeMock.TestConfig()))
 }
 
 func (tc *WriterTestCase) updateServiceConfig(cfg *config.Config) {

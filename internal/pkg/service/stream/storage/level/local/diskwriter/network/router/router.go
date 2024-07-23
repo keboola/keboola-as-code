@@ -24,6 +24,7 @@ import (
 )
 
 type Router struct {
+	nodeID       string
 	config       network.Config
 	logger       log.Logger
 	balancer     Balancer
@@ -57,8 +58,9 @@ type dependencies interface {
 	EncodingManager() *encoding.Manager
 }
 
-func New(d dependencies, sourceType string, config network.Config) (r *Router, err error) {
+func New(d dependencies, sourceNodeID, sourceType string, config network.Config) (r *Router, err error) {
 	r = &Router{
+		nodeID:      sourceNodeID,
 		config:      config,
 		logger:      d.Logger().WithComponent("storage.router"),
 		balancer:    NewRandomBalancer(),

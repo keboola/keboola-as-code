@@ -56,10 +56,11 @@ type mocked struct {
 
 type MockedConfig struct {
 	enableEtcdClient       bool
-	enableTasks            bool
-	enableDistribution     bool
 	enableDistributedLocks bool
 	enableOrchestrator     bool
+
+	tasksNodeID        string
+	distributionNodeID string
 
 	ctx         context.Context
 	clock       clock.Clock
@@ -109,17 +110,17 @@ func WithBigQueryBackend() MockedOption {
 	}
 }
 
-func WithEnabledTasks() MockedOption {
+func WithEnabledTasks(nodeID string) MockedOption {
 	return func(c *MockedConfig) {
 		WithEnabledEtcdClient()(c)
-		c.enableTasks = true
+		c.tasksNodeID = nodeID
 	}
 }
 
-func WithEnabledDistribution() MockedOption {
+func WithEnabledDistribution(nodeID string) MockedOption {
 	return func(c *MockedConfig) {
 		WithEnabledEtcdClient()(c)
-		c.enableDistribution = true
+		c.distributionNodeID = nodeID
 	}
 }
 
@@ -130,18 +131,18 @@ func WithEnabledDistributedLocks() MockedOption {
 	}
 }
 
-func WithDistributionConfig(cfg distribution.Config) MockedOption {
+func WithDistributionConfig(nodeID string, cfg distribution.Config) MockedOption {
 	return func(c *MockedConfig) {
 		WithEnabledEtcdClient()(c)
-		WithEnabledDistribution()(c)
+		WithEnabledDistribution(nodeID)(c)
 		c.distributionConfig = cfg
 	}
 }
 
-func WithEnabledOrchestrator() MockedOption {
+func WithEnabledOrchestrator(nodeID string) MockedOption {
 	return func(c *MockedConfig) {
-		WithEnabledTasks()(c)
-		WithEnabledDistribution()(c)
+		WithEnabledTasks(nodeID)(c)
+		WithEnabledDistribution(nodeID)(c)
 		c.enableOrchestrator = true
 	}
 }
@@ -383,13 +384,13 @@ func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
 		require.NoError(tb, err)
 	}
 
-	if cfg.enableTasks {
-		d.taskScope, err = newTaskScope(cfg.ctx, cfg.nodeID, d)
+	if cfg.tasksNodeID != "" {
+		d.taskScope, err = newTaskScope(cfg.ctx, cfg.tasksNodeID, d)
 		require.NoError(tb, err)
 	}
 
-	if cfg.enableDistribution {
-		d.distributionScope = newDistributionScope(cfg.nodeID, cfg.distributionConfig, d)
+	if cfg.distributionNodeID != "" {
+		d.distributionScope = newDistributionScope(cfg.distributionNodeID, cfg.distributionConfig, d)
 	}
 
 	if cfg.enableDistributedLocks {

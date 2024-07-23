@@ -57,7 +57,7 @@ func NewMockedStorageWriterScopeWithConfig(tb testing.TB, modifyConfig func(*con
 	storageScp, mock := NewMockedStorageScopeWithConfig(
 		tb,
 		modifyConfig,
-		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution()}, opts...)...,
+		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution("test-node")}, opts...)...,
 	)
 	d, err := newStorageWriterScope(mock.TestContext(), storageWriterParentScopesImpl{
 		StorageScope:      storageScp,

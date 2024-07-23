@@ -23,7 +23,7 @@ import (
 func NewMockedAPIScope(t *testing.T, cfg config.Config, opts ...dependencies.MockedOption) (APIScope, dependencies.Mocked) {
 	t.Helper()
 
-	opts = append(opts, dependencies.WithEnabledEtcdClient(), dependencies.WithEnabledTasks())
+	opts = append(opts, dependencies.WithEnabledEtcdClient(), dependencies.WithEnabledTasks("test-node"))
 	mocked := dependencies.NewMocked(t, opts...)
 
 	var err error

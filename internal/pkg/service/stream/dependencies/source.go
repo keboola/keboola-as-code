@@ -66,7 +66,7 @@ func NewMockedSourceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Con
 	svcScp, mock := NewMockedServiceScopeWithConfig(
 		tb,
 		modifyConfig,
-		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution()}, opts...)...,
+		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution("test-node")}, opts...)...,
 	)
 	d, err := newSourceScope(sourceParentScopesImpl{
 		ServiceScope:      svcScp,
@@ -95,7 +95,7 @@ func newSourceScope(parentScp sourceParentScopes, sourceType string, cfg config.
 		return nil, err
 	}
 
-	d.storageRouter, err = storageRouter.New(d, sourceType, cfg.Storage.Level.Local.Writer.Network)
+	d.storageRouter, err = storageRouter.New(d, cfg.NodeID, sourceType, cfg.Storage.Level.Local.Writer.Network)
 	if err != nil {
 		return nil, err
 	}

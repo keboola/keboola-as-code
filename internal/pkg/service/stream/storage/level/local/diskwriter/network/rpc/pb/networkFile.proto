@@ -14,7 +14,8 @@ service NetworkFile {
 }
 
 message OpenRequest {
-  SliceKey slice_key = 1;
+  string source_node_id = 1;
+  SliceKey slice_key = 2;
 }
 
 message OpenResponse{
