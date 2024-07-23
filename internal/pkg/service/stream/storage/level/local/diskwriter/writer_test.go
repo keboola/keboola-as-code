@@ -50,7 +50,7 @@ func TestWriter_Basic(t *testing.T) {
 	}
 
 	// Check file content
-	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath))
+	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, "source-node"))
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("123,456,789\nabc,def,ghj\n"), content)
 }

@@ -25,6 +25,6 @@ func (s Slice) DirName(volumePath string) string {
 	return filepath.Join(volumePath, s.Dir)
 }
 
-func (s Slice) FileName(volumePath string) string {
-	return filepath.Join(s.DirName(volumePath), fmt.Sprintf("%s.%s", s.FilenamePrefix, s.FilenameExtension))
+func (s Slice) FileName(volumePath string, sourceNodeID string) string {
+	return filepath.Join(s.DirName(volumePath), fmt.Sprintf("%s-%s.%s", s.FilenamePrefix, sourceNodeID, s.FilenameExtension))
 }
