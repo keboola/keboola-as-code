@@ -12,14 +12,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	local "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
+	staging "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
+	target "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 )
 
 func TestConfig_With(t *testing.T) {

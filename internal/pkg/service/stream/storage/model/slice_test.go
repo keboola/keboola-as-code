@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
+	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -154,6 +155,7 @@ func TestSlice_Validation(t *testing.T) {
 	stagingStorage := stagingModel.Slice{
 		Path:        "slice.csv.gzip",
 		Compression: compression.NewConfig(),
+		Upload:      stagingConfig.NewConfig().Upload,
 	}
 
 	// Test cases
@@ -189,6 +191,10 @@ func TestSlice_Validation(t *testing.T) {
 - "local.filenameExtension" is a required field
 - "staging.path" is a required field
 - "staging.compression.type" is a required field
+- "staging.upload.minInterval" is a required field
+- "staging.upload.trigger.count" is a required field
+- "staging.upload.trigger.size" is a required field
+- "staging.upload.trigger.interval" is a required field
 `,
 			Value: Slice{},
 		},

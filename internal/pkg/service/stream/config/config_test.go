@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	local "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
