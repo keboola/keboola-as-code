@@ -46,11 +46,11 @@ func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	mock.DebugLogger().AssertJSONMessages(t, `{"level":"debug","message":"Sent \"slice-upload\" event id: \"12345\""}`)
 	wildcards.Assert(t, `
 {
-  "component": "keboola.keboola-stream",
+  "component": "keboola.keboola-buffer",
   "duration": 3,
   "message": "Slice upload done.",
-  "params": "{\"eventName\":\"slice-upload\"}",
-  "results": "{\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"statistics\":{\"compressedSize\":52428800,\"firstRecordAt\":\"2000-01-01T20:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"slicesCount\":1,\"stagingSize\":26214400,\"uncompressedSize\":104857600}}",
+  "params": "{\"eventName\":\"slice-upload\",\"task\":\"slice-upload\"}",
+  "results": "{\"exportId\":\"my-sink\",\"projectId\":123,\"receiverId\":\"my-source\",\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"statistics\":{\"bodySize\":104857600,\"compressedSize\":52428800,\"fileGZipSize\":52428800,\"fileSize\":104857600,\"firstRecordAt\":\"2000-01-01T20:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"recordsSize\":52428800,\"slicesCount\":1,\"stagingSize\":26214400,\"uncompressedSize\":104857600}}",
   "type": "info"
 }`, body)
 }
@@ -78,11 +78,11 @@ func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	mock.DebugLogger().AssertJSONMessages(t, `{"level":"debug","message":"Sent \"slice-upload\" event id: \"12345\""}`)
 	wildcards.Assert(t, `
 {
-  "component": "keboola.keboola-stream",
+  "component": "keboola.keboola-buffer",
   "duration": 3,
   "message": "Slice upload failed.",
-  "params": "{\"eventName\":\"slice-upload\"}",
-  "results": "{\"error\":\"some error\",\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\"}",
+  "params": "{\"eventName\":\"slice-upload\",\"task\":\"slice-upload\"}",
+  "results": "{\"error\":\"some error\",\"exportId\":\"my-sink\",\"projectId\":123,\"receiverId\":\"my-source\",\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\"}",
   "type": "error"
 }`, body)
 }
@@ -132,11 +132,11 @@ func TestSender_SendFileImportEvent_OkEvent(t *testing.T) {
 	mock.DebugLogger().AssertJSONMessages(t, `{"level":"debug","message":"Sent \"file-import\" event id: \"12345\""}`)
 	wildcards.Assert(t, `
 {
-  "component": "keboola.keboola-stream",
+  "component": "keboola.keboola-buffer",
   "duration": 3,
   "message": "File import done.",
-  "params": "{\"eventName\":\"file-import\"}",
-  "results": "{\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"statistics\":{\"compressedSize\":52428800,\"firstRecordAt\":\"2000-01-01T01:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"slicesCount\":10,\"stagingSize\":26214400,\"uncompressedSize\":104857600}}",
+  "params": "{\"eventName\":\"file-import\",\"task\":\"file-import\"}",
+  "results": "{\"exportId\":\"my-sink\",\"projectId\":123,\"receiverId\":\"my-source\",\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"statistics\":{\"bodySize\":104857600,\"compressedSize\":52428800,\"fileGZipSize\":52428800,\"fileSize\":104857600,\"firstRecordAt\":\"2000-01-01T01:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"recordsSize\":52428800,\"slicesCount\":10,\"stagingSize\":26214400,\"uncompressedSize\":104857600}}",
   "type": "info"
 }`, body)
 }
@@ -164,11 +164,11 @@ func TestSender_SendFileImportEvent_ErrorEvent(t *testing.T) {
 	mock.DebugLogger().AssertJSONMessages(t, `{"level":"debug","message":"Sent \"file-import\" event id: \"12345\""}`)
 	wildcards.Assert(t, `
 {
-  "component": "keboola.keboola-stream",
+  "component": "keboola.keboola-buffer",
   "duration": 3,
   "message": "File import failed.",
-  "params": "{\"eventName\":\"file-import\"}",
-  "results": "{\"error\":\"some error\",\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\"}",
+  "params": "{\"eventName\":\"file-import\",\"task\":\"file-import\"}",
+  "results": "{\"error\":\"some error\",\"exportId\":\"my-sink\",\"projectId\":123,\"receiverId\":\"my-source\",\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\"}",
   "type": "error"
 }`, body)
 }

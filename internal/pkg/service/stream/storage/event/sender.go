@@ -17,7 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const componentID = keboola.ComponentID("keboola.keboola-stream")
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.keboola-buffer..json
+const componentID = keboola.ComponentID("keboola.keboola-buffer")
 
 type Sender struct {
 	logger log.Logger
@@ -114,11 +115,16 @@ func (s *Sender) sendEvent(ctx context.Context, api *keboola.AuthorizedAPI, dura
 		Duration:    client.DurationSeconds(duration),
 		Params: map[string]any{
 			"eventName": eventName,
+			// legacy fields for compatibility with buffer events
+			"task": eventName,
 		},
 		Results: map[string]any{
 			"projectId": params.ProjectID,
 			"sourceId":  params.SourceID,
 			"sinkId":    params.SinkID,
+			// legacy fields for compatibility with buffer events
+			"receiverId": params.SourceID,
+			"exportId":   params.SinkID,
 		},
 	}
 	if err != nil {
@@ -133,6 +139,11 @@ func (s *Sender) sendEvent(ctx context.Context, api *keboola.AuthorizedAPI, dura
 			"uncompressedSize": params.Stats.UncompressedSize.Bytes(),
 			"compressedSize":   params.Stats.CompressedSize.Bytes(),
 			"stagingSize":      params.Stats.StagingSize.Bytes(),
+			// legacy fields for compatibility with buffer events
+			"recordsSize":  params.Stats.CompressedSize.Bytes(),
+			"bodySize":     params.Stats.UncompressedSize.Bytes(),
+			"fileSize":     params.Stats.UncompressedSize.Bytes(),
+			"fileGZipSize": params.Stats.CompressedSize.Bytes(),
 		}
 	}
 
