@@ -1,9 +1,10 @@
 import * as common from "./common.js";
-import { checkResponse, post } from "./common.js";
 
 export const options = common.options;
 
 export function setup() {
+  let strings = common.randomStrings()
+
   let source = common.setupSource();
 
   let sink = common.setupSink(
@@ -33,12 +34,11 @@ export function setup() {
     },
   )
 
-  const payload = { a: "b", c: { d: "e", f: { g: "h" } } };
   const headers = {
     "My-Custom-Header": "custom header value abcd",
   };
 
-  return { source, sink, payload, headers };
+  return { source, sink, strings, headers };
 }
 
 export function teardown(data) {
@@ -46,5 +46,7 @@ export function teardown(data) {
 }
 
 export default function(data) {
-  checkResponse(post(data.source.url, data.payload, data.headers));
+  const payload = { a: "b", c: { d: "e", f: { g: common.randomElement(data.strings) } } };
+
+  common.checkResponse(common.post(data.source.url, payload, data.headers));
 }
