@@ -95,7 +95,7 @@ func newSourceScope(parentScp sourceParentScopes, sourceType string, cfg config.
 		return nil, err
 	}
 
-	d.storageRouter, err = storageRouter.New(d, sourceType, cfg.Storage.Level.Local.Writer.Network)
+	d.storageRouter, err = storageRouter.New(d, cfg.NodeID, sourceType, cfg.Storage.Level.Local.Writer.Network)
 	if err != nil {
 		return nil, err
 	}
