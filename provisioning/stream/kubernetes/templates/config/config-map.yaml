@@ -135,6 +135,10 @@ data:
             inputBuffer: 1MB
             # Max size of the buffer before the output. 0 = disabled. Validation rules: maxBytes=16MB
             outputBuffer: 1MB
+            # Max size of a chunk sent over the network to a disk writer node. Validation rules: required,minBytes=64kB,maxBytes=1MB
+            maxChunkSize: 512KB
+            # If the defined number of chunks cannot be sent, the pipeline is marked as not ready. Validation rules: required,min=1,max=100
+            failedChunksThreshold: 3
             compression:
               # Compression type. Validation rules: required,oneof=none gzip
               type: gzip
