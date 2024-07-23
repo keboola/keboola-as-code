@@ -66,7 +66,7 @@ func NewMockedSourceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Con
 	svcScp, mock := NewMockedServiceScopeWithConfig(
 		tb,
 		modifyConfig,
-		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution()}, opts...)...,
+		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution("test-node")}, opts...)...,
 	)
 	d, err := newSourceScope(sourceParentScopesImpl{
 		ServiceScope:      svcScp,

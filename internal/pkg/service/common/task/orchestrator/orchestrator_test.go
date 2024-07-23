@@ -39,7 +39,7 @@ func TestOrchestrator(t *testing.T) {
 	d1 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
-		dependencies.WithEnabledOrchestrator(),
+		dependencies.WithEnabledOrchestrator("node1"),
 		dependencies.WithNodeID("node1"),
 	)
 	grp1, err := d1.DistributionNode().Group("my-group")
@@ -49,7 +49,7 @@ func TestOrchestrator(t *testing.T) {
 	d2 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdConfig(etcdCfg),
-		dependencies.WithEnabledOrchestrator(),
+		dependencies.WithEnabledOrchestrator("node2"),
 		dependencies.WithNodeID("node2"),
 	)
 	grp2, err := d2.DistributionNode().Group("my-group")

@@ -29,7 +29,7 @@ func NewMockedAPIScope(tb testing.TB, opts ...dependencies.MockedOption) (APISco
 func NewMockedAPIScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (APIScope, Mocked) {
 	tb.Helper()
 
-	opts = append(opts, dependencies.WithEnabledTasks())
+	opts = append(opts, dependencies.WithEnabledTasks("test-node"))
 	serviceScp, mock := NewMockedServiceScopeWithConfig(tb, modifyConfig, opts...)
 
 	apiScp := newAPIScope(serviceScp, mock.TestConfig())
