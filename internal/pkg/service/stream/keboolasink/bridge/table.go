@@ -16,8 +16,9 @@ import (
 )
 
 func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKey, sink definition.Sink) error {
-	// Create bucket if not exists
-	if err := b.ensureBucketExists(ctx, tableKey.BucketKey()); err != nil {
+	// Create bucket in a blocking way if not exists
+	b.logger.Infof(ctx, "branchID %s, key %v", tableKey.BranchID, tableKey)
+	if err := b.ensureBucketExistsBlocking(ctx, sink.ProjectID, tableKey); err != nil {
 		return err
 	}
 

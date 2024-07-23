@@ -1,6 +1,8 @@
 package bridge
 
 import (
+	"sync"
+
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/singleflight"
@@ -37,6 +39,8 @@ type Bridge struct {
 
 	getBucketOnce    *singleflight.Group
 	createBucketOnce *singleflight.Group
+	bucketLocks      map[string]*sync.Mutex
+	bucketLock       sync.Mutex
 }
 
 type dependencies interface {
@@ -57,6 +61,7 @@ func New(d dependencies, apiProvider apiProvider) *Bridge {
 		apiProvider:      apiProvider,
 		getBucketOnce:    &singleflight.Group{},
 		createBucketOnce: &singleflight.Group{},
+		bucketLocks:      make(map[string]*sync.Mutex),
 	}
 
 	b.setupOnFileOpen()

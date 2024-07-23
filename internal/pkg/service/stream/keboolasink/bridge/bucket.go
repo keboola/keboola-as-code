@@ -2,6 +2,8 @@ package bridge
 
 import (
 	"context"
+	"fmt"
+	"sync"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/attribute"
@@ -10,6 +12,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
+
+func (b *Bridge) ensureBucketExistsBlocking(ctx context.Context, projectID keboola.ProjectID, tableKey keboola.TableKey) error {
+	// Creation of bucket is blocking operation per bucketKey
+	lock := b.createBucketLock(projectID, tableKey.BucketKey())
+
+	// Create bucket if not exists
+	err := b.ensureBucketExists(ctx, tableKey.BucketKey())
+
+	lock.Unlock()
+	b.deleteBucketLock(projectID, tableKey.BucketKey())
+	return err
+}
 
 func (b *Bridge) ensureBucketExists(ctx context.Context, bucketKey keboola.BucketKey) error {
 	// Check if the bucket exists
@@ -22,6 +36,29 @@ func (b *Bridge) ensureBucketExists(ctx context.Context, bucketKey keboola.Bucke
 	}
 
 	return err
+}
+
+func (b *Bridge) createBucketLock(projectID, tableKey fmt.Stringer) *sync.Mutex {
+	key := projectID.String() + "/" + tableKey.String()
+	b.bucketLock.Lock()
+	defer b.bucketLock.Unlock()
+
+	lock, found := b.bucketLocks[key]
+	if !found {
+		lock = &sync.Mutex{}
+		b.bucketLocks[key] = lock
+	}
+
+	lock.Lock()
+	return lock
+}
+
+func (b *Bridge) deleteBucketLock(projectID, tableKey fmt.Stringer) {
+	key := projectID.String() + "/" + tableKey.String()
+	b.bucketLock.Lock()
+	defer b.bucketLock.Unlock()
+
+	delete(b.bucketLocks, key)
 }
 
 func (b *Bridge) getBucket(ctx context.Context, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
