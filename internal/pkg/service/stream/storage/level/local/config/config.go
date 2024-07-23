@@ -1,4 +1,4 @@
-package local
+package config
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"

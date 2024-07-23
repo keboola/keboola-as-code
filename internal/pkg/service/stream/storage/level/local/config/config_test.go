@@ -1,9 +1,9 @@
-package local_test
+package config_test
 
 import (
 	"testing"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
 )
 
@@ -11,7 +11,7 @@ func TestConfig_Validation(t *testing.T) {
 	t.Parallel()
 
 	// Test cases
-	cases := testvalidation.TestCases[local.Config]{
+	cases := testvalidation.TestCases[config.Config]{
 		{
 			Name: "empty",
 			ExpectedError: `
@@ -43,11 +43,11 @@ func TestConfig_Validation(t *testing.T) {
 - "writer.allocation.static" is a required field
 - "writer.allocation.relative" must be 100 or greater
 `,
-			Value: local.Config{},
+			Value: config.Config{},
 		},
 		{
 			Name:  "default",
-			Value: local.NewConfig(),
+			Value: config.NewConfig(),
 		},
 	}
 

@@ -87,10 +87,26 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source-1/
         "concurrency": 0
       }
     },
-    "expiration": "2000-01-02T02:00:00.000Z"
+    "expiration": "2000-01-02T02:00:00.000Z",
+    "upload": {
+      "minInterval": "5s",
+      "trigger": {
+        "count": 10000,
+        "size": "1MB",
+        "interval": "1m0s"
+      }
+    }
   },
   "target": {
-    "provider": "test"
+    "provider": "keboola",
+    "import": {
+      "minInterval": "1m0s",
+      "trigger": {
+        "count": 50000,
+        "size": "5MB",
+        "interval": "5m0s"
+      }
+    }
   }
 }
 >>>>>

@@ -18,7 +18,9 @@ import (
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
+	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -107,9 +109,11 @@ func TestFile_Validation(t *testing.T) {
 		Provider:    "foo",
 		Compression: compression.NewConfig(),
 		Expiration:  utctime.MustParse("2006-01-02T15:04:05.000Z"),
+		Upload:      stagingConfig.NewConfig().Upload,
 	}
 	targetStorage := targetModel.Target{
 		Provider: "foo",
+		Import:   targetConfig.NewConfig().Import,
 	}
 
 	// Test cases
@@ -147,7 +151,15 @@ func TestFile_Validation(t *testing.T) {
 - "staging.provider" is a required field
 - "staging.compression" is a required field
 - "staging.expiration" is a required field
+- "staging.upload.minInterval" is a required field
+- "staging.upload.trigger.count" is a required field
+- "staging.upload.trigger.size" is a required field
+- "staging.upload.trigger.interval" is a required field
 - "target.provider" is a required field
+- "target.import.minInterval" is a required field
+- "target.import.trigger.count" is a required field
+- "target.import.trigger.size" is a required field
+- "target.import.trigger.interval" is a required field
 `,
 			Value: File{},
 		},

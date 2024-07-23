@@ -14,6 +14,7 @@ import (
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
+	staging "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
@@ -71,6 +72,14 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 		StagingStorage: stagingModel.Slice{
 			Path:        "slice.csv",
 			Compression: compression.NewNoneConfig(),
+			Upload: staging.UploadConfig{
+				MinInterval: duration.From(5 * time.Second),
+				Trigger: staging.UploadTrigger{
+					Count:    10000,
+					Size:     1 * datasize.MB,
+					Interval: duration.From(1 * time.Minute),
+				},
+			},
 		},
 	}
 }

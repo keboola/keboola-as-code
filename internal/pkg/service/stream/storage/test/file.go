@@ -3,6 +3,9 @@ package test
 import (
 	"time"
 
+	"github.com/c2h5oh/datasize"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -13,7 +16,9 @@ import (
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	staging "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
+	target "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
@@ -60,7 +65,17 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 		StagingStorage: stagingModel.File{
 			Compression: compression.NewNoneConfig(),
 			Expiration:  utctime.From(openedAt.Time().Add(time.Hour)),
+			Upload:      staging.NewConfig().Upload,
 		},
-		TargetStorage: targetModel.Target{},
+		TargetStorage: targetModel.Target{
+			Import: target.ImportConfig{
+				MinInterval: duration.From(1 * time.Minute),
+				Trigger: target.ImportTrigger{
+					Count:    50000,
+					Size:     5 * datasize.MB,
+					Interval: duration.From(5 * time.Minute),
+				},
+			},
+		},
 	}
 }

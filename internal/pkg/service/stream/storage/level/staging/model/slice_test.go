@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
+	staging "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -24,6 +25,7 @@ func TestSlice_Validation(t *testing.T) {
 			ExpectedError: `"path" is a required field`,
 			Value: Slice{
 				Compression: compression.NewConfig(),
+				Upload:      staging.NewConfig().Upload,
 			},
 		},
 		{
@@ -31,6 +33,7 @@ func TestSlice_Validation(t *testing.T) {
 			Value: Slice{
 				Path:        "my-slice.csv.gzip",
 				Compression: compression.NewConfig(),
+				Upload:      staging.NewConfig().Upload,
 			},
 		},
 	}

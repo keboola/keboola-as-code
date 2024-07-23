@@ -1,4 +1,4 @@
-package target_test
+package config_test
 
 import (
 	"testing"
@@ -7,22 +7,22 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
 )
 
 func TestConfig_Validation(t *testing.T) {
 	t.Parallel()
 
-	overMaximumCfg := target.NewConfig()
-	overMaximumCfg.Import.Trigger = target.ImportTrigger{
+	overMaximumCfg := config.NewConfig()
+	overMaximumCfg.Import.Trigger = config.ImportTrigger{
 		Count:    10000000 + 1,
 		Size:     datasize.MustParseString("500MB") + 1,
 		Interval: duration.From(24*time.Hour + 1),
 	}
 
 	// Test cases
-	cases := testvalidation.TestCases[target.Config]{
+	cases := testvalidation.TestCases[config.Config]{
 		{
 			Name: "empty",
 			ExpectedError: `
@@ -31,7 +31,7 @@ func TestConfig_Validation(t *testing.T) {
 - "import.trigger.size" is a required field
 - "import.trigger.interval" is a required field
 `,
-			Value: target.Config{},
+			Value: config.Config{},
 		},
 		{
 			Name: "over maximum",
@@ -44,7 +44,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:  "default",
-			Value: target.NewConfig(),
+			Value: config.NewConfig(),
 		},
 	}
 

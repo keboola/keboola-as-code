@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 )
 
 const (
@@ -20,6 +21,8 @@ type File struct {
 	Compression compression.Config `json:"compression" validate:"required"`
 	// Expiration determines how long it is possible to write to the staging file, e.g. due to expiring credentials.
 	Expiration utctime.UTCTime `json:"expiration" validate:"required"`
+	// Upload - slices upload configuration.
+	Upload config.UploadConfig `json:"upload"`
 }
 
 type FileProvider string
