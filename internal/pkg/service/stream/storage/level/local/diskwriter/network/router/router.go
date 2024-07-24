@@ -107,7 +107,6 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 	{
 		r.slices = etcdop.
 			SetupMirror(
-				r.logger,
 				d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
 				func(kv *op.KeyValue, slice storage.Slice) string {
 					return slice.SliceKey.String()
@@ -121,10 +120,8 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 					}
 				},
 			).
-			WithOnUpdate(func(_ etcdop.MirrorUpdate) {
-			}).
 			Build()
-		if err := <-r.slices.StartMirroring(ctx, &r.wg); err != nil {
+		if err := <-r.slices.StartMirroring(ctx, &r.wg, r.logger); err != nil {
 			return nil, err
 		}
 	}

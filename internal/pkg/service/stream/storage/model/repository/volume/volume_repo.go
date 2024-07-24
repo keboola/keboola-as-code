@@ -60,8 +60,8 @@ func (r *Repository) watchVolumes() error {
 		r.logger.Info(ctx, "closed volumes stream")
 	})
 
-	r.volumes = etcdop.SetupFullMirror(r.logger, r.schema.WriterVolumes().GetAllAndWatch(ctx, r.client)).Build()
-	return <-r.volumes.StartMirroring(ctx, wg)
+	r.volumes = etcdop.SetupFullMirror(r.schema.WriterVolumes().GetAllAndWatch(ctx, r.client)).Build()
+	return <-r.volumes.StartMirroring(ctx, wg, r.logger)
 }
 
 // AssignVolumes assigns volumes to a new file.
