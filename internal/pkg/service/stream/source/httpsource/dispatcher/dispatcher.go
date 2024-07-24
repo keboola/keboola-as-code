@@ -26,7 +26,7 @@ type Dispatcher struct {
 	logger     log.Logger
 	sinkRouter *sinkRouter.Router
 	// sources field contains in-memory snapshot of all active HTTP sources. Only necessary data is saved.
-	sources *etcdop.Mirror[definition.Source, *sourceData]
+	sources *etcdop.MirrorTree[definition.Source, *sourceData]
 	// cancelMirror on shutdown
 	cancelMirror context.CancelFunc
 	// closed channel block new writer during shutdown
@@ -60,7 +60,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 		ctx, dp.cancelMirror = context.WithCancel(context.Background())
 
 		dp.sources = etcdop.
-			SetupMirror(
+			SetupMirrorTree(
 				d.DefinitionRepository().Source().GetAllAndWatch(ctx, etcd.WithPrevKV()),
 				func(kv *op.KeyValue, source definition.Source) string {
 					return sourceKey(source.SourceKey)

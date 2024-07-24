@@ -36,7 +36,7 @@ type Manager struct {
 
 	// volumes field contains in-memory snapshot of all active disk writer volumes.
 	// It is used to get info about active disk writers, to open/close connections.
-	volumes *etcdop.Mirror[volume.Metadata, *volumeData]
+	volumes *etcdop.MirrorTree[volume.Metadata, *volumeData]
 }
 
 type volumeData struct {
@@ -88,7 +88,7 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 	// Start active volumes mirroring, only necessary data is saved
 	{
 		m.volumes = etcdop.
-			SetupMirror(
+			SetupMirrorTree(
 				d.StorageRepository().Volume().GetAllWriterVolumesAndWatch(ctx, etcd.WithPrevKV()),
 				func(kv *op.KeyValue, vol volume.Metadata) string {
 					return vol.ID.String()

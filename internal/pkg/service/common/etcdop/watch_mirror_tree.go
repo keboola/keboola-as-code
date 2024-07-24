@@ -10,11 +10,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Mirror [T,V] is an in memory AtomicTree filled via the etcd Watch API from a WatchStreamT[T].
+// MirrorTree [T,V] is an in memory AtomicTree filled via the etcd Watch API from a WatchStreamT[T].
 // Tree read operations are publicly available, writing is performed exclusively from the watch stream.
-// Key (string) and value (V) are generated from incoming WatchEventT by custom callbacks, see MirrorSetup.
-// Start with SetupMirror function.
-type Mirror[T any, V any] struct {
+// Key (string) and value (V) are generated from incoming WatchEventT by custom callbacks, see MirrorTreeSetup.
+// Start with SetupMirrorTree function.
+type MirrorTree[T any, V any] struct {
 	stream    *RestartableWatchStreamT[T]
 	filter    func(t WatchEventT[T]) bool
 	mapKey    func(kv *op.KeyValue, value T) string
@@ -27,7 +27,7 @@ type Mirror[T any, V any] struct {
 	revision     int64
 }
 
-type MirrorSetup[T any, V any] struct {
+type MirrorTreeSetup[T any, V any] struct {
 	stream    *RestartableWatchStreamT[T]
 	filter    func(t WatchEventT[T]) bool
 	mapKey    func(kv *op.KeyValue, value T) string
@@ -53,33 +53,33 @@ type MirrorKVPair[V any] struct {
 	Value V
 }
 
-// SetupFullMirror - without key and value mapping.
-func SetupFullMirror[T any](
+// SetupFullMirrorTree - without key and value mapping.
+func SetupFullMirrorTree[T any](
 	stream *RestartableWatchStreamT[T],
-) MirrorSetup[T, T] {
+) MirrorTreeSetup[T, T] {
 	mapKey := func(kv *op.KeyValue, value T) string {
 		return string(kv.Key)
 	}
 	mapValue := func(kv *op.KeyValue, value T) T {
 		return value
 	}
-	return SetupMirror(stream, mapKey, mapValue)
+	return SetupMirrorTree(stream, mapKey, mapValue)
 }
 
-func SetupMirror[T any, V any](
+func SetupMirrorTree[T any, V any](
 	stream *RestartableWatchStreamT[T],
 	mapKey func(kv *op.KeyValue, value T) string,
 	mapValue func(kv *op.KeyValue, value T) V,
-) MirrorSetup[T, V] {
-	return MirrorSetup[T, V]{
+) MirrorTreeSetup[T, V] {
+	return MirrorTreeSetup[T, V]{
 		stream:   stream,
 		mapKey:   mapKey,
 		mapValue: mapValue,
 	}
 }
 
-func (s MirrorSetup[T, V]) BuildMirror() *Mirror[T, V] {
-	return &Mirror[T, V]{
+func (s MirrorTreeSetup[T, V]) BuildMirror() *MirrorTree[T, V] {
+	return &MirrorTree[T, V]{
 		stream:       s.stream,
 		filter:       s.filter,
 		mapKey:       s.mapKey,
@@ -91,7 +91,7 @@ func (s MirrorSetup[T, V]) BuildMirror() *Mirror[T, V] {
 	}
 }
 
-func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
+func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
 	consumer := m.stream.
 		SetupConsumer().
 		WithForEach(func(events []WatchEventT[T], header *Header, restart bool) {
@@ -168,7 +168,7 @@ func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, l
 }
 
 // WithFilter set a filter, the filter must return true if the event should be processed.
-func (s MirrorSetup[T, V]) WithFilter(fn func(event WatchEventT[T]) bool) MirrorSetup[T, V] {
+func (s MirrorTreeSetup[T, V]) WithFilter(fn func(event WatchEventT[T]) bool) MirrorTreeSetup[T, V] {
 	s.filter = fn
 	return s
 }
@@ -176,7 +176,7 @@ func (s MirrorSetup[T, V]) WithFilter(fn func(event WatchEventT[T]) bool) Mirror
 // WithOnUpdate callback is triggered on each atomic tree update.
 // The update argument contains actual etcd revision,
 // on which the mirror is synchronized.
-func (s MirrorSetup[T, V]) WithOnUpdate(fn func(update MirrorUpdate)) MirrorSetup[T, V] {
+func (s MirrorTreeSetup[T, V]) WithOnUpdate(fn func(update MirrorUpdate)) MirrorTreeSetup[T, V] {
 	s.onUpdate = append(s.onUpdate, fn)
 	return s
 }
@@ -184,53 +184,53 @@ func (s MirrorSetup[T, V]) WithOnUpdate(fn func(update MirrorUpdate)) MirrorSetu
 // WithOnChanges callback is triggered on each atomic tree update.
 // The changes argument contains actual etcd revision,
 // on which the mirror is synchronized and also a list of changes.
-func (s MirrorSetup[T, V]) WithOnChanges(fn func(changes MirrorUpdateChanges[V])) MirrorSetup[T, V] {
+func (s MirrorTreeSetup[T, V]) WithOnChanges(fn func(changes MirrorUpdateChanges[V])) MirrorTreeSetup[T, V] {
 	s.onChanges = append(s.onChanges, fn)
 	return s
 }
 
-func (m *Mirror[T, V]) Restart(cause error) {
+func (m *MirrorTree[T, V]) Restart(cause error) {
 	m.stream.Restart(cause)
 }
 
-func (m *Mirror[T, V]) Revision() int64 {
+func (m *MirrorTree[T, V]) Revision() int64 {
 	m.revisionLock.Lock()
 	defer m.revisionLock.Unlock()
 	return m.revision
 }
 
-func (m *Mirror[T, V]) Atomic(do func(t prefixtree.TreeReadOnly[V])) {
+func (m *MirrorTree[T, V]) Atomic(do func(t prefixtree.TreeReadOnly[V])) {
 	m.tree.AtomicReadOnly(do)
 }
 
-func (m *Mirror[T, V]) Get(key string) (V, bool) {
+func (m *MirrorTree[T, V]) Get(key string) (V, bool) {
 	return m.tree.Get(key)
 }
 
-func (m *Mirror[T, V]) All() []V {
+func (m *MirrorTree[T, V]) All() []V {
 	return m.tree.All()
 }
 
-func (m *Mirror[T, V]) AllFromPrefix(key string) []V {
+func (m *MirrorTree[T, V]) AllFromPrefix(key string) []V {
 	return m.tree.AllFromPrefix(key)
 }
 
-func (m *Mirror[T, V]) FirstFromPrefix(key string) (value V, found bool) {
+func (m *MirrorTree[T, V]) FirstFromPrefix(key string) (value V, found bool) {
 	return m.tree.FirstFromPrefix(key)
 }
 
-func (m *Mirror[T, V]) LastFromPrefix(key string) (value V, found bool) {
+func (m *MirrorTree[T, V]) LastFromPrefix(key string) (value V, found bool) {
 	return m.tree.LastFromPrefix(key)
 }
 
-func (m *Mirror[T, V]) WalkPrefix(key string, fn func(key string, value V) (stop bool)) {
+func (m *MirrorTree[T, V]) WalkPrefix(key string, fn func(key string, value V) (stop bool)) {
 	m.tree.WalkPrefix(key, fn)
 }
 
-func (m *Mirror[T, V]) WalkAll(fn func(key string, value V) (stop bool)) {
+func (m *MirrorTree[T, V]) WalkAll(fn func(key string, value V) (stop bool)) {
 	m.tree.WalkAll(fn)
 }
 
-func (m *Mirror[T, V]) ToMap() map[string]V {
+func (m *MirrorTree[T, V]) ToMap() map[string]V {
 	return m.tree.ToMap()
 }

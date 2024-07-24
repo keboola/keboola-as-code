@@ -33,7 +33,7 @@ type NetworkFileServer struct {
 	volumesMap map[volume.ID]bool
 
 	// slices field contains in-memory snapshot of all opened storage file slices
-	slices *etcdop.Mirror[storage.Slice, *sliceData]
+	slices *etcdop.MirrorTree[storage.Slice, *sliceData]
 
 	lock      sync.Mutex
 	idCounter uint64
@@ -85,7 +85,7 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 	// Start slices mirroring, only necessary data is saved
 	{
 		f.slices = etcdop.
-			SetupMirror(
+			SetupMirrorTree(
 				d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
 				func(kv *op.KeyValue, slice storage.Slice) string {
 					return slice.SliceKey.String()

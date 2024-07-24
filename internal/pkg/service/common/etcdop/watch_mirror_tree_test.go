@@ -42,7 +42,7 @@ func TestMirror(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
-	mirror := SetupMirror(
+	mirror := SetupMirrorTree(
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
 		func(kv *op.KeyValue, v testUser) int { return v.Age },
@@ -140,7 +140,7 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
-	mirror := SetupMirror(
+	mirror := SetupMirrorTree(
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
 		func(kv *op.KeyValue, v testUser) int { return v.Age },
@@ -229,7 +229,7 @@ func TestMirror_WithOnChanges(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
-	mirror := SetupMirror(
+	mirror := SetupMirrorTree(
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
 		func(kv *op.KeyValue, v testUser) int { return v.Age },
@@ -350,7 +350,7 @@ func TestFullMirror(t *testing.T) {
 
 	// Setup full mirroring of the etcd prefix tree to the memory.
 	logger := log.NewDebugLogger()
-	mirror := SetupFullMirror(
+	mirror := SetupFullMirrorTree(
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV())).
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")

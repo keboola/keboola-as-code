@@ -33,7 +33,7 @@ type Router struct {
 	distribution *distribution.GroupNode
 
 	// slices field contains in-memory snapshot of all opened storage file slices
-	slices *etcdop.Mirror[storage.Slice, *sliceData]
+	slices *etcdop.MirrorTree[storage.Slice, *sliceData]
 
 	closed <-chan struct{}
 	wg     sync.WaitGroup
@@ -106,7 +106,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 	// Start slices mirroring, only necessary data is saved
 	{
 		r.slices = etcdop.
-			SetupMirror(
+			SetupMirrorTree(
 				d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
 				func(kv *op.KeyValue, slice storage.Slice) string {
 					return slice.SliceKey.String()
