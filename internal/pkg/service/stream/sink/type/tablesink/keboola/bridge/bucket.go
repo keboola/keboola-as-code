@@ -2,26 +2,56 @@ package bridge
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (b *Bridge) ensureBucketExistsBlocking(ctx context.Context, api *keboola.AuthorizedAPI, tableKey keboola.TableKey) error {
+func (b *Bridge) ensureBucketExistsBlocking(ctx context.Context, api *keboola.AuthorizedAPI, projectID keboola.ProjectID, tableKey keboola.TableKey) error {
+	// Creation of bucket is blocking operation per bucketKey
+	mutex, err := b.createLockAndLockBucket(ctx, projectID, tableKey)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := mutex.Unlock(ctx); err != nil {
+			b.logger.Errorf(ctx, "cannot unlock the lock: %s", err)
+		}
+	}()
+
+	// Create bucket if not exists
+	err = b.ensureBucketExists(ctx, api, tableKey.BucketKey())
+	return err
+}
+
+func (b *Bridge) ensureBucketExists(ctx context.Context, api *keboola.AuthorizedAPI, bucketKey keboola.BucketKey) error {
 	// Check if the bucket exists
-	_, err := b.getBucket(ctx, api, tableKey.BucketKey())
+	_, err := b.getBucket(ctx, api, bucketKey)
 
 	// Try to create bucket, if not exists
 	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.buckets.notFound" {
-		_, err = b.createBucket(ctx, api, tableKey.BucketKey())
+		_, err = b.createBucket(ctx, api, bucketKey)
 	}
 
 	return err
+}
+
+func (b *Bridge) createLockAndLockBucket(ctx context.Context, projectID, tableKey fmt.Stringer) (*etcdop.Mutex, error) {
+	key := projectID.String() + "/" + tableKey.String()
+	mutex := b.distributedLockProvider.NewMutex(key)
+	if err := mutex.Lock(ctx); err != nil {
+		return nil, err
+	}
+
+	return mutex, nil
 }
 
 func (b *Bridge) getBucket(ctx context.Context, api *keboola.AuthorizedAPI, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {

@@ -1,8 +1,6 @@
 package bridge
 
 import (
-	"sync"
-
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/singleflight"
@@ -33,20 +31,17 @@ const (
 )
 
 type Bridge struct {
-	logger            log.Logger
-	config            keboolasink.Config
-	client            etcd.KV
-	schema            schema.Schema
-	plugins           *plugin.Plugins
-	publicAPI         *keboola.PublicAPI
-	apiProvider       apiProvider
-	storageRepository *storageRepo.Repository
-	locks             *distlock.Provider
+	logger                  log.Logger
+	client                  etcd.KV
+	schema                  schema.Schema
+	plugins                 *plugin.Plugins
+	publicAPI               *keboola.PublicAPI
+	apiProvider             apiProvider
+	storageRepository       *storageRepo.Repository
+	distributedLockProvider *distlock.Provider
 
 	getBucketOnce    *singleflight.Group
 	createBucketOnce *singleflight.Group
-	bucketLocks      map[string]*sync.Mutex
-	bucketLock       sync.Mutex
 }
 
 type dependencies interface {
@@ -61,17 +56,16 @@ type dependencies interface {
 
 func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Bridge {
 	b := &Bridge{
-		logger:            d.Logger().WithComponent("keboola.bridge"),
-		config:            config,
-		client:            d.EtcdClient(),
-		schema:            schema.New(d.EtcdSerde()),
-		plugins:           d.Plugins(),
-		publicAPI:         d.KeboolaPublicAPI(),
-		apiProvider:       apiProvider,
-		storageRepository: d.StorageRepository(),
-		locks:             d.DistributedLockProvider(),
-		getBucketOnce:     &singleflight.Group{},
-		createBucketOnce:  &singleflight.Group{},
+		logger:                  d.Logger().WithComponent("keboola.bridge"),
+		client:                  d.EtcdClient(),
+		schema:                  schema.New(d.EtcdSerde()),
+		plugins:                 d.Plugins(),
+		publicAPI:               d.KeboolaPublicAPI(),
+		apiProvider:             apiProvider,
+		storageRepository:       d.StorageRepository(),
+		distributedLockProvider: d.DistributedLockProvider(),
+		getBucketOnce:           &singleflight.Group{},
+		createBucketOnce:        &singleflight.Group{},
 	}
 
 	b.setupOnFileOpen()

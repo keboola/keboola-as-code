@@ -128,6 +128,11 @@ func newParentScopes(
 		return nil, err
 	}
 
+	d.DistributedLockScope, err = dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), d)
+	if err != nil {
+		return nil, err
+	}
+
 	return d, nil
 }
 

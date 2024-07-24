@@ -33,7 +33,7 @@ func (b *Bridge) setupOnFileOpen() {
 			// We need a token with right permissions, to be able to create the bucket.
 			// If the operation is not called via API, but from a background operator, the bucket should already exist.
 			if api, err := b.apiProvider.APIFromContext(ctx); err == nil {
-				if err := b.ensureBucketExistsBlocking(ctx, api, tableKey); err != nil {
+				if err := b.ensureBucketExistsBlocking(ctx, api, sink.ProjectID, tableKey); err != nil {
 					return err
 				}
 			}
