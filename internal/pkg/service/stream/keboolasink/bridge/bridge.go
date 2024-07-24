@@ -1,13 +1,12 @@
 package bridge
 
 import (
-	"sync"
-
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/schema"
@@ -30,17 +29,16 @@ const (
 )
 
 type Bridge struct {
-	logger      log.Logger
-	client      etcd.KV
-	schema      schema.Schema
-	plugins     *plugin.Plugins
-	publicAPI   *keboola.PublicAPI
-	apiProvider apiProvider
+	logger                  log.Logger
+	client                  etcd.KV
+	schema                  schema.Schema
+	plugins                 *plugin.Plugins
+	publicAPI               *keboola.PublicAPI
+	apiProvider             apiProvider
+	distributedLockProvider *distlock.Provider
 
 	getBucketOnce    *singleflight.Group
 	createBucketOnce *singleflight.Group
-	bucketLocks      map[string]*sync.Mutex
-	bucketLock       sync.Mutex
 }
 
 type dependencies interface {
@@ -49,19 +47,20 @@ type dependencies interface {
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
 	KeboolaPublicAPI() *keboola.PublicAPI
+	DistributedLockProvider() *distlock.Provider
 }
 
 func New(d dependencies, apiProvider apiProvider) *Bridge {
 	b := &Bridge{
-		logger:           d.Logger().WithComponent("keboola.bridge"),
-		client:           d.EtcdClient(),
-		schema:           schema.New(d.EtcdSerde()),
-		plugins:          d.Plugins(),
-		publicAPI:        d.KeboolaPublicAPI(),
-		apiProvider:      apiProvider,
-		getBucketOnce:    &singleflight.Group{},
-		createBucketOnce: &singleflight.Group{},
-		bucketLocks:      make(map[string]*sync.Mutex),
+		logger:                  d.Logger().WithComponent("keboola.bridge"),
+		client:                  d.EtcdClient(),
+		schema:                  schema.New(d.EtcdSerde()),
+		plugins:                 d.Plugins(),
+		publicAPI:               d.KeboolaPublicAPI(),
+		apiProvider:             apiProvider,
+		getBucketOnce:           &singleflight.Group{},
+		createBucketOnce:        &singleflight.Group{},
+		distributedLockProvider: d.DistributedLockProvider(),
 	}
 
 	b.setupOnFileOpen()

@@ -3,25 +3,31 @@ package bridge
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (b *Bridge) ensureBucketExistsBlocking(ctx context.Context, projectID keboola.ProjectID, tableKey keboola.TableKey) error {
 	// Creation of bucket is blocking operation per bucketKey
-	lock := b.createBucketLock(projectID, tableKey.BucketKey())
+	mutex, err := b.createLockAndLockBucket(ctx, projectID, tableKey)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := mutex.Unlock(ctx); err != nil {
+			b.logger.Errorf(ctx, "cannot unlock the lock: %s", err)
+		}
+	}()
 
 	// Create bucket if not exists
-	err := b.ensureBucketExists(ctx, tableKey.BucketKey())
-
-	lock.Unlock()
-	b.deleteBucketLock(projectID, tableKey.BucketKey())
+	err = b.ensureBucketExists(ctx, tableKey.BucketKey())
 	return err
 }
 
@@ -38,27 +44,14 @@ func (b *Bridge) ensureBucketExists(ctx context.Context, bucketKey keboola.Bucke
 	return err
 }
 
-func (b *Bridge) createBucketLock(projectID, tableKey fmt.Stringer) *sync.Mutex {
+func (b *Bridge) createLockAndLockBucket(ctx context.Context, projectID, tableKey fmt.Stringer) (*etcdop.Mutex, error) {
 	key := projectID.String() + "/" + tableKey.String()
-	b.bucketLock.Lock()
-	defer b.bucketLock.Unlock()
-
-	lock, found := b.bucketLocks[key]
-	if !found {
-		lock = &sync.Mutex{}
-		b.bucketLocks[key] = lock
+	mutex := b.distributedLockProvider.NewMutex(key)
+	if err := mutex.Lock(ctx); err != nil {
+		return nil, err
 	}
 
-	lock.Lock()
-	return lock
-}
-
-func (b *Bridge) deleteBucketLock(projectID, tableKey fmt.Stringer) {
-	key := projectID.String() + "/" + tableKey.String()
-	b.bucketLock.Lock()
-	defer b.bucketLock.Unlock()
-
-	delete(b.bucketLocks, key)
+	return mutex, nil
 }
 
 func (b *Bridge) getBucket(ctx context.Context, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
