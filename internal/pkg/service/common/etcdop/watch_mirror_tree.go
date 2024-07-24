@@ -9,20 +9,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// MirrorTree [T,V] is an in memory AtomicTree filled via the etcd Watch API from a WatchStreamT[T].
+// MirrorTree [T,V] is an in memory AtomicTree filled via the etcd Watch API from a RestartableWatchStream[T].
 // Tree read operations are publicly available, writing is performed exclusively from the watch stream.
-// Key (string) and value (V) are generated from incoming WatchEventT by custom callbacks, see MirrorTreeSetup.
+// Key (string) and value (V) are generated from incoming WatchEvent[T] by custom callbacks, see MirrorTreeSetup.
 // Start with SetupMirrorTree function.
+//
+// MirrorTree is ideal to get all keys from a common prefix.
+// If you need only quick single key access or iteration over all keys, use MirrorMap.
+//
+// MirrorTree map is a little slower, but you can scan a prefix without full scan.
 type MirrorTree[T any, V any] struct {
 	stream    RestartableWatchStream[T]
 	filter    func(event WatchEvent[T]) bool
 	mapKey    func(key string, value T) string
 	mapValue  func(key string, value T) V
 	onUpdate  []func(update MirrorUpdate)
-	onChanges []func(changes MirrorUpdateChanges[V])
+	onChanges []func(changes MirrorUpdateChanges[string, V])
 
 	tree         *prefixtree.AtomicTree[V]
-	revisionLock *sync.Mutex
+	revisionLock sync.RWMutex
 	revision     int64
 }
 
@@ -32,24 +37,7 @@ type MirrorTreeSetup[T any, V any] struct {
 	mapKey    func(key string, value T) string
 	mapValue  func(key string, value T) V
 	onUpdate  []func(update MirrorUpdate)
-	onChanges []func(changes MirrorUpdateChanges[V])
-}
-
-type MirrorUpdate struct {
-	Header  *Header
-	Restart bool
-}
-
-type MirrorUpdateChanges[V any] struct {
-	MirrorUpdate
-	Created []MirrorKVPair[V]
-	Updated []MirrorKVPair[V]
-	Deleted []MirrorKVPair[V]
-}
-
-type MirrorKVPair[V any] struct {
-	Key   string
-	Value V
+	onChanges []func(changes MirrorUpdateChanges[string, V])
 }
 
 // SetupFullMirrorTree - without key and value mapping.
@@ -79,14 +67,13 @@ func SetupMirrorTree[T any, V any](
 
 func (s MirrorTreeSetup[T, V]) BuildMirror() *MirrorTree[T, V] {
 	return &MirrorTree[T, V]{
-		stream:       s.stream,
-		filter:       s.filter,
-		mapKey:       s.mapKey,
-		mapValue:     s.mapValue,
-		tree:         prefixtree.New[V](),
-		revisionLock: &sync.Mutex{},
-		onUpdate:     s.onUpdate,
-		onChanges:    s.onChanges,
+		stream:    s.stream,
+		filter:    s.filter,
+		mapKey:    s.mapKey,
+		mapValue:  s.mapValue,
+		tree:      prefixtree.New[V](),
+		onUpdate:  s.onUpdate,
+		onChanges: s.onChanges,
 	}
 }
 
@@ -94,7 +81,7 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 	consumer := newConsumerSetup(m.stream).
 		WithForEach(func(events []WatchEvent[T], header *Header, restart bool) {
 			update := MirrorUpdate{Header: header, Restart: restart}
-			changes := MirrorUpdateChanges[V]{MirrorUpdate: update}
+			changes := MirrorUpdateChanges[string, V]{MirrorUpdate: update}
 			m.tree.Atomic(func(t *prefixtree.Tree[V]) {
 				// Reset the tree after receiving the first batch after the restart.
 				if restart {
@@ -125,19 +112,19 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 						}
 						newValue := m.mapValue(event.Key, event.Value)
 						if len(m.onChanges) > 0 {
-							changes.Updated = append(changes.Updated, MirrorKVPair[V]{Key: newKey, Value: newValue})
+							changes.Updated = append(changes.Updated, MirrorKVPair[string, V]{Key: newKey, Value: newValue})
 						}
 						t.Insert(newKey, newValue)
 					case CreateEvent:
 						newValue := m.mapValue(event.Key, event.Value)
 						if len(m.onChanges) > 0 {
-							changes.Created = append(changes.Created, MirrorKVPair[V]{Key: newKey, Value: newValue})
+							changes.Created = append(changes.Created, MirrorKVPair[string, V]{Key: newKey, Value: newValue})
 						}
 						t.Insert(newKey, newValue)
 					case DeleteEvent:
 						if len(m.onChanges) > 0 {
 							oldValue, _ := t.Get(oldKey)
-							changes.Deleted = append(changes.Deleted, MirrorKVPair[V]{Key: oldKey, Value: oldValue})
+							changes.Deleted = append(changes.Deleted, MirrorKVPair[string, V]{Key: oldKey, Value: oldValue})
 						}
 						t.Delete(oldKey)
 					default:
@@ -182,7 +169,7 @@ func (s MirrorTreeSetup[T, V]) WithOnUpdate(fn func(update MirrorUpdate)) Mirror
 // WithOnChanges callback is triggered on each atomic tree update.
 // The changes argument contains actual etcd revision,
 // on which the mirror is synchronized and also a list of changes.
-func (s MirrorTreeSetup[T, V]) WithOnChanges(fn func(changes MirrorUpdateChanges[V])) MirrorTreeSetup[T, V] {
+func (s MirrorTreeSetup[T, V]) WithOnChanges(fn func(changes MirrorUpdateChanges[string, V])) MirrorTreeSetup[T, V] {
 	s.onChanges = append(s.onChanges, fn)
 	return s
 }
@@ -192,8 +179,8 @@ func (m *MirrorTree[T, V]) Restart(cause error) {
 }
 
 func (m *MirrorTree[T, V]) Revision() int64 {
-	m.revisionLock.Lock()
-	defer m.revisionLock.Unlock()
+	m.revisionLock.RLock()
+	defer m.revisionLock.RUnlock()
 	return m.revision
 }
 
