@@ -60,15 +60,6 @@ func newWriter(
 	slice localModel.Slice,
 	events *events.Events[Writer],
 ) (out Writer, err error) {
-	logger = logger.With(
-		attribute.String("projectId", sliceKey.ProjectID.String()),
-		attribute.String("branchId", sliceKey.BranchID.String()),
-		attribute.String("sourceId", sliceKey.SourceID.String()),
-		attribute.String("sinkId", sliceKey.SinkID.String()),
-		attribute.String("fileId", sliceKey.FileID.String()),
-		attribute.String("sliceId", sliceKey.SliceID.String()),
-	)
-
 	w := &writer{
 		logger:    logger,
 		writerKey: key,

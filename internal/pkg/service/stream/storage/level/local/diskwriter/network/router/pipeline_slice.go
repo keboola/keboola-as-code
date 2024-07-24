@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
@@ -35,6 +37,18 @@ type slicePipeline struct {
 func newSlicePipeline(ctx context.Context, ready *readyNotifier, router *Router, slice *sliceData) *slicePipeline {
 	p := &slicePipeline{router: router, slice: slice}
 	p.ctx, p.cancel = context.WithCancel(context.WithoutCancel(ctx))
+
+	ctx = ctxattr.ContextWith(
+		ctx,
+		attribute.String("projectId", slice.SliceKey.ProjectID.String()),
+		attribute.String("branchId", slice.SliceKey.BranchID.String()),
+		attribute.String("sourceId", slice.SliceKey.SourceID.String()),
+		attribute.String("sinkId", slice.SliceKey.SinkID.String()),
+		attribute.String("fileId", slice.SliceKey.FileID.String()),
+		attribute.String("volumeId", slice.SliceKey.VolumeID.String()),
+		attribute.String("sliceId", slice.SliceKey.SliceID.String()),
+		attribute.String("sourceNodeId", router.nodeID),
+	)
 
 	// Try to open pipeline in background, see IsReady method
 	p.wg.Add(1)
@@ -114,26 +128,34 @@ func (p *slicePipeline) tryOpen() error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
+	ctx := p.ctx
+
 	// Get connection
 	conn, found := p.router.connections.ConnectionToVolume(p.slice.SliceKey.VolumeID)
 	if !found || !conn.IsConnected() {
-		return errors.Errorf("no connection to the volume %q for the slice %q", p.slice.SliceKey.VolumeID.String(), p.slice.SliceKey.String())
+		return errors.Errorf("no connection to the volume %q", p.slice.SliceKey.VolumeID.String())
 	}
 
+	ctx = ctxattr.ContextWith(
+		ctx,
+		attribute.String("writerNodeId", conn.RemoteNodeID()),
+		attribute.String("writerNodeAddress", conn.RemoteAddr()),
+	)
+
 	// Open remote RPC file
-	remoteFile, err := rpc.OpenNetworkFile(p.ctx, p.router.nodeID, conn, p.slice.SliceKey)
+	remoteFile, err := rpc.OpenNetworkFile(ctx, p.router.nodeID, conn, p.slice.SliceKey)
 	if err != nil {
-		return errors.PrefixErrorf(err, "cannot open network file for the slice %q", p.slice.SliceKey.String())
+		return errors.PrefixErrorf(err, "cannot open network file")
 	}
 
 	// Open pipeline
-	p.pipeline, err = p.router.encoding.OpenPipeline(p.ctx, p.slice.SliceKey, p.slice.Mapping, p.slice.Encoding, remoteFile)
+	p.pipeline, err = p.router.encoding.OpenPipeline(ctx, p.slice.SliceKey, p.slice.Mapping, p.slice.Encoding, remoteFile)
 	if err != nil {
-		_ = remoteFile.Close(p.ctx)
-		return errors.PrefixErrorf(err, "cannot open encoding pipeline for the slice %q", p.slice.SliceKey.String())
+		_ = remoteFile.Close(ctx)
+		return errors.PrefixErrorf(err, "cannot open encoding pipeline")
 	}
 
-	p.router.logger.Infof(p.ctx, "opened encoding pipeline for the slice %q", p.slice.SliceKey)
+	p.router.logger.Infof(ctx, "opened encoding pipeline")
 	return nil
 }
 

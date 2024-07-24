@@ -180,13 +180,30 @@ func (v *Volume) Metadata() volume.Metadata {
 func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice localModel.Slice) (w Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
-		return nil, errors.PrefixErrorf(err, `disk writer for slice "%s" cannot be created: volume is closed`, sliceKey.String())
+		return nil, errors.PrefixErrorf(err, `disk writer cannot be created: volume "%s" is closed`, sliceKey.VolumeID)
 	}
+
+	key := writerKey{
+		SliceKey:     sliceKey,
+		SourceNodeID: sourceNodeID,
+	}
+
+	logger := v.logger.With(
+		attribute.String("projectId", key.SliceKey.ProjectID.String()),
+		attribute.String("branchId", key.SliceKey.BranchID.String()),
+		attribute.String("sourceId", key.SliceKey.SourceID.String()),
+		attribute.String("sinkId", key.SliceKey.SinkID.String()),
+		attribute.String("fileId", key.SliceKey.FileID.String()),
+		attribute.String("sliceId", key.SliceKey.SliceID.String()),
+		attribute.String("sourceNodeID", key.SourceNodeID),
+	)
 
 	// Check if the writer already exists, if not, register an empty reference to unlock immediately
 	ref, exists := v.addWriter(key)
 	if exists {
-		return nil, errors.Errorf(`disk writer for slice "%s" already exists`, sliceKey.String())
+		err := errors.Errorf(`disk writer already exists`)
+		logger.Error(v.ctx, err.Error())
+		return nil, err
 	}
 
 	// Close resources on a creation error
