@@ -40,7 +40,7 @@ func Start(ctx context.Context, d dependencies, cfg config.Config) error {
 	logger.Info(ctx, `starting storage writer node`)
 
 	// Listen for network connections
-	listener, err := transport.Listen(logger.WithComponent("server"), cfg.Storage.Level.Local.Writer.Network, cfg.NodeID)
+	listener, err := transport.Listen(logger, cfg.Storage.Level.Local.Writer.Network, cfg.NodeID)
 	if err != nil {
 		return err
 	}

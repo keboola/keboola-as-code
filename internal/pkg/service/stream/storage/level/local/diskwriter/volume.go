@@ -54,7 +54,7 @@ type Volume struct {
 	drainFilePath string
 
 	writersLock *sync.Mutex
-	writers     map[string]*writerRef
+	writers     map[writerKey]*writerRef
 }
 
 type writerRef struct {
@@ -79,7 +79,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, confi
 		drained:       atomic.NewBool(false),
 		drainFilePath: filepath.Join(spec.Path, DrainFile),
 		writersLock:   &sync.Mutex{},
-		writers:       make(map[string]*writerRef),
+		writers:       make(map[writerKey]*writerRef),
 	}
 
 	if config.OverrideFileOpener != nil {
@@ -180,13 +180,30 @@ func (v *Volume) Metadata() volume.Metadata {
 func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice localModel.Slice) (w Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
-		return nil, errors.PrefixErrorf(err, `disk writer for slice "%s" cannot be created: volume is closed`, sliceKey.String())
+		return nil, errors.PrefixErrorf(err, `disk writer cannot be created: volume "%s" is closed`, sliceKey.VolumeID)
 	}
 
+	key := writerKey{
+		SliceKey:     sliceKey,
+		SourceNodeID: sourceNodeID,
+	}
+
+	logger := v.logger.With(
+		attribute.String("projectId", key.SliceKey.ProjectID.String()),
+		attribute.String("branchId", key.SliceKey.BranchID.String()),
+		attribute.String("sourceId", key.SliceKey.SourceID.String()),
+		attribute.String("sinkId", key.SliceKey.SinkID.String()),
+		attribute.String("fileId", key.SliceKey.FileID.String()),
+		attribute.String("sliceId", key.SliceKey.SliceID.String()),
+		attribute.String("sourceNodeID", key.SourceNodeID),
+	)
+
 	// Check if the writer already exists, if not, register an empty reference to unlock immediately
-	ref, exists := v.addWriter(sliceKey)
+	ref, exists := v.addWriter(key)
 	if exists {
-		return nil, errors.Errorf(`disk writer for slice "%s" already exists`, sliceKey.String())
+		err := errors.Errorf(`disk writer already exists`)
+		logger.Error(v.ctx, err.Error())
+		return nil, err
 	}
 
 	// Close resources on a creation error
@@ -198,18 +215,18 @@ func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice 
 		}
 
 		// Unregister the writer
-		v.removeWriter(sliceKey)
+		v.removeWriter(key)
 	}()
 
 	// Create writer
-	w, err = newWriter(v.ctx, v.logger, v.Path(), sourceNodeID, v.fileOpener, v.allocator, sliceKey, slice, v.writerEvents)
+	w, err = newWriter(v.ctx, logger, v.Path(), v.fileOpener, v.allocator, key, slice, v.writerEvents)
 	if err != nil {
 		return nil, err
 	}
 
 	// Register writer close callback
-	w.Events().OnClose(func(w Writer, _ error) error {
-		v.removeWriter(w.SliceKey())
+	w.Events().OnClose(func(_ Writer, _ error) error {
+		v.removeWriter(key)
 		return nil
 	})
 
@@ -267,11 +284,10 @@ func (v *Volume) Close(ctx context.Context) error {
 	return errs.ErrorOrNil()
 }
 
-func (v *Volume) addWriter(k model.SliceKey) (ref *writerRef, exists bool) {
+func (v *Volume) addWriter(key writerKey) (ref *writerRef, exists bool) {
 	v.writersLock.Lock()
 	defer v.writersLock.Unlock()
 
-	key := k.String()
 	ref, exists = v.writers[key]
 	if !exists {
 		// Register a new empty reference, it will be initialized later.
@@ -283,10 +299,10 @@ func (v *Volume) addWriter(k model.SliceKey) (ref *writerRef, exists bool) {
 	return ref, exists
 }
 
-func (v *Volume) removeWriter(k model.SliceKey) {
+func (v *Volume) removeWriter(key writerKey) {
 	v.writersLock.Lock()
 	defer v.writersLock.Unlock()
-	delete(v.writers, k.String())
+	delete(v.writers, key)
 }
 
 func createVolumeIDFile(path string, content []byte) error {

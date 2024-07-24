@@ -26,7 +26,7 @@ func TestWriter_Basic(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	w, err := tc.NewWriter()
+	w, err := tc.OpenWriter()
 	require.NoError(t, err)
 
 	// Test getters
@@ -66,20 +66,59 @@ func TestOpenWriter_ClosedVolume(t *testing.T) {
 	slice := test.NewSlice()
 	_, err = vol.OpenWriter(tc.SourceNodeID, slice.SliceKey, slice.LocalStorage)
 	if assert.Error(t, err) {
-		wildcards.Assert(t, "disk writer for slice \"%s\" cannot be created: volume is closed:\n- context canceled", err.Error())
+		wildcards.Assert(t, "disk writer cannot be created: volume \"my-volume\" is closed:\n- context canceled", err.Error())
 	}
 }
 
-func TestWriter_OpenFile_Ok(t *testing.T) {
+func TestOpenWriter_Ok(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
 
-	w, err := tc.NewWriter()
+	w, err := tc.OpenWriter()
 	assert.NoError(t, err)
 	assert.FileExists(t, tc.FilePath())
 
 	assert.NoError(t, w.Close(context.Background()))
 	assert.FileExists(t, tc.FilePath())
+}
+
+func TestOpenWriter_AlreadyExists(t *testing.T) {
+	t.Parallel()
+	tc := newWriterTestCase(t)
+
+	// First open - ok
+	_, err := tc.OpenWriter()
+	assert.NoError(t, err)
+
+	// Second open - already exists error
+	_, err = tc.OpenWriter()
+	if assert.Error(t, err) {
+		assert.Equal(t, "disk writer already exists", err.Error())
+	}
+}
+
+func TestOpenWriter_SameSliceDifferentSourceNodeID(t *testing.T) {
+	t.Parallel()
+	tc := newWriterTestCase(t)
+
+	// Open volume
+	vol, err := tc.OpenVolume()
+	require.NoError(t, err)
+
+	// Close volume after the test
+	tc.TB.Cleanup(func() {
+		assert.NoError(tc.TB, vol.Close(context.Background()))
+	})
+
+	// Source node 1
+	_, err = vol.OpenWriter("source-node-1", tc.Slice.SliceKey, tc.Slice.LocalStorage)
+	assert.NoError(t, err)
+	assert.FileExists(t, tc.Slice.LocalStorage.FileName(vol.Path(), "source-node-1"))
+
+	// Source node 2
+	_, err = vol.OpenWriter("source-node-2", tc.Slice.SliceKey, tc.Slice.LocalStorage)
+	assert.NoError(t, err)
+	assert.FileExists(t, tc.Slice.LocalStorage.FileName(vol.Path(), "source-node-2"))
 }
 
 func TestWriter_OpenFile_MkdirError(t *testing.T) {
@@ -98,7 +137,7 @@ func TestWriter_OpenFile_MkdirError(t *testing.T) {
 	// Block creating of the slice directory in the volume directory
 	assert.NoError(t, os.Chmod(tc.VolumePath, 0o440))
 
-	_, err = tc.NewWriter()
+	_, err = tc.OpenWriter()
 	if assert.Error(t, err) {
 		assert.True(t, errors.Is(err, os.ErrPermission))
 	}
@@ -122,7 +161,7 @@ func TestWriter_OpenFile_FileError(t *testing.T) {
 	// Create read only slice directory
 	assert.NoError(t, os.Mkdir(filepath.Join(tc.VolumePath, tc.Slice.LocalStorage.Dir), 0o440))
 
-	_, err := tc.NewWriter()
+	_, err := tc.OpenWriter()
 	if assert.Error(t, err) {
 		assert.True(t, errors.Is(err, os.ErrPermission))
 	}
@@ -135,7 +174,7 @@ func TestWriter_AllocateSpace_Error(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Allocator.Error = errors.New("some space allocation error")
 
-	w, err := tc.NewWriter()
+	w, err := tc.OpenWriter()
 	assert.NoError(t, err)
 	assert.FileExists(t, tc.FilePath())
 
@@ -160,7 +199,7 @@ func TestWriter_AllocateSpace_NotSupported(t *testing.T) {
 	tc := newWriterTestCase(t)
 	tc.Allocator.Ok = false
 
-	w, err := tc.NewWriter()
+	w, err := tc.OpenWriter()
 	assert.NoError(t, err)
 	assert.FileExists(t, tc.FilePath())
 
@@ -184,7 +223,7 @@ func TestWriter_AllocateSpace_Disabled(t *testing.T) {
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.AllocatedDiskSpace = 0
-	w, err := tc.NewWriter()
+	w, err := tc.OpenWriter()
 	assert.NoError(t, err)
 
 	// Check file - no allocation
@@ -227,7 +266,7 @@ func (tc *writerTestCase) OpenVolume() (*diskwriter.Volume, error) {
 	return vol, err
 }
 
-func (tc *writerTestCase) NewWriter() (diskwriter.Writer, error) {
+func (tc *writerTestCase) OpenWriter() (diskwriter.Writer, error) {
 	if tc.Volume == nil {
 		// Write file with the ID
 		require.NoError(tc.TB, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("my-volume"), 0o640))

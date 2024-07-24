@@ -24,7 +24,7 @@ func TestWriter_AllocateSpace_Enabled(t *testing.T) {
 	tc.Slice.LocalStorage.AllocatedDiskSpace = expectedSize
 
 	// Use real allocator
-	w, err := tc.NewWriter()
+	w, err := tc.OpenWriter()
 	assert.NoError(t, err)
 
 	// Check file size after allocation

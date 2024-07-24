@@ -69,6 +69,7 @@ func run(ctx context.Context, cfg config.Config, posArgs []string) error {
 			if cfg.Datadog.Enabled {
 				return datadog.NewTracerProvider(
 					logger, proc,
+					tracer.WithGlobalTag("stream.components", components.String()),
 					tracer.WithRuntimeMetrics(),
 					tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
 					tracer.WithAnalyticsRate(1.0),

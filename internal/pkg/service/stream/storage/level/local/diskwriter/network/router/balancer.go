@@ -1,6 +1,8 @@
 package router
 
 import (
+	"net/http"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 )
@@ -16,8 +18,24 @@ type NoPipelineError struct{}
 
 type NoPipelineReadyError struct{}
 
+func (e NoPipelineError) StatusCode() int {
+	return http.StatusServiceUnavailable
+}
+
+func (e NoPipelineError) ErrorName() string {
+	return "noPipeline"
+}
+
 func (e NoPipelineError) Error() string {
 	return "no pipeline"
+}
+
+func (e NoPipelineReadyError) StatusCode() int {
+	return http.StatusServiceUnavailable
+}
+
+func (e NoPipelineReadyError) ErrorName() string {
+	return "noPipelineReady"
 }
 
 func (e NoPipelineReadyError) Error() string {

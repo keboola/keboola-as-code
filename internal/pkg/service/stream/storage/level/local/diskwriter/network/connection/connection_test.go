@@ -35,6 +35,8 @@ func TestConnectionManager(t *testing.T) {
 	// There are two disk writer nodes, before the source node is started
 	w1 := startWriterNode(t, ctx, etcdCfg, "w1")
 	w2 := startWriterNode(t, ctx, etcdCfg, "w2")
+	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.server"}`)
+	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.server"}`)
 
 	// Start source node
 	connManager, s := startSourceNode(t, etcdCfg, "s1")

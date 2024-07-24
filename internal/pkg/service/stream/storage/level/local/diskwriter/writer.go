@@ -23,6 +23,7 @@ const (
 // Thw Writer.Write method is called by the network.Listener, which received bytes from the network.Writer/encoding.Writer.
 type Writer interface {
 	SliceKey() model.SliceKey
+	SourceNodeID() string
 	// Write bytes to the buffer in the disk writer node.
 	Write(ctx context.Context, p []byte) (n int, err error)
 	// Sync OS disk cache to the physical disk.
@@ -34,42 +35,37 @@ type Writer interface {
 }
 
 type writer struct {
-	logger   log.Logger
-	sliceKey model.SliceKey
-	file     File
-	events   *events.Events[Writer]
+	logger    log.Logger
+	writerKey writerKey
+	file      File
+	events    *events.Events[Writer]
 	// closed blocks new writes
 	closed chan struct{}
 	// wg waits for in-progress writes before Close
 	wg *sync.WaitGroup
 }
 
+type writerKey struct {
+	SliceKey     model.SliceKey
+	SourceNodeID string
+}
+
 func newWriter(
 	ctx context.Context,
 	logger log.Logger,
 	volumePath string,
-	sourceNodeID string,
 	opener FileOpener,
 	allocator diskalloc.Allocator,
-	sliceKey model.SliceKey,
+	key writerKey,
 	slice localModel.Slice,
 	events *events.Events[Writer],
 ) (out Writer, err error) {
-	logger = logger.With(
-		attribute.String("projectId", sliceKey.ProjectID.String()),
-		attribute.String("branchId", sliceKey.BranchID.String()),
-		attribute.String("sourceId", sliceKey.SourceID.String()),
-		attribute.String("sinkId", sliceKey.SinkID.String()),
-		attribute.String("fileId", sliceKey.FileID.String()),
-		attribute.String("sliceId", sliceKey.SliceID.String()),
-	)
-
 	w := &writer{
-		logger:   logger,
-		sliceKey: sliceKey,
-		events:   events.Clone(), // clone passed events, so additional writer specific listeners can be added
-		closed:   make(chan struct{}),
-		wg:       &sync.WaitGroup{},
+		logger:    logger,
+		writerKey: key,
+		events:    events.Clone(), // clone passed events, so additional writer specific listeners can be added
+		closed:    make(chan struct{}),
+		wg:        &sync.WaitGroup{},
 	}
 
 	w.logger.Debug(ctx, "opening disk writer")
@@ -81,7 +77,7 @@ func newWriter(
 	}
 
 	// Open file
-	filePath := slice.FileName(volumePath, sourceNodeID)
+	filePath := slice.FileName(volumePath, w.writerKey.SourceNodeID)
 	logger = logger.With(attribute.String("file.path", filePath))
 	w.file, err = opener.OpenFile(filePath)
 	if err == nil {
@@ -123,7 +119,11 @@ func newWriter(
 }
 
 func (w *writer) SliceKey() model.SliceKey {
-	return w.sliceKey
+	return w.writerKey.SliceKey
+}
+
+func (w *writer) SourceNodeID() string {
+	return w.writerKey.SourceNodeID
 }
 
 func (w *writer) Write(ctx context.Context, p []byte) (n int, err error) {
