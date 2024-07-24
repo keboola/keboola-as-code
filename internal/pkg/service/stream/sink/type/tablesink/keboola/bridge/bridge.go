@@ -32,6 +32,7 @@ const (
 
 type Bridge struct {
 	logger                  log.Logger
+	config                  keboolasink.Config
 	client                  etcd.KV
 	schema                  schema.Schema
 	plugins                 *plugin.Plugins
@@ -57,6 +58,7 @@ type dependencies interface {
 func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Bridge {
 	b := &Bridge{
 		logger:                  d.Logger().WithComponent("keboola.bridge"),
+		config:                  config,
 		client:                  d.EtcdClient(),
 		schema:                  schema.New(d.EtcdSerde()),
 		plugins:                 d.Plugins(),
