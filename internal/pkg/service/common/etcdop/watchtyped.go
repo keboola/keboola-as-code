@@ -37,7 +37,7 @@ func (s *WatchStreamT[T]) SetupConsumer(logger log.Logger) WatchConsumer[WatchEv
 }
 
 // Restart cancels the current stream, so a new stream is created.
-func (s RestartableWatchStreamT[T]) Restart(cause error) {
+func (s *RestartableWatchStreamT[T]) Restart(cause error) {
 	s.rawStream.Restart(cause)
 }
 
