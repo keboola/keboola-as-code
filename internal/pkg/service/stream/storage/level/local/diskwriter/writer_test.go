@@ -101,8 +101,14 @@ func TestOpenWriter_SameSliceDifferentSourceNodeID(t *testing.T) {
 	t.Parallel()
 	tc := newWriterTestCase(t)
 
+	// Open volume
 	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
+
+	// Close volume after the test
+	tc.TB.Cleanup(func() {
+		assert.NoError(tc.TB, vol.Close(context.Background()))
+	})
 
 	// Source node 1
 	_, err = vol.OpenWriter("source-node-1", tc.Slice.SliceKey, tc.Slice.LocalStorage)
