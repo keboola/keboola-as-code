@@ -55,6 +55,8 @@ func newClientConnection(ctx context.Context, remoteNodeID, remoteAddr string, c
 	go func() {
 		defer c.wg.Done()
 		c.dialLoop(ctx, initDone)
+		c.client.unregisterConnection(ctx, c)
+		c.client.logger.Infof(ctx, `disk writer client closed connection to %q - %q`, c.remoteNodeID, c.remoteAddr)
 	}()
 
 	client.registerConnection(ctx, c)
@@ -143,16 +145,14 @@ func (c *ClientConnection) Close(ctx context.Context) error {
 	// Wait for the dial loop
 	c.wg.Wait()
 
-	c.client.unregisterConnection(ctx, c)
-
-	c.client.logger.Infof(ctx, `disk writer client closed connection to %q - %q`, c.remoteNodeID, c.remoteAddr)
 	return nil
 }
 
 func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 	b := newClientConnBackoff()
+	var closeErr error
 	for {
-		if c.isClosed() || c.client.isClosed() {
+		if c.isClosed() || c.client.isClosed() || errors.Is(closeErr, yamux.ErrSessionShutdown) {
 			c.client.logger.Debugf(ctx, "dial loop closed %q - %q", c.remoteNodeID, c.remoteAddr)
 			return
 		}
@@ -193,7 +193,10 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 		// Block while the connection is open
 		<-sess.CloseChan()
 
-		c.client.logger.Infof(ctx, `disk writer client disconnected from %q - %q`, c.remoteNodeID, c.remoteAddr)
+		// Get close cause
+		_, closeErr = sess.Accept()
+
+		c.client.logger.Infof(ctx, `disk writer client disconnected from %q - %q: %s`, c.remoteNodeID, c.remoteAddr, closeErr.Error())
 	}
 }
 
