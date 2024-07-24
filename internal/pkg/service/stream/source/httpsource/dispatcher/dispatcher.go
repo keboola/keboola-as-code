@@ -59,19 +59,19 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 		ctx, dp.cancelMirror = context.WithCancel(context.Background())
 
 		dp.sources = etcdop.
-			SetupMirrorTree(
-				d.DefinitionRepository().Source().GetAllAndWatch(ctx, etcd.WithPrevKV()),
-				func(key string, source definition.Source) string {
-					return sourceKey(source.SourceKey)
-				},
-				func(key string, source definition.Source) *sourceData {
-					return &sourceData{
-						sourceKey: source.SourceKey,
-						enabled:   source.IsEnabled(),
-						secret:    source.HTTP.Secret,
-					}
-				},
-			).
+			SetupMirrorTree[definition.Source](
+			d.DefinitionRepository().Source().GetAllAndWatch(ctx, etcd.WithPrevKV()),
+			func(key string, source definition.Source) string {
+				return sourceKey(source.SourceKey)
+			},
+			func(key string, source definition.Source) *sourceData {
+				return &sourceData{
+					sourceKey: source.SourceKey,
+					enabled:   source.IsEnabled(),
+					secret:    source.HTTP.Secret,
+				}
+			},
+		).
 			WithFilter(func(event etcdop.WatchEvent[definition.Source]) bool {
 				return event.Value.Type == definition.SourceTypeHTTP
 			}).

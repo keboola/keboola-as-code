@@ -18,7 +18,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
@@ -35,7 +34,7 @@ type Manager struct {
 
 	// volumes field contains in-memory snapshot of all active disk writer volumes.
 	// It is used to get info about active disk writers, to open/close connections.
-	volumes *etcdop.MirrorTree[volume.Metadata, *volumeData]
+	volumes *etcdop.MirrorMap[volume.Metadata, volume.ID, *volumeData]
 }
 
 type volumeData struct {
@@ -87,21 +86,21 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 	// Start active volumes mirroring, only necessary data is saved
 	{
 		m.volumes = etcdop.
-			SetupMirrorTree(
-				d.StorageRepository().Volume().GetAllWriterVolumesAndWatch(ctx, etcd.WithPrevKV()),
-				func(key string, vol volume.Metadata) string {
-					return vol.ID.String()
-				},
-				func(key string, vol volume.Metadata) *volumeData {
-					return &volumeData{
-						ID: vol.ID,
-						Node: &nodeData{
-							ID:      vol.NodeID,
-							Address: vol.NodeAddress,
-						},
-					}
-				},
-			).
+			SetupMirrorMap[volume.Metadata](
+			d.StorageRepository().Volume().GetAllWriterVolumesAndWatch(ctx, etcd.WithPrevKV()),
+			func(key string, vol volume.Metadata) volume.ID {
+				return vol.ID
+			},
+			func(key string, vol volume.Metadata) *volumeData {
+				return &volumeData{
+					ID: vol.ID,
+					Node: &nodeData{
+						ID:      vol.NodeID,
+						Address: vol.NodeAddress,
+					},
+				}
+			},
+		).
 			WithOnUpdate(func(_ etcdop.MirrorUpdate) {
 				wg.Add(1)
 				defer wg.Done()
@@ -117,7 +116,7 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 }
 
 func (m *Manager) ConnectionToVolume(volumeID volume.ID) (*transport.ClientConnection, bool) {
-	vol, found := m.volumes.Get(volumeID.String())
+	vol, found := m.volumes.Get(volumeID)
 	if !found {
 		return nil, false
 	}
@@ -182,11 +181,9 @@ func (m *Manager) updateConnections(ctx context.Context) {
 // writerNodes returns all active writer nodes.
 func (m *Manager) writerNodes() map[string]*nodeData {
 	out := make(map[string]*nodeData)
-	m.volumes.Atomic(func(t prefixtree.TreeReadOnly[*volumeData]) {
-		t.WalkAll(func(key string, vol *volumeData) (stop bool) {
-			out[vol.Node.ID] = vol.Node
-			return false
-		})
+	m.volumes.ForEach(func(id volume.ID, vol *volumeData) (stop bool) {
+		out[vol.Node.ID] = vol.Node
+		return false
 	})
 	return out
 }

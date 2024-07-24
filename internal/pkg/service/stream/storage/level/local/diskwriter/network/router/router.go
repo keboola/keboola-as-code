@@ -105,20 +105,20 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 	// Start slices mirroring, only necessary data is saved
 	{
 		r.slices = etcdop.
-			SetupMirrorTree(
-				d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
-				func(key string, slice storage.Slice) string {
-					return slice.SliceKey.String()
-				},
-				func(key string, slice storage.Slice) *sliceData {
-					return &sliceData{
-						SliceKey: slice.SliceKey,
-						State:    slice.State,
-						Encoding: slice.Encoding,
-						Mapping:  slice.Mapping,
-					}
-				},
-			).
+			SetupMirrorTree[storage.Slice](
+			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
+			func(key string, slice storage.Slice) string {
+				return slice.SliceKey.String()
+			},
+			func(key string, slice storage.Slice) *sliceData {
+				return &sliceData{
+					SliceKey: slice.SliceKey,
+					State:    slice.State,
+					Encoding: slice.Encoding,
+					Mapping:  slice.Mapping,
+				}
+			},
+		).
 			BuildMirror()
 		if err := <-r.slices.StartMirroring(ctx, &r.wg, r.logger); err != nil {
 			return nil, err
