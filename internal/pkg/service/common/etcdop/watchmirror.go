@@ -15,7 +15,6 @@ import (
 // Key (string) and value (V) are generated from incoming WatchEventT by custom callbacks, see MirrorSetup.
 // Start with SetupMirror function.
 type Mirror[T any, V any] struct {
-	logger    log.Logger
 	stream    *RestartableWatchStreamT[T]
 	filter    func(t WatchEventT[T]) bool
 	mapKey    func(kv *op.KeyValue, value T) string
@@ -29,7 +28,6 @@ type Mirror[T any, V any] struct {
 }
 
 type MirrorSetup[T any, V any] struct {
-	logger    log.Logger
 	stream    *RestartableWatchStreamT[T]
 	filter    func(t WatchEventT[T]) bool
 	mapKey    func(kv *op.KeyValue, value T) string
@@ -57,7 +55,6 @@ type MirrorKVPair[V any] struct {
 
 // SetupFullMirror - without key and value mapping.
 func SetupFullMirror[T any](
-	logger log.Logger,
 	stream *RestartableWatchStreamT[T],
 ) MirrorSetup[T, T] {
 	mapKey := func(kv *op.KeyValue, value T) string {
@@ -66,22 +63,15 @@ func SetupFullMirror[T any](
 	mapValue := func(kv *op.KeyValue, value T) T {
 		return value
 	}
-	return MirrorSetup[T, T]{
-		logger:   logger,
-		stream:   stream,
-		mapKey:   mapKey,
-		mapValue: mapValue,
-	}
+	return SetupMirror(stream, mapKey, mapValue)
 }
 
 func SetupMirror[T any, V any](
-	logger log.Logger,
 	stream *RestartableWatchStreamT[T],
 	mapKey func(kv *op.KeyValue, value T) string,
 	mapValue func(kv *op.KeyValue, value T) V,
 ) MirrorSetup[T, V] {
 	return MirrorSetup[T, V]{
-		logger:   logger,
 		stream:   stream,
 		mapKey:   mapKey,
 		mapValue: mapValue,
@@ -90,7 +80,6 @@ func SetupMirror[T any, V any](
 
 func (s MirrorSetup[T, V]) Build() *Mirror[T, V] {
 	return &Mirror[T, V]{
-		logger:       s.logger,
 		stream:       s.stream,
 		filter:       s.filter,
 		mapKey:       s.mapKey,
@@ -102,9 +91,9 @@ func (s MirrorSetup[T, V]) Build() *Mirror[T, V] {
 	}
 }
 
-func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup) (initErr <-chan error) {
-	errCh := m.stream.
-		SetupConsumer(m.logger).
+func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
+	_, errCh := m.stream.
+		SetupConsumer().
 		WithForEach(func(events []WatchEventT[T], header *Header, restart bool) {
 			update := MirrorUpdate{Header: header, Restart: restart}
 			changes := MirrorUpdateChanges[V]{MirrorUpdate: update}
@@ -162,7 +151,7 @@ func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup) (
 				m.revisionLock.Lock()
 				m.revision = header.Revision
 				m.revisionLock.Unlock()
-				m.logger.Debugf(ctx, `synced to revision %d`, header.Revision)
+				logger.Debugf(ctx, `synced to revision %d`, header.Revision)
 			})
 
 			// Call callbacks
@@ -173,7 +162,7 @@ func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup) (
 				go fn(changes)
 			}
 		}).
-		StartConsumer(ctx, wg)
+		StartConsumer(ctx, wg, logger)
 	return errCh
 }
 
