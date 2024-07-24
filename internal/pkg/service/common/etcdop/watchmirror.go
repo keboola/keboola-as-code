@@ -78,7 +78,7 @@ func SetupMirror[T any, V any](
 	}
 }
 
-func (s MirrorSetup[T, V]) Build() *Mirror[T, V] {
+func (s MirrorSetup[T, V]) BuildMirror() *Mirror[T, V] {
 	return &Mirror[T, V]{
 		stream:       s.stream,
 		filter:       s.filter,
@@ -92,7 +92,7 @@ func (s MirrorSetup[T, V]) Build() *Mirror[T, V] {
 }
 
 func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
-	_, errCh := m.stream.
+	consumer := m.stream.
 		SetupConsumer().
 		WithForEach(func(events []WatchEventT[T], header *Header, restart bool) {
 			update := MirrorUpdate{Header: header, Restart: restart}
@@ -162,8 +162,9 @@ func (m *Mirror[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, l
 				go fn(changes)
 			}
 		}).
-		StartConsumer(ctx, wg, logger)
-	return errCh
+		BuildConsumer()
+
+	return consumer.StartConsumer(ctx, wg, logger)
 }
 
 // WithFilter set a filter, the filter must return true if the event should be processed.

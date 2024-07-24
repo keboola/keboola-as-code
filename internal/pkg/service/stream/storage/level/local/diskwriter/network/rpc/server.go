@@ -102,7 +102,7 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 				// Mirror only slices from managed volumes
 				return f.volumesMap[event.Value.VolumeID]
 			}).
-			Build()
+			BuildMirror()
 		if err := <-f.slices.StartMirroring(ctx, wg, f.logger); err != nil {
 			return nil, err
 		}

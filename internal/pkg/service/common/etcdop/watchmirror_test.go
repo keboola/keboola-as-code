@@ -50,7 +50,7 @@ func TestMirror(t *testing.T) {
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
-		Build()
+		BuildMirror()
 	errCh := mirror.StartMirroring(ctx, wg, logger)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
@@ -151,7 +151,7 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 		WithOnUpdate(func(update MirrorUpdate) {
 			updateCh <- update
 		}).
-		Build()
+		BuildMirror()
 	errCh := mirror.StartMirroring(ctx, wg, logger)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
@@ -240,7 +240,7 @@ func TestMirror_WithOnChanges(t *testing.T) {
 		WithOnChanges(func(changes MirrorUpdateChanges[int]) {
 			changesCh <- changes
 		}).
-		Build()
+		BuildMirror()
 	errCh := mirror.StartMirroring(ctx, wg, logger)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
@@ -355,7 +355,7 @@ func TestFullMirror(t *testing.T) {
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
-		Build()
+		BuildMirror()
 	errCh := mirror.StartMirroring(ctx, wg, logger)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change

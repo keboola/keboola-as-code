@@ -91,9 +91,9 @@ func (s WatchConsumerSetup[E]) WithOnClose(v onWatcherClose) WatchConsumerSetup[
 	return s
 }
 
-func (s WatchConsumerSetup[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (consumer *WatchConsumer[E], initErr <-chan error) {
-	// Copy settings, they are immutable after the consumer start
-	c := &WatchConsumer[E]{
+func (s WatchConsumerSetup[E]) BuildConsumer() *WatchConsumer[E] {
+	// Copy settings, they are immutable after the build call
+	return &WatchConsumer[E]{
 		stream:      s.stream,
 		forEachFn:   s.forEachFn,
 		onCreated:   s.onCreated,
@@ -101,7 +101,9 @@ func (s WatchConsumerSetup[E]) StartConsumer(ctx context.Context, wg *sync.WaitG
 		onError:     s.onError,
 		onClose:     s.onClose,
 	}
+}
 
+func (c *WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
 	initErrCh := make(chan error, 1)
 
 	wg.Add(1)
@@ -191,5 +193,5 @@ func (s WatchConsumerSetup[E]) StartConsumer(ctx context.Context, wg *sync.WaitG
 		}
 	}()
 
-	return c, initErrCh
+	return initErrCh
 }

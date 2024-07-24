@@ -108,7 +108,7 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 				defer wg.Done()
 				m.updateConnections(ctx)
 			}).
-			Build()
+			BuildMirror()
 		if err := <-m.volumes.StartMirroring(ctx, wg, m.logger); err != nil {
 			return nil, err
 		}

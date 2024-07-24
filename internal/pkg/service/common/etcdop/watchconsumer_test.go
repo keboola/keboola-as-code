@@ -39,7 +39,7 @@ func TestWatchConsumer_NotTyped(t *testing.T) {
 	// Create consumer
 	onCloseCalled := false
 	pfx := prefixForTest()
-	consumer, errCh := pfx.
+	consumer := pfx.
 		GetAllAndWatch(ctx, watchClient).
 		SetupConsumer().
 		WithOnCreated(func(header *Header) {
@@ -67,10 +67,10 @@ func TestWatchConsumer_NotTyped(t *testing.T) {
 			}
 			logger.Infof(ctx, `ForEach: restart=%t, events(%d): %s`, restart, len(events), strings.TrimSuffix(str.String(), ", "))
 		}).
-		StartConsumer(ctx, wg, logger)
+		BuildConsumer()
 
 	// Wait for initialization
-	assert.NoError(t, <-errCh)
+	assert.NoError(t, <-consumer.StartConsumer(ctx, wg, logger))
 
 	// Expect created event
 	logger.AssertJSONMessages(t, `{"level":"info","message":"OnCreated: created (rev 1)"}`)
@@ -175,7 +175,7 @@ func TestWatchConsumer_Typed(t *testing.T) {
 	// Create consumer
 	onCloseCalled := false
 	pfx := typedPrefixForTest()
-	consumer, errCh := pfx.
+	consumer := pfx.
 		GetAllAndWatch(ctx, watchClient).
 		SetupConsumer().
 		WithOnCreated(func(header *Header) {
@@ -203,10 +203,10 @@ func TestWatchConsumer_Typed(t *testing.T) {
 			}
 			logger.Infof(ctx, `ForEach: restart=%t, events(%d): %s`, restart, len(events), strings.TrimSuffix(str.String(), ", "))
 		}).
-		StartConsumer(ctx, wg, logger)
+		BuildConsumer()
 
 	// Wait for initialization
-	assert.NoError(t, <-errCh)
+	assert.NoError(t, <-consumer.StartConsumer(ctx, wg, logger))
 
 	// Expect created event
 	logger.AssertJSONMessages(t, `{"level":"info","message":"OnCreated: created (rev 1)"}`)

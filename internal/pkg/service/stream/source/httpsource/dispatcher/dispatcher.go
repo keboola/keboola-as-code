@@ -76,7 +76,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 			WithFilter(func(event etcdop.WatchEventT[definition.Source]) bool {
 				return event.Value.Type == definition.SourceTypeHTTP
 			}).
-			Build()
+			BuildMirror()
 		if err := <-dp.sources.StartMirroring(ctx, &dp.wg, dp.logger); err != nil {
 			return nil, err
 		}

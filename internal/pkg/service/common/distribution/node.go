@@ -184,17 +184,17 @@ func (n *GroupNode) unregister(ctx context.Context, timeout time.Duration) {
 // watch for other nodes.
 func (n *GroupNode) watch(ctx context.Context, wg *sync.WaitGroup) error {
 	n.logger.Info(ctx, "watching for other nodes")
-	_, errCh := n.groupPrefix.
+	consumer := n.groupPrefix.
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer().
 		WithForEach(func(events []etcdop.WatchEventRaw, _ *etcdop.Header, restart bool) {
 			modifiedNodes := n.updateNodesFrom(ctx, events, restart)
 			n.listeners.Notify(modifiedNodes)
 		}).
-		StartConsumer(ctx, wg, n.logger)
+		BuildConsumer()
 
 	// Wait for initial sync
-	if err := <-errCh; err != nil {
+	if err := <-consumer.StartConsumer(ctx, wg, n.logger); err != nil {
 		return err
 	}
 

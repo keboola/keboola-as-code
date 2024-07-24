@@ -78,7 +78,7 @@ func New(d dependencies) (*Router, error) {
 
 	// Start sinks mirroring, only necessary data is saved
 	{
-		_, errCh := r.definitions.Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()).
+		consumer := r.definitions.Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()).
 			SetupConsumer().
 			WithForEach(func(events []etcdop.WatchEventT[definition.Sink], header *etcdop.Header, restart bool) {
 				// On stream restart, for example some network outage, we have to reset our internal state
@@ -126,8 +126,8 @@ func New(d dependencies) (*Router, error) {
 
 				r.logger.Debugf(ctx, "synced to revision %d", header.Revision)
 			}).
-			StartConsumer(ctx, &r.wg, r.logger)
-		if err := <-errCh; err != nil {
+			BuildConsumer()
+		if err := <-consumer.StartConsumer(ctx, &r.wg, r.logger); err != nil {
 			return nil, err
 		}
 	}

@@ -120,7 +120,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 					}
 				},
 			).
-			Build()
+			BuildMirror()
 		if err := <-r.slices.StartMirroring(ctx, &r.wg, r.logger); err != nil {
 			return nil, err
 		}
