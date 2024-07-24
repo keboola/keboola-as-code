@@ -52,7 +52,7 @@ func Listen(logger log.Logger, config network.Config, nodeID string) (*Server, e
 	}
 
 	s := &Server{
-		logger:    logger,
+		logger:    logger.WithComponent("server"),
 		config:    config,
 		transport: transport,
 		accept:    make(chan *ServerStream),
