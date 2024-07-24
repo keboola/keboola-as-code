@@ -65,14 +65,14 @@ func TestOrchestrator(t *testing.T) {
 			WatchPrefix:     pfx,
 			RestartInterval: time.Minute,
 		},
-		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
+		DistributionKey: func(event etcdop.WatchEvent[testResource]) string {
 			return event.Value.DistributionKey
 		},
-		Lock: func(event etcdop.WatchEventT[testResource]) string {
+		Lock: func(event etcdop.WatchEvent[testResource]) string {
 			// Define a custom lock name
 			return "custom-lock"
 		},
-		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
+		TaskKey: func(event etcdop.WatchEvent[testResource]) task.Key {
 			resource := event.Value
 			return task.Key{
 				ProjectID: resource.ProjectID,
@@ -82,7 +82,7 @@ func TestOrchestrator(t *testing.T) {
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
+		TaskFactory: func(event etcdop.WatchEvent[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
 				logger.Info(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
@@ -161,10 +161,10 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 			WatchPrefix:     pfx,
 			RestartInterval: time.Minute,
 		},
-		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
+		DistributionKey: func(event etcdop.WatchEvent[testResource]) string {
 			return event.Value.DistributionKey
 		},
-		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
+		TaskKey: func(event etcdop.WatchEvent[testResource]) task.Key {
 			resource := event.Value
 			return task.Key{
 				ProjectID: resource.ProjectID,
@@ -174,13 +174,13 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
-		StartTaskIf: func(event etcdop.WatchEventT[testResource]) (string, bool) {
+		StartTaskIf: func(event etcdop.WatchEvent[testResource]) (string, bool) {
 			if event.Value.ID == "GoodID" { // <<<<<<<<<<<<<<<<<<<<
 				return "", true
 			}
 			return "StartTaskIf condition evaluated as false", false
 		},
-		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
+		TaskFactory: func(event etcdop.WatchEvent[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
 				logger.Info(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)
@@ -246,10 +246,10 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 			WatchPrefix:     pfx,
 			RestartInterval: restartInterval,
 		},
-		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
+		DistributionKey: func(event etcdop.WatchEvent[testResource]) string {
 			return event.Value.DistributionKey
 		},
-		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
+		TaskKey: func(event etcdop.WatchEvent[testResource]) task.Key {
 			resource := event.Value
 			return task.Key{
 				ProjectID: resource.ProjectID,
@@ -260,7 +260,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 			// Each orchestrator task must have a deadline.
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
+		TaskFactory: func(event etcdop.WatchEvent[testResource]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
 				logger.Info(ctx, "message from the task")
 				return task.OkResult(event.Value.ID)

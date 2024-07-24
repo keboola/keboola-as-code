@@ -18,7 +18,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
@@ -90,10 +89,10 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 		m.volumes = etcdop.
 			SetupMirrorTree(
 				d.StorageRepository().Volume().GetAllWriterVolumesAndWatch(ctx, etcd.WithPrevKV()),
-				func(kv *op.KeyValue, vol volume.Metadata) string {
+				func(key string, vol volume.Metadata) string {
 					return vol.ID.String()
 				},
-				func(kv *op.KeyValue, vol volume.Metadata) *volumeData {
+				func(key string, vol volume.Metadata) *volumeData {
 					return &volumeData{
 						ID: vol.ID,
 						Node: &nodeData{

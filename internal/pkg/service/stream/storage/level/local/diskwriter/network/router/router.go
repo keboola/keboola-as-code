@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
@@ -108,10 +107,10 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 		r.slices = etcdop.
 			SetupMirrorTree(
 				d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
-				func(kv *op.KeyValue, slice storage.Slice) string {
+				func(key string, slice storage.Slice) string {
 					return slice.SliceKey.String()
 				},
-				func(kv *op.KeyValue, slice storage.Slice) *sliceData {
+				func(key string, slice storage.Slice) *sliceData {
 					return &sliceData{
 						SliceKey: slice.SliceKey,
 						State:    slice.State,

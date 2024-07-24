@@ -57,7 +57,7 @@ func TestWatchConsumer_NotTyped(t *testing.T) {
 			assert.ErrorIs(t, err, context.Canceled) // there should be no unexpected error
 			onCloseCalled = true
 		}).
-		WithForEach(func(events []WatchEventRaw, header *Header, restart bool) {
+		WithForEach(func(events []WatchEvent[[]byte], header *Header, restart bool) {
 			var str strings.Builder
 			for _, e := range events {
 				str.WriteString(e.Type.String())
@@ -193,7 +193,7 @@ func TestWatchConsumer_Typed(t *testing.T) {
 			assert.ErrorIs(t, err, context.Canceled) // there should be no unexpected error
 			onCloseCalled = true
 		}).
-		WithForEach(func(events []WatchEventT[fooType], header *Header, restart bool) {
+		WithForEach(func(events []WatchEvent[fooType], header *Header, restart bool) {
 			var str strings.Builder
 			for _, e := range events {
 				str.WriteString(e.Type.String())

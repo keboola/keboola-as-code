@@ -12,36 +12,25 @@ const (
 	DeleteEvent
 )
 
-// WatchEvent is interface for WatchEventRaw and WatchEventT.
-type WatchEvent interface {
-	EventType() EventType
-	// HasPrevValue returns true, if the event contains previous value of the key.
-	HasPrevValue() bool
-}
-
-type WatchEventRaw struct {
+type WatchEvent[T any] struct {
 	Type   EventType
 	Kv     *op.KeyValue
 	PrevKv *op.KeyValue
+	Key    string
+	Value  T
+	// PrevValue is set only for UpdateEvent if etcd.WithPrevKV() option is used.
+	PrevValue *T
 }
 
 type EventType int
 
 // WatchResponseRaw for untyped prefix.
-type WatchResponseRaw = WatchResponseE[WatchEventRaw]
+type WatchResponseRaw = WatchResponseE[WatchEvent[[]byte]]
 
 // WatchResponseE wraps events of the type E together with WatcherStatus.
 type WatchResponseE[E any] struct {
 	WatcherStatus
 	Events []E
-}
-
-func (e WatchEventRaw) EventType() EventType {
-	return e.Type
-}
-
-func (e WatchEventRaw) HasPrevValue() bool {
-	return e.PrevKv != nil
 }
 
 func (v EventType) String() string {

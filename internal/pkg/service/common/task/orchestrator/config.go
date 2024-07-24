@@ -19,16 +19,16 @@ type Config[T any] struct {
 	// Source etcd prefix events trigger new tasks.
 	Source Source[T]
 	// DistributionKey determines which node processes the task. See distribution package.
-	DistributionKey func(event etcdop.WatchEventT[T]) string
+	DistributionKey func(event etcdop.WatchEvent[T]) string
 	// Lock, only one task with the lock can run at a time.
 	// If it is not set, the TaskKey is used as the lock name.
-	Lock func(event etcdop.WatchEventT[T]) string
+	Lock func(event etcdop.WatchEvent[T]) string
 	// TaskKey defines etcd prefix where the task will be stored in etcd.
 	// It is a unique task identifier.
 	// CreatedAt datetime and a random suffix are always appended to the TaskID.
-	TaskKey func(event etcdop.WatchEventT[T]) task.Key
+	TaskKey func(event etcdop.WatchEvent[T]) task.Key
 	// StartTaskIf, if set, it determines whether the task is started or not.
-	StartTaskIf func(event etcdop.WatchEventT[T]) (skipReason string, start bool)
+	StartTaskIf func(event etcdop.WatchEvent[T]) (skipReason string, start bool)
 	// TaskCtx must return a task context with a deadline.
 	TaskCtx task.ContextFactory
 	// TaskFactory is a function that converts an etcd watch event to a task.
@@ -46,7 +46,7 @@ type Source[T any] struct {
 	RestartInterval time.Duration
 }
 
-type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Fn
+type TaskFactory[T any] func(event etcdop.WatchEvent[T]) task.Fn
 
 func (c Config[T]) Validate() error {
 	errs := errors.NewMultiError()

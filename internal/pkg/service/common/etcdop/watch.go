@@ -9,6 +9,7 @@ import (
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -46,7 +47,7 @@ type WatchStreamE[E any] struct {
 }
 
 // WatchStreamRaw for untyped prefix.
-type WatchStreamRaw = WatchStreamE[WatchEventRaw]
+type WatchStreamRaw = WatchStreamE[WatchEvent[[]byte]]
 
 func (s *WatchStreamE[E]) Channel() <-chan WatchResponseE[E] {
 	return s.channel
@@ -73,7 +74,7 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 
 			// GetAll phase
 			itr := v.GetAll(client).Do(ctx)
-			var events []WatchEventRaw
+			var events []WatchEvent[[]byte]
 			sendBatch := func() {
 				if len(events) > 0 {
 					resp := WatchResponseRaw{}
@@ -86,8 +87,8 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 
 			// Iterate and send batches of events
 			i := 1
-			err := itr.ForEach(func(kv *op.KeyValue, _ *Header) error {
-				events = append(events, WatchEventRaw{Kv: kv, Type: CreateEvent})
+			err := itr.ForEach(func(kv *op.KeyValue, _ *iterator.Header) error {
+				events = append(events, WatchEvent[[]byte]{Kv: kv, Type: CreateEvent, Key: string(kv.Key), Value: kv.Value})
 				if i%getAllBatchSize == 0 {
 					sendBatch()
 				}
@@ -196,7 +197,7 @@ func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, op
 			})
 
 			if len(rawResp.Events) > 0 {
-				resp.Events = make([]WatchEventRaw, 0, len(rawResp.Events))
+				resp.Events = make([]WatchEvent[[]byte], 0, len(rawResp.Events))
 			}
 
 			// Map event type
@@ -213,11 +214,19 @@ func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, op
 					panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 				}
 
-				resp.Events = append(resp.Events, WatchEventRaw{
+				out := WatchEvent[[]byte]{
 					Type:   typ,
 					Kv:     rawEvent.Kv,
 					PrevKv: rawEvent.PrevKv,
-				})
+					Key:    string(rawEvent.Kv.Key),
+					Value:  rawEvent.Kv.Value,
+				}
+
+				if out.PrevKv != nil {
+					out.PrevValue = &out.PrevKv.Value
+				}
+
+				resp.Events = append(resp.Events, out)
 			}
 
 			// Pass the response

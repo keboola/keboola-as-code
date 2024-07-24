@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -15,10 +14,10 @@ import (
 // Key (string) and value (V) are generated from incoming WatchEventT by custom callbacks, see MirrorTreeSetup.
 // Start with SetupMirrorTree function.
 type MirrorTree[T any, V any] struct {
-	stream    *RestartableWatchStreamT[T]
-	filter    func(t WatchEventT[T]) bool
-	mapKey    func(kv *op.KeyValue, value T) string
-	mapValue  func(kv *op.KeyValue, value T) V
+	stream    RestartableWatchStream[T]
+	filter    func(event WatchEvent[T]) bool
+	mapKey    func(key string, value T) string
+	mapValue  func(key string, value T) V
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[V])
 
@@ -28,10 +27,10 @@ type MirrorTree[T any, V any] struct {
 }
 
 type MirrorTreeSetup[T any, V any] struct {
-	stream    *RestartableWatchStreamT[T]
-	filter    func(t WatchEventT[T]) bool
-	mapKey    func(kv *op.KeyValue, value T) string
-	mapValue  func(kv *op.KeyValue, value T) V
+	stream    RestartableWatchStream[T]
+	filter    func(event WatchEvent[T]) bool
+	mapKey    func(key string, value T) string
+	mapValue  func(key string, value T) V
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[V])
 }
@@ -57,19 +56,19 @@ type MirrorKVPair[V any] struct {
 func SetupFullMirrorTree[T any](
 	stream *RestartableWatchStreamT[T],
 ) MirrorTreeSetup[T, T] {
-	mapKey := func(kv *op.KeyValue, value T) string {
-		return string(kv.Key)
+	mapKey := func(key string, value T) string {
+		return key
 	}
-	mapValue := func(kv *op.KeyValue, value T) T {
+	mapValue := func(key string, value T) T {
 		return value
 	}
-	return SetupMirrorTree(stream, mapKey, mapValue)
+	return SetupMirrorTree[T](stream, mapKey, mapValue)
 }
 
 func SetupMirrorTree[T any, V any](
-	stream *RestartableWatchStreamT[T],
-	mapKey func(kv *op.KeyValue, value T) string,
-	mapValue func(kv *op.KeyValue, value T) V,
+	stream RestartableWatchStream[T],
+	mapKey func(key string, value T) string,
+	mapValue func(key string, value T) V,
 ) MirrorTreeSetup[T, V] {
 	return MirrorTreeSetup[T, V]{
 		stream:   stream,
@@ -92,9 +91,8 @@ func (s MirrorTreeSetup[T, V]) BuildMirror() *MirrorTree[T, V] {
 }
 
 func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
-	consumer := m.stream.
-		SetupConsumer().
-		WithForEach(func(events []WatchEventT[T], header *Header, restart bool) {
+	consumer := newConsumerSetup(m.stream).
+		WithForEach(func(events []WatchEvent[T], header *Header, restart bool) {
 			update := MirrorUpdate{Header: header, Restart: restart}
 			changes := MirrorUpdateChanges[V]{MirrorUpdate: update}
 			m.tree.Atomic(func(t *prefixtree.Tree[V]) {
@@ -109,13 +107,13 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 						continue
 					}
 
-					newKey := m.mapKey(event.Kv, event.Value)
+					newKey := m.mapKey(event.Key, event.Value)
 					oldKey := newKey
 
 					// Calculate oldKey based on the old value, if it is present.
 					// It can be enabled by watch etcd.WithPrevKV() option.
 					if event.PrevValue != nil {
-						oldKey = m.mapKey(event.PrevKv, *event.PrevValue)
+						oldKey = m.mapKey(event.Key, *event.PrevValue)
 					}
 
 					switch event.Type {
@@ -125,13 +123,13 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 								t.Delete(oldKey)
 							}
 						}
-						newValue := m.mapValue(event.Kv, event.Value)
+						newValue := m.mapValue(event.Key, event.Value)
 						if len(m.onChanges) > 0 {
 							changes.Updated = append(changes.Updated, MirrorKVPair[V]{Key: newKey, Value: newValue})
 						}
 						t.Insert(newKey, newValue)
 					case CreateEvent:
-						newValue := m.mapValue(event.Kv, event.Value)
+						newValue := m.mapValue(event.Key, event.Value)
 						if len(m.onChanges) > 0 {
 							changes.Created = append(changes.Created, MirrorKVPair[V]{Key: newKey, Value: newValue})
 						}
@@ -168,7 +166,7 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 }
 
 // WithFilter set a filter, the filter must return true if the event should be processed.
-func (s MirrorTreeSetup[T, V]) WithFilter(fn func(event WatchEventT[T]) bool) MirrorTreeSetup[T, V] {
+func (s MirrorTreeSetup[T, V]) WithFilter(fn func(event WatchEvent[T]) bool) MirrorTreeSetup[T, V] {
 	s.filter = fn
 	return s
 }

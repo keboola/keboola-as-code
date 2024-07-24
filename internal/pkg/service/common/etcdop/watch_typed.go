@@ -8,10 +8,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
-// WatchStreamT streams events of the WatchEventT[T] type.
-type WatchStreamT[T any] WatchStreamE[WatchEventT[T]]
+// WatchStreamT streams events of the WatchEvent[T] type.
+type WatchStreamT[T any] WatchStreamE[WatchEvent[T]]
 
-func (s *WatchStreamT[T]) Channel() <-chan WatchResponseE[WatchEventT[T]] {
+func (s *WatchStreamT[T]) Channel() <-chan WatchResponseE[WatchEvent[T]] {
 	return s.channel
 }
 
@@ -62,7 +62,7 @@ func (v PrefixT[T]) WatchWithoutRestart(ctx context.Context, client etcd.Watcher
 // decodeChannel is used by Watch and GetAllAndWatch to decode raw data to typed data.
 func (v PrefixT[T]) decodeChannel(ctx context.Context, rawStream *WatchStreamRaw) *WatchStreamT[T] {
 	ctx, cancel := context.WithCancelCause(ctx)
-	stream := &WatchStreamT[T]{channel: make(chan WatchResponseE[WatchEventT[T]]), cancel: cancel}
+	stream := &WatchStreamT[T]{channel: make(chan WatchResponseE[WatchEvent[T]]), cancel: cancel}
 	go func() {
 		defer close(stream.channel)
 		defer cancel(context.Canceled)
@@ -71,7 +71,7 @@ func (v PrefixT[T]) decodeChannel(ctx context.Context, rawStream *WatchStreamRaw
 		decode := func(kv *op.KeyValue, header *Header) (T, bool) {
 			var target T
 			if err := v.serde.Decode(ctx, kv, &target); err != nil {
-				resp := WatchResponseE[WatchEventT[T]]{}
+				resp := WatchResponseE[WatchEvent[T]]{}
 				resp.Header = header
 				resp.Err = err
 				stream.channel <- resp
@@ -82,17 +82,18 @@ func (v PrefixT[T]) decodeChannel(ctx context.Context, rawStream *WatchStreamRaw
 
 		// Channel is closed by the context, so the context does not have to be checked here again.
 		for rawResp := range rawStream.channel {
-			var events []WatchEventT[T]
+			var events []WatchEvent[T]
 			if len(rawResp.Events) > 0 {
-				events = make([]WatchEventT[T], 0, len(rawResp.Events))
+				events = make([]WatchEvent[T], 0, len(rawResp.Events))
 			}
 
 			// Map raw response to typed response.
 			for _, rawEvent := range rawResp.Events {
-				outEvent := WatchEventT[T]{
+				outEvent := WatchEvent[T]{
 					Type:   rawEvent.Type,
 					Kv:     rawEvent.Kv,
 					PrevKv: rawEvent.PrevKv,
+					Key:    rawEvent.Key,
 				}
 
 				// Decode value.
@@ -124,7 +125,7 @@ func (v PrefixT[T]) decodeChannel(ctx context.Context, rawStream *WatchStreamRaw
 			}
 
 			// Pass the response
-			stream.channel <- WatchResponseE[WatchEventT[T]]{
+			stream.channel <- WatchResponseE[WatchEvent[T]]{
 				WatcherStatus: rawResp.WatcherStatus,
 				Events:        events,
 			}

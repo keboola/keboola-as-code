@@ -42,12 +42,12 @@ func TestMirror(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
-	mirror := SetupMirrorTree(
+	mirror := SetupMirrorTree[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
-		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
-		func(kv *op.KeyValue, v testUser) int { return v.Age },
+		func(key string, value testUser) string { return value.FirstName + " " + value.LastName },
+		func(key string, value testUser) int { return value.Age },
 	).
-		WithFilter(func(event WatchEventT[testUser]) bool {
+		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		BuildMirror()
@@ -140,12 +140,12 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
-	mirror := SetupMirrorTree(
+	mirror := SetupMirrorTree[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
-		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
-		func(kv *op.KeyValue, v testUser) int { return v.Age },
+		func(key string, value testUser) string { return value.FirstName + " " + value.LastName },
+		func(key string, value testUser) int { return value.Age },
 	).
-		WithFilter(func(event WatchEventT[testUser]) bool {
+		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		WithOnUpdate(func(update MirrorUpdate) {
@@ -229,12 +229,12 @@ func TestMirror_WithOnChanges(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
-	mirror := SetupMirrorTree(
+	mirror := SetupMirrorTree[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
-		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
-		func(kv *op.KeyValue, v testUser) int { return v.Age },
+		func(key string, value testUser) string { return value.FirstName + " " + value.LastName },
+		func(key string, value testUser) int { return value.Age },
 	).
-		WithFilter(func(event WatchEventT[testUser]) bool {
+		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		WithOnChanges(func(changes MirrorUpdateChanges[int]) {
@@ -352,7 +352,7 @@ func TestFullMirror(t *testing.T) {
 	logger := log.NewDebugLogger()
 	mirror := SetupFullMirrorTree(
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV())).
-		WithFilter(func(event WatchEventT[testUser]) bool {
+		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		BuildMirror()

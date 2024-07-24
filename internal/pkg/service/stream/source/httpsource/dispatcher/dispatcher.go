@@ -12,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -62,10 +61,10 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 		dp.sources = etcdop.
 			SetupMirrorTree(
 				d.DefinitionRepository().Source().GetAllAndWatch(ctx, etcd.WithPrevKV()),
-				func(kv *op.KeyValue, source definition.Source) string {
+				func(key string, source definition.Source) string {
 					return sourceKey(source.SourceKey)
 				},
-				func(kv *op.KeyValue, source definition.Source) *sourceData {
+				func(key string, source definition.Source) *sourceData {
 					return &sourceData{
 						sourceKey: source.SourceKey,
 						enabled:   source.IsEnabled(),
@@ -73,7 +72,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 					}
 				},
 			).
-			WithFilter(func(event etcdop.WatchEventT[definition.Source]) bool {
+			WithFilter(func(event etcdop.WatchEvent[definition.Source]) bool {
 				return event.Value.Type == definition.SourceTypeHTTP
 			}).
 			BuildMirror()

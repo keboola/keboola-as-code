@@ -12,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -85,20 +84,20 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 	// Start slices mirroring, only necessary data is saved
 	{
 		f.slices = etcdop.
-			SetupMirrorTree(
-				d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
-				func(kv *op.KeyValue, slice storage.Slice) string {
-					return slice.SliceKey.String()
-				},
-				func(kv *op.KeyValue, slice storage.Slice) *sliceData {
-					return &sliceData{
-						SliceKey:     slice.SliceKey,
-						State:        slice.State,
-						LocalStorage: slice.LocalStorage,
-					}
-				},
-			).
-			WithFilter(func(event etcdop.WatchEventT[storage.Slice]) bool {
+			SetupMirrorTree[storage.Slice](
+			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
+			func(key string, slice storage.Slice) string {
+				return slice.SliceKey.String()
+			},
+			func(key string, slice storage.Slice) *sliceData {
+				return &sliceData{
+					SliceKey:     slice.SliceKey,
+					State:        slice.State,
+					LocalStorage: slice.LocalStorage,
+				}
+			},
+		).
+			WithFilter(func(event etcdop.WatchEvent[storage.Slice]) bool {
 				// Mirror only slices from managed volumes
 				return f.volumesMap[event.Value.VolumeID]
 			}).
