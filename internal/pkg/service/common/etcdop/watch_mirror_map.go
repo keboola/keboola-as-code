@@ -5,7 +5,10 @@ import (
 	"maps"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -64,6 +67,8 @@ func (s MirrorMapSetup[T, K, V]) BuildMirror() *MirrorMap[T, K, V] {
 }
 
 func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
+	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", m.stream.WatchedPrefix()))
+
 	consumer := newConsumerSetup(m.stream).
 		WithForEach(func(events []WatchEvent[T], header *Header, restart bool) {
 			update := MirrorUpdate{Header: header, Restart: restart}

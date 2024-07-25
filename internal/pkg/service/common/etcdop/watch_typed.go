@@ -11,6 +11,10 @@ import (
 // WatchStreamT streams events of the WatchEvent[T] type.
 type WatchStreamT[T any] WatchStreamE[WatchEvent[T]]
 
+func (s *WatchStreamT[T]) WatchedPrefix() string {
+	return s.prefix
+}
+
 func (s *WatchStreamT[T]) Channel() <-chan WatchResponseE[WatchEvent[T]] {
 	return s.channel
 }
@@ -62,7 +66,7 @@ func (v PrefixT[T]) WatchWithoutRestart(ctx context.Context, client etcd.Watcher
 // decodeChannel is used by Watch and GetAllAndWatch to decode raw data to typed data.
 func (v PrefixT[T]) decodeChannel(ctx context.Context, rawStream *WatchStreamRaw) *WatchStreamT[T] {
 	ctx, cancel := context.WithCancelCause(ctx)
-	stream := &WatchStreamT[T]{channel: make(chan WatchResponseE[WatchEvent[T]]), cancel: cancel}
+	stream := &WatchStreamT[T]{prefix: v.Prefix(), channel: make(chan WatchResponseE[WatchEvent[T]]), cancel: cancel}
 	go func() {
 		defer close(stream.channel)
 		defer cancel(context.Canceled)

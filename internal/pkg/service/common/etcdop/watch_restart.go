@@ -11,6 +11,7 @@ import (
 )
 
 type RestartableWatchStream[T any] interface {
+	WatchedPrefix() string
 	Channel() <-chan WatchResponseE[WatchEvent[T]]
 	Restart(cause error)
 }

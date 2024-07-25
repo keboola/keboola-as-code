@@ -41,6 +41,7 @@ type WatcherStatus struct {
 
 // WatchStreamE streams events of the E type.
 type WatchStreamE[E any] struct {
+	prefix      string
 	channel     chan WatchResponseE[E]
 	cancel      context.CancelCauseFunc
 	cancelCause error
@@ -48,6 +49,10 @@ type WatchStreamE[E any] struct {
 
 // WatchStreamRaw for untyped prefix.
 type WatchStreamRaw = WatchStreamE[WatchEvent[[]byte]]
+
+func (s *WatchStreamE[E]) WatchedPrefix() string {
+	return s.prefix
+}
 
 func (s *WatchStreamE[E]) Channel() <-chan WatchResponseE[E] {
 	return s.channel
@@ -67,7 +72,7 @@ func (s *WatchStreamE[E]) Channel() <-chan WatchResponseE[E] {
 func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) *RestartableWatchStreamRaw {
 	return wrapStreamWithRestart(ctx, func(ctx context.Context) *WatchStreamRaw {
 		ctx, cancel := context.WithCancelCause(ctx)
-		stream := &WatchStreamRaw{channel: make(chan WatchResponseRaw), cancel: cancel}
+		stream := &WatchStreamRaw{prefix: v.Prefix(), channel: make(chan WatchResponseRaw), cancel: cancel}
 		go func() {
 			defer close(stream.channel)
 			defer cancel(context.Canceled)
@@ -135,7 +140,7 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 // WatchWithoutRestart is same as the Watch, but watcher is not restarted on a fatal error.
 func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) *WatchStreamRaw {
 	ctx, cancel := context.WithCancelCause(ctx)
-	stream := &WatchStreamRaw{channel: make(chan WatchResponseRaw), cancel: cancel}
+	stream := &WatchStreamRaw{prefix: v.Prefix(), channel: make(chan WatchResponseRaw), cancel: cancel}
 	go func() {
 		defer close(stream.channel)
 		defer cancel(context.Canceled)

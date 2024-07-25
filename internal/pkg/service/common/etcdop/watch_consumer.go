@@ -5,7 +5,10 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -101,6 +104,8 @@ func (s WatchConsumerSetup[T]) BuildConsumer() *WatchConsumer[T] {
 
 func (c *WatchConsumer[T]) StartConsumer(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
 	initErrCh := make(chan error, 1)
+
+	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", c.stream.WatchedPrefix()))
 
 	wg.Add(1)
 	go func() {
