@@ -106,24 +106,29 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 		return err
 	})
 
-	// Periodically collect statistics and sync them to the database
-	c.wg.Add(1)
-	ticker := d.Clock().Ticker(c.config.SyncInterval.Duration())
-	go func() {
-		defer c.wg.Done()
-		defer ticker.Stop()
+	// Periodically collect statistics and sync them to the database.
+	// Collector can be disabled in tests.
+	// It causes problems when mocked clock is used.
+	// For example clock.Add(time.Hour) invokes the timer 3600 times, if the interval is 1s.
+	if c.config.Enabled {
+		c.wg.Add(1)
+		ticker := d.Clock().Ticker(c.config.SyncInterval.Duration())
+		go func() {
+			defer c.wg.Done()
+			defer ticker.Stop()
 
-		// Note: errors are already logged
-		for {
-			select {
-			case <-ctx.Done():
-				_ = c.syncAll()
-				return
-			case <-ticker.C:
-				_ = c.syncAll()
+			// Note: errors are already logged
+			for {
+				select {
+				case <-ctx.Done():
+					_ = c.syncAll()
+					return
+				case <-ticker.C:
+					_ = c.syncAll()
+				}
 			}
-		}
-	}()
+		}()
+	}
 }
 
 func (c *Collector) syncAll() error {
