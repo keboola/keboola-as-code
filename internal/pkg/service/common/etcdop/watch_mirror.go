@@ -1,5 +1,7 @@
 package etcdop
 
+import "slices"
+
 type MirrorUpdate struct {
 	Header  *Header
 	Restart bool
@@ -15,4 +17,8 @@ type MirrorUpdateChanges[K, V any] struct {
 type MirrorKVPair[K, V any] struct {
 	Key   K
 	Value V
+}
+
+func (c *MirrorUpdateChanges[K, V]) All() []MirrorKVPair[K, V] {
+	return slices.Concat(c.Created, c.Updated, c.Deleted)
 }
