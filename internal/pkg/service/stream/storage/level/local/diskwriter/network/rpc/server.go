@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sync"
 
@@ -15,10 +16,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	local "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc/pb"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
 	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -49,12 +53,13 @@ type serverDependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
 	Volumes() *diskwriter.Volumes
+	EtcdClient() *etcd.Client
 	StorageRepository() *storageRepo.Repository
 }
 
-func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
+func StartNetworkFileServer(d serverDependencies, nodeID, hostname string, cfg local.Config) error {
 	f := &NetworkFileServer{
-		logger:     d.Logger(),
+		logger:     d.Logger().WithComponent("storage.node.writer.network-file"),
 		volumes:    d.Volumes(),
 		volumesMap: make(map[volume.ID]bool),
 		writers:    make(map[uint64]diskwriter.Writer),
@@ -65,6 +70,15 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 		f.volumesMap[vol.ID()] = true
 	}
 
+	// Listen for network connections
+	listener, err := transport.Listen(f.logger, nodeID, cfg.Writer.Network)
+	if err != nil {
+		return err
+	}
+	d.Process().OnShutdown(func(ctx context.Context) {
+		_ = listener.Close()
+	})
+
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -74,6 +88,11 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 		// Stop mirroring
 		cancel()
 		wg.Wait()
+
+		// Stop network listener
+		if err := listener.Close(); err != nil {
+			f.logger.Error(ctx, err.Error())
+		}
 
 		// Close active writers
 		f.closeWriters(ctx)
@@ -102,15 +121,27 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 				return f.volumesMap[event.Value.VolumeID]
 			}).
 			BuildMirror()
-		if err := <-f.slices.StartMirroring(ctx, wg, f.logger); err != nil {
-			return nil, err
+		if err = <-f.slices.StartMirroring(ctx, wg, f.logger); err != nil {
+			return err
 		}
 	}
 
-	return f, nil
+	// Register volumes to database
+	nodeAddress := volume.RemoteAddr(fmt.Sprintf("%s:%s", hostname, listener.Port()))
+	err = registration.RegisterVolumes(cfg.Volume.Registration, d, nodeID, nodeAddress, d.Volumes().Collection(), d.StorageRepository().Volume().RegisterWriterVolume)
+	if err != nil {
+		return err
+	}
+
+	// Start server
+	d.Process().Add(func(shutdown servicectx.ShutdownFn) {
+		shutdown(context.Background(), f.serve(listener))
+	})
+
+	return nil
 }
 
-func (s *NetworkFileServer) Serve(listener net.Listener) error {
+func (s *NetworkFileServer) serve(listener net.Listener) error {
 	srv := grpc.NewServer(
 		grpc.SharedWriteBuffer(true),
 	)
