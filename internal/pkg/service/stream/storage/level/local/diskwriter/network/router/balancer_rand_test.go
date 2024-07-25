@@ -25,7 +25,7 @@ func TestRandomBalancer(t *testing.T) {
 
 	// Pipelines
 	var logger strings.Builder
-	p1 := NewTestPipeline("pipeline1", test.NewSliceKeyOpenedAt("2000-01-01:01:00.000Z"), &logger)
+	p1 := NewTestPipeline("pipeline1", test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z"), &logger)
 	p2 := NewTestPipeline("pipeline2", test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z"), &logger)
 	p3 := NewTestPipeline("pipeline3", test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z"), &logger)
 	pipelines := []router.SlicePipeline{p1, p2, p3}
