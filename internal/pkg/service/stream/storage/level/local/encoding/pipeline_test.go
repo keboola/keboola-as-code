@@ -576,7 +576,7 @@ func (h *writerSyncHelper) TriggerSync(tb testing.TB) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(tb, s.TriggerSync(true).Wait())
+			assert.NoError(tb, s.TriggerSync(true).Wait(context.Background()))
 		}()
 	}
 	wg.Wait()
