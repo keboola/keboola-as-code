@@ -184,7 +184,9 @@ func startWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 
 func waitForLog(t *testing.T, logger log.DebugLogger, expected string) {
 	t.Helper()
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
+	if !assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, expected)
-	}, 15*time.Second, 100*time.Millisecond)
+	}, 15*time.Second, 100*time.Millisecond) {
+		t.Log(logger.AllMessages())
+	}
 }
