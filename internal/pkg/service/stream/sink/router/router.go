@@ -223,6 +223,10 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	// Wait for all writes
 	wg.Wait()
 
+	if result.StatusCode > 299 {
+		result.Finalize()
+	}
+
 	return result
 }
 
