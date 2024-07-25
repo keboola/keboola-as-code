@@ -3,12 +3,10 @@ package rpc
 import (
 	"context"
 	"net"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc/pb"
@@ -52,13 +50,6 @@ func OpenNetworkFile(ctx context.Context, sourceNodeID string, conn *transport.C
 		  }
 		}]}`
 
-	// Keep alive parameters
-	kacp := keepalive.ClientParameters{
-		Time:                5 * time.Second,
-		Timeout:             time.Second,
-		PermitWithoutStream: true,
-	}
-
 	// Create gRPC client
 	clientConn, err := grpc.NewClient(
 		"127.0.0.1",
@@ -66,7 +57,6 @@ func OpenNetworkFile(ctx context.Context, sourceNodeID string, conn *transport.C
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultServiceConfig(serviceConfig),
-		grpc.WithKeepaliveParams(kacp),
 	)
 	if err != nil {
 		return nil, err
