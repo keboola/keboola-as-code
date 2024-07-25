@@ -124,7 +124,7 @@ func New(d dependencies) (*Router, error) {
 					p.close(ctx, "sink disabled")
 				}
 
-				r.logger.Debugf(ctx, "synced to revision %d", header.Revision)
+				r.logger.Debugf(ctx, "watch stream mirror synced to revision %d", header.Revision)
 			}).
 			BuildConsumer()
 		if err := <-consumer.StartConsumer(ctx, &r.wg, r.logger); err != nil {

@@ -136,7 +136,7 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 				m.revisionLock.Lock()
 				m.revision = header.Revision
 				m.revisionLock.Unlock()
-				logger.Debugf(ctx, `synced to revision %d`, header.Revision)
+				logger.Debugf(ctx, `watch stream mirror synced to revision %d`, header.Revision)
 			})
 
 			// Call callbacks

@@ -126,7 +126,7 @@ func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGr
 			m.revisionLock.Lock()
 			m.revision = header.Revision
 			m.revisionLock.Unlock()
-			logger.Debugf(ctx, `synced to revision %d`, header.Revision)
+			logger.Debugf(ctx, `watch stream mirror synced to revision %d`, header.Revision)
 
 			// Call callbacks
 			for _, fn := range m.onUpdate {

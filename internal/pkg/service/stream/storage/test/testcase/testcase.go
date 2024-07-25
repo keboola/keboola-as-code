@@ -117,8 +117,8 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	// Wait for pipeline initialization
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		// Messages order can be random
-		tc.logger.AssertJSONMessages(c, `{"level":"debug","message":"synced to revision %s","component":"sink.router"}`)
-		tc.logger.AssertJSONMessages(c, `{"level":"debug","message":"synced to revision %s","component":"storage.router"}`)
+		tc.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %s","component":"sink.router"}`)
+		tc.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %s","component":"storage.router"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Write all rows batches

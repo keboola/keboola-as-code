@@ -116,8 +116,8 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Wait for pipeline initialization
 	assert.EventuallyWithT(b, func(c *assert.CollectT) {
 		// Messages order can be random
-		wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"synced to revision %s","component":"sink.router"}`)
-		// wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"synced to revision %s","component":"storage.router"}`)
+		wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %s","component":"sink.router"}`)
+		wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %s","component":"storage.router"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Create data channel
