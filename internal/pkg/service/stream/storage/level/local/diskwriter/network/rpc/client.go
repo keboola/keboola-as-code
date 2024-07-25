@@ -7,11 +7,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc/pb"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -24,7 +25,7 @@ type networkFile struct {
 	fileID   uint64
 }
 
-func OpenNetworkFile(ctx context.Context, sourceNodeID string, conn *transport.ClientConnection, sliceKey model.SliceKey) (encoding.NetworkOutput, error) {
+func OpenNetworkFile(ctx context.Context, sourceNodeID string, conn *transport.ClientConnection, sliceKey model.SliceKey, slice localModel.Slice) (encoding.NetworkOutput, error) {
 	// Use transport layer with multiplexer for connection
 	dialer := func(_ context.Context, _ string) (net.Conn, error) {
 		stream, err := conn.OpenStream()
@@ -64,7 +65,7 @@ func OpenNetworkFile(ctx context.Context, sourceNodeID string, conn *transport.C
 
 	// Try to open remote file
 	f := &networkFile{conn: clientConn, rpc: pb.NewNetworkFileClient(clientConn), sliceKey: sliceKey}
-	if err := f.open(ctx, sourceNodeID); err != nil {
+	if err := f.open(ctx, sourceNodeID, slice); err != nil {
 		_ = clientConn.Close()
 		return nil, err
 	}
@@ -72,18 +73,15 @@ func OpenNetworkFile(ctx context.Context, sourceNodeID string, conn *transport.C
 	return f, nil
 }
 
-func (f *networkFile) open(ctx context.Context, sourceNodeID string) error {
+func (f *networkFile) open(ctx context.Context, sourceNodeID string, slice localModel.Slice) error {
+	sliceJSON, err := json.Encode(sliceData{SliceKey: f.sliceKey, LocalStorage: slice}, false)
+	if err != nil {
+		return err
+	}
+
 	resp, err := f.rpc.Open(ctx, &pb.OpenRequest{
-		SourceNodeId: sourceNodeID,
-		SliceKey: &pb.SliceKey{
-			ProjectId: int64(f.sliceKey.ProjectID),
-			BranchId:  int64(f.sliceKey.BranchID),
-			SourceId:  f.sliceKey.SourceID.String(),
-			SinkId:    f.sliceKey.SinkID.String(),
-			FileId:    timestamppb.New(f.sliceKey.FileID.OpenedAt.Time()),
-			VolumeId:  f.sliceKey.VolumeID.String(),
-			SliceId:   timestamppb.New(f.sliceKey.SliceID.OpenedAt.Time()),
-		},
+		SourceNodeId:  sourceNodeID,
+		SliceDataJson: sliceJSON,
 	})
 	if err != nil {
 		return err

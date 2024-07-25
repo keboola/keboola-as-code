@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode"
@@ -64,7 +65,7 @@ func TestNetworkFile(t *testing.T) {
 	slice := slices[0]
 
 	// Open file on a source node
-	file, sourceNode := openNetworkFileOnSourceNode(t, ctx, etcdCfg, "source", slice.SliceKey)
+	file, sourceNode := openNetworkFile(t, ctx, etcdCfg, "source", slice.SliceKey, slice.LocalStorage)
 	assert.True(t, file.IsReady())
 
 	// Write
@@ -113,7 +114,7 @@ func startDiskWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.C
 	return m
 }
 
-func openNetworkFileOnSourceNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, sourceNodeID string, sliceKey model.SliceKey) (encoding.NetworkOutput, dependencies.Mocked) {
+func openNetworkFile(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, sourceNodeID string, sliceKey model.SliceKey, slice localModel.Slice) (encoding.NetworkOutput, dependencies.Mocked) {
 	t.Helper()
 
 	d, m := dependencies.NewMockedSourceScopeWithConfig(
@@ -130,7 +131,7 @@ func openNetworkFileOnSourceNode(t *testing.T, ctx context.Context, etcdCfg etcd
 	require.True(t, found)
 
 	// Open network file
-	file, err := rpc.OpenNetworkFile(ctx, sourceNodeID, conn, sliceKey)
+	file, err := rpc.OpenNetworkFile(ctx, sourceNodeID, conn, sliceKey, slice)
 	require.NoError(t, err)
 
 	return file, m

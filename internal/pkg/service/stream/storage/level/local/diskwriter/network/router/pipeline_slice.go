@@ -149,7 +149,7 @@ func (p *slicePipeline) tryOpen() error {
 	)
 
 	// Open remote RPC file
-	remoteFile, err := rpc.OpenNetworkFile(ctx, p.router.nodeID, conn, p.slice.SliceKey)
+	remoteFile, err := rpc.OpenNetworkFile(ctx, p.router.nodeID, conn, p.slice.SliceKey, p.slice.LocalStorage)
 	if err != nil {
 		return errors.PrefixErrorf(err, "cannot open network file")
 	}
