@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"testing"
-	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -17,17 +16,14 @@ import (
 	aggregationRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/aggregation/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -160,28 +156,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Co
 	mock.DebugLogger().Truncate()
 	mock.MockedHTTPTransport().Reset()
 
-	// Register dummy sink with local storage support for tests
-	serviceScp.Plugins().RegisterSinkWithLocalStorage(func(sinkType definition.SinkType) bool {
-		return sinkType == test.SinkTypeWithLocalStorage
-	})
-	serviceScp.Plugins().Collection().OnFileOpen(func(ctx context.Context, now time.Time, sink definition.Sink, file *model.File) error {
-		if sink.Type == test.SinkTypeWithLocalStorage {
-			// Set required fields
-			file.Mapping = table.Mapping{Columns: column.Columns{column.Body{Name: "body"}}}
-			file.StagingStorage.Provider = "test"
-			file.TargetStorage.Provider = "test"
-		}
-		return nil
-	})
-
-	// Register dummy pipeline opener for tests
-	serviceScp.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType) (pipeline.Pipeline, error) {
-		if sinkType == test.SinkType {
-			return mock.sinkPipelineOpener.OpenPipeline()
-		}
-
-		return nil, pipeline.NoOpenerFoundError{SinkType: sinkType}
-	})
+	dummy.RegisterDummySinkTypes(serviceScp.Plugins(), mock.TestSinkPipelineOpener())
 
 	return serviceScp, mock
 }

@@ -30,8 +30,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testnode"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
@@ -83,7 +83,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	require.NoError(b, os.WriteFile(filepath.Join(volumePath, volume.IDFile), []byte(volumeID), 0o600))
 
 	// Start nodes
-	wb.startNodes(b, ctx, etcdCfg, volumesPath)
+	wb.startNodes(b, etcdCfg)
 	sinkRouter := wb.sourceNode.SinkRouter()
 
 	// Create resource in an API node
@@ -203,13 +203,13 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	wb.logger.AssertJSONMessages(b, "")
 }
 
-func (wb *WriterBenchmark) startNodes(b *testing.B, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) {
+func (wb *WriterBenchmark) startNodes(b *testing.B, etcdCfg etcdclient.Config) {
 	b.Helper()
 
 	wb.logger.Truncate()
 
 	// Start disk in node
-	wb.startWriterNode(b, ctx, etcdCfg, volumesPath)
+	wb.startWriterNode(b, etcdCfg)
 
 	// Start source node
 	wb.startSourceNode(b, etcdCfg)
@@ -249,38 +249,15 @@ func (wb *WriterBenchmark) startAPINode(b *testing.B, etcdCfg etcdclient.Config)
 
 func (wb *WriterBenchmark) startSourceNode(b *testing.B, etcdCfg etcdclient.Config) {
 	b.Helper()
-
-	wb.sourceNode, wb.sourceNodeMock = dependencies.NewMockedSourceScopeWithConfig(
-		b,
-		func(cfg *config.Config) {
-			wb.updateServiceConfig(cfg)
-			cfg.NodeID = "source"
-		},
-		commonDeps.WithDebugLogger(wb.logger),
-		commonDeps.WithEtcdConfig(etcdCfg),
-	)
+	wb.sourceNode, wb.sourceNodeMock = testnode.StartSourceNode(b, wb.logger, etcdCfg, wb.updateServiceConfig)
 }
 
-func (wb *WriterBenchmark) startWriterNode(b *testing.B, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) {
+func (wb *WriterBenchmark) startWriterNode(b *testing.B, etcdCfg etcdclient.Config) {
 	b.Helper()
-
-	wb.writerNode, wb.writerNodeMock = dependencies.NewMockedStorageWriterScopeWithConfig(
-		b,
-		func(cfg *config.Config) {
-			wb.updateServiceConfig(cfg)
-			cfg.NodeID = "disk-writer"
-			cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(b))
-			cfg.Storage.VolumesPath = volumesPath
-		},
-		// commonDeps.WithDebugLogger(wb.logger),
-		commonDeps.WithEtcdConfig(etcdCfg),
-	)
-
-	require.NoError(b, writernode.Start(ctx, wb.writerNode, wb.writerNodeMock.TestConfig()))
+	wb.writerNode, wb.writerNodeMock = testnode.StartDiskWriterNode(b, wb.logger, etcdCfg, 1, wb.updateServiceConfig)
 }
 
 func (wb *WriterBenchmark) updateServiceConfig(cfg *config.Config) {
-	cfg.Hostname = "localhost"
 	cfg.Storage.Level.Local.Writer.WatchDrainFile = false
 	cfg.Storage.Level.Local.Encoding.Sync = wb.Sync
 	cfg.Storage.Level.Local.Encoding.Compression = wb.Compression
