@@ -159,7 +159,7 @@ func (c *WatchConsumer[T]) StartConsumer(ctx context.Context, wg *sync.WaitGroup
 				// The watcher has been successfully created.
 				// This means transition from GetAll to Watch phase.
 				// The Created event is emitted always if a new watches is created, so after initialization and each restart.
-				logger.Info(ctx, "watcher created")
+				logger.Info(ctx, "watch stream created")
 				if c.onCreated != nil {
 					c.onCreated(resp.Header)
 				}

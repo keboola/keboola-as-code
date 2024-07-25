@@ -116,7 +116,7 @@ func TestWatchConsumer_NotTyped(t *testing.T) {
 {"level":"info","message":"watch stream consumer restarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}
 {"level":"info","message":"OnRestarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}
 {"level":"info","message":"ForEach: restart=true, events(3): create \"my/prefix/key1\", create \"my/prefix/key2\", create \"my/prefix/key3\""}
-{"level":"info","message":"watcher created"}                                                                                
+{"level":"info","message":"watch stream created"}                                                                                
 {"level":"info","message":"OnCreated: created (rev %d)"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
@@ -138,7 +138,7 @@ func TestWatchConsumer_NotTyped(t *testing.T) {
 {"level":"info","message":"watch stream consumer restarted: test restart"}                                                               
 {"level":"info","message":"OnRestarted: test restart"}                                                                      
 {"level":"info","message":"ForEach: restart=true, events(4): create \"my/prefix/key1\", create \"my/prefix/key2\", create \"my/prefix/key3\", create \"my/prefix/key4\""}                                                                                                                                                 
-{"level":"info","message":"watcher created"}                                                                                
+{"level":"info","message":"watch stream created"}                                                                                
 {"level":"info","message":"OnCreated: created (rev %d)"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
@@ -252,7 +252,7 @@ func TestWatchConsumer_Typed(t *testing.T) {
 {"level":"info","message":"watch stream consumer restarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}
 {"level":"info","message":"OnRestarted: unexpected restart, backoff delay %s, cause:\n- watch error: etcdserver: mvcc: required revision has been compacted"}
 {"level":"info","message":"ForEach: restart=true, events(3): create \"my/prefix/key1\", create \"my/prefix/key2\", create \"my/prefix/key3\""}
-{"level":"info","message":"watcher created"}                                                                                
+{"level":"info","message":"watch stream created"}                                                                                
 {"level":"info","message":"OnCreated: created (rev %d)"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
@@ -274,7 +274,7 @@ func TestWatchConsumer_Typed(t *testing.T) {
 {"level":"info","message":"watch stream consumer restarted: test restart"}                                                               
 {"level":"info","message":"OnRestarted: test restart"}                                                                      
 {"level":"info","message":"ForEach: restart=true, events(4): create \"my/prefix/key1\", create \"my/prefix/key2\", create \"my/prefix/key3\", create \"my/prefix/key4\""}                                                                                                                                                 
-{"level":"info","message":"watcher created"}                                                                                
+{"level":"info","message":"watch stream created"}                                                                                
 {"level":"info","message":"OnCreated: created (rev %d)"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
