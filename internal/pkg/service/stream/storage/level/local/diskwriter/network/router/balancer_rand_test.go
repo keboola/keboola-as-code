@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -24,9 +25,9 @@ func TestRandomBalancer(t *testing.T) {
 
 	// Pipelines
 	var logger strings.Builder
-	p1 := NewTestPipeline("pipeline1", &logger)
-	p2 := NewTestPipeline("pipeline2", &logger)
-	p3 := NewTestPipeline("pipeline3", &logger)
+	p1 := NewTestPipeline("pipeline1", test.NewSliceKeyOpenedAt("2000-01-01:01:00.000Z"), &logger)
+	p2 := NewTestPipeline("pipeline2", test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z"), &logger)
+	p3 := NewTestPipeline("pipeline3", test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z"), &logger)
 	pipelines := []router.SlicePipeline{p1, p2, p3}
 	expectWriteToPipeline := func(expectedPipeline *TestPipeline) {
 		status, err := balancer.WriteRecord(c, pipelines)

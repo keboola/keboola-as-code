@@ -11,18 +11,24 @@ import (
 
 type TestPipeline struct {
 	logger     io.Writer
+	sliceKey   model.SliceKey
 	Name       string
 	Ready      bool
 	WriteError error
 	CloseError error
 }
 
-func NewTestPipeline(name string, logger io.Writer) *TestPipeline {
+func NewTestPipeline(name string, sliceKey model.SliceKey, logger io.Writer) *TestPipeline {
 	return &TestPipeline{
-		Name:   name,
-		logger: logger,
-		Ready:  true,
+		Name:     name,
+		sliceKey: sliceKey,
+		logger:   logger,
+		Ready:    true,
 	}
+}
+
+func (p *TestPipeline) SliceKey() model.SliceKey {
+	return p.sliceKey
 }
 
 func (p *TestPipeline) IsReady() bool {
