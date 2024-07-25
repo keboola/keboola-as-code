@@ -60,7 +60,7 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 		writers:    make(map[uint64]diskwriter.Writer),
 	}
 
-	// Create volumes mat, to quick check, if the volume is managed by the node
+	// Create volumes map, to quick check, if the volume is managed by the node
 	for _, vol := range f.volumes.Collection().All() {
 		f.volumesMap[vol.ID()] = true
 	}
