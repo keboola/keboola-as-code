@@ -25,7 +25,7 @@ type Repository struct {
 	process *servicectx.Process
 	client  *etcd.Client
 	schema  schema.Volume
-	volumes *etcdop.Mirror[volume.Metadata, volume.Metadata]
+	volumes *etcdop.MirrorTree[volume.Metadata, volume.Metadata]
 }
 
 type dependencies interface {
@@ -60,7 +60,7 @@ func (r *Repository) watchVolumes() error {
 		r.logger.Info(ctx, "closed volumes stream")
 	})
 
-	r.volumes = etcdop.SetupFullMirror(r.schema.WriterVolumes().GetAllAndWatch(ctx, r.client)).BuildMirror()
+	r.volumes = etcdop.SetupFullMirrorTree(r.schema.WriterVolumes().GetAllAndWatch(ctx, r.client)).BuildMirror()
 	return <-r.volumes.StartMirroring(ctx, wg, r.logger)
 }
 

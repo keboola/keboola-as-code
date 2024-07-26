@@ -5,7 +5,10 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -28,26 +31,22 @@ import (
 // the ForEach callback is called with the "restart=true" flag, see WithForEach method.
 //
 // The WatchConsumer can be canceled by cancelling the context passed to the Watch/GetAllAndWatch method.
-type WatchConsumer[E WatchEvent] struct {
-	stream      RestartableWatchStream[E]
-	forEachFn   func(events []E, header *Header, restart bool)
+type WatchConsumer[T any] struct {
+	stream      RestartableWatchStream[T]
+	forEachFn   func(events []WatchEvent[T], header *Header, restart bool)
 	onCreated   onWatcherCreated
 	onRestarted onWatcherRestarted
 	onError     onWatcherError
 	onClose     onWatcherClose
 }
 
-type WatchConsumerSetup[E WatchEvent] struct {
-	stream      RestartableWatchStream[E]
-	forEachFn   func(events []E, header *Header, restart bool)
+type WatchConsumerSetup[T any] struct {
+	stream      RestartableWatchStream[T]
+	forEachFn   func(events []WatchEvent[T], header *Header, restart bool)
 	onCreated   onWatcherCreated
 	onRestarted onWatcherRestarted
 	onError     onWatcherError
 	onClose     onWatcherClose
-}
-
-type Restartable interface {
-	Restart(cause error)
 }
 
 type (
@@ -57,43 +56,43 @@ type (
 	onWatcherClose     func(err error)
 )
 
-func newConsumerSetup[E WatchEvent](stream RestartableWatchStream[E]) WatchConsumerSetup[E] {
-	return WatchConsumerSetup[E]{stream: stream}
+func newConsumerSetup[T any](stream RestartableWatchStream[T]) WatchConsumerSetup[T] {
+	return WatchConsumerSetup[T]{stream: stream}
 }
 
 // Restart underlying stream.
-func (c *WatchConsumer[E]) Restart(cause error) {
+func (c *WatchConsumer[T]) Restart(cause error) {
 	c.stream.Restart(cause)
 }
 
-func (s WatchConsumerSetup[E]) WithForEach(v func(events []E, header *Header, restart bool)) WatchConsumerSetup[E] {
+func (s WatchConsumerSetup[T]) WithForEach(v func(events []WatchEvent[T], header *Header, restart bool)) WatchConsumerSetup[T] {
 	s.forEachFn = v
 	return s
 }
 
-func (s WatchConsumerSetup[E]) WithOnCreated(v onWatcherCreated) WatchConsumerSetup[E] {
+func (s WatchConsumerSetup[T]) WithOnCreated(v onWatcherCreated) WatchConsumerSetup[T] {
 	s.onCreated = v
 	return s
 }
 
-func (s WatchConsumerSetup[E]) WithOnRestarted(v onWatcherRestarted) WatchConsumerSetup[E] {
+func (s WatchConsumerSetup[T]) WithOnRestarted(v onWatcherRestarted) WatchConsumerSetup[T] {
 	s.onRestarted = v
 	return s
 }
 
-func (s WatchConsumerSetup[E]) WithOnError(v onWatcherError) WatchConsumerSetup[E] {
+func (s WatchConsumerSetup[T]) WithOnError(v onWatcherError) WatchConsumerSetup[T] {
 	s.onError = v
 	return s
 }
 
-func (s WatchConsumerSetup[E]) WithOnClose(v onWatcherClose) WatchConsumerSetup[E] {
+func (s WatchConsumerSetup[T]) WithOnClose(v onWatcherClose) WatchConsumerSetup[T] {
 	s.onClose = v
 	return s
 }
 
-func (s WatchConsumerSetup[E]) BuildConsumer() *WatchConsumer[E] {
+func (s WatchConsumerSetup[T]) BuildConsumer() *WatchConsumer[T] {
 	// Copy settings, they are immutable after the build call
-	return &WatchConsumer[E]{
+	return &WatchConsumer[T]{
 		stream:      s.stream,
 		forEachFn:   s.forEachFn,
 		onCreated:   s.onCreated,
@@ -103,8 +102,10 @@ func (s WatchConsumerSetup[E]) BuildConsumer() *WatchConsumer[E] {
 	}
 }
 
-func (c *WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
+func (c *WatchConsumer[T]) StartConsumer(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
 	initErrCh := make(chan error, 1)
+
+	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", c.stream.WatchedPrefix()))
 
 	wg.Add(1)
 	go func() {
@@ -163,7 +164,7 @@ func (c *WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup
 				// The watcher has been successfully created.
 				// This means transition from GetAll to Watch phase.
 				// The Created event is emitted always if a new watches is created, so after initialization and each restart.
-				logger.Info(ctx, "watcher created")
+				logger.Info(ctx, "watch stream created")
 				if c.onCreated != nil {
 					c.onCreated(resp.Header)
 				}

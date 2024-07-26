@@ -12,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -33,7 +32,7 @@ type NetworkFileServer struct {
 	volumesMap map[volume.ID]bool
 
 	// slices field contains in-memory snapshot of all opened storage file slices
-	slices *etcdop.Mirror[storage.Slice, *sliceData]
+	slices *etcdop.MirrorMap[storage.Slice, storage.SliceKey, *sliceData]
 
 	lock      sync.Mutex
 	idCounter uint64
@@ -61,7 +60,7 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 		writers:    make(map[uint64]diskwriter.Writer),
 	}
 
-	// Create volumes mat, to quick check, if the volume is managed by the node
+	// Create volumes map, to quick check, if the volume is managed by the node
 	for _, vol := range f.volumes.Collection().All() {
 		f.volumesMap[vol.ID()] = true
 	}
@@ -85,20 +84,20 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 	// Start slices mirroring, only necessary data is saved
 	{
 		f.slices = etcdop.
-			SetupMirror(
-				d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
-				func(kv *op.KeyValue, slice storage.Slice) string {
-					return slice.SliceKey.String()
-				},
-				func(kv *op.KeyValue, slice storage.Slice) *sliceData {
-					return &sliceData{
-						SliceKey:     slice.SliceKey,
-						State:        slice.State,
-						LocalStorage: slice.LocalStorage,
-					}
-				},
-			).
-			WithFilter(func(event etcdop.WatchEventT[storage.Slice]) bool {
+			SetupMirrorMap[storage.Slice](
+			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
+			func(key string, slice storage.Slice) storage.SliceKey {
+				return slice.SliceKey
+			},
+			func(key string, slice storage.Slice) *sliceData {
+				return &sliceData{
+					SliceKey:     slice.SliceKey,
+					State:        slice.State,
+					LocalStorage: slice.LocalStorage,
+				}
+			},
+		).
+			WithFilter(func(event etcdop.WatchEvent[storage.Slice]) bool {
 				// Mirror only slices from managed volumes
 				return f.volumesMap[event.Value.VolumeID]
 			}).
@@ -129,7 +128,7 @@ func (s *NetworkFileServer) Open(ctx context.Context, req *pb.OpenRequest) (*pb.
 	}
 
 	// Get slice
-	slice, found := s.slices.Get(sliceKey.String())
+	slice, found := s.slices.Get(sliceKey)
 	if !found {
 		return nil, errors.Errorf("slice not found %q", sliceKey.String())
 	}

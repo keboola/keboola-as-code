@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
@@ -33,7 +32,7 @@ type Router struct {
 	distribution *distribution.GroupNode
 
 	// slices field contains in-memory snapshot of all opened storage file slices
-	slices *etcdop.Mirror[storage.Slice, *sliceData]
+	slices *etcdop.MirrorTree[storage.Slice, *sliceData]
 
 	closed <-chan struct{}
 	wg     sync.WaitGroup
@@ -106,20 +105,20 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 	// Start slices mirroring, only necessary data is saved
 	{
 		r.slices = etcdop.
-			SetupMirror(
-				d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
-				func(kv *op.KeyValue, slice storage.Slice) string {
-					return slice.SliceKey.String()
-				},
-				func(kv *op.KeyValue, slice storage.Slice) *sliceData {
-					return &sliceData{
-						SliceKey: slice.SliceKey,
-						State:    slice.State,
-						Encoding: slice.Encoding,
-						Mapping:  slice.Mapping,
-					}
-				},
-			).
+			SetupMirrorTree[storage.Slice](
+			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
+			func(key string, slice storage.Slice) string {
+				return slice.SliceKey.String()
+			},
+			func(key string, slice storage.Slice) *sliceData {
+				return &sliceData{
+					SliceKey: slice.SliceKey,
+					State:    slice.State,
+					Encoding: slice.Encoding,
+					Mapping:  slice.Mapping,
+				}
+			},
+		).
 			BuildMirror()
 		if err := <-r.slices.StartMirroring(ctx, &r.wg, r.logger); err != nil {
 			return nil, err

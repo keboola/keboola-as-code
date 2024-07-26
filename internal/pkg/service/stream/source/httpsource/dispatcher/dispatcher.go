@@ -12,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -26,7 +25,7 @@ type Dispatcher struct {
 	logger     log.Logger
 	sinkRouter *sinkRouter.Router
 	// sources field contains in-memory snapshot of all active HTTP sources. Only necessary data is saved.
-	sources *etcdop.Mirror[definition.Source, *sourceData]
+	sources *etcdop.MirrorTree[definition.Source, *sourceData]
 	// cancelMirror on shutdown
 	cancelMirror context.CancelFunc
 	// closed channel block new writer during shutdown
@@ -60,20 +59,20 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 		ctx, dp.cancelMirror = context.WithCancel(context.Background())
 
 		dp.sources = etcdop.
-			SetupMirror(
-				d.DefinitionRepository().Source().GetAllAndWatch(ctx, etcd.WithPrevKV()),
-				func(kv *op.KeyValue, source definition.Source) string {
-					return sourceKey(source.SourceKey)
-				},
-				func(kv *op.KeyValue, source definition.Source) *sourceData {
-					return &sourceData{
-						sourceKey: source.SourceKey,
-						enabled:   source.IsEnabled(),
-						secret:    source.HTTP.Secret,
-					}
-				},
-			).
-			WithFilter(func(event etcdop.WatchEventT[definition.Source]) bool {
+			SetupMirrorTree[definition.Source](
+			d.DefinitionRepository().Source().GetAllAndWatch(ctx, etcd.WithPrevKV()),
+			func(key string, source definition.Source) string {
+				return sourceKey(source.SourceKey)
+			},
+			func(key string, source definition.Source) *sourceData {
+				return &sourceData{
+					sourceKey: source.SourceKey,
+					enabled:   source.IsEnabled(),
+					secret:    source.HTTP.Secret,
+				}
+			},
+		).
+			WithFilter(func(event etcdop.WatchEvent[definition.Source]) bool {
 				return event.Value.Type == definition.SourceTypeHTTP
 			}).
 			BuildMirror()

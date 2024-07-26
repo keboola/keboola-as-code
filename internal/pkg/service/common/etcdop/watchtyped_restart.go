@@ -11,6 +11,6 @@ func (s *RestartableWatchStreamT[T]) Restart(cause error) {
 	s.rawStream.Restart(cause)
 }
 
-func (s *RestartableWatchStreamT[T]) SetupConsumer() WatchConsumerSetup[WatchEventT[T]] {
-	return newConsumerSetup((RestartableWatchStream[WatchEventT[T]])(s))
+func (s *RestartableWatchStreamT[T]) SetupConsumer() WatchConsumerSetup[T] {
+	return newConsumerSetup[T](s)
 }

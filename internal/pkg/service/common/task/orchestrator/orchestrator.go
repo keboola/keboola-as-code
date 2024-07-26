@@ -36,7 +36,7 @@ func (o orchestrator[T]) start() <-chan error {
 			WithOnClose(func(err error) {
 				span.End(&err)
 			}).
-			WithForEach(func(events []etcdop.WatchEventT[T], header *etcdop.Header, _ bool) {
+			WithForEach(func(events []etcdop.WatchEvent[T], header *etcdop.Header, _ bool) {
 				for _, event := range events {
 					o.startTask(ctx, event)
 				}
@@ -70,7 +70,7 @@ func (o orchestrator[T]) start() <-chan error {
 }
 
 // startTask for the event received from the watched prefix.
-func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEventT[T]) {
+func (o orchestrator[T]) startTask(ctx context.Context, event etcdop.WatchEvent[T]) {
 	// Check event type
 	if event.Type != etcdop.CreateEvent {
 		return

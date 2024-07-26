@@ -104,7 +104,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func watchResponseToSlice(resp etcdop.WatchResponseE[etcdop.WatchEventT[statistics.Value]]) (out []statistics.Value) {
+func watchResponseToSlice(resp etcdop.WatchResponseE[etcdop.WatchEvent[statistics.Value]]) (out []statistics.Value) {
 	for _, e := range resp.Events {
 		out = append(out, e.Value)
 	}

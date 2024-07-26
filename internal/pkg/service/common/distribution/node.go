@@ -187,7 +187,7 @@ func (n *GroupNode) watch(ctx context.Context, wg *sync.WaitGroup) error {
 	consumer := n.groupPrefix.
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer().
-		WithForEach(func(events []etcdop.WatchEventRaw, _ *etcdop.Header, restart bool) {
+		WithForEach(func(events []etcdop.WatchEvent[[]byte], _ *etcdop.Header, restart bool) {
 			modifiedNodes := n.updateNodesFrom(ctx, events, restart)
 			n.listeners.Notify(modifiedNodes)
 		}).
@@ -207,7 +207,7 @@ func (n *GroupNode) watch(ctx context.Context, wg *sync.WaitGroup) error {
 }
 
 // updateNodesFrom events. The operation is atomic.
-func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEventRaw, reset bool) Events {
+func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEvent[[]byte], reset bool) Events {
 	n.assigner.lock()
 	defer n.assigner.unlock()
 

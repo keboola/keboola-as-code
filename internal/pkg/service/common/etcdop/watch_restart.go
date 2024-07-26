@@ -10,16 +10,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type RestartableWatchStream[E WatchEvent] interface {
-	Channel() <-chan WatchResponseE[E]
+type RestartableWatchStream[T any] interface {
+	WatchedPrefix() string
+	Channel() <-chan WatchResponseE[WatchEvent[T]]
 	Restart(cause error)
 }
 
 // RestartableWatchStreamRaw is restarted on a fatal error, or manually by the Restart method.
 type RestartableWatchStreamRaw struct {
-	WatchStreamE[WatchEventRaw]
+	WatchStreamE[WatchEvent[[]byte]]
 	lock *sync.Mutex
-	sub  *WatchStreamE[WatchEventRaw]
+	sub  *WatchStreamE[WatchEvent[[]byte]]
 }
 
 // Restart cancels the current stream, so a new stream is created.
@@ -35,8 +36,8 @@ func (s *RestartableWatchStreamRaw) Restart(cause error) {
 	s.lock.Unlock()
 }
 
-func (s *RestartableWatchStreamRaw) SetupConsumer() WatchConsumerSetup[WatchEventRaw] {
-	return newConsumerSetup((RestartableWatchStream[WatchEventRaw])(s))
+func (s *RestartableWatchStreamRaw) SetupConsumer() WatchConsumerSetup[[]byte] {
+	return newConsumerSetup[[]byte](s)
 }
 
 // wrapStreamWithRestart continuously tries to restart the stream on fatal errors.

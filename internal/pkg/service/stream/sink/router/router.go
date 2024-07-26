@@ -80,7 +80,7 @@ func New(d dependencies) (*Router, error) {
 	{
 		consumer := r.definitions.Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()).
 			SetupConsumer().
-			WithForEach(func(events []etcdop.WatchEventT[definition.Sink], header *etcdop.Header, restart bool) {
+			WithForEach(func(events []etcdop.WatchEvent[definition.Sink], header *etcdop.Header, restart bool) {
 				// On stream restart, for example some network outage, we have to reset our internal state
 				if restart {
 					r.collection.reset()
@@ -124,7 +124,7 @@ func New(d dependencies) (*Router, error) {
 					p.close(ctx, "sink disabled")
 				}
 
-				r.logger.Debugf(ctx, "synced to revision %d", header.Revision)
+				r.logger.Debugf(ctx, "watch stream mirror synced to revision %d", header.Revision)
 			}).
 			BuildConsumer()
 		if err := <-consumer.StartConsumer(ctx, &r.wg, r.logger); err != nil {
