@@ -94,7 +94,7 @@ type pipeline struct {
 	closed chan struct{}
 	// writeWg waits for in-progress writes without waiting for sync.
 	writeWg sync.WaitGroup
-	// writeWg waits until all Write method calls are completed, it includes waiting for the sync.
+	// writeCompletedWg waits until all Write method calls are completed, it includes waiting for the sync.
 	writeCompletedWg sync.WaitGroup
 	// writeWg waits for in-progress writes before Close
 	chunksWg sync.WaitGroup
