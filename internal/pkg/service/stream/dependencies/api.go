@@ -12,13 +12,14 @@ import (
 // apiSCope implements APIScope interface.
 type apiScope struct {
 	ServiceScope
+	dependencies.DistributedLockScope
 	logger              log.Logger
 	apiPublicURL        *url.URL
 	httpSourcePublicURL *url.URL
 }
 
-func NewAPIScope(serviceScp ServiceScope, cfg config.Config) (v APIScope, err error) {
-	return newAPIScope(serviceScp, cfg), nil
+func NewAPIScope(serviceScp ServiceScope, distLocksScp dependencies.DistributedLockScope, cfg config.Config) (v APIScope, err error) {
+	return newAPIScope(serviceScp, distLocksScp, cfg), nil
 }
 
 func NewMockedAPIScope(tb testing.TB, opts ...dependencies.MockedOption) (APIScope, Mocked) {
@@ -29,19 +30,21 @@ func NewMockedAPIScope(tb testing.TB, opts ...dependencies.MockedOption) (APISco
 func NewMockedAPIScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (APIScope, Mocked) {
 	tb.Helper()
 
-	opts = append(opts, dependencies.WithEnabledTasks("test-node"))
+	opts = append(opts, dependencies.WithEnabledTasks("test-node"), dependencies.WithEnabledDistributedLocks())
 	serviceScp, mock := NewMockedServiceScopeWithConfig(tb, modifyConfig, opts...)
 
-	apiScp := newAPIScope(serviceScp, mock.TestConfig())
+	apiScp := newAPIScope(serviceScp, mock, mock.TestConfig())
 
 	mock.DebugLogger().Truncate()
 	return apiScp, mock
 }
 
-func newAPIScope(svcScope ServiceScope, cfg config.Config) APIScope {
+func newAPIScope(svcScope ServiceScope, distLocksScp dependencies.DistributedLockScope, cfg config.Config) APIScope {
 	d := &apiScope{}
 
 	d.ServiceScope = svcScope
+
+	d.DistributedLockScope = distLocksScp
 
 	d.logger = svcScope.Logger().WithComponent("api")
 

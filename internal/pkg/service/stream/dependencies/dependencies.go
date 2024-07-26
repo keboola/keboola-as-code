@@ -88,6 +88,7 @@ type ServiceScope interface {
 
 type APIScope interface {
 	ServiceScope
+	dependencies.DistributedLockScope
 	APIPublicURL() *url.URL
 	HTTPSourcePublicURL() *url.URL
 }
