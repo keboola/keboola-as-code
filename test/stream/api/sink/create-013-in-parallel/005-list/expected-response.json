@@ -1,0 +1,34 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "page": {
+    "limit": 100,
+    "totalCount": 3,
+    "afterId": "",
+    "lastId": "my-sink-3"
+  },
+  "sinks": [
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source",
+      "sinkId": "my-sink-1",
+      %A
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source",
+      "sinkId": "my-sink-2",
+      %A
+    },
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source",
+      "sinkId": "my-sink-3",
+      %A
+    }
+  ]
+}

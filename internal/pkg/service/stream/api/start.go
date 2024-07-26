@@ -22,18 +22,12 @@ const (
 	ExceptionIDPrefix = "keboola-stream-api-"
 )
 
-func Start(ctx context.Context, d dependencies.ServiceScope, cfg config.Config) error {
-	// Create dependencies
-	apiScp, err := dependencies.NewAPIScope(d, cfg) // nolint:forbidigo
-	if err != nil {
-		return err
-	}
-
+func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) error {
 	// Create service
-	svc := service.New(apiScp, cfg)
+	svc := service.New(d, cfg)
 
 	// Start HTTP server
-	return httpserver.Start(ctx, apiScp, httpserver.Config{
+	return httpserver.Start(ctx, d, httpserver.Config{
 		ListenAddress:     cfg.API.Listen,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIDPrefix,
@@ -52,7 +46,7 @@ func Start(ctx context.Context, d dependencies.ServiceScope, cfg config.Config) 
 				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					next.ServeHTTP(w, req.WithContext(context.WithValue(
 						req.Context(),
-						dependencies.PublicRequestScopeCtxKey, dependencies.NewPublicRequestScope(apiScp, req),
+						dependencies.PublicRequestScopeCtxKey, dependencies.NewPublicRequestScope(d, req),
 					)))
 				})
 			})
