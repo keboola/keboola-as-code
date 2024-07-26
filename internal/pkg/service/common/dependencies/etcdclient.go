@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"reflect"
 
 	etcdPkg "go.etcd.io/etcd/client/v3"
 
@@ -31,7 +32,12 @@ func newEtcdClientScope(ctx context.Context, baseScp BaseScope, cfg etcdclient.C
 
 	return &etcdClientScope{
 		client: client,
-		serde:  serde.NewJSON(baseScp.Validator().Validate),
+		serde: serde.NewJSON(func(ctx context.Context, value any) error {
+			if k := reflect.ValueOf(value).Kind(); k != reflect.Struct && k != reflect.Pointer {
+				return baseScp.Validator().Validate(ctx, value)
+			}
+			return nil
+		}),
 	}, nil
 }
 
