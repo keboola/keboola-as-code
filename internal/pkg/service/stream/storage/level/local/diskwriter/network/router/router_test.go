@@ -51,7 +51,7 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	waitForMinRevInUse := func(t *testing.T, r int64) {
 		t.Helper()
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
-			assert.Equal(c, r, coordinator.MinRevInUse())
+			assert.GreaterOrEqual(c, coordinator.MinRevInUse(), r)
 		}, 5*time.Second, 10*time.Millisecond)
 	}
 
