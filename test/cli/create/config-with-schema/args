@@ -1,0 +1,1 @@
+local create config --name "new config" --branch "main" --component-id keboola.ag-geocoding --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%

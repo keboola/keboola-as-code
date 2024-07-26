@@ -1,0 +1,10 @@
+{
+  "parameters": {
+    "#apiKey": "",
+    "#privateKey": "",
+    "clientId": "",
+    "locale": "",
+    "method": "geocode",
+    "provider": "google_maps"
+  }
+}
