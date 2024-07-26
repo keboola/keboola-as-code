@@ -13,10 +13,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type SlicePipeline interface {
+	SliceKey() model.SliceKey
 	IsReady() bool
 	WriteRecord(c recordctx.Context) (pipeline.RecordStatus, error)
 	Close(ctx context.Context) (err error)
@@ -76,6 +78,10 @@ func newSlicePipeline(ctx context.Context, ready *readyNotifier, router *Router,
 	}()
 
 	return p
+}
+
+func (p *slicePipeline) SliceKey() model.SliceKey {
+	return p.slice.SliceKey
 }
 
 // IsReady returns true if the pipeline and underlying network connection is healthy.
@@ -143,7 +149,7 @@ func (p *slicePipeline) tryOpen() error {
 	)
 
 	// Open remote RPC file
-	remoteFile, err := rpc.OpenNetworkFile(ctx, p.router.nodeID, conn, p.slice.SliceKey)
+	remoteFile, err := rpc.OpenNetworkFile(ctx, p.router.nodeID, conn, p.slice.SliceKey, p.slice.LocalStorage)
 	if err != nil {
 		return errors.PrefixErrorf(err, "cannot open network file")
 	}

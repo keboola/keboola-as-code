@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"context"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -27,14 +28,18 @@ func (n *Notifier) Done(err error) {
 }
 
 // Wait for the operation.
-func (n *Notifier) Wait() error {
+func (n *Notifier) Wait(ctx context.Context) error {
 	// *notify.Notifier(nil).Wait() is valid call
 	if n == nil {
 		return nil
 	}
 
-	<-n.doneCh
-	return n.error
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-n.doneCh:
+		return n.error
+	}
 }
 
 // WaitWithTimeout for the operation.

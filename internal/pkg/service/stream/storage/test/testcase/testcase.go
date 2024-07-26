@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -31,9 +30,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
-	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testnode"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
@@ -76,15 +74,8 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	tc.logger.ConnectTo(testhelper.VerboseStdout())
 	etcdCfg := etcdhelper.TmpNamespace(t)
 
-	// Create volume directory, with volume ID file
-	volumeID := volume.ID("my-volume")
-	volumesPath := t.TempDir()
-	volumePath := filepath.Join(volumesPath, "hdd", "001")
-	require.NoError(t, os.MkdirAll(volumePath, 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(volumePath, volume.IDFile), []byte(volumeID), 0o600))
-
 	// Start nodes
-	tc.startNodes(t, ctx, etcdCfg, volumesPath)
+	tc.startNodes(t, etcdCfg)
 	sinkRouter := tc.sourceNode.SinkRouter()
 
 	// Create resource in an API node
@@ -112,7 +103,9 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, slices, 1)
 	slice := slices[0]
-	filePath := slice.LocalStorage.FileName(volumePath, tc.sourceNodeMock.TestConfig().NodeID)
+	vol, err := tc.writerNode.Volumes().Collection().Volume("my-volume-001")
+	require.NoError(t, err)
+	filePath := slice.LocalStorage.FileName(vol.Path(), tc.sourceNodeMock.TestConfig().NodeID)
 
 	// Wait for pipeline initialization
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -229,13 +222,13 @@ func (tc *WriterTestCase) assertResult(t *testing.T, result *router.SourceResult
 	}
 }
 
-func (tc *WriterTestCase) startNodes(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) {
+func (tc *WriterTestCase) startNodes(t *testing.T, etcdCfg etcdclient.Config) {
 	t.Helper()
 
 	tc.logger.Truncate()
 
 	// Start disk in node
-	tc.startWriterNode(t, ctx, etcdCfg, volumesPath)
+	tc.startWriterNode(t, etcdCfg)
 
 	// Start source node
 	tc.startSourceNode(t, etcdCfg)
@@ -275,38 +268,15 @@ func (tc *WriterTestCase) startAPINode(t *testing.T, etcdCfg etcdclient.Config) 
 
 func (tc *WriterTestCase) startSourceNode(t *testing.T, etcdCfg etcdclient.Config) {
 	t.Helper()
-
-	tc.sourceNode, tc.sourceNodeMock = dependencies.NewMockedSourceScopeWithConfig(
-		t,
-		func(cfg *config.Config) {
-			tc.updateServiceConfig(cfg)
-			cfg.NodeID = "source"
-		},
-		commonDeps.WithDebugLogger(tc.logger),
-		commonDeps.WithEtcdConfig(etcdCfg),
-	)
+	tc.sourceNode, tc.sourceNodeMock = testnode.StartSourceNode(t, tc.logger, etcdCfg, tc.updateServiceConfig)
 }
 
-func (tc *WriterTestCase) startWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, volumesPath string) {
+func (tc *WriterTestCase) startWriterNode(t *testing.T, etcdCfg etcdclient.Config) {
 	t.Helper()
-
-	tc.writerNode, tc.writerNodeMock = dependencies.NewMockedStorageWriterScopeWithConfig(
-		t,
-		func(cfg *config.Config) {
-			tc.updateServiceConfig(cfg)
-			cfg.NodeID = "disk-writer"
-			cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(t))
-			cfg.Storage.VolumesPath = volumesPath
-		},
-		commonDeps.WithDebugLogger(tc.logger),
-		commonDeps.WithEtcdConfig(etcdCfg),
-	)
-
-	require.NoError(t, writernode.Start(ctx, tc.writerNode, tc.writerNodeMock.TestConfig()))
+	tc.writerNode, tc.writerNodeMock = testnode.StartDiskWriterNode(t, tc.logger, etcdCfg, 1, tc.updateServiceConfig)
 }
 
 func (tc *WriterTestCase) updateServiceConfig(cfg *config.Config) {
-	cfg.Hostname = "localhost"
 	cfg.Storage.Level.Local.Writer.WatchDrainFile = false
 	cfg.Storage.Level.Local.Encoding.Sync = tc.Sync
 	cfg.Storage.Level.Local.Encoding.Compression = tc.Compression

@@ -82,7 +82,7 @@ func TestSyncWriter_Write_Wait(t *testing.T) {
 	}()
 
 	// Wait for sync
-	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 	wg.Wait()
 
 	// Check output
@@ -133,7 +133,7 @@ func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 	assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 
 	// Wait for sync
-	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
@@ -170,7 +170,7 @@ func TestSyncWriter_SkipEmptySync(t *testing.T) {
 	syncerWriter := tc.NewSyncerWriter()
 
 	// Wait for sync
-	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 
 	// Check output
 	assert.Equal(t, "", tc.Chain.Buffer.String())
@@ -194,7 +194,7 @@ func TestSyncWriter_SkipEmptySync(t *testing.T) {
 `)
 }
 
-// TestSyncWriter_SyncToDisk_Wait_Ok tests that w.Notifier().Wait() blocks if SyncConfig.SyncWait = true.
+// TestSyncWriter_SyncToDisk_Wait_Ok tests that w.Notifier().Wait(ctx) blocks if SyncConfig.SyncWait = true.
 // Sync operation is successful.
 func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	t.Parallel()
@@ -283,7 +283,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 `)
 }
 
-// TestSyncWriter_SyncToDisk_Wait_Error tests that w.Notifier().Wait() blocks if SyncConfig.SyncWait = true.
+// TestSyncWriter_SyncToDisk_Wait_Error tests that w.Notifier().Wait(ctx) blocks if SyncConfig.SyncWait = true.
 // The sync error is returned by the Wait() method.
 func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 	t.Parallel()
@@ -349,7 +349,7 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 `)
 }
 
-// TestSyncWriter_SyncToDisk_NoWait_Ok tests that w.Notifier().Wait() doesn't block if SyncConfig.SyncWait = false.
+// TestSyncWriter_SyncToDisk_NoWait_Ok tests that w.Notifier().Wait(ctx) doesn't block if SyncConfig.SyncWait = false.
 // The sync operation is successful.
 func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 	t.Parallel()
@@ -372,7 +372,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 	}
 
 	// Sync
-	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
@@ -399,7 +399,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 `)
 }
 
-// TestSyncWriter_SyncToDisk_NoWait_Error tests that w.Notifier().Wait() doesn't block if SyncConfig.SyncWait = false.
+// TestSyncWriter_SyncToDisk_NoWait_Error tests that w.Notifier().Wait(ctx) doesn't block if SyncConfig.SyncWait = false.
 // The sync error is logged.
 func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 	t.Parallel()
@@ -423,7 +423,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 	}
 
 	// Sync
-	err := syncerWriter.TriggerSync(false).Wait()
+	err := syncerWriter.TriggerSync(false).Wait(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, "some sync error", err.Error())
 	}
@@ -456,7 +456,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 `)
 }
 
-// TestSyncWriter_SyncToCache_Wait_Ok tests that w.Notifier().Wait() blocks if SyncConfig.SyncWait = true.
+// TestSyncWriter_SyncToCache_Wait_Ok tests that w.Notifier().Wait(ctx) blocks if SyncConfig.SyncWait = true.
 // The flush operation is successful.
 func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	t.Parallel()
@@ -545,7 +545,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 `)
 }
 
-// TestSyncWriter_SyncToCache_Wait_Error tests that w.Notifier().Wait() blocks if SyncConfig.SyncWait = true.
+// TestSyncWriter_SyncToCache_Wait_Error tests that w.Notifier().Wait(ctx) blocks if SyncConfig.SyncWait = true.
 // The flush error is returned by the Wait() method.
 func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 	t.Parallel()
@@ -611,7 +611,7 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 `)
 }
 
-// TestSyncWriter_SyncToCache_NoWait_Ok tests that w.Notifier().Wait() doesn't block if SyncConfig.SyncWait = false.
+// TestSyncWriter_SyncToCache_NoWait_Ok tests that w.Notifier().Wait(ctx) doesn't block if SyncConfig.SyncWait = false.
 // The flush operation is successful.
 func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 	t.Parallel()
@@ -634,7 +634,7 @@ func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 	}
 
 	// Sync
-	assert.NoError(t, syncerWriter.TriggerSync(false).Wait())
+	assert.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
@@ -661,7 +661,7 @@ func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 `)
 }
 
-// TestSyncWriter_SyncToCache_NoWait_Err tests that w.Notifier().Wait() doesn't block if SyncConfig.SyncWait = false.
+// TestSyncWriter_SyncToCache_NoWait_Err tests that w.Notifier().Wait(ctx) doesn't block if SyncConfig.SyncWait = false.
 // The flush error is logged.
 func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 	t.Parallel()
@@ -685,7 +685,7 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 	}
 
 	// Sync
-	err := syncerWriter.TriggerSync(false).Wait()
+	err := syncerWriter.TriggerSync(false).Wait(ctx)
 	if assert.Error(t, err) {
 		assert.Equal(t, "some flush error", err.Error())
 	}

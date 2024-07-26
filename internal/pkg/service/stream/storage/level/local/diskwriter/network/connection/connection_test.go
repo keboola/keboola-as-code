@@ -27,7 +27,7 @@ import (
 func TestConnectionManager(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
@@ -35,8 +35,8 @@ func TestConnectionManager(t *testing.T) {
 	// There are two disk writer nodes, before the source node is started
 	w1 := startWriterNode(t, ctx, etcdCfg, "w1")
 	w2 := startWriterNode(t, ctx, etcdCfg, "w2")
-	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.server"}`)
-	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.server"}`)
+	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.network-file.server"}`)
+	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.network-file.server"}`)
 
 	// Start source node
 	connManager, s := startSourceNode(t, etcdCfg, "s1")
@@ -44,8 +44,8 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w1\" - \"l%s\"","component":"storage.router.connections.client"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w2\" - \"l%s\"","component":"storage.router.connections.client"}`)
-	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.server"}`)
-	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.server"}`)
+	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network-file.server"}`)
+	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network-file.server"}`)
 	sourceLogger.Truncate()
 	assert.Equal(t, 2, connManager.ConnectionsCount())
 	if conn, found := connManager.ConnectionToNode("w1"); assert.True(t, found) {
@@ -61,8 +61,8 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w3\" - \"l%s\"","component":"storage.router.connections.client"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w4\" - \"l%s\"","component":"storage.router.connections.client"}`)
-	waitForLog(t, w3.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.server"}`)
-	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.server"}`)
+	waitForLog(t, w3.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network-file.server"}`)
+	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.network-file.server"}`)
 	sourceLogger.Truncate()
 	assert.Equal(t, 4, connManager.ConnectionsCount())
 	if conn, found := connManager.ConnectionToNode("w1"); assert.True(t, found) {
@@ -105,8 +105,8 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w2\" - \"localhost:%s\": session shutdown","component":"storage.router.connections.client"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w4\" - \"localhost:%s\": session shutdown","component":"storage.router.connections.client"}`)
 	sourceLogger.AssertJSONMessages(t, `{"level":"info","message":"exited"}`)
-	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.server"}`)
-	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.server"}`)
+	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.network-file.server"}`)
+	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.network-file.server"}`)
 	sourceLogger.Truncate()
 
 	// Shutdown w2 and w4
@@ -120,16 +120,16 @@ func TestConnectionManager(t *testing.T) {
 {"level":"info","message":"searching for volumes in volumes path","component":"storage.node.writer.volumes"}
 {"level":"info","message":"found \"2\" volumes","component":"storage.node.writer.volumes"}
 {"level":"info","message":"starting storage writer node","component":"storage.node.writer"}
-{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.server"}
+{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.network-file.server"}
 {"level":"info","message":"registered \"2\" volumes","component":"volumes.registry"}
 {"level":"info","message":"exiting (bye bye writer %d)"}
-{"level":"info","message":"closing disk writer server","component":"storage.node.writer.server"}
-{"level":"info","message":"waiting %s for 0 streams","component":"storage.node.writer.server"}
-{"level":"info","message":"waiting for streams done","component":"storage.node.writer.server"}
-{"level":"info","message":"closing 0 streams","component":"storage.node.writer.server"}
-{"level":"info","message":"closing %d sessions","component":"storage.node.writer.server"}
-{"level":"info","message":"waiting for goroutines","component":"storage.node.writer.server"}
-{"level":"info","message":"closed disk writer server","component":"storage.node.writer.server"}
+{"level":"info","message":"closing disk writer server","component":"storage.node.writer.network-file.server"}
+{"level":"info","message":"waiting %s for 0 streams","component":"storage.node.writer.network-file.server"}
+{"level":"info","message":"waiting for streams done","component":"storage.node.writer.network-file.server"}
+{"level":"info","message":"closing 0 streams","component":"storage.node.writer.network-file.server"}
+{"level":"info","message":"closing %d sessions","component":"storage.node.writer.network-file.server"}
+{"level":"info","message":"waiting for goroutines","component":"storage.node.writer.network-file.server"}
+{"level":"info","message":"closed disk writer server","component":"storage.node.writer.network-file.server"}
 {"level":"info","message":"closing etcd connection","component":"etcd.client"}
 {"level":"info","message":"closed etcd connection","component":"etcd.client"}
 {"level":"info","message":"exited"}
@@ -186,7 +186,7 @@ func waitForLog(t *testing.T, logger log.DebugLogger, expected string) {
 	t.Helper()
 	if !assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, expected)
-	}, 15*time.Second, 100*time.Millisecond) {
+	}, 5*time.Second, 100*time.Millisecond) {
 		t.Log(logger.AllMessages())
 	}
 }

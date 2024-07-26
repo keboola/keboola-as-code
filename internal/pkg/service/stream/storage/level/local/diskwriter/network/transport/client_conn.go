@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"io"
 	"sync"
 	"time"
 
@@ -152,7 +153,7 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 	b := newClientConnBackoff()
 	var closeErr error
 	for {
-		if c.isClosed() || c.client.isClosed() || errors.Is(closeErr, yamux.ErrSessionShutdown) {
+		if c.isClosed() || c.client.isClosed() || errors.Is(closeErr, yamux.ErrSessionShutdown) || errors.Is(closeErr, io.EOF) {
 			c.client.logger.Debugf(ctx, "dial loop closed %q - %q", c.remoteNodeID, c.remoteAddr)
 			return
 		}

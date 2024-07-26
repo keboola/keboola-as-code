@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"context"
 	"strings"
 	"sync"
 	"testing"
@@ -22,13 +23,25 @@ func TestNotifier_Nil(t *testing.T) {
 	var n *Notifier
 
 	// Notifier can be used as a nil value, Wait ends immediately, without error
-	assert.NoError(t, n.Wait())
+	assert.NoError(t, n.Wait(context.Background()))
 	assert.NoError(t, n.WaitWithTimeout(testWaitTimeout))
 
 	// But call of the Done fails
 	assert.Panics(t, func() {
 		n.Done(nil)
 	})
+}
+
+func TestNotifier_ContextTimeout(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
+
+	err := New().Wait(ctx)
+	if assert.Error(t, err) {
+		assert.Equal(t, "context deadline exceeded", err.Error())
+	}
 }
 
 func TestNotifier_WaitWithTimeout(t *testing.T) {
@@ -43,6 +56,9 @@ func TestNotifier_WaitWithTimeout(t *testing.T) {
 func TestNotifier_Success(t *testing.T) {
 	t.Parallel()
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	log := ioutil.NewAtomicWriter()
 	wg := &sync.WaitGroup{}
 
@@ -52,7 +68,7 @@ func TestNotifier_Success(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			assert.NoError(t, n.WaitWithTimeout(testWaitTimeout))
-			assert.NoError(t, n.Wait())
+			assert.NoError(t, n.Wait(ctx))
 			_, _ = log.WriteString("wait finished\n")
 		}()
 	}

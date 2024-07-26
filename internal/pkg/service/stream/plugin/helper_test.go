@@ -9,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
 
 type testEntity struct {
@@ -23,7 +22,7 @@ func TestIsDeletedNow(t *testing.T) {
 	t.Parallel()
 
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
-	by := test.ByUser()
+	by := byUser()
 	entity := &testEntity{}
 
 	// Default
@@ -55,7 +54,7 @@ func TestIsUndeletedNow(t *testing.T) {
 	t.Parallel()
 
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
-	by := test.ByUser()
+	by := byUser()
 	entity := &testEntity{}
 
 	// Default
@@ -87,7 +86,7 @@ func TestIsActivatedNow(t *testing.T) {
 	t.Parallel()
 
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
-	by := test.ByUser()
+	by := byUser()
 	entity := &testEntity{}
 
 	// Created now
@@ -146,7 +145,7 @@ func TestIsDeactivatedNow(t *testing.T) {
 	t.Parallel()
 
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
-	by := test.ByUser()
+	by := byUser()
 	entity := &testEntity{}
 
 	// Default
@@ -203,4 +202,14 @@ func TestIsDeactivatedNow(t *testing.T) {
 	// Enabled in the past
 	original = deepcopy.Copy(entity).(*testEntity)
 	assert.False(t, isDeactivatedNow(original, entity))
+}
+
+func byUser() definition.By {
+	return definition.By{
+		Type:      definition.ByUser,
+		TokenID:   "111",
+		TokenDesc: "some.user@company.com",
+		UserID:    "222",
+		UserName:  "Some User",
+	}
 }

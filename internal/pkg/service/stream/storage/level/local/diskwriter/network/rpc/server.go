@@ -2,24 +2,22 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sync"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
-	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	local "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc/pb"
-	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
-	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -31,30 +29,22 @@ type NetworkFileServer struct {
 	volumes    *diskwriter.Volumes
 	volumesMap map[volume.ID]bool
 
-	// slices field contains in-memory snapshot of all opened storage file slices
-	slices *etcdop.MirrorMap[storage.Slice, storage.SliceKey, *sliceData]
-
 	lock      sync.Mutex
 	idCounter uint64
 	writers   map[uint64]diskwriter.Writer
-}
-
-type sliceData struct {
-	SliceKey     storage.SliceKey
-	State        storage.SliceState
-	LocalStorage localModel.Slice
 }
 
 type serverDependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
 	Volumes() *diskwriter.Volumes
+	EtcdClient() *etcd.Client
 	StorageRepository() *storageRepo.Repository
 }
 
-func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
+func StartNetworkFileServer(d serverDependencies, nodeID, hostname string, cfg local.Config) error {
 	f := &NetworkFileServer{
-		logger:     d.Logger(),
+		logger:     d.Logger().WithComponent("storage.node.writer.network-file"),
 		volumes:    d.Volumes(),
 		volumesMap: make(map[volume.ID]bool),
 		writers:    make(map[uint64]diskwriter.Writer),
@@ -65,15 +55,24 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 		f.volumesMap[vol.ID()] = true
 	}
 
+	// Listen for network connections
+	listener, err := transport.Listen(f.logger, nodeID, cfg.Writer.Network)
+	if err != nil {
+		return err
+	}
+	d.Process().OnShutdown(func(ctx context.Context) {
+		_ = listener.Close()
+	})
+
 	// Graceful shutdown
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.Background()
 	d.Process().OnShutdown(func(_ context.Context) {
 		f.logger.Info(ctx, "closing network file server")
 
-		// Stop mirroring
-		cancel()
-		wg.Wait()
+		// Stop network listener
+		if err := listener.Close(); err != nil {
+			f.logger.Error(ctx, err.Error())
+		}
 
 		// Close active writers
 		f.closeWriters(ctx)
@@ -81,36 +80,22 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 		f.logger.Info(ctx, "closed network file server")
 	})
 
-	// Start slices mirroring, only necessary data is saved
-	{
-		f.slices = etcdop.
-			SetupMirrorMap[storage.Slice](
-			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
-			func(key string, slice storage.Slice) storage.SliceKey {
-				return slice.SliceKey
-			},
-			func(key string, slice storage.Slice) *sliceData {
-				return &sliceData{
-					SliceKey:     slice.SliceKey,
-					State:        slice.State,
-					LocalStorage: slice.LocalStorage,
-				}
-			},
-		).
-			WithFilter(func(event etcdop.WatchEvent[storage.Slice]) bool {
-				// Mirror only slices from managed volumes
-				return f.volumesMap[event.Value.VolumeID]
-			}).
-			BuildMirror()
-		if err := <-f.slices.StartMirroring(ctx, wg, f.logger); err != nil {
-			return nil, err
-		}
+	// Register volumes to database
+	nodeAddress := volume.RemoteAddr(fmt.Sprintf("%s:%s", hostname, listener.Port()))
+	err = registration.RegisterVolumes(cfg.Volume.Registration, d, nodeID, nodeAddress, d.Volumes().Collection(), d.StorageRepository().Volume().RegisterWriterVolume)
+	if err != nil {
+		return err
 	}
 
-	return f, nil
+	// Start server
+	d.Process().Add(func(shutdown servicectx.ShutdownFn) {
+		shutdown(context.Background(), f.serve(listener))
+	})
+
+	return nil
 }
 
-func (s *NetworkFileServer) Serve(listener net.Listener) error {
+func (s *NetworkFileServer) serve(listener net.Listener) error {
 	srv := grpc.NewServer(
 		grpc.SharedWriteBuffer(true),
 	)
@@ -119,22 +104,19 @@ func (s *NetworkFileServer) Serve(listener net.Listener) error {
 }
 
 func (s *NetworkFileServer) Open(ctx context.Context, req *pb.OpenRequest) (*pb.OpenResponse, error) {
-	sliceKey := sliceKeyFrom(req.SliceKey)
+	var data sliceData
+	if err := json.Decode(req.SliceDataJson, &data); err != nil {
+		return nil, err
+	}
 
 	// Open volume
-	vol, err := s.volumes.Collection().Volume(sliceKey.VolumeID)
+	vol, err := s.volumes.Collection().Volume(data.SliceKey.VolumeID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get slice
-	slice, found := s.slices.Get(sliceKey)
-	if !found {
-		return nil, errors.Errorf("slice not found %q", sliceKey.String())
-	}
-
 	// Open writer
-	w, err := vol.OpenWriter(req.SourceNodeId, sliceKey, slice.LocalStorage)
+	w, err := vol.OpenWriter(req.SourceNodeId, data.SliceKey, data.LocalStorage)
 	if err != nil {
 		return nil, err
 	}
@@ -204,42 +186,14 @@ func (s *NetworkFileServer) closeWriters(ctx context.Context) {
 	s.logger.Infof(ctx, "closing %d disk writers", len(s.writers))
 
 	wg := &sync.WaitGroup{}
-	for _, id := range maps.Keys(s.writers) {
+	for _, w := range s.writers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			w := s.writers[id]
-			delete(s.writers, id)
 			if err := w.Close(ctx); err != nil {
 				s.logger.Errorf(ctx, "cannot close disk writer %q: %s", w.SliceKey(), err)
 			}
 		}()
 	}
 	wg.Wait()
-}
-
-func sliceKeyFrom(k *pb.SliceKey) storage.SliceKey {
-	return storage.SliceKey{
-		FileVolumeKey: storage.FileVolumeKey{
-			FileKey: storage.FileKey{
-				SinkKey: key.SinkKey{
-					SourceKey: key.SourceKey{
-						BranchKey: key.BranchKey{
-							ProjectID: keboola.ProjectID(k.ProjectId),
-							BranchID:  keboola.BranchID(k.BranchId),
-						},
-						SourceID: key.SourceID(k.SourceId),
-					},
-					SinkID: key.SinkID(k.SinkId),
-				},
-				FileID: storage.FileID{
-					OpenedAt: utctime.From(k.FileId.AsTime()),
-				},
-			},
-			VolumeID: volume.ID(k.VolumeId),
-		},
-		SliceID: storage.SliceID{
-			OpenedAt: utctime.From(k.SliceId.AsTime()),
-		},
-	}
 }

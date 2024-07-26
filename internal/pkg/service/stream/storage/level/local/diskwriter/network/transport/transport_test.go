@@ -59,7 +59,7 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	// Start server
 	srvLogger := log.NewDebugLogger()
 	srvLogger.ConnectTo(os.Stdout)
-	srv, err := transport.Listen(srvLogger, cfg, "server-node")
+	srv, err := transport.Listen(srvLogger, "server-node", cfg)
 	require.NoError(t, err)
 	addr := srv.Addr().String()
 
@@ -149,7 +149,7 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 
 	// Start Setup
 	srvLogger := log.NewDebugLogger()
-	srv, err := transport.Listen(srvLogger, cfg, "server-node")
+	srv, err := transport.Listen(srvLogger, "server-node", cfg)
 	require.NoError(t, err)
 	addr := srv.Addr().String()
 

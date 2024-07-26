@@ -39,7 +39,7 @@ type Server struct {
 type StreamHandler func(ctx context.Context, stream *yamux.Stream)
 
 // Listen function is called by the Writer node, to listen for slices data.
-func Listen(logger log.Logger, config network.Config, nodeID string) (*Server, error) {
+func Listen(logger log.Logger, nodeID string, config network.Config) (*Server, error) {
 	ctx := ctxattr.ContextWith(
 		context.Background(),
 		attribute.String("nodeId", nodeID),

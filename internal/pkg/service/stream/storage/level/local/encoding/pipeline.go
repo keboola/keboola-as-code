@@ -276,7 +276,7 @@ func (p *pipeline) WriteRecord(record recordctx.Context) error {
 	p.acceptedWrites.Add(timestamp, 1)
 
 	// Wait for sync and return sync error, if any
-	if err := notifier.Wait(); err != nil {
+	if err := notifier.Wait(record.Ctx()); err != nil {
 		return err
 	}
 

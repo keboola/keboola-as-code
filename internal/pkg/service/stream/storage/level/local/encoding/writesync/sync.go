@@ -211,7 +211,7 @@ func (s *Syncer) Stop(ctx context.Context) error {
 	s.cancel()
 
 	// Run the last sync
-	err := s.TriggerSync(true).Wait()
+	err := s.TriggerSync(true).Wait(ctx)
 
 	// Wait for sync loop and running sync, if any
 	s.wg.Wait()

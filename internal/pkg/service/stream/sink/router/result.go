@@ -22,6 +22,7 @@ type SourcesResult struct {
 	AllSinks        int             `json:"-"`
 	SuccessfulSinks int             `json:"-"`
 	FailedSinks     int             `json:"-"`
+	finalized       bool
 }
 
 type SourceResult struct {
@@ -35,6 +36,7 @@ type SourceResult struct {
 	AllSinks        int               `json:"-"`
 	SuccessfulSinks int               `json:"-"`
 	FailedSinks     int               `json:"-"`
+	finalized       bool
 }
 
 type SinkResult struct {
@@ -44,10 +46,17 @@ type SinkResult struct {
 	Message    string     `json:"message"`
 	status     pipeline.RecordStatus
 	error      error
+	finalized  bool
 }
 
 // Finalize result strings only when they are really needed - verbose mode or an error.
 func (r *SourcesResult) Finalize() {
+	if r.finalized {
+		return
+	}
+
+	r.finalized = true
+
 	// Error name
 	if r.FailedSinks > 0 {
 		r.ErrorName = ErrorNamePrefix + "writeFailed"
@@ -88,6 +97,12 @@ func (r *SourcesResult) Finalize() {
 
 // Finalize result strings only when they are really needed - verbose mode or an error.
 func (r *SourceResult) Finalize() {
+	if r.finalized {
+		return
+	}
+
+	r.finalized = true
+
 	// Error name
 	if r.FailedSinks > 0 {
 		r.ErrorName = ErrorNamePrefix + "writeFailed"
@@ -128,6 +143,12 @@ func (r *SourceResult) Finalize() {
 
 // Finalize result strings only when they are really needed - verbose mode or an error.
 func (r *SinkResult) Finalize() {
+	if r.finalized {
+		return
+	}
+
+	r.finalized = true
+
 	// Error name
 	r.ErrorName = resultErrorName(r.error)
 
