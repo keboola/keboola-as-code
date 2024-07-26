@@ -37,6 +37,25 @@ export const options = {
   },
 };
 
+export function awaitTask(url) {
+  const createSourceTimeoutSec = 60
+  const taskUrl = stripUrlHost(url)
+  for (let retries = createSourceTimeoutSec; retries > 0; retries--) {
+    let res = get(taskUrl)
+    if (res.status !== 200) {
+      console.error(res);
+      throw new Error("failed to get task");
+    }
+    if (res.json().status !== "processing") {
+      if (res.json().error) {
+        throw new Error("task failed: " + res.json().error);
+      }
+      break
+    }
+    sleep(1)
+  }
+}
+
 export function setupSource() {
   if (!TOKEN) throw new Error("Please set the `API_TOKEN` env var.");
 
@@ -51,22 +70,7 @@ export function setupSource() {
     throw new Error("failed to create source task");
   }
 
-  const createSourceTimeoutSec = 60
-  const taskUrl = stripUrlHost(res.json().url)
-  for (let retries = createSourceTimeoutSec; retries > 0; retries--) {
-    res = get(taskUrl)
-    if (res.status !== 200) {
-      console.error(res);
-      throw new Error("failed to get source task");
-    }
-    if (res.json().status !== "processing") {
-      if (res.json().error) {
-        throw new Error("failed to create source: " + res.json().error);
-      }
-      break
-    }
-    sleep(1)
-  }
+  awaitTask(res.json().url)
 
   res = get(`v1/branches/default/sources/${sourceId}`);
   if (res.status !== 200) {
@@ -91,22 +95,7 @@ export function setupSink(sourceId, body) {
     throw new Error("failed to create sink task");
   }
 
-  const createSinkTimeoutSec = 60
-  const taskUrl = stripUrlHost(res.json().url)
-  for (let retries = createSinkTimeoutSec; retries > 0; retries--) {
-    res = get(taskUrl)
-    if (res.status !== 200) {
-      console.error(res);
-      throw new Error("failed to get sink task");
-    }
-    if (res.json().status !== "processing") {
-      if (res.json().error) {
-        throw new Error("failed to create sink: " + res.json().error);
-      }
-      break
-    }
-    sleep(1)
-  }
+  awaitTask(res.json().url)
 
   res = get(`v1/branches/default/sources/${sourceId}/sinks/${body.sinkId}`);
   if (res.status !== 200) {
