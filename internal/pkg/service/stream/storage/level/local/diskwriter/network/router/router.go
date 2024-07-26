@@ -1,3 +1,4 @@
+// Package router provides write routing and balancing, from a source node to disk writer nodes/slices.
 package router
 
 import (
@@ -13,12 +14,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router/closesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	encodingCfg "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
@@ -34,6 +37,7 @@ type Router struct {
 	connections  *connection.Manager
 	encoding     *encoding.Manager
 	distribution *distribution.GroupNode
+	closeSyncer  *closesync.SourceNode
 
 	// slices field contains in-memory snapshot of all opened storage file slices
 	slices *etcdop.MirrorTree[storage.Slice, *sliceData]
@@ -56,6 +60,8 @@ type sliceData struct {
 type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
+	EtcdClient() *etcd.Client
+	EtcdSerde() *serde.Serde
 	DistributionNode() *distribution.Node
 	StorageRepository() *storageRepo.Repository
 	ConnectionManager() *connection.Manager
@@ -112,6 +118,12 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 		return nil, err
 	}
 
+	// Create utility, to report processed changes in slices (closed pipelines)
+	r.closeSyncer, err = closesync.NewSourceNode(d, sourceNodeID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Start slices mirroring, only necessary data is saved
 	{
 		r.slices = etcdop.
@@ -145,6 +157,12 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 
 				// Update all affected pipelines
 				r.updatePipelines(ctx, sinks)
+
+				// All changes up to the revision have been processed,
+				// pipelines have been closed.
+				if err := r.closeSyncer.Notify(ctx, changes.Header.Revision); err != nil {
+					r.logger.Errorf(ctx, "cannot report synced revision: %s", err.Error())
+				}
 			}).
 			BuildMirror()
 		if err := <-r.slices.StartMirroring(ctx, &r.wg, r.logger); err != nil {
