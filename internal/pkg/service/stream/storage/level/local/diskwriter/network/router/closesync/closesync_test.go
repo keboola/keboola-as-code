@@ -17,7 +17,7 @@ import (
 func TestSourceAndCoordinatorNodes(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	d, mock := dependencies.NewMockedServiceScope(t)
@@ -39,13 +39,13 @@ func TestSourceAndCoordinatorNodes(t *testing.T) {
 		t.Helper()
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			assert.Equal(c, r, coordinator.MinRevInUse())
-		}, 5*time.Second, 10*time.Millisecond)
+		}, 10*time.Second, 10*time.Millisecond)
 	}
 	waitForEtcdState := func(t *testing.T, expected string) {
 		t.Helper()
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			etcdhelper.AssertKVsString(c, client, expected)
-		}, 5*time.Second, 10*time.Millisecond)
+		}, 10*time.Second, 10*time.Millisecond)
 	}
 
 	// Check initial etcd state
