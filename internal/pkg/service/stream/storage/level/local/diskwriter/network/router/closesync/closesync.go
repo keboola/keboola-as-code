@@ -1,4 +1,4 @@
-// Package closesync provides synchronization between source and coordinators nodes regarding closing slices
+// Package closesync provides synchronization between source and coordinator nodes regarding closing slices
 // The coordinator nodes are waiting for slice pipeline to finish, the router nodes notify about closed slices.
 package closesync
 

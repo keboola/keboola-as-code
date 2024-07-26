@@ -36,7 +36,7 @@ func NewSourceNode(d dependencies, nodeID string) (*SourceNode, error) {
 		n.logger.Infof(ctx, "closed close-sync source node")
 	})
 
-	// Stat concurrent session with retries
+	// Start concurrent session with retries
 	{
 		var errCh <-chan error
 		n.sess, errCh = etcdop.NewSessionBuilder().Start(ctx, wg, n.logger, n.client)

@@ -11,6 +11,8 @@ import (
 )
 
 const (
+	// NoSourceNode is revision number used to describe an edge-case, when no source node is running, only a coordinator node is running.
+	// So it is guaranteed that no source node writes to the slice and the check can be skipped.
 	NoSourceNode = int64(-1)
 )
 
@@ -81,7 +83,7 @@ func (n *CoordinatorNode) MinRevInUse() (out int64) {
 	return out
 }
 
-// WaitForRevision waits until all API nodes are synced to the required revision or the context is cancelled.
+// WaitForRevision waits until all source nodes are synced to the required revision or the context is cancelled.
 func (n *CoordinatorNode) WaitForRevision(ctx context.Context, minRev int64) error {
 	if greaterOrEqual(n.MinRevInUse(), minRev) {
 		return nil
@@ -95,7 +97,7 @@ func (n *CoordinatorNode) WaitForRevision(ctx context.Context, minRev int64) err
 	}
 }
 
-// WaitForRevisionChan returns the channel that is closed when all API nodes are synced to the required revision.
+// WaitForRevisionChan returns the channel that is closed when all source nodes are synced to the required revision.
 func (n *CoordinatorNode) WaitForRevisionChan(minRev int64) <-chan struct{} {
 	if greaterOrEqual(n.MinRevInUse(), minRev) {
 		done := make(chan struct{})
