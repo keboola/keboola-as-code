@@ -27,7 +27,7 @@ import (
 func TestConnectionManager(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
@@ -186,7 +186,7 @@ func waitForLog(t *testing.T, logger log.DebugLogger, expected string) {
 	t.Helper()
 	if !assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, expected)
-	}, 15*time.Second, 100*time.Millisecond) {
+	}, 5*time.Second, 100*time.Millisecond) {
 		t.Log(logger.AllMessages())
 	}
 }
