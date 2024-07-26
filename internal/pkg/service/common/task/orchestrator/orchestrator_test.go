@@ -295,12 +295,12 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		clk.Add(restartInterval)
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			logger.AssertJSONMessages(c, `
-{"level":"info","message":"consumer restarted: restarted by timer","component":"orchestrator.watch.consumer","task":"some.task"}
+{"level":"info","message":"watch stream consumer restarted: restarted by timer","component":"orchestrator.watch.consumer","task":"some.task"}
 {"level":"debug","message":"lock released%s"}
 `)
 		}, 5*time.Second, 10*time.Millisecond, "timeout")
 		logger.AssertJSONMessages(t, `
-{"level":"info","message":"consumer restarted: restarted by timer","component":"orchestrator.watch.consumer"}
+{"level":"info","message":"watch stream consumer restarted: restarted by timer","component":"orchestrator.watch.consumer"}
 {"level":"info","message":"assigned \"1000/my-prefix/some.task/ResourceID\"","component":"orchestrator","task":"some.task"}
 {"level":"info","message":"started task","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}
 {"level":"debug","message":"lock acquired \"runtime/lock/task/1000/my-prefix/some.task/ResourceID\"","component":"task","task":"1000/my-prefix/some.task/ResourceID/%s"}

@@ -89,7 +89,6 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 	{
 		m.volumes = etcdop.
 			SetupMirror(
-				m.logger,
 				d.StorageRepository().Volume().GetAllWriterVolumesAndWatch(ctx, etcd.WithPrevKV()),
 				func(kv *op.KeyValue, vol volume.Metadata) string {
 					return vol.ID.String()
@@ -109,8 +108,8 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 				defer wg.Done()
 				m.updateConnections(ctx)
 			}).
-			Build()
-		if err := <-m.volumes.StartMirroring(ctx, wg); err != nil {
+			BuildMirror()
+		if err := <-m.volumes.StartMirroring(ctx, wg, m.logger); err != nil {
 			return nil, err
 		}
 	}

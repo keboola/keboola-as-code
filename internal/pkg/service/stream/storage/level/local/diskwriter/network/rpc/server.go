@@ -86,7 +86,6 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 	{
 		f.slices = etcdop.
 			SetupMirror(
-				f.logger,
 				d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, storage.LevelLocal, etcd.WithPrevKV()),
 				func(kv *op.KeyValue, slice storage.Slice) string {
 					return slice.SliceKey.String()
@@ -103,8 +102,8 @@ func NewNetworkFileServer(d serverDependencies) (*NetworkFileServer, error) {
 				// Mirror only slices from managed volumes
 				return f.volumesMap[event.Value.VolumeID]
 			}).
-			Build()
-		if err := <-f.slices.StartMirroring(ctx, wg); err != nil {
+			BuildMirror()
+		if err := <-f.slices.StartMirroring(ctx, wg, f.logger); err != nil {
 			return nil, err
 		}
 	}

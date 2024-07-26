@@ -32,7 +32,7 @@ func (o orchestrator[T]) start() <-chan error {
 		defer o.node.wg.Done()
 		ctx, span := o.node.tracer.Start(o.node.ctx, spanName, trace.WithAttributes(attribute.String("resource.name", o.config.Name)))
 		stream := o.config.Source.WatchPrefix.GetAllAndWatch(ctx, o.node.client, o.config.Source.WatchEtcdOps...)
-		err := <-stream.SetupConsumer(o.logger.WithComponent("watch.consumer")).
+		consumer := stream.SetupConsumer().
 			WithOnClose(func(err error) {
 				span.End(&err)
 			}).
@@ -41,10 +41,10 @@ func (o orchestrator[T]) start() <-chan error {
 					o.startTask(ctx, event)
 				}
 			}).
-			StartConsumer(ctx, o.node.wg)
+			BuildConsumer()
 
 		// Handle init error
-		if err == nil {
+		if err := <-consumer.StartConsumer(ctx, o.node.wg, o.logger.WithComponent("watch.consumer")); err == nil {
 			close(initErrCh)
 		} else {
 			span.End(&err)

@@ -50,7 +50,7 @@ func TestPrefix_Watch(t *testing.T) {
 
 	// Wait for CREATE event
 	assertDone(t, func() {
-		expected := WatchEvent{}
+		expected := WatchEventRaw{}
 		expected.Type = CreateEvent
 		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key1"),
@@ -59,7 +59,7 @@ func TestPrefix_Watch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
+		assert.Equal(t, WatchResponseRaw{Events: []WatchEventRaw{expected}}, clearResponse(resp))
 	}, "CREATE timeout")
 
 	// UPDATE key
@@ -71,7 +71,7 @@ func TestPrefix_Watch(t *testing.T) {
 
 	// Wait for UPDATE event
 	assertDone(t, func() {
-		expected := WatchEvent{}
+		expected := WatchEventRaw{}
 		expected.Type = UpdateEvent
 		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key1"),
@@ -80,7 +80,7 @@ func TestPrefix_Watch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
+		assert.Equal(t, WatchResponseRaw{Events: []WatchEventRaw{expected}}, clearResponse(resp))
 	}, "UPDATE timeout")
 
 	// DELETE key
@@ -94,7 +94,7 @@ func TestPrefix_Watch(t *testing.T) {
 
 	// Wait for DELETE event
 	assertDone(t, func() {
-		expected := WatchEvent{}
+		expected := WatchEventRaw{}
 		expected.Type = DeleteEvent
 		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
@@ -102,7 +102,7 @@ func TestPrefix_Watch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
+		assert.Equal(t, WatchResponseRaw{Events: []WatchEventRaw{expected}}, clearResponse(resp))
 	}, "DELETE timeout")
 
 	// Manual RESTART
@@ -159,7 +159,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 
 	// Wait for CREATE key1 event
 	assertDone(t, func() {
-		expected := WatchEvent{}
+		expected := WatchEventRaw{}
 		expected.Type = CreateEvent
 		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key1"),
@@ -168,7 +168,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
+		assert.Equal(t, WatchResponseRaw{Events: []WatchEventRaw{expected}}, clearResponse(resp))
 	}, "CREATE1 timeout")
 
 	// Wait for watcher created event
@@ -188,7 +188,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 
 	// Wait for CREATE key1 event
 	assertDone(t, func() {
-		expected := WatchEvent{}
+		expected := WatchEventRaw{}
 		expected.Type = CreateEvent
 		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key2"),
@@ -197,7 +197,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
+		assert.Equal(t, WatchResponseRaw{Events: []WatchEventRaw{expected}}, clearResponse(resp))
 	}, "CREATE2 timeout")
 
 	// UPDATE key
@@ -209,7 +209,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 
 	// Wait for UPDATE event
 	assertDone(t, func() {
-		expected := WatchEvent{}
+		expected := WatchEventRaw{}
 		expected.Type = UpdateEvent
 		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key2"),
@@ -218,7 +218,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
+		assert.Equal(t, WatchResponseRaw{Events: []WatchEventRaw{expected}}, clearResponse(resp))
 	}, "UPDATE timeout")
 
 	// DELETE key
@@ -232,7 +232,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 
 	// Wait for DELETE event
 	assertDone(t, func() {
-		expected := WatchEvent{}
+		expected := WatchEventRaw{}
 		expected.Type = DeleteEvent
 		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
@@ -240,7 +240,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponse{Events: []WatchEvent{expected}}, clearResponse(resp))
+		assert.Equal(t, WatchResponseRaw{Events: []WatchEventRaw{expected}}, clearResponse(resp))
 	}, "DELETE timeout")
 
 	// Manual RESTART
@@ -306,7 +306,7 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 	pfx := prefixForTest()
 	stream := pfx.Watch(ctx, watchClient)
 	ch := stream.Channel()
-	receive := func(expectedLen int) WatchResponse {
+	receive := func(expectedLen int) WatchResponseRaw {
 		resp, ok := <-ch
 		assert.True(t, ok)
 		assert.False(t, resp.Created)
@@ -424,7 +424,7 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	pfx := prefixForTest()
 	stream := pfx.GetAllAndWatch(ctx, watchClient)
 	ch := stream.Channel()
-	receive := func(expectedLen int) WatchResponse {
+	receive := func(expectedLen int) WatchResponseRaw {
 		resp, ok := <-ch
 		assert.True(t, ok)
 		assert.False(t, resp.Created)
@@ -569,7 +569,7 @@ func TestWatchBackoff(t *testing.T) {
 	}, delays)
 }
 
-func clearResponse(resp WatchResponse) WatchResponse {
+func clearResponse(resp WatchResponseRaw) WatchResponseRaw {
 	for i := range resp.Events {
 		event := &resp.Events[i]
 		event.Kv.CreateRevision = 0

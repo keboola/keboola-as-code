@@ -28,14 +28,26 @@ import (
 // the ForEach callback is called with the "restart=true" flag, see WithForEach method.
 //
 // The WatchConsumer can be canceled by cancelling the context passed to the Watch/GetAllAndWatch method.
-type WatchConsumer[E any] struct {
-	logger      log.Logger
-	stream      *WatchStreamE[E]
+type WatchConsumer[E WatchEvent] struct {
+	stream      RestartableWatchStream[E]
 	forEachFn   func(events []E, header *Header, restart bool)
 	onCreated   onWatcherCreated
 	onRestarted onWatcherRestarted
 	onError     onWatcherError
 	onClose     onWatcherClose
+}
+
+type WatchConsumerSetup[E WatchEvent] struct {
+	stream      RestartableWatchStream[E]
+	forEachFn   func(events []E, header *Header, restart bool)
+	onCreated   onWatcherCreated
+	onRestarted onWatcherRestarted
+	onError     onWatcherError
+	onClose     onWatcherClose
+}
+
+type Restartable interface {
+	Restart(cause error)
 }
 
 type (
@@ -45,40 +57,55 @@ type (
 	onWatcherClose     func(err error)
 )
 
-func newConsumer[E any](logger log.Logger, stream *WatchStreamE[E]) WatchConsumer[E] {
-	return WatchConsumer[E]{
-		logger: logger,
-		stream: stream,
+func newConsumerSetup[E WatchEvent](stream RestartableWatchStream[E]) WatchConsumerSetup[E] {
+	return WatchConsumerSetup[E]{stream: stream}
+}
+
+// Restart underlying stream.
+func (c *WatchConsumer[E]) Restart(cause error) {
+	c.stream.Restart(cause)
+}
+
+func (s WatchConsumerSetup[E]) WithForEach(v func(events []E, header *Header, restart bool)) WatchConsumerSetup[E] {
+	s.forEachFn = v
+	return s
+}
+
+func (s WatchConsumerSetup[E]) WithOnCreated(v onWatcherCreated) WatchConsumerSetup[E] {
+	s.onCreated = v
+	return s
+}
+
+func (s WatchConsumerSetup[E]) WithOnRestarted(v onWatcherRestarted) WatchConsumerSetup[E] {
+	s.onRestarted = v
+	return s
+}
+
+func (s WatchConsumerSetup[E]) WithOnError(v onWatcherError) WatchConsumerSetup[E] {
+	s.onError = v
+	return s
+}
+
+func (s WatchConsumerSetup[E]) WithOnClose(v onWatcherClose) WatchConsumerSetup[E] {
+	s.onClose = v
+	return s
+}
+
+func (s WatchConsumerSetup[E]) BuildConsumer() *WatchConsumer[E] {
+	// Copy settings, they are immutable after the build call
+	return &WatchConsumer[E]{
+		stream:      s.stream,
+		forEachFn:   s.forEachFn,
+		onCreated:   s.onCreated,
+		onRestarted: s.onRestarted,
+		onError:     s.onError,
+		onClose:     s.onClose,
 	}
 }
 
-func (c WatchConsumer[E]) WithForEach(v func(events []E, header *Header, restart bool)) WatchConsumer[E] {
-	c.forEachFn = v
-	return c
-}
-
-func (c WatchConsumer[E]) WithOnCreated(v onWatcherCreated) WatchConsumer[E] {
-	c.onCreated = v
-	return c
-}
-
-func (c WatchConsumer[E]) WithOnRestarted(v onWatcherRestarted) WatchConsumer[E] {
-	c.onRestarted = v
-	return c
-}
-
-func (c WatchConsumer[E]) WithOnError(v onWatcherError) WatchConsumer[E] {
-	c.onError = v
-	return c
-}
-
-func (c WatchConsumer[E]) WithOnClose(v onWatcherClose) WatchConsumer[E] {
-	c.onClose = v
-	return c
-}
-
-func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup) (initErr <-chan error) {
+func (c *WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
 	initErrCh := make(chan error, 1)
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -94,7 +121,7 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 
 		// Channel is closed when the watcher context is cancelled,
 		// so the context does not have to be checked here.
-		for resp := range c.stream.channel {
+		for resp := range c.stream.Channel() {
 			switch {
 			case resp.InitErr != nil:
 				// Initialization error, the channel will be closed in the beginning of the next iteration.
@@ -115,9 +142,9 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// It is suspicious if a short time has passed between two errors,
 				// then the error is logged with error log level.
 				if interval := time.Since(lastErrorAt); interval > watchErrorThreshold {
-					c.logger.Warn(ctx, resp.Err.Error())
+					logger.Warn(ctx, resp.Err.Error())
 				} else {
-					c.logger.Error(ctx, errors.Errorf(`%s (previous error %s ago)`, resp.Err, interval).Error())
+					logger.Error(ctx, errors.Errorf(`%s (previous error %s ago)`, resp.Err, interval).Error())
 				}
 				lastErrorAt = time.Now()
 				lastError = resp.Err
@@ -128,7 +155,7 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// A fatal error (etcd ErrCompacted) occurred.
 				// It is not possible to continue watching, the operation must be restarted.
 				restart = true
-				c.logger.Infof(ctx, "consumer restarted: %s", resp.RestartCause)
+				logger.Infof(ctx, "watch stream consumer restarted: %s", resp.RestartCause)
 				if c.onRestarted != nil {
 					c.onRestarted(resp.RestartCause, resp.RestartDelay)
 				}
@@ -136,7 +163,7 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 				// The watcher has been successfully created.
 				// This means transition from GetAll to Watch phase.
 				// The Created event is emitted always if a new watches is created, so after initialization and each restart.
-				c.logger.Info(ctx, "watcher created")
+				logger.Info(ctx, "watcher created")
 				if c.onCreated != nil {
 					c.onCreated(resp.Header)
 				}
@@ -160,10 +187,11 @@ func (c WatchConsumer[E]) StartConsumer(ctx context.Context, wg *sync.WaitGroup)
 		} else {
 			closeErr = errors.New("unknown cause") // shouldn't happen
 		}
-		c.logger.Infof(ctx, "watch stream consumer closed: %s", closeErr.Error())
+		logger.Infof(ctx, "watch stream consumer closed: %s", closeErr.Error())
 		if c.onClose != nil {
 			c.onClose(closeErr)
 		}
 	}()
+
 	return initErrCh
 }

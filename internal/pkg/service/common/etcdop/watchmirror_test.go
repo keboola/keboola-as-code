@@ -43,7 +43,6 @@ func TestMirror(t *testing.T) {
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
 	mirror := SetupMirror(
-		logger,
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
 		func(kv *op.KeyValue, v testUser) int { return v.Age },
@@ -51,8 +50,8 @@ func TestMirror(t *testing.T) {
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
-		Build()
-	errCh := mirror.StartMirroring(ctx, wg)
+		BuildMirror()
+	errCh := mirror.StartMirroring(ctx, wg, logger)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -142,7 +141,6 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
 	mirror := SetupMirror(
-		logger,
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
 		func(kv *op.KeyValue, v testUser) int { return v.Age },
@@ -153,8 +151,8 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 		WithOnUpdate(func(update MirrorUpdate) {
 			updateCh <- update
 		}).
-		Build()
-	errCh := mirror.StartMirroring(ctx, wg)
+		BuildMirror()
+	errCh := mirror.StartMirroring(ctx, wg, logger)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -232,7 +230,6 @@ func TestMirror_WithOnChanges(t *testing.T) {
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
 	mirror := SetupMirror(
-		logger,
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(kv *op.KeyValue, v testUser) string { return v.FirstName + " " + v.LastName },
 		func(kv *op.KeyValue, v testUser) int { return v.Age },
@@ -243,8 +240,8 @@ func TestMirror_WithOnChanges(t *testing.T) {
 		WithOnChanges(func(changes MirrorUpdateChanges[int]) {
 			changesCh <- changes
 		}).
-		Build()
-	errCh := mirror.StartMirroring(ctx, wg)
+		BuildMirror()
+	errCh := mirror.StartMirroring(ctx, wg, logger)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -354,13 +351,12 @@ func TestFullMirror(t *testing.T) {
 	// Setup full mirroring of the etcd prefix tree to the memory.
 	logger := log.NewDebugLogger()
 	mirror := SetupFullMirror(
-		logger,
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV())).
 		WithFilter(func(event WatchEventT[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
-		Build()
-	errCh := mirror.StartMirroring(ctx, wg)
+		BuildMirror()
+	errCh := mirror.StartMirroring(ctx, wg, logger)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header

@@ -36,7 +36,7 @@ func TestConnectionManager(t *testing.T) {
 	w1 := startWriterNode(t, ctx, etcdCfg, "w1")
 	w2 := startWriterNode(t, ctx, etcdCfg, "w2")
 	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.server"}`)
-	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.server"}`)
+	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.server"}`)
 
 	// Start source node
 	connManager, s := startSourceNode(t, etcdCfg, "s1")
@@ -84,8 +84,8 @@ func TestConnectionManager(t *testing.T) {
 	w3.Process().Shutdown(ctx, errors.New("bye bye writer 3"))
 	w3.Process().WaitForShutdown()
 	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
-	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w1\" - \"localhost:%s\"","component":"storage.router.connections.client"}`)
-	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w3\" - \"localhost:%s\"","component":"storage.router.connections.client"}`)
+	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w1\" - \"localhost:%s\": session shutdown","component":"storage.router.connections.client"}`)
+	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w3\" - \"localhost:%s\": session shutdown","component":"storage.router.connections.client"}`)
 	sourceLogger.Truncate()
 	assert.Equal(t, 2, connManager.ConnectionsCount())
 	_, found := connManager.ConnectionToNode("w1")
@@ -102,8 +102,8 @@ func TestConnectionManager(t *testing.T) {
 	// Shutdown source node - no warning/error is logged
 	s.Process().Shutdown(ctx, errors.New("bye bye source"))
 	s.Process().WaitForShutdown()
-	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w2\" - \"localhost:%s\"","component":"storage.router.connections.client"}`)
-	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w4\" - \"localhost:%s\"","component":"storage.router.connections.client"}`)
+	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w2\" - \"localhost:%s\": session shutdown","component":"storage.router.connections.client"}`)
+	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w4\" - \"localhost:%s\": session shutdown","component":"storage.router.connections.client"}`)
 	sourceLogger.AssertJSONMessages(t, `{"level":"info","message":"exited"}`)
 	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.server"}`)
 	waitForLog(t, w4.DebugLogger(), `{"level":"info","message":"closed connection from \"%s\"","component":"storage.node.writer.server"}`)
