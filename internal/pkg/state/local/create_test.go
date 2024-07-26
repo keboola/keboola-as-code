@@ -43,7 +43,7 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 	config := object.(*model.Config)
 	assert.Equal(t, key, config.Key())
 	assert.Equal(t, "New Config", config.Name)
-	expectedContent := `{"configValue":123,"configObject":{"Key":"foo","Value":"bar"}}`
+	expectedContent := `{"parameters":{"configValue":123,"configObject":{"Key":"foo","Value":"bar"}}}`
 	assert.Equal(t, expectedContent, json.MustEncodeString(config.Content, false))
 }
 
@@ -80,7 +80,7 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 	row := object.(*model.ConfigRow)
 	assert.Equal(t, key, row.Key())
 	assert.Equal(t, "New Row", row.Name)
-	expectedContent := `{"configValue":123,"configObject":{"Key":"foo","Value":"bar"}}`
+	expectedContent := `{"parameters":{"configValue":123,"configObject":{"Key":"foo","Value":"bar"}}}`
 	assert.Equal(t, expectedContent, json.MustEncodeString(row.Content, false))
 }
 
@@ -107,7 +107,7 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 	config := object.(*model.Config)
 	assert.Equal(t, key, config.Key())
 	assert.Equal(t, "New Config", config.Name)
-	expectedContent := `{"bar":{"type":"abc"},"baz":{"type":789}}`
+	expectedContent := `{"parameters":{"bar":{"type":"abc"},"baz":{"type":789}}}`
 	assert.Equal(t, expectedContent, json.MustEncodeString(config.Content, false))
 }
 
@@ -135,7 +135,7 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 	row := object.(*model.ConfigRow)
 	assert.Equal(t, key, row.Key())
 	assert.Equal(t, "New Row", row.Name)
-	expectedContent := `{"bar":{"type":"abc"},"baz":{"type":789}}`
+	expectedContent := `{"parameters":{"bar":{"type":"abc"},"baz":{"type":789}}}`
 	assert.Equal(t, expectedContent, json.MustEncodeString(row.Content, false))
 }
 
