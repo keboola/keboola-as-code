@@ -10,6 +10,9 @@ const ITERATIONS = __ENV.K6_ITERATIONS || 100000;
 const PARALLELISM = __ENV.K6_PARALLELISM || 1000;
 const TIMEOUT = __ENV.K6_TIMEOUT || "60s";
 
+const SYNC_MODE = __ENV.STREAM_SYNC_MODE || "disabled"; // disabled / cache / disk
+const SYNC_WAIT = __ENV.STREAM_SYNC_WAIT || "1"; // 1 = enabled, 0 = disabled
+
 const commonHeaders = {
   "Content-Type": "application/json",
   "X-StorageApi-Token": TOKEN,
@@ -72,6 +75,21 @@ export function setupSource() {
 
   awaitTask(res.json().url)
 
+  res = patch(`v1/branches/default/sources/${sourceId}/settings`, {
+    settings: [
+      {
+        key: "storage.level.local.encoding.sync.mode",
+        value: SYNC_MODE,
+      },
+      {
+        key: "storage.level.local.encoding.sync.wait",
+        value: SYNC_WAIT === "1",
+      },
+    ],
+  });
+
+  awaitTask(res.json().url)
+
   res = get(`v1/branches/default/sources/${sourceId}`);
   if (res.status !== 200) {
     throw new Error("failed to get source");
@@ -131,6 +149,12 @@ export function get(url, headers = {}) {
 
 export function post(url, data, headers = {}) {
   return http.post(normalizeUrl(url), JSON.stringify(data), {
+    headers: Object.assign({}, commonHeaders, headers),
+  });
+}
+
+export function patch(url, data, headers = {}) {
+  return http.patch(normalizeUrl(url), JSON.stringify(data), {
     headers: Object.assign({}, commonHeaders, headers),
   });
 }
