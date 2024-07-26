@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
@@ -221,14 +222,10 @@ foo3
 {"level":"debug","message":"sync to disk done"}             
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"closing encoding pipeline"}
+{"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to disk"}          
 {"level":"debug","message":"flushing writers"}              
 {"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}        
-{"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"sync to disk done"} 
-{"level":"debug","message":"stopping syncer"}
-{"level":"debug","message":"starting sync to disk"}
-{"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to disk done"}
 {"level":"debug","message":"syncer stopped"}
@@ -318,14 +315,10 @@ foo3
 {"level":"debug","message":"sync to cache done"}
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"closing encoding pipeline"}
+{"level":"debug","message":"stopping syncer"}
 {"level":"debug","message":"starting sync to cache"}          
 {"level":"debug","message":"flushing writers"}              
 {"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
-{"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"sync to cache done"} 
-{"level":"debug","message":"stopping syncer"}
-{"level":"debug","message":"starting sync to cache"}
-{"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
 {"level":"debug","message":"syncer stopped"}
@@ -496,7 +489,10 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 		cancel()
 	})
 
-	d, mock := dependencies.NewMockedSourceScope(t)
+	// Disable real clocks, in tests, sync is triggered manually.
+	// The sync timer may cause unexpected log messages.
+	clk := clock.NewMock()
+	d, mock := dependencies.NewMockedSourceScope(t, commonDeps.WithClock(clk))
 
 	helper := &writerSyncHelper{writeDone: make(chan struct{}, 100)}
 

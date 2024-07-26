@@ -92,8 +92,10 @@ type pipeline struct {
 
 	// closed blocks new writes
 	closed chan struct{}
-	// writeWg waits for in-progress writes before Close
+	// writeWg waits for in-progress writes without waiting for sync.
 	writeWg sync.WaitGroup
+	// writeCompletedWg waits until all Write method calls are completed, it includes waiting for the sync.
+	writeCompletedWg sync.WaitGroup
 	// writeWg waits for in-progress writes before Close
 	chunksWg sync.WaitGroup
 
@@ -258,7 +260,8 @@ func (p *pipeline) WriteRecord(record recordctx.Context) error {
 
 	// Block Close method
 	p.writeWg.Add(1)
-	defer p.writeWg.Done()
+	p.writeCompletedWg.Add(1)
+	defer p.writeCompletedWg.Done()
 
 	// Check if the writer is closed
 	if p.isClosed() {
@@ -266,7 +269,9 @@ func (p *pipeline) WriteRecord(record recordctx.Context) error {
 	}
 
 	// Format and write table row
-	if err := p.encoder.WriteRecord(record); err != nil {
+	err := p.encoder.WriteRecord(record)
+	p.writeWg.Done()
+	if err != nil {
 		return err
 	}
 
@@ -364,13 +369,16 @@ func (p *pipeline) Close(ctx context.Context) error {
 
 	errs := errors.NewMultiError()
 
-	// Wait for running writes
+	// Wait for in-progress writes.
 	p.writeWg.Wait()
 
-	// Stop syncer, it triggers also the last sync.
+	// Stop syncer, it triggers also the last sync to unblock write sync notifiers.
 	if err := p.syncer.Stop(ctx); err != nil {
 		errs.Append(err)
 	}
+
+	// Wait for all Write method calls, it includes waiting for the sync.
+	p.writeCompletedWg.Wait()
 
 	// Close writers  chain, it closes all writers and generates the last chunk.
 	if err := p.chain.Close(ctx); err != nil {

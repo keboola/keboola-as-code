@@ -13,9 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router/closesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
@@ -38,6 +41,19 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	// Start disk writer node
 	volumesCount := 2
 	writerNode, _ := testnode.StartDiskWriterNode(t, logger, etcdCfg, volumesCount, nil)
+
+	// Create coordinator, to check reported revisions
+	svcScope, _ := dependencies.NewMockedServiceScope(t, commonDeps.WithEtcdConfig(etcdCfg))
+	coordinator, err := closesync.NewCoordinatorNode(svcScope)
+	require.NoError(t, err)
+
+	// Helper
+	waitForMinRevInUse := func(t *testing.T, r int64) {
+		t.Helper()
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			assert.GreaterOrEqual(c, coordinator.MinRevInUse(), r)
+		}, 5*time.Second, 10*time.Millisecond)
+	}
 
 	// Wait for volumes registration
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -64,7 +80,8 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	sink.Config = testconfig.LocalVolumeConfig(2, []string{"hdd"})
 	require.NoError(t, sourceScp.DefinitionRepository().Branch().Create(&branch, clk.Now(), test.ByUser()).Do(ctx).Err())
 	require.NoError(t, sourceScp.DefinitionRepository().Source().Create(&source, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
-	require.NoError(t, sourceScp.DefinitionRepository().Sink().Create(&sink, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+	sinkResult := sourceScp.DefinitionRepository().Sink().Create(&sink, clk.Now(), test.ByUser(), "create").Do(ctx)
+	require.NoError(t, sinkResult.Err())
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"sink.router"}`)
 	}, 5*time.Second, 10*time.Millisecond)
@@ -82,26 +99,32 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 {"level":"debug","message":"opened balanced pipeline to 2 slices, sink \"123/111/my-source/my-sink\"","component":"storage.router"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
+	waitForMinRevInUse(t, sinkResult.Header().Revision)
 
 	// Rotate file/slices
-	require.NoError(t, sourceScp.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
+	rotateResult := sourceScp.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx)
+	require.NoError(t, rotateResult.Err())
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
 {"level":"debug","message":"updated balanced pipeline, 2 opened slices, 2 closed slices, sink \"123/111/my-source/my-sink\"","component":"storage.router"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
+	waitForMinRevInUse(t, rotateResult.Header().Revision)
 
 	// Disable sink - close files/slices
-	require.NoError(t, sourceScp.DefinitionRepository().Sink().Disable(sink.SinkKey, clk.Now(), test.ByUser(), "reason").Do(ctx).Err())
+	disableResult := sourceScp.DefinitionRepository().Sink().Disable(sink.SinkKey, clk.Now(), test.ByUser(), "reason").Do(ctx)
+	require.NoError(t, disableResult.Err())
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
 {"level":"debug","message":"closed balanced pipeline to 2 slices, sink \"123/111/my-source/my-sink\"","component":"storage.router"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
+	waitForMinRevInUse(t, disableResult.Header().Revision)
 
 	// Shutdown the source node
 	sourceScp.Process().Shutdown(ctx, errors.New("bye bye"))
 	sourceScp.Process().WaitForShutdown()
+	waitForMinRevInUse(t, closesync.NoSourceNode)
 
 	// Shutdown the writer node
 	writerNode.Process().Shutdown(ctx, errors.New("bye bye"))

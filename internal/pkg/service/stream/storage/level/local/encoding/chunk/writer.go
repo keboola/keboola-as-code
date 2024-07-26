@@ -90,6 +90,10 @@ func (w *Writer) Flush() error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
+	if w.closed {
+		return errors.New("chunk.Writer is closed")
+	}
+
 	// Swap chunks
 	w.activeChunk.aligned = true
 	w.swapChunks(w.emptyChunk())

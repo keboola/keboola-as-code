@@ -33,10 +33,10 @@ const (
 // Any initialization error is reported via the error channel.
 // After successful initialization, a new session is created after each failure until the context ends.
 type Session struct {
-	sessionBuilder
-	logger  log.Logger
-	client  *etcd.Client
-	backoff *backoff.ExponentialBackOff
+	sessionBuilder SessionBuilder
+	logger         log.Logger
+	client         *etcd.Client
+	backoff        *backoff.ExponentialBackOff
 
 	mutexStore *mutexStore
 
@@ -53,12 +53,18 @@ type SessionBuilder struct {
 
 type onSession func(session *concurrency.Session) error
 
-type sessionBuilder = SessionBuilder
-
 type NoSessionError struct{}
 
 func (e NoSessionError) Error() string {
 	return "no active concurrent.Session"
+}
+
+// NewSessionBuilder creates a builder for the resistant Session.
+func NewSessionBuilder() *SessionBuilder {
+	return &SessionBuilder{
+		grantTimeout: sessionDefaultGrantTimeout,
+		ttlSeconds:   sessionDefaultTTLSeconds,
+	}
 }
 
 // WithGrantTimeout configures the maximum time to wait for creating a new session.
@@ -233,15 +239,15 @@ func (s *Session) newSession(ctx context.Context) (_ *concurrency.Session, err e
 
 	// Obtain the LeaseID
 	// The concurrency.NewSession bellow can do it by itself, but we need a separate context with a timeout here.
-	grantCtx, grantCancel := context.WithTimeout(ctx, s.grantTimeout)
+	grantCtx, grantCancel := context.WithTimeout(ctx, s.sessionBuilder.grantTimeout)
 	defer grantCancel()
-	grantResp, err := s.client.Grant(grantCtx, int64(s.ttlSeconds))
+	grantResp, err := s.client.Grant(grantCtx, int64(s.sessionBuilder.ttlSeconds))
 	if err != nil {
 		return nil, err
 	}
 
 	// Create session
-	session, err := concurrency.NewSession(s.client, concurrency.WithTTL(s.ttlSeconds), concurrency.WithLease(grantResp.ID))
+	session, err := concurrency.NewSession(s.client, concurrency.WithTTL(s.sessionBuilder.ttlSeconds), concurrency.WithLease(grantResp.ID))
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +267,7 @@ func (s *Session) newSession(ctx context.Context) (_ *concurrency.Session, err e
 
 	// Invoke callbacks - start session dependent work
 	s.logger.WithDuration(time.Since(startTime)).Infof(ctx, "created etcd session")
-	for i, fn := range s.onSession {
+	for i, fn := range s.sessionBuilder.onSession {
 		if err := fn(session); err != nil {
 			err = errors.Errorf(`callback OnSession[%d] failed: %s`, i, err)
 			s.logger.Error(ctx, err.Error())
@@ -299,14 +305,6 @@ func (s *Session) closeSession(ctx context.Context, reason string) error {
 	// Ok
 	s.logger.WithDuration(time.Since(startTime)).Info(ctx, "closed etcd session")
 	return nil
-}
-
-// NewSessionBuilder creates a builder for the resistant Session.
-func NewSessionBuilder() *SessionBuilder {
-	return &SessionBuilder{
-		grantTimeout: sessionDefaultGrantTimeout,
-		ttlSeconds:   sessionDefaultTTLSeconds,
-	}
 }
 
 func newSessionBackoff() *backoff.ExponentialBackOff {
