@@ -1,10 +1,13 @@
 package op
 
-import "time"
+import (
+	"time"
+)
 
 type AtomicResult[R any] struct {
 	result      *R
 	error       error
+	header      *Header
 	attempt     int
 	elapsedTime time.Duration
 }
@@ -19,6 +22,10 @@ func (v AtomicResult[R]) Result() R {
 
 func (v AtomicResult[R]) Err() error {
 	return v.error
+}
+
+func (v AtomicResult[R]) Header() *Header {
+	return v.header
 }
 
 func (v AtomicResult[R]) ResultOrErr() (R, error) {
