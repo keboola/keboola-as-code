@@ -157,6 +157,10 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 	return r, nil
 }
 
+func (r *Router) SinksCount() int {
+	return r.slices.Len()
+}
+
 func (r *Router) OpenPipeline(ctx context.Context, sinkKey key.SinkKey) (pipeline.Pipeline, error) {
 	p, err := openBalancedPipeline(ctx, r, sinkKey)
 	if err != nil {

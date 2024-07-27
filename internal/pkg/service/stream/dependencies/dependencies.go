@@ -55,6 +55,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
+	storageRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
@@ -126,6 +127,7 @@ type SourceScope interface {
 	EncodingManager() *encoding.Manager
 	ConnectionManager() *connection.Manager
 	SinkRouter() *sinkRouter.Router
+	StorageRouter() *storageRouter.Router
 }
 
 type CoordinatorScope interface {

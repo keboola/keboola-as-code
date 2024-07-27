@@ -65,8 +65,14 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	wb.logger = log.NewDebugLogger()
-	wb.logger.ConnectTo(testhelper.VerboseStdout())
+	// Create debug logger
+	if testhelper.TestIsVerbose() {
+		wb.logger = log.NewDebugLogger()
+		wb.logger.ConnectTo(testhelper.VerboseStdout())
+	} else {
+		wb.logger = log.NewDebugLoggerWithoutDebugLevel()
+	}
+
 	wb.failedCount = atomic.NewInt64(0)
 	wb.latencySum = atomic.NewFloat64(0)
 	wb.latencyCount = atomic.NewInt64(0)
@@ -75,6 +81,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Start nodes
 	wb.startNodes(b, etcdCfg)
 	sinkRouter := wb.sourceNode.SinkRouter()
+	storageRouter := wb.sourceNode.StorageRouter()
 
 	// Create resource in an API node
 	apiCtx := context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, wb.apiNodeMock.KeboolaProjectAPI())
@@ -99,11 +106,10 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	require.NoError(b, err)
 	filePath := slice.LocalStorage.FileName(vol.Path(), wb.sourceNodeMock.TestConfig().NodeID)
 
-	// Wait for pipeline initialization
+	// Wait for initialization
 	assert.EventuallyWithT(b, func(c *assert.CollectT) {
-		// Messages order can be random
-		wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %s","component":"sink.router"}`)
-		wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %s","component":"storage.router"}`)
+		assert.Equal(c, 1, sinkRouter.SourcesCount())
+		assert.Equal(c, 1, storageRouter.SinksCount())
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Create data channel

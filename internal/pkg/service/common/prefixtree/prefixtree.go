@@ -51,6 +51,12 @@ func (t *AtomicTree[T]) AtomicReadOnly(do func(t TreeReadOnly[T])) {
 	do(t.tree)
 }
 
+func (t *AtomicTree[T]) Len() int {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	return t.tree.Len()
+}
+
 func (t *AtomicTree[T]) All() []T {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
@@ -121,6 +127,10 @@ func (t *AtomicTree[T]) DeletePrefix(key string) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 	t.tree.DeletePrefix(key)
+}
+
+func (t *Tree[T]) Len() int {
+	return t.tree.Len()
 }
 
 func (t *Tree[T]) All() []T {

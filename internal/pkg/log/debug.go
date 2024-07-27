@@ -38,10 +38,14 @@ func (v *oneLevelEnabler) Enabled(level zapcore.Level) bool {
 // NewDebugLogger returns logs as string by String() method.
 // See also other methods of the ioutil.Writer.
 func NewDebugLogger() DebugLogger {
-	return NewDebugLoggerWithPrefix("")
+	return NewDebugLoggerWithMinLevel(DebugLevel)
 }
 
-func NewDebugLoggerWithPrefix(prefix string) DebugLogger {
+func NewDebugLoggerWithoutDebugLevel() DebugLogger {
+	return NewDebugLoggerWithMinLevel(InfoLevel)
+}
+
+func NewDebugLoggerWithMinLevel(minLevel zapcore.Level) DebugLogger {
 	l := &debugLogger{
 		all:         ioutil.NewAtomicWriter(),
 		debug:       ioutil.NewAtomicWriter(),
@@ -50,15 +54,30 @@ func NewDebugLoggerWithPrefix(prefix string) DebugLogger {
 		warnOrError: ioutil.NewAtomicWriter(),
 		error:       ioutil.NewAtomicWriter(),
 	}
-	cores := zapcore.NewTee(
-		debugCore(l.all, DebugLevel),                            // all = debug level and higher
-		debugCore(l.debug, &oneLevelEnabler{level: DebugLevel}), // only debug msgs
-		debugCore(l.info, &oneLevelEnabler{level: InfoLevel}),   // only info msgs
-		debugCore(l.warn, &oneLevelEnabler{level: WarnLevel}),   // only warn msgs
-		debugCore(l.warnOrError, WarnLevel),                     // warn or error = warn level and higher
-		debugCore(l.error, ErrorLevel),                          // error = error level and higher
-	)
-	l.zapLogger = newLoggerFromZapCore(cores)
+
+	var cores []zapcore.Core
+
+	cores = append(cores, debugCore(l.all, minLevel))
+
+	if minLevel <= DebugLevel {
+		cores = append(cores, debugCore(l.debug, &oneLevelEnabler{level: DebugLevel}))
+	}
+
+	if minLevel <= InfoLevel {
+		cores = append(cores, debugCore(l.info, &oneLevelEnabler{level: InfoLevel}))
+	}
+
+	if minLevel <= WarnLevel {
+		cores = append(cores, debugCore(l.warn, &oneLevelEnabler{level: WarnLevel}))
+		cores = append(cores, debugCore(l.warnOrError, WarnLevel))
+	}
+
+	if minLevel <= ErrorLevel {
+		cores = append(cores, debugCore(l.error, ErrorLevel))
+	}
+
+	core := zapcore.NewTee(cores...)
+	l.zapLogger = newLoggerFromZapCore(core)
 	return l
 }
 

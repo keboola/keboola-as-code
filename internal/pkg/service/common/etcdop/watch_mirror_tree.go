@@ -203,6 +203,10 @@ func (m *MirrorTree[T, V]) Get(key string) (V, bool) {
 	return m.tree.Get(key)
 }
 
+func (m *MirrorTree[T, V]) Len() int {
+	return m.tree.Len()
+}
+
 func (m *MirrorTree[T, V]) All() []V {
 	return m.tree.All()
 }
