@@ -3,7 +3,6 @@ package staging
 import (
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
@@ -15,7 +14,6 @@ func NewFile(encodingCfg encoding.Config, slicesUploadCfg config.UploadConfig, o
 	// Note: Compression in the staging storage is same as in the local storage, but it can be modified in the future.
 	return stagingModel.File{
 		Compression: encodingCfg.Compression,
-		Expiration:  utctime.From(openedAt.Add(stagingModel.DefaultFileExpiration)),
 		Upload:      slicesUploadCfg,
 	}
 }

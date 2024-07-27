@@ -63,7 +63,6 @@ func TestConfig_With(t *testing.T) {
 		PreferredTypes: []string{"foo", "bar"},
 	}
 	stagingConfigPatch := &staging.ConfigPatch{
-		MaxSlicesPerFile: ptr.Ptr(1000),
 		Upload: &staging.UploadConfigPatch{
 			Trigger: &staging.UploadTriggerPatch{
 				Count:    ptr.Ptr(uint64(30000)),
@@ -72,7 +71,6 @@ func TestConfig_With(t *testing.T) {
 			},
 		},
 	}
-	expectedCfg.Staging.MaxSlicesPerFile = 1000
 	expectedCfg.Staging.Upload.Trigger = staging.UploadTrigger{
 		Count:    30000,
 		Size:     4 * datasize.MB,
