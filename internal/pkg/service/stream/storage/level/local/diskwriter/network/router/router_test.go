@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router/closesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testnode"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -75,8 +76,7 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	branch := test.NewBranch(branchKey)
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	source := test.NewHTTPSource(sourceKey)
-	source.HTTP.Secret = strings.Repeat("1", 48)
-	sink := test.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
+	sink := dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
 	sink.Config = testconfig.LocalVolumeConfig(2, []string{"hdd"})
 	require.NoError(t, sourceScp.DefinitionRepository().Branch().Create(&branch, clk.Now(), test.ByUser()).Do(ctx).Err())
 	require.NoError(t, sourceScp.DefinitionRepository().Source().Create(&source, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
