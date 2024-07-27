@@ -115,7 +115,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 			func(key string, slice storage.Slice) string {
 				return slice.SliceKey.String()
 			},
-			func(key string, slice storage.Slice) *sliceData {
+			func(key string, slice storage.Slice, oldValue **sliceData) *sliceData {
 				return &sliceData{
 					SliceKey:     slice.SliceKey,
 					State:        slice.State,

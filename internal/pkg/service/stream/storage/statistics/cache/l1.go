@@ -51,7 +51,7 @@ func NewL1Cache(d dependencies) (*L1, error) {
 	// Mirror statistics from the database to the cache via etcd watcher
 	stream := c.repository.GetAllAndWatch(ctx)
 	mapKey := func(key string, stats statistics.Value) string { return key }
-	mapValue := func(key string, stats statistics.Value) statistics.Value { return stats }
+	mapValue := func(key string, stats statistics.Value, oldValue *statistics.Value) statistics.Value { return stats }
 	mirror := etcdop.SetupMirrorTree[statistics.Value](stream, mapKey, mapValue).BuildMirror()
 	if err := <-mirror.StartMirroring(ctx, wg, c.logger); err == nil {
 		c.cache = mirror

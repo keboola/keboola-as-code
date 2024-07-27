@@ -58,7 +58,7 @@ func NewCoordinatorNode(d dependencies) (*CoordinatorNode, error) {
 		n.revisions = etcdop.SetupMirrorMap[int64, string, int64](
 			n.schema.prefix.GetAllAndWatch(ctx, n.client),
 			func(key string, value int64) string { return key },
-			func(key string, value int64) int64 { return value },
+			func(key string, value int64, oldValue *int64) int64 { return value },
 		).
 			WithOnUpdate(func(_ etcdop.MirrorUpdate) {
 				n.invokeListeners()

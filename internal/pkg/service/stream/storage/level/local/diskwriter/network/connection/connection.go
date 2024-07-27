@@ -91,7 +91,7 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 			func(key string, vol volume.Metadata) volume.ID {
 				return vol.ID
 			},
-			func(key string, vol volume.Metadata) *volumeData {
+			func(key string, vol volume.Metadata, oldValue **volumeData) *volumeData {
 				return &volumeData{
 					ID: vol.ID,
 					Node: &nodeData{

@@ -62,7 +62,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 			func(key string, source definition.Source) string {
 				return sourceKey(source.SourceKey)
 			},
-			func(key string, source definition.Source) *sourceData {
+			func(key string, source definition.Source, oldValue **sourceData) *sourceData {
 				return &sourceData{
 					sourceKey: source.SourceKey,
 					enabled:   source.IsEnabled(),
