@@ -12,7 +12,8 @@ import (
 // Listener listens for distribution changes, when a node is added or removed.
 // It contains the C channel with distribution change Events.
 type Listener struct {
-	C      chan Events
+	C      <-chan Events
+	c      chan Events
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     *sync.WaitGroup
@@ -111,6 +112,8 @@ func (v *listeners) Notify(events Events) {
 
 // add a new listener, it contains channel C with streamed distribution change Events.
 func (v *listeners) add() *Listener {
+	c := make(chan Events)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	out := &Listener{
 		ctx:    ctx,
@@ -118,7 +121,8 @@ func (v *listeners) add() *Listener {
 		wg:     &sync.WaitGroup{},
 		all:    v,
 		id:     listenerID(idgenerator.Random(10)),
-		C:      make(chan Events),
+		C:      c,
+		c:      c,
 	}
 	v.lock.Lock()
 	v.listeners[out.id] = out
@@ -162,7 +166,7 @@ func (l *Listener) trigger(events Events) {
 		select {
 		case <-l.ctx.Done():
 			// stop goroutine on stop/shutdown
-		case l.C <- events:
+		case l.c <- events:
 			// propagate events, wait for receiver side
 		}
 	}()
