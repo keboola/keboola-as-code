@@ -122,7 +122,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 				}
 
 				// Keep the same lock, to prevent parallel processing of the same slice.
-				// No one other than this operator should modify the slice, but just to be sure.
+				// No modification from another code is expected, but just to be sure.
 				if oldValue != nil {
 					out.Lock = (*oldValue).Lock
 				} else {
@@ -279,26 +279,25 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
+	// Wait until no source node is using the slice
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
 	defer cancel()
 
-	if !slice.Retry.Allowed(o.clock.Now()) {
-		return
-	}
-
 	if err := o.closeSyncer.WaitForRevision(ctx, slice.ModRevision); err != nil {
 		o.logger.Errorf(ctx, `error when waiting for slice closing: %s`)
+		// continue! we waited long enough, the wait mechanism is probably broken
 	}
 
+	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
 	err := o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
 	if err != nil {
-		o.logger.Errorf(dbCtx, "cannot switch slice to uploading state: %s", err.Error())
+		o.logger.Errorf(dbCtx, "cannot switch slice to the uploading state: %s", err.Error())
 
 		// Increment retry delay
-		err := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+		err = o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
 		if err != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
 			return

@@ -67,11 +67,12 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 		},
 		TargetStorage: targetModel.Target{
 			Import: target.ImportConfig{
-				MinInterval: duration.From(1 * time.Minute),
 				Trigger: target.ImportTrigger{
-					Count:    50000,
-					Size:     5 * datasize.MB,
-					Interval: duration.From(5 * time.Minute),
+					Count:       50000,
+					Size:        5 * datasize.MB,
+					Interval:    duration.From(5 * time.Minute),
+					SlicesCount: 100,
+					Expiration:  duration.From(30 * time.Minute),
 				},
 			},
 		},
