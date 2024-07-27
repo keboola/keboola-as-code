@@ -2,6 +2,7 @@ package model
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -9,6 +10,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testvalidation"
 )
+
+func TestRetryable_Allowed(t *testing.T) {
+	t.Parallel()
+
+	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+
+	v := Retryable{}
+	assert.True(t, v.Allowed(now))
+
+	timeInPast := utctime.From(now.Add(-time.Second))
+	v.RetryAttempt = 1
+	v.RetryAfter = &timeInPast
+	assert.True(t, v.Allowed(now))
+
+	timeInFuture := utctime.From(now.Add(time.Second))
+	v.RetryAttempt = 1
+	v.RetryAfter = &timeInFuture
+	assert.False(t, v.Allowed(now))
+}
 
 func TestRetryable_Validation(t *testing.T) {
 	t.Parallel()
