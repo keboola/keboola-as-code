@@ -16,6 +16,7 @@ import (
 )
 
 type fastHTTPContext struct {
+	ctx           context.Context
 	timestamp     time.Time
 	req           *fasthttp.RequestCtx
 	lock          sync.Mutex
@@ -28,15 +29,16 @@ type fastHTTPContext struct {
 	bodyMapErr    error
 }
 
-func FromFastHTTP(timestamp time.Time, req *fasthttp.RequestCtx) Context {
+func FromFastHTTP(ctx context.Context, timestamp time.Time, req *fasthttp.RequestCtx) Context {
 	return &fastHTTPContext{
+		ctx:       ctx,
 		timestamp: timestamp,
 		req:       req,
 	}
 }
 
 func (c *fastHTTPContext) Ctx() context.Context {
-	return c.req
+	return c.ctx
 }
 
 func (c *fastHTTPContext) Timestamp() time.Time {
