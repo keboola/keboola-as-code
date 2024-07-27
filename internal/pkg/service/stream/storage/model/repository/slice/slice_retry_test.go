@@ -98,7 +98,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 	{
 		var err error
 		clk.Add(time.Hour)
-		slice, err := sliceRepo.IncrementRetryAttempt(clk.Now(), sliceKey, "some reason 1").Do(ctx).ResultOrErr()
+		slice, err := sliceRepo.IncrementRetryAttempt(sliceKey, clk.Now(), "some reason 1").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploading, slice.State)
 		assert.Equal(t, 1, slice.RetryAttempt)
@@ -111,7 +111,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 		var err error
 		clk.Add(time.Hour)
 		etcdLogs.Reset()
-		slice, err := sliceRepo.IncrementRetryAttempt(clk.Now(), sliceKey, "some reason 2").Do(ctx).ResultOrErr()
+		slice, err := sliceRepo.IncrementRetryAttempt(sliceKey, clk.Now(), "some reason 2").Do(ctx).ResultOrErr()
 		rotateEtcdLogs = etcdLogs.String()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploading, slice.State)
