@@ -103,7 +103,13 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 		delete(c.writers, k)
 		c.writersLock.Unlock()
 
-		return err
+		if err != nil {
+			c.logger.Errorf(ctx, "cannot sync stats on writer close: %s, slice %q", err, k.String())
+			return err
+		}
+
+		c.logger.Debugf(ctx, "stats synced on writer close, slice %q", k.String())
+		return nil
 	})
 
 	// Periodically collect statistics and sync them to the database.
