@@ -23,6 +23,7 @@ import (
 	sourcerepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 )
 
 func TestSinkLimits_SinksPerBranch(t *testing.T) {
@@ -57,7 +58,7 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	txn := op.Txn(client)
 	ops := 0
 	for i := 1; i <= sinkrepo.MaxSinksPerSource; i++ {
-		sink := test.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: key.SinkID(fmt.Sprintf("my-sink-%d", i))})
+		sink := dummy.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: key.SinkID(fmt.Sprintf("my-sink-%d", i))})
 		sink.SetCreation(clk.Now(), by)
 		sink.IncrementVersion(sink, clk.Now(), by, "Create")
 		txn.Then(sinkSchema.Active().ByKey(sink.SinkKey).Put(client, sink))
@@ -77,7 +78,7 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	assert.Len(t, sinks, sinkrepo.MaxSinksPerSource)
 
 	// Exceed the limit
-	sink := test.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "over-maximum-count"})
+	sink := dummy.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "over-maximum-count"})
 	if err := sinkRepo.Create(&sink, clk.Now(), by, "Create description").Do(ctx).Err(); assert.Error(t, err) {
 		assert.Equal(t, "sink count limit reached in the source, the maximum is 100", err.Error())
 		serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
@@ -113,7 +114,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	require.NoError(t, repo.Source().Create(&source, clk.Now(), by, "Create").Do(ctx).Err())
 
 	// Create sink
-	sink := test.NewSink(sinkKey)
+	sink := dummy.NewSink(sinkKey)
 	require.NoError(t, sinkRepo.Create(&sink, clk.Now(), by, "create").Do(ctx).Err())
 
 	// Create versions up to maximum count

@@ -51,7 +51,6 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
@@ -60,6 +59,7 @@ import (
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 )
 
 type ctxKey string
@@ -154,5 +154,5 @@ type StorageReaderScope interface {
 type Mocked interface {
 	dependencies.Mocked
 	TestConfig() config.Config
-	TestSinkPipelineOpener() *pipeline.TestOpener
+	TestDummySinkController() *dummy.SinkController
 }

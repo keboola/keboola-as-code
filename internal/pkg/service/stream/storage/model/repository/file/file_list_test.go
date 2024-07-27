@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
@@ -66,7 +67,7 @@ func TestFileRepository_List(t *testing.T) {
 		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
-		sink := test.NewSinkWithLocalStorage(sinkKey)
+		sink := dummy.NewSinkWithLocalStorage(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 
@@ -217,9 +218,9 @@ func TestFileRepository_ListRecent(t *testing.T) {
 		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
 		source := test.NewSource(sourceKey)
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
-		sink1 := test.NewSinkWithLocalStorage(sinkKey1)
+		sink1 := dummy.NewSinkWithLocalStorage(sinkKey1)
 		require.NoError(t, defRepo.Sink().Create(&sink1, clk.Now(), by, "Create sink").Do(ctx).Err())
-		sink2 := test.NewSinkWithLocalStorage(sinkKey2)
+		sink2 := dummy.NewSinkWithLocalStorage(sinkKey2)
 		require.NoError(t, defRepo.Sink().Create(&sink2, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 

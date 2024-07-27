@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -75,7 +76,7 @@ func TestSinkRepository_Versions(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
-		version1 = test.NewSink(sinkKey)
+		version1 = dummy.NewSink(sinkKey)
 		require.NoError(t, repo.Create(&version1, now, by, "Create sink").Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(1), version1.Version.Number)
 	}

@@ -19,7 +19,6 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -147,7 +146,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Co
 	}
 
 	// Create service mocked dependencies
-	mock := &mocked{Mocked: commonMock, config: cfg, sinkPipelineOpener: pipeline.NewTestOpener()}
+	mock := &mocked{Mocked: commonMock, config: cfg, dummySinkController: dummy.NewController()}
 
 	backoff := model.NoRandomizationBackoff()
 	serviceScp, err := newServiceScope(mock, cfg, backoff)
@@ -156,7 +155,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Co
 	mock.DebugLogger().Truncate()
 	mock.MockedHTTPTransport().Reset()
 
-	dummy.RegisterDummySinkTypes(serviceScp.Plugins(), mock.TestSinkPipelineOpener())
+	mock.dummySinkController.RegisterDummySinkTypes(serviceScp.Plugins(), mock.TestDummySinkController())
 
 	return serviceScp, mock
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 )
 
 func TestSinkRepository_ExistsOrErr(t *testing.T) {
@@ -78,7 +79,7 @@ func TestSinkRepository_ExistsOrErr(t *testing.T) {
 	// Create sink
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		sink := test.NewSink(sinkKey)
+		sink := dummy.NewSink(sinkKey)
 		require.NoError(t, sinkRepo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
 	}
 
@@ -148,7 +149,7 @@ func TestSinkRepository_MustNotExists(t *testing.T) {
 	// Create sink
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		sink := test.NewSink(sinkKey)
+		sink := dummy.NewSink(sinkKey)
 		require.NoError(t, sinkRepo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
 	}
 

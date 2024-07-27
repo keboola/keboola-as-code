@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 )
 
 func NewSinkKey() key.SinkKey {
@@ -20,24 +19,6 @@ func NewSinkKey() key.SinkKey {
 			SourceID: "my-source",
 		},
 		SinkID: "my-sink",
-	}
-}
-
-func NewSink(k key.SinkKey) definition.Sink {
-	return definition.Sink{
-		SinkKey:     k,
-		Type:        dummy.SinkType,
-		Name:        "My Sink",
-		Description: "My Description",
-	}
-}
-
-func NewSinkWithLocalStorage(k key.SinkKey) definition.Sink {
-	return definition.Sink{
-		SinkKey:     k,
-		Type:        dummy.SinkTypeWithLocalStorage,
-		Name:        "My Sink",
-		Description: "My Description",
 	}
 }
 
