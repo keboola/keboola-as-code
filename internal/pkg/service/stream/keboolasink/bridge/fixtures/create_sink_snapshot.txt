@@ -91,7 +91,6 @@ storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
     },
     "expiration": "2000-01-01T02:00:00.000Z",
     "upload": {
-      "minInterval": "5s",
       "trigger": {
         "count": 10000,
         "size": "1MB",
@@ -102,13 +101,12 @@ storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
   "target": {
     "provider": "keboola",
     "import": {
-      "minInterval": "1m0s",
       "trigger": {
         "count": 50000,
         "size": "5MB",
         "interval": "5m0s",
         "slicesCount": 100,
-        "expiration": "30m"
+        "expiration": "30m0s"
       }
     }
   }
@@ -184,7 +182,6 @@ storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-
       }
     },
     "upload": {
-      "minInterval": "5s",
       "trigger": {
         "count": 10000,
         "size": "1MB",

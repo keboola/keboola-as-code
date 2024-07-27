@@ -63,7 +63,13 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 		},
 		StagingStorage: stagingModel.File{
 			Compression: compression.NewNoneConfig(),
-			Upload:      staging.NewConfig().Upload,
+			Upload: staging.UploadConfig{
+				Trigger: staging.UploadTrigger{
+					Count:    10000,
+					Size:     1 * datasize.MB,
+					Interval: duration.From(1 * time.Minute),
+				},
+			},
 		},
 		TargetStorage: targetModel.Target{
 			Import: target.ImportConfig{

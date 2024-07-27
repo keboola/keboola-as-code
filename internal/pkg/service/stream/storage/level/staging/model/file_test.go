@@ -19,7 +19,6 @@ func TestFile_Validation(t *testing.T) {
 - "provider" is a required field
 - "compression" is a required field
 - "expiration" is a required field
-- "upload.minInterval" is a required field
 - "upload.trigger.count" is a required field
 - "upload.trigger.size" is a required field
 - "upload.trigger.interval" is a required field

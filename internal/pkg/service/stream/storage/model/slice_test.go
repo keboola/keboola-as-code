@@ -191,7 +191,6 @@ func TestSlice_Validation(t *testing.T) {
 - "local.filenameExtension" is a required field
 - "staging.path" is a required field
 - "staging.compression.type" is a required field
-- "staging.upload.minInterval" is a required field
 - "staging.upload.trigger.count" is a required field
 - "staging.upload.trigger.size" is a required field
 - "staging.upload.trigger.interval" is a required field

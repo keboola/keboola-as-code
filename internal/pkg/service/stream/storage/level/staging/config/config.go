@@ -29,7 +29,6 @@ func NewConfig() Config {
 			SliceUploadTimeout:   duration.From(15 * time.Minute),
 		},
 		Upload: UploadConfig{
-			MinInterval: duration.From(5 * time.Second),
 			Trigger: UploadTrigger{
 				Count:    10000,
 				Size:     5 * datasize.MB,
@@ -48,8 +47,7 @@ type OperatorConfig struct {
 
 // UploadConfig configures the slice upload.
 type UploadConfig struct {
-	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Minimal interval between uploads." validate:"required,minDuration=1s,maxDuration=5m"`
-	Trigger     UploadTrigger     `json:"trigger" configKey:"trigger"`
+	Trigger UploadTrigger `json:"trigger" configKey:"trigger"`
 }
 
 // UploadConfigPatch is same as the UploadConfig, but with optional/nullable fields.

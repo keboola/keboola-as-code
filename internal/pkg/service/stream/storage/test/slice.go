@@ -73,7 +73,6 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 			Path:        "slice.csv",
 			Compression: compression.NewNoneConfig(),
 			Upload: staging.UploadConfig{
-				MinInterval: duration.From(5 * time.Second),
 				Trigger: staging.UploadTrigger{
 					Count:    10000,
 					Size:     1 * datasize.MB,
