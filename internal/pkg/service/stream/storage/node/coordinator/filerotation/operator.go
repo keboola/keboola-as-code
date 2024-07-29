@@ -245,6 +245,10 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 		return
 	}
 
+	if !file.Retry.Allowed(o.clock.Now()) {
+		return
+	}
+
 	switch file.State {
 	case model.FileWriting:
 		o.rotateFile(ctx, file)
@@ -259,12 +263,6 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration())
 	defer cancel()
 
-	now := o.clock.Now()
-
-	if !file.Retry.Allowed(now) {
-		return
-	}
-
 	// Get file statistics
 	stats, err := o.statistics.FileStats(ctx, file.FileKey)
 	if err != nil {
@@ -273,7 +271,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	}
 
 	// Check conditions
-	cause, ok := shouldImport(file.ImportTrigger, now, file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Local)
+	cause, ok := shouldImport(file.ImportTrigger, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Local)
 	if !ok {
 		o.logger.Debugf(ctx, "skipping file rotation: %s", cause)
 		return

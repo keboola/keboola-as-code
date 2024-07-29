@@ -210,6 +210,10 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
+	if !slice.Retry.Allowed(o.clock.Now()) {
+		return
+	}
+
 	switch slice.State {
 	case model.SliceWriting:
 		o.rotateSlice(ctx, slice)
@@ -225,10 +229,6 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	defer cancel()
 
 	now := o.clock.Now()
-
-	if !slice.Retry.Allowed(now) {
-		return
-	}
 
 	// Get slice statistics
 	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
