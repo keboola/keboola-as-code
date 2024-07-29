@@ -3,6 +3,7 @@ package router_test
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -92,7 +93,9 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	body := io.NopCloser(strings.NewReader(`{"foo":"bar"}`))
 	req := (&http.Request{Body: body}).WithContext(reqCtx)
 	result := sourceScp.SinkRouter().DispatchToSource(sourceKey, recordctx.FromHTTP(clk.Now(), req))
-	require.Empty(t, result.ErrorName, result.Message)
+	if !assert.Empty(t, result.ErrorName, result.Message) {
+		t.Log(json.MustEncodeString(result, true))
+	}
 	require.Equal(t, http.StatusOK, result.StatusCode, result.Message)
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
