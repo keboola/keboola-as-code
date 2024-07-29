@@ -13,6 +13,30 @@
   ➡️  THEN:
   001 ➡️  GET "definition/source/active/123/456/my-source"
 ✔️  TXN | succeeded: true
+➡️  TXN
+  ➡️  IF:
+  001 "lock/123/456/in.c-bucket.table/%s" CREATE EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "lock/123/456/in.c-bucket.table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+  ➡️  ELSE:
+  001 ➡️  GET "lock/123/456/in.c-bucket.table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+✔️  TXN | succeeded: true
+➡️  DEL "lock/123/456/in.c-bucket.table/%s"
+✔️  DEL "lock/123/456/in.c-bucket.table/%s" | count: 1
+➡️  TXN
+  ➡️  IF:
+  001 "lock/123/456/in.c-bucket.table/%s" CREATE EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "lock/123/456/in.c-bucket.table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+  ➡️  ELSE:
+  001 ➡️  GET "lock/123/456/in.c-bucket.table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+✔️  TXN | succeeded: true
+➡️  DEL "lock/123/456/in.c-bucket.table/%s"
+✔️  DEL "lock/123/456/in.c-bucket.table/%s" | count: 1
 
 // WRITE:
 ➡️  TXN
@@ -53,4 +77,11 @@
   002   ➡️  IF:
   002   001 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD EQUAL 0
 ✔️  TXN | succeeded: true
-
+➡️  TXN
+  ➡️  THEN:
+  001 ➡️  GET "definition/branch/active/123/456" | count only
+  002 ➡️  GET "definition/source/active/123/456/my-source" | count only
+  003 ➡️  GET "definition/sink/active/123/456/my-source/my-sink" | count only
+  004 ➡️  GET ["definition/sink/active/123/456/my-source/", "definition/sink/active/123/456/my-source0") | count only
+  005 ➡️  GET "definition/sink/deleted/123/456/my-source/my-sink"
+✔️  TXN | succeeded: true

@@ -9,6 +9,30 @@
   ➡️  THEN:
   001 ➡️  GET "definition/source/active/123/456/my-source"
 ✔️  TXN | succeeded: true
+➡️  TXN
+  ➡️  IF:
+  001 "lock/123/456/in.c-bucket.table/%s" CREATE EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "lock/123/456/in.c-bucket.table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+  ➡️  ELSE:
+  001 ➡️  GET "lock/123/456/in.c-bucket.table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+✔️  TXN | succeeded: true
+➡️  DEL "lock/123/456/in.c-bucket.table/%s"
+✔️  DEL "lock/123/456/in.c-bucket.table/%s" | count: 1
+➡️  TXN
+  ➡️  IF:
+  001 "lock/123/456/in.c-bucket.table/%s" CREATE EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "lock/123/456/in.c-bucket.table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+  ➡️  ELSE:
+  001 ➡️  GET "lock/123/456/in.c-bucket.table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+✔️  TXN | succeeded: true
+➡️  DEL "lock/123/456/in.c-bucket.table/%s"
+✔️  DEL "lock/123/456/in.c-bucket.table/%s" | count: 1
 
 // READ: the Storage API token
 ➡️  GET "storage/keboola/secret/token/123/456/my-source/my-sink"
