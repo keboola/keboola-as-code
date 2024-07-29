@@ -1,6 +1,8 @@
 package local
 
 import (
+	"slices"
+
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json/schema"
@@ -54,6 +56,9 @@ func generateContent(schemaDef []byte, defaultConfig *orderedmap.OrderedMap) (*o
 	finalContent := orderedmap.New()
 	// Use default configuration if defined in the component's metadata
 	if len(defaultConfig.Keys()) > 0 {
+		if slices.Contains(defaultConfig.Keys(), "parameters") {
+			return defaultConfig, nil
+		}
 		finalContent.Set("parameters", defaultConfig)
 		return finalContent, nil
 	}
