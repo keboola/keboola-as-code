@@ -31,7 +31,7 @@ echo
 
 # Run linters
 echo "Running golangci-lint ..."
-if golangci-lint run -c "./build/ci/golangci.yml" "$@"; then
+if golangci-lint run -j 8 --max-issues-per-linter 0  --max-same-issues 0 -c "./build/ci/golangci.yml" "$@"; then
     echo "Ok. The code looks good."
     echo
 else
