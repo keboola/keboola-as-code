@@ -20,6 +20,7 @@ import (
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
@@ -93,7 +94,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 		sink := test.NewKeboolaTableSink(sinkKey)
 		etcdLogs.Reset()
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(apiCtx).Err())
-		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(apiCtx).Err())
+		require.Error(t, errors.New("sink \"my-sink\" already exists in the source"), defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(apiCtx).Err())
 		createSinkEtcdLogs = etcdLogs.String()
 	}
 	{
