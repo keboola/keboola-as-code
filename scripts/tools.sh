@@ -95,5 +95,5 @@ fi
 
 if ! command -v protoc-gen-go-grpc &> /dev/null
 then
-  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.4.0
 fi
