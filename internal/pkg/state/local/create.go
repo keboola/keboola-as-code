@@ -51,11 +51,23 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 }
 
 func generateContent(schemaDef []byte, defaultConfig *orderedmap.OrderedMap) (*orderedmap.OrderedMap, error) {
+	finalContent := orderedmap.New()
 	// Use default configuration if defined in the component's metadata
 	if len(defaultConfig.Keys()) > 0 {
-		return defaultConfig, nil
+		finalContent.Set("parameters", defaultConfig)
+		return finalContent, nil
 	}
 
 	// Otherwise, generate configuration from the JSON schema
-	return schema.GenerateDocument(schemaDef)
+	content, err := schema.GenerateDocument(schemaDef)
+	if err != nil {
+		return nil, err
+	}
+
+	// wrap config content to parameters
+	// { "parameters":{...}
+	if content.Len() != 0 {
+		finalContent.Set("parameters", content)
+	}
+	return finalContent, nil
 }
