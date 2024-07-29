@@ -125,7 +125,7 @@ func createFile(ctx context.Context, d dependencies.RemoteCommandScope, f Flags,
 
 	defer file.Close()
 
-	b, err := json.MarshalIndent(output{NewBranchID: branch.ID}, "", "	")
+	b, err := json.MarshalIndent(output{NewBranchID: branch.ID}, "", "  ")
 	if err != nil {
 		return err
 	}
