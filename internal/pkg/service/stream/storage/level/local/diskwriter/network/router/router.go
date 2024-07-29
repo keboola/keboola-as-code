@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -115,7 +116,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 			func(key string, slice storage.Slice) string {
 				return slice.SliceKey.String()
 			},
-			func(key string, slice storage.Slice, oldValue **sliceData) *sliceData {
+			func(key string, slice storage.Slice, rawValue *op.KeyValue, oldValue **sliceData) *sliceData {
 				return &sliceData{
 					SliceKey:     slice.SliceKey,
 					State:        slice.State,

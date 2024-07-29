@@ -41,7 +41,7 @@ func TestMirrorMap(t *testing.T) {
 		func(key string, value testUser) testUserFullName {
 			return testUserFullName(value.FirstName + " " + value.LastName)
 		},
-		func(key string, value testUser, oldValue *int) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
@@ -141,7 +141,7 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 		func(key string, value testUser) testUserFullName {
 			return testUserFullName(value.FirstName + " " + value.LastName)
 		},
-		func(key string, value testUser, oldValue *int) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
@@ -232,7 +232,7 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		func(key string, value testUser) testUserFullName {
 			return testUserFullName(value.FirstName + " " + value.LastName)
 		},
-		func(key string, value testUser, oldValue *int) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")

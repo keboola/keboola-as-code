@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -62,7 +63,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 			func(key string, source definition.Source) string {
 				return sourceKey(source.SourceKey)
 			},
-			func(key string, source definition.Source, oldValue **sourceData) *sourceData {
+			func(key string, source definition.Source, rawValue *op.KeyValue, oldValue **sourceData) *sourceData {
 				return &sourceData{
 					sourceKey: source.SourceKey,
 					enabled:   source.IsEnabled(),

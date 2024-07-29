@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -25,7 +26,7 @@ type MirrorTree[T any, V any] struct {
 	stream    RestartableWatchStream[T]
 	filter    func(event WatchEvent[T]) bool
 	mapKey    func(key string, value T) string
-	mapValue  func(key string, value T, oldValue *V) V
+	mapValue  func(key string, value T, rawValue *op.KeyValue, oldValue *V) V
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[string, V])
 
@@ -38,7 +39,7 @@ type MirrorTreeSetup[T any, V any] struct {
 	stream    RestartableWatchStream[T]
 	filter    func(event WatchEvent[T]) bool
 	mapKey    func(key string, value T) string
-	mapValue  func(key string, value T, oldValue *V) V
+	mapValue  func(key string, value T, rawValue *op.KeyValue, oldValue *V) V
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[string, V])
 }
@@ -50,7 +51,7 @@ func SetupFullMirrorTree[T any](
 	mapKey := func(key string, value T) string {
 		return key
 	}
-	mapValue := func(key string, value T, _ *T) T {
+	mapValue := func(key string, value T, _ *op.KeyValue, _ *T) T {
 		return value
 	}
 	return SetupMirrorTree[T](stream, mapKey, mapValue)
@@ -59,7 +60,7 @@ func SetupFullMirrorTree[T any](
 func SetupMirrorTree[T any, V any](
 	stream RestartableWatchStream[T],
 	mapKey func(key string, value T) string,
-	mapValue func(key string, value T, oldValue *V) V, // oldValue is set only on the update event
+	mapValue func(key string, value T, rawValue *op.KeyValue, oldValue *V) V, // oldValue is set only on the update event
 ) MirrorTreeSetup[T, V] {
 	return MirrorTreeSetup[T, V]{
 		stream:   stream,
@@ -119,14 +120,14 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 							oldValuePtr = &oldValue
 						}
 
-						newValue := m.mapValue(event.Key, event.Value, oldValuePtr)
+						newValue := m.mapValue(event.Key, event.Value, event.Kv, oldValuePtr)
 
 						if len(m.onChanges) > 0 {
 							changes.Updated = append(changes.Updated, MirrorKVPair[string, V]{Key: newKey, Value: newValue})
 						}
 						t.Insert(newKey, newValue)
 					case CreateEvent:
-						newValue := m.mapValue(event.Key, event.Value, nil)
+						newValue := m.mapValue(event.Key, event.Value, event.Kv, nil)
 						if len(m.onChanges) > 0 {
 							changes.Created = append(changes.Created, MirrorKVPair[string, V]{Key: newKey, Value: newValue})
 						}
