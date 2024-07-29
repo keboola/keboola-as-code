@@ -24,7 +24,7 @@
           "columns": [
             {
               "primaryKey": true,
-              "type": "uuid-v7",
+              "type": "uuid",
               "name": "id"
             },
             {
