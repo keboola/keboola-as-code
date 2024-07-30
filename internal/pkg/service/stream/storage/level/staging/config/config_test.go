@@ -26,9 +26,10 @@ func TestConfig_Validation(t *testing.T) {
 		{
 			Name: "empty",
 			ExpectedError: `
-- "maxSlicesPerFile" is a required field
-- "parallelFileCreateLimit" is a required field
-- "upload.minInterval" is a required field
+- "operator.checkInterval" is a required field
+- "operator.sliceRotationTimeout" is a required field
+- "operator.sliceCloseTimeout" is a required field
+- "operator.sliceUploadTimeout" is a required field
 - "upload.trigger.count" is a required field
 - "upload.trigger.size" is a required field
 - "upload.trigger.interval" is a required field

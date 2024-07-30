@@ -15,10 +15,15 @@ import (
 )
 
 type balancedPipeline struct {
-	sinkKey   key.SinkKey
-	router    *Router
-	lock      sync.RWMutex
-	pipelines []SlicePipeline
+	sinkKey key.SinkKey
+	router  *Router
+
+	// updateLock protects open, update and close operations
+	updateLock sync.Mutex
+
+	// pipelinesLock protects reading and swapping of the sub pipelines
+	pipelinesLock sync.RWMutex
+	pipelines     []SlicePipeline
 }
 
 type readyNotifier struct {
@@ -44,11 +49,12 @@ func (n *readyNotifier) WaitCh() <-chan struct{} {
 	return n.ready
 }
 
-func newBalancedPipeline(ctx context.Context, router *Router, sinkKey key.SinkKey) (*balancedPipeline, error) {
+func openBalancedPipeline(ctx context.Context, router *Router, sinkKey key.SinkKey) (*balancedPipeline, error) {
 	p := &balancedPipeline{sinkKey: sinkKey, router: router}
-	if err := p.openCloseSlices(ctx, true); err != nil {
+	if err := p.update(ctx, true); err != nil {
 		return nil, err
 	}
+	router.registerPipeline(p)
 	return p, nil
 }
 
@@ -58,37 +64,22 @@ func (p *balancedPipeline) ReopenOnSinkModification() bool {
 }
 
 func (p *balancedPipeline) WriteRecord(c recordctx.Context) (pipeline.RecordStatus, error) {
-	p.lock.RLock()
-	defer p.lock.RUnlock()
+	p.pipelinesLock.RLock()
+	defer p.pipelinesLock.RUnlock()
 	return p.router.balancer.WriteRecord(c, p.pipelines)
 }
 
 func (p *balancedPipeline) Close(ctx context.Context) error {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
-	p.router.pipelinesLock.Lock()
-	delete(p.router.pipelines, p.sinkKey)
-	p.router.pipelinesLock.Unlock()
-
-	wg := &sync.WaitGroup{}
-	for _, pipeline := range p.pipelines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := pipeline.Close(ctx); err != nil {
-				p.router.logger.Errorf(ctx, "cannot close slice pipeline: %s", err)
-			}
-		}()
-	}
-	wg.Wait()
-
-	p.router.logger.Debugf(ctx, `closed balanced pipeline to %d slices, sink %q`, len(p.pipelines), p.sinkKey)
-	p.pipelines = nil
-	return nil
+	p.updateLock.Lock()
+	defer p.updateLock.Unlock()
+	return p.close(ctx)
 }
 
-func (p *balancedPipeline) openCloseSlices(ctx context.Context, isNew bool) error {
+// update reacts on slices changes - closes old pipelines and open new pipelines.
+func (p *balancedPipeline) update(ctx context.Context, isNew bool) error {
+	p.updateLock.Lock()
+	defer p.updateLock.Unlock()
+
 	// Assign part of all sink slices to the balanced pipeline.
 	// For each assigned slice, a sub pipeline is opened in the code bellow.
 	sinkSlices := p.router.sinkOpenedSlices(p.sinkKey)
@@ -106,12 +97,12 @@ func (p *balancedPipeline) openCloseSlices(ctx context.Context, isNew bool) erro
 	)
 
 	// Convert existing pipelines to a map
-	p.lock.RLock()
+	p.pipelinesLock.RLock()
 	existing := make(map[model.SliceKey]SlicePipeline)
 	for _, sub := range p.pipelines {
 		existing[sub.SliceKey()] = sub
 	}
-	p.lock.RUnlock()
+	p.pipelinesLock.RUnlock()
 
 	// Open pipelines for new slices
 	existingCount := 0
@@ -139,17 +130,17 @@ func (p *balancedPipeline) openCloseSlices(ctx context.Context, isNew bool) erro
 		}
 	}
 
-	// Swap pipelines
+	// Close balanced pipeline, if there is no sub pipeline at all
+	if len(pipelines) == 0 {
+		return p.close(ctx) // call close, but we already have the update lock
+	}
+
+	// Swap pipelines quickly, we do not block writes
 	var old []SlicePipeline
-	p.lock.Lock()
+	p.pipelinesLock.Lock()
 	old = p.pipelines
 	p.pipelines = pipelines
-	p.lock.Unlock()
-
-	// Close balanced pipeline, if there is no sub pipeline at all
-	if openedCount+existingCount == 0 {
-		return p.Close(ctx)
-	}
+	p.pipelinesLock.Unlock()
 
 	// Close old pipelines, replaced by new pipelines, if any
 	closedCount := 0
@@ -169,5 +160,28 @@ func (p *balancedPipeline) openCloseSlices(ctx context.Context, isNew bool) erro
 		}
 	}
 
+	return nil
+}
+
+func (p *balancedPipeline) close(ctx context.Context) error {
+	p.pipelinesLock.Lock()
+	defer p.pipelinesLock.Unlock()
+
+	p.router.unregisterPipeline(p)
+
+	wg := &sync.WaitGroup{}
+	for _, pipeline := range p.pipelines {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := pipeline.Close(ctx); err != nil {
+				p.router.logger.Errorf(ctx, "cannot close slice pipeline: %s", err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	p.router.logger.Debugf(ctx, `closed balanced pipeline to %d slices, sink %q`, len(p.pipelines), p.sinkKey)
+	p.pipelines = nil
 	return nil
 }

@@ -18,6 +18,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
@@ -91,7 +92,7 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 			func(key string, vol volume.Metadata) volume.ID {
 				return vol.ID
 			},
-			func(key string, vol volume.Metadata) *volumeData {
+			func(key string, vol volume.Metadata, rawValue *op.KeyValue, oldValue **volumeData) *volumeData {
 				return &volumeData{
 					ID: vol.ID,
 					Node: &nodeData{

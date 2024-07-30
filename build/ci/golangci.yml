@@ -34,6 +34,9 @@ linters-settings:
   dupl:
     threshold: 500
 
+  goconst:
+    ignore-strings: 'localhost'
+
   # Forbidden constructions
   forbidigo:
     # Instead of matching the literal source code, use real package name.

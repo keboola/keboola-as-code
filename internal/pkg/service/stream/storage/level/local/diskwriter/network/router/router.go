@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -89,30 +90,13 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 		cancel()
 		r.wg.Wait()
 
-		// Close pipelines
-		r.pipelinesLock.Lock()
-		wg := &sync.WaitGroup{}
-		for _, p := range r.pipelines {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-
-				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-				defer cancel()
-
-				if err := p.Close(ctx); err != nil {
-					r.logger.Errorf(ctx, "cannot close balanced pipeline: %s", err)
-				}
-			}()
-		}
-		r.pipelinesLock.Unlock()
-		wg.Wait()
+		r.closePipelines()
 
 		r.logger.Info(ctx, "closed storage router")
 	})
 
 	// Join a distribution group, it contains all source nodes of the same type
-	// See newBalancedPipeline and assignment.AssignSlices for more info.
+	// See openBalancedPipeline and assignment.AssignSlices for more info.
 	r.distribution, err = d.DistributionNode().Group("storage.router.sources." + sourceType)
 	if err != nil {
 		return nil, err
@@ -132,7 +116,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 			func(key string, slice storage.Slice) string {
 				return slice.SliceKey.String()
 			},
-			func(key string, slice storage.Slice) *sliceData {
+			func(key string, slice storage.Slice, rawValue *op.KeyValue, oldValue **sliceData) *sliceData {
 				return &sliceData{
 					SliceKey:     slice.SliceKey,
 					State:        slice.State,
@@ -173,34 +157,70 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 	return r, nil
 }
 
+func (r *Router) SinksCount() int {
+	return r.slices.Len()
+}
+
 func (r *Router) OpenPipeline(ctx context.Context, sinkKey key.SinkKey) (pipeline.Pipeline, error) {
-	p, err := newBalancedPipeline(ctx, r, sinkKey)
+	p, err := openBalancedPipeline(ctx, r, sinkKey)
 	if err != nil {
 		return nil, err
 	}
-	r.pipelinesLock.Lock()
-	r.pipelines[sinkKey] = p
-	r.pipelinesLock.Unlock()
+
 	return p, nil
 }
 
-func (r *Router) updatePipelines(ctx context.Context, modifiedSinks []key.SinkKey) {
+func (r *Router) registerPipeline(p *balancedPipeline) {
 	r.pipelinesLock.Lock()
 	defer r.pipelinesLock.Unlock()
+	r.pipelines[p.sinkKey] = p
+}
 
+func (r *Router) unregisterPipeline(p *balancedPipeline) {
+	r.pipelinesLock.Lock()
+	defer r.pipelinesLock.Unlock()
+	delete(p.router.pipelines, p.sinkKey)
+}
+
+func (r *Router) updatePipelines(ctx context.Context, modifiedSinks []key.SinkKey) {
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
+
+	r.pipelinesLock.Lock()
+	defer r.pipelinesLock.Unlock()
 
 	for _, sinkKey := range modifiedSinks {
 		if p := r.pipelines[sinkKey]; p != nil {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				if err := p.openCloseSlices(ctx, false); err != nil {
+				if err := p.update(ctx, false); err != nil {
 					r.logger.Errorf(ctx, `cannot update sink slices pipelines: %s, sink %q`, err, sinkKey)
 				}
 			}()
 		}
+	}
+}
+
+func (r *Router) closePipelines() {
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+
+	r.pipelinesLock.Lock()
+	defer r.pipelinesLock.Unlock()
+
+	for _, p := range r.pipelines {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			if err := p.Close(ctx); err != nil {
+				r.logger.Errorf(ctx, "cannot close balanced pipeline: %s", err)
+			}
+		}()
 	}
 }
 

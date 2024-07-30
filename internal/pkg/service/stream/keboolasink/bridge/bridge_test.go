@@ -7,17 +7,22 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	deps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/test"
+	staging "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
+	target "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -42,7 +47,21 @@ func TestBridge_FullWorkflow(t *testing.T) {
 	ignoredKeys := etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/volume/")
 
 	// Get services
-	d, mocked := dependencies.NewMockedStorageScope(t, deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedAPIScopeWithConfig(t, func(cfg *config.Config) {
+		// Lock configuration, so it is not affected by the default values
+		cfg.Storage.Level.Staging.Upload.Trigger = staging.UploadTrigger{
+			Count:    10000,
+			Size:     1 * datasize.MB,
+			Interval: duration.From(1 * time.Minute),
+		}
+		cfg.Storage.Level.Target.Import.Trigger = target.ImportTrigger{
+			Count:       50000,
+			Size:        5 * datasize.MB,
+			Interval:    duration.From(5 * time.Minute),
+			SlicesCount: 100,
+			Expiration:  duration.From(30 * time.Minute),
+		}
+	}, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()

@@ -1,15 +1,9 @@
 package model
 
 import (
-	"time"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
-)
-
-const (
-	DefaultFileExpiration = 24 * time.Hour
 )
 
 type File struct {

@@ -212,31 +212,45 @@ storage:
                     # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
                     relative: 110
         staging:
-            # Maximum number of slices in a file, a new file is created after reaching it. Validation rules: required,min=1,max=50000
-            maxSlicesPerFile: 100
-            # Maximum number of the Storage API file resources created in parallel within one operation. Validation rules: required,min=1,max=500
-            parallelFileCreateLimit: 50
+            operator:
+                # Upload triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s
+                checkInterval: 1s
+                # Timeout of the slice rotation operation. Validation rules: required,minDuration=30s,maxDuration=15m
+                sliceRotationTimeout: 5m0s
+                # Timeout of the slice close operation. Validation rules: required,minDuration=10s,maxDuration=10m
+                sliceCloseTimeout: 1m0s
+                # Timeout of the slice upload operation. Validation rules: required,minDuration=30s,maxDuration=60m
+                sliceUploadTimeout: 15m0s
             upload:
-                # Minimal interval between uploads. Validation rules: required,minDuration=1s,maxDuration=5m
-                minInterval: 5s
                 trigger:
                     # Records count to trigger slice upload. Validation rules: required,min=1,max=10000000
                     count: 10000
                     # Records size to trigger slice upload. Validation rules: required,minBytes=100B,maxBytes=50MB
-                    size: 1MB
+                    size: 5MB
                     # Duration from the last slice upload to trigger the next upload. Validation rules: required,minDuration=1s,maxDuration=30m
-                    interval: 1m0s
+                    interval: 5m0s
         target:
+            operator:
+                # Import triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s
+                checkInterval: 1s
+                # Timeout of the file rotation operation. Validation rules: required,minDuration=30s,maxDuration=15m
+                fileRotationTimeout: 5m0s
+                # Timeout of the file close operation. Validation rules: required,minDuration=10s,maxDuration=10m
+                fileCloseTimeout: 1m0s
+                # Timeout of the file import operation. Validation rules: required,minDuration=30s,maxDuration=60m
+                fileImportTimeout: 15m0s
             import:
-                # Minimal interval between imports. Validation rules: required,minDuration=30s,maxDuration=30m
-                minInterval: 1m0s
                 trigger:
                     # Records count to trigger file import. Validation rules: required,min=1,max=10000000
                     count: 50000
                     # Records size to trigger file import. Validation rules: required,minBytes=100B,maxBytes=500MB
-                    size: 5MB
+                    size: 50MB
                     # Duration from the last import to trigger the next import. Validation rules: required,minDuration=60s,maxDuration=24h
-                    interval: 5m0s
+                    interval: 15m0s
+                    # Number of slices in the file to trigger file import. Validation rules: required,min=1,max=50000
+                    slicesCount: 100
+                    # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
+                    expiration: 30m0s
 `), strings.TrimSpace(string(bytes)))
 
 	// Add missing values, and validate it
@@ -465,16 +479,6 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "required,min=1"
   },
   {
-    "key": "storage.level.staging.maxSlicesPerFile",
-    "type": "int",
-    "description": "Maximum number of slices in a file, a new file is created after reaching it.",
-    "value": 100,
-    "defaultValue": 100,
-    "overwritten": false,
-    "protected": true,
-    "validation": "required,min=1,max=50000"
-  },
-  {
     "key": "storage.level.staging.upload.trigger.count",
     "type": "uint64",
     "description": "Records count to trigger slice upload.",
@@ -488,8 +492,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.staging.upload.trigger.interval",
     "type": "string",
     "description": "Duration from the last slice upload to trigger the next upload.",
-    "value": "1m0s",
-    "defaultValue": "1m0s",
+    "value": "5m0s",
+    "defaultValue": "5m0s",
     "overwritten": false,
     "protected": false,
     "validation": "required,minDuration=1s,maxDuration=30m"
@@ -498,8 +502,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.staging.upload.trigger.size",
     "type": "string",
     "description": "Records size to trigger slice upload.",
-    "value": "1MB",
-    "defaultValue": "1MB",
+    "value": "5MB",
+    "defaultValue": "5MB",
     "overwritten": false,
     "protected": false,
     "validation": "required,minBytes=100B,maxBytes=50MB"
@@ -515,11 +519,21 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "validation": "required,min=1,max=10000000"
   },
   {
+    "key": "storage.level.target.import.trigger.expiration",
+    "type": "string",
+    "description": "Min remaining expiration to trigger file import.",
+    "value": "30m0s",
+    "defaultValue": "30m0s",
+    "overwritten": false,
+    "protected": true,
+    "validation": "required,minDuration=5m,maxDuration=45m"
+  },
+  {
     "key": "storage.level.target.import.trigger.interval",
     "type": "string",
     "description": "Duration from the last import to trigger the next import.",
-    "value": "5m0s",
-    "defaultValue": "5m0s",
+    "value": "15m0s",
+    "defaultValue": "15m0s",
     "overwritten": false,
     "protected": false,
     "validation": "required,minDuration=60s,maxDuration=24h"
@@ -528,11 +542,21 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.target.import.trigger.size",
     "type": "string",
     "description": "Records size to trigger file import.",
-    "value": "5MB",
-    "defaultValue": "5MB",
+    "value": "50MB",
+    "defaultValue": "50MB",
     "overwritten": false,
     "protected": false,
     "validation": "required,minBytes=100B,maxBytes=500MB"
+  },
+  {
+    "key": "storage.level.target.import.trigger.slicesCount",
+    "type": "int",
+    "description": "Number of slices in the file to trigger file import.",
+    "value": 100,
+    "defaultValue": 100,
+    "overwritten": false,
+    "protected": true,
+    "validation": "required,min=1,max=50000"
   }
 ]
 `), strings.TrimSpace(json.MustEncodeString(kvs, true)))

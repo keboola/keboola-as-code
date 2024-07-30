@@ -24,6 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -102,10 +103,10 @@ func TestStart(t *testing.T) {
 	f.source1B.HTTP.Secret = f.validSecret
 	f.source2Disabled = test.NewHTTPSource(key.SourceKey{BranchKey: f.branchAKey, SourceID: "my-source-2"})
 	f.source2Disabled.HTTP.Secret = f.validSecret
-	f.sink1A1 = test.NewSink(key.SinkKey{SourceKey: f.source1A.SourceKey, SinkID: "my-sink-1"})
-	f.sink1B1 = test.NewSink(key.SinkKey{SourceKey: f.source1B.SourceKey, SinkID: "my-sink-1"})
-	f.sink1A2Disabled = test.NewSink(key.SinkKey{SourceKey: f.source1A.SourceKey, SinkID: "my-sink-2"})
-	f.sink1B2Disabled = test.NewSink(key.SinkKey{SourceKey: f.source1B.SourceKey, SinkID: "my-sink-2"})
+	f.sink1A1 = dummy.NewSink(key.SinkKey{SourceKey: f.source1A.SourceKey, SinkID: "my-sink-1"})
+	f.sink1B1 = dummy.NewSink(key.SinkKey{SourceKey: f.source1B.SourceKey, SinkID: "my-sink-1"})
+	f.sink1A2Disabled = dummy.NewSink(key.SinkKey{SourceKey: f.source1A.SourceKey, SinkID: "my-sink-2"})
+	f.sink1B2Disabled = dummy.NewSink(key.SinkKey{SourceKey: f.source1B.SourceKey, SinkID: "my-sink-2"})
 	require.NoError(t, f.d.DefinitionRepository().Branch().Create(&f.branchA, f.clk.Now(), test.ByUser()).Do(f.ctx).Err())
 	require.NoError(t, f.d.DefinitionRepository().Branch().Create(&f.branchB, f.clk.Now(), test.ByUser()).Do(f.ctx).Err())
 	require.NoError(t, f.d.DefinitionRepository().Source().Create(&f.source1A, f.clk.Now(), test.ByUser(), "create").Do(f.ctx).Err())
@@ -244,8 +245,8 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				o := f.mock.TestSinkPipelineOpener()
-				o.OpenError = errors.New("some open error")
+				c := f.mock.TestDummySinkController()
+				c.PipelineOpenError = errors.New("some open error")
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + f.validSecret,
@@ -304,9 +305,9 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Prepare: func(t *testing.T) {
 				t.Helper()
 				f.clk.Add(10 * time.Second) // skip backoff delay for open pipeline operation
-				o := f.mock.TestSinkPipelineOpener()
-				o.OpenError = nil
-				o.WriteError = errors.New("some write error")
+				c := f.mock.TestDummySinkController()
+				c.PipelineOpenError = nil
+				c.PipelineWriteError = errors.New("some write error")
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + f.validSecret,
@@ -364,9 +365,9 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name: "stream input - POST - ok - accepted",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				o := f.mock.TestSinkPipelineOpener()
-				o.WriteError = nil
-				o.WriteRecordStatus = pipeline.RecordAccepted
+				c := f.mock.TestDummySinkController()
+				c.PipelineWriteError = nil
+				c.PipelineWriteRecordStatus = pipeline.RecordAccepted
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + f.validSecret,
@@ -381,9 +382,9 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name: "stream input - POST - ok - processed",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				o := f.mock.TestSinkPipelineOpener()
-				o.WriteError = nil
-				o.WriteRecordStatus = pipeline.RecordProcessed
+				c := f.mock.TestDummySinkController()
+				c.PipelineWriteError = nil
+				c.PipelineWriteRecordStatus = pipeline.RecordProcessed
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + f.validSecret,
@@ -398,9 +399,9 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name: "stream input - POST - ok - accepted - verbose",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				o := f.mock.TestSinkPipelineOpener()
-				o.WriteError = nil
-				o.WriteRecordStatus = pipeline.RecordAccepted
+				c := f.mock.TestDummySinkController()
+				c.PipelineWriteError = nil
+				c.PipelineWriteRecordStatus = pipeline.RecordAccepted
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + f.validSecret,
@@ -447,9 +448,9 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name: "stream input - POST - ok - processed - verbose",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				o := f.mock.TestSinkPipelineOpener()
-				o.WriteError = nil
-				o.WriteRecordStatus = pipeline.RecordProcessed
+				c := f.mock.TestDummySinkController()
+				c.PipelineWriteError = nil
+				c.PipelineWriteRecordStatus = pipeline.RecordProcessed
 			},
 			Method:             http.MethodPost,
 			Path:               "/stream/123/my-source-1/" + f.validSecret,

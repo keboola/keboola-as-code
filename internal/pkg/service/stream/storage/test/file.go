@@ -42,7 +42,6 @@ func NewFile() model.File {
 }
 
 func NewFileOpenedAt(openedAtStr string) model.File {
-	openedAt := utctime.MustParse(openedAtStr)
 	fileKey := NewFileKeyOpenedAt(openedAtStr)
 	return model.File{
 		FileKey: fileKey,
@@ -64,16 +63,22 @@ func NewFileOpenedAt(openedAtStr string) model.File {
 		},
 		StagingStorage: stagingModel.File{
 			Compression: compression.NewNoneConfig(),
-			Expiration:  utctime.From(openedAt.Time().Add(time.Hour)),
-			Upload:      staging.NewConfig().Upload,
+			Upload: staging.UploadConfig{
+				Trigger: staging.UploadTrigger{
+					Count:    10000,
+					Size:     1 * datasize.MB,
+					Interval: duration.From(1 * time.Minute),
+				},
+			},
 		},
 		TargetStorage: targetModel.Target{
 			Import: target.ImportConfig{
-				MinInterval: duration.From(1 * time.Minute),
 				Trigger: target.ImportTrigger{
-					Count:    50000,
-					Size:     5 * datasize.MB,
-					Interval: duration.From(5 * time.Minute),
+					Count:       50000,
+					Size:        5 * datasize.MB,
+					Interval:    duration.From(5 * time.Minute),
+					SlicesCount: 100,
+					Expiration:  duration.From(30 * time.Minute),
 				},
 			},
 		},

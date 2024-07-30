@@ -193,16 +193,6 @@
       "validation": "required,min=1"
     },
     {
-      "key": "storage.level.staging.maxSlicesPerFile",
-      "type": "int",
-      "description": "Maximum number of slices in a file, a new file is created after reaching it.",
-      "value": 100,
-      "defaultValue": 100,
-      "overwritten": false,
-      "protected": true,
-      "validation": "required,min=1,max=50000"
-    },
-    {
       "key": "storage.level.staging.upload.trigger.count",
       "type": "int",
       "description": "Records count to trigger slice upload.",
@@ -217,7 +207,7 @@
       "type": "string",
       "description": "Duration from the last slice upload to trigger the next upload.",
       "value": "45s",
-      "defaultValue": "1m0s",
+      "defaultValue": "5m0s",
       "overwritten": true,
       "protected": false,
       "validation": "required,minDuration=1s,maxDuration=30m"
@@ -227,7 +217,7 @@
       "type": "string",
       "description": "Records size to trigger slice upload.",
       "value": "12MB",
-      "defaultValue": "1MB",
+      "defaultValue": "5MB",
       "overwritten": true,
       "protected": false,
       "validation": "required,minBytes=100B,maxBytes=50MB"
@@ -243,11 +233,21 @@
       "validation": "required,min=1,max=10000000"
     },
     {
+      "key": "storage.level.target.import.trigger.expiration",
+      "type": "string",
+      "description": "Min remaining expiration to trigger file import.",
+      "value": "30m0s",
+      "defaultValue": "30m0s",
+      "overwritten": false,
+      "protected": true,
+      "validation": "required,minDuration=5m,maxDuration=45m"
+    },
+    {
       "key": "storage.level.target.import.trigger.interval",
       "type": "string",
       "description": "Duration from the last import to trigger the next import.",
-      "value": "5m0s",
-      "defaultValue": "5m0s",
+      "value": "15m0s",
+      "defaultValue": "15m0s",
       "overwritten": false,
       "protected": false,
       "validation": "required,minDuration=60s,maxDuration=24h"
@@ -256,11 +256,21 @@
       "key": "storage.level.target.import.trigger.size",
       "type": "string",
       "description": "Records size to trigger file import.",
-      "value": "5MB",
-      "defaultValue": "5MB",
+      "value": "50MB",
+      "defaultValue": "50MB",
       "overwritten": false,
       "protected": false,
       "validation": "required,minBytes=100B,maxBytes=500MB"
+    },
+    {
+      "key": "storage.level.target.import.trigger.slicesCount",
+      "type": "int",
+      "description": "Number of slices in the file to trigger file import.",
+      "value": 100,
+      "defaultValue": 100,
+      "overwritten": false,
+      "protected": true,
+      "validation": "required,min=1,max=50000"
     }
   ]
 }

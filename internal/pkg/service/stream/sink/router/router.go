@@ -230,6 +230,10 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	return result
 }
 
+func (r *Router) SourcesCount() int {
+	return r.collection.sourcesCount()
+}
+
 func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult {
 	status, err := r.pipelineRef(sink).writeRecord(c)
 	result := &SinkResult{

@@ -8,7 +8,7 @@ import (
 )
 
 type collection struct {
-	lock    sync.Mutex
+	lock    sync.RWMutex
 	sources map[key.SourceKey]*sourceData
 }
 
@@ -35,17 +35,23 @@ func (c *collection) reset() {
 	c.sources = make(map[key.SourceKey]*sourceData)
 }
 
+func (c *collection) sourcesCount() int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return len(c.sources)
+}
+
 func (c *collection) source(sourceKey key.SourceKey) (*sourceData, bool) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 
 	source, found := c.sources[sourceKey]
 	return source, found
 }
 
 func (c *collection) sink(sinkKey key.SinkKey) (*sinkData, bool) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 
 	source := c.sources[sinkKey.SourceKey]
 	if source == nil {

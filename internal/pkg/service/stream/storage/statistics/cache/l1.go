@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -51,7 +52,9 @@ func NewL1Cache(d dependencies) (*L1, error) {
 	// Mirror statistics from the database to the cache via etcd watcher
 	stream := c.repository.GetAllAndWatch(ctx)
 	mapKey := func(key string, stats statistics.Value) string { return key }
-	mapValue := func(key string, stats statistics.Value) statistics.Value { return stats }
+	mapValue := func(key string, stats statistics.Value, rawValue *op.KeyValue, oldValue *statistics.Value) statistics.Value {
+		return stats
+	}
 	mirror := etcdop.SetupMirrorTree[statistics.Value](stream, mapKey, mapValue).BuildMirror()
 	if err := <-mirror.StartMirroring(ctx, wg, c.logger); err == nil {
 		c.cache = mirror

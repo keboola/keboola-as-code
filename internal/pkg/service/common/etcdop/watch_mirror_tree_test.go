@@ -47,7 +47,7 @@ func TestMirrorTree(t *testing.T) {
 	mirror := SetupMirrorTree[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(key string, value testUser) string { return value.FirstName + " " + value.LastName },
-		func(key string, value testUser) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
@@ -145,7 +145,7 @@ func TestMirrorTree_WithOnUpdate(t *testing.T) {
 	mirror := SetupMirrorTree[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(key string, value testUser) string { return value.FirstName + " " + value.LastName },
-		func(key string, value testUser) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
@@ -234,7 +234,7 @@ func TestMirrorTree_WithOnChanges(t *testing.T) {
 	mirror := SetupMirrorTree[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(key string, value testUser) string { return value.FirstName + " " + value.LastName },
-		func(key string, value testUser) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")

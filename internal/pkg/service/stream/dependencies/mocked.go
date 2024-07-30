@@ -12,23 +12,23 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 )
 
 // mocked implements Mocked interface.
 type mocked struct {
 	dependencies.Mocked
-	config             config.Config
-	sinkPipelineOpener *pipeline.TestOpener
+	config              config.Config
+	dummySinkController *dummy.SinkController
 }
 
 func (v *mocked) TestConfig() config.Config {
 	return v.config
 }
 
-func (v *mocked) TestSinkPipelineOpener() *pipeline.TestOpener {
-	return v.sinkPipelineOpener
+func (v *mocked) TestDummySinkController() *dummy.SinkController {
+	return v.dummySinkController
 }
 
 func testConfig(tb testing.TB, d dependencies.Mocked) config.Config {

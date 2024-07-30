@@ -4,14 +4,13 @@ import (
 	"context"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/valyala/fasthttp"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -64,7 +63,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 			func(key string, source definition.Source) string {
 				return sourceKey(source.SourceKey)
 			},
-			func(key string, source definition.Source) *sourceData {
+			func(key string, source definition.Source, rawValue *op.KeyValue, oldValue **sourceData) *sourceData {
 				return &sourceData{
 					sourceKey: source.SourceKey,
 					enabled:   source.IsEnabled(),
@@ -84,7 +83,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 	return dp, nil
 }
 
-func (d *Dispatcher) Dispatch(timestamp time.Time, projectID keboola.ProjectID, sourceID key.SourceID, secret string, c *fasthttp.RequestCtx) (*sinkRouter.SourcesResult, error) {
+func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID, secret string, c recordctx.Context) (*sinkRouter.SourcesResult, error) {
 	d.wg.Add(1)
 	defer d.wg.Done()
 
@@ -118,7 +117,7 @@ func (d *Dispatcher) Dispatch(timestamp time.Time, projectID keboola.ProjectID, 
 		}
 	}
 
-	return d.sinkRouter.DispatchToSources(matchedSources, recordctx.FromFastHTTP(timestamp, c)), nil
+	return d.sinkRouter.DispatchToSources(matchedSources, c), nil
 }
 
 func (d *Dispatcher) Close(ctx context.Context) error {

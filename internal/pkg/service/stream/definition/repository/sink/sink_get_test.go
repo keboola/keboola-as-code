@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 )
 
 func TestSinkRepository_Get(t *testing.T) {
@@ -52,7 +53,7 @@ func TestSinkRepository_Get(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
-		sink = test.NewSink(sinkKey)
+		sink = dummy.NewSink(sinkKey)
 		require.NoError(t, repo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
 	}
 
@@ -101,7 +102,7 @@ func TestSinkRepository_GetDeleted(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
-		sink = test.NewSink(sinkKey)
+		sink = dummy.NewSink(sinkKey)
 		require.NoError(t, repo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
 	}
 

@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -59,7 +60,7 @@ func TestSinkRepository_Enable(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
-		sink := test.NewSink(sinkKey)
+		sink := dummy.NewSink(sinkKey)
 		require.NoError(t, repo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
 		assert.Equal(t, definition.VersionNumber(1), sink.VersionNumber())
 	}
@@ -154,11 +155,11 @@ func TestSinkRepository_EnableSinksOnBranchEnable(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var sink1, sink2, sink3 definition.Sink
 	{
-		sink1 = test.NewSink(sinkKey1)
+		sink1 = dummy.NewSink(sinkKey1)
 		require.NoError(t, repo.Create(&sink1, now, by, "Create sink").Do(ctx).Err())
-		sink2 = test.NewSink(sinkKey2)
+		sink2 = dummy.NewSink(sinkKey2)
 		require.NoError(t, repo.Create(&sink2, now, by, "Create sink").Do(ctx).Err())
-		sink3 = test.NewSink(sinkKey3)
+		sink3 = dummy.NewSink(sinkKey3)
 		require.NoError(t, repo.Create(&sink3, now, by, "Create sink").Do(ctx).Err())
 	}
 
@@ -235,11 +236,11 @@ func TestSinkRepository_EnableSinksOnSourceEnable(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var sink1, sink2, sink3 definition.Sink
 	{
-		sink1 = test.NewSink(sinkKey1)
+		sink1 = dummy.NewSink(sinkKey1)
 		require.NoError(t, repo.Create(&sink1, now, by, "Create sink").Do(ctx).Err())
-		sink2 = test.NewSink(sinkKey2)
+		sink2 = dummy.NewSink(sinkKey2)
 		require.NoError(t, repo.Create(&sink2, now, by, "Create sink").Do(ctx).Err())
-		sink3 = test.NewSink(sinkKey3)
+		sink3 = dummy.NewSink(sinkKey3)
 		require.NoError(t, repo.Create(&sink3, now, by, "Create sink").Do(ctx).Err())
 	}
 

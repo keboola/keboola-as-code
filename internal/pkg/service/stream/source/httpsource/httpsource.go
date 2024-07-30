@@ -18,8 +18,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/httpsource/dispatcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -67,7 +69,6 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	}
 
 	// Route import requests to the dispatcher
-	clk := d.Clock()
 	router.Post("/stream/<projectID>/<sourceID>/<secret>", func(c *routing.Context) error {
 		// Get parameters
 		projectIDStr := c.Param("projectID")
@@ -79,8 +80,12 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		sourceID := key.SourceID(c.Param("sourceID"))
 		secret := c.Param("secret")
 
+		// Create record context
+		ctx := telemetry.ContextWithDisabledTracing(ctx) // disable spans in the hot path
+		recordCtx := recordctx.FromFastHTTP(ctx, d.Clock().Now(), c.RequestCtx)
+
 		// Dispatch request to all sinks
-		result, err := dp.Dispatch(clk.Now(), keboola.ProjectID(projectIDInt), sourceID, secret, c.RequestCtx)
+		result, err := dp.Dispatch(keboola.ProjectID(projectIDInt), sourceID, secret, recordCtx)
 		if err != nil {
 			errorHandler(c.RequestCtx, err)
 			return nil //nolint:nilerr

@@ -42,14 +42,13 @@ func (s *service) CreateSink(ctx context.Context, d dependencies.SourceRequestSc
 		ObjectKey: sink.SinkKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Lock: create only one sink per source at a time
-			lockName := fmt.Sprintf("api.source.create.sink.%s", sink.SourceKey)
-			lock := s.locks.NewMutex(lockName)
+			lock := s.locks.NewMutex(fmt.Sprintf("api.source.create.sink.%s", sink.SourceKey))
 			if err := lock.Lock(ctx); err != nil {
 				return task.ErrResult(err)
 			}
 			defer func() {
 				if err := lock.Unlock(ctx); err != nil {
-					s.logger.Warnf(ctx, "cannot unlock lock %q: %s", lockName, err)
+					s.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
 				}
 			}()
 

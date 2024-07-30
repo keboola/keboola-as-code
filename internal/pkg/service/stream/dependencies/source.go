@@ -49,6 +49,10 @@ func (v *sourceScope) SinkRouter() *sinkRouter.Router {
 	return v.sinkRouter
 }
 
+func (v *sourceScope) StorageRouter() *storageRouter.Router {
+	return v.storageRouter
+}
+
 func NewSourceScope(serviceScp ServiceScope, distScp dependencies.DistributionScope, sourceType string, cfg config.Config) (v SourceScope, err error) {
 	return newSourceScope(sourceParentScopesImpl{
 		ServiceScope:      serviceScp,

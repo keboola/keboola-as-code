@@ -21,6 +21,10 @@ func CompareJSONMessages(expected string, actual string) error {
 
 	for expectedScanner.Scan() {
 		expectedMessage := expectedScanner.Text()
+		if strings.TrimSpace(expectedMessage) == "" {
+			continue
+		}
+
 		expectedMessageData, err := decodeMessage(expectedMessage, "expected")
 		if err != nil {
 			return err

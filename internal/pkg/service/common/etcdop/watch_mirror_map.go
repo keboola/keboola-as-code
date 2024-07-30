@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -23,7 +24,7 @@ type MirrorMap[T any, K comparable, V any] struct {
 	stream    RestartableWatchStream[T]
 	filter    func(event WatchEvent[T]) bool
 	mapKey    func(key string, value T) K
-	mapValue  func(key string, value T) V
+	mapValue  func(key string, value T, rawValue *op.KeyValue, oldValue *V) V
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[K, V])
 
@@ -37,7 +38,7 @@ type MirrorMapSetup[T any, K comparable, V any] struct {
 	stream    RestartableWatchStream[T]
 	filter    func(event WatchEvent[T]) bool
 	mapKey    func(key string, value T) K
-	mapValue  func(key string, value T) V
+	mapValue  func(key string, value T, rawValue *op.KeyValue, oldValue *V) V
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[K, V])
 }
@@ -45,7 +46,7 @@ type MirrorMapSetup[T any, K comparable, V any] struct {
 func SetupMirrorMap[T any, K comparable, V any](
 	stream RestartableWatchStream[T],
 	mapKey func(key string, value T) K,
-	mapValue func(key string, value T) V,
+	mapValue func(key string, value T, rawValue *op.KeyValue, oldValue *V) V, // oldValue is set only on the update event
 ) MirrorMapSetup[T, K, V] {
 	return MirrorMapSetup[T, K, V]{
 		stream:   stream,
@@ -98,18 +99,23 @@ func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGr
 
 				switch event.Type {
 				case UpdateEvent:
-					if event.PrevValue != nil {
-						if oldKey != newKey {
-							delete(m.mapData, oldKey)
-						}
+					if oldKey != newKey {
+						delete(m.mapData, oldKey)
 					}
-					newValue := m.mapValue(event.Key, event.Value)
+
+					var oldValuePtr *V
+					if oldValue, found := m.mapData[oldKey]; found {
+						oldValuePtr = &oldValue
+					}
+
+					newValue := m.mapValue(event.Key, event.Value, event.Kv, oldValuePtr)
+
 					if len(m.onChanges) > 0 {
 						changes.Updated = append(changes.Updated, MirrorKVPair[K, V]{Key: newKey, Value: newValue})
 					}
 					m.mapData[newKey] = newValue
 				case CreateEvent:
-					newValue := m.mapValue(event.Key, event.Value)
+					newValue := m.mapValue(event.Key, event.Value, event.Kv, nil)
 					if len(m.onChanges) > 0 {
 						changes.Created = append(changes.Created, MirrorKVPair[K, V]{Key: newKey, Value: newValue})
 					}

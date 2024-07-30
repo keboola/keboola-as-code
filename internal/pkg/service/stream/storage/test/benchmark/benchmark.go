@@ -2,10 +2,8 @@ package benchmark
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -17,24 +15,21 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
-	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testnode"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -54,6 +49,8 @@ type WriterBenchmark struct {
 	latencySum   *atomic.Float64
 	latencyCount *atomic.Int64
 
+	apiNode        dependencies.APIScope
+	apiNodeMock    dependencies.Mocked
 	sourceNode     dependencies.SourceScope
 	sourceNodeMock dependencies.Mocked
 	writerNode     dependencies.StorageWriterScope
@@ -68,56 +65,51 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	wb.logger = log.NewDebugLogger()
-	wb.logger.ConnectTo(testhelper.VerboseStdout())
+	// Create debug logger
+	if testhelper.TestIsVerbose() {
+		wb.logger = log.NewDebugLogger()
+		wb.logger.ConnectTo(testhelper.VerboseStdout())
+	} else {
+		wb.logger = log.NewDebugLoggerWithoutDebugLevel()
+	}
+
 	wb.failedCount = atomic.NewInt64(0)
 	wb.latencySum = atomic.NewFloat64(0)
 	wb.latencyCount = atomic.NewInt64(0)
 	etcdCfg := etcdhelper.TmpNamespace(b)
 
-	// Create volume directory, with volume ID file
-	volumeID := volume.ID("my-volume")
-	volumesPath := b.TempDir()
-	volumePath := filepath.Join(volumesPath, "hdd", "001")
-	require.NoError(b, os.MkdirAll(volumePath, 0o700))
-	require.NoError(b, os.WriteFile(filepath.Join(volumePath, volume.IDFile), []byte(volumeID), 0o600))
-
 	// Start nodes
 	wb.startNodes(b, etcdCfg)
 	sinkRouter := wb.sourceNode.SinkRouter()
+	storageRouter := wb.sourceNode.StorageRouter()
 
 	// Create resource in an API node
-	apiScp, apiMock := wb.startAPINode(b, etcdCfg)
-	apiCtx := context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, apiMock.KeboolaProjectAPI())
-	apiCtx = rollback.ContextWith(apiCtx, rollback.New(apiScp.Logger()))
-	transport := apiMock.MockedHTTPTransport()
-	bridgeTest.MockTokenStorageAPICalls(b, transport)
-	bridgeTest.MockBucketStorageAPICalls(b, transport)
-	bridgeTest.MockTableStorageAPICalls(b, transport)
-	bridgeTest.MockFileStorageAPICalls(b, apiMock.Clock(), transport)
+	apiCtx := context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, wb.apiNodeMock.KeboolaProjectAPI())
+	apiCtx = rollback.ContextWith(apiCtx, rollback.New(wb.apiNode.Logger()))
+	wb.apiNodeMock.TestDummySinkController().FileMapping = table.Mapping{Columns: wb.Columns}
 	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
 	branch := test.NewBranch(branchKey)
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	source := test.NewHTTPSource(sourceKey)
 	source.HTTP.Secret = strings.Repeat("1", 48)
-	sink := test.NewKeboolaTableSink(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
-	sink.Table.Mapping = table.Mapping{Columns: wb.Columns}
-	require.NoError(b, apiScp.DefinitionRepository().Branch().Create(&branch, apiScp.Clock().Now(), test.ByUser()).Do(apiCtx).Err())
-	require.NoError(b, apiScp.DefinitionRepository().Source().Create(&source, apiScp.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
-	require.NoError(b, apiScp.DefinitionRepository().Sink().Create(&sink, apiScp.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
+	sink := dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
+	require.NoError(b, wb.apiNode.DefinitionRepository().Branch().Create(&branch, wb.apiNode.Clock().Now(), test.ByUser()).Do(apiCtx).Err())
+	require.NoError(b, wb.apiNode.DefinitionRepository().Source().Create(&source, wb.apiNode.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
+	require.NoError(b, wb.apiNode.DefinitionRepository().Sink().Create(&sink, wb.apiNode.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
 
 	// Load created slice
-	slices, err := apiScp.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	slices, err := wb.apiNode.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
 	require.NoError(b, err)
 	require.Len(b, slices, 1)
 	slice := slices[0]
-	filePath := slice.LocalStorage.FileName(volumePath, wb.sourceNodeMock.TestConfig().NodeID)
+	vol, err := wb.writerNode.Volumes().Collection().Volume("my-volume-001")
+	require.NoError(b, err)
+	filePath := slice.LocalStorage.FileName(vol.Path(), wb.sourceNodeMock.TestConfig().NodeID)
 
-	// Wait for pipeline initialization
+	// Wait for initialization
 	assert.EventuallyWithT(b, func(c *assert.CollectT) {
-		// Messages order can be random
-		wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %s","component":"sink.router"}`)
-		wb.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %s","component":"storage.router"}`)
+		assert.Equal(c, 1, sinkRouter.SourcesCount())
+		assert.Equal(c, 1, storageRouter.SinksCount())
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Create data channel
@@ -167,6 +159,15 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// There should be no failed write
 	assert.Equal(b, int64(0), wb.failedCount.Load(), "failed writes")
 
+	// Disable sink to force close the pipeline
+	require.NoError(b, wb.apiNode.DefinitionRepository().Sink().Disable(sink.SinkKey, wb.apiNode.Clock().Now(), test.ByUser(), "reason").Do(apiCtx).Err())
+	assert.EventuallyWithT(b, func(c *assert.CollectT) {
+		wb.logger.AssertJSONMessages(c, `{"level":"info","message":"closed sink pipeline \"%s\": sink disabled","component":"sink.router"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Get statistics
+	sliceStats, statsErr := wb.apiNode.StatisticsRepository().SliceStats(ctx, slice.SliceKey)
+
 	// Shutdown nodes
 	wb.shutdownNodes(b, ctx)
 
@@ -182,8 +183,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	assert.NoError(b, f.Close())
 
 	// Check statistics
-	sliceStats, err := apiScp.StatisticsRepository().SliceStats(ctx, slice.SliceKey)
-	if assert.NoError(b, err) {
+	if assert.NoError(b, statsErr) {
 		assert.Equal(b, int(sliceStats.Total.RecordsCount), b.N, "records count doesn't match")
 		assert.Equal(b, int64(sliceStats.Total.CompressedSize.Bytes()), fileStat.Size(), "compressed file size doesn't match")
 	}
@@ -195,10 +195,6 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	b.ReportMetric(sliceStats.Total.CompressedSize.MBytes()/duration.Seconds(), "out_MB/s")
 	b.ReportMetric(float64(sliceStats.Total.UncompressedSize)/float64(sliceStats.Total.CompressedSize), "ratio")
 
-	// Shutdown API node
-	apiScp.Process().Shutdown(ctx, errors.New("bye bye API"))
-	apiScp.Process().WaitForShutdown()
-
 	// No error should be logged
 	wb.logger.AssertJSONMessages(b, "")
 }
@@ -208,10 +204,8 @@ func (wb *WriterBenchmark) startNodes(b *testing.B, etcdCfg etcdclient.Config) {
 
 	wb.logger.Truncate()
 
-	// Start disk in node
+	wb.startAPINode(b, etcdCfg)
 	wb.startWriterNode(b, etcdCfg)
-
-	// Start source node
 	wb.startSourceNode(b, etcdCfg)
 
 	// Wait for connection between nodes
@@ -223,28 +217,22 @@ func (wb *WriterBenchmark) startNodes(b *testing.B, etcdCfg etcdclient.Config) {
 func (wb *WriterBenchmark) shutdownNodes(b *testing.B, ctx context.Context) {
 	b.Helper()
 
-	// Close source node
+	// Shutdown API node
+	wb.apiNode.Process().Shutdown(ctx, errors.New("bye bye API"))
+	wb.apiNode.Process().WaitForShutdown()
+
+	// Shutdown source node
 	wb.sourceNode.Process().Shutdown(ctx, errors.New("bye bye source"))
 	wb.sourceNode.Process().WaitForShutdown()
 
-	// Close disk writer node
+	// Shutdown disk writer node
 	wb.writerNode.Process().Shutdown(ctx, errors.New("bye bye disk writer"))
 	wb.writerNode.Process().WaitForShutdown()
 }
 
-func (wb *WriterBenchmark) startAPINode(b *testing.B, etcdCfg etcdclient.Config) (dependencies.APIScope, dependencies.Mocked) {
+func (wb *WriterBenchmark) startAPINode(b *testing.B, etcdCfg etcdclient.Config) {
 	b.Helper()
-
-	return dependencies.NewMockedAPIScopeWithConfig(
-		b,
-		func(cfg *config.Config) {
-			wb.updateServiceConfig(cfg)
-			cfg.NodeID = "api"
-			cfg.API.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(b))
-		},
-		commonDeps.WithDebugLogger(wb.logger),
-		commonDeps.WithEtcdConfig(etcdCfg),
-	)
+	wb.apiNode, wb.apiNodeMock = testnode.StartAPINode(b, wb.logger, etcdCfg, wb.updateServiceConfig)
 }
 
 func (wb *WriterBenchmark) startSourceNode(b *testing.B, etcdCfg etcdclient.Config) {

@@ -10,37 +10,44 @@ import (
 
 // Config configures for the staging storage.
 type Config struct {
-	MaxSlicesPerFile        int          `configKey:"maxSlicesPerFile" configUsage:"Maximum number of slices in a file, a new file is created after reaching it." validate:"required,min=1,max=50000"`
-	ParallelFileCreateLimit int          `configKey:"parallelFileCreateLimit" configUsage:"Maximum number of the Storage API file resources created in parallel within one operation." validate:"required,min=1,max=500"`
-	Upload                  UploadConfig `configKey:"upload"`
+	Operator OperatorConfig `configKey:"operator"`
+	Upload   UploadConfig   `configKey:"upload"`
 }
 
 // ConfigPatch is same as the Config, but with optional/nullable fields.
 // It may be part of a Sink definition to allow modification of the default configuration.
 type ConfigPatch struct {
-	MaxSlicesPerFile *int               `json:"maxSlicesPerFile,omitempty"`
-	Upload           *UploadConfigPatch `json:"upload,omitempty"`
+	Upload *UploadConfigPatch `json:"upload,omitempty"`
 }
 
 func NewConfig() Config {
 	return Config{
-		MaxSlicesPerFile:        100,
-		ParallelFileCreateLimit: 50,
+		Operator: OperatorConfig{
+			CheckInterval:        duration.From(1 * time.Second),
+			SliceRotationTimeout: duration.From(5 * time.Minute),
+			SliceCloseTimeout:    duration.From(1 * time.Minute),
+			SliceUploadTimeout:   duration.From(15 * time.Minute),
+		},
 		Upload: UploadConfig{
-			MinInterval: duration.From(5 * time.Second),
 			Trigger: UploadTrigger{
 				Count:    10000,
-				Size:     1 * datasize.MB,
-				Interval: duration.From(1 * time.Minute),
+				Size:     5 * datasize.MB,
+				Interval: duration.From(5 * time.Minute),
 			},
 		},
 	}
 }
 
+type OperatorConfig struct {
+	CheckInterval        duration.Duration `json:"checkInterval" configKey:"checkInterval" configUsage:"Upload triggers check interval." validate:"required,minDuration=100ms,maxDuration=30s"`
+	SliceRotationTimeout duration.Duration `json:"sliceRotationTimeout" configKey:"sliceRotationTimeout" configUsage:"Timeout of the slice rotation operation." validate:"required,minDuration=30s,maxDuration=15m"`
+	SliceCloseTimeout    duration.Duration `json:"sliceCloseTimeout" configKey:"sliceCloseTimeout" configUsage:"Timeout of the slice close operation." validate:"required,minDuration=10s,maxDuration=10m"`
+	SliceUploadTimeout   duration.Duration `json:"sliceUploadTimeout" configKey:"sliceUploadTimeout" configUsage:"Timeout of the slice upload operation." validate:"required,minDuration=30s,maxDuration=60m"`
+}
+
 // UploadConfig configures the slice upload.
 type UploadConfig struct {
-	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Minimal interval between uploads." validate:"required,minDuration=1s,maxDuration=5m"`
-	Trigger     UploadTrigger     `json:"trigger" configKey:"trigger"`
+	Trigger UploadTrigger `json:"trigger" configKey:"trigger"`
 }
 
 // UploadConfigPatch is same as the UploadConfig, but with optional/nullable fields.

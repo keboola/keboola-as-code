@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -39,7 +40,7 @@ func TestSinkRepository_Create(t *testing.T) {
 	// Create - parent not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		sink := test.NewSink(sinkKey)
+		sink := dummy.NewSink(sinkKey)
 		if err := repo.Create(&sink, now, by, "Create sink").Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
@@ -55,7 +56,7 @@ func TestSinkRepository_Create(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
-		sink := test.NewSink(sinkKey)
+		sink := dummy.NewSink(sinkKey)
 		result, err := repo.Create(&sink, now, by, "Create sink").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, sink, result)
@@ -73,7 +74,7 @@ func TestSinkRepository_Create(t *testing.T) {
 	// Create - already exists
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		sink := test.NewSink(sinkKey)
+		sink := dummy.NewSink(sinkKey)
 		if err := repo.Create(&sink, now, by, "Create sink").Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `sink "my-sink" already exists in the source`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
@@ -89,7 +90,7 @@ func TestSinkRepository_Create(t *testing.T) {
 	// Create - ok, undeleted
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		sink := test.NewSink(sinkKey)
+		sink := dummy.NewSink(sinkKey)
 		result, err := repo.Create(&sink, now.Add(time.Hour), by, "Create sink").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, sink, result)

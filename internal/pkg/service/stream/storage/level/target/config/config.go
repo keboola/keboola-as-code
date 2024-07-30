@@ -10,7 +10,8 @@ import (
 
 // Config configures the target storage.
 type Config struct {
-	Import ImportConfig `configKey:"import"`
+	Operator OperatorConfig `configKey:"operator"`
+	Import   ImportConfig   `configKey:"import"`
 }
 
 // ConfigPatch is same as the Config, but with optional/nullable fields.
@@ -21,21 +22,34 @@ type ConfigPatch struct {
 
 func NewConfig() Config {
 	return Config{
+		Operator: OperatorConfig{
+			CheckInterval:       duration.From(1 * time.Second),
+			FileRotationTimeout: duration.From(5 * time.Minute),
+			FileCloseTimeout:    duration.From(1 * time.Minute),
+			FileImportTimeout:   duration.From(15 * time.Minute),
+		},
 		Import: ImportConfig{
-			MinInterval: duration.From(1 * time.Minute),
 			Trigger: ImportTrigger{
-				Count:    50000,
-				Size:     5 * datasize.MB,
-				Interval: duration.From(5 * time.Minute),
+				Count:       50000,
+				Size:        50 * datasize.MB,
+				Interval:    duration.From(15 * time.Minute),
+				SlicesCount: 100,
+				Expiration:  duration.From(30 * time.Minute),
 			},
 		},
 	}
 }
 
+type OperatorConfig struct {
+	CheckInterval       duration.Duration `json:"checkInterval" configKey:"checkInterval" configUsage:"Import triggers check interval." validate:"required,minDuration=100ms,maxDuration=30s"`
+	FileRotationTimeout duration.Duration `json:"fileRotationTimeout" configKey:"fileRotationTimeout" configUsage:"Timeout of the file rotation operation." validate:"required,minDuration=30s,maxDuration=15m"`
+	FileCloseTimeout    duration.Duration `json:"fileCloseTimeout" configKey:"fileCloseTimeout" configUsage:"Timeout of the file close operation." validate:"required,minDuration=10s,maxDuration=10m"`
+	FileImportTimeout   duration.Duration `json:"fileImportTimeout" configKey:"fileImportTimeout" configUsage:"Timeout of the file import operation." validate:"required,minDuration=30s,maxDuration=60m"`
+}
+
 // ImportConfig configures the file import.
 type ImportConfig struct {
-	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Minimal interval between imports." validate:"required,minDuration=30s,maxDuration=30m"`
-	Trigger     ImportTrigger     `json:"trigger" configKey:"trigger"`
+	Trigger ImportTrigger `json:"trigger" configKey:"trigger"`
 }
 
 // ImportConfigPatch is same as the ImportConfig, but with optional/nullable fields.
@@ -46,15 +60,19 @@ type ImportConfigPatch struct {
 
 // ImportTrigger configures file import conditions, at least one must be met.
 type ImportTrigger struct {
-	Count    uint64            `json:"count" configKey:"count" configUsage:"Records count to trigger file import." modAllowed:"true" validate:"required,min=1,max=10000000"`
-	Size     datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size to trigger file import." modAllowed:"true" validate:"required,minBytes=100B,maxBytes=500MB"`
-	Interval duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last import to trigger the next import." modAllowed:"true" validate:"required,minDuration=60s,maxDuration=24h"`
+	Count       uint64            `json:"count" configKey:"count" configUsage:"Records count to trigger file import." modAllowed:"true" validate:"required,min=1,max=10000000"`
+	Size        datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size to trigger file import." modAllowed:"true" validate:"required,minBytes=100B,maxBytes=500MB"`
+	Interval    duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last import to trigger the next import." modAllowed:"true" validate:"required,minDuration=60s,maxDuration=24h"`
+	SlicesCount int               `json:"slicesCount" configKey:"slicesCount" configUsage:"Number of slices in the file to trigger file import." validate:"required,min=1,max=50000"`
+	Expiration  duration.Duration `json:"expiration" configKey:"expiration" configUsage:"Min remaining expiration to trigger file import." validate:"required,minDuration=5m,maxDuration=45m"`
 }
 
 // ImportTriggerPatch is same as the ImportTrigger, but with optional/nullable fields.
 // It may be part of a Sink definition to allow modification of the default configuration.
 type ImportTriggerPatch struct {
-	Count    *uint64            `json:"count,omitempty" configKey:"count"`
-	Size     *datasize.ByteSize `json:"size,omitempty" configKey:"size"`
-	Interval *duration.Duration `json:"interval,omitempty" configKey:"interval"`
+	Count       *uint64            `json:"count,omitempty"`
+	Size        *datasize.ByteSize `json:"size,omitempty"`
+	Interval    *duration.Duration `json:"interval,omitempty"`
+	SlicesCount *int               `json:"slicesCount,omitempty"`
+	Expiration  *duration.Duration `json:"expiration,omitempty"`
 }

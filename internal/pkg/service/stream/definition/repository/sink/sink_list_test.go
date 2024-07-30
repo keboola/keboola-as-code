@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 )
 
 func TestSinkRepository_List(t *testing.T) {
@@ -50,8 +51,8 @@ func TestSinkRepository_List(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
-		sink1 = test.NewSink(sinkKey1)
-		sink2 = test.NewSink(sinkKey2)
+		sink1 = dummy.NewSink(sinkKey1)
+		sink2 = dummy.NewSink(sinkKey2)
 		require.NoError(t, repo.Create(&sink1, now, by, "Create sink").Do(ctx).Err())
 		require.NoError(t, repo.Create(&sink2, now, by, "Create sink").Do(ctx).Err())
 	}
@@ -101,10 +102,10 @@ func TestSinkRepository_ListDeleted(t *testing.T) {
 		source := test.NewSource(sourceKey)
 		require.NoError(t, d.DefinitionRepository().Source().Create(&source, now, by, "Create source").Do(ctx).Err())
 
-		sink1 = test.NewSink(sinkKey1)
+		sink1 = dummy.NewSink(sinkKey1)
 		require.NoError(t, repo.Create(&sink1, now, by, "Create sink").Do(ctx).Err())
 
-		sink2 = test.NewSink(sinkKey2)
+		sink2 = dummy.NewSink(sinkKey2)
 		require.NoError(t, repo.Create(&sink2, now, by, "Create sink").Do(ctx).Err())
 	}
 

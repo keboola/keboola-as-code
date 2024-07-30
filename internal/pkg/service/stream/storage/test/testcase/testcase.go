@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -17,13 +16,11 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -31,10 +28,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testnode"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -50,6 +47,8 @@ type WriterTestCase struct {
 	FileDecoder func(t *testing.T, r io.Reader) io.Reader
 	Validator   func(t *testing.T, fileContent string)
 
+	apiNode        dependencies.APIScope
+	apiNodeMock    dependencies.Mocked
 	sourceNode     dependencies.SourceScope
 	sourceNodeMock dependencies.Mocked
 	writerNode     dependencies.StorageWriterScope
@@ -79,27 +78,20 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	sinkRouter := tc.sourceNode.SinkRouter()
 
 	// Create resource in an API node
-	apiScp, apiMock := tc.startAPINode(t, etcdCfg)
-	apiCtx := context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, apiMock.KeboolaProjectAPI())
-	apiCtx = rollback.ContextWith(apiCtx, rollback.New(apiScp.Logger()))
-	transport := apiMock.MockedHTTPTransport()
-	bridgeTest.MockTokenStorageAPICalls(t, transport)
-	bridgeTest.MockBucketStorageAPICalls(t, transport)
-	bridgeTest.MockTableStorageAPICalls(t, transport)
-	bridgeTest.MockFileStorageAPICalls(t, apiMock.Clock(), transport)
+	apiCtx := context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, tc.apiNodeMock.KeboolaProjectAPI())
+	apiCtx = rollback.ContextWith(apiCtx, rollback.New(tc.apiNode.Logger()))
+	tc.apiNodeMock.TestDummySinkController().FileMapping = table.Mapping{Columns: tc.Columns}
 	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
 	branch := test.NewBranch(branchKey)
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	source := test.NewHTTPSource(sourceKey)
-	source.HTTP.Secret = strings.Repeat("1", 48)
-	sink := test.NewKeboolaTableSink(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
-	sink.Table.Mapping = table.Mapping{Columns: tc.Columns}
-	require.NoError(t, apiScp.DefinitionRepository().Branch().Create(&branch, apiScp.Clock().Now(), test.ByUser()).Do(apiCtx).Err())
-	require.NoError(t, apiScp.DefinitionRepository().Source().Create(&source, apiScp.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
-	require.NoError(t, apiScp.DefinitionRepository().Sink().Create(&sink, apiScp.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
+	sink := dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
+	require.NoError(t, tc.apiNode.DefinitionRepository().Branch().Create(&branch, tc.apiNode.Clock().Now(), test.ByUser()).Do(apiCtx).Err())
+	require.NoError(t, tc.apiNode.DefinitionRepository().Source().Create(&source, tc.apiNode.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
+	require.NoError(t, tc.apiNode.DefinitionRepository().Sink().Create(&sink, tc.apiNode.Clock().Now(), test.ByUser(), "create").Do(apiCtx).Err())
 
 	// Load created slice
-	slices, err := apiScp.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	slices, err := tc.apiNode.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	require.Len(t, slices, 1)
 	slice := slices[0]
@@ -162,6 +154,15 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 		//}
 	}
 
+	// Disable sink to force close the pipeline
+	require.NoError(t, tc.apiNode.DefinitionRepository().Sink().Disable(sink.SinkKey, tc.apiNode.Clock().Now(), test.ByUser(), "reason").Do(apiCtx).Err())
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		tc.logger.AssertJSONMessages(c, `{"level":"info","message":"closed sink pipeline \"%s\": sink disabled","component":"sink.router"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Get statistics
+	sliceStats, statsErr := tc.apiNode.StatisticsRepository().SliceStats(ctx, slice.SliceKey)
+
 	// Shutdown nodes
 	tc.shutdownNodes(t, ctx)
 
@@ -186,20 +187,15 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	// Close file
 	assert.NoError(t, f.Close())
 
-	// Check written data
-	tc.Validator(t, string(content))
-
-	// Check statistics
-	sliceStats, err := apiScp.StatisticsRepository().SliceStats(ctx, slice.SliceKey)
-	if assert.NoError(t, err) {
+	// Check stats
+	if assert.NoError(t, statsErr) {
 		assert.Equal(t, int(sliceStats.Total.RecordsCount), rowsCount, "records count doesn't match")
 		assert.Equal(t, int64(sliceStats.Total.CompressedSize.Bytes()), fileStat.Size(), "compressed file size doesn't match")
 		assert.Equal(t, int(sliceStats.Total.UncompressedSize.Bytes()), len(content), "uncompressed file size doesn't match")
 	}
 
-	// Shutdown API node
-	apiScp.Process().Shutdown(ctx, errors.New("bye bye API"))
-	apiScp.Process().WaitForShutdown()
+	// Check written data
+	tc.Validator(t, string(content))
 
 	// No error should be logged
 	tc.logger.AssertJSONMessages(t, "")
@@ -227,10 +223,8 @@ func (tc *WriterTestCase) startNodes(t *testing.T, etcdCfg etcdclient.Config) {
 
 	tc.logger.Truncate()
 
-	// Start disk in node
+	tc.startAPINode(t, etcdCfg)
 	tc.startWriterNode(t, etcdCfg)
-
-	// Start source node
 	tc.startSourceNode(t, etcdCfg)
 
 	// Wait for connection between nodes
@@ -242,28 +236,22 @@ func (tc *WriterTestCase) startNodes(t *testing.T, etcdCfg etcdclient.Config) {
 func (tc *WriterTestCase) shutdownNodes(t *testing.T, ctx context.Context) {
 	t.Helper()
 
-	// Close source node
+	// Shutdown API node
+	tc.apiNode.Process().Shutdown(ctx, errors.New("bye bye API"))
+	tc.apiNode.Process().WaitForShutdown()
+
+	// Shutdown source node
 	tc.sourceNode.Process().Shutdown(ctx, errors.New("bye bye source"))
 	tc.sourceNode.Process().WaitForShutdown()
 
-	// Close disk writer node
+	// Shutdown disk writer node
 	tc.writerNode.Process().Shutdown(ctx, errors.New("bye bye disk writer"))
 	tc.writerNode.Process().WaitForShutdown()
 }
 
-func (tc *WriterTestCase) startAPINode(t *testing.T, etcdCfg etcdclient.Config) (dependencies.APIScope, dependencies.Mocked) {
+func (tc *WriterTestCase) startAPINode(t *testing.T, etcdCfg etcdclient.Config) {
 	t.Helper()
-
-	return dependencies.NewMockedAPIScopeWithConfig(
-		t,
-		func(cfg *config.Config) {
-			tc.updateServiceConfig(cfg)
-			cfg.NodeID = "api"
-			cfg.API.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(t))
-		},
-		commonDeps.WithDebugLogger(tc.logger),
-		commonDeps.WithEtcdConfig(etcdCfg),
-	)
+	tc.apiNode, tc.apiNodeMock = testnode.StartAPINode(t, tc.logger, etcdCfg, tc.updateServiceConfig)
 }
 
 func (tc *WriterTestCase) startSourceNode(t *testing.T, etcdCfg etcdclient.Config) {
