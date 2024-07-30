@@ -23,7 +23,7 @@ type Flags struct {
 	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
 	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Name            configmap.Value[string] `configKey:"name" configShorthand:"n" configUsage:"name of the new branch"`
-	Output          configmap.Value[string] `configKey:"output-json" configUsage:"output as JSON file"`
+	OutputJSON      configmap.Value[string] `configKey:"output-json" configUsage:"output as JSON file"`
 }
 
 func DefaultFlags() Flags {
@@ -95,7 +95,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// create a file including newBranchId
-			if f.Output.Value != "" {
+			if f.OutputJSON.Value != "" {
 				if err = createFile(cmd.Context(), d, f, branch); err != nil {
 					return err
 				}
@@ -114,11 +114,11 @@ type output struct {
 }
 
 func createFile(ctx context.Context, d dependencies.RemoteCommandScope, f Flags, branch *keboola.Branch) error {
-	if !strings.HasSuffix(f.Output.Value, ".json") {
+	if !strings.HasSuffix(f.OutputJSON.Value, ".json") {
 		return errors.New("output value is not a JSON file")
 	}
 
-	file, err := d.Fs().Create(ctx, f.Output.Value)
+	file, err := d.Fs().Create(ctx, f.OutputJSON.Value)
 	if err != nil {
 		return err
 	}
