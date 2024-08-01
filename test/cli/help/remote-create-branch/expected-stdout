@@ -10,7 +10,7 @@ Usage:
 
 Flags:
   -n, --name string                name of the new branch
-      --output-json string         output as JSON file
+      --output-json string         output as a JSON file
   -H, --storage-api-host string    if command is run outside the project directory
   -t, --storage-api-token string   storage API token from your project
 

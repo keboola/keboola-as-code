@@ -23,7 +23,7 @@ type Flags struct {
 	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
 	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Name            configmap.Value[string] `configKey:"name" configShorthand:"n" configUsage:"name of the new branch"`
-	OutputJSON      configmap.Value[string] `configKey:"output-json" configUsage:"output as JSON file"`
+	OutputJSON      configmap.Value[string] `configKey:"output-json" configUsage:"output as a JSON file"`
 }
 
 func DefaultFlags() Flags {
