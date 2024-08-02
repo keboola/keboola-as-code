@@ -56,8 +56,11 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Run pull, if the command is run in a project directory
-			if prj, found, err := d.LocalProject(cmd.Context(), false); found {
+			// Get local project
+			prj, found, err := d.LocalProject(cmd.Context(), false)
+
+			// Run pull, if the command is run in a project directory and allow target env is disabled
+			if found && !prj.ProjectManifest().AllowTargetENV() {
 				d.Logger().Info(cmd.Context(), "")
 				d.Logger().Info(cmd.Context(), `Pulling objects to the local directory.`)
 

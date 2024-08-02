@@ -1,0 +1,38 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "test fixture",
+          "configuration": {},
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    },
+    {
+      "branch": {
+        "name": "new branch",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "test fixture",
+          "configuration": {},
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}

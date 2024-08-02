@@ -211,15 +211,23 @@ func (d *Differ) diffValues(objectState model.ObjectState, remoteValue, localVal
 }
 
 func (d *Differ) newBranchOptions(reporter *Reporter) cmp.Options {
-	options := d.newOptions(reporter)
-	options = append(options, cmp.Transformer("name", func(s string) string {
-		if d.allowTargetEnv {
-			return ""
-		}
+	return cmp.Options{
+		d.newOptions(reporter),
 
-		return s
-	}))
-	return options
+		cmp.Transformer("name", func(s string) string {
+			if d.allowTargetEnv {
+				return ""
+			}
+			return s
+		}),
+
+		cmp.Transformer("isDefault", func(isDefault bool) bool {
+			if d.allowTargetEnv {
+				return false
+			}
+			return isDefault
+		}),
+	}
 }
 
 func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
