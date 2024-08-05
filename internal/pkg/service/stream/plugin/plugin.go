@@ -13,6 +13,7 @@ type Plugins struct {
 	executor            *Executor
 	localStorageSinks   []func(sinkType definition.SinkType) bool
 	sinkPipelineOpeners []pipeline.Opener
+	sliceUploader       uploadSliceFn // func(context.Context, *keboola.FileUploadCredentials, string, ...keboola.UploadOption) (*blob.Writer, error)
 }
 
 type fnList[T any] []T
