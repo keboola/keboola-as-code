@@ -47,15 +47,16 @@ func StartAppServer(t *testing.T) *AppServer {
 		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 		defer cancel()
 
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ctx.Done():
-				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
+				require.NoError(t, c.Close(websocket.StatusNormalClosure, "Connection closed"))
+				return
 			case <-ticker.C:
-				err = wsjson.Write(ctx, c, "Hello from websocket")
-				require.NoError(t, err)
+				require.NoError(t, wsjson.Write(ctx, c, "Hello from websocket"))
 			}
 		}
 	})

@@ -31,6 +31,7 @@ type Manager struct {
 type appHandlerWrapper struct {
 	lock    *sync.Mutex
 	handler http.Handler
+	cancel  context.CancelFunc
 }
 
 type dependencies interface {
@@ -72,17 +73,20 @@ func (m *Manager) HandlerFor(ctx context.Context, appID api.AppID) http.Handler 
 
 	// Create a new handler, if needed
 	if wrapper.handler == nil || modified {
-		wrapper.handler = m.newHandler(ctx, app)
+		if wrapper.cancel != nil {
+			wrapper.cancel()
+		}
+		wrapper.handler, wrapper.cancel = m.newHandler(ctx, app)
 	}
 
 	return wrapper.handler
 }
 
-func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) http.Handler {
+func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) (http.Handler, context.CancelFunc) {
 	// Create upstream reverse proxy without authentication
 	appUpstream, err := m.upstreamManager.NewUpstream(ctx, app)
 	if err != nil {
-		return m.newErrorHandler(ctx, app, err)
+		return m.newErrorHandler(ctx, app, err), nil
 	}
 
 	// Create authentication handlers
@@ -95,10 +99,10 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) http.Handle
 			errors.Errorf(`application "%s" has invalid configuration`, app.IdAndName()),
 			err,
 		))
-		return m.newErrorHandler(ctx, app, err)
+		return m.newErrorHandler(ctx, app, err), nil
 	}
 
-	return handler
+	return handler, appUpstream.Cancel
 }
 
 func (m *Manager) newErrorHandler(ctx context.Context, app api.AppConfig, err error) http.Handler {
