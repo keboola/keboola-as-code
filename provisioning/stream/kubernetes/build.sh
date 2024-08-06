@@ -64,6 +64,7 @@ if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
   envsubst < templates/cloud/aws/ingress-api.yaml > deploy/cloud/aws/ingress-api.yaml
     envsubst < templates/cloud/aws/service-http-source.yaml > deploy/cloud/aws/service-http-source.yaml
     envsubst < templates/cloud/aws/ingress-http-source.yaml > deploy/cloud/aws/ingress-http-source.yaml
+  envsubst < templates/cloud/aws/sc-stream-api.yaml > deploy/cloud/aws/sc-stream-api.yaml
 elif [[ "$CLOUD_PROVIDER" == "gcp" ]]; then
   mkdir deploy/cloud/gcp
   envsubst < templates/cloud/gcp/service-api.yaml > deploy/cloud/gcp/service-api.yaml

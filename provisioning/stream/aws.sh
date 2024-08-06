@@ -24,6 +24,7 @@ kubectl apply -f ./kubernetes/deploy/cloud/aws/service-api.yaml
 kubectl apply -f ./kubernetes/deploy/cloud/aws/ingress-api.yaml
 kubectl apply -f ./kubernetes/deploy/cloud/aws/service-http-source.yaml
 kubectl apply -f ./kubernetes/deploy/cloud/aws/ingress-http-source.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/aws/sc-stream-api.yaml
 
 # Wait for the rollout
 . ./wait.sh
