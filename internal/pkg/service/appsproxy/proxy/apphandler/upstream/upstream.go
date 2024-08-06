@@ -226,5 +226,7 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 }
 
 func (u *AppUpstream) Cancel() {
-	u.cancelWs()
+	if u.cancelWs != nil {
+		u.cancelWs()
+	}
 }

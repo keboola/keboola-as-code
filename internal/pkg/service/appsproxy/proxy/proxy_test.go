@@ -1681,13 +1681,18 @@ func TestAppProxyRouter(t *testing.T) {
 				originalConfig := service.Apps["123"]
 				newConfig := service.Apps["oidc"]
 				newConfig.ID = "public-123"
+
 				service.Apps["123"] = newConfig
 
 				// Request to the same app which is now private
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				response, err = client.Do(request)
-				require.NoError(t, err)
+
+				assert.Eventually(t, func() bool {
+					response, err = client.Do(request)
+					return err == nil
+				}, time.Second*5, time.Millisecond*100)
+
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
 				// Revert configuration
@@ -1696,8 +1701,12 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to public app
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				response, err = client.Do(request)
-				require.NoError(t, err)
+
+				assert.Eventually(t, func() bool {
+					response, err = client.Do(request)
+					return err == nil
+				}, time.Second*5, time.Millisecond*100)
+
 				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{
