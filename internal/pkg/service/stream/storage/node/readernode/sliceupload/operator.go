@@ -9,28 +9,17 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
-	"gocloud.dev/blob"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router/closesync"
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-)
-
-const (
-	uploadEventSendTimeout = 30 * time.Second
 )
 
 type operator struct {
@@ -42,10 +31,6 @@ type operator struct {
 	statistics *statsCache.L1
 	storage    *storageRepo.Repository
 	plugins    *plugin.Plugins
-
-	distribution *distribution.GroupNode
-	locks        *distlock.Provider
-	closeSyncer  *closesync.CoordinatorNode
 
 	slices *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
 }
@@ -65,15 +50,11 @@ type dependencies interface {
 	Logger() log.Logger
 	Clock() clock.Clock
 	Process() *servicectx.Process
-	EtcdClient() *etcd.Client
-	EtcdSerde() *serde.Serde
 	KeboolaPublicAPI() *keboola.PublicAPI
 	Volumes() *diskreader.Volumes
 	StatisticsL1Cache() *statsCache.L1
 	StorageRepository() *storageRepo.Repository
 	Plugins() *plugin.Plugins
-	DistributionNode() *distribution.Node
-	DistributedLockProvider() *distlock.Provider
 }
 
 func Start(d dependencies, config stagingConfig.OperatorConfig) error {
@@ -81,21 +62,12 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 	o := &operator{
 		config:     config,
 		clock:      d.Clock(),
-		logger:     d.Logger().WithComponent("storage.node.operator.slice.rotation"),
+		logger:     d.Logger().WithComponent("storage.node.operator.slice.upload"),
 		publicAPI:  d.KeboolaPublicAPI(),
 		volumes:    d.Volumes(),
 		statistics: d.StatisticsL1Cache(),
 		storage:    d.StorageRepository(),
 		plugins:    d.Plugins(),
-		locks:      d.DistributedLockProvider(),
-	}
-
-	// Setup close sync utility
-	{
-		o.closeSyncer, err = closesync.NewCoordinatorNode(d)
-		if err != nil {
-			return err
-		}
 	}
 
 	// Graceful shutdown
@@ -110,14 +82,6 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 
 		o.logger.Info(ctx, "closed slice upload operator")
 	})
-
-	// Join the distribution group
-	{
-		o.distribution, err = d.DistributionNode().Group("operator.slice.upload")
-		if err != nil {
-			return err
-		}
-	}
 
 	// Mirror slices
 	{
@@ -142,68 +106,13 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 				return out
 			},
 		).
-			// TODO: is this needed ? Check only slices owned by the node
 			WithFilter(func(event etcdop.WatchEvent[model.Slice]) bool {
-				return o.distribution.MustCheckIsOwner(event.Value.SourceKey.String())
+				return o.volumes.Collection().HasVolume(event.Value.VolumeID)
 			}).
 			BuildMirror()
 		if err = <-o.slices.StartMirroring(ctx, wg, o.logger); err != nil {
 			return err
 		}
-	}
-
-	// Restart stream on distribution change
-	{
-		wg.Add(1)
-		listener := o.distribution.OnChangeListener()
-
-		go func() {
-			defer wg.Done()
-			defer listener.Stop()
-
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case events := <-listener.C:
-					o.slices.Restart(errors.Errorf("distribution changed: %s", events.Messages()))
-				}
-			}
-		}()
-	}
-
-	{
-		d.Plugins().RegisterSliceUploader(func(volume *diskreader.Volume, slice *model.Slice, sinkSchema schema.Schema, client etcd.KV) (*blob.Writer, diskreader.Reader, error) {
-			var err error
-			reader, err := volume.OpenReader(slice)
-			if err != nil {
-				// p.logger.Warnf(ctx, "unable to open reader: %v", err)
-				return nil, nil, err
-			}
-
-			credentials := sinkSchema.UploadCredentials().ForFile(slice.FileKey).GetOrEmpty(client).Do(ctx).Result()
-			token := sinkSchema.Token().ForSink(slice.SinkKey).GetOrEmpty(client).Do(ctx).Result()
-
-			defer func() {
-				ctx, cancel := context.WithTimeout(ctx, uploadEventSendTimeout)
-				// TODO: time.Now
-				o.sendSliceUploadEvent(ctx, o.publicAPI.WithToken(token.String()), 0, slice)
-				cancel()
-			}()
-
-			uploader, err := keboola.NewUploadSliceWriter(ctx, &credentials.FileUploadCredentials, slice.String())
-			if err != nil {
-				return nil, reader, err
-			}
-
-			// Compress to GZip and measure count/size
-			/*gzipWr, err := gzip.NewWriterLevel(uploader, slice.Encoding.Compression.GZIP.Level)
-			if err != nil {
-				return err
-			}*/
-
-			return uploader, reader, err
-		})
 	}
 
 	// Start conditions check ticker
@@ -227,50 +136,6 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 	}
 
 	return nil
-}
-
-func (o *operator) sendSliceUploadEvent(
-	ctx context.Context,
-	api *keboola.AuthorizedAPI,
-	duration time.Duration,
-	slice *model.Slice,
-) error {
-	var err error
-
-	// Catch panic
-	panicErr := recover()
-	if panicErr != nil {
-		err = errors.Errorf(`%s`, panicErr)
-	}
-
-	// Get slice statistics
-	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
-	if err != nil {
-		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
-		return err
-	}
-
-	formatMsg := func(err error) string {
-		if err != nil {
-			return "Slice upload failed."
-		} else {
-			return "Slice upload done."
-		}
-	}
-
-	err = sendEvent(ctx, api, duration, "slice-upload", err, formatMsg, Params{
-		ProjectID: slice.ProjectID,
-		SourceID:  slice.SourceID,
-		SinkID:    slice.SinkID,
-		Stats:     stats.Local,
-	})
-
-	// Throw panic
-	if panicErr != nil {
-		panic(panicErr)
-	}
-
-	return err
 }
 
 func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
@@ -298,13 +163,19 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 		return
 	}
 
+	err := o.plugins.ImporterFor(data.Slice.StagingStorage.Provider)
+	if err != nil {
+		o.logger.Errorf(ctx, "importer for provider: %v does not exists", data.Slice.StagingStorage.Provider)
+		return
+	}
+
 	if !data.Slice.Retryable.Allowed(o.clock.Now()) {
 		return
 	}
 
 	volume, err := o.volumes.Collection().Volume(data.Slice.SliceKey.VolumeID)
 	if err != nil {
-		o.logger.Warnf(ctx, "unable to find volume: %v", err)
+		o.logger.Errorf(ctx, "unable to upload slice. No volume found for key: %v", data.Slice.SliceKey.VolumeID)
 		return
 	}
 
@@ -321,9 +192,16 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 		return
 	}
 
+	// Get slice statistics
+	stats, err := o.statistics.SliceStats(ctx, data.Slice.SliceKey)
+	if err != nil {
+		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
+		return
+	}
+
 	// Use plugin system to create the pipeline
 	o.logger.Infof(ctx, `uploading slice %q`, data.Slice.SliceKey)
-	err := o.plugins.UploadSlice(ctx, volume, data.Slice, schema.Schema{}, nil) // stats.Local)
+	err = o.plugins.UploadSlice(ctx, volume, data.Slice, stats.Local) // stats.Local)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot upload slice to stagin: %v", err)
 
@@ -335,14 +213,6 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 		}
 
 	}
-
-	/*
-		// Check conditions
-		cause, ok := shouldUpload(slice.UploadTrigger, now, slice.SliceKey.OpenedAt().Time(), stats.Local)
-		if !ok {
-			o.logger.Debugf(ctx, "skipping slice rotation: %s", cause)
-			return
-		}*/
 
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)

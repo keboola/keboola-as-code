@@ -8,6 +8,8 @@ import (
 type Slice struct {
 	// Path to the slice in the staging File.
 	Path string `json:"path" validate:"required"`
+	// Provider of the staging file.
+	Provider FileProvider `json:"provider" validate:"required"`
 	// Compression configuration.
 	Compression compression.Config `json:"compression"`
 	// Upload - slice upload configuration.

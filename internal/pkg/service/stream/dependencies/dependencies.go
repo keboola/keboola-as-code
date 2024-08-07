@@ -151,6 +151,8 @@ type StorageWriterScope interface {
 type StorageReaderScope interface {
 	StorageScope
 	Volumes() *diskreader.Volumes
+	StatisticsL1Cache() *cache.L1
+	StatisticsL2Cache() *cache.L2
 }
 
 type Mocked interface {

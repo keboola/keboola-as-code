@@ -1,4 +1,4 @@
-package sliceupload
+package bridge
 
 import (
 	"context"
@@ -7,9 +7,10 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const componentID = keboola.ComponentID("keboola.keboola-as-code")
@@ -21,7 +22,45 @@ type Params struct {
 	Stats     statistics.Value
 }
 
-func sendEvent(
+func (b *Bridge) sendSliceUploadEvent(
+	ctx context.Context,
+	api *keboola.AuthorizedAPI,
+	duration time.Duration,
+	slice *model.Slice,
+	stats statistics.Value,
+) error {
+	var err error
+
+	// Catch panic
+	panicErr := recover()
+	if panicErr != nil {
+		err = errors.Errorf(`%s`, panicErr)
+	}
+
+	formatMsg := func(err error) string {
+		if err != nil {
+			return "Slice upload failed."
+		} else {
+			return "Slice upload done."
+		}
+	}
+
+	err = b.sendEvent(ctx, api, duration, "slice-upload", err, formatMsg, Params{
+		ProjectID: slice.ProjectID,
+		SourceID:  slice.SourceID,
+		SinkID:    slice.SinkID,
+		Stats:     stats,
+	})
+
+	// Throw panic
+	if panicErr != nil {
+		panic(panicErr)
+	}
+
+	return err
+}
+
+func (b *Bridge) sendEvent(
 	ctx context.Context,
 	api *keboola.AuthorizedAPI,
 	duration time.Duration,
@@ -67,6 +106,11 @@ func sendEvent(
 			"fileSize":     params.Stats.UncompressedSize.Bytes(),
 			"fileGZipSize": params.Stats.CompressedSize.Bytes(),
 		}
+	}
+
+	api, err = b.apiProvider.APIFromContext(ctx)
+	if err != nil {
+		return err
 	}
 
 	event, err = api.CreateEventRequest(event).Send(ctx)

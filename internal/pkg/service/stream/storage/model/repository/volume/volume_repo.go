@@ -79,6 +79,11 @@ func (r *Repository) ListReaderVolumes() iterator.DefinitionT[volume.Metadata] {
 	return r.schema.ReaderVolumes().GetAll(r.client)
 }
 
+// GetReaderVolume by ID
+func (r *Repository) GetReaderVolume(ID string) op.WithResult[*volume.Metadata] {
+	return r.schema.ReaderVolumes().GetOne(r.client)
+}
+
 // RegisterWriterVolume registers an active volume on a writer node, lease ensures automatic un-registration in case of node failure.
 func (r *Repository) RegisterWriterVolume(v volume.Metadata, leaseID etcd.LeaseID) op.WithResult[volume.Metadata] {
 	return r.schema.WriterVolume(v.ID).Put(r.client, v, etcd.WithLease(leaseID))

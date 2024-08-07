@@ -2,31 +2,49 @@ package plugin
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	etcd "go.etcd.io/etcd/client/v3"
 	"gocloud.dev/blob"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
+	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
-type uploadSliceFn func(volume *diskreader.Volume, slice *model.Slice, sinkSchema schema.Schema, client etcd.KV) (*blob.Writer, diskreader.Reader, error)
+const (
+	keboolaFileProvider = stagingModel.FileProvider("keboola")
+)
 
-func (p *Plugins) RegisterSliceUploader(fn uploadSliceFn) {
-	p.sliceUploader = fn
-	// p.sliceUploader = keboola.NewUploadSliceWriter
+type uploadSliceFn func(
+	ctx context.Context,
+	volume *diskreader.Volume,
+	slice *model.Slice,
+	stats statistics.Value,
+) (*blob.Writer, diskreader.Reader, error)
+
+func (p *Plugins) ImporterFor(provider stagingModel.FileProvider) error {
+	if _, ok := p.sliceUploader[provider]; !ok {
+		err := fmt.Sprintf("no importer for given provider: %v", provider)
+		return errors.New(err)
+	}
+
+	return nil
+}
+
+func (p *Plugins) RegisterSliceUploader(provider stagingModel.FileProvider, fn uploadSliceFn) {
+	p.sliceUploader[provider] = fn
 }
 
 func (p *Plugins) UploadSlice(
 	ctx context.Context,
 	volume *diskreader.Volume,
 	slice *model.Slice,
-	sinkSchema schema.Schema,
-	client etcd.KV,
+	stats statistics.Value,
 ) error {
 	var err error
-	uploader, reader, err := p.sliceUploader(volume, slice, sinkSchema, client)
+	uploader, reader, err := p.sliceUploader[slice.StagingStorage.Provider](ctx, volume, slice, stats)
 	if err != nil {
 		return err
 	}
