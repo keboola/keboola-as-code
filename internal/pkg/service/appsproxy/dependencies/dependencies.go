@@ -43,6 +43,27 @@ const (
 	userAgent = "keboola-apps-proxy"
 )
 
+type ctxKey string
+
+const (
+	PublicRequestScopeCtxKey  = ctxKey("PublicRequestScope")
+	ProjectRequestScopeCtxKey = ctxKey("ProjectRequestScope")
+)
+
+// PublicRequestScope interface provides dependencies for a public request that doesn't need the Storage API token.
+// The container exists only during request processing.
+type PublicRequestScope interface {
+	ServiceScope
+	dependencies.RequestInfo
+}
+
+// ProjectRequestScope interface provides dependencies for an request authenticated by the Storage API token.
+// The container exists only during request processing.
+type ProjectRequestScope interface {
+	PublicRequestScope
+	dependencies.ProjectScope
+}
+
 // ServiceScope interface provides dependencies for Apps Proxy server.
 // The container exists during the entire run of the Apps Proxy server.
 type ServiceScope interface {

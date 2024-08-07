@@ -8,7 +8,6 @@ import (
 
 	oautproxylogger "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -121,13 +120,7 @@ func NewHandler(d dependencies.ServiceScope) http.Handler {
 	mux.Handle("/", approuter.New(d))
 
 	// Wrap handler with middlewares
-	middlewareCfg := middleware.NewConfig(
-		middleware.WithPropagators(propagation.TraceContext{}),
-		// Ignore health checks and robots
-		middleware.WithFilter(func(req *http.Request) bool {
-			return req.URL.Path != "/health-check" && req.URL.Path != "/robots.txt"
-		}),
-	)
+	middlewareCfg := middleware.NewConfig()
 	return middleware.Wrap(
 		mux,
 		// Mandatory middleware when used in combination with newTracerProviderWrapper
