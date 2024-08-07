@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -10,16 +11,30 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKey, sink definition.Sink) error {
-	// Create bucket if not exists
-	if err := b.ensureBucketExists(ctx, tableKey.BucketKey()); err != nil {
+	// Create bucket in a blocking way if not exists
+	b.logger.Infof(ctx, "branchID %s, key %v", tableKey.BranchID, tableKey)
+	if err := b.ensureBucketExistsBlocking(ctx, sink.ProjectID, tableKey); err != nil {
 		return err
 	}
+
+	// Creation of table is blocking operation per tableKey
+	mutex, err := b.createLockAndLockTable(ctx, sink.ProjectID, tableKey)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := mutex.Unlock(ctx); err != nil {
+			b.logger.Errorf(ctx, "cannot unlock the lock: %s", err)
+		}
+	}()
 
 	// Get table
 	tab, err := b.getTable(ctx, tableKey)
@@ -59,6 +74,16 @@ func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKe
 	}
 
 	return nil
+}
+
+func (b *Bridge) createLockAndLockTable(ctx context.Context, projectID, tableKey fmt.Stringer) (*etcdop.Mutex, error) {
+	key := projectID.String() + "/" + tableKey.String()
+	mutex := b.distributedLockProvider.NewMutex(key)
+	if err := mutex.Lock(ctx); err != nil {
+		return nil, err
+	}
+
+	return mutex, nil
 }
 
 func (b *Bridge) getTable(ctx context.Context, tableKey keboola.TableKey) (*keboola.Table, error) {

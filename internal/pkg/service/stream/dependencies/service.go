@@ -11,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	aggregationRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/aggregation/repository"
@@ -46,6 +47,7 @@ type parentScopes interface {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
+	dependencies.DistributedLockScope
 }
 
 type parentScopesImpl struct {
@@ -54,6 +56,7 @@ type parentScopesImpl struct {
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
 	dependencies.DistributionScope
+	dependencies.DistributedLockScope
 }
 
 func NewServiceScope(
@@ -119,6 +122,11 @@ func newParentScopes(
 		return nil, err
 	}
 
+	d.DistributedLockScope, err = dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), d)
+	if err != nil {
+		return nil, err
+	}
+
 	return d, nil
 }
 
@@ -135,6 +143,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Co
 		[]dependencies.MockedOption{
 			dependencies.WithEnabledEtcdClient(),
 			dependencies.WithMockedStorageAPIHost("connection.keboola.local"),
+			dependencies.WithEnabledDistributedLocks(),
 		},
 		opts...,
 	)...)

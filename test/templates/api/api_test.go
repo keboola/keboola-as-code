@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -85,6 +86,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 					binaryPath,
 					addArgs,
 					addEnvs,
+					1*time.Minute,
 					requestDecoratorFn,
 				),
 				runner.WithAssertProjectState(),
