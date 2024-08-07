@@ -37,6 +37,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
+const exceptionIDPrefix = "keboola-mocked-task-"
+
 // mocked dependencies container implements Mocked interface.
 type mocked struct {
 	*baseScope
@@ -385,7 +387,7 @@ func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
 	}
 
 	if cfg.tasksNodeID != "" {
-		d.taskScope, err = newTaskScope(cfg.ctx, cfg.tasksNodeID, d)
+		d.taskScope, err = newTaskScope(cfg.ctx, cfg.tasksNodeID, exceptionIDPrefix, d)
 		require.NoError(tb, err)
 	}
 

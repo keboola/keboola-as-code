@@ -8,6 +8,7 @@ const (
 	TemplateInstanceIDLength      = 25
 	EtcdNamespaceForE2ETestLength = 20
 	ReceiverSecretLength          = 48
+	TaskExceptionIDLength         = 15
 )
 
 // alphabet used in ID generation.
@@ -32,4 +33,8 @@ func EtcdNamespaceForTest() string {
 
 func StreamHTTPSourceSecret() string {
 	return Random(ReceiverSecretLength)
+}
+
+func TaskExceptionID() string {
+	return Random(TaskExceptionIDLength)
 }

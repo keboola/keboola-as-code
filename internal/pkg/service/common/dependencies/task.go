@@ -17,15 +17,15 @@ type taskScopeDependencies interface {
 	EtcdClientScope
 }
 
-func NewTaskScope(ctx context.Context, nodeID string, d taskScopeDependencies, opts ...taskPkg.NodeOption) (TaskScope, error) {
-	return newTaskScope(ctx, nodeID, d, opts...)
+func NewTaskScope(ctx context.Context, nodeID string, exceptionIDPrefix string, d taskScopeDependencies, opts ...taskPkg.NodeOption) (TaskScope, error) {
+	return newTaskScope(ctx, nodeID, exceptionIDPrefix, d, opts...)
 }
 
-func newTaskScope(ctx context.Context, nodeID string, d taskScopeDependencies, opts ...taskPkg.NodeOption) (v *taskScope, err error) {
+func newTaskScope(ctx context.Context, nodeID string, exceptionIDPrefix string, d taskScopeDependencies, opts ...taskPkg.NodeOption) (v *taskScope, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewTaskScope")
 	defer span.End(&err)
 
-	node, err := taskPkg.NewNode(nodeID, d, opts...)
+	node, err := taskPkg.NewNode(nodeID, exceptionIDPrefix, d, opts...)
 	if err != nil {
 		return nil, err
 	}
