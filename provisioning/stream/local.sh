@@ -14,6 +14,8 @@ export KEBOOLA_STACK="${KEBOOLA_STACK:=local-machine}"
 export HOSTNAME_SUFFIX="${HOSTNAME_SUFFIX:=keboola.com}"
 export STREAM_IMAGE_REPOSITORY="${STREAM_IMAGE_REPOSITORY:=docker.io/keboola/stream-api}"
 export STREAM_IMAGE_TAG="${STREAM_IMAGE_TAG:=$(git rev-parse --short HEAD)-$(date +%s)}"
+export K6_IMAGE_REPOSITORY="${K6_IMAGE_REPOSITORY:=docker.io/keboolabot/stream-benchmark}"
+export K6_IMAGE_TAG="${K6_IMAGE_TAG:=$(git rev-parse --short HEAD)-$(date +%s)}"
 
 export STREAM_ETCD_REPLICAS=2
 export STREAM_API_REPLICAS=2
@@ -48,6 +50,16 @@ echo
 
 # Load the images to the Minikube
 minikube image load --overwrite=true "$SERVICE_IMAGE"
+
+# Build Docker image in the local Docker, so it is cached, if Minikube is destroyed
+K6_IMAGE="$K6_IMAGE_REPOSITORY:$K6_IMAGE_TAG"
+echo
+echo "Building K6 image ..."
+echo "--------------------------"
+docker build -t "$K6_IMAGE" -f "./docker/k6/Dockerfile" "../../"
+echo
+
+minikube image load --overwrite=true "$K6_IMAGE"
 
 echo
 echo "Images in the MiniKube:"

@@ -1,4 +1,4 @@
-export KEBOOLA_STACK=us-central1.gcp.keboola.dev
+export KEBOOLA_STACK=connection.eu-west-1.aws.keboola.dev
 export API_TOKEN=$STORAGE_API_TOKEN
 export API_TOKEN_BASE64=$(echo -n $API_TOKEN | base64)
 
