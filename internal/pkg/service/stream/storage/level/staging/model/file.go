@@ -6,6 +6,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 )
 
+const ()
+
 type File struct {
 	// IsEmpty is set if the import was skipped because there is no slice in the file.
 	IsEmpty bool `json:"isEmpty,omitempty"`

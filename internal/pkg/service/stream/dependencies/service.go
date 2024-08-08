@@ -156,6 +156,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Co
 	mock.MockedHTTPTransport().Reset()
 
 	mock.dummySinkController.RegisterDummySinkTypes(serviceScp.Plugins(), mock.TestDummySinkController())
+	mock.dummySinkController.RegisterDummySinkTypes(serviceScp.Plugins(), mock.TestDummySinkController())
 
 	return serviceScp, mock
 }
@@ -185,7 +186,8 @@ func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff m
 		return api
 	}
 
-	d.keboolaBridge = keboolaSinkBridge.New(d, apiCtxProvider)
+	// TODO: change provider for testing
+	d.keboolaBridge = keboolaSinkBridge.New(d, "test", apiCtxProvider)
 
 	d.storageStatisticsRepository = statsRepo.New(d)
 

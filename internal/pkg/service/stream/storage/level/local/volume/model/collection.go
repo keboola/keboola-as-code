@@ -60,6 +60,14 @@ func (v *Collection[V]) Volume(id ID) (V, error) {
 	}
 }
 
+func (v *Collection[V]) HasVolume(id ID) bool {
+	if _, ok := v.byID[id]; ok {
+		return true
+	}
+
+	return false
+}
+
 // VolumeByType returns volumes which match the type.
 func (v *Collection[V]) VolumeByType(typ string) (out []V) {
 	out = make([]V, len(v.byType[typ]))
