@@ -134,6 +134,7 @@ func NewHandler(d dependencies.ServiceScope) http.Handler {
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
 		middleware.Logger(d.Logger()),
+		middleware.OpenTelemetryApdex(d.Telemetry().MeterProvider()),
 		middleware.OpenTelemetry(
 			newTracerProviderWrapper(d.Telemetry().TracerProvider()),
 			d.Telemetry().MeterProvider(),
