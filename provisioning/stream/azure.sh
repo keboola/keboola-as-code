@@ -28,6 +28,7 @@ export ETCD_STORAGE_CLASS_NAME=
 # Azure specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/cloud/azure/service-api.yaml
 kubectl apply -f ./kubernetes/deploy/cloud/azure/service-http-source.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/azure/sc-stream-api.yaml
 
 # Wait for the rollout
 . ./wait.sh

@@ -75,6 +75,7 @@ elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
   mkdir deploy/cloud/azure
   envsubst < templates/cloud/azure/service-api.yaml > deploy/cloud/azure/service-api.yaml
    envsubst < templates/cloud/azure/service-http-source.yaml > deploy/cloud/azure/service-http-source.yaml
+   envsubst < templates/cloud/azure/sc-stream-api.yaml > deploy/cloud/azure/sc-stream-api.yaml
 elif [[ "$CLOUD_PROVIDER" == "local" ]]; then
   mkdir deploy/cloud/local
   envsubst < templates/cloud/local/service-api.yaml > deploy/cloud/local/service-api.yaml
