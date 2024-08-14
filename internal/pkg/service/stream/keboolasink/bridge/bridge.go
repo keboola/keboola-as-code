@@ -18,7 +18,7 @@ import (
 const (
 	// stagingFileProvider marks staging files provided by the Keboola Storage API.
 	stagingFileProvider = stagingModel.FileProvider("keboola")
-	// targetProvider marks files which destionation is a Keboola table.
+	// targetProvider marks files which destination is a Keboola table.
 	targetProvider = targetModel.Provider("keboola")
 
 	// sinkMetaKey is a key of the table metadata that marks each table created by the stream.sink.
