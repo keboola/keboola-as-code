@@ -62,6 +62,7 @@ func New(d dependencies, apiProvider apiProvider) *Bridge {
 	b.setupOnFileOpen()
 	b.deleteCredentialsOnFileDelete()
 	b.deleteTokenOnSinkDeactivation()
+	b.registerFileImporter()
 
 	return b
 }

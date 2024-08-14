@@ -89,7 +89,14 @@ func (b *Bridge) createStagingFile(ctx context.Context, now time.Time, sink defi
 
 	// Save credentials to database
 	ctx = ctxattr.ContextWith(ctx, attribute.String("file.resourceID", stagingFile.FileID.String()))
-	entity := keboolasink.FileUploadCredentials{SinkKey: file.SinkKey, FileUploadCredentials: *stagingFile}
+	entity := keboolasink.FileUploadCredentials{
+		SinkKey: file.SinkKey,
+		TableKey: keboola.TableKey{
+			BranchID: sink.BranchID,
+			TableID:  sink.Table.Keboola.TableID,
+		},
+		FileUploadCredentials: *stagingFile,
+	}
 	op.AtomicOpFromCtx(ctx).Write(func(ctx context.Context) op.Op {
 		return b.schema.UploadCredentials().ForFile(file.FileKey).Put(b.client, entity)
 	})
@@ -108,4 +115,42 @@ func (b *Bridge) deleteCredentialsOnFileDelete() {
 		}
 		return nil
 	})
+}
+
+func (b *Bridge) registerFileImporter() {
+	b.plugins.RegisterFileImporter(
+		targetProvider,
+		func(ctx context.Context, file *model.File) error {
+			// Get authorization token
+			var token *keboolasink.Token
+			err := b.schema.Token().ForSink(file.SinkKey).GetOrNil(b.client).WithResultTo(&token).Do(ctx).Err()
+			if err != nil {
+				return err
+			}
+
+			// Get file upload credentials
+			var credentials *keboolasink.FileUploadCredentials
+			err = b.schema.UploadCredentials().ForFile(file.FileKey).GetOrNil(b.client).WithResultTo(&credentials).Do(ctx).Err()
+			if err != nil {
+				return err
+			}
+
+			// Authorized API
+			api := b.publicAPI.WithToken(token.TokenString())
+
+			// Create job to import data
+			job, err := api.LoadDataFromFileRequest(credentials.TableKey, credentials.FileKey).Send(ctx)
+			if err != nil {
+				return err
+			}
+
+			// Wait for job to complete
+			err = api.WaitForStorageJob(ctx, job)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
 }

@@ -8,5 +8,6 @@ import (
 
 type FileUploadCredentials struct {
 	key.SinkKey
+	keboola.TableKey
 	keboola.FileUploadCredentials
 }
