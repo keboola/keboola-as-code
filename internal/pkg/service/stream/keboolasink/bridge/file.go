@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
@@ -120,7 +121,7 @@ func (b *Bridge) deleteCredentialsOnFileDelete() {
 func (b *Bridge) registerFileImporter() {
 	b.plugins.RegisterFileImporter(
 		targetProvider,
-		func(ctx context.Context, file *model.File) error {
+		func(ctx context.Context, file *plugin.File) error {
 			// Get authorization token
 			var token *keboolasink.Token
 			err := b.schema.Token().ForSink(file.SinkKey).GetOrNil(b.client).WithResultTo(&token).Do(ctx).Err()
