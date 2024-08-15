@@ -44,9 +44,5 @@ func (p *Plugins) UploadSlice(
 		return err
 	}
 
-	/*if errors.As(err, &pipeline.NoOpenerFoundError{}) {
-		continue
-	}*/
-
 	return err
 }

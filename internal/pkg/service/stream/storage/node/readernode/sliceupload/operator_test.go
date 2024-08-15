@@ -362,11 +362,6 @@ storage/keboola/file/upload/credentials/123/111/my-source/my-keboola-sink/2000-0
 {"level":"debug","time":"%s","message":"watch stream mirror synced to revision %d","stream.prefix":"storage/slice/level/local/","component":"storage.node.operator.slice.upload"}
 `)
 
-	// todo: check update of manifest
-	// todo: test multiple slices with same fileKey. There should be updated manifest with old slices joined with new slice
-	// todo: multiple in-progress uploads.
-	// todo: in-progress upload timeout. Shutdown performed, unable to send, test case timeouts
-	// todo: uploaded successfully to staging, cannot change state of slice in ETCD to `uploaded`
 	// Shutdown
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
 	d.Process().WaitForShutdown()

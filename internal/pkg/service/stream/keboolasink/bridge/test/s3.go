@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 )
 
-// TODO: not working.
 func MockS3Bucket(tb testing.TB, transport *httpmock.MockTransport) {
 	tb.Helper()
 
