@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/readernode/sliceupload"
 )
 
 func Start(ctx context.Context, d dependencies.StorageReaderScope, cfg config.Config) error {
@@ -17,6 +18,11 @@ func Start(ctx context.Context, d dependencies.StorageReaderScope, cfg config.Co
 
 	logger := d.Logger().WithComponent("storage.node.reader")
 	logger.Info(ctx, `starting storage reader node`)
+	defer logger.Info(ctx, `stoping storage reader node`)
+
+	if err := sliceupload.Start(d, cfg.Storage.Level.Staging.Operator); err != nil {
+		return err
+	}
 
 	return nil
 }
