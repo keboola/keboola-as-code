@@ -289,7 +289,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 		defer dbCancel()
 
-		err := o.storage.Slice().SwitchToUploaded(data.Slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
+		err := o.storage.Slice().SwitchToUploaded(data.Slice.SliceKey, o.clock.Now(), true).Do(dbCtx).Err()
 		if err != nil {
 			o.logger.Errorf(dbCtx, "cannot switch slice to the uploaded state: %v", err)
 
@@ -345,7 +345,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
-	err = o.storage.Slice().SwitchToUploaded(data.Slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
+	err = o.storage.Slice().SwitchToUploaded(data.Slice.SliceKey, o.clock.Now(), false).Do(dbCtx).Err()
 	if err != nil {
 		o.logger.Errorf(dbCtx, "cannot switch slice to the uploaded state: %v", err)
 

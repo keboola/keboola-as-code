@@ -8,6 +8,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/gcs"
 	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
 	"github.com/relvacode/iso8601"
 	"go.uber.org/atomic"
@@ -34,12 +35,41 @@ func MockFileStorageAPICalls(tb testing.TB, clk clock.Clock, transport *httpmock
 						BranchID: branchID,
 						FileID:   keboola.FileID(fileID.Inc()),
 					},
+					Provider: gcs.Provider,
+				},
+				GCSUploadParams: &gcs.UploadParams{
+					Path: gcs.Path{
+						Key:    "testing",
+						Bucket: "b1",
+					},
+					Credentials: gcs.Credentials{
+						ExpiresIn: int(clk.Now().Add(time.Hour).Unix()),
+					},
 				},
 				S3UploadParams: &s3.UploadParams{
+					Path: s3.Path{
+						Key:    "test",
+						Bucket: "b1",
+					},
 					Credentials: s3.Credentials{
 						Expiration: iso8601.Time{Time: clk.Now().Add(time.Hour)},
 					},
 				},
+			})
+		},
+	)
+
+	// Mocked events call
+	transport.RegisterResponder(
+		http.MethodPost,
+		`=~/v2/storage/events$`,
+		func(request *http.Request) (*http.Response, error) {
+			return httpmock.NewJsonResponse(http.StatusOK, &keboola.Event{
+				ID:          "123",
+				ComponentID: "123",
+				Message:     "abc",
+				Type:        "event",
+				Duration:    0,
 			})
 		},
 	)

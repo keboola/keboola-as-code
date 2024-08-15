@@ -154,6 +154,7 @@ func TestSlice_Validation(t *testing.T) {
 	}
 	stagingStorage := stagingModel.Slice{
 		Path:        "slice.csv.gzip",
+		Provider:    "keboola",
 		Compression: compression.NewConfig(),
 		Upload:      stagingConfig.NewConfig().Upload,
 	}
@@ -190,6 +191,7 @@ func TestSlice_Validation(t *testing.T) {
 - "local.filenamePrefix" is a required field
 - "local.filenameExtension" is a required field
 - "staging.path" is a required field
+- "staging.provider" is a required field
 - "staging.compression.type" is a required field
 - "staging.upload.trigger.count" is a required field
 - "staging.upload.trigger.size" is a required field

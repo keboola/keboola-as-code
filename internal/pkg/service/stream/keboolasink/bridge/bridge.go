@@ -1,6 +1,8 @@
 package bridge
 
 import (
+	"time"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -22,6 +24,8 @@ const (
 	// targetProvider marks files which destination is a Keboola table.
 	targetProvider = targetModel.Provider("keboola")
 
+	// Upload slice timeout.
+	uploadEventSendTimeout = 30 * time.Second
 	// sinkMetaKey is a key of the table metadata that marks each table created by the stream.sink.
 	sinkMetaKey = "KBC.stream.sink.id"
 	// sourceMetaKey is a key of the table metadata that marks each table created by the stream.source.
@@ -67,6 +71,10 @@ func New(d dependencies, apiProvider apiProvider) *Bridge {
 	b.deleteCredentialsOnFileDelete()
 	b.deleteTokenOnSinkDeactivation()
 	b.registerFileImporter()
+	b.plugins.RegisterSliceUploader(
+		stagingFileProvider,
+		b.uploadSlice,
+	)
 
 	return b
 }

@@ -24,6 +24,7 @@ func TestSlice_Validation(t *testing.T) {
 			Name:          "empty",
 			ExpectedError: `"path" is a required field`,
 			Value: Slice{
+				Provider:    "keeboola",
 				Compression: compression.NewConfig(),
 				Upload:      staging.NewConfig().Upload,
 			},
@@ -32,6 +33,7 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "ok",
 			Value: Slice{
 				Path:        "my-slice.csv.gzip",
+				Provider:    "keeboola",
 				Compression: compression.NewConfig(),
 				Upload:      staging.NewConfig().Upload,
 			},

@@ -71,6 +71,7 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 		},
 		StagingStorage: stagingModel.Slice{
 			Path:        "slice.csv",
+			Provider:    "keboola",
 			Compression: compression.NewNoneConfig(),
 			Upload: staging.UploadConfig{
 				Trigger: staging.UploadTrigger{
