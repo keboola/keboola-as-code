@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofrs/uuid/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
@@ -90,6 +91,38 @@ func TestRenderer_Path_Json_Scalar(t *testing.T) {
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, `"val2"`, val)
+}
+
+func TestRenderer_Path_Json_Integer(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key1.key2",
+	}
+
+	body := `{"key1":{"key2":42},"key3":"val3"}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `42`, val)
+}
+
+func TestRenderer_Path_Json_Float(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key1.key2",
+	}
+
+	body := `{"key1":{"key2":42.1},"key3":"val3"}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `42.1`, val)
 }
 
 func TestRenderer_Path_Json_Object(t *testing.T) {
@@ -183,7 +216,7 @@ func TestRenderer_Path_Json_UndefinedKey_Error(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `path "key1.invalid" not found in the body`, err.Error())
 }
 
@@ -199,7 +232,7 @@ func TestRenderer_Path_Json_UndefinedIndex_Error(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `path "key1[1]" not found in the body`, err.Error())
 }
 
@@ -367,7 +400,7 @@ func TestRenderer_Template_Json_UndefinedKey_Error(t *testing.T) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 
 	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, `path "key1.invalid" not found in the body`, err.Error())
 }
 
