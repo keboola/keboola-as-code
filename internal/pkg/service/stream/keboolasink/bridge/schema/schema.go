@@ -3,14 +3,14 @@ package schema
 import "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 
 type Schema struct {
-	token             Token
-	uploadCredentials UploadCredentials
+	token Token
+	file  File
 }
 
 func New(s *serde.Serde) Schema {
 	return Schema{
-		token:             forToken(s),
-		uploadCredentials: forFileUploadCredentials(s),
+		token: forToken(s),
+		file:  forFile(s),
 	}
 }
 
@@ -18,6 +18,6 @@ func (s Schema) Token() Token {
 	return s.token
 }
 
-func (s Schema) UploadCredentials() UploadCredentials {
-	return s.uploadCredentials
+func (s Schema) File() File {
+	return s.file
 }

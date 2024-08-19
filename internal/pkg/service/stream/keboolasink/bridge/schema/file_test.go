@@ -12,7 +12,7 @@ import (
 
 func TestFileSchema(t *testing.T) {
 	t.Parallel()
-	s := forFileUploadCredentials(serde.NewJSON(serde.NoValidation))
+	s := forFile(serde.NewJSON(serde.NoValidation))
 
 	fileKey := test.NewFileKey()
 
