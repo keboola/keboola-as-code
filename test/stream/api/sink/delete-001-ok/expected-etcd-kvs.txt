@@ -47,7 +47,7 @@ task/%%TEST_KBC_PROJECT_ID%%/api.delete.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-sourc
 >>>>>
 
 <<<<<
-storage/keboola/file/upload/credentials/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
+storage/keboola/file/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
 -----
 %A
 >>>>>

@@ -29,7 +29,7 @@
   003 ➡️  DEL "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
   004 ➡️  DEL "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
   // Delete file upload credentials
-  005 ➡️  DEL "storage/keboola/file/upload/credentials/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  005 ➡️  DEL "storage/keboola/file/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
   // Delete statistics (there is no PUT _sum, because statistics are empty)
   006 ➡️  DEL ["storage/stats/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/stats/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0")
   007 ➡️  DEL ["storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0")
@@ -65,7 +65,7 @@
   002 ➡️  DEL "storage/file/level/local/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"
   003 ➡️  DEL "storage/slice/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
   004 ➡️  DEL "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z"
-  005 ➡️  DEL "storage/keboola/file/upload/credentials/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"
+  005 ➡️  DEL "storage/keboola/file/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"
   006 ➡️  DEL ["storage/stats/local/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/", "storage/stats/local/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z0")
   007 ➡️  DEL ["storage/stats/staging/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z0")
   008 ➡️  DEL ["storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/", "storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z0")

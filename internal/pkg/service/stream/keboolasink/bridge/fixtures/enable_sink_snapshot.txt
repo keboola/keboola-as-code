@@ -5,13 +5,13 @@ storage/keboola/secret/token/123/456/my-source/my-sink
 >>>>>
 
 <<<<<
-storage/keboola/file/upload/credentials/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
+storage/keboola/file/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
 -----
 %A
 >>>>>
 
 <<<<<
-storage/keboola/file/upload/credentials/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z
+storage/keboola/file/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z
 -----
 %A
 >>>>>

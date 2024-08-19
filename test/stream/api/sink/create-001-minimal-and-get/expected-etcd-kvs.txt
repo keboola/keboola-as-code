@@ -107,7 +107,7 @@ storage/keboola/secret/token/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/
 >>>>>
 
 <<<<<
-storage/keboola/file/upload/credentials/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
+storage/keboola/file/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
 -----
 %A
 >>>>>

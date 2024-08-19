@@ -221,25 +221,25 @@ storage/file/level/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-s
 >>>>>
 
 <<<<<
-storage/keboola/file/upload/credentials/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
+storage/keboola/file/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
 -----
 %A
 >>>>>
 
 <<<<<
-storage/keboola/file/upload/credentials/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
+storage/keboola/file/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
 -----
 %A
 >>>>>
 
 <<<<<
-storage/keboola/file/upload/credentials/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
+storage/keboola/file/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
 -----
 %A
 >>>>>
 
 <<<<<
-storage/keboola/file/upload/credentials/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
+storage/keboola/file/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
 -----
 %A
 >>>>>
