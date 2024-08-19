@@ -10,5 +10,6 @@ import (
 type File struct {
 	key.SinkKey
 	keboola.TableKey
+	*keboola.StorageJobID
 	keboola.FileUploadCredentials
 }
