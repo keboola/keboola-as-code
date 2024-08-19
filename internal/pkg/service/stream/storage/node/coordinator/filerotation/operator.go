@@ -301,7 +301,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		// Increment retry delay
 		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
 		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file retry: %s", err)
+			o.logger.Errorf(ctx, "cannot increment file rotation retry: %s", err)
 			return
 		}
 	}
@@ -338,7 +338,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 		o.logger.Error(ctx, err.Error())
 		err = o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).Do(ctx).Err()
 		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file retry", err)
+			o.logger.Errorf(ctx, "cannot increment file close retry", err)
 		}
 		return
 	}

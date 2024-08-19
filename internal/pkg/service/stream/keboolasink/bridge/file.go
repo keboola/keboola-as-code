@@ -131,7 +131,8 @@ func (b *Bridge) registerFileImporter() {
 
 			// Get file upload credentials
 			var keboolaFile *keboolasink.File
-			err = b.schema.File().ForFile(file.FileKey).GetOrNil(b.client).WithResultTo(&keboolaFile).Do(ctx).Err()
+			prefix := b.schema.File().ForFile(file.FileKey)
+			err = prefix.GetOrNil(b.client).WithResultTo(&keboolaFile).Do(ctx).Err()
 			if err != nil {
 				return err
 			}
@@ -139,10 +140,29 @@ func (b *Bridge) registerFileImporter() {
 			// Authorized API
 			api := b.publicAPI.WithToken(token.TokenString())
 
-			// Create job to import data
-			job, err := api.LoadDataFromFileRequest(keboolaFile.TableKey, keboolaFile.FileKey).Send(ctx)
-			if err != nil {
-				return err
+			// Check if job already exists
+			var job *keboola.StorageJob
+			if keboolaFile.StorageJobID != nil {
+				job, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: *keboolaFile.StorageJobID}).Send(ctx)
+				if err != nil {
+					return err
+				}
+
+				if job.Status == "success" {
+					return nil
+				}
+			}
+
+			// Create job to import data if no job exists yet or if it failed
+			if job == nil || job.Status == "error" {
+				job, err = api.LoadDataFromFileRequest(keboolaFile.TableKey, keboolaFile.FileKey).Send(ctx)
+				if err != nil {
+					return err
+				}
+
+				// Save job ID to etcd
+				keboolaFile.StorageJobID = &job.ID
+				prefix.Put(b.client, *keboolaFile).Do(ctx)
 			}
 
 			// Wait for job to complete

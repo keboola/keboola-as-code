@@ -4,6 +4,7 @@ package fileimport
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -216,6 +217,32 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 func (o *operator) importFile(ctx context.Context, file *fileData) {
 	err := o.plugins.ImportFile(ctx, &file.File)
 	if err != nil {
-		panic(err) // TODO: error handling?
+		err = errors.PrefixError(err, "error when waiting for file import")
 	}
+
+	// Update the entity, the ctx may be cancelled
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer dbCancel()
+
+	// If there is no error, switch file to the importing state
+	if err == nil {
+		err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).Do(dbCtx).Err()
+		if err != nil {
+			err = errors.PrefixError(err, "cannot switch file to the imported state")
+		}
+	}
+
+	// If there is an error, increment retry delay
+	if err != nil {
+		o.logger.Error(ctx, err.Error())
+		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+		if err != nil {
+			o.logger.Errorf(ctx, "cannot increment file import retry: %s", err)
+		}
+		return
+	}
+
+	// Prevents other processing, if the entity has been modified.
+	// It takes a while to watch stream send the updated state back.
+	file.Processed = true
 }
