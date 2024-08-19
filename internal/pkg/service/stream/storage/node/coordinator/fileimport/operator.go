@@ -74,6 +74,14 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		plugins:    d.Plugins(),
 	}
 
+	// Join the distribution group
+	{
+		o.distribution, err = d.DistributionNode().Group("operator.file.import")
+		if err != nil {
+			return err
+		}
+	}
+
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -86,14 +94,6 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 
 		o.logger.Info(ctx, "closed file import operator")
 	})
-
-	// Join the distribution group
-	{
-		o.distribution, err = d.DistributionNode().Group("operator.file.import")
-		if err != nil {
-			return err
-		}
-	}
 
 	// Mirror files
 	{

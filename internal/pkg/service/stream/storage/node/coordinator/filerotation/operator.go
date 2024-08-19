@@ -76,6 +76,14 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		locks:      d.DistributedLockProvider(),
 	}
 
+	// Join the distribution group
+	{
+		o.distribution, err = d.DistributionNode().Group("operator.file.rotation")
+		if err != nil {
+			return err
+		}
+	}
+
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -88,14 +96,6 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 
 		o.logger.Info(ctx, "closed file rotation operator")
 	})
-
-	// Join the distribution group
-	{
-		o.distribution, err = d.DistributionNode().Group("operator.file.rotation")
-		if err != nil {
-			return err
-		}
-	}
 
 	// Mirror files
 	{
