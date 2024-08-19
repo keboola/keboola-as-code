@@ -342,6 +342,12 @@ func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
 	// Mock APIs
 	httpClient, mockedHTTPTransport := defaultMockedResponses(cfg)
 
+	// Create temporary etcd namespace, see "TmpNamespace" function for details.
+	// It should be deleted at the end via t.Cleanup as the LAST thing, therefore it is initialized as the first.
+	if cfg.enableEtcdClient && cfg.etcdConfig.Endpoint == "" {
+		cfg.etcdConfig = etcdhelper.TmpNamespace(tb)
+	}
+
 	// Create service process, WithoutSignals - so it doesn't block Ctrl+C in tests
 	cfg.procOpts = append([]servicectx.Option{servicectx.WithLogger(logger), servicectx.WithoutSignals()}, cfg.procOpts...)
 	proc := servicectx.NewForTest(tb, cfg.procOpts...)
@@ -369,10 +375,6 @@ func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
 	}
 
 	if cfg.enableEtcdClient {
-		if cfg.etcdConfig.Endpoint == "" {
-			cfg.etcdConfig = etcdhelper.TmpNamespace(tb)
-		}
-
 		etcdCfg := cfg.etcdConfig
 		if cfg.etcdDebugLog {
 			etcdCfg.DebugLog = true
