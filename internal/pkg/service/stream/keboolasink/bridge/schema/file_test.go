@@ -19,7 +19,7 @@ func TestFileSchema(t *testing.T) {
 	cases := []struct{ actual, expected string }{
 		{
 			s.ForFile(fileKey).Key(),
-			"storage/keboola/file/upload/credentials/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z",
+			"storage/keboola/file/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z",
 		},
 	}
 
