@@ -321,13 +321,25 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 		err = errors.PrefixError(err, "error when waiting for file slices upload")
 	}
 
+	// Lock all file operations in the sink
+	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
+	if err := lock.Lock(ctx); err != nil {
+		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+		return
+	}
+	defer func() {
+		if err := lock.Unlock(ctx); err != nil {
+			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
+		}
+	}()
+
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
 	// If there is no error, switch file to the importing state
 	if err == nil {
-		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now()).Do(dbCtx).Err()
+		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
 		if err != nil {
 			err = errors.PrefixError(err, "cannot switch file to the importing state")
 		}
@@ -336,11 +348,11 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
-		err = o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+		err = o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
 		if err != nil {
 			o.logger.Errorf(ctx, "cannot increment file close retry", err)
+			return
 		}
-		return
 	}
 
 	// Prevents other processing, if the entity has been modified.
