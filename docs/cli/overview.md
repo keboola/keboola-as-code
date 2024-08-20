@@ -28,7 +28,7 @@ CLI commands are defined in [`internal/pkg/service/cli/cmd/`](../../internal/pkg
 ## Dialogs
 
 Most CLI commands offer an interactive dialog to fill in the needed information. E.g. `local create` command asks what to create 
-by calling [`d.Dialogs().AskWhatCreateLocal()`](https://github.com/keboola/keboola-as-code/blob/6157a3d111c04adc58e87485e065b386046fffaa/internal/pkg/service/cli/cmd/local/create.go#L28-L28).
+by calling [`d.Dialogs().AskWhatCreateLocal()`](https://github.com/keboola/keboola-as-code/blob/26baba1315236ed6b9cc810892ac440bf7da9d7e/internal/pkg/service/cli/cmd/local/create/cmd.go#L42-L49).
 The user inputs can be filled in a non-interactive mode using command flags.
 
 The dialogs are defined in the [`internal/pkg/service/cli/dialog`](../../internal/pkg/service/cli/dialog) package.
