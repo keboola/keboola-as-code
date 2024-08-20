@@ -156,6 +156,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Co
 	mock.MockedHTTPTransport().Reset()
 
 	mock.dummySinkController.RegisterDummySinkTypes(serviceScp.Plugins(), mock.TestDummySinkController())
+	mock.dummyBridge.RegisterDummyImporter(serviceScp.Plugins())
 
 	return serviceScp, mock
 }

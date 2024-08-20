@@ -186,7 +186,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 }
 
 func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
-	o.logger.Debugf(ctx, "checking slices rotation conditions")
+	o.logger.Debugf(ctx, "checking slices upload conditions")
 
 	o.slices.ForEach(func(_ model.SliceKey, slice *sliceData) (stop bool) {
 		wg.Add(1)

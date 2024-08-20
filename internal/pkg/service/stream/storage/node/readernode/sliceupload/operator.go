@@ -26,7 +26,6 @@ type operator struct {
 	config     stagingConfig.OperatorConfig
 	clock      clock.Clock
 	logger     log.Logger
-	publicAPI  *keboola.PublicAPI
 	volumes    *diskreader.Volumes
 	statistics *statsCache.L1
 	storage    *storageRepo.Repository
@@ -73,7 +72,6 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		config:     config,
 		clock:      d.Clock(),
 		logger:     d.Logger().WithComponent("storage.node.operator.slice.upload"),
-		publicAPI:  d.KeboolaPublicAPI(),
 		volumes:    d.Volumes(),
 		statistics: d.StatisticsL1Cache(),
 		storage:    d.StorageRepository(),
@@ -89,55 +87,6 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		// Stop mirroring
 		cancel()
 		wg.Wait()
-		ctx := context.WithoutCancel(ctx)
-		for {
-			remainingToUpload := 0
-			o.slices.ForEach(func(_ model.SliceKey, data *sliceData) (stop bool) {
-				wg.Add(1)
-				// Prevent multiple checks of the same slice
-				if !data.Lock.TryLock() {
-					return false
-				}
-				defer func() {
-					data.Lock.Unlock()
-					wg.Done()
-				}()
-
-				// Slice uploading is already in progress
-				if data.Uploading {
-					remainingToUpload++
-					return false
-				}
-
-				// Slice has been modified by some previous check, but we haven't received an updated version from etcd yet
-				if data.Processed {
-					return false
-				}
-
-				if !data.Slice.Retryable.Allowed(o.clock.Now()) {
-					remainingToUpload++
-					return false
-				}
-
-				volume, err := o.volumes.Collection().Volume(data.Slice.SliceKey.VolumeID)
-				if err != nil {
-					o.logger.Errorf(ctx, "unable to upload slice. No volume found for key: %v", data.Slice.SliceKey.VolumeID)
-					return true
-				}
-
-				switch data.Slice.State {
-				case model.SliceUploading:
-					remainingToUpload++
-					o.uploadSlice(ctx, volume, data)
-				default:
-					// nop
-				}
-				return false
-			})
-			if remainingToUpload == 0 {
-				break
-			}
-		}
 		o.logger.Info(ctx, "closed slice upload operator")
 	})
 
@@ -270,7 +219,7 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 
 	volume, err := o.volumes.Collection().Volume(data.Slice.SliceKey.VolumeID)
 	if err != nil {
-		o.logger.Errorf(ctx, "unable to upload slice. No volume found for key: %v", data.Slice.SliceKey.VolumeID)
+		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", data.Slice.SliceKey.VolumeID)
 		return
 	}
 

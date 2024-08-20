@@ -18,12 +18,10 @@ import (
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router/closesync"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
@@ -32,9 +30,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/readernode/sliceupload"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 func TestSliceUpload(t *testing.T) {
@@ -60,7 +58,6 @@ func TestSliceUpload(t *testing.T) {
 	volumePath2 := filepath.Join(volumesPath, "hdd", "002")
 	require.NoError(t, os.MkdirAll(volumePath2, 0o700))
 	require.NoError(t, os.WriteFile(filepath.Join(volumePath2, volume.IDFile), []byte(fmt.Sprintf("%s-2", nodeID)), 0o600))
-	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition)|(runtime)|(storage/file)|(storage/slice)|(storage/stats)|(storage/volume)")
 
 	// Create dependencies
 	clk := clock.NewMock()
@@ -93,23 +90,6 @@ func TestSliceUpload(t *testing.T) {
 
 	// Start slice upload reader node
 	require.NoError(t, sliceupload.Start(d, mock.TestConfig().Storage.Level.Staging.Operator))
-
-	// apiCtx - for operations triggered by an authorized API call
-	apiCtx := rollback.ContextWith(ctx, rollback.New(d.Logger()))
-	apiCtx = context.WithValue(apiCtx, dependencies.KeboolaProjectAPICtxKey, mock.KeboolaProjectAPI())
-
-	// Register mocked responses
-	// -----------------------------------------------------------------------------------------------------------------
-	url := bridgeTest.GCSServer(t)
-	os.Setenv("STORAGE_EMULATOR_HOST", url)
-	transport := mock.MockedHTTPTransport()
-	{
-		bridgeTest.MockTokenStorageAPICalls(t, transport)
-		bridgeTest.MockBucketStorageAPICalls(t, transport)
-		bridgeTest.MockTableStorageAPICalls(t, transport)
-		bridgeTest.MockGCSBucket(t, transport)
-		bridgeTest.MockFileStorageAPICalls(t, clk, transport)
-	}
 
 	// Register some volumes
 	session, err := concurrency.NewSession(client)
@@ -147,12 +127,11 @@ func TestSliceUpload(t *testing.T) {
 	branch := test.NewBranch(branchKey)
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	source := test.NewHTTPSource(sourceKey)
-	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-keboola-sink"}
-	sink := test.NewKeboolaTableSink(sinkKey)
+	sink := dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-keboola-sink"})
 	sink.Config = testconfig.LocalVolumeConfig(2, []string{"hdd"})
 	require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, clk.Now(), test.ByUser()).Do(ctx).Err())
 	require.NoError(t, d.DefinitionRepository().Source().Create(&source, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
-	require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, clk.Now(), test.ByUser(), "create").Do(apiCtx).Err())
+	require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
 	waitForFilesSync(t)
 
 	// Trigger check - no upload trigger
@@ -267,98 +246,13 @@ func TestSliceUpload(t *testing.T) {
 	for _, slice := range slices {
 		// Setup slice
 		sliceData := localData.Bytes()
-		// slice.Encoding.Compression = tc.LocalCompression
-		// slice.StagingStorage.Compression = tc.StagingCompression
 		assert.NoError(t, os.MkdirAll(slice.LocalStorage.DirName(volumePath1), 0o750))
 		assert.NoError(t, os.WriteFile(slice.LocalStorage.FileName(volumePath1, "my-node"), sliceData, 0o640))
 	}
 
-	etcdhelper.AssertKVsString(t, d.EtcdClient(), `
-<<<<<
-storage/keboola/secret/token/123/111/my-source/my-keboola-sink
------
-{
-  "projectId": 123,
-  "branchId": 111,
-  "sourceId": "my-source",
-  "sinkId": "my-keboola-sink",
-  "token": {
-    "token": "my-token",
-    "id": "1001",
-    "description": "[_internal] Stream Sink my-source/my-keboola-sink",
-    "isMasterToken": false,
-    "canManageBuckets": false,
-    "canManageTokens": false,
-    "canReadAllFileUploads": true,
-    "canPurgeTrash": false,
-    "created": "0001-01-01T00:00:00Z",
-    "refreshed": "0001-01-01T00:00:00Z",
-    "expires": null,
-    "isExpired": false,
-    "isDisabled": false,
-    "owner": {
-      "id": 0,
-      "name": "",
-      "features": null,
-      "hasMysql": false,
-      "hasSynapse": false,
-      "hasRedshift": false,
-      "hasSnowflake": false,
-      "hasExasol": false,
-      "hasTeradata": false,
-      "hasBigquery": false,
-      "defaultBackend": ""
-    },
-    "bucketPermissions": {
-      "in.c-bucket": "write"
-    }
-  }
-}
->>>>>
-
-<<<<<
-storage/keboola/file/upload/credentials/123/111/my-source/my-keboola-sink/2000-01-01T00:00:00.000Z
------
-{
-  "projectId": 123,
-  "branchId": 111,
-  "sourceId": "my-source",
-  "sinkId": "my-keboola-sink",
-  "id": 1001,
-  "created": "0001-01-01T00:00:00Z",
-  "name": "",
-  "url": "",
-  "provider": "gcp",
-  "region": "",
-  "maxAgeDays": 0,
-  "federationToken": true,
-  "gcsUploadParams": {
-    "key": "testing",
-    "bucket": "b1",
-    "projectId": "",
-    "access_token": "",
-    "token_type": "",
-    "expires_in": 946688400
-  },
-  "uploadParams": {
-    "key": "test",
-    "bucket": "b1",
-    "credentials": {
-      "AccessKeyId": "",
-      "SecretAccessKey": "",
-      "SessionToken": "",
-      "Expiration": "2000-01-01T01:00:00Z"
-    },
-    "acl": "",
-    "x-amz-server-side-encryption": ""
-  }
-}
->>>>>`, ignoredEtcdKeys)
-
 	// Trigger check - opened reader to upload slice
 	triggerCheck(t, false, `
 {"level":"debug","time":"%s","message":"opened disk reader","volume.id":"my-volume-1","projectId":"123","branchId":"111","sourceId":"my-source","sinkId":"my-keboola-sink","fileId":"2000-01-01T00:00:00.000Z","sliceId":"2000-01-01T00:00:00.000Z","file.path":"/tmp/TestSliceUpload%s/hdd/001/123/111/my-source/my-keboola-sink/2000-01-01T00-00-00-000Z/2000-01-01T00-00-00-000Z/slice-my-node.csv.gz","slice":"123/111/my-source/my-keboola-sink/2000-01-01T00:00:00.000Z/my-volume-1/2000-01-01T00:00:00.000Z","component":"storage.node.reader.volumes"}
-{"level":"debug","time":"%s","message":"Sent eventID: 123","component":"keboola.bridge"}
 {"level":"debug","time":"%s","message":"watch stream mirror synced to revision %d","stream.prefix":"storage/slice/level/local/","component":"storage.node.operator.slice.upload"}
 `)
 

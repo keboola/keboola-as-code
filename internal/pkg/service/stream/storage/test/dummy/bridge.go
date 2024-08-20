@@ -25,6 +25,15 @@ func (b *Bridge) RegisterDummyImporter(plugins *plugin.Plugins) {
 	plugins.RegisterSliceUploader(
 		fileProviderType,
 		func(ctx context.Context, volume *diskreader.Volume, slice *model.Slice, uploadedSlices map[model.FileKey]string, stats statistics.Value) error {
+			reader, err := volume.OpenReader(slice)
+			if err != nil {
+				return err
+			}
+
+			defer func() {
+				err = reader.Close(ctx)
+			}()
+
 			return nil
 		})
 }
