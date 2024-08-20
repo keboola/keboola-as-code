@@ -19,15 +19,6 @@ type uploadSliceFn func(
 	stats statistics.Value,
 ) error
 
-func (p *Plugins) ImporterFor(provider stagingModel.FileProvider) error {
-	if _, ok := p.sliceUploader[provider]; !ok {
-		err := fmt.Sprintf("no importer for given provider: %v", provider)
-		return errors.New(err)
-	}
-
-	return nil
-}
-
 func (p *Plugins) RegisterSliceUploader(provider stagingModel.FileProvider, fn uploadSliceFn) {
 	p.sliceUploader[provider] = fn
 }
@@ -39,6 +30,11 @@ func (p *Plugins) UploadSlice(
 	alreadyUploadedSlices map[model.FileKey]string,
 	stats statistics.Value,
 ) error {
+	if _, ok := p.sliceUploader[slice.StagingStorage.Provider]; !ok {
+		err := fmt.Sprintf("missing uploadSlice definition for given provider: %v", slice.StagingStorage.Provider)
+		return errors.New(err)
+	}
+
 	err := p.sliceUploader[slice.StagingStorage.Provider](ctx, volume, slice, alreadyUploadedSlices, stats)
 	if err != nil {
 		return err

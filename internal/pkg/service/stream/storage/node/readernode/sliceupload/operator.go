@@ -196,13 +196,6 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 	}
 	defer data.Lock.Unlock()
 
-	// No plugin existing for given slice to be uploaded
-	err := o.plugins.ImporterFor(data.Slice.StagingStorage.Provider)
-	if err != nil {
-		o.logger.Errorf(ctx, "importer for provider: %v does not exists", data.Slice.StagingStorage.Provider)
-		return
-	}
-
 	// Slice uploading is already in progress
 	if data.Uploading {
 		return
