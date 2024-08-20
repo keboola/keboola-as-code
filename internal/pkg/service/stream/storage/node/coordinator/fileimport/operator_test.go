@@ -130,8 +130,6 @@ func TestFileImportError(t *testing.T) {
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, func(cfg *config.Config) {
 		cfg.Storage.Level.Target.Operator.FileImportCheckInterval = duration.From(importingFilesCheckInterval)
 	}, commonDeps.WithClock(clk))
-	// File import plugin will return this error instead of a success
-	mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
 	logger := mock.DebugLogger()
 	client := mock.TestEtcdClient()
 
@@ -164,6 +162,9 @@ func TestFileImportError(t *testing.T) {
 	require.Len(t, slices, 1)
 	require.Equal(t, model.SliceWriting, slices[0].State)
 
+	// Fail first file import
+	mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
+
 	clk.Add(time.Second)
 	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now()).Do(ctx).Err())
@@ -176,6 +177,11 @@ func TestFileImportError(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, files, 2)
 	require.Equal(t, model.FileImporting, files[0].State)
+	require.Equal(t, 0, files[0].RetryAttempt)
+	require.Nil(t, files[0].FirstFailedAt)
+	require.Nil(t, files[0].LastFailedAt)
+	require.Nil(t, files[0].RetryAfter)
+	require.Equal(t, "", files[0].RetryReason)
 	require.Equal(t, model.FileWriting, files[1].State)
 	slices, err = d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
@@ -189,13 +195,44 @@ func TestFileImportError(t *testing.T) {
 		logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for file import:\n- File import to keboola failed","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
-	// TODO: check fields in file Retryable
+	// Check state
+	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Len(t, files, 2)
+	require.Equal(t, model.FileImporting, files[0].State)
+	require.Equal(t, 1, files[0].RetryAttempt)
+	require.NotNil(t, files[0].FirstFailedAt)
+	require.NotNil(t, files[0].LastFailedAt)
+	require.NotNil(t, files[0].RetryAfter)
+	require.Equal(t, "error when waiting for file import:\n- File import to keboola failed", files[0].RetryReason)
+	require.Equal(t, model.FileWriting, files[1].State)
+	slices, err = d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Len(t, slices, 2)
+	require.Equal(t, model.SliceUploaded, slices[0].State)
+	require.Equal(t, model.SliceWriting, slices[1].State)
+
+	// File import retry should succeed
+	mock.TestDummySinkController().ImportError = nil
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		logger.AssertJSONMessages(
+			c,
+	`{"level":"error","message":"error when waiting for file import:\n- File import to keboola failed","component":"storage.node.operator.file.import"}
+{"level":"debug","message":"successfully imported file %s","component":"storage.node.operator.file.import"}`,
+		)
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
 	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	require.Len(t, files, 2)
 	require.Equal(t, model.FileImported, files[0].State)
+	require.Equal(t, 1, files[0].RetryAttempt)
+	require.NotNil(t, files[0].FirstFailedAt)
+	require.NotNil(t, files[0].LastFailedAt)
+	require.NotNil(t, files[0].RetryAfter)
+	require.Equal(t, "error when waiting for file import:\n- File import to keboola failed", files[0].RetryReason)
 	require.Equal(t, model.FileWriting, files[1].State)
 	slices, err = d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
@@ -206,7 +243,4 @@ func TestFileImportError(t *testing.T) {
 	// Shutdown
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
 	d.Process().WaitForShutdown()
-
-	// No error is logged
-	logger.AssertJSONMessages(t, "")
 }
