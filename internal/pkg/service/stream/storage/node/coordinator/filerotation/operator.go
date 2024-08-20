@@ -200,7 +200,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 	// Start conditions check ticker
 	{
 		wg.Add(1)
-		ticker := d.Clock().Ticker(o.config.CheckInterval.Duration())
+		ticker := d.Clock().Ticker(o.config.FileRotationCheckInterval.Duration())
 
 		go func() {
 			defer wg.Done()
@@ -312,7 +312,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
 	// Wait until all slices are uploaded

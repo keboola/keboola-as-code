@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -155,10 +154,10 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		}()
 	}
 
-	// Start conditions check ticker
+	// Start importing files check ticker
 	{
 		wg.Add(1)
-		ticker := d.Clock().Ticker(o.config.CheckInterval.Duration())
+		ticker := d.Clock().Ticker(o.config.FileImportCheckInterval.Duration())
 
 		go func() {
 			defer wg.Done()
@@ -179,7 +178,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 }
 
 func (o *operator) checkFiles(ctx context.Context, wg *sync.WaitGroup) {
-	o.logger.Debugf(ctx, "checking files import conditions")
+	o.logger.Debugf(ctx, "checking files in the importing state")
 
 	o.files.ForEach(func(_ model.FileKey, file *fileData) (stop bool) {
 		wg.Add(1)
@@ -216,6 +215,7 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) importFile(ctx context.Context, file *fileData) {
+	// Import the file to specific provider
 	err := o.plugins.ImportFile(ctx, &file.File)
 	if err != nil {
 		err = errors.PrefixError(err, "error when waiting for file import")
@@ -234,12 +234,12 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	}()
 
 	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-	defer dbCancel()
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
+	defer cancel()
 
 	// If there is no error, switch file to the importing state
 	if err == nil {
-		err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
+		err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
 		if err != nil {
 			err = errors.PrefixError(err, "cannot switch file to the imported state")
 		}
