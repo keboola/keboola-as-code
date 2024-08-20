@@ -16,6 +16,7 @@ import (
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 )
 
 const (
@@ -33,13 +34,14 @@ const (
 )
 
 type Bridge struct {
-	logger      log.Logger
-	client      etcd.KV
-	schema      schema.Schema
-	plugins     *plugin.Plugins
-	publicAPI   *keboola.PublicAPI
-	apiProvider apiProvider
-	clock       clock.Clock
+	logger            log.Logger
+	client            etcd.KV
+	schema            schema.Schema
+	plugins           *plugin.Plugins
+	publicAPI         *keboola.PublicAPI
+	apiProvider       apiProvider
+	storageRepository *storageRepo.Repository
+	clock             clock.Clock
 
 	getBucketOnce    *singleflight.Group
 	createBucketOnce *singleflight.Group
@@ -52,19 +54,21 @@ type dependencies interface {
 	Plugins() *plugin.Plugins
 	KeboolaPublicAPI() *keboola.PublicAPI
 	Clock() clock.Clock
+	StorageRepository() *storageRepo.Repository
 }
 
 func New(d dependencies, apiProvider apiProvider) *Bridge {
 	b := &Bridge{
-		logger:           d.Logger().WithComponent("keboola.bridge"),
-		client:           d.EtcdClient(),
-		schema:           schema.New(d.EtcdSerde()),
-		plugins:          d.Plugins(),
-		publicAPI:        d.KeboolaPublicAPI(),
-		apiProvider:      apiProvider,
-		clock:            d.Clock(),
-		getBucketOnce:    &singleflight.Group{},
-		createBucketOnce: &singleflight.Group{},
+		logger:            d.Logger().WithComponent("keboola.bridge"),
+		client:            d.EtcdClient(),
+		schema:            schema.New(d.EtcdSerde()),
+		plugins:           d.Plugins(),
+		publicAPI:         d.KeboolaPublicAPI(),
+		apiProvider:       apiProvider,
+		storageRepository: d.StorageRepository(),
+		clock:             d.Clock(),
+		getBucketOnce:     &singleflight.Group{},
+		createBucketOnce:  &singleflight.Group{},
 	}
 
 	b.setupOnFileOpen()
