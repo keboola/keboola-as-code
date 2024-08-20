@@ -234,12 +234,12 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	}()
 
 	// Update the entity, the ctx may be cancelled
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
-	defer cancel()
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
+	defer dbCancel()
 
 	// If there is no error, switch file to the importing state
 	if err == nil {
-		err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
+		err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
 		if err != nil {
 			err = errors.PrefixError(err, "cannot switch file to the imported state")
 		}
@@ -248,7 +248,7 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
-		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).Err()
 		if err != nil {
 			o.logger.Errorf(ctx, "cannot increment file import retry: %s", err)
 			return
