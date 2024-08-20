@@ -23,10 +23,11 @@ type ConfigPatch struct {
 func NewConfig() Config {
 	return Config{
 		Operator: OperatorConfig{
-			CheckInterval:       duration.From(1 * time.Second),
-			FileRotationTimeout: duration.From(5 * time.Minute),
-			FileCloseTimeout:    duration.From(1 * time.Minute),
-			FileImportTimeout:   duration.From(15 * time.Minute),
+			FileRotationCheckInterval: duration.From(1 * time.Second),
+			FileRotationTimeout:       duration.From(5 * time.Minute),
+			FileCloseTimeout:          duration.From(1 * time.Minute),
+			FileImportCheckInterval:   duration.From(1 * time.Second),
+			FileImportTimeout:         duration.From(15 * time.Minute),
 		},
 		Import: ImportConfig{
 			Trigger: ImportTrigger{
@@ -41,10 +42,11 @@ func NewConfig() Config {
 }
 
 type OperatorConfig struct {
-	CheckInterval       duration.Duration `json:"checkInterval" configKey:"checkInterval" configUsage:"Import triggers check interval." validate:"required,minDuration=100ms,maxDuration=30s"`
-	FileRotationTimeout duration.Duration `json:"fileRotationTimeout" configKey:"fileRotationTimeout" configUsage:"Timeout of the file rotation operation." validate:"required,minDuration=30s,maxDuration=15m"`
-	FileCloseTimeout    duration.Duration `json:"fileCloseTimeout" configKey:"fileCloseTimeout" configUsage:"Timeout of the file close operation." validate:"required,minDuration=10s,maxDuration=10m"`
-	FileImportTimeout   duration.Duration `json:"fileImportTimeout" configKey:"fileImportTimeout" configUsage:"Timeout of the file import operation." validate:"required,minDuration=30s,maxDuration=60m"`
+	FileRotationCheckInterval duration.Duration `json:"fileRotationCheckInterval" configKey:"fileRotationCheckInterval" configUsage:"Import triggers check interval." validate:"required,minDuration=100ms,maxDuration=30s"`
+	FileRotationTimeout       duration.Duration `json:"fileRotationTimeout" configKey:"fileRotationTimeout" configUsage:"Timeout of the file rotation operation." validate:"required,minDuration=30s,maxDuration=15m"`
+	FileCloseTimeout          duration.Duration `json:"fileCloseTimeout" configKey:"fileCloseTimeout" configUsage:"Timeout of the file close operation." validate:"required,minDuration=10s,maxDuration=10m"`
+	FileImportCheckInterval   duration.Duration `json:"fileImportCheckInterval" configKey:"fileImportCheckInterval" configUsage:"Interval of checking files in the importing state." validate:"required,minDuration=100ms,maxDuration=30s"`
+	FileImportTimeout         duration.Duration `json:"fileImportTimeout" configKey:"fileImportTimeout" configUsage:"Timeout of the file import operation." validate:"required,minDuration=30s,maxDuration=60m"`
 }
 
 // ImportConfig configures the file import.
