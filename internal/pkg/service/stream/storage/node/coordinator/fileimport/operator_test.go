@@ -6,21 +6,21 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/fileimport"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/fileimport"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestFileImport(t *testing.T) {
@@ -218,7 +218,7 @@ func TestFileImportError(t *testing.T) {
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(
 			c,
-	`{"level":"error","message":"error when waiting for file import:\n- File import to keboola failed","component":"storage.node.operator.file.import"}
+			`{"level":"error","message":"error when waiting for file import:\n- File import to keboola failed","component":"storage.node.operator.file.import"}
 {"level":"debug","message":"successfully imported file %s","component":"storage.node.operator.file.import"}`,
 		)
 	}, 5*time.Second, 10*time.Millisecond)
