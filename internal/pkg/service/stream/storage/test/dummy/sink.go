@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
@@ -26,6 +27,7 @@ type SinkController struct {
 	PipelineWriteRecordStatus        pipeline.RecordStatus
 	PipelineWriteError               error
 	PipelineCloseError               error
+	ImportError                      error
 }
 
 type Pipeline struct {
@@ -81,6 +83,11 @@ func (c *SinkController) RegisterDummySinkTypes(plugins *plugin.Plugins, control
 		}
 
 		return nil, pipeline.NoOpenerFoundError{SinkType: sinkType}
+	})
+
+	// Register dummy file importer
+	plugins.RegisterFileImporter(targetModel.Provider("test"), func(ctx context.Context, file *plugin.File) error {
+		return c.ImportError
 	})
 }
 
