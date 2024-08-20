@@ -186,31 +186,16 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 }
 
 func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, data *sliceData) {
-	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
-	if data.Slice.LocalStorage.IsEmpty {
-		// Update the entity, the ctx may be cancelled
-		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-		defer dbCancel()
-
-		err := o.storage.Slice().SwitchToUploaded(data.Slice.SliceKey, o.clock.Now(), true).Do(dbCtx).Err()
-		if err != nil {
-			o.logger.Errorf(dbCtx, "cannot switch slice to the uploaded state: %v", err)
-
-			// Increment retry delay
-			err = o.storage.Slice().IncrementRetryAttempt(data.Slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
-			if err != nil {
-				o.logger.Errorf(ctx, "cannot increment slice retry: %v", err)
-				return
-			}
-		}
-		return
-	}
-
 	// Get slice statistics
 	stats, err := o.statistics.SliceStats(ctx, data.Slice.SliceKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
 		return
+	}
+
+	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
+	if data.Slice.LocalStorage.IsEmpty || stats.Local.RecordsCount == 0 {
+		o.changeSliceState(ctx, data.Slice.SliceKey, true)
 	}
 
 	if !data.Uploading {
@@ -234,27 +219,36 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 				return
 			}
 
+			data.Processed = true
 			return
 		}
 	}
 
-	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-	defer dbCancel()
-
-	err = o.storage.Slice().SwitchToUploaded(data.Slice.SliceKey, o.clock.Now(), false).Do(dbCtx).Err()
+	err = o.changeSliceState(ctx, data.Slice.SliceKey, false)
 	if err != nil {
-		o.logger.Errorf(dbCtx, "cannot switch slice to the uploaded state: %v", err)
-
-		// Increment retry delay
-		err = o.storage.Slice().IncrementRetryAttempt(data.Slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
-		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment slice retry: %v", err)
-			return
-		}
+		return
 	}
 
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	data.Processed = true
+}
+
+func (o *operator) changeSliceState(ctx context.Context, sliceKey model.SliceKey, isEmpty bool) error {
+	// Update the entity, the ctx may be cancelled
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer dbCancel()
+
+	err := o.storage.Slice().SwitchToUploaded(sliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
+	if err != nil {
+		o.logger.Errorf(dbCtx, "cannot switch slice to the uploaded state: %v", err)
+
+		// Increment retry delay
+		err = o.storage.Slice().IncrementRetryAttempt(sliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+		if err != nil {
+			o.logger.Errorf(ctx, "cannot increment slice retry: %v", err)
+			return err
+		}
+	}
+	return nil
 }
