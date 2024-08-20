@@ -255,6 +255,10 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 		}
 	}
 
+	if err == nil {
+		o.logger.Debugf(ctx, `successfully imported file %s"`, file.FileKey.String())
+	}
+
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
