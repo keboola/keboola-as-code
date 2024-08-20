@@ -24,7 +24,7 @@ func (b *Bridge) RegisterDummyImporter(plugins *plugin.Plugins) {
 	// Register dummy sink with local storage support for tests
 	plugins.RegisterSliceUploader(
 		fileProviderType,
-		func(ctx context.Context, volume *diskreader.Volume, slice *model.Slice, uploadedSlices map[model.FileKey]string, stats statistics.Value) error {
+		func(ctx context.Context, volume *diskreader.Volume, slice *model.Slice, stats statistics.Value) error {
 			reader, err := volume.OpenReader(slice)
 			if err != nil {
 				return err

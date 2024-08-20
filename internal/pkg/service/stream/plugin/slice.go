@@ -15,7 +15,6 @@ type uploadSliceFn func(
 	ctx context.Context,
 	volume *diskreader.Volume,
 	slice *model.Slice,
-	alreadyUploadedSlices map[model.FileKey]string,
 	stats statistics.Value,
 ) error
 
@@ -27,7 +26,6 @@ func (p *Plugins) UploadSlice(
 	ctx context.Context,
 	volume *diskreader.Volume,
 	slice *model.Slice,
-	alreadyUploadedSlices map[model.FileKey]string,
 	stats statistics.Value,
 ) error {
 	if _, ok := p.sliceUploader[slice.StagingStorage.Provider]; !ok {
@@ -35,7 +33,7 @@ func (p *Plugins) UploadSlice(
 		return errors.New(err)
 	}
 
-	err := p.sliceUploader[slice.StagingStorage.Provider](ctx, volume, slice, alreadyUploadedSlices, stats)
+	err := p.sliceUploader[slice.StagingStorage.Provider](ctx, volume, slice, stats)
 	if err != nil {
 		return err
 	}

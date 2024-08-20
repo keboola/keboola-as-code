@@ -31,8 +31,7 @@ type operator struct {
 	storage    *storageRepo.Repository
 	plugins    *plugin.Plugins
 
-	slices         *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
-	uploadedSlices *etcdop.MirrorMap[model.Slice, model.SliceKey, *uploadedSliceData]
+	slices *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
 }
 
 type sliceData struct {
@@ -46,13 +45,6 @@ type sliceData struct {
 	Processed bool
 	// Uploading is true, if the entity is already uploaded to file.Provider stagin storage
 	Uploading bool
-}
-
-type uploadedSliceData struct {
-	filename string
-
-	// Lock prevents parallel check of the same slice.
-	Lock *sync.Mutex
 }
 
 type dependencies interface {
@@ -122,41 +114,10 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		}
 	}
 
-	// Mirror already uploaded slices for updating manifest
-	{
-		o.uploadedSlices = etcdop.SetupMirrorMap[model.Slice, model.SliceKey, *uploadedSliceData](
-			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, model.LevelStaging, etcd.WithPrevKV()),
-			func(_ string, slice model.Slice) model.SliceKey {
-				return slice.SliceKey
-			},
-			func(_ string, slice model.Slice, rawValue *op.KeyValue, oldValue **uploadedSliceData) *uploadedSliceData {
-				out := &uploadedSliceData{
-					filename: slice.String(),
-				}
-
-				// Keep the same lock, to prevent parallel processing of the same slice.
-				// No modification from another code is expected, but just to be sure.
-				if oldValue != nil {
-					out.Lock = (*oldValue).Lock
-				} else {
-					out.Lock = &sync.Mutex{}
-				}
-
-				return out
-			},
-		).
-			WithFilter(func(event etcdop.WatchEvent[model.Slice]) bool {
-				return event.Value.State == model.SliceUploaded
-			}).
-			BuildMirror()
-		if err = <-o.uploadedSlices.StartMirroring(ctx, wg, o.logger); err != nil {
-			return err
-		}
-	}
 	// Start conditions check ticker
 	{
 		wg.Add(1)
-		ticker := d.Clock().Ticker(o.config.CheckInterval.Duration())
+		ticker := d.Clock().Ticker(o.config.SliceUploadCheckInterval.Duration())
 
 		go func() {
 			defer wg.Done()
@@ -261,13 +222,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 			uploadCancel()
 		}()
 		data.Uploading = true
-		alreadyUploadedSlices := make(map[model.FileKey]string)
-		// Update the entity, the ctx may be cancelled
-		o.uploadedSlices.ForEach(func(k model.SliceKey, data *uploadedSliceData) (stop bool) {
-			alreadyUploadedSlices[k.FileKey] = data.filename
-			return false
-		})
-		err = o.plugins.UploadSlice(uploadCtx, volume, data.Slice, alreadyUploadedSlices, stats.Local)
+		err = o.plugins.UploadSlice(uploadCtx, volume, data.Slice, stats.Local)
 		if err != nil {
 			// Upload was not successful, next check will launch it again
 			o.logger.Errorf(ctx, "cannot upload slice to staging: %v", err)

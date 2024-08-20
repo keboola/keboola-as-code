@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -14,16 +15,20 @@ func (b *Bridge) uploadSlice(
 	ctx context.Context,
 	volume *diskreader.Volume,
 	slice *model.Slice,
-	alreadyUploadedSlices map[model.FileKey]string,
 	stats statistics.Value,
 ) error {
+	start := time.Now()
 	reader, err := volume.OpenReader(slice)
 	if err != nil {
 		b.logger.Warnf(ctx, "unable to open reader: %v", err)
 		return err
 	}
 
-	token := b.schema.Token().ForSink(slice.SinkKey).GetOrEmpty(b.client).Do(ctx).Result()
+	token, err := b.schema.Token().ForSink(slice.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
+	if err != nil {
+		return err
+	}
+
 	defer func() {
 		err = reader.Close(ctx)
 		if err != nil {
@@ -31,8 +36,7 @@ func (b *Bridge) uploadSlice(
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, uploadEventSendTimeout)
-		// time.Now
-		err = b.sendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), 0, slice, stats)
+		err = b.sendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), slice, stats)
 		cancel()
 	}()
 
@@ -46,12 +50,7 @@ func (b *Bridge) uploadSlice(
 		return err
 	}
 
-	// Compress to GZip and measure count/size
-	/*gzipWr, err := gzip.NewWriterLevel(uploader, slice.Encoding.Compression.GZIP.Level)
-	if err != nil {
-		return err
-	}*/
-
+	// uploader already contians GZip writer, so no compression is needed.
 	_, err = reader.WriteTo(uploader)
 	if err != nil {
 		return err
@@ -61,16 +60,11 @@ func (b *Bridge) uploadSlice(
 		return err
 	}
 
-	alreadyUploadedSlices[slice.FileKey] = slice.String()
-	uploadedSlices := make([]string, 0, len(alreadyUploadedSlices))
-	for _, slice := range alreadyUploadedSlices {
-		uploadedSlices = append(uploadedSlices, slice)
-	}
-
+	/*b.client.Get(ctx, slice.FileKey.String())
 	_, err = keboola.UploadSlicedFileManifest(ctx, &credentials.FileUploadCredentials, uploadedSlices)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	return err
 }

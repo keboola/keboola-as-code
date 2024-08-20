@@ -23,10 +23,11 @@ type ConfigPatch struct {
 func NewConfig() Config {
 	return Config{
 		Operator: OperatorConfig{
-			CheckInterval:        duration.From(1 * time.Second),
-			SliceRotationTimeout: duration.From(5 * time.Minute),
-			SliceCloseTimeout:    duration.From(1 * time.Minute),
-			SliceUploadTimeout:   duration.From(15 * time.Minute),
+			SliceRotationCheckInterval: duration.From(1 * time.Second),
+			SliceRotationTimeout:       duration.From(5 * time.Minute),
+			SliceCloseTimeout:          duration.From(1 * time.Minute),
+			SliceUploadCheckInterval:   duration.From(2 * time.Second),
+			SliceUploadTimeout:         duration.From(15 * time.Minute),
 		},
 		Upload: UploadConfig{
 			Trigger: UploadTrigger{
@@ -39,10 +40,11 @@ func NewConfig() Config {
 }
 
 type OperatorConfig struct {
-	CheckInterval        duration.Duration `json:"checkInterval" configKey:"checkInterval" configUsage:"Upload triggers check interval." validate:"required,minDuration=100ms,maxDuration=30s"`
-	SliceRotationTimeout duration.Duration `json:"sliceRotationTimeout" configKey:"sliceRotationTimeout" configUsage:"Timeout of the slice rotation operation." validate:"required,minDuration=30s,maxDuration=15m"`
-	SliceCloseTimeout    duration.Duration `json:"sliceCloseTimeout" configKey:"sliceCloseTimeout" configUsage:"Timeout of the slice close operation." validate:"required,minDuration=10s,maxDuration=10m"`
-	SliceUploadTimeout   duration.Duration `json:"sliceUploadTimeout" configKey:"sliceUploadTimeout" configUsage:"Timeout of the slice upload operation." validate:"required,minDuration=30s,maxDuration=60m"`
+	SliceRotationCheckInterval duration.Duration `json:"sliceRotationCheckInterval" configKey:"sliceRotationCheckInterval" configUsage:"Upload triggers check interval." validate:"required,minDuration=100ms,maxDuration=30s"`
+	SliceRotationTimeout       duration.Duration `json:"sliceRotationTimeout" configKey:"sliceRotationTimeout" configUsage:"Timeout of the slice rotation operation." validate:"required,minDuration=30s,maxDuration=15m"`
+	SliceCloseTimeout          duration.Duration `json:"sliceCloseTimeout" configKey:"sliceCloseTimeout" configUsage:"Timeout of the slice close operation." validate:"required,minDuration=10s,maxDuration=10m"`
+	SliceUploadCheckInterval   duration.Duration `json:"sliceUploadCheckInterval" configKey:"sliceUploadCheckInterval" configUsage:"Staging upload check interval." validate:"required,minDuration=500ms,maxDuration=30s"`
+	SliceUploadTimeout         duration.Duration `json:"sliceUploadTimeout" configKey:"sliceUploadTimeout" configUsage:"Timeout of the slice upload operation." validate:"required,minDuration=30s,maxDuration=60m"`
 }
 
 // UploadConfig configures the slice upload.

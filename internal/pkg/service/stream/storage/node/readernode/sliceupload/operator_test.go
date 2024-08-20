@@ -67,7 +67,7 @@ func TestSliceUpload(t *testing.T) {
 		cfg.Hostname = "localhost"
 		cfg.Storage.VolumesPath = volumesPath
 		cfg.Storage.Level.Staging.Upload.Trigger = uploadTrigger
-		cfg.Storage.Level.Staging.Operator.CheckInterval = duration.From(conditionsCheckInterval)
+		cfg.Storage.Level.Staging.Operator.SliceUploadCheckInterval = duration.From(conditionsCheckInterval)
 	}, commonDeps.WithClock(clk))
 	logger := mock.DebugLogger()
 	client := mock.TestEtcdClient()
