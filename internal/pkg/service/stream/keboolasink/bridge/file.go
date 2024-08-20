@@ -148,13 +148,13 @@ func (b *Bridge) registerFileImporter() {
 					return err
 				}
 
-				if job.Status == "success" {
+				if job.Status == keboola.StorageJobStatusSuccess {
 					return nil
 				}
 			}
 
 			// Create job to import data if no job exists yet or if it failed
-			if job == nil || job.Status == "error" {
+			if job == nil || job.Status == keboola.StorageJobStatusError {
 				job, err = api.LoadDataFromFileRequest(keboolaFile.TableKey, keboolaFile.FileKey).Send(ctx)
 				if err != nil {
 					return err
