@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -131,10 +132,13 @@ func (b *Bridge) registerFileImporter() {
 
 			// Get file upload credentials
 			var keboolaFile *keboolasink.File
-			prefix := b.schema.File().ForFile(file.FileKey)
-			err = prefix.GetOrNil(b.client).WithResultTo(&keboolaFile).Do(ctx).Err()
+			err = b.schema.File().ForFile(file.FileKey).GetOrNil(b.client).WithResultTo(&keboolaFile).Do(ctx).Err()
 			if err != nil {
 				return err
+			}
+
+			if keboolaFile == nil {
+				return errors.New("missing keboola details for file")
 			}
 
 			// Authorized API
@@ -162,7 +166,7 @@ func (b *Bridge) registerFileImporter() {
 
 				// Save job ID to etcd
 				keboolaFile.StorageJobID = &job.ID
-				prefix.Put(b.client, *keboolaFile).Do(ctx)
+				b.schema.File().ForFile(file.FileKey).Put(b.client, *keboolaFile).Do(ctx)
 			}
 
 			// Wait for job to complete
