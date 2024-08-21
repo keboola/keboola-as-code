@@ -151,7 +151,9 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 	}
 
 	// Log/trace file details
-	ctx = ctxattr.ContextWith(ctx, file.Telemetry(n.clock)...)
+	attrs := file.Telemetry()
+	attrs = append(attrs, attribute.String("file.age", n.clock.Since(file.LastStateChange().Time()).String()))
+	ctx = ctxattr.ContextWith(ctx, attrs...)
 
 	// Trace each file
 	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.node.cleanFile")

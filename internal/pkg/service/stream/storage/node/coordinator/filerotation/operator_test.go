@@ -159,8 +159,9 @@ func TestFileRotation(t *testing.T) {
 	waitForStatsSync(t)
 
 	// Trigger check - records count trigger
-	triggerCheck(t, true, ` 
-{"level":"info","message":"rotating file for import: count threshold met, records count: 50002, threshold: 50000","component":"storage.node.operator.file.rotation"}
+	triggerCheck(t, true, `
+{"level":"info","message":"rotating file for import: count threshold met, records count: 50002, threshold: 50000",file.id":"2000-01-01T00:01:01.000Z","component":"storage.node.operator.file.rotation"}
+{"level":"info","message":"rotating of file finished","file.id":"2000-01-01T00:01:01.000Z","component":"storage.node.operator.file.rotation"}
 `)
 
 	// Trigger check - no import trigger
@@ -189,7 +190,10 @@ func TestFileRotation(t *testing.T) {
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[1].SliceKey, d.Clock().Now()).Do(ctx).Err())
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, d.Clock().Now(), false).Do(ctx).Err())
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[1].SliceKey, d.Clock().Now(), false).Do(ctx).Err())
-	triggerCheck(t, false, "")
+	triggerCheck(t, false, `
+{"level":"info","message":"closing file","file.id":"2000-01-01T00:01:01.000Z","component":"storage.node.operator.file.rotation"}
+{"level":"info","message":"closing file finished","file.id":"2000-01-01T00:01:01.000Z","component":"storage.node.operator.file.rotation"}
+	`)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
 		assert.NoError(c, err)

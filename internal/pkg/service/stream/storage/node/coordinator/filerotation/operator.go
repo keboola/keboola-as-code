@@ -9,8 +9,10 @@ import (
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -47,6 +49,7 @@ type fileData struct {
 	Expiration    utctime.UTCTime
 	ImportTrigger targetConfig.ImportTrigger
 	Retry         model.Retryable
+	Attrs         []attribute.KeyValue
 
 	// Lock prevents parallel check of the same file.
 	Lock *sync.Mutex
@@ -112,6 +115,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 					Expiration:    file.StagingStorage.Expiration,
 					ImportTrigger: file.TargetStorage.Import.Trigger,
 					Retry:         file.Retryable,
+					Attrs:         file.Telemetry(),
 				}
 
 				// Keep the same lock, to prevent parallel processing of the same file.
@@ -249,6 +253,9 @@ func (o *operator) checkFiles(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (o *operator) checkFile(ctx context.Context, file *fileData) {
+	// Log/trace file details
+	ctx = ctxattr.ContextWith(ctx, file.Attrs...)
+
 	// Prevent multiple checks of the same file
 	if !file.Lock.TryLock() {
 		return
@@ -294,14 +301,25 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		return
 	}
 
-	// Rotate file
 	o.logger.Infof(ctx, "rotating file for import: %s", cause)
+	err = o.rotateFileState(ctx, file)
+	if err != nil {
+		return
+	}
 
+	o.logger.Info(ctx, "successfully rotated file")
+
+	// Prevents other processing, if the entity has been modified.
+	// It takes a while to watch stream send the updated state back.
+	file.Processed = true
+}
+
+func (o *operator) rotateFileState(ctx context.Context, file *fileData) error {
 	// Lock all file operations in the sink
 	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
 	if err := lock.Lock(ctx); err != nil {
 		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
-		return
+		return err
 	}
 	defer func() {
 		if err := lock.Unlock(ctx); err != nil {
@@ -309,8 +327,8 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		}
 	}()
 
-	// Rotate file
-	err = o.storage.File().Rotate(file.FileKey.SinkKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
+	// Rotate file using repository
+	err := o.storage.File().Rotate(file.FileKey.SinkKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
 	// Handle error
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot rotate file: %s", err)
@@ -319,17 +337,11 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
 		if err != nil {
 			o.logger.Errorf(ctx, "cannot increment file rotation retry: %s", err)
-			return
+			return err
 		}
 	}
 
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	file.Processed = true
-
-	if err == nil {
-		o.logger.Info(ctx, "successfully rotated file")
-	}
+	return nil
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
@@ -337,17 +349,6 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
-
-	// Wait until all slices are uploaded
-	err := o.waitForSlicesUpload(ctx, file.FileKey)
-	if err != nil {
-		err = errors.PrefixError(err, "error when waiting for file slices upload")
-	}
-
-	// Find if file is empty
-	o.lock.RLock()
-	fileEmpty := !o.fileNotEmpty[file.FileKey]
-	o.lock.RUnlock()
 
 	// Lock all file operations in the sink
 	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
@@ -361,18 +362,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 		}
 	}()
 
-	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-	defer dbCancel()
-
-	// If there is no error, switch file to the importing state
-	if err == nil {
-		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), fileEmpty).RequireLock(lock).Do(dbCtx).Err()
-		if err != nil {
-			err = errors.PrefixError(err, "cannot switch file to the importing state")
-		}
-	}
-
+	err := o.switchToImportState(ctx, lock, file)
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
@@ -383,18 +373,40 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 		}
 	}
 
+	// Clean memory
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	delete(o.fileNotEmpty, file.FileKey)
+	o.logger.Info(ctx, "successfully closed file")
+
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
+}
 
-	if err == nil {
-		// Clean memory
-		o.lock.Lock()
-		defer o.lock.Unlock()
-		delete(o.fileNotEmpty, file.FileKey)
-
-		o.logger.Info(ctx, "successfully closed file")
+func (o *operator) switchToImportState(ctx context.Context, lock *etcdop.Mutex, file *fileData) error {
+	// Wait until all slices are uploaded
+	err := o.waitForSlicesUpload(ctx, file.FileKey)
+	if err != nil {
+		return errors.PrefixError(err, "error when waiting for file slices upload")
 	}
+
+	// Find if file is empty
+	o.lock.RLock()
+	fileEmpty := !o.fileNotEmpty[file.FileKey]
+	o.lock.RUnlock()
+
+	// Update the entity, the ctx may be cancelled
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer dbCancel()
+
+	// If there is no error, switch file to the importing state
+	err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), fileEmpty).RequireLock(lock).Do(dbCtx).Err()
+	if err != nil {
+		return errors.PrefixError(err, "cannot switch file to the importing state")
+	}
+
+	return nil
 }
 
 func (o *operator) waitForSlicesUpload(ctx context.Context, fileKey model.FileKey) error {

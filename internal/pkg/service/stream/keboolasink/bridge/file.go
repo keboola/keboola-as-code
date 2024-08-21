@@ -60,7 +60,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, now time.Time, sink defi
 	api := b.publicAPI.WithToken(token.TokenString())
 
 	name := fmt.Sprintf(`%s_%s_%s`, file.SourceID, file.SinkID, file.OpenedAt().Time().Format(fileNameDateFormat))
-	attributes := file.Telemetry(b.clock)
+	attributes := file.Telemetry()
 	attributes = append(attributes, attribute.String("token.ID", token.Token.ID), attribute.String("file.name", name))
 	ctx = ctxattr.ContextWith(ctx, attributes...)
 
