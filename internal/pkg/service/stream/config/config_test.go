@@ -230,11 +230,13 @@ storage:
         staging:
             operator:
                 # Upload triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s
-                checkInterval: 1s
+                sliceRotationCheckInterval: 1s
                 # Timeout of the slice rotation operation. Validation rules: required,minDuration=30s,maxDuration=15m
                 sliceRotationTimeout: 5m0s
                 # Timeout of the slice close operation. Validation rules: required,minDuration=10s,maxDuration=10m
                 sliceCloseTimeout: 1m0s
+                # Staging upload check interval. Validation rules: required,minDuration=500ms,maxDuration=30s
+                sliceUploadCheckInterval: 2s
                 # Timeout of the slice upload operation. Validation rules: required,minDuration=30s,maxDuration=60m
                 sliceUploadTimeout: 15m0s
             upload:

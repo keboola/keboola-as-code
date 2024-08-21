@@ -155,6 +155,7 @@ func TestSliceUpload(t *testing.T) {
 	logger.Truncate()
 
 	slice, err := d.StorageRepository().Slice().Get(slices[2].SliceKey).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
 	failed := utctime.MustParse("2000-01-01T00:00:04.000Z")
 	retryAfter := utctime.MustParse("2000-01-01T00:02:04.000Z")
 	assert.Equal(t, model.Retryable{
@@ -172,6 +173,7 @@ func TestSliceUpload(t *testing.T) {
 	logger.Truncate()
 
 	slice, err = d.StorageRepository().Slice().Get(slices[2].SliceKey).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
 	failed = utctime.MustParse("2000-01-01T00:00:04.000Z")
 	retryAfter = utctime.MustParse("2000-01-01T00:10:05.000Z")
 	lastFailed := utctime.MustParse("2000-01-01T00:02:05.000Z")
