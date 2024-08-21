@@ -8,8 +8,10 @@ import (
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -46,6 +48,7 @@ type sliceData struct {
 	UploadTrigger stagingConfig.UploadTrigger
 	Retry         model.Retryable
 	ModRevision   int64
+	Attrs         []attribute.KeyValue
 
 	// Lock prevents parallel check of the same slice.
 	Lock *sync.Mutex
@@ -121,6 +124,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 					UploadTrigger: slice.StagingStorage.Upload.Trigger,
 					Retry:         slice.Retryable,
 					ModRevision:   rawValue.ModRevision,
+					Attrs:         slice.Telemetry(),
 				}
 
 				// Keep the same lock, to prevent parallel processing of the same slice.
@@ -201,6 +205,9 @@ func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
+	// Log/trace file details
+	ctx = ctxattr.ContextWith(ctx, slice.Attrs...)
+
 	// Prevent multiple checks of the same slice
 	if !slice.Lock.TryLock() {
 		return
@@ -248,31 +255,40 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 
 	// Rotate slice
 	o.logger.Infof(ctx, "rotating slice for upload: %s", cause)
+	err = o.rotateSliceWithState(ctx, slice)
+	if err != nil {
+		return
+	}
 
+	o.logger.Infof(ctx, "rotating of slice finished")
+	// Prevents other processing, if the entity has been modified.
+	// It takes a while to watch stream send the updated state back.
+	slice.Processed = true
+}
+
+func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) error {
 	// Lock all file operations in the sink
 	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, slice.SliceKey.SinkKey)
 	if unlock == nil {
-		return
+		return errors.New("unable to lock file")
 	}
 	defer unlock()
 
 	// Rotate slice
-	err = o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
+	err := o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
 	// Handle error
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot rotate slice: %s", err)
 
 		// Increment retry delay
-		err := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if err != nil {
+		iErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+		if iErr != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
-			return
+			return iErr
 		}
 	}
 
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	slice.Processed = true
+	return err
 }
 
 func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
@@ -280,6 +296,20 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
 	defer cancel()
 
+	// Rotate slice
+	o.logger.Infof(ctx, "closing slice")
+	err := o.switchSliceToImporting(ctx, slice)
+	if err != nil {
+		return
+	}
+
+	o.logger.Infof(ctx, "closing slice finished")
+	// Prevents other processing, if the entity has been modified.
+	// It takes a while to watch stream send the updated state back.
+	slice.Processed = true
+}
+
+func (o *operator) switchSliceToImporting(ctx context.Context, slice *sliceData) error {
 	if err := o.closeSyncer.WaitForRevision(ctx, slice.ModRevision); err != nil {
 		o.logger.Errorf(ctx, `error when waiting for slice closing: %s`)
 		// continue! we waited long enough, the wait mechanism is probably broken
@@ -289,7 +319,7 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
-		return
+		return nil
 	}
 
 	// Update the entity, the ctx may be cancelled
@@ -301,14 +331,12 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 		o.logger.Errorf(dbCtx, "cannot switch slice to the uploading state: %s", err.Error())
 
 		// Increment retry delay
-		err := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
-		if err != nil {
+		rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
-			return
+			return rErr
 		}
 	}
 
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	slice.Processed = true
+	return err
 }

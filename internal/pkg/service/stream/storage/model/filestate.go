@@ -49,8 +49,8 @@ const FileImported FileState = "imported"
 //	FileImported     SliceImported    SliceImported    SliceImported
 type FileState string
 
-func (s FileState) String() string {
-	return string(s)
+func (f FileState) String() string {
+	return string(f)
 }
 
 func (f File) WithState(at time.Time, to FileState) (File, error) {
@@ -74,8 +74,8 @@ func (f File) WithState(at time.Time, to FileState) (File, error) {
 }
 
 // Level gets the lowest storage.Level at which at least one file slice is present.
-func (s FileState) Level() Level {
-	switch s {
+func (f FileState) Level() Level {
+	switch f {
 	case FileWriting, FileClosing:
 		return LevelLocal
 	case FileImporting:
@@ -83,6 +83,6 @@ func (s FileState) Level() Level {
 	case FileImported:
 		return LevelTarget
 	default:
-		panic(errors.Errorf(`unexpected file state "%v"`, s))
+		panic(errors.Errorf(`unexpected file state "%v"`, f))
 	}
 }

@@ -82,7 +82,6 @@ func (f File) Telemetry() []attribute.KeyValue {
 		attribute.String("source.id", f.SourceID.String()),
 		attribute.String("sink.id", f.SinkID.String()),
 		attribute.String("file.id", f.FileID.String()),
-		attribute.String("file.state", f.State.String()),
 		attribute.String("file.lastStateChange", lastStateChange.String()),
 		attribute.Int("file.retryAttempt", f.RetryAttempt),
 	}
