@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -26,7 +27,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/pprof"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
@@ -54,17 +55,33 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 		return err
 	}
 
-	// Start CPU profiling, if enabled
-	if cfg.CPUProfFilePath != "" {
-		stop, err := cpuprofile.Start(ctx, cfg.CPUProfFilePath, logger)
-		if err != nil {
-			return errors.Errorf(`cannot start cpu profiling: %w`, err)
-		}
-		defer stop()
-	}
-
 	// Create process abstraction
 	proc := servicectx.New(servicectx.WithLogger(logger))
+
+	// PProf profiler
+	if cfg.PProf.Enabled {
+		logger.Infof(ctx, `PProf profiler enabled, listening on %q`, cfg.PProf.Listen)
+		srv := pprof.NewHTTPServer(cfg.PProf.Listen)
+		go func() {
+			if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				logger.Errorf(ctx, `PProf HTTP server error: %s`, err)
+			}
+		}()
+		defer func() {
+			if err := srv.Close(); err != nil {
+				logger.Errorf(ctx, `cannot stop PProf HTTP server: %s`, err)
+			}
+		}()
+	}
+
+	// Datadog profiler
+	if cfg.Datadog.Enabled && cfg.Datadog.Profiler.Enabled {
+		logger.Infof(ctx, "Datadog profiler enabled")
+		if err := profiler.Start(profiler.WithProfileTypes(cfg.Datadog.Profiler.ProfilerTypes()...)); err != nil {
+			return err
+		}
+		defer profiler.Stop()
+	}
 
 	// Setup telemetry
 	tel, err := telemetry.New(
