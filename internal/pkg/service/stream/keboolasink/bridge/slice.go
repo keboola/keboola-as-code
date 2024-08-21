@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -32,12 +33,19 @@ func (b *Bridge) uploadSlice(
 	defer func() {
 		err = reader.Close(ctx)
 		if err != nil {
+			err = &plugin.ReaderClosureError{SliceKey: slice.SliceKey}
+			b.logger.Warnf(ctx, "unable to close reader: %v", err)
 			return
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, uploadEventSendTimeout)
 		err = b.sendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), slice, stats)
 		cancel()
+		if err != nil {
+			err = &plugin.SendSliceUploadEventError{SliceKey: slice.SliceKey}
+			b.logger.Warnf(ctx, "unable to send slice upload event: %v", err)
+			return
+		}
 	}()
 
 	credentials, err := b.schema.File().ForFile(slice.FileKey).GetOrEmpty(b.client).Do(ctx).ResultOrErr()

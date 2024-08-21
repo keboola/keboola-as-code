@@ -25,7 +25,7 @@ const (
 	// targetProvider marks files which destination is a Keboola table.
 	targetProvider = targetModel.Provider("keboola")
 
-	// Upload slice timeout.
+	// Upload event slice timeout.
 	uploadEventSendTimeout = 30 * time.Second
 	// sinkMetaKey is a key of the table metadata that marks each table created by the stream.sink.
 	sinkMetaKey = "KBC.stream.sink.id"
