@@ -232,11 +232,13 @@ storage:
         target:
             operator:
                 # Import triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s
-                checkInterval: 1s
+                fileRotationCheckInterval: 1s
                 # Timeout of the file rotation operation. Validation rules: required,minDuration=30s,maxDuration=15m
                 fileRotationTimeout: 5m0s
                 # Timeout of the file close operation. Validation rules: required,minDuration=10s,maxDuration=10m
                 fileCloseTimeout: 1m0s
+                # Interval of checking files in the importing state. Validation rules: required,minDuration=100ms,maxDuration=30s
+                fileImportCheckInterval: 1s
                 # Timeout of the file import operation. Validation rules: required,minDuration=30s,maxDuration=60m
                 fileImportTimeout: 15m0s
             import:
