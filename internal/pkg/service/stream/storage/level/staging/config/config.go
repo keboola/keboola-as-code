@@ -43,7 +43,7 @@ type OperatorConfig struct {
 	SliceRotationCheckInterval duration.Duration `json:"sliceRotationCheckInterval" configKey:"sliceRotationCheckInterval" configUsage:"Upload triggers check interval." validate:"required,minDuration=100ms,maxDuration=30s"`
 	SliceRotationTimeout       duration.Duration `json:"sliceRotationTimeout" configKey:"sliceRotationTimeout" configUsage:"Timeout of the slice rotation operation." validate:"required,minDuration=30s,maxDuration=15m"`
 	SliceCloseTimeout          duration.Duration `json:"sliceCloseTimeout" configKey:"sliceCloseTimeout" configUsage:"Timeout of the slice close operation." validate:"required,minDuration=10s,maxDuration=10m"`
-	SliceUploadCheckInterval   duration.Duration `json:"sliceUploadCheckInterval" configKey:"sliceUploadCheckInterval" configUsage:"Staging upload check interval." validate:"required,minDuration=500ms,maxDuration=30s"`
+	SliceUploadCheckInterval   duration.Duration `json:"sliceUploadCheckInterval" configKey:"sliceUploadCheckInterval" configUsage:"Interval of checking slices in the 'uploading' state to perform upload." validate:"required,minDuration=500ms,maxDuration=30s"`
 	SliceUploadTimeout         duration.Duration `json:"sliceUploadTimeout" configKey:"sliceUploadTimeout" configUsage:"Timeout of the slice upload operation." validate:"required,minDuration=30s,maxDuration=60m"`
 }
 

@@ -504,8 +504,6 @@ func defaultMockedResponses(cfg *MockedConfig) (client.Client, *httpmock.MockTra
 		host = "https://" + host
 	}
 
-	s3Host := "s3://"
-
 	httpClient, mockedHTTPTransport := client.NewMockedClient()
 
 	httpClient = httpClient.WithRetry(client.TestingRetry())
@@ -523,13 +521,6 @@ func defaultMockedResponses(cfg *MockedConfig) (client.Client, *httpmock.MockTra
 		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
 			Index: keboola.Index{Services: cfg.services, Features: cfg.features}, Components: keboola.Components{},
 		}),
-	)
-	mockedHTTPTransport.RegisterResponder(
-		http.MethodPut,
-		fmt.Sprintf("%s/buckets/", s3Host),
-		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
-			Index: keboola.Index{Services: cfg.services, Features: cfg.features}, Components: cfg.components,
-		}).Once(),
 	)
 
 	// Mocked token verification

@@ -43,8 +43,6 @@ type sliceData struct {
 	// Processed is true, if the entity has been modified.
 	// It prevents other processing. It takes a while for the watch stream to send updated state back.
 	Processed bool
-	// Uploading is true, if the entity is already uploaded to file.Provider stagin storage
-	Uploading bool
 }
 
 type dependencies interface {
@@ -82,7 +80,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		o.logger.Info(ctx, "closed slice upload operator")
 	})
 
-	// Mirror uploading slices
+	// Mirror slices in writing, closing and uploading state. Check only uploading state
 	{
 		o.slices = etcdop.SetupMirrorMap[model.Slice, model.SliceKey, *sliceData](
 			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV()),
@@ -157,11 +155,6 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 	}
 	defer data.Lock.Unlock()
 
-	// Slice uploading is already in progress
-	if data.Uploading {
-		return
-	}
-
 	// Slice has been modified by some previous check, but we haven't received an updated version from etcd yet
 	if data.Processed {
 		return
@@ -194,15 +187,11 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 	}
 
 	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
-	if stats.Local.RecordsCount != 0 && !data.Uploading {
+	if stats.Local.RecordsCount != 0 {
 		o.logger.Infof(ctx, `uploading slice %q`, data.Slice.SliceKey)
 		// Use plugin system to upload slice to stagin storage. Set is an in-progress upload
 		uploadCtx, uploadCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
-		defer func() {
-			data.Uploading = false
-			uploadCancel()
-		}()
-		data.Uploading = true
+		defer uploadCancel()
 		err = o.plugins.UploadSlice(uploadCtx, volume, data.Slice, stats.Local)
 		if err != nil {
 			// Upload was not successful, next check will launch it again
