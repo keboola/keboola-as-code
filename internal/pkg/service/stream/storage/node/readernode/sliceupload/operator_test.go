@@ -110,6 +110,7 @@ func TestSliceUpload(t *testing.T) {
 	logger.Truncate()
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[1].SliceKey, clk.Now()).Do(ctx).Err())
 
+	// Check that rotation and switch was performed
 	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	require.Len(t, files, 2)
@@ -123,10 +124,6 @@ func TestSliceUpload(t *testing.T) {
 	require.Equal(t, model.SliceWriting, slices[2].State)
 	require.Equal(t, model.SliceWriting, slices[3].State)
 
-	// TODO: error tests
-	// blaErr := errors.New("bla")
-	// mock.TestDummySinkController().UploadError = blaErr
-
 	require.NoError(t, d.StatisticsRepository().Put(ctx, "node", []statistics.PerSlice{{SliceKey: slices[0].SliceKey, RecordsCount: 1}}))
 	waitForSlicesSync(t)
 	// Triggers slice upload
@@ -137,6 +134,54 @@ func TestSliceUpload(t *testing.T) {
 		logger.AssertJSONMessages(c, `{"level":"info","message":"slice was uploaded \"123/111/my-source/my-keboola-sink/2000-01-01T00:00:00.000Z/vol-2/2000-01-01T00:00:00.000Z\""}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
+
+	// Test when error on operator occurs
+	blaErr := errors.New("bla")
+	mock.TestDummySinkController().UploadError = blaErr
+
+	clk.Add(1 * time.Second)
+	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[2].SliceKey, clk.Now()).Do(ctx).Err())
+	logger.Truncate()
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[3].SliceKey, clk.Now()).Do(ctx).Err())
+
+	require.NoError(t, d.StatisticsRepository().Put(ctx, "node", []statistics.PerSlice{{SliceKey: slices[2].SliceKey, RecordsCount: 1}}))
+	waitForSlicesSync(t)
+	// Triggers slice upload
+	clk.Add(slicesCheckInterval)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"cannot upload slice to staging: bla","component":"storage.node.operator.slice.upload"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+	logger.Truncate()
+
+	slice, err := d.StorageRepository().Slice().Get(slices[2].SliceKey).Do(ctx).ResultOrErr()
+	failed := utctime.MustParse("2000-01-01T00:00:04.000Z")
+	retryAfter := utctime.MustParse("2000-01-01T00:02:04.000Z")
+	assert.Equal(t, model.Retryable{
+		RetryAttempt:  1,
+		RetryReason:   "bla",
+		FirstFailedAt: &failed,
+		LastFailedAt:  &failed,
+		RetryAfter:    &retryAfter,
+	}, slice.Retryable)
+
+	clk.Add(-clk.Now().Sub(retryAfter.Time()) + slicesCheckInterval)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"cannot upload slice to staging: bla","component":"storage.node.operator.slice.upload"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+	logger.Truncate()
+
+	slice, err = d.StorageRepository().Slice().Get(slices[2].SliceKey).Do(ctx).ResultOrErr()
+	failed = utctime.MustParse("2000-01-01T00:00:04.000Z")
+	retryAfter = utctime.MustParse("2000-01-01T00:10:05.000Z")
+	lastFailed := utctime.MustParse("2000-01-01T00:02:05.000Z")
+	assert.Equal(t, model.Retryable{
+		RetryAttempt:  2,
+		RetryReason:   "bla",
+		FirstFailedAt: &failed,
+		LastFailedAt:  &lastFailed,
+		RetryAfter:    &retryAfter,
+	}, slice.Retryable)
 
 	// Shutdown
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
