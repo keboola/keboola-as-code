@@ -20,19 +20,35 @@ data:
     debugLog: false
     # Log HTTP client requests and responses as debug messages.
     debugHTTPClient: false
-    # Path where CPU profile is saved.
-    cpuProfilePath: ""
     # Unique ID of the node in the cluster. Validation rules: required
     #nodeID: ""
     # Hostname for communication between nodes. Validation rules: required
     #hostname: ""
     # Storage API host. Validation rules: required,hostname
     storageApiHost: "connection.$HOSTNAME_SUFFIX"
+    pprof:
+      # Enable PProf HTTP server. Don't use in the production.'
+      enabled: false
+      # Listen address of the PProf HTTP server. Validation rules: required,hostname_port
+      listen: 0.0.0.0:4000
     datadog:
       # Enable DataDog integration.
       enabled: true
       # Enable DataDog debug messages.
       debug: false
+      profiler:
+        # Enable DataDog profiler. Don't use in the production.
+        enabled: false
+        # Enable CPU profile.
+        cpu: true
+        # Enable memory profile.
+        memory: true
+        # Enable block profile, may have big overhead.
+        block: false
+        # Enable mutex profile, may have big overhead.
+        mutex: false
+        # Enable Goroutine profile, may have big overhead.
+        goroutine: false
     etcd:
       # Etcd endpoint. Validation rules: required
       endpoint: stream-etcd.stream.svc.cluster.local:2379

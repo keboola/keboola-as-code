@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/pprof"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -15,7 +16,7 @@ import (
 type Config struct {
 	DebugLog         bool              `configKey:"debugLog" configUsage:"Enable debug log level."`
 	DebugHTTPClient  bool              `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
-	CPUProfFilePath  string            `configKey:"cpuProfilePath" configUsage:"Path where CPU profile is saved."`
+	PProf            pprof.Config      `configKey:"pprof"`
 	Datadog          datadog.Config    `configKey:"datadog"`
 	Metrics          prometheus.Config `configKey:"metrics"`
 	DNSServer        string            `configKey:"dnsServer" configUsage:"DNS server for proxy. If empty, the /etc/resolv.conf is used."`
@@ -45,7 +46,7 @@ func New() Config {
 	return Config{
 		DebugLog:        false,
 		DebugHTTPClient: false,
-		CPUProfFilePath: "",
+		PProf:           pprof.NewConfig(),
 		Datadog:         datadog.NewConfig(),
 		Metrics:         prometheus.NewConfig(),
 		Upstream: Upstream{

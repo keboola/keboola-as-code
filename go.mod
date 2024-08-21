@@ -159,6 +159,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.1 // indirect
 	github.com/DataDog/go-libddwaf/v3 v3.2.1 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
+	github.com/DataDog/gostackparse v0.7.0 // indirect
 	github.com/MichaelMure/go-term-text v0.3.1 // indirect
 	github.com/Shopify/toxiproxy v2.1.4+incompatible // indirect
 	github.com/a8m/envsubst v1.4.2 // indirect
@@ -217,6 +218,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/gomarkdown/markdown v0.0.0-20231222211730-1d6d20845b47 // indirect
 	github.com/google/btree v1.0.1 // indirect
+	github.com/google/pprof v0.0.0-20230817174616-7a8ec2ada47b // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/google/wire v0.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
@@ -253,12 +255,14 @@ require (
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	github.com/redis/go-redis/v9 v9.5.1 // indirect
+	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/templexxx/cpu v0.1.0 // indirect
 	github.com/templexxx/xorsimd v0.4.2 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect

@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/pprof"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -18,10 +19,10 @@ import (
 type Config struct {
 	DebugLog        bool                `configKey:"debugLog"  configUsage:"Enable logging at DEBUG level."`
 	DebugHTTPClient bool                `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
-	CPUProfFilePath string              `configKey:"cpuProfilePath" configUsage:"Path where CPU profile is saved."`
 	NodeID          string              `configKey:"nodeID" configUsage:"Unique ID of the node in the cluster." validate:"required"`
 	Hostname        string              `configKey:"hostname" configUsage:"Hostname for communication between nodes." validate:"required"`
 	StorageAPIHost  string              `configKey:"storageApiHost" configUsage:"Storage API host." validate:"required,hostname"`
+	PProf           pprof.Config        `configKey:"pprof"`
 	Datadog         datadog.Config      `configKey:"datadog"`
 	Etcd            etcdclient.Config   `configKey:"etcd"`
 	Metrics         prometheus.Config   `configKey:"metrics"`
@@ -47,9 +48,9 @@ func New() Config {
 	return Config{
 		DebugLog:        false,
 		DebugHTTPClient: false,
-		CPUProfFilePath: "",
 		NodeID:          "",
 		StorageAPIHost:  "",
+		PProf:           pprof.NewConfig(),
 		Datadog:         datadog.NewConfig(),
 		Etcd:            etcdclient.NewConfig(),
 		Metrics:         prometheus.NewConfig(),
