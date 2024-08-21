@@ -6,17 +6,17 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	etcdPkg "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -27,17 +27,17 @@ import (
 )
 
 type testState struct {
-	interval time.Duration
-	clk *clock.Mock
-	logger log.DebugLogger
-	client *etcdPkg.Client
-	mock dependencies.Mocked
+	interval     time.Duration
+	clk          *clock.Mock
+	logger       log.DebugLogger
+	client       *etcdPkg.Client
+	mock         dependencies.Mocked
 	dependencies dependencies.CoordinatorScope
-
-	sink definition.Sink
+	session      *concurrency.Session
+	sink         definition.Sink
 }
 
-func setup(t *testing.T, ctx context.Context) (ts *testState) {
+func setup(t *testing.T, ctx context.Context) *testState {
 	// The interval triggers importing files check
 	importingFilesCheckInterval := time.Second
 
@@ -48,25 +48,29 @@ func setup(t *testing.T, ctx context.Context) (ts *testState) {
 		cfg.Storage.Level.Target.Operator.FileImportCheckInterval = duration.From(importingFilesCheckInterval)
 	}, commonDeps.WithClock(clk))
 
-	ts = &testState{
-		interval: importingFilesCheckInterval,
-		clk: clk,
-		mock: mock,
-		logger: mock.DebugLogger(),
-		client: mock.TestEtcdClient(),
-		dependencies: d,
-	}
-
 	// Start file import coordinator
 	require.NoError(t, fileimport.Start(d, mock.TestConfig().Storage.Level.Target.Operator))
 
+	client := mock.TestEtcdClient()
+
 	// Register some volumes
-	session, err := concurrency.NewSession(ts.client)
+	session, err := concurrency.NewSession(client)
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, session.Close()) })
 	test.RegisterWriterVolumes(t, ctx, d.StorageRepository().Volume(), session, 1)
 
-	return
+	return &testState{
+		interval:     importingFilesCheckInterval,
+		clk:          clk,
+		mock:         mock,
+		logger:       mock.DebugLogger(),
+		client:       client,
+		dependencies: d,
+		session:      session,
+	}
+}
+
+func (ts *testState) teardown(t *testing.T, ctx context.Context) {
+	require.NoError(t, ts.session.Close())
 }
 
 func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
@@ -100,9 +104,10 @@ func TestFileImport(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	t.Cleanup(cancel)
+	defer cancel()
 
 	ts := setup(t, ctx)
+	defer ts.teardown(t, ctx)
 	ts.prepareFixtures(t, ctx)
 	file := ts.prepareFile(t, ctx)
 	slice := ts.prepareSlice(t, ctx)
@@ -156,9 +161,10 @@ func TestFileImportError(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	t.Cleanup(cancel)
+	defer cancel()
 
 	ts := setup(t, ctx)
+	defer ts.teardown(t, ctx)
 	ts.prepareFixtures(t, ctx)
 	file := ts.prepareFile(t, ctx)
 	slice := ts.prepareSlice(t, ctx)
@@ -252,9 +258,10 @@ func TestFileImportEmpty(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	t.Cleanup(cancel)
+	defer cancel()
 
 	ts := setup(t, ctx)
+	defer ts.teardown(t, ctx)
 	ts.prepareFixtures(t, ctx)
 	file := ts.prepareFile(t, ctx)
 	slice := ts.prepareSlice(t, ctx)
