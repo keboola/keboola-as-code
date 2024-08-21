@@ -11,11 +11,11 @@ import (
 )
 
 func (r *Repository) SwitchToUploading(k model.SliceKey, now time.Time) *op.AtomicOp[model.Slice] {
-	return r.stateTransition(k, now, model.SliceClosing, model.SliceUploading)
+	return r.stateTransition(k, now, model.SliceClosing, model.SliceUploading, false)
 }
 
-func (r *Repository) SwitchToUploaded(k model.SliceKey, now time.Time) *op.AtomicOp[model.Slice] {
-	return r.stateTransition(k, now, model.SliceUploading, model.SliceUploaded)
+func (r *Repository) SwitchToUploaded(k model.SliceKey, now time.Time, isEmpty bool) *op.AtomicOp[model.Slice] {
+	return r.stateTransition(k, now, model.SliceUploading, model.SliceUploaded, isEmpty)
 }
 
 func (r *Repository) updateSlicesOnFileImport() {
@@ -38,7 +38,7 @@ func (r *Repository) validateSlicesOnFileStateTransition() {
 	})
 }
 
-func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to model.SliceState) *op.AtomicOp[model.Slice] {
+func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to model.SliceState, isEmpty bool) *op.AtomicOp[model.Slice] {
 	var file model.File
 	var old, updated model.Slice
 	return op.Atomic(r.client, &updated).
@@ -52,11 +52,11 @@ func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to m
 		}).
 		// Update the entity
 		Write(func(ctx context.Context) op.Op {
-			return r.switchState(ctx, file.State, old, now, from, to).SetResultTo(&updated)
+			return r.switchState(ctx, file.State, old, now, from, to, isEmpty).SetResultTo(&updated)
 		})
 }
 
-func (r *Repository) switchState(ctx context.Context, fileState model.FileState, oldValue model.Slice, now time.Time, from, to model.SliceState) *op.TxnOp[model.Slice] {
+func (r *Repository) switchState(ctx context.Context, fileState model.FileState, oldValue model.Slice, now time.Time, from, to model.SliceState, isEmpty bool) *op.TxnOp[model.Slice] {
 	// Validate from state
 	if oldValue.State != from {
 		return op.ErrorTxn[model.Slice](errors.Errorf(`slice "%s" is in "%s" state, expected "%s"`, oldValue.SliceKey, oldValue.State, from))
@@ -73,6 +73,7 @@ func (r *Repository) switchState(ctx context.Context, fileState model.FileState,
 		return op.ErrorTxn[model.Slice](err)
 	}
 
+	newValue.LocalStorage.IsEmpty = isEmpty
 	return r.save(ctx, now, &oldValue, &newValue)
 }
 
@@ -80,7 +81,7 @@ func (r *Repository) switchStateInBatch(ctx context.Context, fileState model.Fil
 	var updated []model.Slice
 	txn := op.TxnWithResult(r.client, &updated)
 	for _, slice := range original {
-		txn.Merge(r.switchState(ctx, fileState, slice, now, from, to).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
+		txn.Merge(r.switchState(ctx, fileState, slice, now, from, to, slice.LocalStorage.IsEmpty).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
 			updated = append(updated, r.Result())
 		}))
 	}

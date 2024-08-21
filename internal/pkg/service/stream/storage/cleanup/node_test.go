@@ -120,7 +120,7 @@ func TestNode(t *testing.T) {
 		slice1, err = sliceRepo.SwitchToUploading(slice1.SliceKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		require.Equal(t, model.SliceUploading, slice1.State)
-		slice1, err = sliceRepo.SwitchToUploaded(slice1.SliceKey, clk.Now()).Do(ctx).ResultOrErr()
+		slice1, err = sliceRepo.SwitchToUploaded(slice1.SliceKey, clk.Now(), false).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		require.Equal(t, model.SliceUploaded, slice1.State)
 

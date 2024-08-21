@@ -238,7 +238,7 @@ func TestStatisticsProviders(t *testing.T) {
 				// Disable sink, it triggers closing of the active file
 				require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "some reason").Do(ctx).Err())
 				require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now()).Do(ctx).Err())
-				require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
+				require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now(), false).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {
 				stats, err := provider.SinkStats(ctx, sinkKey)
@@ -362,7 +362,7 @@ func TestStatisticsProviders(t *testing.T) {
 			Description: "Move stats from local -> target level",
 			Prepare: func() {
 				require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now()).Do(ctx).Err())
-				require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now()).Do(ctx).Err())
+				require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now(), false).Do(ctx).Err())
 				require.NoError(t, fileRepo.SwitchToImporting(sliceKey3.FileKey, clk.Now()).Do(ctx).Err())
 				require.NoError(t, fileRepo.SwitchToImported(sliceKey3.FileKey, clk.Now()).Do(ctx).Err())
 			},

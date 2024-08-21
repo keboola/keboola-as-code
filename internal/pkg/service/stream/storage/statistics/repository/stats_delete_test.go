@@ -146,8 +146,8 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelLocalStaging(t *testing.T)
 	{
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey1, clk.Now()).Do(ctx).Err())
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now()).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey1, clk.Now()).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey1, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now(), false).Do(ctx).Err())
 	}
 
 	// Check initial state
@@ -295,9 +295,9 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now()).Do(ctx).Err())
 
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey1, clk.Now()).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now()).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey1, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now(), false).Do(ctx).Err())
 
 		clk.Add(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImporting(fileKey1, clk.Now()).Do(ctx).Err())

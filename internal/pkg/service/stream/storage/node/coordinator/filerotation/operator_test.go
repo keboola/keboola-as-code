@@ -187,8 +187,8 @@ func TestFileRotation(t *testing.T) {
 	// Unblock switching to the importing state
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, d.Clock().Now()).Do(ctx).Err())
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[1].SliceKey, d.Clock().Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, d.Clock().Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[1].SliceKey, d.Clock().Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, d.Clock().Now(), false).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[1].SliceKey, d.Clock().Now(), false).Do(ctx).Err())
 	triggerCheck(t, false, "")
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
