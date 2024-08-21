@@ -38,6 +38,8 @@ type testState struct {
 }
 
 func setup(t *testing.T, ctx context.Context) *testState {
+	t.Helper()
+
 	// The interval triggers importing files check
 	importingFilesCheckInterval := time.Second
 
@@ -69,11 +71,13 @@ func setup(t *testing.T, ctx context.Context) *testState {
 	}
 }
 
-func (ts *testState) teardown(t *testing.T, ctx context.Context) {
+func (ts *testState) teardown(t *testing.T) {
+	t.Helper()
 	require.NoError(t, ts.session.Close())
 }
 
 func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
+	t.Helper()
 	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
 	branch := test.NewBranch(branchKey)
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
@@ -85,6 +89,7 @@ func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
 }
 
 func (ts *testState) prepareFile(t *testing.T, ctx context.Context) model.File {
+	t.Helper()
 	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	require.Len(t, files, 1)
@@ -93,6 +98,7 @@ func (ts *testState) prepareFile(t *testing.T, ctx context.Context) model.File {
 }
 
 func (ts *testState) prepareSlice(t *testing.T, ctx context.Context) model.Slice {
+	t.Helper()
 	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	require.Len(t, slices, 1)
@@ -107,7 +113,7 @@ func TestFileImport(t *testing.T) {
 	defer cancel()
 
 	ts := setup(t, ctx)
-	defer ts.teardown(t, ctx)
+	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
 	file := ts.prepareFile(t, ctx)
 	slice := ts.prepareSlice(t, ctx)
@@ -164,7 +170,7 @@ func TestFileImportError(t *testing.T) {
 	defer cancel()
 
 	ts := setup(t, ctx)
-	defer ts.teardown(t, ctx)
+	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
 	file := ts.prepareFile(t, ctx)
 	slice := ts.prepareSlice(t, ctx)
@@ -261,7 +267,7 @@ func TestFileImportEmpty(t *testing.T) {
 	defer cancel()
 
 	ts := setup(t, ctx)
-	defer ts.teardown(t, ctx)
+	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
 	file := ts.prepareFile(t, ctx)
 	slice := ts.prepareSlice(t, ctx)
