@@ -68,6 +68,11 @@ func (b *Bridge) uploadSlice(
 
 	uploadedSlices := make([]string, 0, len(slices)+1)
 	for _, s := range slices {
+		// Skip empty slices
+		if s.LocalStorage.IsEmpty {
+			continue
+		}
+
 		uploadedSlices = append(uploadedSlices, s.StagingStorage.Path)
 	}
 
