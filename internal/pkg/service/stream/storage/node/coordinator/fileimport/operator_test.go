@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	etcdPkg "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -23,12 +26,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func TestFileImport(t *testing.T) {
-	t.Parallel()
+type testState struct {
+	interval time.Duration
+	clk *clock.Mock
+	logger log.DebugLogger
+	client *etcdPkg.Client
+	mock dependencies.Mocked
+	dependencies dependencies.CoordinatorScope
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	sink definition.Sink
+}
 
+func setup(t *testing.T, ctx context.Context) (ts *testState) {
 	// The interval triggers importing files check
 	importingFilesCheckInterval := time.Second
 
@@ -38,142 +47,134 @@ func TestFileImport(t *testing.T) {
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, func(cfg *config.Config) {
 		cfg.Storage.Level.Target.Operator.FileImportCheckInterval = duration.From(importingFilesCheckInterval)
 	}, commonDeps.WithClock(clk))
-	logger := mock.DebugLogger()
-	client := mock.TestEtcdClient()
+
+	ts = &testState{
+		interval: importingFilesCheckInterval,
+		clk: clk,
+		mock: mock,
+		logger: mock.DebugLogger(),
+		client: mock.TestEtcdClient(),
+		dependencies: d,
+	}
 
 	// Start file import coordinator
 	require.NoError(t, fileimport.Start(d, mock.TestConfig().Storage.Level.Target.Operator))
 
 	// Register some volumes
-	session, err := concurrency.NewSession(client)
+	session, err := concurrency.NewSession(ts.client)
 	require.NoError(t, err)
-	defer func() { require.NoError(t, session.Close()) }()
+	t.Cleanup(func() { require.NoError(t, session.Close()) })
 	test.RegisterWriterVolumes(t, ctx, d.StorageRepository().Volume(), session, 1)
 
-	// Fixtures
+	return
+}
+
+func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
 	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
 	branch := test.NewBranch(branchKey)
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	source := test.NewHTTPSource(sourceKey)
-	sink := dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
-	require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, clk.Now(), test.ByUser()).Do(ctx).Err())
-	require.NoError(t, d.DefinitionRepository().Source().Create(&source, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
-	require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+	ts.sink = dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
+	require.NoError(t, ts.dependencies.DefinitionRepository().Branch().Create(&branch, ts.clk.Now(), test.ByUser()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.DefinitionRepository().Source().Create(&source, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, ts.dependencies.DefinitionRepository().Sink().Create(&ts.sink, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+}
 
-	// Prepare file and slice
-	files, err := d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
+func (ts *testState) prepareFile(t *testing.T, ctx context.Context) model.File {
+	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 	require.Equal(t, model.FileWriting, files[0].State)
-	slices, err := d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	return files[0]
+}
+
+func (ts *testState) prepareSlice(t *testing.T, ctx context.Context) model.Slice {
+	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	require.Len(t, slices, 1)
 	require.Equal(t, model.SliceWriting, slices[0].State)
+	return slices[0]
+}
 
-	clk.Add(time.Second)
-	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, clk.Now(), false).Do(ctx).Err())
-	logger.Truncate()
-	require.NoError(t, d.StorageRepository().File().SwitchToImporting(files[0].FileKey, clk.Now(), false).Do(ctx).Err())
+func TestFileImport(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	t.Cleanup(cancel)
+
+	ts := setup(t, ctx)
+	ts.prepareFixtures(t, ctx)
+	file := ts.prepareFile(t, ctx)
+	slice := ts.prepareSlice(t, ctx)
+
+	ts.clk.Add(time.Second)
+	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	ts.logger.Truncate()
+	require.NoError(t, ts.dependencies.StorageRepository().File().SwitchToImporting(file.FileKey, ts.clk.Now(), false).Do(ctx).Err())
 
 	// Check state
-	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
+	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, files, 2)
 	assert.Equal(t, model.FileImporting, files[0].State)
 	assert.Equal(t, model.FileWriting, files[1].State)
-	slices, err = d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, slices, 2)
 	assert.Equal(t, model.SliceUploaded, slices[0].State)
 	assert.Equal(t, model.SliceWriting, slices[1].State)
 
-	clk.Add(importingFilesCheckInterval)
+	ts.clk.Add(ts.interval)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
-	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
+	files, err = ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, files, 2)
 	assert.Equal(t, model.FileImported, files[0].State)
 	assert.Equal(t, model.FileWriting, files[1].State)
-	slices, err = d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, slices, 2)
 	assert.Equal(t, model.SliceImported, slices[0].State)
 	assert.Equal(t, model.SliceWriting, slices[1].State)
 
 	// Shutdown
-	d.Process().Shutdown(ctx, errors.New("bye bye"))
-	d.Process().WaitForShutdown()
+	ts.dependencies.Process().Shutdown(ctx, errors.New("bye bye"))
+	ts.dependencies.Process().WaitForShutdown()
 
 	// No error is logged
-	logger.AssertJSONMessages(t, "")
+	ts.logger.AssertJSONMessages(t, "")
 }
 
 func TestFileImportError(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	t.Cleanup(cancel)
 
-	// The interval triggers importing files check
-	importingFilesCheckInterval := time.Second
-
-	// Create dependencies
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
-	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, func(cfg *config.Config) {
-		cfg.Storage.Level.Target.Operator.FileImportCheckInterval = duration.From(importingFilesCheckInterval)
-	}, commonDeps.WithClock(clk))
-	logger := mock.DebugLogger()
-	client := mock.TestEtcdClient()
-
-	// Start file import coordinator
-	require.NoError(t, fileimport.Start(d, mock.TestConfig().Storage.Level.Target.Operator))
-
-	// Register some volumes
-	session, err := concurrency.NewSession(client)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, session.Close()) }()
-	test.RegisterWriterVolumes(t, ctx, d.StorageRepository().Volume(), session, 1)
-
-	// Fixtures
-	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
-	branch := test.NewBranch(branchKey)
-	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
-	source := test.NewHTTPSource(sourceKey)
-	sink := dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
-	require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, clk.Now(), test.ByUser()).Do(ctx).Err())
-	require.NoError(t, d.DefinitionRepository().Source().Create(&source, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
-	require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
-
-	// Prepare file and slice
-	files, err := d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	require.Len(t, files, 1)
-	require.Equal(t, model.FileWriting, files[0].State)
-	slices, err := d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	require.Len(t, slices, 1)
-	require.Equal(t, model.SliceWriting, slices[0].State)
+	ts := setup(t, ctx)
+	ts.prepareFixtures(t, ctx)
+	file := ts.prepareFile(t, ctx)
+	slice := ts.prepareSlice(t, ctx)
 
 	// Fail first file import
-	mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
+	ts.mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
 
-	clk.Add(time.Second)
-	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, clk.Now(), false).Do(ctx).Err())
-	logger.Truncate()
-	require.NoError(t, d.StorageRepository().File().SwitchToImporting(files[0].FileKey, clk.Now(), false).Do(ctx).Err())
+	ts.clk.Add(time.Second)
+	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	ts.logger.Truncate()
+	require.NoError(t, ts.dependencies.StorageRepository().File().SwitchToImporting(file.FileKey, ts.clk.Now(), false).Do(ctx).Err())
 
 	// Check state
-	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
+	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, files, 2)
 	assert.Equal(t, model.FileImporting, files[0].State)
@@ -183,20 +184,20 @@ func TestFileImportError(t *testing.T) {
 	assert.Nil(t, files[0].RetryAfter)
 	assert.Equal(t, "", files[0].RetryReason)
 	assert.Equal(t, model.FileWriting, files[1].State)
-	slices, err = d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, slices, 2)
 	assert.Equal(t, model.SliceUploaded, slices[0].State)
 	assert.Equal(t, model.SliceWriting, slices[1].State)
 
-	clk.Add(importingFilesCheckInterval)
+	ts.clk.Add(ts.interval)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for file import:\n- File import to keboola failed","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for file import:\n- File import to keboola failed","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
-	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
+	files, err = ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, files, 2)
 	assert.Equal(t, model.FileImporting, files[0].State)
@@ -206,24 +207,24 @@ func TestFileImportError(t *testing.T) {
 	assert.NotNil(t, files[0].RetryAfter)
 	assert.Equal(t, "error when waiting for file import:\n- File import to keboola failed", files[0].RetryReason)
 	assert.Equal(t, model.FileWriting, files[1].State)
-	slices, err = d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, slices, 2)
 	assert.Equal(t, model.SliceUploaded, slices[0].State)
 	assert.Equal(t, model.SliceWriting, slices[1].State)
 
 	// File import retry should succeed
-	mock.TestDummySinkController().ImportError = nil
-	logger.Truncate()
-	clk.Set(files[0].RetryAfter.Time())
-	clk.Add(importingFilesCheckInterval)
+	ts.mock.TestDummySinkController().ImportError = nil
+	ts.logger.Truncate()
+	ts.clk.Set(files[0].RetryAfter.Time())
+	ts.clk.Add(ts.interval)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
-	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
+	files, err = ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, files, 2)
 	assert.Equal(t, model.FileImported, files[0].State)
@@ -233,16 +234,16 @@ func TestFileImportError(t *testing.T) {
 	assert.Nil(t, files[0].RetryAfter)
 	assert.Equal(t, "", files[0].RetryReason)
 	assert.Equal(t, model.FileWriting, files[1].State)
-	slices, err = d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	assert.Len(t, slices, 2)
 	assert.Equal(t, model.SliceImported, slices[0].State)
 	assert.Equal(t, model.SliceWriting, slices[1].State)
 
 	// Shutdown
-	d.Process().Shutdown(ctx, errors.New("bye bye"))
-	d.Process().WaitForShutdown()
+	ts.dependencies.Process().Shutdown(ctx, errors.New("bye bye"))
+	ts.dependencies.Process().WaitForShutdown()
 
 	// No error is logged
-	logger.AssertJSONMessages(t, "")
+	ts.logger.AssertJSONMessages(t, "")
 }
