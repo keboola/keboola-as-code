@@ -270,6 +270,8 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) rotateFile(ctx context.Context, file *fileData) {
+	o.logger.Info(ctx, "rotating file")
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration())
 	defer cancel()
 
@@ -319,9 +321,15 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "successfully rotated file")
+	}
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
+	o.logger.Info(ctx, "closing file")
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
@@ -368,6 +376,10 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "successfully closed file")
+	}
 }
 
 func (o *operator) waitForSlicesUpload(ctx context.Context, fileKey model.FileKey) (allEmpty bool, err error) {

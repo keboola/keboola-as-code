@@ -215,6 +215,8 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) importFile(ctx context.Context, file *fileData) {
+	o.logger.Info(ctx, "importing file")
+
 	// Import the file to specific provider
 	err := o.plugins.ImportFile(ctx, &file.File)
 	if err != nil {
@@ -258,4 +260,8 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "successfully imported file")
+	}
 }
