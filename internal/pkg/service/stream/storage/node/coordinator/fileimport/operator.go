@@ -40,6 +40,7 @@ type fileData struct {
 	FileKey model.FileKey
 	State   model.FileState
 	Retry   model.Retryable
+	IsEmpty bool
 	File    plugin.File
 
 	// Lock prevents parallel check of the same file.
@@ -106,6 +107,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 					FileKey: file.FileKey,
 					State:   file.State,
 					Retry:   file.Retryable,
+					IsEmpty: file.StagingStorage.IsEmpty,
 					File: plugin.File{
 						FileKey:  file.FileKey,
 						SinkKey:  file.SinkKey,
@@ -217,10 +219,13 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 func (o *operator) importFile(ctx context.Context, file *fileData) {
 	o.logger.Info(ctx, "importing file")
 
-	// Import the file to specific provider
-	err := o.plugins.ImportFile(ctx, &file.File)
-	if err != nil {
-		err = errors.PrefixError(err, "error when waiting for file import")
+	var err error
+	if !file.IsEmpty {
+		// Import the file to specific provider
+		err = o.plugins.ImportFile(ctx, &file.File)
+		if err != nil {
+			err = errors.PrefixError(err, "error when waiting for file import")
+		}
 	}
 
 	// Lock all file operations in the sink
