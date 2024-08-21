@@ -20,6 +20,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+const (
+	testStagingFileProvider = stagingModel.FileProvider("keboola")
+)
+
 func TestVolumeKey_Validation(t *testing.T) {
 	t.Parallel()
 
@@ -154,7 +158,7 @@ func TestSlice_Validation(t *testing.T) {
 	}
 	stagingStorage := stagingModel.Slice{
 		Path:        "slice.csv.gzip",
-		Provider:    "keboola",
+		Provider:    testStagingFileProvider,
 		Compression: compression.NewConfig(),
 		Upload:      stagingConfig.NewConfig().Upload,
 	}

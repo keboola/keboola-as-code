@@ -19,6 +19,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
+const (
+	testStagingFileProvider = stagingModel.FileProvider("keboola")
+)
+
 func NewSliceKey() model.SliceKey {
 	return NewSliceKeyOpenedAt("2000-01-01T20:00:00.000Z")
 }
@@ -71,7 +75,7 @@ func NewSliceOpenedAt(openedAt string) *model.Slice {
 		},
 		StagingStorage: stagingModel.Slice{
 			Path:        "slice.csv",
-			Provider:    "keboola",
+			Provider:    testStagingFileProvider,
 			Compression: compression.NewNoneConfig(),
 			Upload: staging.UploadConfig{
 				Trigger: staging.UploadTrigger{
