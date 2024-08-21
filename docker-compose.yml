@@ -59,6 +59,9 @@ services:
       - STREAM_ETCD_PASSWORD=toor
       - STREAM_ETCD_NAMESPACE=stream
     ports:
+      # PProf
+      - "4000:4000"
+      - "4001:4001"
       # Templates API
       - "8000:8000" # API
       - "9000:9000" # metrics
