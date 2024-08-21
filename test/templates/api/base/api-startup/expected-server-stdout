@@ -1,4 +1,4 @@
-{"level":"info","message":"configuration: {\"debugLog\":false,\"debugHTTPClient\":false,\"cpuProfilePath\":\"\",\"nodeID\":\"test-node\",\"datadog\":{\"enabled\":false,\"debug\":false},\"etcd\":{\"endpoint\":\"%s\",\"namespace\":\"%s\",\"username\":\"%s\",\"password\":\"*****\",\"connectTimeout\":\"30s\",\"keepAliveTimeout\":\"5s\",\"keepAliveInterval\":\"10s\",\"debugLog\":false},\"metrics\":{\"listen\":\"%s\"},\"api\":{\"listen\":\"%s\",\"publicUrl\":\"https://templates.keboola.local\"},\"storage-api-host\":\"%s\",\"repositories\":\"keboola|https://github.com/keboola/keboola-as-code-templates.git|main\",\"tasks-cleanup-enabled\":true,\"tasks-cleanup-interval\":\"1h0m0s\"}"}
+{"level":"info","message":"configuration: %s"}
 {"level":"info","message":"starting HTTP server on \"%s\"","component":"metrics"}
 {"level":"info","message":"started HTTP server on \"%s\", endpoint \"metrics\"\"","component":"metrics"}
 {"level":"info","message":"loading Storage API index with components"}
