@@ -247,3 +247,62 @@ func TestFileImportError(t *testing.T) {
 	// No error is logged
 	ts.logger.AssertJSONMessages(t, "")
 }
+
+func TestFileImportEmpty(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	t.Cleanup(cancel)
+
+	ts := setup(t, ctx)
+	ts.prepareFixtures(t, ctx)
+	file := ts.prepareFile(t, ctx)
+	slice := ts.prepareSlice(t, ctx)
+
+	// Import should pass regardless of this error because the file is empty
+	ts.mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
+
+	ts.clk.Add(time.Second)
+	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), true).Do(ctx).Err())
+	ts.logger.Truncate()
+	require.NoError(t, ts.dependencies.StorageRepository().File().SwitchToImporting(file.FileKey, ts.clk.Now(), true).Do(ctx).Err())
+
+	// Check state
+	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	assert.Len(t, files, 2)
+	assert.Equal(t, model.FileImporting, files[0].State)
+	assert.Equal(t, model.FileWriting, files[1].State)
+	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	assert.Len(t, slices, 2)
+	assert.Equal(t, model.SliceUploaded, slices[0].State)
+	assert.Equal(t, model.SliceWriting, slices[1].State)
+
+	ts.clk.Add(ts.interval)
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Check state
+	files, err = ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	assert.Len(t, files, 2)
+	assert.Equal(t, model.FileImported, files[0].State)
+	assert.Equal(t, model.FileWriting, files[1].State)
+	slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	assert.Len(t, slices, 2)
+	assert.Equal(t, model.SliceImported, slices[0].State)
+	assert.Equal(t, model.SliceWriting, slices[1].State)
+
+	// Shutdown
+	ts.dependencies.Process().Shutdown(ctx, errors.New("bye bye"))
+	ts.dependencies.Process().WaitForShutdown()
+
+	// No error is logged
+	ts.logger.AssertJSONMessages(t, "")
+}
