@@ -9,15 +9,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 )
 
 // storageReaderScope implements StorageReaderScope interface.
 type storageReaderScope struct {
 	storageReaderParentScopes
-	volumes           *diskreader.Volumes
-	statisticsL1Cache *cache.L1
-	statisticsL2Cache *cache.L2
+	volumes *diskreader.Volumes
 }
 
 type storageReaderParentScopes interface {
@@ -42,16 +39,6 @@ func newStorageReaderScope(ctx context.Context, parentScp storageReaderParentSco
 		return nil, err
 	}
 
-	d.statisticsL1Cache, err = cache.NewL1Cache(d)
-	if err != nil {
-		return nil, err
-	}
-
-	d.statisticsL2Cache, err = cache.NewL2Cache(d, d.statisticsL1Cache, cfg.Storage.Statistics.Cache.L2)
-	if err != nil {
-		return nil, err
-	}
-
 	return d, nil
 }
 
@@ -72,12 +59,4 @@ func NewMockedStorageReaderScopeWithConfig(tb testing.TB, modifyConfig func(*con
 
 func (s *storageReaderScope) Volumes() *diskreader.Volumes {
 	return s.volumes
-}
-
-func (s *storageReaderScope) StatisticsL1Cache() *cache.L1 {
-	return s.statisticsL1Cache
-}
-
-func (s *storageReaderScope) StatisticsL2Cache() *cache.L2 {
-	return s.statisticsL2Cache
 }

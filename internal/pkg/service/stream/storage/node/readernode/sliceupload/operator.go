@@ -19,7 +19,7 @@ import (
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
-	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
+	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 )
 
 type operator struct {
@@ -27,7 +27,7 @@ type operator struct {
 	clock      clock.Clock
 	logger     log.Logger
 	volumes    *diskreader.Volumes
-	statistics *statsCache.L1
+	statistics *statsRepo.Repository
 	storage    *storageRepo.Repository
 	plugins    *plugin.Plugins
 
@@ -51,7 +51,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 	KeboolaPublicAPI() *keboola.PublicAPI
 	Volumes() *diskreader.Volumes
-	StatisticsL1Cache() *statsCache.L1
+	StatisticsRepository() *statsRepo.Repository
 	StorageRepository() *storageRepo.Repository
 	Plugins() *plugin.Plugins
 }
@@ -63,8 +63,8 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		clock:      d.Clock(),
 		logger:     d.Logger().WithComponent("storage.node.operator.slice.upload"),
 		volumes:    d.Volumes(),
-		statistics: d.StatisticsL1Cache(),
 		storage:    d.StorageRepository(),
+		statistics: d.StatisticsRepository(),
 		plugins:    d.Plugins(),
 	}
 
