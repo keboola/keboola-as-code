@@ -302,7 +302,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	}
 
 	o.logger.Infof(ctx, "rotating file for import: %s", cause)
-	err = o.rotateFileState(ctx, file)
+	err = o.rotateFileWithState(ctx, file)
 	if err != nil {
 		return
 	}
@@ -314,7 +314,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	file.Processed = true
 }
 
-func (o *operator) rotateFileState(ctx context.Context, file *fileData) error {
+func (o *operator) rotateFileWithState(ctx context.Context, file *fileData) error {
 	// Lock all file operations in the sink
 	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
 	if err := lock.Lock(ctx); err != nil {
@@ -334,10 +334,10 @@ func (o *operator) rotateFileState(ctx context.Context, file *fileData) error {
 		o.logger.Errorf(ctx, "cannot rotate file: %s", err)
 
 		// Increment retry delay
-		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file rotation retry: %s", err)
-			return err
+		iErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+		if iErr != nil {
+			o.logger.Errorf(ctx, "cannot increment file retry: %s", err)
+			return iErr
 		}
 	}
 

@@ -40,6 +40,10 @@ const SliceImported SliceState = "imported"
 // SliceWriting -> SliceClosing -> SliceUploading -> SliceUploaded -> SliceImported.
 type SliceState string
 
+func (s SliceState) String() string {
+	return string(s)
+}
+
 func (s Slice) WithState(at time.Time, to SliceState) (Slice, error) {
 	from := s.State
 	atUTC := utctime.From(at)
