@@ -50,13 +50,13 @@ spec:
               value: $(DD_AGENT_HOST):$(DD_STATSD_PORT)
             - name: K6_STATSD_ENABLE_TAGS
               value: "true"
-            - name: BENCHMARK_MAX_VIRTUAL_USERS
+            - name: K6_MAX_VIRTUAL_USERS
               value: "150"
-            - name: BENCHMARK_PARALLEL_REQS_PER_USER
+            - name: K6_PARALLEL_REQS_PER_USER
               value: "15"
-            - name: BENCHMARK_RAMPING_DURATION
+            - name: K6_RAMPING_DURATION
               value: "5m"
-            - name: BENCHMARK_STABLE_RATE_DURATION
+            - name: K6_STABLE_RATE_DURATION
               value: "5m"
       tolerations:
         - key: app
