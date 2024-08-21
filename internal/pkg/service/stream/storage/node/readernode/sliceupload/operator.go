@@ -138,7 +138,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 }
 
 func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
-	o.logger.Debugf(ctx, "checking slices upload conditions")
+	o.logger.Debugf(ctx, "checking slices in the uploading state")
 
 	o.slices.ForEach(func(_ model.SliceKey, data *sliceData) (stop bool) {
 		wg.Add(1)
@@ -194,11 +194,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 	}
 
 	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
-	if data.Slice.LocalStorage.IsEmpty || stats.Local.RecordsCount == 0 {
-		o.changeSliceState(ctx, data.Slice.SliceKey, true)
-	}
-
-	if !data.Uploading {
+	if stats.Local.RecordsCount != 0 && !data.Uploading {
 		o.logger.Infof(ctx, `uploading slice %q`, data.Slice.SliceKey)
 		// Use plugin system to upload slice to stagin storage. Set is an in-progress upload
 		uploadCtx, uploadCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
@@ -229,6 +225,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 		return
 	}
 
+	o.logger.Infof(ctx, `slice was uploaded %q`, data.Slice.SliceKey)
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	data.Processed = true

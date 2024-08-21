@@ -67,8 +67,13 @@ func RegisterWriterVolumes(t *testing.T, ctx context.Context, volumeRepo volumeR
 		panic(errors.New("count must be 1-5"))
 	}
 
+	RegisterCustomWriterVolumes(t, ctx, volumeRepo, session, volumes[:count])
+}
+
+func RegisterCustomWriterVolumes(t *testing.T, ctx context.Context, volumeRepo volumeRepository, session *concurrency.Session, volumes []model.Metadata) {
+	t.Helper()
 	txn := op.Txn(session.Client())
-	for _, vol := range volumes[:count] {
+	for _, vol := range volumes {
 		txn.Merge(volumeRepo.RegisterWriterVolume(vol, session.Lease()))
 	}
 	require.NoError(t, txn.Do(ctx).Err())

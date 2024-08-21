@@ -21,7 +21,6 @@ type mocked struct {
 	dependencies.Mocked
 	config              config.Config
 	dummySinkController *dummy.SinkController
-	dummyBridge         *dummy.Bridge
 }
 
 func (v *mocked) TestConfig() config.Config {
@@ -30,10 +29,6 @@ func (v *mocked) TestConfig() config.Config {
 
 func (v *mocked) TestDummySinkController() *dummy.SinkController {
 	return v.dummySinkController
-}
-
-func (v *mocked) TestDummyBridge() *dummy.Bridge {
-	return v.dummyBridge
 }
 
 func testConfig(tb testing.TB, d dependencies.Mocked) config.Config {

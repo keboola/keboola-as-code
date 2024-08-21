@@ -61,17 +61,17 @@ func (b *Bridge) uploadSlice(
 	}
 
 	// Get already uploaded slices and update the manifest with new uploaded slice
-	slices, err := b.storageRepository.Slice().ListIn(slice.SinkKey).Do(ctx).All()
+	slices, err := b.storageRepository.Slice().ListInState(slice.FileKey, model.SliceUploaded).Do(ctx).All()
 	if err != nil {
 		return err
 	}
 
 	uploadedSlices := make([]string, 0, len(slices)+1)
 	for _, s := range slices {
-		uploadedSlices = append(uploadedSlices, s.String())
+		uploadedSlices = append(uploadedSlices, s.StagingStorage.Path)
 	}
 
-	uploadedSlices = append(uploadedSlices, slice.String())
+	uploadedSlices = append(uploadedSlices, slice.StagingStorage.Path)
 	_, err = keboola.UploadSlicedFileManifest(ctx, &credentials.FileUploadCredentials, uploadedSlices)
 	if err != nil {
 		return err
