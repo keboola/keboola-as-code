@@ -134,7 +134,7 @@ func TestFileImport(t *testing.T) {
 	ts.clk.Add(ts.interval)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"successfully imported file","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
@@ -226,7 +226,7 @@ func TestFileImportError(t *testing.T) {
 	ts.clk.Add(ts.interval)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"successfully imported file","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
@@ -291,7 +291,7 @@ func TestFileImportEmpty(t *testing.T) {
 	ts.clk.Add(ts.interval)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"successfully imported file","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
