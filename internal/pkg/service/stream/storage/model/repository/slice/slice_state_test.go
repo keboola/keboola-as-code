@@ -112,7 +112,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.SwitchToImporting(file.FileKey, clk.Now()).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImporting(file.FileKey, clk.Now(), false).Do(ctx).Err())
 		clk.Add(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImported(file.FileKey, clk.Now()).Do(ctx).Err())
 	}

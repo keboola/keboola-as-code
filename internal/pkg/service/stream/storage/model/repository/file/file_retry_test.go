@@ -103,7 +103,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.SwitchToImporting(fileKey, clk.Now()).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImporting(fileKey, clk.Now(), false).Do(ctx).Err())
 	}
 
 	// Import failed, increment retry attempt

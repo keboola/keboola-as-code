@@ -126,7 +126,7 @@ func TestNode(t *testing.T) {
 
 		clk.Add(time.Hour)
 		require.Equal(t, model.FileClosing, file1.State)
-		file1, err = fileRepo.SwitchToImporting(file1.FileKey, clk.Now()).Do(ctx).ResultOrErr()
+		file1, err = fileRepo.SwitchToImporting(file1.FileKey, clk.Now(), false).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		require.Equal(t, model.FileImporting, file1.State)
 		file1, err = fileRepo.SwitchToImported(file1.FileKey, clk.Now()).Do(ctx).ResultOrErr()

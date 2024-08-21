@@ -75,7 +75,7 @@ func TestFileImport(t *testing.T) {
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now()).Do(ctx).Err())
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, clk.Now(), false).Do(ctx).Err())
 	logger.Truncate()
-	require.NoError(t, d.StorageRepository().File().SwitchToImporting(files[0].FileKey, clk.Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().File().SwitchToImporting(files[0].FileKey, clk.Now(), false).Do(ctx).Err())
 
 	// Check state
 	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
@@ -170,7 +170,7 @@ func TestFileImportError(t *testing.T) {
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now()).Do(ctx).Err())
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, clk.Now(), false).Do(ctx).Err())
 	logger.Truncate()
-	require.NoError(t, d.StorageRepository().File().SwitchToImporting(files[0].FileKey, clk.Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().File().SwitchToImporting(files[0].FileKey, clk.Now(), false).Do(ctx).Err())
 
 	// Check state
 	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()

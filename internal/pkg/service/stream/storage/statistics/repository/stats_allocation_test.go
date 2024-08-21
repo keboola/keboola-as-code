@@ -143,7 +143,7 @@ func TestRepository_EstimateSliceSizeOnSliceCreate(t *testing.T) {
 		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now(), false).Do(ctx).Err())
 
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.SwitchToImporting(sliceKey2.FileKey, clk.Now()).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImporting(sliceKey2.FileKey, clk.Now(), false).Do(ctx).Err())
 		require.NoError(t, fileRepo.SwitchToImported(sliceKey2.FileKey, clk.Now()).Do(ctx).Err())
 	}
 

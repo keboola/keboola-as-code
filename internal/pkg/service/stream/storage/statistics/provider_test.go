@@ -363,7 +363,7 @@ func TestStatisticsProviders(t *testing.T) {
 			Prepare: func() {
 				require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now()).Do(ctx).Err())
 				require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now(), false).Do(ctx).Err())
-				require.NoError(t, fileRepo.SwitchToImporting(sliceKey3.FileKey, clk.Now()).Do(ctx).Err())
+				require.NoError(t, fileRepo.SwitchToImporting(sliceKey3.FileKey, clk.Now(), false).Do(ctx).Err())
 				require.NoError(t, fileRepo.SwitchToImported(sliceKey3.FileKey, clk.Now()).Do(ctx).Err())
 			},
 			Assert: func(provider repository.Provider) {

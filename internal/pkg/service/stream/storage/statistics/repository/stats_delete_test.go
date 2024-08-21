@@ -300,9 +300,9 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now(), false).Do(ctx).Err())
 
 		clk.Add(time.Hour)
-		require.NoError(t, fileRepo.SwitchToImporting(fileKey1, clk.Now()).Do(ctx).Err())
-		require.NoError(t, fileRepo.SwitchToImporting(fileKey2, clk.Now()).Do(ctx).Err())
-		require.NoError(t, fileRepo.SwitchToImporting(fileKey3, clk.Now()).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImporting(fileKey1, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImporting(fileKey2, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, fileRepo.SwitchToImporting(fileKey3, clk.Now(), false).Do(ctx).Err())
 
 		clk.Add(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImported(fileKey1, clk.Now()).Do(ctx).Err())

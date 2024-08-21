@@ -339,7 +339,8 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 
 	// If there is no error, switch file to the importing state
 	if err == nil {
-		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
+		// TODO: set isEmpty to true if all slices are empty
+		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), false).RequireLock(lock).Do(dbCtx).Err()
 		if err != nil {
 			err = errors.PrefixError(err, "cannot switch file to the importing state")
 		}
