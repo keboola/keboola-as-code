@@ -177,11 +177,11 @@ func TestProvider(t *testing.T) {
 
 		// All slices must be marked as uploaded, to mark the file as imported
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now()).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now()).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now(), false).Do(ctx).Err())
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now(), false).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now()).Do(ctx).Err())
 
 		clk.Add(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImporting(sliceKey3.FileKey, clk.Now(), false).Do(ctx).Err())

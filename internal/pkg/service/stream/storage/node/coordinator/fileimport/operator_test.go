@@ -120,8 +120,8 @@ func TestFileImport(t *testing.T) {
 
 	ts.clk.Add(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
 
 	// Clear logs before this change so that we wait for mirror sync
 	ts.logger.Truncate()
@@ -189,8 +189,8 @@ func TestFileImportError(t *testing.T) {
 
 	ts.clk.Add(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
 
 	// Clear logs before this change so that we wait for mirror sync
 	ts.logger.Truncate()
@@ -298,8 +298,8 @@ func TestFileImportEmpty(t *testing.T) {
 
 	ts.clk.Add(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), true).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), true).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
 
 	// Clear logs before this change so that we wait for mirror sync
 	ts.logger.Truncate()

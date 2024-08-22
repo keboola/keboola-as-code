@@ -141,12 +141,12 @@ func TestRepository_MoveStatisticsOnSliceUpdate(t *testing.T) {
 		require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "some reason").Do(ctx).Err())
 
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now()).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now()).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now(), false).Do(ctx).Err())
 
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now(), false).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now()).Do(ctx).Err())
 
 		clk.Add(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImporting(sliceKey3.FileKey, clk.Now(), false).Do(ctx).Err())
