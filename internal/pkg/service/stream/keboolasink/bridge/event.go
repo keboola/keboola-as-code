@@ -1,3 +1,5 @@
+// Package bridge provides the dispatch of events for platform telemetry purposes.
+// Events contain slice/file statistics, for example, for billing purposes.
 package bridge
 
 import (
@@ -14,7 +16,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const componentID = keboola.ComponentID("keboola.keboola-as-code")
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.keboola-buffer.json
+const componentID = keboola.ComponentID("keboola.keboola-buffer")
 
 type Params struct {
 	ProjectID keboola.ProjectID
@@ -23,14 +26,18 @@ type Params struct {
 	Stats     statistics.Value
 }
 
-func (b *Bridge) sendSliceUploadEvent(
+func (b *Bridge) SendSliceUploadEvent(
 	ctx context.Context,
 	api *keboola.AuthorizedAPI,
 	duration time.Duration,
+	errPtr *error,
 	slice *model.Slice,
 	stats statistics.Value,
 ) error {
 	var err error
+	if errPtr != nil {
+		err = *errPtr
+	}
 
 	// Catch panic
 	panicErr := recover()

@@ -39,7 +39,7 @@ func (b *Bridge) uploadSlice(
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, uploadEventSendTimeout)
-		err = b.sendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), slice, stats)
+		err = b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), &err, slice, stats)
 		cancel()
 		if err != nil {
 			err = &plugin.SendSliceUploadEventError{SliceKey: slice.SliceKey}
