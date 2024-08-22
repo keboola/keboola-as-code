@@ -102,7 +102,7 @@ func MockTableStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) 
 
 			return httpmock.NewJsonResponse(http.StatusCreated, &keboola.StorageJob{
 				StorageJobKey: keboola.StorageJobKey{ID: jobID},
-				Status:        "processing",
+				Status:        keboola.StorageJobStatusProcessing,
 			})
 		},
 	)

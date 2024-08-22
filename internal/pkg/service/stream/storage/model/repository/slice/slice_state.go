@@ -10,12 +10,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type switchStateOption func(file *model.Slice)
+
+func withIsEmpty(isEmpty bool) switchStateOption {
+	return func(file *model.Slice) {
+		file.LocalStorage.IsEmpty = isEmpty
+	}
+}
+
 func (r *Repository) SwitchToUploading(k model.SliceKey, now time.Time) *op.AtomicOp[model.Slice] {
 	return r.stateTransition(k, now, model.SliceClosing, model.SliceUploading)
 }
 
-func (r *Repository) SwitchToUploaded(k model.SliceKey, now time.Time) *op.AtomicOp[model.Slice] {
-	return r.stateTransition(k, now, model.SliceUploading, model.SliceUploaded)
+func (r *Repository) SwitchToUploaded(k model.SliceKey, now time.Time, isEmpty bool) *op.AtomicOp[model.Slice] {
+	return r.stateTransition(k, now, model.SliceUploading, model.SliceUploaded, withIsEmpty(isEmpty))
 }
 
 func (r *Repository) updateSlicesOnFileImport() {
@@ -38,7 +46,7 @@ func (r *Repository) validateSlicesOnFileStateTransition() {
 	})
 }
 
-func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to model.SliceState) *op.AtomicOp[model.Slice] {
+func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to model.SliceState, opts ...switchStateOption) *op.AtomicOp[model.Slice] {
 	var file model.File
 	var old, updated model.Slice
 	return op.Atomic(r.client, &updated).
@@ -52,11 +60,11 @@ func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to m
 		}).
 		// Update the entity
 		Write(func(ctx context.Context) op.Op {
-			return r.switchState(ctx, file.State, old, now, from, to).SetResultTo(&updated)
+			return r.switchState(ctx, file.State, old, now, from, to, opts...).SetResultTo(&updated)
 		})
 }
 
-func (r *Repository) switchState(ctx context.Context, fileState model.FileState, oldValue model.Slice, now time.Time, from, to model.SliceState) *op.TxnOp[model.Slice] {
+func (r *Repository) switchState(ctx context.Context, fileState model.FileState, oldValue model.Slice, now time.Time, from, to model.SliceState, opts ...switchStateOption) *op.TxnOp[model.Slice] {
 	// Validate from state
 	if oldValue.State != from {
 		return op.ErrorTxn[model.Slice](errors.Errorf(`slice "%s" is in "%s" state, expected "%s"`, oldValue.SliceKey, oldValue.State, from))
@@ -71,6 +79,11 @@ func (r *Repository) switchState(ctx context.Context, fileState model.FileState,
 	newValue, err := oldValue.WithState(now, to)
 	if err != nil {
 		return op.ErrorTxn[model.Slice](err)
+	}
+
+	// Process options
+	for _, opt := range opts {
+		opt(&newValue)
 	}
 
 	return r.save(ctx, now, &oldValue, &newValue)

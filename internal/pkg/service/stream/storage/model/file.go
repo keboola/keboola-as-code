@@ -78,7 +78,11 @@ func (f File) LastStateChange() utctime.UTCTime {
 func (f File) Telemetry(clk clock.Clock) []attribute.KeyValue {
 	lastStateChange := f.LastStateChange().Time()
 	return []attribute.KeyValue{
-		attribute.String("file.key", f.FileKey.String()),
+		attribute.String("project.id", f.ProjectID.String()),
+		attribute.String("branch.id", f.BranchID.String()),
+		attribute.String("source.id", f.SourceID.String()),
+		attribute.String("sink.id", f.SinkID.String()),
+		attribute.String("file.id", f.FileID.String()),
 		attribute.String("file.age", clk.Since(lastStateChange).String()),
 		attribute.String("file.state", f.State.String()),
 		attribute.String("file.lastStateChange", lastStateChange.String()),

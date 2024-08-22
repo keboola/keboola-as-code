@@ -35,9 +35,10 @@ type operator struct {
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
 
-	openedSlicesLock     sync.RWMutex
+	lock                 sync.RWMutex
 	openedSlicesNotifier chan struct{}
 	openedSlicesCount    map[model.FileKey]int
+	fileNotEmpty         map[model.FileKey]bool
 }
 
 type fileData struct {
@@ -76,6 +77,14 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		locks:      d.DistributedLockProvider(),
 	}
 
+	// Join the distribution group
+	{
+		o.distribution, err = d.DistributionNode().Group("operator.file.rotation")
+		if err != nil {
+			return err
+		}
+	}
+
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -88,14 +97,6 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 
 		o.logger.Info(ctx, "closed file rotation operator")
 	})
-
-	// Join the distribution group
-	{
-		o.distribution, err = d.DistributionNode().Group("operator.file.rotation")
-		if err != nil {
-			return err
-		}
-	}
 
 	// Mirror files
 	{
@@ -142,28 +143,42 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 	{
 		o.openedSlicesNotifier = make(chan struct{})
 		o.openedSlicesCount = make(map[model.FileKey]int)
+		o.fileNotEmpty = make(map[model.FileKey]bool)
 		slices := d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV()).
 			SetupConsumer().
 			WithForEach(func(events []etcdop.WatchEvent[model.Slice], header *etcdop.Header, restart bool) {
-				o.openedSlicesLock.Lock()
-				defer o.openedSlicesLock.Unlock()
+				o.lock.Lock()
+				defer o.lock.Unlock()
 
 				if restart {
 					o.openedSlicesCount = make(map[model.FileKey]int)
+					o.fileNotEmpty = make(map[model.FileKey]bool)
 				}
 
-				// Update opened slices counts, per file
 				for _, event := range events {
+					fileKey := event.Value.FileKey
+
+					// Update opened slices counts, per file
 					switch event.Type {
 					case etcdop.CreateEvent:
-						o.openedSlicesCount[event.Value.FileKey]++
+						o.openedSlicesCount[fileKey]++
 					case etcdop.UpdateEvent:
 						// nop
 					case etcdop.DeleteEvent:
-						o.openedSlicesCount[event.Value.FileKey]--
-						if o.openedSlicesCount[event.Value.FileKey] == 0 {
-							delete(o.openedSlicesCount, event.Value.FileKey)
+						o.openedSlicesCount[fileKey]--
+						if o.openedSlicesCount[fileKey] == 0 {
+							delete(o.openedSlicesCount, fileKey)
 						}
+					}
+
+					// Detect if all slices are empty, per file
+					switch event.Type {
+					case etcdop.CreateEvent, etcdop.UpdateEvent:
+						if event.Value.State == model.SliceUploading {
+							o.fileNotEmpty[fileKey] = o.fileNotEmpty[fileKey] || !event.Value.LocalStorage.IsEmpty
+						}
+					case etcdop.DeleteEvent:
+						// nop
 					}
 				}
 
@@ -200,7 +215,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 	// Start conditions check ticker
 	{
 		wg.Add(1)
-		ticker := d.Clock().Ticker(o.config.CheckInterval.Duration())
+		ticker := d.Clock().Ticker(o.config.FileRotationCheckInterval.Duration())
 
 		go func() {
 			defer wg.Done()
@@ -260,6 +275,8 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) rotateFile(ctx context.Context, file *fileData) {
+	o.logger.Info(ctx, "rotating file")
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration())
 	defer cancel()
 
@@ -301,7 +318,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		// Increment retry delay
 		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
 		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file retry: %s", err)
+			o.logger.Errorf(ctx, "cannot increment file rotation retry: %s", err)
 			return
 		}
 	}
@@ -309,10 +326,16 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "successfully rotated file")
+	}
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
+	o.logger.Info(ctx, "closing file")
+
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
 	// Wait until all slices are uploaded
@@ -321,13 +344,30 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 		err = errors.PrefixError(err, "error when waiting for file slices upload")
 	}
 
+	// Find if file is empty
+	o.lock.RLock()
+	fileEmpty := !o.fileNotEmpty[file.FileKey]
+	o.lock.RUnlock()
+
+	// Lock all file operations in the sink
+	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
+	if err := lock.Lock(ctx); err != nil {
+		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+		return
+	}
+	defer func() {
+		if err := lock.Unlock(ctx); err != nil {
+			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
+		}
+	}()
+
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
 	// If there is no error, switch file to the importing state
 	if err == nil {
-		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now()).Do(dbCtx).Err()
+		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), fileEmpty).RequireLock(lock).Do(dbCtx).Err()
 		if err != nil {
 			err = errors.PrefixError(err, "cannot switch file to the importing state")
 		}
@@ -336,25 +376,34 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
-		err = o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+		err = o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
 		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file retry", err)
+			o.logger.Errorf(ctx, "cannot increment file close retry", err)
+			return
 		}
-		return
 	}
 
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
+
+	if err == nil {
+		// Clean memory
+		o.lock.Lock()
+		defer o.lock.Unlock()
+		delete(o.fileNotEmpty, file.FileKey)
+
+		o.logger.Info(ctx, "successfully closed file")
+	}
 }
 
 func (o *operator) waitForSlicesUpload(ctx context.Context, fileKey model.FileKey) error {
 	for {
 		// Order is important, to make it bulletproof, we have to get the notifier channel before the check
-		o.openedSlicesLock.RLock()
+		o.lock.RLock()
 		notifier := o.openedSlicesNotifier
 		openedSlicesCount := o.openedSlicesCount[fileKey]
-		o.openedSlicesLock.RUnlock()
+		o.lock.RUnlock()
 
 		// Check slices openedSlicesCount
 		if openedSlicesCount == 0 {

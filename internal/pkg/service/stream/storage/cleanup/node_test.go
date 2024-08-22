@@ -120,13 +120,13 @@ func TestNode(t *testing.T) {
 		slice1, err = sliceRepo.SwitchToUploading(slice1.SliceKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		require.Equal(t, model.SliceUploading, slice1.State)
-		slice1, err = sliceRepo.SwitchToUploaded(slice1.SliceKey, clk.Now()).Do(ctx).ResultOrErr()
+		slice1, err = sliceRepo.SwitchToUploaded(slice1.SliceKey, clk.Now(), false).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		require.Equal(t, model.SliceUploaded, slice1.State)
 
 		clk.Add(time.Hour)
 		require.Equal(t, model.FileClosing, file1.State)
-		file1, err = fileRepo.SwitchToImporting(file1.FileKey, clk.Now()).Do(ctx).ResultOrErr()
+		file1, err = fileRepo.SwitchToImporting(file1.FileKey, clk.Now(), false).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		require.Equal(t, model.FileImporting, file1.State)
 		file1, err = fileRepo.SwitchToImported(file1.FileKey, clk.Now()).Do(ctx).ResultOrErr()
@@ -150,7 +150,7 @@ func TestNode(t *testing.T) {
 		doCleanup()
 		logger.AssertJSONMessages(t, `
 {"level":"info","message":"deleting metadata of expired files"}
-{"level":"info","message":"deleted expired file","file.state":"imported","file.age":"9h0m0s","file.key":"123/456/my-source/my-sink/2000-01-01T00:00:00.000Z"}
+{"level":"info","message":"deleted expired file","file.state":"imported","file.age":"9h0m0s","file.id":"2000-01-01T00:00:00.000Z"}
 {"level":"info","message":"deleted \"1\" files","deletedFilesCount":1}
 `)
 	}
@@ -187,7 +187,7 @@ func TestNode(t *testing.T) {
 		doCleanup()
 		logger.AssertJSONMessages(t, `
 {"level":"info","message":"deleting metadata of expired files"}
-{"level":"info","message":"deleted expired file","file.state":"writing","file.age":"35h0m0s","file.key":"123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"}
+{"level":"info","message":"deleted expired file","file.state":"writing","file.age":"35h0m0s","file.id":"2000-01-01T01:00:00.000Z"}
 {"level":"info","message":"deleted \"1\" files","deletedFilesCount":1}
 `)
 	}

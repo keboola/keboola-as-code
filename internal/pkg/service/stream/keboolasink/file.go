@@ -6,7 +6,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-type FileUploadCredentials struct {
+// File contains all Keboola-specific data we need for upload and import.
+type File struct {
 	key.SinkKey
+	keboola.TableKey
+	*keboola.StorageJobID
 	keboola.FileUploadCredentials
 }

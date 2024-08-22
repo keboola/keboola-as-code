@@ -39,7 +39,7 @@
   // Save token
   005 ➡️  PUT "storage/keboola/secret/token/123/456/my-source/my-sink"
   // Save upload credentials
-  006 ➡️  PUT "storage/keboola/file/upload/credentials/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
+  006 ➡️  PUT "storage/keboola/file/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
   // Save slice
   007 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
   008 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"

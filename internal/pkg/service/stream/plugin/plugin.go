@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 )
 
 type Plugins struct {
@@ -13,6 +14,7 @@ type Plugins struct {
 	executor            *Executor
 	localStorageSinks   []func(sinkType definition.SinkType) bool
 	sinkPipelineOpeners []pipeline.Opener
+	fileImport          map[targetModel.Provider]Importer
 }
 
 type fnList[T any] []T
@@ -23,6 +25,7 @@ func New(logger log.Logger) *Plugins {
 	return &Plugins{
 		collection: c,
 		executor:   e,
+		fileImport: make(map[targetModel.Provider]Importer),
 	}
 }
 

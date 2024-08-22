@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/singleflight"
@@ -18,7 +19,7 @@ import (
 const (
 	// stagingFileProvider marks staging files provided by the Keboola Storage API.
 	stagingFileProvider = stagingModel.FileProvider("keboola")
-	// targetProvider marks files which destionation is a Keboola table.
+	// targetProvider marks files which destination is a Keboola table.
 	targetProvider = targetModel.Provider("keboola")
 
 	// sinkMetaKey is a key of the table metadata that marks each table created by the stream.sink.
@@ -34,6 +35,7 @@ type Bridge struct {
 	plugins     *plugin.Plugins
 	publicAPI   *keboola.PublicAPI
 	apiProvider apiProvider
+	clock       clock.Clock
 
 	getBucketOnce    *singleflight.Group
 	createBucketOnce *singleflight.Group
@@ -45,6 +47,7 @@ type dependencies interface {
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
 	KeboolaPublicAPI() *keboola.PublicAPI
+	Clock() clock.Clock
 }
 
 func New(d dependencies, apiProvider apiProvider) *Bridge {
@@ -55,6 +58,7 @@ func New(d dependencies, apiProvider apiProvider) *Bridge {
 		plugins:          d.Plugins(),
 		publicAPI:        d.KeboolaPublicAPI(),
 		apiProvider:      apiProvider,
+		clock:            d.Clock(),
 		getBucketOnce:    &singleflight.Group{},
 		createBucketOnce: &singleflight.Group{},
 	}
@@ -62,6 +66,7 @@ func New(d dependencies, apiProvider apiProvider) *Bridge {
 	b.setupOnFileOpen()
 	b.deleteCredentialsOnFileDelete()
 	b.deleteTokenOnSinkDeactivation()
+	b.registerFileImporter()
 
 	return b
 }

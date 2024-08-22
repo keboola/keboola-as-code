@@ -49,7 +49,7 @@ func TestFileRotation(t *testing.T) {
 	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, func(cfg *config.Config) {
 		cfg.Storage.Level.Target.Import.Trigger = importTrigger
-		cfg.Storage.Level.Target.Operator.CheckInterval = duration.From(conditionsCheckInterval)
+		cfg.Storage.Level.Target.Operator.FileRotationCheckInterval = duration.From(conditionsCheckInterval)
 	}, commonDeps.WithClock(clk))
 	logger := mock.DebugLogger()
 	client := mock.TestEtcdClient()
@@ -187,8 +187,8 @@ func TestFileRotation(t *testing.T) {
 	// Unblock switching to the importing state
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, d.Clock().Now()).Do(ctx).Err())
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[1].SliceKey, d.Clock().Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, d.Clock().Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[1].SliceKey, d.Clock().Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, d.Clock().Now(), false).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploaded(slices[1].SliceKey, d.Clock().Now(), false).Do(ctx).Err())
 	triggerCheck(t, false, "")
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()

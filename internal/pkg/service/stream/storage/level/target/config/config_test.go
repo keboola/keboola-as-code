@@ -28,9 +28,10 @@ func TestConfig_Validation(t *testing.T) {
 		{
 			Name: "empty",
 			ExpectedError: `
-- "operator.checkInterval" is a required field
+- "operator.fileRotationCheckInterval" is a required field
 - "operator.fileRotationTimeout" is a required field
 - "operator.fileCloseTimeout" is a required field
+- "operator.fileImportCheckInterval" is a required field
 - "operator.fileImportTimeout" is a required field
 - "import.trigger.count" is a required field
 - "import.trigger.size" is a required field
