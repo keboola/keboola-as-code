@@ -65,7 +65,11 @@ func (b *Bridge) createStagingFile(ctx context.Context, now time.Time, sink defi
 		ctx,
 		attribute.String("token.ID", token.Token.ID),
 		attribute.String("file.name", name),
-		attribute.String("file.key", file.FileKey.String()),
+		attribute.String("project.id", file.ProjectID.String()),
+		attribute.String("branch.id", file.BranchID.String()),
+		attribute.String("source.id", file.SourceID.String()),
+		attribute.String("sink.id", file.SinkID.String()),
+		attribute.String("file.id", file.FileID.String()),
 	)
 
 	// Create staging file

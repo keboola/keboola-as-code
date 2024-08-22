@@ -132,8 +132,8 @@ func TestBridge_FullWorkflow(t *testing.T) {
 {"level":"info","message":"created table","table.key":"456/in.c-bucket.table"}
 {"level":"info","message":"creating token","token.bucketID":"in.c-bucket"}
 {"level":"info","message":"created token","token.bucketID":"in.c-bucket","token.name":"[_internal] Stream Sink my-source/my-sink"}
-{"level":"info","message":"creating staging file","token.ID":"1001","file.name":"my-source_my-sink_20000101010000","file.key":"123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"}
-{"level":"info","message":"created staging file","token.ID":"1001","file.resourceID":"1001","file.name":"my-source_my-sink_20000101010000","file.key":"123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"}
+{"level":"info","message":"creating staging file","token.ID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
+{"level":"info","message":"created staging file","token.ID":"1001","file.resourceID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
 `)
 		mocked.DebugLogger().Truncate()
 	}
@@ -197,8 +197,8 @@ func TestBridge_FullWorkflow(t *testing.T) {
 		mocked.DebugLogger().AssertJSONMessages(t, `
 {"level":"info","message":"creating token","token.bucketID":"in.c-bucket"}
 {"level":"info","message":"created token","token.bucketID":"in.c-bucket","token.name":"[_internal] Stream Sink my-source/my-sink"}
-{"level":"info","message":"creating staging file","token.ID":"1002","file.name":"my-source_my-sink_20000101030000","file.key":"123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"}
-{"level":"info","message":"created staging file","token.ID":"1002","file.resourceID":"1002","file.name":"my-source_my-sink_20000101030000","file.key":"123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"}
+{"level":"info","message":"creating staging file","token.ID":"1002","file.name":"my-source_my-sink_20000101030000","file.id":"2000-01-01T03:00:00.000Z"}
+{"level":"info","message":"created staging file","token.ID":"1002","file.resourceID":"1002","file.name":"my-source_my-sink_20000101030000","file.id":"2000-01-01T03:00:00.000Z"}
 `)
 		mocked.DebugLogger().Truncate()
 	}
