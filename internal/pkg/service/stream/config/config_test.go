@@ -237,7 +237,7 @@ storage:
                 fileRotationTimeout: 5m0s
                 # Timeout of the file close operation. Validation rules: required,minDuration=10s,maxDuration=10m
                 fileCloseTimeout: 1m0s
-                # Interval of checking files in the importing state. Validation rules: required,minDuration=100ms,maxDuration=30s
+                # Interval of checking files in the importing state. Validation rules: required,minDuration=500ms,maxDuration=30s
                 fileImportCheckInterval: 1s
                 # Timeout of the file import operation. Validation rules: required,minDuration=30s,maxDuration=60m
                 fileImportTimeout: 15m0s

@@ -38,7 +38,7 @@ type operator struct {
 	openedSlicesLock     sync.RWMutex
 	openedSlicesNotifier chan struct{}
 	openedSlicesCount    map[model.FileKey]int
-	filesNotEmpty        map[model.FileKey]bool
+	fileNotEmpty         map[model.FileKey]bool
 }
 
 type fileData struct {
@@ -143,7 +143,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 	{
 		o.openedSlicesNotifier = make(chan struct{})
 		o.openedSlicesCount = make(map[model.FileKey]int)
-		o.filesNotEmpty = make(map[model.FileKey]bool)
+		o.fileNotEmpty = make(map[model.FileKey]bool)
 		slices := d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV()).
 			SetupConsumer().
 			WithForEach(func(events []etcdop.WatchEvent[model.Slice], header *etcdop.Header, restart bool) {
@@ -152,27 +152,27 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 
 				if restart {
 					o.openedSlicesCount = make(map[model.FileKey]int)
-					o.filesNotEmpty = make(map[model.FileKey]bool)
+					o.fileNotEmpty = make(map[model.FileKey]bool)
 				}
 
-				// Update opened slices counts, per file
+				// Update opened slices counts and emptiness, per file
 				for _, event := range events {
 					fileKey := event.Value.FileKey
 					switch event.Type {
 					case etcdop.CreateEvent:
 						o.openedSlicesCount[fileKey]++
 						if event.Value.State == model.SliceUploading {
-							o.filesNotEmpty[fileKey] = o.filesNotEmpty[fileKey] || !event.Value.LocalStorage.IsEmpty
+							o.fileNotEmpty[fileKey] = o.fileNotEmpty[fileKey] || !event.Value.LocalStorage.IsEmpty
 						}
 					case etcdop.UpdateEvent:
 						if event.Value.State == model.SliceUploading {
-							o.filesNotEmpty[fileKey] = o.filesNotEmpty[fileKey] || !event.Value.LocalStorage.IsEmpty
+							o.fileNotEmpty[fileKey] = o.fileNotEmpty[fileKey] || !event.Value.LocalStorage.IsEmpty
 						}
 					case etcdop.DeleteEvent:
 						o.openedSlicesCount[fileKey]--
 						if o.openedSlicesCount[fileKey] == 0 {
 							delete(o.openedSlicesCount, fileKey)
-							delete(o.filesNotEmpty, fileKey)
+							delete(o.fileNotEmpty, fileKey)
 						}
 					}
 				}
@@ -334,7 +334,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	defer cancel()
 
 	// Wait until all slices are uploaded
-	allEmpty, err := o.waitForSlicesUpload(ctx, file.FileKey)
+	fileEmpty, err := o.waitForSlicesUpload(ctx, file.FileKey)
 	if err != nil {
 		err = errors.PrefixError(err, "error when waiting for file slices upload")
 	}
@@ -357,7 +357,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 
 	// If there is no error, switch file to the importing state
 	if err == nil {
-		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), allEmpty).RequireLock(lock).Do(dbCtx).Err()
+		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), fileEmpty).RequireLock(lock).Do(dbCtx).Err()
 		if err != nil {
 			err = errors.PrefixError(err, "cannot switch file to the importing state")
 		}
@@ -382,18 +382,18 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	}
 }
 
-func (o *operator) waitForSlicesUpload(ctx context.Context, fileKey model.FileKey) (allEmpty bool, err error) {
+func (o *operator) waitForSlicesUpload(ctx context.Context, fileKey model.FileKey) (fileEmpty bool, err error) {
 	for {
 		// Order is important, to make it bulletproof, we have to get the notifier channel before the check
 		o.openedSlicesLock.RLock()
 		notifier := o.openedSlicesNotifier
 		openedSlicesCount := o.openedSlicesCount[fileKey]
-		allEmpty = !o.filesNotEmpty[fileKey]
+		fileEmpty = !o.fileNotEmpty[fileKey]
 		o.openedSlicesLock.RUnlock()
 
 		// Check slices openedSlicesCount
 		if openedSlicesCount == 0 {
-			return allEmpty, nil
+			return fileEmpty, nil
 		}
 
 		// Wait for the next update

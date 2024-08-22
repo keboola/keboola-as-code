@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -219,14 +220,8 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 func (o *operator) importFile(ctx context.Context, file *fileData) {
 	o.logger.Info(ctx, "importing file")
 
-	var err error
-	if !file.IsEmpty {
-		// Import the file to specific provider
-		err = o.plugins.ImportFile(ctx, &file.File)
-		if err != nil {
-			err = errors.PrefixError(err, "error when waiting for file import")
-		}
-	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
+	defer cancel()
 
 	// Lock all file operations in the sink
 	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
@@ -240,8 +235,17 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 		}
 	}()
 
+	var err error
+	if !file.IsEmpty {
+		// Import the file to specific provider
+		err = o.plugins.ImportFile(ctx, &file.File)
+		if err != nil {
+			err = errors.PrefixError(err, "error when waiting for file import")
+		}
+	}
+
 	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
 	// If there is no error, switch file to the importing state

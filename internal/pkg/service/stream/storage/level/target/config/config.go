@@ -45,7 +45,7 @@ type OperatorConfig struct {
 	FileRotationCheckInterval duration.Duration `json:"fileRotationCheckInterval" configKey:"fileRotationCheckInterval" configUsage:"Import triggers check interval." validate:"required,minDuration=100ms,maxDuration=30s"`
 	FileRotationTimeout       duration.Duration `json:"fileRotationTimeout" configKey:"fileRotationTimeout" configUsage:"Timeout of the file rotation operation." validate:"required,minDuration=30s,maxDuration=15m"`
 	FileCloseTimeout          duration.Duration `json:"fileCloseTimeout" configKey:"fileCloseTimeout" configUsage:"Timeout of the file close operation." validate:"required,minDuration=10s,maxDuration=10m"`
-	FileImportCheckInterval   duration.Duration `json:"fileImportCheckInterval" configKey:"fileImportCheckInterval" configUsage:"Interval of checking files in the importing state." validate:"required,minDuration=100ms,maxDuration=30s"`
+	FileImportCheckInterval   duration.Duration `json:"fileImportCheckInterval" configKey:"fileImportCheckInterval" configUsage:"Interval of checking files in the importing state." validate:"required,minDuration=500ms,maxDuration=30s"`
 	FileImportTimeout         duration.Duration `json:"fileImportTimeout" configKey:"fileImportTimeout" configUsage:"Timeout of the file import operation." validate:"required,minDuration=30s,maxDuration=60m"`
 }
 

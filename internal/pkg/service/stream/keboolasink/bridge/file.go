@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -61,16 +60,9 @@ func (b *Bridge) createStagingFile(ctx context.Context, now time.Time, sink defi
 	api := b.publicAPI.WithToken(token.TokenString())
 
 	name := fmt.Sprintf(`%s_%s_%s`, file.SourceID, file.SinkID, file.OpenedAt().Time().Format(fileNameDateFormat))
-	ctx = ctxattr.ContextWith(
-		ctx,
-		attribute.String("token.ID", token.Token.ID),
-		attribute.String("file.name", name),
-		attribute.String("project.id", file.ProjectID.String()),
-		attribute.String("branch.id", file.BranchID.String()),
-		attribute.String("source.id", file.SourceID.String()),
-		attribute.String("sink.id", file.SinkID.String()),
-		attribute.String("file.id", file.FileID.String()),
-	)
+	attributes := file.Telemetry(b.clock)
+	attributes = append(attributes, attribute.String("token.ID", token.Token.ID), attribute.String("file.name", name))
+	ctx = ctxattr.ContextWith(ctx, attributes...)
 
 	// Create staging file
 	b.logger.Info(ctx, `creating staging file`)
@@ -95,7 +87,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, now time.Time, sink defi
 
 	// Save credentials to database
 	ctx = ctxattr.ContextWith(ctx, attribute.String("file.resourceID", stagingFile.FileID.String()))
-	entity := keboolasink.File{
+	keboolaFile := keboolasink.File{
 		SinkKey: file.SinkKey,
 		TableKey: keboola.TableKey{
 			BranchID: sink.BranchID,
@@ -104,11 +96,11 @@ func (b *Bridge) createStagingFile(ctx context.Context, now time.Time, sink defi
 		FileUploadCredentials: *stagingFile,
 	}
 	op.AtomicOpFromCtx(ctx).Write(func(ctx context.Context) op.Op {
-		return b.schema.File().ForFile(file.FileKey).Put(b.client, entity)
+		return b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile)
 	})
 
 	b.logger.Info(ctx, "created staging file")
-	return entity, nil
+	return keboolaFile, nil
 }
 
 // deleteCredentialsOnFileDelete deletes upload credentials from database, staging file is kept until its expiration.
@@ -135,14 +127,10 @@ func (b *Bridge) registerFileImporter() {
 			}
 
 			// Get file upload credentials
-			var keboolaFile *keboolasink.File
-			err = b.schema.File().ForFile(file.FileKey).GetOrNil(b.client).WithResultTo(&keboolaFile).Do(ctx).Err()
+			var keboolaFile keboolasink.File
+			err = b.schema.File().ForFile(file.FileKey).GetOrErr(b.client).WithResultTo(&keboolaFile).Do(ctx).Err()
 			if err != nil {
 				return err
-			}
-
-			if keboolaFile == nil {
-				return errors.New("missing keboola details for file")
 			}
 
 			// Authorized API
@@ -170,7 +158,10 @@ func (b *Bridge) registerFileImporter() {
 
 				// Save job ID to etcd
 				keboolaFile.StorageJobID = &job.ID
-				b.schema.File().ForFile(file.FileKey).Put(b.client, *keboolaFile).Do(ctx)
+				err = b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile).Do(ctx).Err()
+				if err != nil {
+					return err
+				}
 			}
 
 			// Wait for job to complete
