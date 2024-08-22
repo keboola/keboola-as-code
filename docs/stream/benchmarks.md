@@ -11,9 +11,12 @@ export STREAM_API_PUBLIC_URL=http://localhost:10000
 export STREAM_SOURCE_HTTP_LISTEN=0.0.0.0:10001
 export STREAM_SOURCE_HTTP_PUBLIC_URL=http://localhost:10001
 export STREAM_STORAGE_VOLUMES_PATH=/tmp/k6/volumes
+export STREAM_PPROF_ENABLED=false
+export STREAM_PPROF_LISTEN="0.0.0.0:4000"
 mkdir -p "$STREAM_STORAGE_VOLUMES_PATH/hdd/001"
 docker compose run \
     -u "$UID:$GID" \
+    -p 4000:4000 \
     -p 10000:10000 \
     -p 10001:10001 \
     -v "$STREAM_STORAGE_VOLUMES_PATH:$STREAM_STORAGE_VOLUMES_PATH" \
@@ -25,6 +28,8 @@ docker compose run \
     -e STREAM_SOURCE_HTTP_LISTEN \
     -e STREAM_SOURCE_HTTP_PUBLIC_URL \
     -e STREAM_STORAGE_VOLUMES_PATH \
+    -e STREAM_PPROF_ENABLED \
+    -e STREAM_PPROF_LISTEN \
     --rm \
 dev make run-stream-service-once
 ```
@@ -78,6 +83,11 @@ http://localhost:4000/debug/pprof/goroutine?debug=2
 
 #### PProf Visualization
 
+Start a Go container to run `go tool` commands:
+```
+docker run --rm -it --net host keboolabot/keboola-as-code-dev bash
+```
+
 Use `go tool pprof` to visualise profiles in a web browser:
 ```
 cpu:       go tool pprof -http=0.0.0.0:4001 http://localhost:4000/debug/pprof/profile?seconds=10
@@ -90,6 +100,11 @@ goroutine: go tool pprof -http=0.0.0.0:4001 http://localhost:4000/debug/pprof/go
 Open `http://localhost:4001` to see the profile visualisation.
 
 #### Trace Visualization
+
+Start a Go container to run `go tool` commands:
+```
+docker run --rm -it --net host keboolabot/keboola-as-code-dev bash
+```
 
 Download trace profile:
 ```sh
