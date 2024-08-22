@@ -227,21 +227,23 @@ func TestFileImportError(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
-	files, err = ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	assert.Len(t, files, 2)
-	assert.Equal(t, model.FileImporting, files[0].State)
-	assert.Equal(t, 1, files[0].RetryAttempt)
-	assert.NotNil(t, files[0].FirstFailedAt)
-	assert.NotNil(t, files[0].LastFailedAt)
-	assert.NotNil(t, files[0].RetryAfter)
-	assert.Equal(t, "error when waiting for file import:\n- File import to keboola failed", files[0].RetryReason)
-	assert.Equal(t, model.FileWriting, files[1].State)
-	slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	assert.Len(t, slices, 2)
-	assert.Equal(t, model.SliceUploaded, slices[0].State)
-	assert.Equal(t, model.SliceWriting, slices[1].State)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		files, err = ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
+		require.NoError(t, err)
+		assert.Len(t, files, 2)
+		assert.Equal(t, model.FileImporting, files[0].State)
+		assert.Equal(t, 1, files[0].RetryAttempt)
+		assert.NotNil(t, files[0].FirstFailedAt)
+		assert.NotNil(t, files[0].LastFailedAt)
+		assert.NotNil(t, files[0].RetryAfter)
+		assert.Equal(t, "error when waiting for file import:\n- File import to keboola failed", files[0].RetryReason)
+		assert.Equal(t, model.FileWriting, files[1].State)
+		slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
+		require.NoError(t, err)
+		assert.Len(t, slices, 2)
+		assert.Equal(t, model.SliceUploaded, slices[0].State)
+		assert.Equal(t, model.SliceWriting, slices[1].State)
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// File import retry should succeed
 	ts.mock.TestDummySinkController().ImportError = nil
