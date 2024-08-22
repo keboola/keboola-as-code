@@ -122,6 +122,8 @@ func TestFileImport(t *testing.T) {
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+
+	// Clear logs before this change so that we wait for mirror sync
 	ts.logger.Truncate()
 	require.NoError(t, ts.dependencies.StorageRepository().File().SwitchToImporting(file.FileKey, ts.clk.Now(), false).Do(ctx).Err())
 
@@ -137,8 +139,15 @@ func TestFileImport(t *testing.T) {
 	assert.Equal(t, model.SliceUploaded, slices[0].State)
 	assert.Equal(t, model.SliceWriting, slices[1].State)
 
+	// Wait for ETCD mirror to sync to latest state
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Trigger import
 	ts.clk.Add(ts.interval)
 
+	// Await import success
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"successfully imported file","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
@@ -182,6 +191,8 @@ func TestFileImportError(t *testing.T) {
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+
+	// Clear logs before this change so that we wait for mirror sync
 	ts.logger.Truncate()
 	require.NoError(t, ts.dependencies.StorageRepository().File().SwitchToImporting(file.FileKey, ts.clk.Now(), false).Do(ctx).Err())
 
@@ -202,8 +213,15 @@ func TestFileImportError(t *testing.T) {
 	assert.Equal(t, model.SliceUploaded, slices[0].State)
 	assert.Equal(t, model.SliceWriting, slices[1].State)
 
+	// Wait for ETCD mirror to sync to latest state
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Trigger import
 	ts.clk.Add(ts.interval)
 
+	// Await import error
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for file import:\n- File import to keboola failed","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
@@ -231,6 +249,7 @@ func TestFileImportError(t *testing.T) {
 	ts.clk.Set(files[0].RetryAfter.Time())
 	ts.clk.Add(ts.interval)
 
+	// Await import success
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"successfully imported file","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
@@ -279,6 +298,8 @@ func TestFileImportEmpty(t *testing.T) {
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), true).Do(ctx).Err())
+
+	// Clear logs before this change so that we wait for mirror sync
 	ts.logger.Truncate()
 	require.NoError(t, ts.dependencies.StorageRepository().File().SwitchToImporting(file.FileKey, ts.clk.Now(), true).Do(ctx).Err())
 
@@ -294,8 +315,15 @@ func TestFileImportEmpty(t *testing.T) {
 	assert.Equal(t, model.SliceUploaded, slices[0].State)
 	assert.Equal(t, model.SliceWriting, slices[1].State)
 
+	// Wait for ETCD mirror to sync to latest state
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Trigger import
 	ts.clk.Add(ts.interval)
 
+	// Await import success
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"successfully imported file","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
