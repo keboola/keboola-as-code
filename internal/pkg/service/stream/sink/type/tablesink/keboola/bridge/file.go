@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	keboolasink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
 const (
@@ -115,7 +116,9 @@ func (b *Bridge) deleteCredentialsOnFileDelete() {
 	})
 }
 
-func (b *Bridge) importFile(ctx context.Context, file *plugin.File) error {
+func (b *Bridge) importFile(ctx context.Context, file *plugin.File, stats statistics.Value) error {
+	start := time.Now()
+
 	// Get authorization token
 	token, err := b.schema.Token().ForSink(file.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
@@ -130,6 +133,16 @@ func (b *Bridge) importFile(ctx context.Context, file *plugin.File) error {
 
 	// Authorized API
 	api := b.publicAPI.WithToken(token.TokenString())
+
+	defer func() {
+		ctx, cancel := context.WithTimeout(ctx, uploadEventSendTimeout)
+		err = b.SendFileImportEvent(ctx, api, time.Since(start), &err, file.FileKey, stats)
+		cancel()
+		if err != nil {
+			b.logger.Warnf(ctx, "unable to send slice upload event: %v", err)
+			return
+		}
+	}()
 
 	// Check if job already exists
 	var job *keboola.StorageJob

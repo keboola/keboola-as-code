@@ -68,6 +68,48 @@ func (b *Bridge) SendSliceUploadEvent(
 	return err
 }
 
+func (b *Bridge) SendFileImportEvent(
+	ctx context.Context,
+	api *keboola.AuthorizedAPI,
+	duration time.Duration,
+	errPtr *error,
+	fileKey model.FileKey,
+	stats statistics.Value,
+) error {
+	var err error
+	if errPtr != nil {
+		err = *errPtr
+	}
+
+	// Catch panic
+	panicErr := recover()
+	if panicErr != nil {
+		err = errors.Errorf(`%s`, panicErr)
+	}
+
+	formatMsg := func(err error) string {
+		if err != nil {
+			return "File import failed."
+		} else {
+			return "File import done."
+		}
+	}
+
+	err = b.sendEvent(ctx, api, duration, "file-import", err, formatMsg, Params{
+		ProjectID: fileKey.ProjectID,
+		SourceID:  fileKey.SourceID,
+		SinkID:    fileKey.SinkID,
+		Stats:     stats,
+	})
+
+	// Throw panic
+	if panicErr != nil {
+		panic(panicErr)
+	}
+
+	return err
+}
+
 func (b *Bridge) sendEvent(
 	ctx context.Context,
 	api *keboola.AuthorizedAPI,

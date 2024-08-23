@@ -37,13 +37,13 @@ func NewFileKeyOpenedAt(openedAtStr string) model.FileKey {
 	}
 }
 
-func NewFile() model.File {
+func NewFile() *model.File {
 	return NewFileOpenedAt("2000-01-01T01:00:00.000Z")
 }
 
-func NewFileOpenedAt(openedAtStr string) model.File {
+func NewFileOpenedAt(openedAtStr string) *model.File {
 	fileKey := NewFileKeyOpenedAt(openedAtStr)
-	return model.File{
+	return &model.File{
 		FileKey: fileKey,
 		State:   model.FileWriting,
 		Mapping: table.Mapping{

@@ -20,6 +20,7 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -236,10 +237,17 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 
 	var err error
 	if !file.IsEmpty {
-		// Import the file to specific provider
-		err = o.plugins.ImportFile(ctx, &file.File)
+		// Get file statistics
+		var stats statistics.Aggregated
+		stats, err = o.statistics.FileStats(ctx, file.FileKey)
 		if err != nil {
-			err = errors.PrefixError(err, "error when waiting for file import")
+			err = errors.PrefixError(err, "cannot get file statistics")
+		} else {
+			// Import the file to specific provider
+			err = o.plugins.ImportFile(ctx, &file.File, stats.Staging)
+			if err != nil {
+				err = errors.PrefixError(err, "error when waiting for file import")
+			}
 		}
 	}
 
