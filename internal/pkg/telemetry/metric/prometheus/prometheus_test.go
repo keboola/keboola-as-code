@@ -25,7 +25,7 @@ func TestServeMetrics(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	d := dependencies.NewMocked(t)
+	d := dependencies.NewMocked(t, ctx)
 
 	// Serve metrics
 	port := netutils.FreePortForTest(t)

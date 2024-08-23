@@ -2339,6 +2339,8 @@ func TestAppProxyRouter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
+
 			// Create testing apps API
 			appsAPI := testutil.StartDataAppsAPI(t)
 			t.Cleanup(func() {
@@ -2352,7 +2354,7 @@ func TestAppProxyRouter(t *testing.T) {
 			})
 
 			// Create dependencies
-			d, mocked := createDependencies(t, appsAPI.URL)
+			d, mocked := createDependencies(t, ctx, appsAPI.URL)
 
 			// Test generated spans
 			if tc.expectedSpans != nil {
@@ -2697,7 +2699,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 	}
 }
 
-func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies.ServiceScope, proxyDependencies.Mocked) {
+func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL string) (proxyDependencies.ServiceScope, proxyDependencies.Mocked) {
 	t.Helper()
 
 	secret := make([]byte, 32)
@@ -2714,7 +2716,7 @@ func createDependencies(t *testing.T, sandboxesAPIURL string) (proxyDependencies
 	cfg.CsrfTokenSalt = string(csrfSecret)
 	cfg.SandboxesAPI.URL = sandboxesAPIURL
 
-	return proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
+	return proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 }
 
 func createProxyHandler(d proxyDependencies.ServiceScope) http.Handler {

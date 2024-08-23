@@ -25,7 +25,7 @@ func TestRepository_Volume(t *testing.T) {
 	clk.Set(utctime.MustParse("2000-01-03T01:00:00.000Z").Time())
 
 	// Get services
-	d, mocked := dependencies.NewMockedStorageScope(t, deps.WithClock(clk))
+	d, mocked := dependencies.NewMockedStorageScope(t, ctx, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	r := d.StorageRepository().Volume()
 

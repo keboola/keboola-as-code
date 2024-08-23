@@ -32,8 +32,7 @@ import (
 func TestBridge_FullWorkflow(t *testing.T) {
 	t.Parallel()
 
-	// bgCtx - for internal background operations
-	bgCtx := context.Background()
+	ctx := context.Background()
 
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
@@ -47,7 +46,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 	ignoredKeys := etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/volume/")
 
 	// Get services
-	d, mocked := dependencies.NewMockedAPIScopeWithConfig(t, func(cfg *config.Config) {
+	d, mocked := dependencies.NewMockedAPIScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		// Lock configuration, so it is not affected by the default values
 		cfg.Storage.Level.Staging.Upload.Trigger = staging.UploadTrigger{
 			Count:    10000,
@@ -74,7 +73,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 	rawClient.KV = etcdlogger.KVLogWrapper(rawClient.KV, &etcdLogs, etcdlogger.WithMinimal())
 
 	// apiCtx - for operations triggered by an authorized API call
-	apiCtx := rollback.ContextWith(bgCtx, rollback.New(d.Logger()))
+	apiCtx := rollback.ContextWith(ctx, rollback.New(d.Logger()))
 	apiCtx = context.WithValue(apiCtx, dependencies.KeboolaProjectAPICtxKey, mocked.KeboolaProjectAPI())
 
 	// Register mocked responses
@@ -93,7 +92,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 		session, err := concurrency.NewSession(client)
 		require.NoError(t, err)
 		defer func() { require.NoError(t, session.Close()) }()
-		test.RegisterWriterVolumes(t, bgCtx, volumeRepo, session, 1)
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
 	// Create parent branch, source, sink, file, slice
@@ -219,8 +218,8 @@ func TestBridge_FullWorkflow(t *testing.T) {
 		fileKey1 := model.FileKey{SinkKey: sinkKey, FileID: model.FileID{OpenedAt: utctime.MustParse("2000-01-01T01:00:00.000Z")}}
 		fileKey2 := model.FileKey{SinkKey: sinkKey, FileID: model.FileID{OpenedAt: utctime.MustParse("2000-01-01T03:00:00.000Z")}}
 		etcdLogs.Reset()
-		require.NoError(t, fileRepo.Delete(fileKey1, clk.Now()).Do(bgCtx).Err())
-		require.NoError(t, fileRepo.Delete(fileKey2, clk.Now()).Do(bgCtx).Err())
+		require.NoError(t, fileRepo.Delete(fileKey1, clk.Now()).Do(ctx).Err())
+		require.NoError(t, fileRepo.Delete(fileKey2, clk.Now()).Do(ctx).Err())
 		deleteFilesEtcdLogs = etcdLogs.String()
 	}
 	{

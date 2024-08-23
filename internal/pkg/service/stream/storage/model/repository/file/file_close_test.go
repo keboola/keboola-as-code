@@ -37,7 +37,7 @@ func TestFileRepository_CloseFileOnSourceDeactivation(t *testing.T) {
 	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedStorageScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedStorageScope(t, ctx, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
@@ -104,7 +104,7 @@ func TestFileRepository_CloseFileOnSinkDeactivation(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedStorageScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedStorageScope(t, ctx, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()

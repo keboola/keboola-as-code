@@ -32,7 +32,7 @@ func TestOnChangeListener(t *testing.T) {
 	etcdCfg := etcdhelper.TmpNamespace(t)
 
 	// Create node with a listener
-	node1, d1 = createNode(t, clk, etcdCfg, "node1")
+	node1, d1 = createNode(t, ctx, clk, etcdCfg, "node1")
 	listener := node1.OnChangeListener()
 	go func() {
 		for {
@@ -48,13 +48,13 @@ func TestOnChangeListener(t *testing.T) {
 	}()
 
 	// Add node 2
-	_, d2 = createNode(t, clk, etcdCfg, "node2")
+	_, d2 = createNode(t, ctx, clk, etcdCfg, "node2")
 	assert.Eventually(t, func() bool {
 		return strings.Contains(listenerLogs.String(), `found a new node "node2"`)
 	}, 10*time.Second, 10*time.Millisecond, "timeout")
 
 	// Add node 3
-	_, d3 = createNode(t, clk, etcdCfg, "node3")
+	_, d3 = createNode(t, ctx, clk, etcdCfg, "node3")
 	assert.Eventually(t, func() bool {
 		return strings.Contains(listenerLogs.String(), `found a new node "node3"`)
 	}, 10*time.Second, 10*time.Millisecond, "timeout")
@@ -70,7 +70,7 @@ func TestOnChangeListener(t *testing.T) {
 	listener.Stop()
 
 	// Add node 4 (listener is stopped, no log msg expected)
-	_, d4 = createNode(t, clk, etcdCfg, "node4")
+	_, d4 = createNode(t, ctx, clk, etcdCfg, "node4")
 
 	// Stop all nodes (listener is stopped, no log msg expected)
 	d1.Process().Shutdown(ctx, errors.New("test"))

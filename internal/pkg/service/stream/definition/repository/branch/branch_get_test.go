@@ -24,7 +24,7 @@ func TestBranchRepository_Get(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, _ := dependencies.NewMockedServiceScope(t)
+	d, _ := dependencies.NewMockedServiceScope(t, ctx)
 	repo := d.DefinitionRepository().Branch()
 
 	// Fixtures
@@ -65,7 +65,7 @@ func TestBranchRepository_GetDeleted(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, _ := dependencies.NewMockedServiceScope(t)
+	d, _ := dependencies.NewMockedServiceScope(t, ctx)
 	repo := d.DefinitionRepository().Branch()
 
 	// Fixtures
@@ -122,7 +122,7 @@ func TestBranchRepository_GetDefault(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, _ := dependencies.NewMockedServiceScope(t)
+	d, _ := dependencies.NewMockedServiceScope(t, ctx)
 	repo := d.DefinitionRepository().Branch()
 
 	// Fixtures

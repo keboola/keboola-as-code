@@ -27,6 +27,8 @@ import (
 func TestContext(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
+
 	// Mocked ticket provider
 	c, httpTransport := client.NewMockedClient()
 	httpTransport.RegisterResponder(resty.MethodGet, `https://connection.keboola.com/v2/storage/?exclude=components`,
@@ -74,7 +76,7 @@ func TestContext(t *testing.T) {
 	instanceID := "my-instance"
 
 	// Current project state
-	d := dependenciesPkg.NewMocked(t)
+	d := dependenciesPkg.NewMocked(t, ctx)
 	projectState := d.MockedState()
 	configKey := model.ConfigKey{BranchID: targetBranch.ID, ComponentID: "foo.bar", ID: "12345"}
 	rowKey := model.ConfigRowKey{BranchID: targetBranch.ID, ComponentID: "foo.bar", ConfigID: "12345", ID: "67890"}
@@ -98,7 +100,7 @@ func TestContext(t *testing.T) {
 
 	// Create context
 	fs := aferofs.NewMemoryFs()
-	ctx := NewContext(context.Background(), templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
+	tmplContext := NewContext(context.Background(), templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
 
 	// Check Jsonnet functions
 	code := `
@@ -133,14 +135,14 @@ func TestContext(t *testing.T) {
   }
 }
 `
-	jsonOutput, err := jsonnet.Evaluate(code, ctx.JsonnetContext())
+	jsonOutput, err := jsonnet.Evaluate(code, tmplContext.JsonnetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), jsonOutput)
 
 	// Check tickets replacement
 	data := orderedmap.New()
 	json.MustDecodeString(jsonOutput, data)
-	replacements, err := ctx.Replacements()
+	replacements, err := tmplContext.Replacements()
 	assert.NoError(t, err)
 	modifiedData, err := replacements.Replace(data)
 	assert.NoError(t, err)

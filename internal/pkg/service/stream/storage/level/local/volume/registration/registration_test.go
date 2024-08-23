@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
@@ -20,7 +19,7 @@ func TestRegisterVolumes_RegisterWriterVolume(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedStorageScope(t, commonDeps.WithCtx(ctx))
+	d, mock := dependencies.NewMockedStorageScope(t, ctx)
 	client := mock.TestEtcdClient()
 	repo := d.StorageRepository().Volume()
 

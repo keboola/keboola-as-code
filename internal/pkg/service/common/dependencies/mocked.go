@@ -251,7 +251,7 @@ func newMockedConfig(tb testing.TB, opts []MockedOption) *MockedConfig {
 	return cfg
 }
 
-func NewMocked(ctx context.Context, tb testing.TB, opts ...MockedOption) Mocked {
+func NewMocked(tb testing.TB, ctx context.Context, opts ...MockedOption) Mocked {
 	tb.Helper()
 
 	// Default values

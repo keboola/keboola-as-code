@@ -42,7 +42,7 @@ func TestQuota_Check(t *testing.T) {
 	}
 
 	// Dependencies
-	d, mocked := dependencies.NewMockedCoordinatorScope(t)
+	d, mocked := dependencies.NewMockedCoordinatorScope(t, ctx)
 	client := mocked.TestEtcdClient()
 	repo := d.StatisticsRepository()
 	quoteChecker := quota.New(d)

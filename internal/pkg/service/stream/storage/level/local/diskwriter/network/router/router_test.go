@@ -42,10 +42,10 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 
 	// Start disk writer node
 	volumesCount := 2
-	writerNode, _ := testnode.StartDiskWriterNode(t, logger, etcdCfg, volumesCount, nil)
+	writerNode, _ := testnode.StartDiskWriterNode(t, ctx, logger, etcdCfg, volumesCount, nil)
 
 	// Create coordinator, to check reported revisions
-	svcScope, _ := dependencies.NewMockedServiceScope(t, commonDeps.WithEtcdConfig(etcdCfg))
+	svcScope, _ := dependencies.NewMockedServiceScope(t, ctx, commonDeps.WithEtcdConfig(etcdCfg))
 	coordinator, err := closesync.NewCoordinatorNode(svcScope)
 	require.NoError(t, err)
 
@@ -64,7 +64,7 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Start a source node
-	sourceScp, mock := testnode.StartSourceNode(t, logger, etcdCfg, nil)
+	sourceScp, mock := testnode.StartSourceNode(t, ctx, logger, etcdCfg, nil)
 	clk := mock.Clock()
 
 	// Wait for connection between nodes

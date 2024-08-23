@@ -34,7 +34,7 @@ func TestCleanup(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	logs := ioutil.NewAtomicWriter()
-	node, d := createNode(t, etcdCfg, logs, tel, "node1")
+	node, d := createNode(t, ctx, etcdCfg, logs, tel, "node1")
 	logger := d.DebugLogger()
 	logger.Truncate()
 	tel.Reset()

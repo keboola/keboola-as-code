@@ -23,7 +23,7 @@ func TestRenameAllPlan(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	fs := testFs(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
-	d := dependencies.NewMocked(t)
+	d := dependencies.NewMocked(t, context.Background())
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]any{

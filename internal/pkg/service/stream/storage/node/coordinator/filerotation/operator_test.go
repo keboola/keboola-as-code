@@ -47,7 +47,7 @@ func TestFileRotation(t *testing.T) {
 	// Create dependencies
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
-	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, func(cfg *config.Config) {
+	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Storage.Level.Target.Import.Trigger = importTrigger
 		cfg.Storage.Level.Target.Operator.FileRotationCheckInterval = duration.From(conditionsCheckInterval)
 	}, commonDeps.WithClock(clk))

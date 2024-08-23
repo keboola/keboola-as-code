@@ -49,7 +49,7 @@ func TestStatisticsProviders(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
 	// Get services
-	d, mock := dependencies.NewMockedCoordinatorScope(t, commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedCoordinatorScope(t, ctx, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()
