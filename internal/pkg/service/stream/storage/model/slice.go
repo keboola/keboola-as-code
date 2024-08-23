@@ -1,6 +1,8 @@
 package model
 
 import (
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
@@ -8,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 const sliceFilename = "slice"
