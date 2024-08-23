@@ -13,7 +13,6 @@ type distributionScope struct {
 type distributionScopeDeps interface {
 	BaseScope
 	EtcdClientScope
-	TaskScope
 }
 
 func NewDistributionScope(nodeID string, cfg distributionPkg.Config, d distributionScopeDeps) DistributionScope {
