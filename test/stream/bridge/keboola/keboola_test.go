@@ -74,30 +74,26 @@ type testState struct {
 	coordinatorMock2 dependencies.Mocked
 }
 
-func (ts testState) teardown(t *testing.T, ctx context.Context) {
-	t.Helper()
-	type withProcess interface {
-		Process() *servicectx.Process
-	}
-	scopes := []withProcess{
-		ts.apiScp,
-		ts.sourceScp1,
-		ts.sourceScp2,
-		ts.writerScp1,
-		ts.writerScp2,
-		ts.readerScp1,
-		ts.readerScp2,
-		ts.coordinatorScp1,
-		ts.coordinatorScp2,
-	}
-	for _, s := range scopes {
-		s.Process().Shutdown(ctx, errors.New("bye bye"))
-	}
+type withProcess interface {
+	Process() *servicectx.Process
+}
 
-	for _, s := range scopes {
-		s.Process().WaitForShutdown()
-	}
+func TestKeboolaBridgeWorkflow(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	ts := setup(t, ctx)
+	defer ts.teardown(t, ctx)
 
+	// TODO: choose source scope
+	for i := range 10 {
+		req, err := http.NewRequest(http.MethodPost, ts.sourceURL1, strings.NewReader(fmt.Sprintf("foo%d", i)))
+		require.NoError(t, err)
+		resp, err := ts.httpClient.Do(req)
+		assert.NoError(t, err)
+		assert.NoError(t, resp.Body.Close())
+	}
+	ts.logger.AssertJSONMessages(t, "")
 }
 
 func setup(t *testing.T, ctx context.Context) testState {
@@ -307,23 +303,36 @@ func setup(t *testing.T, ctx context.Context) testState {
 
 	return ts
 }
+func (ts testState) teardown(t *testing.T, ctx context.Context) {
+	t.Helper()
 
-func TestKeboolaBridgeWorkflow(t *testing.T) {
-	t.Parallel()
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	ts := setup(t, ctx)
-	defer ts.teardown(t, ctx)
+	ts.shutdown(t, ctx, []withProcess{
+		ts.apiScp,
+		ts.sourceScp1,
+		ts.sourceScp2,
+	})
 
-	// TODO: choose source scope
-	for i := range 10 {
-		req, err := http.NewRequest(http.MethodPost, ts.sourceURL1, strings.NewReader(fmt.Sprintf("foo%d", i)))
-		require.NoError(t, err)
-		resp, err := ts.httpClient.Do(req)
-		assert.NoError(t, err)
-		assert.NoError(t, resp.Body.Close())
+	ts.shutdown(t, ctx, []withProcess{
+		ts.writerScp1,
+		ts.writerScp2,
+		ts.readerScp1,
+		ts.readerScp2,
+		ts.coordinatorScp1,
+		ts.coordinatorScp2,
+	})
+}
+
+func (ts testState) shutdown(t *testing.T, ctx context.Context, scopes []withProcess) {
+	t.Helper()
+
+	for _, s := range scopes {
+		s.Process().Shutdown(ctx, errors.New("bye bye"))
 	}
-	ts.logger.AssertJSONMessages(t, "")
+
+	for _, s := range scopes {
+		s.Process().WaitForShutdown()
+	}
+
 }
 
 func formatHTTPSourceURL(t *testing.T, baseURL string, entity definition.Source) string {
