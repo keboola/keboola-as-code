@@ -28,22 +28,6 @@ type uploadSliceFn func(
 	stats statistics.Value,
 ) error
 
-type ReaderClosureError struct {
-	SliceKey model.SliceKey
-}
-
-func (e ReaderClosureError) Error() string {
-	return fmt.Sprintf("closing of reader was not possible for slice :%q", e.SliceKey)
-}
-
-type SendSliceUploadEventError struct {
-	SliceKey model.SliceKey
-}
-
-func (e SendSliceUploadEventError) Error() string {
-	return fmt.Sprintf("send of event was not possible for slice :%q", e.SliceKey)
-}
-
 func (p *Plugins) RegisterSliceUploader(provider stagingModel.FileProvider, fn uploadSliceFn) {
 	p.sliceUploader[provider] = fn
 }
@@ -58,11 +42,5 @@ func (p *Plugins) UploadSlice(
 		return errors.New(fmt.Sprintf("missing uploadSlice definition for given provider: %v", slice.StagingStorage.Provider))
 	}
 
-	err := p.sliceUploader[slice.StagingStorage.Provider](ctx, volume, slice, stats)
-	if !errors.As(err, &ReaderClosureError{}) && !errors.As(err, &SendSliceUploadEventError{}) {
-		return err
-	}
-
-	// Unsuccessful closing of reader will switch the state of slice to Uploaded
-	return nil
+	return p.sliceUploader[slice.StagingStorage.Provider](ctx, volume, slice, stats)
 }

@@ -31,9 +31,8 @@ func (b *Bridge) uploadSlice(
 	}
 
 	defer func() {
-		err = reader.Close(ctx)
+		err := reader.Close(ctx)
 		if err != nil {
-			err = &plugin.ReaderClosureError{SliceKey: slice.SliceKey}
 			b.logger.Warnf(ctx, "unable to close reader: %v", err)
 			return
 		}
@@ -42,7 +41,6 @@ func (b *Bridge) uploadSlice(
 		err = b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), &err, slice.SliceKey, stats)
 		cancel()
 		if err != nil {
-			err = &plugin.SendSliceUploadEventError{SliceKey: slice.SliceKey}
 			b.logger.Warnf(ctx, "unable to send slice upload event: %v", err)
 			return
 		}
