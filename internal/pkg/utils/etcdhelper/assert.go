@@ -81,7 +81,49 @@ func AssertKeys(t assert.TestingT, client etcd.KV, expectedKeys []string, ops ..
 	// Compare expected and actual keys
 	sort.Strings(expectedKeys)
 	sort.Strings(actualKeys)
-	return assert.Equal(t, expectedKeys, actualKeys)
+
+	// Compare expected and actual KVs
+	matchedExpected := make(map[int]bool)
+	matchedActual := make(map[int]bool)
+	for e, expected := range expectedKeys {
+		for a, actual := range actualKeys {
+			if wildcards.Compare(expected, actual) == nil {
+				matchedExpected[e] = true
+				matchedActual[a] = true
+			}
+		}
+	}
+
+	var unmatchedExpected []string
+	for e, expected := range expectedKeys {
+		if !matchedExpected[e] {
+			unmatchedExpected = append(unmatchedExpected, fmt.Sprintf(`[%03d] %s`, e, expected))
+		}
+	}
+	if len(unmatchedExpected) > 0 {
+		msg := fmt.Sprintf("These keys are in expected but not actual ectd state:\n%s\n", strings.Join(unmatchedExpected, "\n"))
+		if c.expectedStateFromFile != "" {
+			msg += fmt.Sprintf("Please, update the file:\n\"%s\"", c.expectedStateFromFile)
+		}
+		assert.Fail(t, msg)
+	}
+
+	var unmatchedActual []string
+	for a, actual := range actualKeys {
+		if !matchedActual[a] {
+			unmatchedActual = append(unmatchedActual, fmt.Sprintf(`[%03d] %s`, a, actual))
+		}
+	}
+
+	if len(unmatchedActual) > 0 {
+		msg := fmt.Sprintf("These keys are in actual but not expected ectd state:\n%s\n", strings.Join(unmatchedActual, "\n"))
+		if c.expectedStateFromFile != "" {
+			msg += fmt.Sprintf("Please, update the file:\n\"%s\"", c.expectedStateFromFile)
+		}
+		assert.Fail(t, msg)
+	}
+
+	return len(unmatchedExpected) == 0 && len(unmatchedActual) == 0
 }
 
 // AssertKVsFromFile dumps all KVs from an etcd database and compares them with content of the file.

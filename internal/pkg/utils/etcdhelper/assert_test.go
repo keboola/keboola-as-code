@@ -306,13 +306,11 @@ func TestAssertKeys_Difference(t *testing.T) {
 	// Expected error
 	wildcards.Assert(t, strings.TrimSpace(`
 %A
-	            	Diff:
-	            	--- Expected
-	            	+++ Actual
-	            	@@ -2,3 +2,3 @@
-	            	  (string) (len=4) "key1",
-	            	- (string) (len=4) "key3"
-	            	+ (string) (len=4) "key2"
-	            	 }
+	Error:      	These keys are in expected but not actual ectd state:
+	            	[001] key3
+
+%A
+	Error:      	These keys are in actual but not expected ectd state:
+	            	[001] key2
 `), strings.TrimSpace(mT.buf.String()))
 }
