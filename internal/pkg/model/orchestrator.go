@@ -62,12 +62,17 @@ func (t Task) String() string {
 	if len(targetConfigDesc) == 0 {
 		targetConfigDesc = fmt.Sprintf(`branch:%d/componentId:%s/configId:%s`, t.BranchID, t.ComponentID, t.ConfigID)
 	}
+
+	// Add field enabled to task.Content
+	content := t.Content.Clone()
+	content.Set("enabled", t.Enabled)
+
 	return fmt.Sprintf(
 		"## %03d %s\n>> %s\n%s",
 		t.Index+1,
 		t.Name,
 		targetConfigDesc,
-		json.MustEncodeString(t.Content, true),
+		json.MustEncodeString(content, true),
 	)
 }
 
