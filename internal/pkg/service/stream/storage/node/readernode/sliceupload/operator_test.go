@@ -163,7 +163,7 @@ func TestSliceUpload(t *testing.T) {
 	retryAfter := utctime.MustParse("2000-01-01T00:02:04.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  1,
-		RetryReason:   "bla",
+		RetryReason:   "cannot upload slice to staging: bla",
 		FirstFailedAt: &failed,
 		LastFailedAt:  &failed,
 		RetryAfter:    &retryAfter,
@@ -182,7 +182,7 @@ func TestSliceUpload(t *testing.T) {
 	lastFailed := utctime.MustParse("2000-01-01T00:02:05.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  2,
-		RetryReason:   "bla",
+		RetryReason:   "cannot upload slice to staging: bla",
 		FirstFailedAt: &failed,
 		LastFailedAt:  &lastFailed,
 		RetryAfter:    &retryAfter,

@@ -282,10 +282,22 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) rotateFile(ctx context.Context, file *fileData) {
+	// Retry attempt error
+	var rErr error
+	var ok bool
 	o.logger.Info(ctx, "rotating file")
-
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration())
-	defer cancel()
+	defer func() {
+		cancel()
+		// Skip file set to Processed when skipping file rotation based on conditions or retry attempt error occurs
+		if rErr != nil || !ok {
+			return
+		}
+
+		// Prevents other processing, if the entity has been modified.
+		// It takes a while to watch stream send the updated state back.
+		file.Processed = true
+	}()
 
 	// Get file statistics
 	stats, err := o.statistics.FileStats(ctx, file.FileKey)
@@ -302,91 +314,51 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	}
 
 	o.logger.Infof(ctx, "rotating file for import: %s", cause)
-	err = o.rotateFileWithState(ctx, file)
+	// Lock all file operations in the sink
+	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
+	if err := lock.Lock(ctx); err != nil {
+		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+		return
+	}
+	defer func() {
+		if err := lock.Unlock(ctx); err != nil {
+			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
+		}
+	}()
+
+	// TODO: why there is not dbCtx?
+	// Rotate file using repository
+	err = o.storage.File().Rotate(file.FileKey.SinkKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
 	if err != nil {
+		o.logger.Error(ctx, err.Error())
+		rErr = o.incrementRetryAttempt(ctx, err, file.FileKey, lock)
 		return
 	}
 
 	o.logger.Info(ctx, "successfully rotated file")
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	file.Processed = true
-}
-
-func (o *operator) rotateFileWithState(ctx context.Context, file *fileData) error {
-	// Lock all file operations in the sink
-	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
-	if err := lock.Lock(ctx); err != nil {
-		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
-		return err
-	}
-	defer func() {
-		if err := lock.Unlock(ctx); err != nil {
-			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
-		}
-	}()
-
-	// Rotate file using repository
-	err := o.storage.File().Rotate(file.FileKey.SinkKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
-	// Handle error
-	if err != nil {
-		o.logger.Errorf(ctx, "cannot rotate file: %s", err)
-
-		// Increment retry delay
-		iErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if iErr != nil {
-			o.logger.Errorf(ctx, "cannot increment file retry: %s", err)
-			return iErr
-		}
-	}
-
-	return nil
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
+	// Retry attempt error
+	var rErr error
 	o.logger.Info(ctx, "closing file")
+	defer func() {
+		if rErr != nil {
+			return
+		}
+
+		// Prevents other processing, if the entity has been modified.
+		// It takes a while to watch stream send the updated state back.
+		file.Processed = true
+	}()
 
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
-	// Lock all file operations in the sink
-	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
-	if err := lock.Lock(ctx); err != nil {
-		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
-		return
-	}
-	defer func() {
-		if err := lock.Unlock(ctx); err != nil {
-			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
-		}
-	}()
-
-	err := o.switchToImportState(ctx, lock, file)
-	// If there is an error, increment retry delay
-	if err != nil {
-		o.logger.Error(ctx, err.Error())
-		err = o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file close retry", err)
-			return
-		}
-	}
-
-	// Clean memory
-	o.lock.Lock()
-	defer o.lock.Unlock()
-	delete(o.fileNotEmpty, file.FileKey)
-	o.logger.Info(ctx, "successfully closed file")
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	file.Processed = true
-}
-
-func (o *operator) switchToImportState(ctx context.Context, lock *etcdop.Mutex, file *fileData) error {
 	// Wait until all slices are uploaded
 	err := o.waitForSlicesUpload(ctx, file.FileKey)
 	if err != nil {
-		return errors.PrefixError(err, "error when waiting for file slices upload")
+		err = errors.PrefixError(err, "error when waiting for file slices upload")
 	}
 
 	// Find if file is empty
@@ -394,17 +366,36 @@ func (o *operator) switchToImportState(ctx context.Context, lock *etcdop.Mutex, 
 	fileEmpty := !o.fileNotEmpty[file.FileKey]
 	o.lock.RUnlock()
 
+	// Lock all file operations in the sink
+	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
+	if err := lock.Lock(ctx); err != nil {
+		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+		return
+	}
+	defer func() {
+		if err := lock.Unlock(ctx); err != nil {
+			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
+		}
+	}()
+
+	// TODO: why there are 2 contexts?
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
 	// If there is no error, switch file to the importing state
-	err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), fileEmpty).RequireLock(lock).Do(dbCtx).Err()
-	if err != nil {
-		return errors.PrefixError(err, "cannot switch file to the importing state")
+	if err == nil {
+		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), fileEmpty).RequireLock(lock).Do(dbCtx).Err()
 	}
 
-	return nil
+	if err != nil {
+		err = errors.PrefixError(err, "cannot switch file to the importing state")
+		rErr = o.incrementRetryAttempt(dbCtx, err, file.FileKey, lock)
+		return
+	}
+
+	o.cleanFileNotEmpty(file.FileKey)
+	o.logger.Info(ctx, "successfully closed file")
 }
 
 func (o *operator) waitForSlicesUpload(ctx context.Context, fileKey model.FileKey) error {
@@ -428,4 +419,23 @@ func (o *operator) waitForSlicesUpload(ctx context.Context, fileKey model.FileKe
 			// check again
 		}
 	}
+}
+
+func (o *operator) cleanFileNotEmpty(fileKey model.FileKey) {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	delete(o.fileNotEmpty, fileKey)
+}
+
+func (o *operator) incrementRetryAttempt(ctx context.Context, err error, fileKey model.FileKey, lock *etcdop.Mutex) error {
+	o.logger.Error(ctx, err.Error())
+
+	// Increment retry delay
+	rErr := o.storage.File().IncrementRetryAttempt(fileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+	if rErr != nil {
+		o.logger.Errorf(ctx, "cannot increment file retry: %v", rErr)
+		return rErr
+	}
+
+	return nil
 }

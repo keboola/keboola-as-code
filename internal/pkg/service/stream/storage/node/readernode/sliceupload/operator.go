@@ -187,8 +187,22 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 }
 
 func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, data *sliceData) {
+	// Retry attempt error
+	var rErr error
+	sliceKey := data.Slice.SliceKey
 	o.logger.Info(ctx, "upload slice")
-	var sliceKey model.SliceKey = data.Slice.SliceKey
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
+	defer func() {
+		cancel()
+		// Do not set data.Processed when retry error occurred
+		if rErr != nil {
+			return
+		}
+
+		// Prevents other processing, if the entity has been modified.
+		// It takes a while to watch stream send the updated state back.
+		data.Processed = true
+	}()
 
 	// Get slice statistics
 	stats, err := o.statistics.SliceStats(ctx, data.Slice.SliceKey)
@@ -201,44 +215,34 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 	if stats.Local.RecordsCount != 0 {
 		o.logger.Info(ctx, `uploading slice to staging`)
 		// Use plugin system to upload slice to stagin storage. Set is an in-progress upload
-		uploadCtx, uploadCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
-		defer uploadCancel()
-		err = o.plugins.UploadSlice(uploadCtx, volume, data.Slice, stats.Local)
+		err = o.plugins.UploadSlice(ctx, volume, data.Slice, stats.Local)
 		if err != nil {
 			// Upload was not successful, next check will launch it again
 			err = errors.PrefixErrorf(err, "cannot upload slice to staging")
-			rErr := o.incrementRetryAttempt(ctx, err, sliceKey)
-			if rErr != nil {
-				return
-			}
+			// TODO: shouldnt be dbCtx used here?
+			rErr = o.incrementRetryAttempt(ctx, err, sliceKey)
+			// Slice was not uploaded but slice state in ETCD was changed based on rErr value
+			return
 		}
 	}
 
-	if err == nil {
-		// Update the entity, the ctx may be cancelled
-		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-		defer dbCancel()
+	// Update the entity, the ctx may be cancelled
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer dbCancel()
 
-		// Empty when Records count equal to 0
-		err = o.storage.Slice().SwitchToUploaded(sliceKey, o.clock.Now(), stats.Local.RecordsCount == 0).Do(dbCtx).Err()
-		if err != nil {
-			err = errors.PrefixErrorf(err, "cannot switch slice to the uploaded state")
-			rErr := o.incrementRetryAttempt(ctx, err, sliceKey)
-			if rErr != nil {
-				return
-			}
-		} else {
-			o.logger.Info(ctx, `successfully uploaded slice`)
-		}
+	// Empty when Records count equal to 0
+	err = o.storage.Slice().SwitchToUploaded(sliceKey, o.clock.Now(), stats.Local.RecordsCount == 0).Do(dbCtx).Err()
+	if err != nil {
+		err = errors.PrefixErrorf(err, "cannot switch slice to the uploaded state")
+		rErr = o.incrementRetryAttempt(dbCtx, err, sliceKey)
+		return
 	}
 
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	data.Processed = true
+	o.logger.Info(ctx, `successfully uploaded slice`)
 }
 
 func (o *operator) incrementRetryAttempt(ctx context.Context, err error, sliceKey model.SliceKey) error {
-	o.logger.Errorf(ctx, "%v", err)
+	o.logger.Error(ctx, err.Error())
 
 	// Increment retry delay
 	rErr := o.storage.Slice().IncrementRetryAttempt(sliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
@@ -248,5 +252,4 @@ func (o *operator) incrementRetryAttempt(ctx context.Context, err error, sliceKe
 	}
 
 	return nil
-
 }

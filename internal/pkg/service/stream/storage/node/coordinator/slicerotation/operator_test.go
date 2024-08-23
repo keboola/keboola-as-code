@@ -137,7 +137,7 @@ func TestSliceRotation(t *testing.T) {
 	waitForStatsSync(t)
 
 	// Trigger check - records count trigger
-	triggerCheck(t, true, ` 
+	triggerCheck(t, true, `
 {"level":"info","message":"rotating slice for upload: count threshold met, records count: 50002, threshold: 50000","component":"storage.node.operator.slice.rotation"}
 `)
 
@@ -178,7 +178,7 @@ func TestSliceRotation(t *testing.T) {
 	// Trigger check - compressed size trigger
 	triggerCheck(t, true, `
 {"level":"info","message":"rotating slice for upload: size threshold met, compressed size: 5.0 MB, threshold: 5.0 MB","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
-{"level":"info","time":"%s","message":"successfully rotated slice","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"successfully rotated slice","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
 `)
 	// Other conditions are tested in "TestShouldUpload"
 
@@ -195,7 +195,7 @@ func TestSliceRotation(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sourceNode.Notify(ctx, resp.Header.Revision))
 	triggerCheck(t, false, `
-{"level":"info","time":"%s","message":"closing slice","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"closing slice","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
 {"level":"info","message":"successfully closed slice","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
 	`)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {

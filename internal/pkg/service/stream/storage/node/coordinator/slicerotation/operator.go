@@ -232,10 +232,22 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
+	// Retry attempt error
+	var rErr error
+	var ok bool
 	o.logger.Info(ctx, "rotating slice")
-
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceRotationTimeout.Duration())
-	defer cancel()
+	defer func() {
+		cancel()
+		// Skip slice set to Processed when skipping slice rotation based on conditions or retry attempt error occurs
+		if rErr != nil || !ok {
+			return
+		}
+
+		// Prevents other processing, if the entity has been modified.
+		// It takes a while to watch stream send the updated state back.
+		slice.Processed = true
+	}()
 
 	// Get slice statistics
 	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
@@ -254,23 +266,12 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 
 	// Rotate slice
 	o.logger.Infof(ctx, "rotating slice for upload: %s", cause)
-	err = o.rotateSliceWithState(ctx, slice)
-	if err != nil {
-		return
-	}
 
-	o.logger.Info(ctx, "successfully rotated slice")
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	slice.Processed = true
-}
-
-func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) error {
 	// Lock all file operations in the sink
 	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", slice.SliceKey.SinkKey))
 	if err := lock.Lock(ctx); err != nil {
 		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
-		return err
+		return
 	}
 	defer func() {
 		if err := lock.Unlock(ctx); err != nil {
@@ -278,43 +279,37 @@ func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) e
 		}
 	}()
 
-	// Rotate slice
-	err := o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
-	// Handle error
-	if err != nil {
-		o.logger.Errorf(ctx, "cannot rotate slice: %s", err)
+	// TODO: no dbCtx
 
-		// Increment retry delay
-		iErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if iErr != nil {
-			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
-			return iErr
-		}
+	// Rotate slice
+	err = o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
+	if err != nil {
+		err = errors.PrefixError(err, "cannot rotate slice")
+		rErr = o.incrementRetryAttempt(ctx, err, slice.SliceKey, lock)
+		return
 	}
 
-	return nil
+	o.logger.Info(ctx, "successfully rotated slice")
 }
 
 func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
-	// Rotate slice
+	// Retry attempt error
+	var rErr error
 	o.logger.Infof(ctx, "closing slice")
+	defer func() {
+		if rErr != nil {
+			return
+		}
+
+		// Prevents other processing, if the entity has been modified.
+		// It takes a while to watch stream send the updated state back.
+		slice.Processed = true
+	}()
 
 	// Wait until no source node is using the slice
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
 	defer cancel()
 
-	err := o.switchSliceToImporting(ctx, slice)
-	if err != nil {
-		return
-	}
-
-	o.logger.Info(ctx, "successfully closed slice")
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	slice.Processed = true
-}
-
-func (o *operator) switchSliceToImporting(ctx context.Context, slice *sliceData) error {
 	if err := o.closeSyncer.WaitForRevision(ctx, slice.ModRevision); err != nil {
 		o.logger.Errorf(ctx, `error when waiting for slice closing: %s`)
 		// continue! we waited long enough, the wait mechanism is probably broken
@@ -326,14 +321,27 @@ func (o *operator) switchSliceToImporting(ctx context.Context, slice *sliceData)
 
 	err := o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
 	if err != nil {
-		o.logger.Errorf(dbCtx, "cannot switch slice to the uploading state: %s", err.Error())
+		err = errors.PrefixError(err, "cannot switch slice to the uploading state")
+		rErr = o.incrementRetryAttempt(dbCtx, err, slice.SliceKey, nil)
+		return
+	}
 
-		// Increment retry delay
-		iErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
-		if iErr != nil {
-			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
-			return iErr
-		}
+	o.logger.Info(ctx, "successfully closed slice")
+}
+
+func (o *operator) incrementRetryAttempt(ctx context.Context, err error, sliceKey model.SliceKey, lock *etcdop.Mutex) error {
+	o.logger.Error(ctx, err.Error())
+
+	operation := o.storage.Slice().IncrementRetryAttempt(sliceKey, o.clock.Now(), err.Error())
+	if lock != nil {
+		operation = operation.RequireLock(lock)
+	}
+
+	// Increment retry delay
+	rErr := operation.Do(ctx).Err()
+	if rErr != nil {
+		o.logger.Errorf(ctx, "cannot increment slice retry: %v", rErr)
+		return rErr
 	}
 
 	return nil
