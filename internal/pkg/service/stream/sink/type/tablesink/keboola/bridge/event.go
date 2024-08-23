@@ -31,7 +31,7 @@ func (b *Bridge) SendSliceUploadEvent(
 	api *keboola.AuthorizedAPI,
 	duration time.Duration,
 	errPtr *error,
-	slice *model.Slice,
+	sliceKey model.SliceKey,
 	stats statistics.Value,
 ) error {
 	var err error
@@ -54,9 +54,9 @@ func (b *Bridge) SendSliceUploadEvent(
 	}
 
 	err = b.sendEvent(ctx, api, duration, "slice-upload", err, formatMsg, Params{
-		ProjectID: slice.ProjectID,
-		SourceID:  slice.SourceID,
-		SinkID:    slice.SinkID,
+		ProjectID: sliceKey.ProjectID,
+		SourceID:  sliceKey.SourceID,
+		SinkID:    sliceKey.SinkID,
 		Stats:     stats,
 	})
 

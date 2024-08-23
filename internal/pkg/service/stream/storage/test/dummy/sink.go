@@ -97,7 +97,7 @@ func (c *SinkController) RegisterDummySinkTypes(plugins *plugin.Plugins, control
 	// Register dummy sink with local storage support for tests
 	plugins.RegisterSliceUploader(
 		FileProvider,
-		func(ctx context.Context, volume *diskreader.Volume, slice *model.Slice, stats statistics.Value) error {
+		func(ctx context.Context, volume *diskreader.Volume, slice *plugin.Slice, stats statistics.Value) error {
 			return c.UploadError
 		})
 }

@@ -15,11 +15,11 @@ import (
 func (b *Bridge) uploadSlice(
 	ctx context.Context,
 	volume *diskreader.Volume,
-	slice *model.Slice,
+	slice *plugin.Slice,
 	stats statistics.Value,
 ) error {
 	start := time.Now()
-	reader, err := volume.OpenReader(slice)
+	reader, err := volume.OpenReader(slice.SliceKey, slice.LocalStorage, slice.EncodingCompression, slice.StagingStorage.Compression)
 	if err != nil {
 		b.logger.Warnf(ctx, "unable to open reader: %v", err)
 		return err
@@ -39,7 +39,7 @@ func (b *Bridge) uploadSlice(
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
-		err = b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), &err, slice, stats)
+		err = b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), &err, slice.SliceKey, stats)
 		cancel()
 		if err != nil {
 			err = &plugin.SendSliceUploadEventError{SliceKey: slice.SliceKey}

@@ -35,7 +35,10 @@ type operator struct {
 }
 
 type sliceData struct {
-	Slice *model.Slice
+	model.SliceKey
+	model.Retryable
+	model.SliceState
+	Slice plugin.Slice
 
 	// Lock prevents parallel check of the same slice.
 	Lock *sync.Mutex
@@ -89,7 +92,15 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 			},
 			func(_ string, slice model.Slice, rawValue *op.KeyValue, oldValue **sliceData) *sliceData {
 				out := &sliceData{
-					Slice: &slice,
+					SliceKey:   slice.SliceKey,
+					SliceState: slice.State,
+					Retryable:  slice.Retryable,
+					Slice: plugin.Slice{
+						SliceKey:            slice.SliceKey,
+						LocalStorage:        slice.LocalStorage,
+						StagingStorage:      slice.StagingStorage,
+						EncodingCompression: slice.Encoding.Compression,
+					},
 				}
 
 				// Keep the same lock, to prevent parallel processing of the same slice.
@@ -160,17 +171,17 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 		return
 	}
 
-	if !data.Slice.Retryable.Allowed(o.clock.Now()) {
+	if !data.Retryable.Allowed(o.clock.Now()) {
 		return
 	}
 
-	volume, err := o.volumes.Collection().Volume(data.Slice.SliceKey.VolumeID)
+	volume, err := o.volumes.Collection().Volume(data.SliceKey.VolumeID)
 	if err != nil {
-		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", data.Slice.SliceKey.VolumeID)
+		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", data.SliceKey.VolumeID)
 		return
 	}
 
-	switch data.Slice.State {
+	switch data.SliceState {
 	case model.SliceUploading:
 		o.uploadSlice(ctx, volume, data)
 	default:
@@ -180,7 +191,7 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 
 func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, data *sliceData) {
 	// Get slice statistics
-	stats, err := o.statistics.SliceStats(ctx, data.Slice.SliceKey)
+	stats, err := o.statistics.SliceStats(ctx, data.SliceKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
 		return
@@ -188,17 +199,17 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 
 	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
 	if !data.Slice.LocalStorage.IsEmpty {
-		o.logger.Infof(ctx, `uploading slice %q`, data.Slice.SliceKey)
+		o.logger.Infof(ctx, `uploading slice %q`, data.SliceKey)
 		// Use plugin system to upload slice to stagin storage. Set is an in-progress upload
 		uploadCtx, uploadCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
 		defer uploadCancel()
-		err = o.plugins.UploadSlice(uploadCtx, volume, data.Slice, stats.Local)
+		err = o.plugins.UploadSlice(uploadCtx, volume, &data.Slice, stats.Local)
 		if err != nil {
 			// Upload was not successful, next check will launch it again
 			o.logger.Errorf(ctx, "cannot upload slice to staging: %v", err)
 
 			// Increment retry delay
-			err = o.storage.Slice().IncrementRetryAttempt(data.Slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+			err = o.storage.Slice().IncrementRetryAttempt(data.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
 			if err != nil {
 				o.logger.Errorf(ctx, "cannot increment slice retry: %v", err)
 				return
@@ -209,12 +220,12 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 		}
 	}
 
-	err = o.changeSliceState(ctx, data.Slice.SliceKey)
+	err = o.changeSliceState(ctx, data.SliceKey)
 	if err != nil {
 		return
 	}
 
-	o.logger.Infof(ctx, `slice was uploaded %q`, data.Slice.SliceKey)
+	o.logger.Infof(ctx, `slice was uploaded %q`, data.SliceKey)
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	data.Processed = true

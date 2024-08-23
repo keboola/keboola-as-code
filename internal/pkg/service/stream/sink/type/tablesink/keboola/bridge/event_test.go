@@ -41,7 +41,7 @@ func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	duration := 3 * time.Second
 	err := error(nil)
 	slice := test.NewSlice()
-	b.SendSliceUploadEvent(ctx, api, duration, &err, slice, testStatsForSlice(slice.OpenedAt(), now))
+	b.SendSliceUploadEvent(ctx, api, duration, &err, slice.SliceKey, testStatsForSlice(slice.OpenedAt(), now))
 
 	// Assert
 	require.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/events"])
@@ -74,7 +74,7 @@ func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	duration := 3 * time.Second
 	err := errors.New("some error")
 	slice := test.NewSlice()
-	b.SendSliceUploadEvent(ctx, api, duration, &err, slice, testStatsForSlice(slice.OpenedAt(), now))
+	b.SendSliceUploadEvent(ctx, api, duration, &err, slice.SliceKey, testStatsForSlice(slice.OpenedAt(), now))
 
 	// Assert
 	require.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/events"])
@@ -105,7 +105,7 @@ func TestSender_SendSliceUploadEvent_HTTPError(t *testing.T) {
 	duration := 3 * time.Second
 	err := error(nil)
 	slice := test.NewSlice()
-	b.SendSliceUploadEvent(ctx, api, duration, &err, slice, testStatsForSlice(slice.OpenedAt(), now))
+	b.SendSliceUploadEvent(ctx, api, duration, &err, slice.SliceKey, testStatsForSlice(slice.OpenedAt(), now))
 
 	// Assert
 	require.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/events"])
