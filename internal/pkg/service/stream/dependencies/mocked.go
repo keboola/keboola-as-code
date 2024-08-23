@@ -53,6 +53,7 @@ func testConfig(tb testing.TB, d dependencies.Mocked) config.Config {
 	// It causes problems when mocked clock is used.
 	// For example clock.Add(time.Hour) invokes the timer 3600 times, if the interval is 1s.
 	if _, ok := d.Clock().(*clock.Mock); ok {
+		cfg.Distribution.EventsGroupInterval = 0 // disable timer
 		cfg.Storage.Statistics.Collector.Enabled = false
 		cfg.Storage.Statistics.Cache.L2.Enabled = false
 	}

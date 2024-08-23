@@ -32,7 +32,10 @@ const (
 
 // serviceScope implements ServiceScope interface.
 type serviceScope struct {
-	parentScopes
+	dependencies.BaseScope
+	dependencies.PublicScope
+	dependencies.EtcdClientScope
+	dependencies.TaskScope
 	plugins                     *plugin.Plugins
 	definitionRepository        *definitionRepo.Repository
 	storageRepository           *storageRepo.Repository
@@ -41,14 +44,7 @@ type serviceScope struct {
 	keboolaBridge               *keboolaSinkBridge.Bridge
 }
 
-type parentScopes interface {
-	dependencies.BaseScope
-	dependencies.PublicScope
-	dependencies.EtcdClientScope
-	dependencies.TaskScope
-}
-
-type parentScopesImpl struct {
+type parentScopes struct {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
@@ -67,11 +63,13 @@ func NewServiceScope(
 ) (v ServiceScope, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.stream.dependencies.NewServiceScope")
 	defer span.End(&err)
-	parentScp, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
+
+	p, err := newParentScopes(ctx, cfg, proc, logger, tel, stdout, stderr)
 	if err != nil {
 		return nil, err
 	}
-	return newServiceScope(parentScp, cfg, model.DefaultBackoff())
+
+	return newServiceScope(p.BaseScope, p.PublicScope, p.EtcdClientScope, cfg, model.DefaultBackoff())
 }
 
 func newParentScopes(
@@ -82,7 +80,7 @@ func newParentScopes(
 	tel telemetry.Telemetry,
 	stdout io.Writer,
 	stderr io.Writer,
-) (v parentScopes, err error) {
+) (v *parentScopes, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.stream.dependencies.newParentScopes")
 	defer span.End(&err)
 
@@ -100,7 +98,7 @@ func newParentScopes(
 		},
 	)
 
-	d := &parentScopesImpl{}
+	d := &parentScopes{}
 
 	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, httpClient)
 
@@ -122,16 +120,16 @@ func newParentScopes(
 	return d, nil
 }
 
-func NewMockedServiceScope(t *testing.T, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
-	t.Helper()
-	return NewMockedServiceScopeWithConfig(t, nil, opts...)
+func NewMockedServiceScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	tb.Helper()
+	return NewMockedServiceScopeWithConfig(tb, ctx, nil, opts...)
 }
 
-func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+func NewMockedServiceScopeWithConfig(tb testing.TB, ctx context.Context, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
 	tb.Helper()
 
 	// Create common mocked dependencies
-	commonMock := dependencies.NewMocked(tb, append(
+	commonMock := dependencies.NewMocked(tb, ctx, append(
 		[]dependencies.MockedOption{
 			dependencies.WithEnabledEtcdClient(),
 			dependencies.WithMockedStorageAPIHost("connection.keboola.local"),
@@ -149,7 +147,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Co
 	mock := &mocked{Mocked: commonMock, config: cfg, dummySinkController: dummy.NewController()}
 
 	backoff := model.NoRandomizationBackoff()
-	serviceScp, err := newServiceScope(mock, cfg, backoff)
+	serviceScp, err := newServiceScope(mock, mock, mock, cfg, backoff)
 	require.NoError(tb, err)
 
 	mock.DebugLogger().Truncate()
@@ -160,12 +158,16 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Co
 	return serviceScp, mock
 }
 
-func newServiceScope(parentScp parentScopes, cfg config.Config, storageBackoff model.RetryBackoff) (ServiceScope, error) {
+func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.PublicScope, etcdClientScp dependencies.EtcdClientScope, cfg config.Config, storageBackoff model.RetryBackoff) (ServiceScope, error) {
 	var err error
 
 	d := &serviceScope{}
 
-	d.parentScopes = parentScp
+	d.BaseScope = baseScp
+
+	d.PublicScope = publicScp
+
+	d.EtcdClientScope = etcdClientScp
 
 	d.plugins = plugin.New(d.Logger())
 

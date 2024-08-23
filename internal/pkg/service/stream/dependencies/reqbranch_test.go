@@ -17,14 +17,16 @@ import (
 func TestBranchRequestScope_DefaultBranch_String(t *testing.T) {
 	t.Parallel()
 
-	branchInput := key.BranchIDOrDefault("default")
+	ctx := context.Background()
 
-	d, mock := NewMockedProjectRequestScope(t)
+	d, mock := NewMockedProjectRequestScope(t, ctx)
 	client := mock.EtcdClient()
+
+	branchInput := key.BranchIDOrDefault("default")
 
 	// Simulate that the operation is running in an API request authorized by a token
 	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
-	ctx := context.WithValue(mock.TestContext(), KeboolaProjectAPICtxKey, api)
+	ctx = context.WithValue(ctx, KeboolaProjectAPICtxKey, api)
 
 	// Mock the Storage API call
 	transport := mock.MockedHTTPTransport()
@@ -104,14 +106,16 @@ definition/branch/active/12345/456
 func TestBranchRequestScope_DefaultBranch_Int(t *testing.T) {
 	t.Parallel()
 
-	branchInput := key.BranchIDOrDefault("456")
+	ctx := context.Background()
 
-	d, mock := NewMockedProjectRequestScope(t)
+	d, mock := NewMockedProjectRequestScope(t, ctx)
 	client := mock.EtcdClient()
+
+	branchInput := key.BranchIDOrDefault("456")
 
 	// Simulate that the operation is running in an API request authorized by a token
 	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
-	ctx := context.WithValue(mock.TestContext(), KeboolaProjectAPICtxKey, api)
+	ctx = context.WithValue(ctx, KeboolaProjectAPICtxKey, api)
 
 	// Mock the Storage API call
 	transport := mock.MockedHTTPTransport()
@@ -189,13 +193,15 @@ definition/branch/active/12345/456
 func TestBranchRequestScope_NotDefaultBranch(t *testing.T) {
 	t.Parallel()
 
-	branchInput := key.BranchIDOrDefault("456")
+	ctx := context.Background()
 
-	d, mock := NewMockedProjectRequestScope(t)
+	d, mock := NewMockedProjectRequestScope(t, ctx)
+
+	branchInput := key.BranchIDOrDefault("456")
 
 	// Simulate that the operation is running in an API request authorized by a token
 	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
-	ctx := context.WithValue(mock.TestContext(), KeboolaProjectAPICtxKey, api)
+	ctx = context.WithValue(ctx, KeboolaProjectAPICtxKey, api)
 
 	// Mock the Storage API call
 	transport := mock.MockedHTTPTransport()

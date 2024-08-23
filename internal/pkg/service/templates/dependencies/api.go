@@ -24,7 +24,11 @@ const (
 
 // apiScope implements APIScope interface.
 type apiScope struct {
-	parentScopes
+	dependencies.BaseScope
+	dependencies.PublicScope
+	dependencies.EtcdClientScope
+	dependencies.DistributedLockScope
+	dependencies.TaskScope
 	logger            log.Logger
 	config            config.Config
 	schema            *schema.Schema
@@ -32,15 +36,7 @@ type apiScope struct {
 	repositoryManager *repositoryManager.Manager
 }
 
-type parentScopes interface {
-	dependencies.BaseScope
-	dependencies.PublicScope
-	dependencies.EtcdClientScope
-	dependencies.DistributedLockScope
-	dependencies.TaskScope
-}
-
-type parentScopesImpl struct {
+type parentScopes struct {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
@@ -72,7 +68,7 @@ func newParentScopes(
 	tel telemetry.Telemetry,
 	stdout io.Writer,
 	stderr io.Writer,
-) (v parentScopes, err error) {
+) (v *parentScopes, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.templates.api.dependencies.newParentScopes")
 	defer span.End(&err)
 
@@ -89,7 +85,7 @@ func newParentScopes(
 		},
 	)
 
-	d := &parentScopesImpl{}
+	d := &parentScopes{}
 
 	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, httpClient)
 
@@ -120,15 +116,23 @@ func newParentScopes(
 	return d, nil
 }
 
-func newAPIScope(ctx context.Context, parentScp parentScopes, cfg config.Config) (v *apiScope, err error) {
-	ctx, span := parentScp.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.NewAPIScope")
+func newAPIScope(ctx context.Context, p *parentScopes, cfg config.Config) (v *apiScope, err error) {
+	ctx, span := p.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.NewAPIScope")
 	defer span.End(&err)
 
 	d := &apiScope{}
 
-	d.parentScopes = parentScp
+	d.BaseScope = p.BaseScope
 
-	d.logger = parentScp.Logger().WithComponent("api")
+	d.PublicScope = p.PublicScope
+
+	d.EtcdClientScope = p.EtcdClientScope
+
+	d.DistributedLockScope = p.DistributedLockScope
+
+	d.TaskScope = p.TaskScope
+
+	d.logger = p.Logger().WithComponent("api")
 
 	d.config = cfg
 
