@@ -129,9 +129,9 @@ func TestSliceUpload(t *testing.T) {
 	// Triggers slice upload
 	clk.Add(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"info","message":"uploading slice"}`)
-		logger.AssertJSONMessages(c, `{"level":"info","message":"successfully uploaded slice"}`)
-		logger.AssertJSONMessages(c, `{"level":"info","message":"successfully uploaded slice"}`)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"uploading slice","slice.key":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"successfully uploaded slice","slice.key":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"successfully uploaded slice","slice.key":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
@@ -150,7 +150,7 @@ func TestSliceUpload(t *testing.T) {
 	// Triggers slice upload
 	clk.Add(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
@@ -168,7 +168,7 @@ func TestSliceUpload(t *testing.T) {
 
 	clk.Add(-clk.Now().Sub(retryAfter.Time()) + slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 

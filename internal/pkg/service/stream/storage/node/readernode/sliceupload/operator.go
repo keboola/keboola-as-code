@@ -9,8 +9,10 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -43,6 +45,7 @@ type sliceData struct {
 	model.Retryable
 	model.SliceState
 	Slice plugin.Slice
+	Attrs []attribute.KeyValue
 
 	// Lock prevents parallel check of the same slice.
 	Lock *sync.Mutex
@@ -105,6 +108,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 						StagingStorage:      slice.StagingStorage,
 						EncodingCompression: slice.Encoding.Compression,
 					},
+					Attrs: slice.Telemetry(),
 				}
 
 				// Keep the same lock, to prevent parallel processing of the same slice.
@@ -164,6 +168,9 @@ func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
+	// Log/trace slice details
+	ctx = ctxattr.ContextWith(ctx, data.Attrs...)
+
 	// Prevent multiple checks of the same slice
 	if !data.Lock.TryLock() {
 		return
@@ -249,6 +256,6 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 	}
 
 	o.logger.Info(ctx, "successfully uploaded slice")
-
 	return nil
+
 }

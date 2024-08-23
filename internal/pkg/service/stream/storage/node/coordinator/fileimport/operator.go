@@ -8,8 +8,10 @@ import (
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -46,6 +48,7 @@ type fileData struct {
 	Retry   model.Retryable
 	IsEmpty bool
 	File    plugin.File
+	Attrs   []attribute.KeyValue
 
 	// Lock prevents parallel check of the same file.
 	Lock *sync.Mutex
@@ -116,6 +119,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 						FileKey:  file.FileKey,
 						Provider: file.TargetStorage.Provider,
 					},
+					Attrs: file.Telemetry(),
 				}
 
 				// Keep the same lock, to prevent parallel processing of the same file.
@@ -196,6 +200,9 @@ func (o *operator) checkFiles(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (o *operator) checkFile(ctx context.Context, file *fileData) {
+	// Log/trace file details
+	ctx = ctxattr.ContextWith(ctx, file.Attrs...)
+
 	// Prevent multiple checks of the same file
 	if !file.Lock.TryLock() {
 		return
