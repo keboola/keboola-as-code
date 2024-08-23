@@ -23,7 +23,6 @@ func StartAPINode(tb testing.TB, logger log.DebugLogger, etcdCfg etcdclient.Conf
 				modifyConfig(cfg)
 			}
 			cfg.NodeID = "api"
-			cfg.Hostname = "localhost"
 			cfg.API.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(tb))
 		},
 		opts...,

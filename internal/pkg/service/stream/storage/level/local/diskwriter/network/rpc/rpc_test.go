@@ -103,7 +103,6 @@ func startDiskWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.C
 		t,
 		func(cfg *config.Config) {
 			cfg.NodeID = nodeID
-			cfg.Hostname = "localhost"
 			cfg.Storage.VolumesPath = volumesPath
 			cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(t))
 		},
@@ -122,7 +121,6 @@ func openNetworkFile(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 		t,
 		func(cfg *config.Config) {
 			cfg.NodeID = sourceNodeID
-			cfg.Hostname = "localhost"
 		},
 		commonDeps.WithEtcdConfig(etcdCfg),
 	)

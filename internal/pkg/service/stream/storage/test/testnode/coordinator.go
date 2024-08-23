@@ -21,7 +21,6 @@ func StartCoordinatorNode(tb testing.TB, logger log.DebugLogger, etcdCfg etcdcli
 				modifyConfig(cfg)
 			}
 			cfg.NodeID = "api"
-			cfg.Hostname = "localhost"
 		},
 		opts...,
 	)
