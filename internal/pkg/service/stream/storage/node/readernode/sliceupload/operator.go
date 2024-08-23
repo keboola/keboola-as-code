@@ -200,7 +200,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
 	if !data.Slice.LocalStorage.IsEmpty {
 		o.logger.Infof(ctx, `uploading slice %q`, data.SliceKey)
-		// Use plugin system to upload slice to stagin storage. Set is an in-progress upload
+		// Use plugin system to upload slice to staging storage. Set as an in-progress upload
 		uploadCtx, uploadCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
 		defer uploadCancel()
 		err = o.plugins.UploadSlice(uploadCtx, volume, &data.Slice, stats.Local)

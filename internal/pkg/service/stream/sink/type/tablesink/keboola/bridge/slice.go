@@ -56,7 +56,7 @@ func (b *Bridge) uploadSlice(
 		return err
 	}
 
-	// uploader already contians GZip writer, so no compression is needed.
+	// uploader already contains GZip writer, so no compression is needed.
 	_, err = reader.WriteTo(uploader)
 	if err != nil {
 		return err
