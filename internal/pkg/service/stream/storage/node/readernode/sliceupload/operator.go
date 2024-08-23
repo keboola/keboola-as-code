@@ -8,6 +8,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -190,15 +191,17 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 }
 
 func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, data *sliceData) {
-	// Get slice statistics
-	stats, err := o.statistics.SliceStats(ctx, data.SliceKey)
-	if err != nil {
-		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
-		return
-	}
-
+	var err error
 	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
 	if !data.Slice.LocalStorage.IsEmpty {
+		// Get slice statistics
+		var stats statistics.Aggregated
+		stats, err = o.statistics.SliceStats(ctx, data.SliceKey)
+		if err != nil {
+			o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
+			return
+		}
+
 		o.logger.Infof(ctx, `uploading slice %q`, data.SliceKey)
 		// Use plugin system to upload slice to staging storage. Set as an in-progress upload
 		uploadCtx, uploadCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
