@@ -95,6 +95,7 @@ func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definiti
 	return result, nil
 }
 
+// TODO: make it public?
 func (m *Mapper) formatHTTPSourceURL(entity definition.Source) string {
 	return m.httpSourcePublicURL.
 		JoinPath("stream", entity.ProjectID.String(), entity.SourceID.String(), entity.HTTP.Secret).

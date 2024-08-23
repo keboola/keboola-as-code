@@ -82,30 +82,6 @@ func AssertKeys(t assert.TestingT, client etcd.KV, expectedKeys []string, ops ..
 	sort.Strings(expectedKeys)
 	sort.Strings(actualKeys)
 
-	// Dump actual state
-	if c.expectedStateFromFile != "" {
-		outDir := filepath.Join(filepath.Dir(c.expectedStateFromFile), ".out")              //nolint:forbidigo // no virtual FS
-		filePath := filepath.Join(outDir, filepath.Base(c.expectedStateFromFile)+".actual") //nolint:forbidigo // no virtual FS
-		assert.NoError(t, os.MkdirAll(outDir, 0o750))                                       //nolint:forbidigo // no virtual FS
-		var b strings.Builder
-		// Start
-		b.WriteString("\n")
-		b.WriteString("<<<<<\n")
-
-		// Dump key
-		for _, key := range actualKeys {
-			b.WriteString(key)
-		}
-		b.WriteByte('\n')
-
-		// Separator
-		b.WriteString("-----\n")
-		// End
-		b.WriteString(">>>>>\n")
-
-		assert.NoError(t, os.WriteFile(filePath, []byte(b.String()), 0o600)) //nolint:forbidigo // no virtual FS
-	}
-
 	// Compare expected and actual KVs
 	matchedExpected := make(map[int]bool)
 	matchedActual := make(map[int]bool)

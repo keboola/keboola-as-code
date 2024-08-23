@@ -151,7 +151,8 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, ctx context.Context, modifyC
 	require.NoError(tb, err)
 
 	mock.DebugLogger().Truncate()
-	mock.MockedHTTPTransport().Reset()
+	// TODO: reset only when mock transport exists
+	// mock.MockedHTTPTransport().Reset()
 
 	mock.dummySinkController.RegisterDummySinkTypes(serviceScp.Plugins(), mock.TestDummySinkController())
 
