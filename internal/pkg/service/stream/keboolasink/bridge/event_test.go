@@ -33,8 +33,9 @@ func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	registerOkResponder(t, transport, &body)
 
+	cfg := bridge.NewConfig()
 	// Send event
-	b := bridge.New(d, nil)
+	b := bridge.New(d, nil, cfg)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
 	err := error(nil)
@@ -65,8 +66,9 @@ func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	registerOkResponder(t, transport, &body)
 
+	cfg := bridge.NewConfig()
 	// Send event
-	b := bridge.New(d, nil)
+	b := bridge.New(d, nil, cfg)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
 	err := errors.New("some error")
@@ -95,8 +97,9 @@ func TestSender_SendSliceUploadEvent_HTTPError(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	registerErrorResponder(t, transport)
 
+	cfg := bridge.NewConfig()
 	// Send event
-	b := bridge.New(d, nil)
+	b := bridge.New(d, nil, cfg)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
 	err := error(nil)

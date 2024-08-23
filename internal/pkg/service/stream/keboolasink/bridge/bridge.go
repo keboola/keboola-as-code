@@ -1,8 +1,6 @@
 package bridge
 
 import (
-	"time"
-
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -25,8 +23,6 @@ const (
 	// targetProvider marks files which destination is a Keboola table.
 	targetProvider = targetModel.Provider("keboola")
 
-	// Upload event slice timeout.
-	uploadEventSendTimeout = 30 * time.Second
 	// sinkMetaKey is a key of the table metadata that marks each table created by the stream.sink.
 	sinkMetaKey = "KBC.stream.sink.id"
 	// sourceMetaKey is a key of the table metadata that marks each table created by the stream.source.
@@ -35,6 +31,7 @@ const (
 
 type Bridge struct {
 	logger            log.Logger
+	config            Config
 	client            etcd.KV
 	schema            schema.Schema
 	plugins           *plugin.Plugins
@@ -57,9 +54,10 @@ type dependencies interface {
 	StorageRepository() *storageRepo.Repository
 }
 
-func New(d dependencies, apiProvider apiProvider) *Bridge {
+func New(d dependencies, apiProvider apiProvider, config Config) *Bridge {
 	b := &Bridge{
 		logger:            d.Logger().WithComponent("keboola.bridge"),
+		config:            config,
 		client:            d.EtcdClient(),
 		schema:            schema.New(d.EtcdSerde()),
 		plugins:           d.Plugins(),

@@ -187,7 +187,7 @@ func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.Publ
 		return api
 	}
 
-	d.keboolaBridge = keboolaSinkBridge.New(d, apiCtxProvider)
+	d.keboolaBridge = keboolaSinkBridge.New(d, apiCtxProvider, cfg.KeboolaBridge)
 
 	d.storageStatisticsRepository = statsRepo.New(d)
 

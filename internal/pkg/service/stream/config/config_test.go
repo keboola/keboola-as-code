@@ -271,6 +271,9 @@ storage:
                     slicesCount: 100
                     # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
                     expiration: 30m0s
+keboolaBridge:
+    # Timeout of uploading send event of slice or file
+    uploadEventSendTimeout: 30s
 `), strings.TrimSpace(string(bytes)))
 
 	// Add missing values, and validate it
