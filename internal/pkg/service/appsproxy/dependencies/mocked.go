@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"context"
 	"net/url"
 	"testing"
 
@@ -27,16 +28,16 @@ func (v *mocked) TestDNSServer() *dnsmock.Server {
 	return v.dnsServer
 }
 
-func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
-	t.Helper()
+func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	tb.Helper()
 
-	commonMock := dependencies.NewMocked(t, opts...)
+	commonMock := dependencies.NewMocked(tb, ctx, opts...)
 
 	// Fill in missing fields
 	if cfg.API.PublicURL == nil {
 		var err error
 		cfg.API.PublicURL, err = url.Parse("https://hub.keboola.local")
-		require.NoError(t, err)
+		require.NoError(tb, err)
 	}
 	if cfg.CookieSecretSalt == "" {
 		cfg.CookieSecretSalt = "foo"
@@ -54,8 +55,8 @@ func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies
 	var dnsServer *dnsmock.Server
 	if cfg.DNSServer == "" {
 		dnsServer = dnsmock.New()
-		require.NoError(t, dnsServer.Start())
-		t.Cleanup(func() {
+		require.NoError(tb, dnsServer.Start())
+		tb.Cleanup(func() {
 			_ = dnsServer.Shutdown()
 		})
 
@@ -63,12 +64,12 @@ func NewMockedServiceScope(t *testing.T, cfg config.Config, opts ...dependencies
 	}
 
 	// Validate config
-	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
+	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
 	mock := &mocked{Mocked: commonMock, config: cfg, dnsServer: dnsServer}
 
-	scope, err := newServiceScope(mock.TestContext(), mock, cfg)
-	require.NoError(t, err)
+	scope, err := newServiceScope(ctx, mock, cfg)
+	require.NoError(tb, err)
 
 	mock.DebugLogger().Truncate()
 	mock.MockedHTTPTransport().Reset()

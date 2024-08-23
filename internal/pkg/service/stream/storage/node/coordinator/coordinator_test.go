@@ -14,10 +14,10 @@ import (
 func TestStart_Ok(t *testing.T) {
 	t.Parallel()
 
-	d, mock := dependencies.NewMockedCoordinatorScope(t)
+	ctx := context.Background()
+	d, mock := dependencies.NewMockedCoordinatorScope(t, ctx)
 
 	// Start
-	ctx := context.Background()
 	require.NoError(t, stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentStorageCoordinator))
 
 	// Shutdown

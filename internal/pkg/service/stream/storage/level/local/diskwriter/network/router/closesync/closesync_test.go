@@ -20,7 +20,7 @@ func TestSourceAndCoordinatorNodes(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	d, mock := dependencies.NewMockedServiceScope(t)
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	client := mock.TestEtcdClient()
 
 	// Create 3 source nodes and 1 coordinator node

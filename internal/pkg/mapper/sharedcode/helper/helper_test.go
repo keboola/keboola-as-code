@@ -1,6 +1,7 @@
 package helper_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -14,7 +15,7 @@ import (
 
 func TestGetSharedCodeByPath(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewMocked(t)
+	d := dependencies.NewMocked(t, context.Background())
 	mockedState := d.MockedState()
 
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, mockedState)
@@ -42,7 +43,7 @@ func TestGetSharedCodeByPath(t *testing.T) {
 func TestGetSharedCodeRowByPath(t *testing.T) {
 	t.Parallel()
 
-	d := dependencies.NewMocked(t)
+	d := dependencies.NewMocked(t, context.Background())
 	mockedState := d.MockedState()
 
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, mockedState)
@@ -70,7 +71,7 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 func TestGetSharedCodeVariablesId(t *testing.T) {
 	t.Parallel()
 
-	d := dependencies.NewMocked(t)
+	d := dependencies.NewMocked(t, context.Background())
 	mockedState := d.MockedState()
 
 	fixtures.CreateSharedCode(t, mockedState)

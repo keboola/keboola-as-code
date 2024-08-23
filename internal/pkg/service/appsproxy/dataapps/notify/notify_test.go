@@ -25,7 +25,7 @@ func TestManager_Notify(t *testing.T) {
 
 	ctx := context.Background()
 	clk := clock.NewMock()
-	d, mock := dependencies.NewMockedServiceScope(t, config.New(), commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
 	appID := api.AppID("app")
 
@@ -61,7 +61,7 @@ func TestManager_Notify_Race(t *testing.T) {
 
 	ctx := context.Background()
 	clk := clock.NewMock()
-	d, mock := dependencies.NewMockedServiceScope(t, config.New(), commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
 	appID := api.AppID("app")
 

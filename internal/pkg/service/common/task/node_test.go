@@ -48,8 +48,8 @@ func TestSuccessfulTask(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdCfg, logs, tel, "node1")
-	node2, _ := createNode(t, etcdCfg, logs, tel, "node2")
+	node1, _ := createNode(t, ctx, etcdCfg, logs, tel, "node1")
+	node2, _ := createNode(t, ctx, etcdCfg, logs, tel, "node2")
 	logs.Truncate()
 	tel.Reset()
 
@@ -345,8 +345,8 @@ func TestFailedTask(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdCfg, logs, tel, "node1")
-	node2, _ := createNode(t, etcdCfg, logs, tel, "node2")
+	node1, _ := createNode(t, ctx, etcdCfg, logs, tel, "node1")
+	node2, _ := createNode(t, ctx, etcdCfg, logs, tel, "node2")
 	logs.Truncate()
 	tel.Reset()
 
@@ -668,7 +668,7 @@ func TestTaskTimeout(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create node and
-	node1, d := createNode(t, etcdCfg, nil, tel, "node1")
+	node1, d := createNode(t, ctx, etcdCfg, nil, tel, "node1")
 	logger := d.DebugLogger()
 	logger.Truncate()
 	tel.Reset()
@@ -838,7 +838,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	tel := newTestTelemetryWithFilter(t)
 
 	// Create node
-	node1, d := createNode(t, etcdCfg, logs, tel, "node1")
+	node1, d := createNode(t, ctx, etcdCfg, logs, tel, "node1")
 	tel.Reset()
 	logs.Truncate()
 
@@ -934,21 +934,21 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 		})
 }
 
-func createNode(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) (*task.Node, dependencies.Mocked) {
+func createNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
-	d := createDeps(t, etcdCfg, logs, tel, nodeID)
+	d := createDeps(t, ctx, etcdCfg, logs, tel)
 	node, err := task.NewNode(nodeID, d)
 	require.NoError(t, err)
 	d.DebugLogger().Truncate()
 	return node, d
 }
 
-func createDeps(t *testing.T, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) dependencies.Mocked {
+func createDeps(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest) dependencies.Mocked {
 	t.Helper()
 
 	d := dependencies.NewMocked(
 		t,
-		dependencies.WithNodeID(nodeID),
+		ctx,
 		dependencies.WithTelemetry(tel),
 		dependencies.WithEtcdConfig(etcdCfg),
 	)

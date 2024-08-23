@@ -1,6 +1,7 @@
 package testnode
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -12,12 +13,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 )
 
-func StartAPINode(tb testing.TB, logger log.DebugLogger, etcdCfg etcdclient.Config, modifyConfig func(cfg *config.Config), opts ...commonDeps.MockedOption) (dependencies.APIScope, dependencies.Mocked) {
+func StartAPINode(tb testing.TB, ctx context.Context, logger log.DebugLogger, etcdCfg etcdclient.Config, modifyConfig func(cfg *config.Config), opts ...commonDeps.MockedOption) (dependencies.APIScope, dependencies.Mocked) {
 	tb.Helper()
 
 	opts = append(opts, commonDeps.WithDebugLogger(logger), commonDeps.WithEtcdConfig(etcdCfg))
 	return dependencies.NewMockedAPIScopeWithConfig(
 		tb,
+		ctx,
 		func(cfg *config.Config) {
 			if modifyConfig != nil {
 				modifyConfig(cfg)

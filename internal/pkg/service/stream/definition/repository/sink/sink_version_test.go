@@ -27,7 +27,7 @@ func TestSinkRepository_Versions(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, mocked := dependencies.NewMockedServiceScope(t)
+	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
 	repo := d.DefinitionRepository().Sink()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)|(definition/source)")

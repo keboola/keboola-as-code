@@ -74,7 +74,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	etcdCfg := etcdhelper.TmpNamespace(t)
 
 	// Start nodes
-	tc.startNodes(t, etcdCfg)
+	tc.startNodes(t, ctx, etcdCfg)
 	sinkRouter := tc.sourceNode.SinkRouter()
 
 	// Create resource in an API node
@@ -218,14 +218,14 @@ func (tc *WriterTestCase) assertResult(t *testing.T, result *router.SourceResult
 	}
 }
 
-func (tc *WriterTestCase) startNodes(t *testing.T, etcdCfg etcdclient.Config) {
+func (tc *WriterTestCase) startNodes(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config) {
 	t.Helper()
 
 	tc.logger.Truncate()
 
-	tc.startAPINode(t, etcdCfg)
-	tc.startWriterNode(t, etcdCfg)
-	tc.startSourceNode(t, etcdCfg)
+	tc.startAPINode(t, ctx, etcdCfg)
+	tc.startWriterNode(t, ctx, etcdCfg)
+	tc.startSourceNode(t, ctx, etcdCfg)
 
 	// Wait for connection between nodes
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -249,19 +249,19 @@ func (tc *WriterTestCase) shutdownNodes(t *testing.T, ctx context.Context) {
 	tc.writerNode.Process().WaitForShutdown()
 }
 
-func (tc *WriterTestCase) startAPINode(t *testing.T, etcdCfg etcdclient.Config) {
+func (tc *WriterTestCase) startAPINode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config) {
 	t.Helper()
-	tc.apiNode, tc.apiNodeMock = testnode.StartAPINode(t, tc.logger, etcdCfg, tc.updateServiceConfig)
+	tc.apiNode, tc.apiNodeMock = testnode.StartAPINode(t, ctx, tc.logger, etcdCfg, tc.updateServiceConfig)
 }
 
-func (tc *WriterTestCase) startSourceNode(t *testing.T, etcdCfg etcdclient.Config) {
+func (tc *WriterTestCase) startSourceNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config) {
 	t.Helper()
-	tc.sourceNode, tc.sourceNodeMock = testnode.StartSourceNode(t, tc.logger, etcdCfg, tc.updateServiceConfig)
+	tc.sourceNode, tc.sourceNodeMock = testnode.StartSourceNode(t, ctx, tc.logger, etcdCfg, tc.updateServiceConfig)
 }
 
-func (tc *WriterTestCase) startWriterNode(t *testing.T, etcdCfg etcdclient.Config) {
+func (tc *WriterTestCase) startWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config) {
 	t.Helper()
-	tc.writerNode, tc.writerNodeMock = testnode.StartDiskWriterNode(t, tc.logger, etcdCfg, 1, tc.updateServiceConfig)
+	tc.writerNode, tc.writerNodeMock = testnode.StartDiskWriterNode(t, ctx, tc.logger, etcdCfg, 1, tc.updateServiceConfig)
 }
 
 func (tc *WriterTestCase) updateServiceConfig(cfg *config.Config) {

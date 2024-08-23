@@ -26,7 +26,7 @@ func TestSourceRepository_Undelete(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, mocked := dependencies.NewMockedServiceScope(t)
+	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
 	repo := d.DefinitionRepository().Source()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)")
@@ -111,7 +111,7 @@ func TestSourceRepository_UndeleteSourcesOnBranchUndelete(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, mocked := dependencies.NewMockedServiceScope(t)
+	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
 	repo := d.DefinitionRepository().Source()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/source/version)")

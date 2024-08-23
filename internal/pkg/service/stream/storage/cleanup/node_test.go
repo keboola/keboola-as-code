@@ -39,7 +39,7 @@ func TestNode(t *testing.T) {
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/slice/all/|runtime/`)
 
 	// Get services
-	d, mocked := dependencies.NewMockedCoordinatorScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedCoordinatorScope(t, ctx, commonDeps.WithClock(clk))
 
 	logger := mocked.DebugLogger()
 	client := mocked.TestEtcdClient()

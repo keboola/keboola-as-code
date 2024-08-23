@@ -28,6 +28,9 @@ import (
 
 func TestLoadState(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
+
 	testProject := testproject.GetTestProjectForTest(t, "")
 	err := testProject.SetState("minimal.json")
 	assert.NoError(t, err)
@@ -41,7 +44,7 @@ func TestLoadState(t *testing.T) {
 
 	// Container
 	m, fs := loadTestManifest(t, envs, "minimal")
-	d := dependencies.NewMocked(t, dependencies.WithTestProject(testProject))
+	d := dependencies.NewMocked(t, ctx, dependencies.WithTestProject(testProject))
 
 	// Load
 	options := LoadOptions{

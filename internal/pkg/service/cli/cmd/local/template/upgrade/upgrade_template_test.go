@@ -29,7 +29,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t)
+	deps := dependencies.NewMocked(t, context.Background())
 	projectState := deps.MockedState()
 
 	// Project state

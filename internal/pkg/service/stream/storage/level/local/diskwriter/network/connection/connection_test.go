@@ -39,7 +39,7 @@ func TestConnectionManager(t *testing.T) {
 	waitForLog(t, w2.DebugLogger(), `{"level":"info","message":"disk writer listening on \"%s\"","component":"storage.node.writer.network-file.server"}`)
 
 	// Start source node
-	connManager, s := startSourceNode(t, etcdCfg, "s1")
+	connManager, s := startSourceNode(t, ctx, etcdCfg, "s1")
 	sourceLogger := s.DebugLogger()
 	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w1\" - \"l%s\"","component":"storage.router.connections.client"}`)
@@ -140,11 +140,12 @@ func TestConnectionManager(t *testing.T) {
 	w4.DebugLogger().AssertJSONMessages(t, expectedWriterLogs)
 }
 
-func startSourceNode(t *testing.T, etcdCfg etcdclient.Config, nodeID string) (*connection.Manager, dependencies.Mocked) {
+func startSourceNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, nodeID string) (*connection.Manager, dependencies.Mocked) {
 	t.Helper()
 
 	d, m := dependencies.NewMockedSourceScopeWithConfig(
 		t,
+		ctx,
 		func(cfg *config.Config) {
 			cfg.NodeID = nodeID
 		},
@@ -167,6 +168,7 @@ func startWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 
 	d, m := dependencies.NewMockedStorageWriterScopeWithConfig(
 		t,
+		ctx,
 		func(cfg *config.Config) {
 			cfg.NodeID = nodeID
 			cfg.Storage.VolumesPath = volumesPath

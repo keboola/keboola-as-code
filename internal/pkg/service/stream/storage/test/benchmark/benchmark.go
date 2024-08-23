@@ -79,7 +79,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	etcdCfg := etcdhelper.TmpNamespace(b)
 
 	// Start nodes
-	wb.startNodes(b, etcdCfg)
+	wb.startNodes(b, ctx, etcdCfg)
 	sinkRouter := wb.sourceNode.SinkRouter()
 	storageRouter := wb.sourceNode.StorageRouter()
 
@@ -199,14 +199,14 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	wb.logger.AssertJSONMessages(b, "")
 }
 
-func (wb *WriterBenchmark) startNodes(b *testing.B, etcdCfg etcdclient.Config) {
+func (wb *WriterBenchmark) startNodes(b *testing.B, ctx context.Context, etcdCfg etcdclient.Config) {
 	b.Helper()
 
 	wb.logger.Truncate()
 
-	wb.startAPINode(b, etcdCfg)
-	wb.startWriterNode(b, etcdCfg)
-	wb.startSourceNode(b, etcdCfg)
+	wb.startAPINode(b, ctx, etcdCfg)
+	wb.startWriterNode(b, ctx, etcdCfg)
+	wb.startSourceNode(b, ctx, etcdCfg)
 
 	// Wait for connection between nodes
 	assert.EventuallyWithT(b, func(c *assert.CollectT) {
@@ -230,19 +230,19 @@ func (wb *WriterBenchmark) shutdownNodes(b *testing.B, ctx context.Context) {
 	wb.writerNode.Process().WaitForShutdown()
 }
 
-func (wb *WriterBenchmark) startAPINode(b *testing.B, etcdCfg etcdclient.Config) {
+func (wb *WriterBenchmark) startAPINode(b *testing.B, ctx context.Context, etcdCfg etcdclient.Config) {
 	b.Helper()
-	wb.apiNode, wb.apiNodeMock = testnode.StartAPINode(b, wb.logger, etcdCfg, wb.updateServiceConfig)
+	wb.apiNode, wb.apiNodeMock = testnode.StartAPINode(b, ctx, wb.logger, etcdCfg, wb.updateServiceConfig)
 }
 
-func (wb *WriterBenchmark) startSourceNode(b *testing.B, etcdCfg etcdclient.Config) {
+func (wb *WriterBenchmark) startSourceNode(b *testing.B, ctx context.Context, etcdCfg etcdclient.Config) {
 	b.Helper()
-	wb.sourceNode, wb.sourceNodeMock = testnode.StartSourceNode(b, wb.logger, etcdCfg, wb.updateServiceConfig)
+	wb.sourceNode, wb.sourceNodeMock = testnode.StartSourceNode(b, ctx, wb.logger, etcdCfg, wb.updateServiceConfig)
 }
 
-func (wb *WriterBenchmark) startWriterNode(b *testing.B, etcdCfg etcdclient.Config) {
+func (wb *WriterBenchmark) startWriterNode(b *testing.B, ctx context.Context, etcdCfg etcdclient.Config) {
 	b.Helper()
-	wb.writerNode, wb.writerNodeMock = testnode.StartDiskWriterNode(b, wb.logger, etcdCfg, 1, wb.updateServiceConfig)
+	wb.writerNode, wb.writerNodeMock = testnode.StartDiskWriterNode(b, ctx, wb.logger, etcdCfg, 1, wb.updateServiceConfig)
 }
 
 func (wb *WriterBenchmark) updateServiceConfig(cfg *config.Config) {

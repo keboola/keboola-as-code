@@ -38,7 +38,7 @@ func TestSourceRepository_Limits_SourcesPerBranch(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 
 	// Get services
-	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	repo := repository.New(d)
 	sourceRepo := repo.Source()
@@ -95,7 +95,7 @@ func TestSourceLimits_VersionsPerSource(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-sourcerepo-1"}
 
 	// Get services
-	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	repo := repository.New(d)
 	sourceRepo := repo.Source()

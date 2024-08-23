@@ -41,7 +41,7 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source-1"}
 
 	// Get services
-	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	repo := repository.New(d)
 	sinkRepo := repo.Sink()
@@ -101,7 +101,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 
 	// Get services
-	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	repo := repository.New(d)
 	sinkRepo := repo.Sink()

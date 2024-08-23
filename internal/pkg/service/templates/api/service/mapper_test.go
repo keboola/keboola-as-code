@@ -69,6 +69,7 @@ func TestTemplatesResponse(t *testing.T) {
 			token.Owner.Features = tc.projectFeatures
 			d, _ := dependencies.NewMockedProjectRequestScope(
 				t,
+				ctx,
 				config.New(),
 				commonDeps.WithMockedStorageAPIToken(token),
 				commonDeps.WithMockedComponents(tc.stackComponents),

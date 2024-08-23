@@ -23,7 +23,7 @@ func TestEventWriter(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mock := dependencies.NewMockedStorageScope(t)
+	d, mock := dependencies.NewMockedStorageScope(t, ctx)
 	logger := mock.DebugLogger()
 
 	// There are 2 volumes
@@ -155,7 +155,7 @@ func TestWriterEvents_OpenError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mock := dependencies.NewMockedStorageScope(t)
+	d, mock := dependencies.NewMockedStorageScope(t, ctx)
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
@@ -197,7 +197,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mock := dependencies.NewMockedStorageScope(t)
+	d, mock := dependencies.NewMockedStorageScope(t, ctx)
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()

@@ -37,7 +37,7 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 
 	ctx := context.Background()
 
-	d, _ := dependencies.NewMockedSourceScope(t)
+	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
 	slice.Encoding.Encoder.Type = encoder.TypeCSV
@@ -53,7 +53,7 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 
 	ctx := context.Background()
 
-	d, _ := dependencies.NewMockedSourceScope(t)
+	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 	slice := test.NewSlice()
 	slice.Encoding.Encoder.Type = "invalid"
 
