@@ -598,7 +598,7 @@ jobs:
         run: |
           docker run --rm homebrew/brew sh -c '
           set -e
-          brew install keboola-cli
+          brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
           '
 
@@ -615,7 +615,7 @@ jobs:
 
       - name: Install on MacOS by Homebrew
         run: |
-          brew install keboola-cli
+          brew install keboola/keboola-cli/keboola-cli
           kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
 
   test-install-windows:
