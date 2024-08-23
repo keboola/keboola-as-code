@@ -149,9 +149,6 @@ type Mocked interface {
 	ProjectScope
 	RequestInfo
 	EtcdClientScope
-	TaskScope
-	DistributionScope
-	DistributedLockScope
 
 	MockControl
 }
@@ -159,7 +156,6 @@ type Mocked interface {
 // MockControl allows modification of mocked scopes and access to the insides in a test.
 type MockControl interface {
 	DebugLogger() log.DebugLogger
-	TestContext() context.Context
 	TestTelemetry() telemetry.ForTest
 	TestEtcdConfig() etcdclient.Config
 	TestEtcdClient() *etcdPkg.Client
