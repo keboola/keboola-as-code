@@ -129,9 +129,12 @@ func TestSliceUpload(t *testing.T) {
 	// Triggers slice upload
 	clk.Add(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"info","message":"uploading slice \"123/111/my-source/my-keboola-sink/2000-01-01T00:00:00.000Z/vol-1/2000-01-01T00:00:00.000Z\""}`)
-		logger.AssertJSONMessages(c, `{"level":"info","message":"slice was uploaded \"123/111/my-source/my-keboola-sink/2000-01-01T00:00:00.000Z/vol-1/2000-01-01T00:00:00.000Z\""}`)
-		logger.AssertJSONMessages(c, `{"level":"info","message":"slice was uploaded \"123/111/my-source/my-keboola-sink/2000-01-01T00:00:00.000Z/vol-2/2000-01-01T00:00:00.000Z\""}`)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"upload slice","slice.key":"2000-01-01T00:00:00.000Z","slice.state":"uploading","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"uploading slice to staging","slice.key":"2000-01-01T00:00:00.000Z","slice.state":"uploading","component":"storage.node.operator.slice.upload"}`)
+		// TODO: uploaded state?
+		// waitForSlicesSync(t)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"successfully uploaded slice","slice.key":"2000-01-01T00:00:00.000Z","slice.state":"uploaded","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"successfully uploaded slice","slice.key":"2000-01-01T00:00:00.000Z","slice.state":"uploaded","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
@@ -150,7 +153,7 @@ func TestSliceUpload(t *testing.T) {
 	// Triggers slice upload
 	clk.Add(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"cannot upload slice to staging: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","message":"cannot upload slice to staging: bla","slice.key":"2000-01-01T00:00:01.000Z","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
@@ -168,7 +171,7 @@ func TestSliceUpload(t *testing.T) {
 
 	clk.Add(-clk.Now().Sub(retryAfter.Time()) + slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"cannot upload slice to staging: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","message":"cannot upload slice to staging: bla","slice.key":"2000-01-01T00:00:01.000Z","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 

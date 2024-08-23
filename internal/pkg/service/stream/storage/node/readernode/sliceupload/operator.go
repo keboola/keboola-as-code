@@ -9,8 +9,10 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -20,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type operator struct {
@@ -36,6 +39,7 @@ type operator struct {
 
 type sliceData struct {
 	Slice *model.Slice
+	Attrs []attribute.KeyValue
 
 	// Lock prevents parallel check of the same slice.
 	Lock *sync.Mutex
@@ -90,6 +94,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 			func(_ string, slice model.Slice, rawValue *op.KeyValue, oldValue **sliceData) *sliceData {
 				out := &sliceData{
 					Slice: &slice,
+					Attrs: slice.Telemetry(),
 				}
 
 				// Keep the same lock, to prevent parallel processing of the same slice.
@@ -149,6 +154,9 @@ func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
+	// Log/trace slice details
+	ctx = ctxattr.ContextWith(ctx, data.Attrs...)
+
 	// Prevent multiple checks of the same slice
 	if !data.Lock.TryLock() {
 		return
@@ -179,6 +187,9 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 }
 
 func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, data *sliceData) {
+	o.logger.Info(ctx, "upload slice")
+	var sliceKey model.SliceKey = data.Slice.SliceKey
+
 	// Get slice statistics
 	stats, err := o.statistics.SliceStats(ctx, data.Slice.SliceKey)
 	if err != nil {
@@ -188,53 +199,54 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 
 	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
 	if stats.Local.RecordsCount != 0 {
-		o.logger.Infof(ctx, `uploading slice %q`, data.Slice.SliceKey)
+		o.logger.Info(ctx, `uploading slice to staging`)
 		// Use plugin system to upload slice to stagin storage. Set is an in-progress upload
 		uploadCtx, uploadCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
 		defer uploadCancel()
 		err = o.plugins.UploadSlice(uploadCtx, volume, data.Slice, stats.Local)
 		if err != nil {
 			// Upload was not successful, next check will launch it again
-			o.logger.Errorf(ctx, "cannot upload slice to staging: %v", err)
-
-			// Increment retry delay
-			err = o.storage.Slice().IncrementRetryAttempt(data.Slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
-			if err != nil {
-				o.logger.Errorf(ctx, "cannot increment slice retry: %v", err)
+			err = errors.PrefixErrorf(err, "cannot upload slice to staging")
+			rErr := o.incrementRetryAttempt(ctx, err, sliceKey)
+			if rErr != nil {
 				return
 			}
-
-			data.Processed = true
-			return
 		}
 	}
 
-	err = o.changeSliceState(ctx, data.Slice.SliceKey, false)
-	if err != nil {
-		return
+	if err == nil {
+		// Update the entity, the ctx may be cancelled
+		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer dbCancel()
+
+		// Empty when Records count equal to 0
+		err = o.storage.Slice().SwitchToUploaded(sliceKey, o.clock.Now(), stats.Local.RecordsCount == 0).Do(dbCtx).Err()
+		if err != nil {
+			err = errors.PrefixErrorf(err, "cannot switch slice to the uploaded state")
+			rErr := o.incrementRetryAttempt(ctx, err, sliceKey)
+			if rErr != nil {
+				return
+			}
+		} else {
+			o.logger.Info(ctx, `successfully uploaded slice`)
+		}
 	}
 
-	o.logger.Infof(ctx, `slice was uploaded %q`, data.Slice.SliceKey)
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	data.Processed = true
 }
 
-func (o *operator) changeSliceState(ctx context.Context, sliceKey model.SliceKey, isEmpty bool) error {
-	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-	defer dbCancel()
+func (o *operator) incrementRetryAttempt(ctx context.Context, err error, sliceKey model.SliceKey) error {
+	o.logger.Errorf(ctx, "%v", err)
 
-	err := o.storage.Slice().SwitchToUploaded(sliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
-	if err != nil {
-		o.logger.Errorf(dbCtx, "cannot switch slice to the uploaded state: %v", err)
-
-		// Increment retry delay
-		err = o.storage.Slice().IncrementRetryAttempt(sliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
-		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment slice retry: %v", err)
-			return err
-		}
+	// Increment retry delay
+	rErr := o.storage.Slice().IncrementRetryAttempt(sliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+	if rErr != nil {
+		o.logger.Errorf(ctx, "cannot increment slice retry: %v", rErr)
+		return rErr
 	}
+
 	return nil
+
 }

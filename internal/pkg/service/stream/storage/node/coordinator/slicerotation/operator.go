@@ -232,10 +232,10 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
+	o.logger.Info(ctx, "rotating slice")
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceRotationTimeout.Duration())
 	defer cancel()
-
-	now := o.clock.Now()
 
 	// Get slice statistics
 	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
@@ -245,6 +245,7 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	}
 
 	// Check conditions
+	now := o.clock.Now()
 	cause, ok := shouldUpload(slice.UploadTrigger, now, slice.SliceKey.OpenedAt().Time(), stats.Local)
 	if !ok {
 		o.logger.Debugf(ctx, "skipping slice rotation: %s", cause)
@@ -258,7 +259,7 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
-	o.logger.Infof(ctx, "rotating of slice finished")
+	o.logger.Info(ctx, "successfully rotated slice")
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	slice.Processed = true
@@ -291,22 +292,23 @@ func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) e
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
+	// Rotate slice
+	o.logger.Infof(ctx, "closing slice")
+
 	// Wait until no source node is using the slice
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
 	defer cancel()
 
-	// Rotate slice
-	o.logger.Infof(ctx, "closing slice")
 	err := o.switchSliceToImporting(ctx, slice)
 	if err != nil {
 		return
 	}
 
-	o.logger.Infof(ctx, "closing slice finished")
+	o.logger.Info(ctx, "successfully closed slice")
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	slice.Processed = true
@@ -334,5 +336,5 @@ func (o *operator) switchSliceToImporting(ctx context.Context, slice *sliceData)
 		}
 	}
 
-	return err
+	return nil
 }

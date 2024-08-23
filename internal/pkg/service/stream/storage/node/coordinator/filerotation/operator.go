@@ -308,7 +308,6 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	}
 
 	o.logger.Info(ctx, "successfully rotated file")
-
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
@@ -378,7 +377,6 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	defer o.lock.Unlock()
 	delete(o.fileNotEmpty, file.FileKey)
 	o.logger.Info(ctx, "successfully closed file")
-
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
