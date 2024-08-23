@@ -288,16 +288,23 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 		// continue! we waited long enough, the wait mechanism is probably broken
 	}
 
+	// Get slice statistics
+	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
+	if err != nil {
+		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
+		return
+	}
+
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
-	err := o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
+	err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), stats.Local.RecordsCount == 0).Do(dbCtx).Err()
 	if err != nil {
 		o.logger.Errorf(dbCtx, "cannot switch slice to the uploading state: %s", err.Error())
 
 		// Increment retry delay
-		err = o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+		err := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
 		if err != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
 			return

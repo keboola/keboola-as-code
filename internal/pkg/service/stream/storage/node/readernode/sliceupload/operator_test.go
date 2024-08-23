@@ -106,9 +106,9 @@ func TestSliceUpload(t *testing.T) {
 	// Prevent duplicate file slice keys
 	clk.Add(1 * time.Second)
 	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now(), false).Do(ctx).Err())
 	logger.Truncate()
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[1].SliceKey, clk.Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[1].SliceKey, clk.Now(), false).Do(ctx).Err())
 
 	// Check that rotation and switch was performed
 	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
@@ -141,9 +141,9 @@ func TestSliceUpload(t *testing.T) {
 
 	clk.Add(1 * time.Second)
 	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[2].SliceKey, clk.Now()).Do(ctx).Err())
 	logger.Truncate()
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[3].SliceKey, clk.Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[2].SliceKey, clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[3].SliceKey, clk.Now(), true).Do(ctx).Err())
 
 	require.NoError(t, d.StatisticsRepository().Put(ctx, "node", []statistics.PerSlice{{SliceKey: slices[2].SliceKey, RecordsCount: 1}}))
 	waitForSlicesSync(t)

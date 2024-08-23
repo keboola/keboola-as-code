@@ -7,17 +7,17 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	etcdPkg "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
@@ -33,15 +33,15 @@ import (
 const fileExpirationDiff = time.Minute
 
 type testState struct {
-	interval     time.Duration
+	interval      time.Duration
 	importTrigger targetConfig.ImportTrigger
-	clk          *clock.Mock
-	logger       log.DebugLogger
-	client       *etcdPkg.Client
-	mock         dependencies.Mocked
-	dependencies dependencies.CoordinatorScope
-	session      *concurrency.Session
-	sink         definition.Sink
+	clk           *clock.Mock
+	logger        log.DebugLogger
+	client        *etcdPkg.Client
+	mock          dependencies.Mocked
+	dependencies  dependencies.CoordinatorScope
+	session       *concurrency.Session
+	sink          definition.Sink
 }
 
 func setup(t *testing.T, ctx context.Context) *testState {
@@ -80,14 +80,14 @@ func setup(t *testing.T, ctx context.Context) *testState {
 	test.RegisterWriterVolumes(t, ctx, d.StorageRepository().Volume(), session, 1)
 
 	return &testState{
-		interval:     conditionsCheckInterval,
+		interval:      conditionsCheckInterval,
 		importTrigger: importTrigger,
-		clk:          clk,
-		mock:         mock,
-		logger:       mock.DebugLogger(),
-		client:       client,
-		dependencies: d,
-		session:      session,
+		clk:           clk,
+		mock:          mock,
+		logger:        mock.DebugLogger(),
+		client:        client,
+		dependencies:  d,
+		session:       session,
 	}
 }
 
@@ -123,6 +123,7 @@ func (ts *testState) triggerCheck(t *testing.T, expectEntityModification bool, e
 }
 
 func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
+	t.Helper()
 	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
 	branch := test.NewBranch(branchKey)
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}

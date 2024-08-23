@@ -187,7 +187,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 	}
 
 	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
-	if stats.Local.RecordsCount != 0 {
+	if !data.Slice.LocalStorage.IsEmpty {
 		o.logger.Infof(ctx, `uploading slice %q`, data.Slice.SliceKey)
 		// Use plugin system to upload slice to stagin storage. Set is an in-progress upload
 		uploadCtx, uploadCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
@@ -209,7 +209,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 		}
 	}
 
-	err = o.changeSliceState(ctx, data.Slice.SliceKey, false)
+	err = o.changeSliceState(ctx, data.Slice.SliceKey)
 	if err != nil {
 		return
 	}
@@ -220,12 +220,12 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 	data.Processed = true
 }
 
-func (o *operator) changeSliceState(ctx context.Context, sliceKey model.SliceKey, isEmpty bool) error {
+func (o *operator) changeSliceState(ctx context.Context, sliceKey model.SliceKey) error {
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
-	err := o.storage.Slice().SwitchToUploaded(sliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
+	err := o.storage.Slice().SwitchToUploaded(sliceKey, o.clock.Now()).Do(dbCtx).Err()
 	if err != nil {
 		o.logger.Errorf(dbCtx, "cannot switch slice to the uploaded state: %v", err)
 
