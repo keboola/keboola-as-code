@@ -26,12 +26,12 @@ func NewBranchRequestScope(ctx context.Context, prjReqScp ProjectRequestScope, b
 	return newBranchRequestScope(ctx, prjReqScp, branch)
 }
 
-func NewMockedBranchRequestScope(t *testing.T, branchInput key.BranchIDOrDefault, opts ...dependencies.MockedOption) (ProjectRequestScope, Mocked) {
-	t.Helper()
-	prjReqScp, mocked := NewMockedProjectRequestScope(t, opts...)
-	branchReqScp, err := newBranchRequestScope(mocked.TestContext(), prjReqScp, branchInput)
-	require.NoError(t, err)
-	return branchReqScp, mocked
+func NewMockedBranchRequestScope(tb testing.TB, ctx context.Context, branchInput key.BranchIDOrDefault, opts ...dependencies.MockedOption) (ProjectRequestScope, Mocked) {
+	tb.Helper()
+	prjReqScp, mock := NewMockedProjectRequestScope(tb, ctx, opts...)
+	branchReqScp, err := newBranchRequestScope(ctx, prjReqScp, branchInput)
+	require.NoError(tb, err)
+	return branchReqScp, mock
 }
 
 func newBranchRequestScope(ctx context.Context, prjReqScp ProjectRequestScope, branchInput key.BranchIDOrDefault) (*branchRequestScope, error) {

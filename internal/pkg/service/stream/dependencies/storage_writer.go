@@ -13,31 +13,21 @@ import (
 
 // storageWriterScope implements StorageWriterScope interface.
 type storageWriterScope struct {
-	storageWriterParentScopes
+	StorageScope
+	dependencies.DistributionScope
 	volumes *diskwriter.Volumes
 }
 
-type storageWriterParentScopes interface {
-	StorageScope
-	dependencies.DistributionScope
-}
-
-type storageWriterParentScopesImpl struct {
-	StorageScope
-	dependencies.DistributionScope
-}
-
 func NewStorageWriterScope(ctx context.Context, storageScp StorageScope, distScp dependencies.DistributionScope, cfg config.Config) (v StorageWriterScope, err error) {
-	return newStorageWriterScope(ctx, storageWriterParentScopesImpl{
-		StorageScope:      storageScp,
-		DistributionScope: distScp,
-	}, cfg)
+	return newStorageWriterScope(ctx, storageScp, distScp, cfg)
 }
 
-func newStorageWriterScope(ctx context.Context, parentScp storageWriterParentScopes, cfg config.Config) (v StorageWriterScope, err error) {
+func newStorageWriterScope(ctx context.Context, storageScp StorageScope, distScp dependencies.DistributionScope, cfg config.Config) (v StorageWriterScope, err error) {
 	d := &storageWriterScope{}
 
-	d.storageWriterParentScopes = parentScp
+	d.StorageScope = storageScp
+
+	d.DistributionScope = distScp
 
 	d.volumes, err = diskwriter.OpenVolumes(ctx, d, cfg.Storage.VolumesPath, cfg.Storage.Level.Local.Writer)
 	if err != nil {
@@ -47,23 +37,21 @@ func newStorageWriterScope(ctx context.Context, parentScp storageWriterParentSco
 	return d, nil
 }
 
-func NewMockedStorageWriterScope(t *testing.T, opts ...dependencies.MockedOption) (StorageWriterScope, Mocked) {
-	t.Helper()
-	return NewMockedStorageWriterScopeWithConfig(t, nil, opts...)
+func NewMockedStorageWriterScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (StorageWriterScope, Mocked) {
+	tb.Helper()
+	return NewMockedStorageWriterScopeWithConfig(tb, ctx, nil, opts...)
 }
 
-func NewMockedStorageWriterScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (StorageWriterScope, Mocked) {
+func NewMockedStorageWriterScopeWithConfig(tb testing.TB, ctx context.Context, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (StorageWriterScope, Mocked) {
 	tb.Helper()
-	storageScp, mock := NewMockedStorageScopeWithConfig(
-		tb,
-		modifyConfig,
-		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution("test-node")}, opts...)...,
-	)
-	d, err := newStorageWriterScope(mock.TestContext(), storageWriterParentScopesImpl{
-		StorageScope:      storageScp,
-		DistributionScope: mock,
-	}, mock.TestConfig())
+
+	storageScp, mock := NewMockedStorageScopeWithConfig(tb, ctx, modifyConfig, opts...)
+
+	distScp := dependencies.NewDistributionScope(mock.TestConfig().NodeID, mock.TestConfig().Distribution, storageScp)
+
+	d, err := newStorageWriterScope(ctx, storageScp, distScp, mock.TestConfig())
 	require.NoError(tb, err)
+
 	return d, mock
 }
 

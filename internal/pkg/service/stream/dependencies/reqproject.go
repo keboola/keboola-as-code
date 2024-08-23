@@ -28,9 +28,9 @@ func NewProjectRequestScope(ctx context.Context, pubReqScp PublicRequestScope, t
 	return newProjectRequestScope(pubReqScp, prjScp), nil
 }
 
-func NewMockedProjectRequestScope(t *testing.T, opts ...dependencies.MockedOption) (ProjectRequestScope, Mocked) {
-	t.Helper()
-	pubReqScp, mock := NewMockedPublicRequestScope(t, opts...)
+func NewMockedProjectRequestScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (ProjectRequestScope, Mocked) {
+	tb.Helper()
+	pubReqScp, mock := NewMockedPublicRequestScope(tb, ctx, opts...)
 	prjReqScp := newProjectRequestScope(pubReqScp, mock)
 	return prjReqScp, mock
 }

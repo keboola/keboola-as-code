@@ -1,11 +1,15 @@
 package dependencies
 
 import (
+	"context"
 	"net/url"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 )
 
@@ -13,36 +17,44 @@ import (
 type apiScope struct {
 	ServiceScope
 	dependencies.DistributedLockScope
+	dependencies.TaskScope
 	logger              log.Logger
 	apiPublicURL        *url.URL
 	httpSourcePublicURL *url.URL
 }
 
-func NewAPIScope(serviceScp ServiceScope, distLocksScp dependencies.DistributedLockScope, cfg config.Config) (v APIScope, err error) {
-	return newAPIScope(serviceScp, distLocksScp, cfg), nil
+func NewAPIScope(serviceScp ServiceScope, taskScp dependencies.TaskScope, distLocksScp dependencies.DistributedLockScope, cfg config.Config) (v APIScope, err error) {
+	return newAPIScope(serviceScp, taskScp, distLocksScp, cfg), nil
 }
 
-func NewMockedAPIScope(tb testing.TB, opts ...dependencies.MockedOption) (APIScope, Mocked) {
+func NewMockedAPIScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (APIScope, Mocked) {
 	tb.Helper()
-	return NewMockedAPIScopeWithConfig(tb, nil, opts...)
+	return NewMockedAPIScopeWithConfig(tb, ctx, nil, opts...)
 }
 
-func NewMockedAPIScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (APIScope, Mocked) {
+func NewMockedAPIScopeWithConfig(tb testing.TB, ctx context.Context, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (APIScope, Mocked) {
 	tb.Helper()
 
-	opts = append(opts, dependencies.WithEnabledTasks("test-node"), dependencies.WithEnabledDistributedLocks())
-	serviceScp, mock := NewMockedServiceScopeWithConfig(tb, modifyConfig, opts...)
+	svcScp, mock := NewMockedServiceScopeWithConfig(tb, ctx, modifyConfig, opts...)
 
-	apiScp := newAPIScope(serviceScp, mock, mock.TestConfig())
+	tasksScp, err := dependencies.NewTaskScope(ctx, mock.TestConfig().NodeID, svcScp)
+	require.NoError(tb, err)
+
+	distLockScope, err := dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), svcScp)
+	require.NoError(tb, err)
+
+	apiScp := newAPIScope(svcScp, tasksScp, distLockScope, mock.TestConfig())
 
 	mock.DebugLogger().Truncate()
 	return apiScp, mock
 }
 
-func newAPIScope(svcScope ServiceScope, distLocksScp dependencies.DistributedLockScope, cfg config.Config) APIScope {
+func newAPIScope(svcScope ServiceScope, tasksScp dependencies.TaskScope, distLocksScp dependencies.DistributedLockScope, cfg config.Config) APIScope {
 	d := &apiScope{}
 
 	d.ServiceScope = svcScope
+
+	d.TaskScope = tasksScp
 
 	d.DistributedLockScope = distLocksScp
 

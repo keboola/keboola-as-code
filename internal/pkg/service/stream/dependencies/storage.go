@@ -12,40 +12,33 @@ import (
 
 // storageScope implements StorageScope interface.
 type storageScope struct {
-	storageParentScopes
-}
-
-type storageParentScopes interface {
 	ServiceScope
 }
 
-type storageParentScopesImpl struct {
-	ServiceScope
+func NewStorageScope(ctx context.Context, svcScp ServiceScope, cfg config.Config) (v StorageScope, err error) {
+	return newStorageScope(ctx, svcScp, cfg)
 }
 
-func NewStorageScope(ctx context.Context, d storageParentScopes, cfg config.Config) (v StorageScope, err error) {
-	return newStorageScope(ctx, d, cfg)
-}
-
-func NewMockedStorageScope(t *testing.T, opts ...dependencies.MockedOption) (StorageScope, Mocked) {
-	t.Helper()
-	return NewMockedStorageScopeWithConfig(t, nil, opts...)
-}
-
-func NewMockedStorageScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (StorageScope, Mocked) {
+func NewMockedStorageScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (StorageScope, Mocked) {
 	tb.Helper()
-	svcScp, mock := NewMockedServiceScopeWithConfig(tb, modifyConfig, opts...)
-	d, err := newStorageScope(mock.TestContext(), storageParentScopesImpl{
-		ServiceScope: svcScp,
-	}, mock.TestConfig())
+	return NewMockedStorageScopeWithConfig(tb, ctx, nil, opts...)
+}
+
+func NewMockedStorageScopeWithConfig(tb testing.TB, ctx context.Context, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (StorageScope, Mocked) {
+	tb.Helper()
+
+	svcScp, mock := NewMockedServiceScopeWithConfig(tb, ctx, modifyConfig, opts...)
+
+	d, err := newStorageScope(ctx, svcScp, mock.TestConfig())
 	require.NoError(tb, err)
+
 	return d, mock
 }
 
-func newStorageScope(_ context.Context, parentScp storageParentScopes, _ config.Config) (v StorageScope, err error) {
+func newStorageScope(_ context.Context, svcScp ServiceScope, _ config.Config) (v StorageScope, err error) {
 	d := &storageScope{}
 
-	d.storageParentScopes = parentScp
+	d.ServiceScope = svcScp
 
 	return d, nil
 }
