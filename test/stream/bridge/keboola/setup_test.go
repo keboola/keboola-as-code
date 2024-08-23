@@ -75,7 +75,7 @@ func setup(t *testing.T, ctx context.Context, modifyConfig func(cfg *config.Conf
 
 	ts := testState{}
 	ts.logger = log.NewDebugLogger()
-	ts.logger.ConnectTo(testhelper.VerboseStdout())
+	ts.logger.ConnectInfoTo(testhelper.VerboseStdout())
 	ts.httpClient = &http.Client{}
 
 	ts.logSection(t, "setup")

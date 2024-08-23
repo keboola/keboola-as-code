@@ -31,6 +31,7 @@ type loggerWithZapCore interface {
 type DebugLogger interface {
 	Logger
 	ConnectTo(writer io.Writer)
+	ConnectInfoTo(writer io.Writer)
 	Truncate()
 	AllMessages() string
 	DebugMessages() string

@@ -50,13 +50,17 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 	defer ts.teardown(t, ctx)
 
 	// TODO: choose source scope
-	for i := range 10 {
+	for i := range 100 {
 		req, err := http.NewRequest(http.MethodPost, ts.sourceURL1, strings.NewReader(fmt.Sprintf("foo%d", i)))
 		require.NoError(t, err)
 		resp, err := ts.httpClient.Do(req)
-		assert.NoError(t, err)
-		assert.NoError(t, resp.Body.Close())
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+			assert.NoError(t, resp.Body.Close())
+		}
 	}
+
+	time.Sleep(10 * time.Second)
 	ts.logger.AssertJSONMessages(t, "")
 }
 
