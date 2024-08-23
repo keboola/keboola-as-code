@@ -38,7 +38,6 @@ func StartDiskWriterNode(tb testing.TB, logger log.DebugLogger, etcdCfg etcdclie
 				modifyConfig(cfg)
 			}
 			cfg.NodeID = "disk-writer"
-			cfg.Hostname = "localhost"
 			cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(tb))
 			cfg.Storage.VolumesPath = volumesPath
 		},

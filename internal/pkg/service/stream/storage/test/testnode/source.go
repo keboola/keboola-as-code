@@ -20,7 +20,6 @@ func StartSourceNode(tb testing.TB, logger log.DebugLogger, etcdCfg etcdclient.C
 				modifyConfig(cfg)
 			}
 			cfg.NodeID = "source"
-			cfg.Hostname = "localhost"
 		},
 		opts...,
 	)
