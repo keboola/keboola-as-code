@@ -85,6 +85,7 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	require.NoError(t, sinkResult.Err())
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"sink.router"}`)
+		logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.router"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Open pipeline, send some data
