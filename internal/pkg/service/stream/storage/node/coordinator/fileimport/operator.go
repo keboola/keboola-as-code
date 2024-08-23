@@ -111,7 +111,6 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 					IsEmpty: file.StagingStorage.IsEmpty,
 					File: plugin.File{
 						FileKey:  file.FileKey,
-						SinkKey:  file.SinkKey,
 						Provider: file.TargetStorage.Provider,
 					},
 				}

@@ -16,7 +16,7 @@ type Plugins struct {
 	localStorageSinks   []func(sinkType definition.SinkType) bool
 	sinkPipelineOpeners []pipeline.Opener
 	sliceUploader       map[stagingModel.FileProvider]uploadSliceFn
-	fileImport          map[targetModel.Provider]Importer
+	fileImport          map[targetModel.Provider]importFileFn
 }
 
 type fnList[T any] []T
@@ -28,7 +28,7 @@ func New(logger log.Logger) *Plugins {
 		collection:    c,
 		executor:      e,
 		sliceUploader: make(map[stagingModel.FileProvider]uploadSliceFn),
-		fileImport:    make(map[targetModel.Provider]Importer),
+		fileImport:    make(map[targetModel.Provider]importFileFn),
 	}
 }
 
