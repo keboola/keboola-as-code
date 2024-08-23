@@ -117,15 +117,13 @@ func (b *Bridge) deleteCredentialsOnFileDelete() {
 
 func (b *Bridge) importFile(ctx context.Context, file *plugin.File) error {
 	// Get authorization token
-	var token *keboolasink.Token
-	err := b.schema.Token().ForSink(file.SinkKey).GetOrNil(b.client).WithResultTo(&token).Do(ctx).Err()
+	token, err := b.schema.Token().ForSink(file.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
 		return err
 	}
 
-	// Get file upload credentials
-	var keboolaFile keboolasink.File
-	err = b.schema.File().ForFile(file.FileKey).GetOrErr(b.client).WithResultTo(&keboolaFile).Do(ctx).Err()
+	// Get file details
+	keboolaFile, err := b.schema.File().ForFile(file.FileKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
 		return err
 	}

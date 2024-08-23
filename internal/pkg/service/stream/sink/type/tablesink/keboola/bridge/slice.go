@@ -25,6 +25,7 @@ func (b *Bridge) uploadSlice(
 		return err
 	}
 
+	// Get authorization token
 	token, err := b.schema.Token().ForSink(slice.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
 		return err
@@ -46,12 +47,13 @@ func (b *Bridge) uploadSlice(
 		}
 	}()
 
-	credentials, err := b.schema.File().ForFile(slice.FileKey).GetOrEmpty(b.client).Do(ctx).ResultOrErr()
+	// Get file details
+	keboolaFile, err := b.schema.File().ForFile(slice.FileKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
 		return err
 	}
 
-	uploader, err := keboola.NewUploadSliceWriter(ctx, &credentials.FileUploadCredentials, slice.String())
+	uploader, err := keboola.NewUploadSliceWriter(ctx, &keboolaFile.FileUploadCredentials, slice.String())
 	if err != nil {
 		return err
 	}
@@ -83,7 +85,7 @@ func (b *Bridge) uploadSlice(
 	}
 
 	uploadedSlices = append(uploadedSlices, slice.StagingStorage.Path)
-	_, err = keboola.UploadSlicedFileManifest(ctx, &credentials.FileUploadCredentials, uploadedSlices)
+	_, err = keboola.UploadSlicedFileManifest(ctx, &keboolaFile.FileUploadCredentials, uploadedSlices)
 	if err != nil {
 		return err
 	}
