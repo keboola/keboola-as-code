@@ -31,6 +31,7 @@ func NewSlice(path string, f stagingModel.File) (stagingModel.Slice, error) {
 
 	return stagingModel.Slice{
 		Path:        path,
+		Provider:    f.Provider,
 		Compression: f.Compression.Simplify(),
 		Upload:      f.Upload,
 	}, nil

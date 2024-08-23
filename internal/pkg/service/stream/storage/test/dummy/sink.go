@@ -10,11 +10,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
+	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
 const (
+	FileProvider             = stagingModel.FileProvider("test")
 	SinkType                 = definition.SinkType("test")
 	SinkTypeWithLocalStorage = definition.SinkType("testWithLocalStorage")
 )
@@ -28,6 +32,7 @@ type SinkController struct {
 	PipelineWriteError               error
 	PipelineCloseError               error
 	ImportError                      error
+	UploadError                      error
 }
 
 type Pipeline struct {
@@ -89,6 +94,12 @@ func (c *SinkController) RegisterDummySinkTypes(plugins *plugin.Plugins, control
 	plugins.RegisterFileImporter(targetModel.Provider("test"), func(ctx context.Context, file *plugin.File) error {
 		return c.ImportError
 	})
+	// Register dummy sink with local storage support for tests
+	plugins.RegisterSliceUploader(
+		FileProvider,
+		func(ctx context.Context, volume *diskreader.Volume, slice *model.Slice, stats statistics.Value) error {
+			return c.UploadError
+		})
 }
 
 func (c *SinkController) OpenPipeline() (pipeline.Pipeline, error) {

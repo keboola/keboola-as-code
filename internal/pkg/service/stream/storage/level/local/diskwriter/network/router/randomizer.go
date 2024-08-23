@@ -24,7 +24,7 @@ type TestRandomizer struct {
 }
 
 func NewDefaultRandomizer() Randomizer {
-	return &DefaultRandomizer{rand: rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 123))}
+	return &DefaultRandomizer{rand: rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 123))} //nolint: gosec // weak random number generator
 }
 
 func NewTestRandomizer() *TestRandomizer {

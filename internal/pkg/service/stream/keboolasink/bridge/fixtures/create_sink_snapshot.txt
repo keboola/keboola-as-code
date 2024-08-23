@@ -172,6 +172,7 @@ storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-
   },
   "staging": {
     "path": "2000-01-01T01:00:00.000Z_my-volume-1.gz",
+    "provider": "keboola",
     "compression": {
       "type": "gzip",
       "gzip": {

@@ -48,7 +48,7 @@ func TestSliceRotation(t *testing.T) {
 	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, func(cfg *config.Config) {
 		cfg.Storage.Level.Staging.Upload.Trigger = uploadTrigger
-		cfg.Storage.Level.Staging.Operator.CheckInterval = duration.From(conditionsCheckInterval)
+		cfg.Storage.Level.Staging.Operator.SliceRotationCheckInterval = duration.From(conditionsCheckInterval)
 	}, commonDeps.WithClock(clk))
 	logger := mock.DebugLogger()
 	client := mock.TestEtcdClient()

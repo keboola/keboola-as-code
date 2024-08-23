@@ -26,9 +26,10 @@ func TestConfig_Validation(t *testing.T) {
 		{
 			Name: "empty",
 			ExpectedError: `
-- "operator.checkInterval" is a required field
+- "operator.sliceRotationCheckInterval" is a required field
 - "operator.sliceRotationTimeout" is a required field
 - "operator.sliceCloseTimeout" is a required field
+- "operator.sliceUploadCheckInterval" is a required field
 - "operator.sliceUploadTimeout" is a required field
 - "upload.trigger.count" is a required field
 - "upload.trigger.size" is a required field

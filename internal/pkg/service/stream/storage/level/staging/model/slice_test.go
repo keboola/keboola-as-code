@@ -12,6 +12,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+const (
+	testStagingFileProvider = FileProvider("keboola")
+)
+
 func TestSlice_Validation(t *testing.T) {
 	t.Parallel()
 
@@ -24,6 +28,7 @@ func TestSlice_Validation(t *testing.T) {
 			Name:          "empty",
 			ExpectedError: `"path" is a required field`,
 			Value: Slice{
+				Provider:    testStagingFileProvider,
 				Compression: compression.NewConfig(),
 				Upload:      staging.NewConfig().Upload,
 			},
@@ -32,6 +37,7 @@ func TestSlice_Validation(t *testing.T) {
 			Name: "ok",
 			Value: Slice{
 				Path:        "my-slice.csv.gzip",
+				Provider:    testStagingFileProvider,
 				Compression: compression.NewConfig(),
 				Upload:      staging.NewConfig().Upload,
 			},

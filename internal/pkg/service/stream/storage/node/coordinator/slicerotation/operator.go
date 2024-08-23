@@ -165,7 +165,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 	// Start conditions check ticker
 	{
 		wg.Add(1)
-		ticker := d.Clock().Ticker(o.config.CheckInterval.Duration())
+		ticker := d.Clock().Ticker(o.config.SliceRotationCheckInterval.Duration())
 
 		go func() {
 			defer wg.Done()
