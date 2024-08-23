@@ -8,7 +8,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -20,7 +19,9 @@ import (
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type operator struct {
@@ -191,6 +192,11 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 }
 
 func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, data *sliceData) {
+	o.logger.Info(ctx, "uploading slice")
+
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
+	defer cancel()
+
 	var err error
 	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
 	if !data.Slice.LocalStorage.IsEmpty {
@@ -198,57 +204,43 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 		var stats statistics.Aggregated
 		stats, err = o.statistics.SliceStats(ctx, data.SliceKey)
 		if err != nil {
-			o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
-			return
-		}
-
-		o.logger.Infof(ctx, `uploading slice %q`, data.SliceKey)
-		// Use plugin system to upload slice to staging storage. Set as an in-progress upload
-		uploadCtx, uploadCancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
-		defer uploadCancel()
-		err = o.plugins.UploadSlice(uploadCtx, volume, &data.Slice, stats.Local)
-		if err != nil {
-			// Upload was not successful, next check will launch it again
-			o.logger.Errorf(ctx, "cannot upload slice to staging: %v", err)
-
-			// Increment retry delay
-			err = o.storage.Slice().IncrementRetryAttempt(data.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+			err = errors.PrefixError(err, "cannot get slice statistics")
+		} else {
+			// Use plugin system to upload slice to staging storage. Set as an in-progress upload
+			err = o.plugins.UploadSlice(ctx, volume, &data.Slice, stats.Local)
 			if err != nil {
-				o.logger.Errorf(ctx, "cannot increment slice retry: %v", err)
-				return
+				err = errors.PrefixError(err, "error when waiting for slice upload")
 			}
-
-			data.Processed = true
-			return
 		}
 	}
 
-	err = o.changeSliceState(ctx, data.SliceKey)
-	if err != nil {
-		return
-	}
-
-	o.logger.Infof(ctx, `slice was uploaded %q`, data.SliceKey)
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	data.Processed = true
-}
-
-func (o *operator) changeSliceState(ctx context.Context, sliceKey model.SliceKey) error {
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
-	err := o.storage.Slice().SwitchToUploaded(sliceKey, o.clock.Now()).Do(dbCtx).Err()
-	if err != nil {
-		o.logger.Errorf(dbCtx, "cannot switch slice to the uploaded state: %v", err)
-
-		// Increment retry delay
-		err = o.storage.Slice().IncrementRetryAttempt(sliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+	// If there is no error, switch slice to the uploaded state
+	if err == nil {
+		err = o.storage.Slice().SwitchToUploaded(data.SliceKey, o.clock.Now()).Do(dbCtx).Err()
 		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment slice retry: %v", err)
-			return err
+			err = errors.PrefixError(err, "cannot switch slice to the uploaded state")
 		}
 	}
-	return nil
+
+	// If there is an error, increment retry delay
+	if err != nil {
+		o.logger.Error(ctx, err.Error())
+		err = o.storage.Slice().IncrementRetryAttempt(data.SliceKey, o.clock.Now(), err.Error()).Do(dbCtx).Err()
+		if err != nil {
+			o.logger.Errorf(ctx, "cannot increment file import retry: %s", err)
+			return
+		}
+	}
+
+	// Prevents other processing, if the entity has been modified.
+	// It takes a while to watch stream send the updated state back.
+	data.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "successfully uploaded slice")
+	}
 }
