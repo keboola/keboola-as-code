@@ -182,7 +182,6 @@ func (v *Volume) OpenReader(sliceKey model.SliceKey, slice localModel.Slice, enc
 		stagingCompression,
 		v.readerEvents,
 	)
-
 	if err != nil {
 		return nil, err
 	}

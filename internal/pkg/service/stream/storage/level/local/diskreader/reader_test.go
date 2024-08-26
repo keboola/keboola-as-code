@@ -41,9 +41,11 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 	tc.AssertLogs(`
 {"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","project.id":"123","branch.id":"456","source.id":"my-source","sink.id":"my-sink","file.id":"2000-01-01T19:00:00.000Z","slice.id":"2000-01-01T20:00:00.000Z"}
 {"level":"debug","message":"closing chain"}
 {"level":"debug","message":"chain closed"}
+`)
+	tc.AssertLogs(`
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","project.id":"123","branch.id":"456","source.id":"my-source","sink.id":"my-sink","file.id":"2000-01-01T19:00:00.000Z","slice.id":"2000-01-01T20:00:00.000Z"}
 `)
 }
 
@@ -107,10 +109,12 @@ func TestVolume_NewReaderFor_MultipleFilesSingleVolume(t *testing.T) {
 	tc.AssertLogs(`
 {"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
-{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
 {"level":"debug","message":"closing chain"}
 {"level":"debug","message":"chain closed"}
+`)
+	tc.AssertLogs(`
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
 `)
 }
 
@@ -323,25 +327,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 	// Read all
 	var buf bytes.Buffer
 	_, err = r.WriteTo(&buf)
-	require.NoError(t, err)
-
-	// Decode
-	content := buf.Bytes()
-	if tc.StagingCompression.Type != compression.TypeNone {
-		decoder, err := compressionReader.New(&buf, tc.StagingCompression)
-		require.NoError(t, err)
-		content, err = io.ReadAll(decoder)
-		require.NoError(t, err)
-	}
-
-	// Check content
-	assert.Equal(t, []byte("foo bar"), content)
-
-	// Close
-	err = r.Close(context.Background())
-	if assert.Error(t, err) {
-		assert.Equal(t, "chain close error: cannot close file: some close error", err.Error())
-	}
+	assert.Equal(t, closeError, err)
 }
 
 // readerTestCase is a helper to open disk reader in tests.

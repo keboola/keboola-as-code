@@ -80,22 +80,15 @@ func newReader(
 	}
 
 	reader, writer := io.Pipe()
-	var wg sync.WaitGroup
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		for _, filePath := range matched {
-			openFileAndWrite(ctx, r.logger, &wg, opener, filePath, writer)
-		}
-
-		err := writer.Close()
-		if err != nil {
-			logger.Errorf(ctx, "%s", err)
+			openFileAndWrite(ctx, r.logger, opener, filePath, writer)
 		}
 	}()
 
 	// Init readers chain
 	r.chain = readchain.New(r.logger, reader)
+	r.chain.AppendCloser(writer)
 
 	// Close resources on error
 	defer func() {
@@ -148,7 +141,6 @@ func newReader(
 		return nil, err
 	}
 
-	wg.Wait()
 	r.logger.Debug(ctx, "opened disk reader")
 	return r, nil
 }
@@ -217,13 +209,14 @@ func (r *reader) isClosed() bool {
 	}
 }
 
-func openFileAndWrite(ctx context.Context, logger log.Logger, wg *sync.WaitGroup, opener FileOpener, filePath string, writer *io.PipeWriter) {
-	wg.Add(1)
+func openFileAndWrite(ctx context.Context, logger log.Logger, opener FileOpener, filePath string, writer *io.PipeWriter) {
 	logger = logger.With(attribute.String("file.path", filePath))
 	file, err := opener.OpenFile(filePath)
 	defer func() {
-		file.Close()
-		wg.Done()
+		err = file.Close()
+		if err != nil {
+			writer.CloseWithError(err)
+		}
 	}()
 	if err != nil {
 		logger.Errorf(ctx, `cannot open file "%s": %s`, filePath, err)
