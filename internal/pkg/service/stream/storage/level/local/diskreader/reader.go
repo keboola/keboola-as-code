@@ -8,6 +8,7 @@ package diskreader
 import (
 	"context"
 	"io"
+	"path/filepath"
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -51,9 +52,10 @@ func newReader(
 	ctx context.Context,
 	logger log.Logger,
 	sliceKey model.SliceKey,
+	opener FileOpener,
+	path string,
 	localCompression compression.Config,
 	targetCompression compression.Config,
-	file readchain.File,
 	readerEvents *events.Events[Reader],
 ) (out Reader, err error) {
 	r := &reader{
@@ -67,8 +69,33 @@ func newReader(
 	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", sliceKey.String()))
 	r.logger.Debug(ctx, "opening disk reader")
 
+	matched, err := filepath.Glob(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(matched) == 0 {
+		err = errors.New("no matched path to read")
+		return nil, err
+	}
+
+	reader, writer := io.Pipe()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for _, filePath := range matched {
+			openFileAndWrite(ctx, r.logger, &wg, opener, filePath, writer)
+		}
+
+		err := writer.Close()
+		if err != nil {
+			logger.Errorf(ctx, "%s", err)
+		}
+	}()
+
 	// Init readers chain
-	r.chain = readchain.New(r.logger, file)
+	r.chain = readchain.New(r.logger, reader)
 
 	// Close resources on error
 	defer func() {
@@ -121,6 +148,7 @@ func newReader(
 		return nil, err
 	}
 
+	wg.Wait()
 	r.logger.Debug(ctx, "opened disk reader")
 	return r, nil
 }
@@ -186,5 +214,34 @@ func (r *reader) isClosed() bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func openFileAndWrite(ctx context.Context, logger log.Logger, wg *sync.WaitGroup, opener FileOpener, filePath string, writer *io.PipeWriter) {
+	wg.Add(1)
+	logger = logger.With(attribute.String("file.path", filePath))
+	file, err := opener.OpenFile(filePath)
+	defer func() {
+		file.Close()
+		wg.Done()
+	}()
+	if err != nil {
+		logger.Errorf(ctx, `cannot open file "%s": %s`, filePath, err)
+		err = writer.CloseWithError(err)
+		if err != nil {
+			logger.Errorf(ctx, `%s`, err)
+		}
+
+		return
+	}
+
+	logger.Debug(ctx, "opened file")
+	_, err = io.Copy(writer, file)
+	if err != nil {
+		logger.Errorf(ctx, `cannot copy to writer "%s": %s`, filePath, err)
+		err = writer.CloseWithError(err)
+		if err != nil {
+			logger.Errorf(ctx, `%s`, err)
+		}
 	}
 }

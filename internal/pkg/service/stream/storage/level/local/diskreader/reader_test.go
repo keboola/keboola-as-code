@@ -87,6 +87,33 @@ func TestVolume_NewReaderFor_ClosedVolume(t *testing.T) {
 	}
 }
 
+// TestVolume_NewReaderFor_MultipleFilesVolume tests that a new reader works on multiple files.
+func TestVolume_NewReaderFor_MultipleFilesSingleVolume(t *testing.T) {
+	t.Parallel()
+	tc := newReaderTestCase(t)
+	tc.Slice = test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z")
+	tc.Files = []string{"my-node1", "my-node2"}
+
+	r, err := tc.NewReader(false)
+	require.NoError(t, err)
+	assert.Len(t, tc.Volume.Readers(), 1)
+
+	assert.Equal(t, tc.Slice.SliceKey, r.SliceKey())
+
+	assert.NoError(t, r.Close(context.Background()))
+	assert.Len(t, tc.Volume.Readers(), 0)
+
+	// Check logs
+	tc.AssertLogs(`
+{"level":"info","message":"opening volume"}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
+{"level":"debug","message":"closing chain"}
+{"level":"debug","message":"chain closed"}
+`)
+}
+
 // TestVolume_NewReaderFor_Compression tests multiple local and staging compression combinations.
 func TestVolume_NewReaderFor_Compression(t *testing.T) {
 	t.Parallel()
@@ -323,6 +350,7 @@ type readerTestCase struct {
 	Volume    *diskreader.Volume
 	Slice     *model.Slice
 	SliceData []byte
+	Files     []string
 }
 
 func newReaderTestCase(tb testing.TB) *readerTestCase {
@@ -330,6 +358,7 @@ func newReaderTestCase(tb testing.TB) *readerTestCase {
 	tc := &readerTestCase{}
 	tc.volumeTestCase = newVolumeTestCase(tb)
 	tc.Slice = test.NewSlice()
+	tc.Files = []string{"my-node"}
 	return tc
 }
 
@@ -363,7 +392,9 @@ func (tc *readerTestCase) NewReader(disableValidation bool) (diskreader.Reader, 
 
 	// Write slice data
 	assert.NoError(tc.TB, os.MkdirAll(tc.Slice.LocalStorage.DirName(tc.VolumePath), 0o750))
-	assert.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, "my-node"), tc.SliceData, 0o640))
+	for _, file := range tc.Files {
+		assert.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, file), tc.SliceData, 0o640))
+	}
 
 	r, err := tc.Volume.OpenReader(tc.Slice.SliceKey, tc.Slice.LocalStorage, tc.Slice.Encoding.Compression, tc.Slice.StagingStorage.Compression)
 	if err != nil {

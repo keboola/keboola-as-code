@@ -21,6 +21,7 @@ import (
 	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 // TestOpenVolume_NonExistentPath tests that an error should occur if there is no access to the volume directory.
@@ -295,6 +296,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	})
 
 	logger := log.NewDebugLogger()
+	logger.ConnectTo(testhelper.VerboseStdout())
 	tmpDir := tb.TempDir()
 
 	return &volumeTestCase{
