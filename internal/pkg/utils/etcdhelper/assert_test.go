@@ -306,13 +306,26 @@ func TestAssertKeys_Difference(t *testing.T) {
 	// Expected error
 	wildcards.Assert(t, strings.TrimSpace(`
 %A
-	            	Diff:
-	            	--- Expected
-	            	+++ Actual
-	            	@@ -2,3 +2,3 @@
-	            	  (string) (len=4) "key1",
-	            	- (string) (len=4) "key3"
-	            	+ (string) (len=4) "key2"
-	            	 }
+	Error:      	These keys are in expected but not actual ectd state:
+	            	[001] key3
+
+%A
+	Error:      	These keys are in actual but not expected ectd state:
+	            	[001] key2
 `), strings.TrimSpace(mT.buf.String()))
+}
+
+func TestAssertKeys_Wildcard(t *testing.T) {
+	t.Parallel()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	// Put keys
+	ctx := context.Background()
+	_, err := client.Put(ctx, "key1", "value1")
+	assert.NoError(t, err)
+	_, err = client.Put(ctx, "key2", "value2")
+	assert.NoError(t, err)
+
+	// No error is expected
+	etcdhelper.AssertKeys(t, client, []string{"key%d", "key%d"})
 }
