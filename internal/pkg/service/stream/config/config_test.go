@@ -120,10 +120,8 @@ source:
 sink:
     table:
         keboola:
-            # Timeout to perform upload send event of slice
-            uploadEventSendTimeout: 30s
-            # Timeout to perform import send event of file
-            importEventSendTimeout: 30s
+            # Timeout to perform upload send event of slice or import event of file
+            eventSendTimeout: 30s
 storage:
     # Mounted volumes path, each volume is in "{type}/{label}" subdir. Validation rules: required
     volumesPath: ""
