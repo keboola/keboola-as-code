@@ -257,8 +257,11 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).
 		WithFilter(func(v model.File) bool {
+			if lastReset.ResetAt == nil {
+				return true
+			}
 			// Exclude files newer than last reset.
-			return v.OpenedAt().After(lastReset.LastRecordAt)
+			return v.OpenedAt().After(*lastReset.ResetAt)
 		}).
 		Do(ctx).
 		ForEachValue(func(value model.File, header *iterator.Header) error {
