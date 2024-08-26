@@ -63,7 +63,7 @@ func NewMockedAPIScope(tb testing.TB, ctx context.Context, cfg config.Config, op
 	p.DistributedLockScope, err = dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), mock)
 	require.NoError(tb, err)
 
-	p.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, mock)
+	p.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, exceptionIDPrefix, mock)
 	require.NoError(tb, err)
 
 	apiScp, err := newAPIScope(ctx, p, cfg)

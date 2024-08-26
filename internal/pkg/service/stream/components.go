@@ -23,6 +23,7 @@ const (
 	ComponentStorageCoordinator Component = "storage-coordinator"
 	ComponentStorageWriter      Component = "storage-writer"
 	ComponentStorageReader      Component = "storage-reader"
+	ExceptionIDPrefix                     = "keboola-stream-"
 )
 
 type Components []Component
@@ -38,7 +39,7 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 	// Common task scope
 	var taskScp commonDeps.TaskScope
 	if componentsMap[ComponentAPI] {
-		taskScp, err = commonDeps.NewTaskScope(ctx, cfg.NodeID, serviceScp)
+		taskScp, err = commonDeps.NewTaskScope(ctx, cfg.NodeID, ExceptionIDPrefix, serviceScp)
 		if err != nil {
 			return err
 		}
