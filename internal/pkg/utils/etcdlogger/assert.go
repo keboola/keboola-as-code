@@ -48,8 +48,8 @@ func AssertFromFile(t assert.TestingT, path, actual string) bool {
 	// Dump actual state to the .out dir
 	outDir := filepath.Join(filepath.Dir(path), ".out")              //nolint:forbidigo // no virtual FS
 	filePath := filepath.Join(outDir, filepath.Base(path)+".actual") //nolint:forbidigo // no virtual FS
-	assert.NoError(t, os.MkdirAll(outDir, 0o750))                    //nolint:forbidigo // no virtual FS
-	assert.NoError(t, os.WriteFile(filePath, []byte(actual), 0o600)) //nolint:forbidigo // no virtual FS
+	assert.NoError(t, os.MkdirAll(outDir, 0o755))                    //nolint:forbidigo // no virtual FS
+	assert.NoError(t, os.WriteFile(filePath, []byte(actual), 0o644)) //nolint:forbidigo // no virtual FS
 
 	return result
 }
