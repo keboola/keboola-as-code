@@ -31,18 +31,22 @@ func (b *Bridge) uploadSlice(
 		return err
 	}
 
+	// Error when sending the event is not a fatal error
 	defer func() {
-		err := reader.Close(ctx)
-		if err != nil {
-			b.logger.Warnf(ctx, "unable to close reader: %v", err)
-			return
-		}
-
 		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
 		err = b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), &err, slice.SliceKey, stats)
 		cancel()
 		if err != nil {
-			b.logger.Warnf(ctx, "unable to send slice upload event: %v", err)
+			b.logger.Errorf(ctx, "unable to send slice upload event: %v", err)
+			return
+		}
+	}()
+
+	// Error when closing the reader is not a fatal error
+	defer func() {
+		err := reader.Close(ctx)
+		if err != nil {
+			b.logger.Warnf(ctx, "unable to close reader: %v", err)
 			return
 		}
 	}()
