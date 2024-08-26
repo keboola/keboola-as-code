@@ -3,7 +3,6 @@ package fileimport
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -224,16 +224,11 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	defer cancel()
 
 	// Lock all file operations in the sink
-	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
-	if err := lock.Lock(ctx); err != nil {
-		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+	lock, unlocker := coordinator.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
+	if unlocker == nil {
 		return
 	}
-	defer func() {
-		if err := lock.Unlock(ctx); err != nil {
-			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
-		}
-	}()
+	defer unlocker()
 
 	var err error
 	if !file.IsEmpty {

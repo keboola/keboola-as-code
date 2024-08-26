@@ -3,7 +3,6 @@ package filerotation
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -298,16 +298,11 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	o.logger.Infof(ctx, "rotating file for import: %s", cause)
 
 	// Lock all file operations in the sink
-	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
-	if err := lock.Lock(ctx); err != nil {
-		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+	lock, unlocker := coordinator.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
+	if unlocker == nil {
 		return
 	}
-	defer func() {
-		if err := lock.Unlock(ctx); err != nil {
-			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
-		}
-	}()
+	defer unlocker()
 
 	// Rotate file
 	err = o.storage.File().Rotate(file.FileKey.SinkKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
@@ -350,16 +345,11 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	o.lock.RUnlock()
 
 	// Lock all file operations in the sink
-	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
-	if err := lock.Lock(ctx); err != nil {
-		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+	lock, unlocker := coordinator.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
+	if unlocker == nil {
 		return
 	}
-	defer func() {
-		if err := lock.Unlock(ctx); err != nil {
-			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
-		}
-	}()
+	defer unlocker()
 
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
