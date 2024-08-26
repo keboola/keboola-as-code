@@ -60,7 +60,7 @@ func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoRe
 		// Get statistics of the object
 		ops.Read(func(_ context.Context) op.Op {
 			objectSum = statistics.Value{}
-			return sumStatsOp(objectPfx.GetAll(r.client), &objectSum, &objectReset)
+			return sumStatsOp(r.clock.Now(), objectPfx.GetAll(r.client), &objectSum, &objectReset)
 		})
 
 		// Save update sum

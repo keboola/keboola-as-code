@@ -36,8 +36,8 @@ type Value struct {
 	// The value is usually same as the CompressedSize,
 	// if the type of compression did not change during the upload.
 	StagingSize datasize.ByteSize `json:"stagingSize,omitempty"`
-	// Reset is true if the value is considered negative.
-	Reset bool `json:"reset,omitempty"`
+	// ResetAt is set if the value is considered negative and marks the time of the reset.
+	ResetAt *utctime.UTCTime `json:"resetAt,omitempty"`
 }
 
 type PerSlice struct {
@@ -72,8 +72,8 @@ type Aggregated struct {
 // Note that the value can't be negative, in case of an underflow the fields will be 0.
 func (v Value) Add(v2 Value) Value {
 	r := v
-	if r.Reset != v2.Reset {
-		if r.Reset {
+	if (r.ResetAt == nil) != (v2.ResetAt == nil) {
+		if r.ResetAt != nil {
 			return v2.Add(r)
 		}
 		r = r.sub(v2)

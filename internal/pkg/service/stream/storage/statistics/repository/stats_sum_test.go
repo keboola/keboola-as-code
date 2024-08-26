@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -31,7 +32,7 @@ func TestSumStats(t *testing.T) {
 
 	// Reset value should be subtracted but only at the very end.
 	assert.NoError(t, pfx.Key("1").Put(client, statistics.Value{
-		Reset:            true,
+		ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-15T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-25T00:00:00.000Z"),
@@ -67,8 +68,11 @@ func TestSumStats(t *testing.T) {
 		StagingSize:      1,
 	}).Do(ctx).Err())
 
+	now, err := time.Parse(time.RFC3339, "2000-02-01T00:00:00.000Z")
+	assert.NoError(t, err)
+
 	// Sum
-	sum, err := repository.SumStats(ctx, pfx.GetAll(client))
+	sum, err := repository.SumStats(ctx, now, pfx.GetAll(client))
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Value{
 		SlicesCount:      2,

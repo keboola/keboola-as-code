@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
@@ -127,19 +128,19 @@ func TestValue_Add(t *testing.T) {
 		{
 			name: "empty reset values",
 			value: statistics.Value{
-				Reset: true,
+				ResetAt: ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 			},
 			addition: statistics.Value{
-				Reset: true,
+				ResetAt: ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 			},
 			expected: statistics.Value{
-				Reset: true,
+				ResetAt: ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 			},
 		},
 		{
 			name: "increment reset values",
 			value: statistics.Value{
-				Reset:            true,
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     100,
 				SlicesCount:      200,
 				UncompressedSize: 2000,
@@ -147,7 +148,7 @@ func TestValue_Add(t *testing.T) {
 				StagingSize:      1000,
 			},
 			addition: statistics.Value{
-				Reset:            true,
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     1,
 				SlicesCount:      1,
 				UncompressedSize: 1,
@@ -155,7 +156,7 @@ func TestValue_Add(t *testing.T) {
 				StagingSize:      1,
 			},
 			expected: statistics.Value{
-				Reset:            true,
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     101,
 				SlicesCount:      201,
 				UncompressedSize: 2001,
@@ -173,7 +174,7 @@ func TestValue_Add(t *testing.T) {
 				StagingSize:      1000,
 			},
 			addition: statistics.Value{
-				Reset:            true,
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     1,
 				SlicesCount:      1,
 				UncompressedSize: 1,
@@ -191,7 +192,7 @@ func TestValue_Add(t *testing.T) {
 		{
 			name: "reset value, add normal value",
 			value: statistics.Value{
-				Reset:            true,
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     1,
 				SlicesCount:      1,
 				UncompressedSize: 1,
@@ -223,7 +224,7 @@ func TestValue_Add(t *testing.T) {
 				StagingSize:      1,
 			},
 			addition: statistics.Value{
-				Reset:            true,
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     100,
 				SlicesCount:      200,
 				UncompressedSize: 2000,
@@ -241,7 +242,7 @@ func TestValue_Add(t *testing.T) {
 		{
 			name: "reset value, add normal value, underflow",
 			value: statistics.Value{
-				Reset:            true,
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     100,
 				SlicesCount:      200,
 				UncompressedSize: 2000,

@@ -73,7 +73,7 @@ func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Ag
 
 		// Sum
 		txn.Then(pfx.GetAll(r.client).ForEach(func(v statistics.Value, header *iterator.Header) error {
-			if !v.Reset {
+			if v.ResetAt == nil {
 				aggregate.Aggregate(l, v, &result)
 			}
 			return nil
@@ -84,7 +84,7 @@ func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Ag
 	pfx := r.schema.InLevel(model.LevelTarget).InObject(objectKey).Reset()
 
 	txn.Then(pfx.GetOrNil(r.client).WithOnResult(func(v *statistics.Value) {
-		if v != nil && v.Reset {
+		if v != nil && v.ResetAt != nil {
 			aggregate.Aggregate(model.LevelTarget, *v, &result)
 		}
 	}))

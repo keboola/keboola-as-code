@@ -23,7 +23,7 @@ storage/stats/target/123/456/my-source/my-sink/_reset
   "uncompressedSize": "112B",
   "compressedSize": "112B",
   "stagingSize": "112B",
-  "reset": true
+  "resetAt": "2000-01-01T14:00:00.000Z"
 }
 >>>>>
 
