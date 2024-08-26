@@ -36,6 +36,7 @@ type Session struct {
 	sessionBuilder SessionBuilder
 	logger         log.Logger
 	client         *etcd.Client
+	lessor         etcd.Lease
 	backoff        *backoff.ExponentialBackOff
 
 	mutexStore *mutexStore
@@ -114,6 +115,7 @@ func (b SessionBuilder) Start(ctx context.Context, wg *sync.WaitGroup, logger lo
 		sessionBuilder: b,
 		logger:         logger.WithComponent("etcd.session"),
 		client:         client,
+		lessor:         etcd.NewLease(client),
 		backoff:        newSessionBackoff(),
 		lock:           &sync.Mutex{},
 		created:        make(chan struct{}),
@@ -241,7 +243,7 @@ func (s *Session) newSession(ctx context.Context) (_ *concurrency.Session, err e
 	// The concurrency.NewSession bellow can do it by itself, but we need a separate context with a timeout here.
 	grantCtx, grantCancel := context.WithTimeout(ctx, s.sessionBuilder.grantTimeout)
 	defer grantCancel()
-	grantResp, err := s.client.Grant(grantCtx, int64(s.sessionBuilder.ttlSeconds))
+	grantResp, err := s.lessor.Grant(grantCtx, int64(s.sessionBuilder.ttlSeconds))
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +263,7 @@ func (s *Session) newSession(ctx context.Context) (_ *concurrency.Session, err e
 
 	// Check connection, wait for the first keep-alive.
 	// It prevents weird warnings if a test ends before the first keep alive is completed.
-	if _, err = session.Client().KeepAliveOnce(ctx, session.Lease()); err != nil {
+	if _, err = s.lessor.KeepAliveOnce(ctx, session.Lease()); err != nil {
 		return nil, err
 	}
 
@@ -298,6 +300,13 @@ func (s *Session) closeSession(ctx context.Context, reason string) error {
 	}
 	if err := session.Close(); err != nil {
 		err = errors.PrefixError(err, "cannot close etcd session")
+		s.logger.Warnf(ctx, err.Error())
+		return err
+	}
+
+	// Close lease client, keep alive, ...
+	if err := s.lessor.Close(); err != nil {
+		err = errors.PrefixError(err, "cannot close etcd session lessor")
 		s.logger.Warnf(ctx, err.Error())
 		return err
 	}
