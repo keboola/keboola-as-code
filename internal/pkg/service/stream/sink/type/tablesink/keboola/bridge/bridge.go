@@ -9,8 +9,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	keboolasink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/schema"
 	stagingModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/model"
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -31,7 +32,7 @@ const (
 
 type Bridge struct {
 	logger            log.Logger
-	config            Config
+	config            keboolasink.Config
 	client            etcd.KV
 	schema            schema.Schema
 	plugins           *plugin.Plugins
@@ -54,7 +55,7 @@ type dependencies interface {
 	StorageRepository() *storageRepo.Repository
 }
 
-func New(d dependencies, apiProvider apiProvider, config Config) *Bridge {
+func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Bridge {
 	b := &Bridge{
 		logger:            d.Logger().WithComponent("keboola.bridge"),
 		config:            config,

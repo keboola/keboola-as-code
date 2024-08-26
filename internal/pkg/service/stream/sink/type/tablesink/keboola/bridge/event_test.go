@@ -17,7 +17,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
+	keboolasink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -33,7 +34,7 @@ func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	registerOkResponder(t, transport, &body)
 
-	cfg := bridge.NewConfig()
+	cfg := keboolasink.NewConfig()
 	// Send event
 	b := bridge.New(d, nil, cfg)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
@@ -66,7 +67,7 @@ func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	registerOkResponder(t, transport, &body)
 
-	cfg := bridge.NewConfig()
+	cfg := keboolasink.NewConfig()
 	// Send event
 	b := bridge.New(d, nil, cfg)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
@@ -97,7 +98,7 @@ func TestSender_SendSliceUploadEvent_HTTPError(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	registerErrorResponder(t, transport)
 
-	cfg := bridge.NewConfig()
+	cfg := keboolasink.NewConfig()
 	// Send event
 	b := bridge.New(d, nil, cfg)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")

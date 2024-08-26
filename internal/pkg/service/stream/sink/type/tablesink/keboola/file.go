@@ -1,4 +1,4 @@
-package keboolasink
+package keboola
 
 import (
 	"github.com/keboola/go-client/pkg/keboola"

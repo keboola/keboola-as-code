@@ -117,6 +117,13 @@ source:
         writeBufferSize: 4KB
         # Max size of the HTTP request body. Validation rules: required
         maxRequestBodySize: 1MB
+sink:
+    table:
+        keboola:
+            # Timeout to perform upload send event of slice
+            uploadEventSendTimeout: 30s
+            # Timeout to perform import send event of file
+            importEventSendTimeout: 30s
 storage:
     # Mounted volumes path, each volume is in "{type}/{label}" subdir. Validation rules: required
     volumesPath: ""
@@ -271,9 +278,6 @@ storage:
                     slicesCount: 100
                     # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
                     expiration: 30m0s
-keboolaBridge:
-    # Timeout of uploading send event of slice or file
-    uploadEventSendTimeout: 30s
 `), strings.TrimSpace(string(bytes)))
 
 	// Add missing values, and validate it
