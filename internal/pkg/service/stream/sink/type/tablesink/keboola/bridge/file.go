@@ -135,7 +135,7 @@ func (b *Bridge) importFile(ctx context.Context, file *plugin.File, stats statis
 	api := b.publicAPI.WithToken(token.TokenString())
 
 	defer func() {
-		ctx, cancel := context.WithTimeout(ctx, uploadEventSendTimeout)
+		ctx, cancel := context.WithTimeout(ctx, eventSendTimeout)
 		err = b.SendFileImportEvent(ctx, api, time.Since(start), &err, file.FileKey, stats)
 		cancel()
 		if err != nil {

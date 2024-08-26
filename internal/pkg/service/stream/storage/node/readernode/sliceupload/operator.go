@@ -198,7 +198,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, d
 	defer cancel()
 
 	var err error
-	// Empty slice does not need to be uploaded to staging. Just mark as uploaded
+	// Skip upload if the slice is empty, just switch the state to the SliceUploaded.
 	if !data.Slice.LocalStorage.IsEmpty {
 		// Get slice statistics
 		var stats statistics.Aggregated

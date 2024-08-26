@@ -156,13 +156,13 @@ func TestSliceUpload(t *testing.T) {
 
 	slice, err := d.StorageRepository().Slice().Get(slices[2].SliceKey).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
-	failed := utctime.MustParse("2000-01-01T00:00:04.000Z")
+	failedAt := utctime.MustParse("2000-01-01T00:00:04.000Z")
 	retryAfter := utctime.MustParse("2000-01-01T00:02:04.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  1,
 		RetryReason:   "error when waiting for slice upload: bla",
-		FirstFailedAt: &failed,
-		LastFailedAt:  &failed,
+		FirstFailedAt: &failedAt,
+		LastFailedAt:  &failedAt,
 		RetryAfter:    &retryAfter,
 	}, slice.Retryable)
 
@@ -174,13 +174,13 @@ func TestSliceUpload(t *testing.T) {
 
 	slice, err = d.StorageRepository().Slice().Get(slices[2].SliceKey).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
-	failed = utctime.MustParse("2000-01-01T00:00:04.000Z")
+	failedAt = utctime.MustParse("2000-01-01T00:00:04.000Z")
 	retryAfter = utctime.MustParse("2000-01-01T00:10:05.000Z")
 	lastFailed := utctime.MustParse("2000-01-01T00:02:05.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  2,
 		RetryReason:   "error when waiting for slice upload: bla",
-		FirstFailedAt: &failed,
+		FirstFailedAt: &failedAt,
 		LastFailedAt:  &lastFailed,
 		RetryAfter:    &retryAfter,
 	}, slice.Retryable)

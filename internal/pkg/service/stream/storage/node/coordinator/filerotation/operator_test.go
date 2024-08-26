@@ -30,6 +30,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// fileExpirationDiff defines the time between file opening and file import trigger.
 const fileExpirationDiff = time.Minute
 
 type testState struct {
