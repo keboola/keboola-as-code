@@ -314,3 +314,18 @@ func TestAssertKeys_Difference(t *testing.T) {
 	            	[001] key2
 `), strings.TrimSpace(mT.buf.String()))
 }
+
+func TestAssertKeys_Wildcard(t *testing.T) {
+	t.Parallel()
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
+
+	// Put keys
+	ctx := context.Background()
+	_, err := client.Put(ctx, "key1", "value1")
+	assert.NoError(t, err)
+	_, err = client.Put(ctx, "key2", "value2")
+	assert.NoError(t, err)
+
+	// No error is expected
+	etcdhelper.AssertKeys(t, client, []string{"key%d", "key%d"})
+}
