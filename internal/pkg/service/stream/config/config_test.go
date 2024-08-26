@@ -577,7 +577,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
   },
   {
     "key": "storage.level.target.import.trigger.slicesCount",
-    "type": "int",
+    "type": "uint64",
     "description": "Number of slices in the file to trigger file import.",
     "value": 100,
     "defaultValue": 100,

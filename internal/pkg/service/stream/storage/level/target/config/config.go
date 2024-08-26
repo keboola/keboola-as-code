@@ -65,7 +65,7 @@ type ImportTrigger struct {
 	Count       uint64            `json:"count" configKey:"count" configUsage:"Records count to trigger file import." modAllowed:"true" validate:"required,min=1,max=10000000"`
 	Size        datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size to trigger file import." modAllowed:"true" validate:"required,minBytes=100B,maxBytes=500MB"`
 	Interval    duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last import to trigger the next import." modAllowed:"true" validate:"required,minDuration=60s,maxDuration=24h"`
-	SlicesCount int               `json:"slicesCount" configKey:"slicesCount" configUsage:"Number of slices in the file to trigger file import." validate:"required,min=1,max=50000"`
+	SlicesCount uint64            `json:"slicesCount" configKey:"slicesCount" configUsage:"Number of slices in the file to trigger file import." validate:"required,min=1,max=50000"`
 	Expiration  duration.Duration `json:"expiration" configKey:"expiration" configUsage:"Min remaining expiration to trigger file import." validate:"required,minDuration=5m,maxDuration=45m"`
 }
 
@@ -75,6 +75,6 @@ type ImportTriggerPatch struct {
 	Count       *uint64            `json:"count,omitempty"`
 	Size        *datasize.ByteSize `json:"size,omitempty"`
 	Interval    *duration.Duration `json:"interval,omitempty"`
-	SlicesCount *int               `json:"slicesCount,omitempty"`
+	SlicesCount *uint64            `json:"slicesCount,omitempty"`
 	Expiration  *duration.Duration `json:"expiration,omitempty"`
 }
