@@ -28,10 +28,11 @@ import (
 func TestCollector(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	clk := clock.NewMock()
 	cfg := statistics.NewConfig().Collector
 
-	d, mock := dependencies.NewMockedStorageScope(t, commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedStorageScope(t, ctx, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	writerEvents := &testEvents{}
 

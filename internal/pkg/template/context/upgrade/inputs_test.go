@@ -361,8 +361,10 @@ func TestExportInputsValues(t *testing.T) {
 func (tc testCase) run(t *testing.T) {
 	t.Helper()
 
+	ctx := context.Background()
+
 	// Create objects
-	d := dependencies.NewMocked(t)
+	d := dependencies.NewMocked(t, ctx)
 	state := d.MockedState()
 	branchKey := model.BranchKey{ID: 123}
 	configKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "111"}

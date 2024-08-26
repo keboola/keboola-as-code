@@ -34,7 +34,7 @@ func TestBranchRepository_Limits_BranchesPerProject(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 
 	// Get services
-	d, mock := dependencies.NewMockedServiceScope(t, commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 	branchRepo := repository.New(d).Branch()
 	branchSchema := schema.New(d.EtcdSerde())

@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -19,9 +20,9 @@ func NewPublicRequestScope(apiScp APIScope, req *http.Request) PublicRequestScop
 	return newPublicRequestScope(apiScp, dependencies.NewRequestInfo(req))
 }
 
-func NewMockedPublicRequestScope(t *testing.T, opts ...dependencies.MockedOption) (PublicRequestScope, Mocked) {
-	t.Helper()
-	apiScp, mock := NewMockedAPIScope(t, opts...)
+func NewMockedPublicRequestScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (PublicRequestScope, Mocked) {
+	tb.Helper()
+	apiScp, mock := NewMockedAPIScope(tb, ctx, opts...)
 	pubReqScp := newPublicRequestScope(apiScp, mock)
 	mock.DebugLogger().Truncate()
 	return pubReqScp, mock

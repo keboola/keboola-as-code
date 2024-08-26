@@ -41,7 +41,7 @@ func TestRepository_MoveStatisticsOnSliceUpdate(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
 	// Get services
-	d, mocked := dependencies.NewMockedStorageScope(t, commonDeps.WithClock(clk))
+	d, mocked := dependencies.NewMockedStorageScope(t, ctx, commonDeps.WithClock(clk))
 	client := mocked.TestEtcdClient()
 	defRepo := d.DefinitionRepository()
 	storageRepo := d.StorageRepository()

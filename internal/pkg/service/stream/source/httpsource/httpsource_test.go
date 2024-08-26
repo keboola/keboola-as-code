@@ -73,6 +73,8 @@ type fixtures struct {
 func TestStart(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
+
 	f := &fixtures{}
 	f.ctx = context.Background()
 	f.maxHeaderSize = 2000
@@ -83,7 +85,7 @@ func TestStart(t *testing.T) {
 	listenAddr := fmt.Sprintf("localhost:%d", port)
 	f.url = fmt.Sprintf(`http://%s`, listenAddr)
 	f.clk = clock.NewMock()
-	f.d, f.mock = dependencies.NewMockedServiceScopeWithConfig(t, func(cfg *config.Config) {
+	f.d, f.mock = dependencies.NewMockedServiceScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Source.HTTP.Listen = fmt.Sprintf("0.0.0.0:%d", port)
 		cfg.Source.HTTP.ReadBufferSize = datasize.ByteSize(f.maxHeaderSize) * datasize.B // ReadBufferSize is a limit for headers, not for the body
 		cfg.Source.HTTP.MaxRequestBodySize = datasize.ByteSize(f.maxBodySize) * datasize.B

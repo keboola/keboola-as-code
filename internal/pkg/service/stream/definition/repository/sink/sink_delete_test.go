@@ -27,7 +27,7 @@ func TestSinkRepository_SoftDelete(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, mocked := dependencies.NewMockedServiceScope(t)
+	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
 	repo := d.DefinitionRepository().Sink()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)|(definition/source)")
@@ -95,7 +95,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, mocked := dependencies.NewMockedServiceScope(t)
+	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
 	repo := d.DefinitionRepository().Sink()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/source/version)|(definition/sink/version)")
@@ -172,7 +172,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, mocked := dependencies.NewMockedServiceScope(t)
+	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
 	repo := d.DefinitionRepository().Sink()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/source/version)|(definition/sink/version)")

@@ -1,6 +1,7 @@
 package create
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -93,7 +94,7 @@ func TestAskCreate(t *testing.T) {
 
 		d, console := dialog.NewForTest(t, true)
 
-		deps := dependencies.NewMocked(t, dependencies.WithSnowflakeBackend())
+		deps := dependencies.NewMocked(t, context.Background(), dependencies.WithSnowflakeBackend())
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 		wg := sync.WaitGroup{}
@@ -178,7 +179,7 @@ func TestAskCreate(t *testing.T) {
 		t.Parallel()
 
 		d, console := dialog.NewForTest(t, true)
-		deps := dependencies.NewMocked(t, dependencies.WithSnowflakeBackend())
+		deps := dependencies.NewMocked(t, context.Background(), dependencies.WithSnowflakeBackend())
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
@@ -256,7 +257,7 @@ func TestAskCreate(t *testing.T) {
 		t.Parallel()
 
 		d, console := dialog.NewForTest(t, true)
-		deps := dependencies.NewMocked(t, dependencies.WithSnowflakeBackend())
+		deps := dependencies.NewMocked(t, context.Background(), dependencies.WithSnowflakeBackend())
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
@@ -351,7 +352,7 @@ func TestAskCreate(t *testing.T) {
 		t.Parallel()
 
 		d, console := dialog.NewForTest(t, true)
-		deps := dependencies.NewMocked(t, dependencies.WithSnowflakeBackend())
+		deps := dependencies.NewMocked(t, context.Background(), dependencies.WithSnowflakeBackend())
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 

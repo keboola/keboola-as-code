@@ -18,7 +18,7 @@ func TestStart_NoVolumeFound(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t)
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 
 	// Start
 	err := stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentStorageReader)
@@ -29,7 +29,8 @@ func TestStart_NoVolumeFound(t *testing.T) {
 func TestStart_Ok(t *testing.T) {
 	t.Parallel()
 
-	d, mock := dependencies.NewMockedServiceScope(t)
+	ctx := context.Background()
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 
 	// Create some volumes in volumes temp dir
 	volumesPath := mock.TestConfig().Storage.VolumesPath
@@ -45,7 +46,6 @@ func TestStart_Ok(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(volume2Path, volume.IDFile), []byte(id2), 0o600))
 
 	// Start
-	ctx := context.Background()
 	require.NoError(t, stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentStorageReader))
 
 	// Shutdown

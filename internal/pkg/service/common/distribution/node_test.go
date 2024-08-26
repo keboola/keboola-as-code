@@ -25,6 +25,7 @@ import (
 func TestNodesDiscovery(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	clk := clock.New() // use real clock
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
@@ -43,7 +44,7 @@ func TestNodesDiscovery(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			node, d := createNode(t, clk, etcdCfg, fmt.Sprintf("node%d", i+1))
+			node, d := createNode(t, ctx, clk, etcdCfg, fmt.Sprintf("node%d", i+1))
 			if node != nil {
 				lock.Lock()
 				nodes[i] = node
@@ -242,7 +243,7 @@ node3
 
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
-	node4, d4 := createNode(t, clk, etcdCfg, "node4")
+	node4, d4 := createNode(t, ctx, clk, etcdCfg, "node4")
 	process4 := d4.Process()
 	assert.Eventually(t, func() bool {
 		return reflect.DeepEqual([]string{"node4"}, node4.Nodes())
@@ -282,11 +283,11 @@ node4
 `)
 }
 
-func createNode(t *testing.T, clk clock.Clock, etcdCfg etcdclient.Config, nodeID string) (*distribution.GroupNode, dependencies.Mocked) {
+func createNode(t *testing.T, ctx context.Context, clk clock.Clock, etcdCfg etcdclient.Config, nodeID string) (*distribution.GroupNode, dependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
-	d := createDeps(t, clk, nil, etcdCfg, nodeID)
+	d := createDeps(t, ctx, clk, nil, etcdCfg)
 
 	// Speedup tests with real clock,
 	// and disable events grouping interval in tests with mocked clocks,
@@ -306,12 +307,12 @@ func createNode(t *testing.T, clk clock.Clock, etcdCfg etcdclient.Config, nodeID
 	return groupNode, d
 }
 
-func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCfg etcdclient.Config, nodeID string) dependencies.Mocked {
+func createDeps(t *testing.T, ctx context.Context, clk clock.Clock, logs io.Writer, etcdCfg etcdclient.Config) dependencies.Mocked {
 	t.Helper()
 	d := dependencies.NewMocked(
 		t,
+		ctx,
 		dependencies.WithClock(clk),
-		dependencies.WithNodeID(nodeID),
 		dependencies.WithEtcdConfig(etcdCfg),
 	)
 	if logs != nil {

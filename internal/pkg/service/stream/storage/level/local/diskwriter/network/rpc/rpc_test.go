@@ -49,7 +49,7 @@ func TestNetworkFile(t *testing.T) {
 	writerNode := startDiskWriterNode(t, ctx, etcdCfg, "disk-writer", volumesPath)
 
 	// Create resources in a API node
-	apiScp, _ := dependencies.NewMockedAPIScope(t, commonDeps.WithEtcdConfig(etcdCfg))
+	apiScp, _ := dependencies.NewMockedAPIScope(t, ctx, commonDeps.WithEtcdConfig(etcdCfg))
 	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
 	branch := test.NewBranch(branchKey)
 	source := test.NewHTTPSource(key.SourceKey{BranchKey: branchKey, SourceID: "my-source"})
@@ -101,9 +101,9 @@ func startDiskWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.C
 
 	d, m := dependencies.NewMockedStorageWriterScopeWithConfig(
 		t,
+		ctx,
 		func(cfg *config.Config) {
 			cfg.NodeID = nodeID
-			cfg.Hostname = "localhost"
 			cfg.Storage.VolumesPath = volumesPath
 			cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(t))
 		},
@@ -120,9 +120,9 @@ func openNetworkFile(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 
 	d, m := dependencies.NewMockedSourceScopeWithConfig(
 		t,
+		ctx,
 		func(cfg *config.Config) {
 			cfg.NodeID = sourceNodeID
-			cfg.Hostname = "localhost"
 		},
 		commonDeps.WithEtcdConfig(etcdCfg),
 	)

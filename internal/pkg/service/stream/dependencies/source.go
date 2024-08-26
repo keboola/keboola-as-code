@@ -20,21 +20,12 @@ import (
 
 // sourceScope implements SourceScope interface.
 type sourceScope struct {
-	sourceParentScopes
+	ServiceScope
+	dependencies.DistributionScope
 	encodingManager   *encoding.Manager
 	connectionManager *connection.Manager
 	sinkRouter        *sinkRouter.Router
 	storageRouter     *storageRouter.Router
-}
-
-type sourceParentScopes interface {
-	dependencies.DistributionScope
-	ServiceScope
-}
-
-type sourceParentScopesImpl struct {
-	dependencies.DistributionScope
-	ServiceScope
 }
 
 func (v *sourceScope) EncodingManager() *encoding.Manager {
@@ -54,36 +45,32 @@ func (v *sourceScope) StorageRouter() *storageRouter.Router {
 }
 
 func NewSourceScope(serviceScp ServiceScope, distScp dependencies.DistributionScope, sourceType string, cfg config.Config) (v SourceScope, err error) {
-	return newSourceScope(sourceParentScopesImpl{
-		ServiceScope:      serviceScp,
-		DistributionScope: distScp,
-	}, sourceType, cfg)
+	return newSourceScope(serviceScp, distScp, sourceType, cfg)
 }
 
-func NewMockedSourceScope(tb testing.TB, opts ...dependencies.MockedOption) (SourceScope, Mocked) {
+func NewMockedSourceScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (SourceScope, Mocked) {
 	tb.Helper()
-	return NewMockedSourceScopeWithConfig(tb, nil, opts...)
+	return NewMockedSourceScopeWithConfig(tb, ctx, nil, opts...)
 }
 
-func NewMockedSourceScopeWithConfig(tb testing.TB, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (SourceScope, Mocked) {
+func NewMockedSourceScopeWithConfig(tb testing.TB, ctx context.Context, modifyConfig func(*config.Config), opts ...dependencies.MockedOption) (SourceScope, Mocked) {
 	tb.Helper()
-	svcScp, mock := NewMockedServiceScopeWithConfig(
-		tb,
-		modifyConfig,
-		append([]dependencies.MockedOption{dependencies.WithEnabledDistribution("test-node")}, opts...)...,
-	)
-	d, err := newSourceScope(sourceParentScopesImpl{
-		ServiceScope:      svcScp,
-		DistributionScope: mock,
-	}, "test-source", mock.TestConfig())
+
+	svcScp, mock := NewMockedServiceScopeWithConfig(tb, ctx, modifyConfig, opts...)
+
+	distScp := dependencies.NewDistributionScope(mock.TestConfig().NodeID, mock.TestConfig().Distribution, svcScp)
+
+	d, err := newSourceScope(svcScp, distScp, "test-source", mock.TestConfig())
 	require.NoError(tb, err)
 	return d, mock
 }
 
-func newSourceScope(parentScp sourceParentScopes, sourceType string, cfg config.Config) (v SourceScope, err error) {
+func newSourceScope(svcScp ServiceScope, distScp dependencies.DistributionScope, sourceType string, cfg config.Config) (v SourceScope, err error) {
 	d := &sourceScope{}
 
-	d.sourceParentScopes = parentScp
+	d.ServiceScope = svcScp
+
+	d.DistributionScope = distScp
 
 	d.connectionManager, err = connection.NewManager(d, cfg.Storage.Level.Local.Writer.Network, cfg.NodeID)
 	if err != nil {

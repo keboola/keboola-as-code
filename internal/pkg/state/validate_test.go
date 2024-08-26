@@ -15,6 +15,9 @@ import (
 
 func TestValidateState(t *testing.T) {
 	t.Parallel()
+
+	ctx := context.Background()
+
 	// Create state
 	envs := env.Empty()
 	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
@@ -23,7 +26,7 @@ func TestValidateState(t *testing.T) {
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 
 	// Container
-	d := dependencies.NewMocked(t)
+	d := dependencies.NewMocked(t, ctx)
 	state := d.MockedState()
 
 	// Mocked component response

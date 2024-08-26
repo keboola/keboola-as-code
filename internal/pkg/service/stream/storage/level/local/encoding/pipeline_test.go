@@ -32,7 +32,7 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d, _ := dependencies.NewMockedSourceScope(t)
+	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
 	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(dummyEncoderFactory)
@@ -66,7 +66,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d, _ := dependencies.NewMockedSourceScope(t)
+	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
 	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
@@ -89,7 +89,7 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d, _ := dependencies.NewMockedSourceScope(t)
+	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
 	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
@@ -492,7 +492,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 	// Disable real clocks, in tests, sync is triggered manually.
 	// The sync timer may cause unexpected log messages.
 	clk := clock.NewMock()
-	d, mock := dependencies.NewMockedSourceScope(t, commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedSourceScope(t, ctx, commonDeps.WithClock(clk))
 
 	helper := &writerSyncHelper{writeDone: make(chan struct{}, 100)}
 

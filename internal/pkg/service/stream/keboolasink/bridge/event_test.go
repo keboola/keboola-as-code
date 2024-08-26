@@ -26,7 +26,7 @@ import (
 func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t)
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	api := d.KeboolaPublicAPI().WithToken("my-token")
 
 	var body string
@@ -58,7 +58,7 @@ func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t)
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	api := d.KeboolaPublicAPI().WithToken("my-token")
 
 	var body string
@@ -89,7 +89,7 @@ func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 func TestSender_SendSliceUploadEvent_HTTPError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t)
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	api := d.KeboolaPublicAPI().WithToken("my-token")
 
 	transport := mock.MockedHTTPTransport()

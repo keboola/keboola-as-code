@@ -75,7 +75,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	taskPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	orchestratorPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -142,11 +141,6 @@ type DistributedLockScope interface {
 	DistributedLockProvider() *distlock.Provider
 }
 
-// OrchestratorScope dependencies to trigger tasks based on cluster nodes on etcd events.
-type OrchestratorScope interface {
-	OrchestratorNode() *orchestratorPkg.Node
-}
-
 // Mocked dependencies for tests.
 // All HTTP requests to APIs are handled by the MockedHttpTransport by default.
 type Mocked interface {
@@ -155,10 +149,6 @@ type Mocked interface {
 	ProjectScope
 	RequestInfo
 	EtcdClientScope
-	TaskScope
-	DistributionScope
-	DistributedLockScope
-	OrchestratorScope
 
 	MockControl
 }
@@ -166,7 +156,6 @@ type Mocked interface {
 // MockControl allows modification of mocked scopes and access to the insides in a test.
 type MockControl interface {
 	DebugLogger() log.DebugLogger
-	TestContext() context.Context
 	TestTelemetry() telemetry.ForTest
 	TestEtcdConfig() etcdclient.Config
 	TestEtcdClient() *etcdPkg.Client

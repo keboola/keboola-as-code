@@ -48,7 +48,7 @@ func TestSliceUpload(t *testing.T) {
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 
-	d, mock := dependencies.NewMockedStorageReaderScopeWithConfig(t, func(cfg *config.Config) {
+	d, mock := dependencies.NewMockedStorageReaderScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Storage.VolumesPath = volumesPath
 		cfg.Storage.Level.Staging.Operator.SliceUploadCheckInterval = duration.From(slicesCheckInterval)
 	}, commonDeps.WithClock(clk))

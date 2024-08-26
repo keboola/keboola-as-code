@@ -22,7 +22,7 @@ func TestStart_NoVolumeFound(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d, mock := dependencies.NewMockedServiceScope(t)
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 
 	err := stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentStorageWriter)
 	require.Error(t, err)
@@ -32,7 +32,8 @@ func TestStart_NoVolumeFound(t *testing.T) {
 func TestStart_Ok(t *testing.T) {
 	t.Parallel()
 
-	d, mock := dependencies.NewMockedServiceScope(t)
+	ctx := context.Background()
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	client := mock.TestEtcdClient()
 
 	// Create some volumes in volumes temp dir
@@ -43,7 +44,6 @@ func TestStart_Ok(t *testing.T) {
 	require.NoError(t, os.MkdirAll(volume2Path, 0o700))
 
 	// Start
-	ctx := context.Background()
 	require.NoError(t, stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentStorageWriter))
 
 	// Each volume has a generated ID

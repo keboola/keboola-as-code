@@ -1,6 +1,7 @@
 package links_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -15,7 +16,7 @@ import (
 
 func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
 	t.Helper()
-	d := dependencies.NewMocked(t)
+	d := dependencies.NewMocked(t, context.Background())
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(links.NewMapper(mockedState))
 	return mockedState, d

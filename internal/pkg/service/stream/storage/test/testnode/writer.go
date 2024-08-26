@@ -1,6 +1,7 @@
 package testnode
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,7 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 )
 
-func StartDiskWriterNode(tb testing.TB, logger log.DebugLogger, etcdCfg etcdclient.Config, volumesCount int, modifyConfig func(cfg *config.Config), opts ...commonDeps.MockedOption) (dependencies.StorageWriterScope, dependencies.Mocked) {
+func StartDiskWriterNode(tb testing.TB, ctx context.Context, logger log.DebugLogger, etcdCfg etcdclient.Config, volumesCount int, modifyConfig func(cfg *config.Config), opts ...commonDeps.MockedOption) (dependencies.StorageWriterScope, dependencies.Mocked) {
 	tb.Helper()
 
 	// Create volumes directories
@@ -33,19 +34,19 @@ func StartDiskWriterNode(tb testing.TB, logger log.DebugLogger, etcdCfg etcdclie
 	opts = append(opts, commonDeps.WithDebugLogger(logger), commonDeps.WithEtcdConfig(etcdCfg))
 	d, mock := dependencies.NewMockedStorageWriterScopeWithConfig(
 		tb,
+		ctx,
 		func(cfg *config.Config) {
 			if modifyConfig != nil {
 				modifyConfig(cfg)
 			}
 			cfg.NodeID = "disk-writer"
-			cfg.Hostname = "localhost"
 			cfg.Storage.Level.Local.Writer.Network.Listen = fmt.Sprintf("0.0.0.0:%d", netutils.FreePortForTest(tb))
 			cfg.Storage.VolumesPath = volumesPath
 		},
 		opts...,
 	)
 
-	require.NoError(tb, writernode.Start(mock.TestContext(), d, mock.TestConfig()))
+	require.NoError(tb, writernode.Start(ctx, d, mock.TestConfig()))
 
 	return d, mock
 }

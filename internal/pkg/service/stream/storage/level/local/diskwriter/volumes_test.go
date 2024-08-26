@@ -23,7 +23,7 @@ func TestOpenVolumes(t *testing.T) {
 	defer cancel()
 
 	process := servicectx.New()
-	d, mock := dependencies.NewMockedStorageScope(t)
+	d, mock := dependencies.NewMockedStorageScope(t, ctx)
 
 	// Create volumes directories
 	volumesPath := t.TempDir()

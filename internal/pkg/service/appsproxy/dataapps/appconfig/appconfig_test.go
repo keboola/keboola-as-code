@@ -228,7 +228,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 
 			ctx := context.Background()
 			clk := clock.NewMock()
-			d, mock := dependencies.NewMockedServiceScope(t, config.New(), commonDeps.WithClock(clk))
+			d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
 			transport := mock.MockedHTTPTransport()
 			loader := d.AppConfigLoader()
@@ -269,7 +269,7 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 	defer cancel()
 
 	clk := clock.NewMock()
-	d, mock := dependencies.NewMockedServiceScope(t, config.New(), commonDeps.WithClock(clk))
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
 	appID := api.AppID("test")
 	appPayload := map[string]any{

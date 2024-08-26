@@ -22,7 +22,7 @@ func TestVolumes(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d, mock := dependencies.NewMockedStorageScope(t)
+	d, mock := dependencies.NewMockedStorageScope(t, ctx)
 	logger := mock.DebugLogger()
 
 	// Create volumes directories

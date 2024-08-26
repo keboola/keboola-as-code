@@ -1,6 +1,7 @@
 package proxy_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -27,6 +28,8 @@ import (
 func TestAppProxyHandler(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
+
 	// Start app
 	appServer := testutil.StartAppServer(t)
 	defer appServer.Close()
@@ -42,7 +45,7 @@ func TestAppProxyHandler(t *testing.T) {
 	cfg.CsrfTokenSalt = "abc"
 
 	// Create dependencies
-	d, mocked := proxyDependencies.NewMockedServiceScope(t, cfg, dependencies.WithRealHTTPClient())
+	d, mocked := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 
 	// Register apps
 	appURL := testutil.AddAppDNSRecord(t, appServer, mocked.TestDNSServer())

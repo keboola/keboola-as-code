@@ -19,7 +19,7 @@ func TestProvider_NewMutex(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	d := dependencies.NewMocked(t, dependencies.WithEnabledEtcdClient())
+	d := dependencies.NewMocked(t, ctx, dependencies.WithEnabledEtcdClient())
 	client := d.TestEtcdClient()
 
 	p, err := distlock.NewProvider(distlock.NewConfig(), d)

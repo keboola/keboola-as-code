@@ -23,8 +23,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -44,10 +42,6 @@ type mocked struct {
 	*projectScope
 	*requestInfo
 	*etcdClientScope
-	*taskScope
-	*distributionScope
-	*distributedLockScope
-	*orchestratorScope
 	t                   testing.TB
 	config              *MockedConfig
 	mockedHTTPTransport *httpmock.MockTransport
@@ -55,22 +49,12 @@ type mocked struct {
 }
 
 type MockedConfig struct {
-	enableEtcdClient       bool
-	enableDistributedLocks bool
-	enableOrchestrator     bool
+	enableEtcdClient bool
 
-	tasksNodeID        string
-	distributionNodeID string
-
-	ctx         context.Context
 	clock       clock.Clock
 	telemetry   telemetry.ForTest
 	debugLogger log.DebugLogger
 	procOpts    []servicectx.Option
-
-	nodeID string
-
-	distributionConfig distribution.Config
 
 	etcdConfig   etcdclient.Config
 	etcdDebugLog bool
@@ -110,58 +94,9 @@ func WithBigQueryBackend() MockedOption {
 	}
 }
 
-func WithEnabledTasks(nodeID string) MockedOption {
-	return func(c *MockedConfig) {
-		WithEnabledEtcdClient()(c)
-		c.tasksNodeID = nodeID
-	}
-}
-
-func WithEnabledDistribution(nodeID string) MockedOption {
-	return func(c *MockedConfig) {
-		WithEnabledEtcdClient()(c)
-		c.distributionNodeID = nodeID
-	}
-}
-
-func WithEnabledDistributedLocks() MockedOption {
-	return func(c *MockedConfig) {
-		WithEnabledEtcdClient()(c)
-		c.enableDistributedLocks = true
-	}
-}
-
-func WithDistributionConfig(nodeID string, cfg distribution.Config) MockedOption {
-	return func(c *MockedConfig) {
-		WithEnabledEtcdClient()(c)
-		WithEnabledDistribution(nodeID)(c)
-		c.distributionConfig = cfg
-	}
-}
-
-func WithEnabledOrchestrator(nodeID string) MockedOption {
-	return func(c *MockedConfig) {
-		WithEnabledTasks(nodeID)(c)
-		WithEnabledDistribution(nodeID)(c)
-		c.enableOrchestrator = true
-	}
-}
-
-func WithCtx(v context.Context) MockedOption {
-	return func(c *MockedConfig) {
-		c.ctx = v
-	}
-}
-
 func WithClock(v clock.Clock) MockedOption {
 	return func(c *MockedConfig) {
 		c.clock = v
-	}
-}
-
-func WithNodeID(v string) MockedOption {
-	return func(c *MockedConfig) {
-		c.nodeID = v
 	}
 }
 
@@ -270,12 +205,9 @@ func newMockedConfig(tb testing.TB, opts []MockedOption) *MockedConfig {
 	tb.Helper()
 
 	cfg := &MockedConfig{
-		ctx:                context.Background(),
-		clock:              clock.New(),
-		telemetry:          telemetry.NewForTest(tb),
-		nodeID:             "local-node",
-		distributionConfig: distribution.NewConfig(),
-		useRealAPIs:        false,
+		clock:       clock.New(),
+		telemetry:   telemetry.NewForTest(tb),
+		useRealAPIs: false,
 		services: keboola.Services{
 			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
 			{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
@@ -316,14 +248,10 @@ func newMockedConfig(tb testing.TB, opts []MockedOption) *MockedConfig {
 		cfg.stderr = os.Stderr // nolint:forbidigo
 	}
 
-	if _, ok := cfg.clock.(*clock.Mock); ok {
-		cfg.distributionConfig.EventsGroupInterval = 0 // disable timer
-	}
-
 	return cfg
 }
 
-func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
+func NewMocked(tb testing.TB, ctx context.Context, opts ...MockedOption) Mocked {
 	tb.Helper()
 
 	// Default values
@@ -331,13 +259,6 @@ func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
 
 	// Logger
 	var logger log.Logger = cfg.debugLogger
-
-	// Cancel context after the test
-	var cancel context.CancelFunc
-	cfg.ctx, cancel = context.WithCancel(cfg.ctx)
-	tb.Cleanup(func() {
-		cancel()
-	})
 
 	// Mock APIs
 	httpClient, mockedHTTPTransport := defaultMockedResponses(cfg)
@@ -355,10 +276,10 @@ func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
 	// Create dependencies container
 	var err error
 	d := &mocked{config: cfg, t: tb, mockedHTTPTransport: mockedHTTPTransport}
-	d.baseScope = newBaseScope(cfg.ctx, logger, cfg.telemetry, cfg.stdout, cfg.stderr, cfg.clock, proc, httpClient)
-	d.publicScope, err = newPublicScope(cfg.ctx, d, cfg.storageAPIHost, WithPreloadComponents(true))
+	d.baseScope = newBaseScope(ctx, logger, cfg.telemetry, cfg.stdout, cfg.stderr, cfg.clock, proc, httpClient)
+	d.publicScope, err = newPublicScope(ctx, d, cfg.storageAPIHost, WithPreloadComponents(true))
 	require.NoError(tb, err)
-	d.projectScope, err = newProjectScope(cfg.ctx, d, cfg.storageAPIToken)
+	d.projectScope, err = newProjectScope(ctx, d, cfg.storageAPIToken)
 	require.NoError(tb, err)
 	d.requestInfo = newRequestInfo(&http.Request{RemoteAddr: "1.2.3.4:789", Header: make(http.Header)})
 
@@ -382,26 +303,8 @@ func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
 			etcdCfg.DebugLog = etcdhelper.VerboseTestLogs()
 		}
 
-		d.etcdClientScope, err = newEtcdClientScope(cfg.ctx, d, etcdCfg)
+		d.etcdClientScope, err = newEtcdClientScope(ctx, d, etcdCfg)
 		require.NoError(tb, err)
-	}
-
-	if cfg.tasksNodeID != "" {
-		d.taskScope, err = newTaskScope(cfg.ctx, cfg.tasksNodeID, d)
-		require.NoError(tb, err)
-	}
-
-	if cfg.distributionNodeID != "" {
-		d.distributionScope = newDistributionScope(cfg.distributionNodeID, cfg.distributionConfig, d)
-	}
-
-	if cfg.enableDistributedLocks {
-		d.distributedLockScope, err = newDistributedLockScope(cfg.ctx, distlock.NewConfig(), d)
-		require.NoError(tb, err)
-	}
-
-	if cfg.enableOrchestrator {
-		d.orchestratorScope = newOrchestratorScope(cfg.ctx, d)
 	}
 
 	// Clear logs
@@ -412,10 +315,6 @@ func NewMocked(tb testing.TB, opts ...MockedOption) Mocked {
 
 func (v *mocked) DebugLogger() log.DebugLogger {
 	return v.config.debugLogger
-}
-
-func (v *mocked) TestContext() context.Context {
-	return v.config.ctx
 }
 
 func (v *mocked) TestTelemetry() telemetry.ForTest {

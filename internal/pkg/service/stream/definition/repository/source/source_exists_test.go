@@ -23,7 +23,7 @@ func TestSourceRepository_ExistsOrErr(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, _ := dependencies.NewMockedServiceScope(t)
+	d, _ := dependencies.NewMockedServiceScope(t, ctx)
 	branchRepo := d.DefinitionRepository().Branch()
 	sourceRepo := d.DefinitionRepository().Source()
 
@@ -78,7 +78,7 @@ func TestSourceRepository_MustNotExists(t *testing.T) {
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
-	d, _ := dependencies.NewMockedServiceScope(t)
+	d, _ := dependencies.NewMockedServiceScope(t, ctx)
 	branchRepo := d.DefinitionRepository().Branch()
 	sourceRepo := d.DefinitionRepository().Source()
 
