@@ -26,6 +26,7 @@ type Config struct {
 	ShutdownTimeout        time.Duration     `configKey:"shutdownTimeout" configUsage:"How long the server waits for streams closing." validate:"required,minDuration=1s,max=600s"`
 	KCPInputBuffer         datasize.ByteSize `configKey:"kcpInputBuffer" configUsage:"Buffer size for transferring data between source and writer nodes (kcp)." validate:"required,minBytes=16kB,maxBytes=100MB"`
 	KCPResponseBuffer      datasize.ByteSize `configKey:"kcpResponseBuffer" configUsage:"Buffer size for transferring responses between writer and source node (kcp)." validate:"required,minBytes=16kB,maxBytes=100MB"`
+	PipelineBalancer       string            `configKey:"pipelineBalancer" configUsage:"Pipeline balancer type which balances the writing on particular nodes based on selected strategy" validate:"required,oneof=rand roundRobin"`
 }
 
 func NewConfig() Config {
@@ -42,5 +43,6 @@ func NewConfig() Config {
 		ShutdownTimeout:        30 * time.Second,
 		KCPInputBuffer:         8 * datasize.MB,
 		KCPResponseBuffer:      512 * datasize.KB,
+		PipelineBalancer:       "rand",
 	}
 }

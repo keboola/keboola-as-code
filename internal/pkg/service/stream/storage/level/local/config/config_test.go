@@ -40,6 +40,7 @@ func TestConfig_Validation(t *testing.T) {
 - "writer.network.shutdownTimeout" is a required field
 - "writer.network.kcpInputBuffer" is a required field
 - "writer.network.kcpResponseBuffer" is a required field
+- "writer.network.pipelineBalancer" is a required field
 - "writer.allocation.static" is a required field
 - "writer.allocation.relative" must be 100 or greater
 `,
