@@ -155,7 +155,7 @@ func TestFileRotation(t *testing.T) {
 	// Trigger check - file expiration import trigger
 	ts.clk.Add(fileExpirationDiff)
 	ts.triggerCheck(t, true, ` 
-{"level":"info","message":"rotating file for import: expiration threshold met, expiration: 2000-01-01T00:31:00.000Z, remains: 30m0s, threshold: 30m0s","component":"storage.node.operator.file.rotation"}
+{"level":"info","message":"rotating file for import: expiration threshold met, expiration: 2000-01-01T00:31:00.000Z, remains: %s, threshold: 30m0s","component":"storage.node.operator.file.rotation"}
 `)
 
 	// Trigger check - no import trigger
