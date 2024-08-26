@@ -3,14 +3,8 @@ package router
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-)
-
-type BalancerType string
-
-const (
-	randomBalancerType     BalancerType = "rand"
-	roundRobinBalancerType BalancerType = "roundRobin"
 )
 
 // Balancer selects and writes to a slice pipeline.
@@ -20,16 +14,15 @@ type Balancer interface {
 	WriteRecord(c recordctx.Context, pipelines []SlicePipeline) (pipeline.RecordStatus, error)
 }
 
-func NewBalancer(pipelineBalancer BalancerType) (Balancer, error) {
+func NewBalancer(pipelineBalancer network.BalancerType) (Balancer, error) {
 	switch pipelineBalancer {
-	case randomBalancerType:
+	case network.RandomBalancerType:
 		return NewRandomBalancer(), nil
 
-	case roundRobinBalancerType:
+	case network.RoundRobinBalancerType:
 		return NewRoundRobinBalancer(), nil
 
 	default:
+		return nil, errors.New("inavlid balancer selected")
 	}
-
-	return nil, errors.New("inavlid balancer selected")
 }

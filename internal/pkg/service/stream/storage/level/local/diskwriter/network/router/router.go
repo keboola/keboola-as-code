@@ -70,7 +70,7 @@ type dependencies interface {
 }
 
 func New(d dependencies, sourceNodeID, sourceType string, config network.Config) (r *Router, err error) {
-	balancer, err := NewBalancer(BalancerType(config.PipelineBalancer))
+	balancer, err := NewBalancer(config.PipelineBalancer)
 	if err != nil {
 		return nil, err
 	}
