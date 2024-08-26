@@ -88,7 +88,7 @@ require (
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 	golang.org/x/sync v0.7.0
 	google.golang.org/grpc v1.64.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.65.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.67.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	nhooyr.io/websocket v1.8.11
 	v.io/x/lib v0.1.20
@@ -155,9 +155,9 @@ require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
-	github.com/DataDog/appsec-internal-go v1.6.0 // indirect
+	github.com/DataDog/appsec-internal-go v1.7.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.1 // indirect
-	github.com/DataDog/go-libddwaf/v3 v3.2.1 // indirect
+	github.com/DataDog/go-libddwaf/v3 v3.3.0 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/gostackparse v0.7.0 // indirect
 	github.com/MichaelMure/go-term-text v0.3.1 // indirect
