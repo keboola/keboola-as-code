@@ -230,37 +230,16 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	}
 	defer unlocker()
 
-	var err error
-	if !file.IsEmpty {
-		// Get file statistics
-		var stats statistics.Aggregated
-		stats, err = o.statistics.FileStats(ctx, file.FileKey)
-		if err != nil {
-			err = errors.PrefixError(err, "cannot get file statistics")
-		} else {
-			// Import the file to specific provider
-			err = o.plugins.ImportFile(ctx, &file.File, stats.Staging)
-			if err != nil {
-				err = errors.PrefixError(err, "error when waiting for file import")
-			}
-		}
-	}
-
-	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-	defer dbCancel()
-
-	// If there is no error, switch file to the importing state
-	if err == nil {
-		err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
-		if err != nil {
-			err = errors.PrefixError(err, "cannot switch file to the imported state")
-		}
-	}
-
+	// Import file
+	err := o.doImportFile(ctx, lock, file)
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
+
+		// Update the entity, the ctx may be cancelled
+		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer dbCancel()
+
 		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).Err()
 		if err != nil {
 			o.logger.Errorf(ctx, "cannot increment file import retry: %s", err)
@@ -271,8 +250,36 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
+}
 
-	if err == nil {
-		o.logger.Info(ctx, "successfully imported file")
+func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *fileData) error {
+	// Skip file import if the file is empty
+	if !file.IsEmpty {
+		// Get file statistics
+		var stats statistics.Aggregated
+		stats, err := o.statistics.FileStats(ctx, file.FileKey)
+		if err != nil {
+			return errors.PrefixError(err, "cannot get file statistics")
+		}
+
+		// Import the file to specific provider
+		err = o.plugins.ImportFile(ctx, &file.File, stats.Staging)
+		if err != nil {
+			return errors.PrefixError(err, "error when waiting for file import")
+		}
 	}
+
+	// Update the entity, the ctx may be cancelled
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer dbCancel()
+
+	// Switch file to the importing state
+	err := o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
+	if err != nil {
+		return errors.PrefixError(err, "cannot switch file to the imported state")
+	}
+
+	o.logger.Info(ctx, "successfully imported file")
+
+	return nil
 }
