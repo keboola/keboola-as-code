@@ -129,7 +129,7 @@ func (v *Volume) Metadata() volume.Metadata {
 	}
 }
 
-func (v *Volume) OpenReader(sliceKey model.SliceKey, slice localModel.Slice, encodingCompression compression.Config, stagingCompression compression.Config) (r Reader, err error) {
+func (v *Volume) OpenReader(sliceKey model.SliceKey, slice localModel.Slice, encodingCompression, stagingCompression compression.Config) (r Reader, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.PrefixErrorf(err, `reader for slice "%s" cannot be created: volume is closed`, sliceKey.String())

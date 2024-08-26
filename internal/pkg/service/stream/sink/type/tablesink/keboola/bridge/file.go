@@ -139,7 +139,7 @@ func (b *Bridge) importFile(ctx context.Context, file *plugin.File, stats statis
 		err = b.SendFileImportEvent(ctx, api, time.Since(start), &err, file.FileKey, stats)
 		cancel()
 		if err != nil {
-			b.logger.Warnf(ctx, "unable to send slice upload event: %v", err)
+			b.logger.Warnf(ctx, "unable to send file import event: %v", err)
 			return
 		}
 	}()
