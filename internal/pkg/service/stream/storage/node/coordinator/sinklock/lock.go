@@ -1,4 +1,4 @@
-package coordinator
+package sinklock
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
 
-// LockSinkFileOperations locks all file operations in the sink
+// LockSinkFileOperations locks all file operations in the sink.
 func LockSinkFileOperations(ctx context.Context, locks *distlock.Provider, logger log.Logger, sinkKey key.SinkKey) (lock *etcdop.Mutex, unlocker func()) {
 	lock = locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", sinkKey))
 	if err := lock.Lock(ctx); err != nil {
