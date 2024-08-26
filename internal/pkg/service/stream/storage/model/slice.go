@@ -90,11 +90,12 @@ func (s Slice) LastStateChange() utctime.UTCTime {
 func (s Slice) Telemetry() []attribute.KeyValue {
 	lastStateChange := s.LastStateChange().Time()
 	return []attribute.KeyValue{
-		attribute.String("slice.key", s.SliceID.String()),
-		attribute.String("slice.branch.key", s.BranchID.String()),
-		attribute.String("slice.source.id", s.SourceID.String()),
-		attribute.String("slice.sink.id", s.SinkID.String()),
-		attribute.String("slice.file.key", s.FileID.String()),
+		attribute.String("project.id", s.ProjectID.String()),
+		attribute.String("branch.id", s.BranchID.String()),
+		attribute.String("source.id", s.SourceID.String()),
+		attribute.String("sink.id", s.SinkID.String()),
+		attribute.String("file.id", s.FileID.String()),
+		attribute.String("slice.id", s.SliceID.String()),
 		attribute.String("slice.lastStateChange", lastStateChange.String()),
 		attribute.Int("slice.retryAttempt", s.RetryAttempt),
 	}
