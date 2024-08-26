@@ -33,110 +33,6 @@ import (
 // fileExpirationDiff defines the time between file opening and file import trigger.
 const fileExpirationDiff = time.Minute
 
-type testState struct {
-	interval      time.Duration
-	importTrigger targetConfig.ImportTrigger
-	clk           *clock.Mock
-	logger        log.DebugLogger
-	client        *etcdPkg.Client
-	mock          dependencies.Mocked
-	dependencies  dependencies.CoordinatorScope
-	session       *concurrency.Session
-	sink          definition.Sink
-}
-
-func setup(t *testing.T, ctx context.Context) *testState {
-	t.Helper()
-
-	importTrigger := targetConfig.ImportTrigger{
-		Count:       50000,
-		Size:        5 * datasize.MB,
-		Interval:    duration.From(5 * time.Minute),
-		SlicesCount: 100,
-		Expiration:  duration.From(30 * time.Minute),
-	}
-
-	// The interval triggers import conditions check
-	conditionsCheckInterval := time.Second
-
-	// Create dependencies
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
-	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
-		cfg.Storage.Level.Target.Import.Trigger = importTrigger
-		cfg.Storage.Level.Target.Operator.FileRotationCheckInterval = duration.From(conditionsCheckInterval)
-	}, commonDeps.WithClock(clk))
-	client := mock.TestEtcdClient()
-
-	// File import should be triggered 1 minute after the file opening, 30 minutes before the expiration.
-	fileExpiration := importTrigger.Expiration.Duration() + fileExpirationDiff
-	mock.TestDummySinkController().FileExpiration = fileExpiration
-
-	// Start file rotation coordinator
-	require.NoError(t, filerotation.Start(d, mock.TestConfig().Storage.Level.Target.Operator))
-
-	// Register some volumes
-	session, err := concurrency.NewSession(client)
-	require.NoError(t, err)
-	test.RegisterWriterVolumes(t, ctx, d.StorageRepository().Volume(), session, 2)
-
-	return &testState{
-		interval:      conditionsCheckInterval,
-		importTrigger: importTrigger,
-		clk:           clk,
-		mock:          mock,
-		logger:        mock.DebugLogger(),
-		client:        client,
-		dependencies:  d,
-		session:       session,
-	}
-}
-
-func (ts *testState) teardown(t *testing.T) {
-	t.Helper()
-	require.NoError(t, ts.session.Close())
-}
-
-func (ts *testState) waitForFilesSync(t *testing.T) {
-	t.Helper()
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.rotation"}`)
-	}, 5*time.Second, 10*time.Millisecond)
-}
-
-func (ts *testState) waitForStatsSync(t *testing.T) {
-	t.Helper()
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"stats.cache.L1"}`)
-	}, 5*time.Second, 10*time.Millisecond)
-}
-
-func (ts *testState) triggerCheck(t *testing.T, expectEntityModification bool, expectedLogs string) {
-	t.Helper()
-	ts.clk.Add(ts.interval)
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, expectedLogs)
-	}, 5*time.Second, 10*time.Millisecond)
-	if expectEntityModification {
-		ts.waitForFilesSync(t)
-	}
-	ts.logger.Truncate()
-}
-
-func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
-	t.Helper()
-	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
-	branch := test.NewBranch(branchKey)
-	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
-	source := test.NewHTTPSource(sourceKey)
-	ts.sink = dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
-	ts.sink.Config = testconfig.LocalVolumeConfig(2, []string{"hdd"})
-	require.NoError(t, ts.dependencies.DefinitionRepository().Branch().Create(&branch, ts.clk.Now(), test.ByUser()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.DefinitionRepository().Source().Create(&source, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
-	require.NoError(t, ts.dependencies.DefinitionRepository().Sink().Create(&ts.sink, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
-	ts.waitForFilesSync(t)
-}
-
 func TestFileRotation(t *testing.T) {
 	t.Parallel()
 
@@ -271,4 +167,108 @@ func TestFileRotation(t *testing.T) {
 
 	// No error is logged
 	ts.logger.AssertJSONMessages(t, "")
+}
+
+type testState struct {
+	interval      time.Duration
+	importTrigger targetConfig.ImportTrigger
+	clk           *clock.Mock
+	logger        log.DebugLogger
+	client        *etcdPkg.Client
+	mock          dependencies.Mocked
+	dependencies  dependencies.CoordinatorScope
+	session       *concurrency.Session
+	sink          definition.Sink
+}
+
+func setup(t *testing.T, ctx context.Context) *testState {
+	t.Helper()
+
+	importTrigger := targetConfig.ImportTrigger{
+		Count:       50000,
+		Size:        5 * datasize.MB,
+		Interval:    duration.From(5 * time.Minute),
+		SlicesCount: 100,
+		Expiration:  duration.From(30 * time.Minute),
+	}
+
+	// The interval triggers import conditions check
+	conditionsCheckInterval := time.Second
+
+	// Create dependencies
+	clk := clock.NewMock()
+	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
+		cfg.Storage.Level.Target.Import.Trigger = importTrigger
+		cfg.Storage.Level.Target.Operator.FileRotationCheckInterval = duration.From(conditionsCheckInterval)
+	}, commonDeps.WithClock(clk))
+	client := mock.TestEtcdClient()
+
+	// File import should be triggered 1 minute after the file opening, 30 minutes before the expiration.
+	fileExpiration := importTrigger.Expiration.Duration() + fileExpirationDiff
+	mock.TestDummySinkController().FileExpiration = fileExpiration
+
+	// Start file rotation coordinator
+	require.NoError(t, filerotation.Start(d, mock.TestConfig().Storage.Level.Target.Operator))
+
+	// Register some volumes
+	session, err := concurrency.NewSession(client)
+	require.NoError(t, err)
+	test.RegisterWriterVolumes(t, ctx, d.StorageRepository().Volume(), session, 2)
+
+	return &testState{
+		interval:      conditionsCheckInterval,
+		importTrigger: importTrigger,
+		clk:           clk,
+		mock:          mock,
+		logger:        mock.DebugLogger(),
+		client:        client,
+		dependencies:  d,
+		session:       session,
+	}
+}
+
+func (ts *testState) teardown(t *testing.T) {
+	t.Helper()
+	require.NoError(t, ts.session.Close())
+}
+
+func (ts *testState) waitForFilesSync(t *testing.T) {
+	t.Helper()
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.rotation"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func (ts *testState) waitForStatsSync(t *testing.T) {
+	t.Helper()
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"stats.cache.L1"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func (ts *testState) triggerCheck(t *testing.T, expectEntityModification bool, expectedLogs string) {
+	t.Helper()
+	ts.clk.Add(ts.interval)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, expectedLogs)
+	}, 5*time.Second, 10*time.Millisecond)
+	if expectEntityModification {
+		ts.waitForFilesSync(t)
+	}
+	ts.logger.Truncate()
+}
+
+func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
+	t.Helper()
+	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
+	branch := test.NewBranch(branchKey)
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	source := test.NewHTTPSource(sourceKey)
+	ts.sink = dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
+	ts.sink.Config = testconfig.LocalVolumeConfig(2, []string{"hdd"})
+	require.NoError(t, ts.dependencies.DefinitionRepository().Branch().Create(&branch, ts.clk.Now(), test.ByUser()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.DefinitionRepository().Source().Create(&source, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, ts.dependencies.DefinitionRepository().Sink().Create(&ts.sink, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+	ts.waitForFilesSync(t)
 }
