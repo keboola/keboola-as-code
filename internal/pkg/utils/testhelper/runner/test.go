@@ -602,7 +602,7 @@ func processPathReference(path string, requests map[string]*APIRequest) (string,
 
 func (t *Test) ReadFileFromTestDir(path string) string {
 	file, err := t.testDirFS.ReadFile(t.ctx, filesystem.NewFileDef(path))
-	assert.NoError(t.t, err)
+	require.NoError(t.t, err)
 	return testhelper.MustReplaceEnvsString(strings.TrimSpace(file.Content), t.envProvider)
 }
 
