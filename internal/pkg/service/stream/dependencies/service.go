@@ -17,8 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -187,7 +187,7 @@ func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.Publ
 		return api
 	}
 
-	d.keboolaBridge = keboolaSinkBridge.New(d, apiCtxProvider)
+	d.keboolaBridge = keboolaSinkBridge.New(d, apiCtxProvider, cfg.Sink.Table.Keboola)
 
 	d.storageStatisticsRepository = statsRepo.New(d)
 

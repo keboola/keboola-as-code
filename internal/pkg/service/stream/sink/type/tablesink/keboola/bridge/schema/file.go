@@ -3,7 +3,7 @@ package schema
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/keboolasink"
+	keboolasink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 

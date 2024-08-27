@@ -117,6 +117,11 @@ source:
         writeBufferSize: 4KB
         # Max size of the HTTP request body. Validation rules: required
         maxRequestBodySize: 1MB
+sink:
+    table:
+        keboola:
+            # Timeout to perform upload send event of slice or import event of file
+            eventSendTimeout: 30s
 storage:
     # Mounted volumes path, each volume is in "{type}/{label}" subdir. Validation rules: required
     volumesPath: ""
