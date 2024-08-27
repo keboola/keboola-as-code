@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
@@ -59,6 +60,8 @@ type Node struct {
 	taskEtcdPrefix etcdop.PrefixT[Task]
 	taskLocksMutex *sync.Mutex
 	taskLocks      map[string]bool
+
+	exceptionIDPrefix string
 }
 
 type dependencies interface {
@@ -70,7 +73,7 @@ type dependencies interface {
 	EtcdSerde() *serde.Serde
 }
 
-func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, opts ...NodeOption) (*Node, error) {
 	// Validate
 	if nodeID == "" {
 		panic(errors.New("task.Node: node ID cannot be empty"))
@@ -86,17 +89,18 @@ func NewNode(nodeID string, d dependencies, opts ...NodeOption) (*Node, error) {
 
 	taskPrefix := etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
-		tracer:         d.Telemetry().Tracer(),
-		meters:         newMeters(d.Telemetry().Meter()),
-		clock:          d.Clock(),
-		logger:         d.Logger().WithComponent("task"),
-		client:         d.EtcdClient(),
-		nodeID:         nodeID,
-		config:         c,
-		tasksCount:     atomic.NewInt64(0),
-		taskEtcdPrefix: taskPrefix,
-		taskLocksMutex: &sync.Mutex{},
-		taskLocks:      make(map[string]bool),
+		tracer:            d.Telemetry().Tracer(),
+		meters:            newMeters(d.Telemetry().Meter()),
+		clock:             d.Clock(),
+		logger:            d.Logger().WithComponent("task"),
+		client:            d.EtcdClient(),
+		nodeID:            nodeID,
+		config:            c,
+		tasksCount:        atomic.NewInt64(0),
+		taskEtcdPrefix:    taskPrefix,
+		taskLocksMutex:    &sync.Mutex{},
+		taskLocks:         make(map[string]bool),
+		exceptionIDPrefix: exceptionIDPrefix,
 	}
 
 	// Graceful shutdown
@@ -319,6 +323,28 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		task.Result = result.Result
 	} else {
 		task.Error = result.Error.Error()
+		task.UserError = &Error{}
+
+		var errWithName svcerrors.WithName
+		if errors.As(result.Error, &errWithName) {
+			task.UserError.Name = errWithName.ErrorName()
+		} else {
+			task.UserError.Name = "unknownError"
+		}
+
+		var errWithUserMessage svcerrors.WithUserMessage
+		if errors.As(result.Error, &errWithUserMessage) {
+			task.UserError.Message = errWithUserMessage.ErrorUserMessage()
+		} else {
+			task.UserError.Message = "Unknown error"
+		}
+
+		var errWithExceptionID svcerrors.WithExceptionID
+		if errors.As(result.Error, &errWithExceptionID) {
+			task.UserError.ExceptionID = errWithExceptionID.ErrorExceptionID()
+		} else {
+			task.UserError.ExceptionID = n.exceptionIDPrefix + idgenerator.TaskExceptionID()
+		}
 	}
 
 	// Update telemetry

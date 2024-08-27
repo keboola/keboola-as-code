@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	userAgent = "keboola-stream"
+	userAgent         = "keboola-stream"
+	exceptionIDPrefix = "keboola-stream-task-"
 )
 
 // serviceScope implements ServiceScope interface.
@@ -112,7 +113,7 @@ func newParentScopes(
 		return nil, err
 	}
 
-	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, d)
+	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, exceptionIDPrefix, d)
 	if err != nil {
 		return nil, err
 	}
