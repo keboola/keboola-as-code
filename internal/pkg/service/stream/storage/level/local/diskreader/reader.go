@@ -84,11 +84,12 @@ func newReader(
 		for _, filePath := range matched {
 			openFileAndWrite(ctx, r.logger, opener, filePath, writer)
 		}
+
+		writer.Close()
 	}()
 
 	// Init readers chain
 	r.chain = readchain.New(r.logger, reader)
-	r.chain.AppendCloser(writer)
 
 	// Close resources on error
 	defer func() {
