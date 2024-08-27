@@ -68,32 +68,38 @@ type Aggregated struct {
 }
 
 // Add returns a sum of the value and the given second value.
-// If only one of the values is a reset value then it returns a non-reset value using subtraction.
-// Note that the value can't be negative, in case of an underflow the fields will be 0.
+// Panics if one of the values has ResetAt but the other does not.
 func (v Value) Add(v2 Value) Value {
-	r := v
-	if (r.ResetAt == nil) != (v2.ResetAt == nil) {
-		if r.ResetAt != nil {
-			return v2.Add(r)
-		}
-		r = r.sub(v2)
-	} else {
-		r.SlicesCount += v2.SlicesCount
-		r.RecordsCount += v2.RecordsCount
-		r.UncompressedSize += v2.UncompressedSize
-		r.CompressedSize += v2.CompressedSize
-		r.StagingSize += v2.StagingSize
+	if (v.ResetAt == nil) != (v2.ResetAt == nil) {
+		panic("can't add statistics when one of them is negative")
 	}
-	if r.FirstRecordAt.IsZero() || (!v2.FirstRecordAt.IsZero() && r.FirstRecordAt.After(v2.FirstRecordAt)) {
-		r.FirstRecordAt = v2.FirstRecordAt
+
+	v.SlicesCount += v2.SlicesCount
+	v.RecordsCount += v2.RecordsCount
+	v.UncompressedSize += v2.UncompressedSize
+	v.CompressedSize += v2.CompressedSize
+	v.StagingSize += v2.StagingSize
+	if v.FirstRecordAt.IsZero() || (!v2.FirstRecordAt.IsZero() && v.FirstRecordAt.After(v2.FirstRecordAt)) {
+		v.FirstRecordAt = v2.FirstRecordAt
 	}
-	if v2.LastRecordAt.After(r.LastRecordAt) {
-		r.LastRecordAt = v2.LastRecordAt
+	if v2.LastRecordAt.After(v.LastRecordAt) {
+		v.LastRecordAt = v2.LastRecordAt
 	}
-	return r
+	if v.ResetAt != nil && v2.ResetAt.After(*v.ResetAt) {
+		v.ResetAt = v2.ResetAt
+	}
+	return v
 }
 
-func (v Value) sub(v2 Value) Value {
+// Sub can be used to subtract a negative value from a positive onw.
+func (v Value) Sub(v2 Value) Value {
+	if v.ResetAt != nil {
+		panic("can't sub statistics when the first is negative")
+	}
+	if v2.ResetAt == nil {
+		panic("can't sub statistics when the second is positive")
+	}
+
 	if v2.SlicesCount > v.SlicesCount {
 		v.SlicesCount = 0
 	} else {
@@ -119,5 +125,12 @@ func (v Value) sub(v2 Value) Value {
 	} else {
 		v.StagingSize -= v2.StagingSize
 	}
+	if v.FirstRecordAt.IsZero() || (!v2.FirstRecordAt.IsZero() && v.FirstRecordAt.After(v2.FirstRecordAt)) {
+		v.FirstRecordAt = v2.FirstRecordAt
+	}
+	if v2.LastRecordAt.After(v.LastRecordAt) {
+		v.LastRecordAt = v2.LastRecordAt
+	}
+
 	return v
 }

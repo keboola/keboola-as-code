@@ -23,3 +23,12 @@ func Aggregate(l model.Level, partial statistics.Value, out *statistics.Aggregat
 		panic(errors.Errorf(`unexpected statistics level "%v"`, l))
 	}
 }
+
+func AggregateSub(l model.Level, partial statistics.Value, out *statistics.Aggregated) {
+	if l != model.LevelTarget {
+		panic("AggregateSub only makes sense for level target")
+	}
+
+	out.Target = out.Target.Sub(partial)
+	out.Total = out.Total.Sub(partial)
+}

@@ -9,6 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/aggregate"
@@ -80,13 +82,22 @@ func (c *L1) aggregate(ctx context.Context, objectKey fmt.Stringer) (statistics.
 func (c *L1) aggregateWithRev(_ context.Context, objectKey fmt.Stringer) (out statistics.Aggregated, rev int64) {
 	c.cache.Atomic(func(t prefixtree.TreeReadOnly[statistics.Value]) {
 		for _, level := range model.AllLevels() {
+			var resetSum statistics.Value
+			resetSum.ResetAt = ptr.Ptr(utctime.UTCTime{})
 			t.WalkPrefix(
 				c.repository.ObjectPrefix(level, objectKey),
 				func(_ string, v statistics.Value) bool {
-					aggregate.Aggregate(level, v, &out)
+					if level == model.LevelTarget && v.ResetAt != nil {
+						resetSum = resetSum.Add(v)
+					} else {
+						aggregate.Aggregate(level, v, &out)
+					}
 					return false
 				},
 			)
+			if level == model.LevelTarget {
+				aggregate.AggregateSub(level, resetSum, &out)
+			}
 		}
 		rev = c.cache.Revision()
 	})

@@ -85,7 +85,7 @@ func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Ag
 
 	txn.Then(pfx.GetOrNil(r.client).WithOnResult(func(v *statistics.Value) {
 		if v != nil && v.ResetAt != nil {
-			aggregate.Aggregate(model.LevelTarget, *v, &result)
+			aggregate.AggregateSub(model.LevelTarget, *v, &result)
 		}
 	}))
 

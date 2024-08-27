@@ -11,10 +11,11 @@ import (
 )
 
 type testCase struct {
-	name     string
-	value    statistics.Value
-	addition statistics.Value
-	expected statistics.Value
+	name        string
+	value       statistics.Value
+	addition    statistics.Value
+	expected    statistics.Value
+	expectPanic bool
 }
 
 func TestValue_Add(t *testing.T) {
@@ -128,13 +129,13 @@ func TestValue_Add(t *testing.T) {
 		{
 			name: "empty reset values",
 			value: statistics.Value{
-				ResetAt: ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+				ResetAt: ptr.Ptr(utctime.MustParse("2000-02-02T00:00:00.000Z")),
 			},
 			addition: statistics.Value{
 				ResetAt: ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 			},
 			expected: statistics.Value{
-				ResetAt: ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+				ResetAt: ptr.Ptr(utctime.MustParse("2000-02-02T00:00:00.000Z")),
 			},
 		},
 		{
@@ -148,7 +149,7 @@ func TestValue_Add(t *testing.T) {
 				StagingSize:      1000,
 			},
 			addition: statistics.Value{
-				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-02T00:00:00.000Z")),
 				RecordsCount:     1,
 				SlicesCount:      1,
 				UncompressedSize: 1,
@@ -156,7 +157,7 @@ func TestValue_Add(t *testing.T) {
 				StagingSize:      1,
 			},
 			expected: statistics.Value{
-				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-02T00:00:00.000Z")),
 				RecordsCount:     101,
 				SlicesCount:      201,
 				UncompressedSize: 2001,
@@ -181,13 +182,7 @@ func TestValue_Add(t *testing.T) {
 				CompressedSize:   1,
 				StagingSize:      1,
 			},
-			expected: statistics.Value{
-				RecordsCount:     99,
-				SlicesCount:      199,
-				UncompressedSize: 1999,
-				CompressedSize:   299,
-				StagingSize:      999,
-			},
+			expectPanic: true,
 		},
 		{
 			name: "reset value, add normal value",
@@ -206,6 +201,54 @@ func TestValue_Add(t *testing.T) {
 				CompressedSize:   300,
 				StagingSize:      1000,
 			},
+			expectPanic: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.expectPanic {
+				defer func() {
+					if err := recover(); err == nil {
+						t.Errorf("The code did not panic")
+					}
+				}()
+			}
+
+			assert.Equal(t, tc.expected, tc.value.Add(tc.addition))
+		})
+	}
+}
+
+func TestValue_Sub(t *testing.T) {
+	t.Parallel()
+
+	testCases := []testCase{
+		{
+			name:        "empty values",
+			value:       statistics.Value{},
+			addition:    statistics.Value{},
+			expectPanic: true,
+		},
+		{
+			name: "normal value, sub reset value",
+			value: statistics.Value{
+				RecordsCount:     100,
+				SlicesCount:      200,
+				UncompressedSize: 2000,
+				CompressedSize:   300,
+				StagingSize:      1000,
+			},
+			addition: statistics.Value{
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+				RecordsCount:     1,
+				SlicesCount:      1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
+				StagingSize:      1,
+			},
 			expected: statistics.Value{
 				RecordsCount:     99,
 				SlicesCount:      199,
@@ -215,8 +258,9 @@ func TestValue_Add(t *testing.T) {
 			},
 		},
 		{
-			name: "normal value, add reset value, underflow",
+			name: "reset value, sub normal value",
 			value: statistics.Value{
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     1,
 				SlicesCount:      1,
 				UncompressedSize: 1,
@@ -224,24 +268,25 @@ func TestValue_Add(t *testing.T) {
 				StagingSize:      1,
 			},
 			addition: statistics.Value{
-				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     100,
 				SlicesCount:      200,
 				UncompressedSize: 2000,
 				CompressedSize:   300,
 				StagingSize:      1000,
 			},
-			expected: statistics.Value{
-				RecordsCount:     0,
-				SlicesCount:      0,
-				UncompressedSize: 0,
-				CompressedSize:   0,
-				StagingSize:      0,
-			},
+			expectPanic: true,
 		},
 		{
-			name: "reset value, add normal value, underflow",
+			name: "reset value, sub reset value",
 			value: statistics.Value{
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+				RecordsCount:     1,
+				SlicesCount:      1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
+				StagingSize:      1,
+			},
+			addition: statistics.Value{
 				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     100,
 				SlicesCount:      200,
@@ -249,12 +294,24 @@ func TestValue_Add(t *testing.T) {
 				CompressedSize:   300,
 				StagingSize:      1000,
 			},
-			addition: statistics.Value{
+			expectPanic: true,
+		},
+		{
+			name: "normal value, sub reset value, underflow",
+			value: statistics.Value{
 				RecordsCount:     1,
 				SlicesCount:      1,
 				UncompressedSize: 1,
 				CompressedSize:   1,
 				StagingSize:      1,
+			},
+			addition: statistics.Value{
+				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+				RecordsCount:     100,
+				SlicesCount:      200,
+				UncompressedSize: 2000,
+				CompressedSize:   300,
+				StagingSize:      1000,
 			},
 			expected: statistics.Value{
 				RecordsCount:     0,
@@ -270,7 +327,15 @@ func TestValue_Add(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, tc.expected, tc.value.Add(tc.addition))
+			if tc.expectPanic {
+				defer func() {
+					if err := recover(); err == nil {
+						t.Errorf("The code did not panic")
+					}
+				}()
+			}
+
+			assert.Equal(t, tc.expected, tc.value.Sub(tc.addition))
 		})
 	}
 }

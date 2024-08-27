@@ -16,7 +16,7 @@ func SumStats(ctx context.Context, now time.Time, prefix iterator.DefinitionT[st
 	if err := sumStatsOp(now, prefix, &out, &outReset).Do(ctx).Err(); err != nil {
 		return out, err
 	}
-	return out.Add(outReset), nil
+	return out.Sub(outReset), nil
 }
 
 // sumStatsOp sums all stats from the iterator.

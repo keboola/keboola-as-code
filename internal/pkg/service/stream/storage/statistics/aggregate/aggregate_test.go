@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -249,4 +250,92 @@ func TestAggregate(t *testing.T) {
 	assert.Panics(t, func() {
 		Aggregate("foo", statistics.Value{}, &result)
 	})
+
+	// Negative value
+	assert.Panics(t, func() {
+		Aggregate("foo", statistics.Value{ResetAt: ptr.Ptr(utctime.MustParse("2000-01-10T00:00:00.000Z"))}, &result)
+	})
+}
+
+func TestAggregateSub(t *testing.T) {
+	t.Parallel()
+
+	result := statistics.Aggregated{
+		Local: statistics.Value{
+			SlicesCount:      10,
+			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			RecordsCount:     10,
+			UncompressedSize: 10,
+			CompressedSize:   10,
+		},
+		Staging: statistics.Value{
+			SlicesCount:      10,
+			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			RecordsCount:     10,
+			UncompressedSize: 10,
+			CompressedSize:   10,
+		},
+		Target: statistics.Value{
+			SlicesCount:      10,
+			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			RecordsCount:     10,
+			UncompressedSize: 10,
+			CompressedSize:   10,
+		},
+		Total: statistics.Value{
+			SlicesCount:      10,
+			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			RecordsCount:     10,
+			UncompressedSize: 10,
+			CompressedSize:   10,
+		},
+	}
+
+	AggregateSub(model.LevelTarget, statistics.Value{
+		ResetAt:          ptr.Ptr(utctime.MustParse("2001-01-10T00:00:00.000Z")),
+		SlicesCount:      1,
+		FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
+		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
+		RecordsCount:     1,
+		UncompressedSize: 1,
+		CompressedSize:   1,
+	}, &result)
+	assert.Equal(t, &statistics.Aggregated{
+		Local: statistics.Value{
+			SlicesCount:      10,
+			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			RecordsCount:     10,
+			UncompressedSize: 10,
+			CompressedSize:   10,
+		},
+		Staging: statistics.Value{
+			SlicesCount:      10,
+			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			RecordsCount:     10,
+			UncompressedSize: 10,
+			CompressedSize:   10,
+		},
+		Target: statistics.Value{
+			SlicesCount:      9,
+			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			RecordsCount:     9,
+			UncompressedSize: 9,
+			CompressedSize:   9,
+		},
+		Total: statistics.Value{
+			SlicesCount:      9,
+			FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
+			LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
+			RecordsCount:     9,
+			UncompressedSize: 9,
+			CompressedSize:   9,
+		},
+	}, &result)
 }
