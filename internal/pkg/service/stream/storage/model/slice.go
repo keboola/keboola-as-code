@@ -95,6 +95,7 @@ func (s Slice) Telemetry() []attribute.KeyValue {
 		attribute.String("source.id", s.SourceID.String()),
 		attribute.String("sink.id", s.SinkID.String()),
 		attribute.String("file.id", s.FileID.String()),
+		attribute.String("volume.id", s.VolumeID.String()),
 		attribute.String("slice.id", s.SliceID.String()),
 		attribute.String("slice.lastStateChange", lastStateChange.String()),
 		attribute.Int("slice.retryAttempt", s.RetryAttempt),
