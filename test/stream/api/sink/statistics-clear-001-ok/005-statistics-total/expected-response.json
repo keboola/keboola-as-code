@@ -1,0 +1,16 @@
+{
+  "total": {
+    "firstRecordAt": "2000-01-19T00:00:00.000Z",
+    "lastRecordAt": "2000-01-21T00:00:00.000Z",
+    "recordsCount": 199,
+    "uncompressedSize": 199
+  },
+  "levels": {
+    "target": {
+      "firstRecordAt": "2000-01-19T00:00:00.000Z",
+      "lastRecordAt": "2000-01-21T00:00:00.000Z",
+      "recordsCount": 199,
+      "uncompressedSize": 199
+    }
+  }
+}

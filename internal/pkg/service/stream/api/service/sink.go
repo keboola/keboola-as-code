@@ -10,7 +10,6 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
@@ -251,10 +250,24 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	filesMap := make(map[model.FileID]*stream.SinkFile)
 
-	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).Do(ctx).ForEachValue(func(value model.File, header *iterator.Header) error {
-		filesMap[value.FileID] = s.mapper.NewSinkFile(value)
-		return nil
-	})
+	lastReset, err := d.StatisticsRepository().LastReset(d.SinkKey()).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+
+	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).
+		WithFilter(func(v model.File) bool {
+			if lastReset.ResetAt == nil {
+				return true
+			}
+			// Exclude files newer than last reset.
+			return v.OpenedAt().After(*lastReset.ResetAt)
+		}).
+		Do(ctx).
+		ForEachValue(func(value model.File, header *iterator.Header) error {
+			filesMap[value.FileID] = s.mapper.NewSinkFile(value)
+			return nil
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +299,11 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 }
 
 func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRequestScope, payload *api.SinkStatisticsClearPayload) (err error) {
-	return errors.NewNotImplementedError()
+	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+		return err
+	}
+
+	return d.StatisticsRepository().ResetSinkStats(d.SinkKey()).Do(ctx).Err()
 }
 
 func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {

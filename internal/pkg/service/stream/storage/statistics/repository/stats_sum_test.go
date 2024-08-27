@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -28,7 +29,20 @@ func TestSumStats(t *testing.T) {
 
 	// Put values
 	assert.NoError(t, pfx.Key("0").Put(client, statistics.Value{}).Do(ctx).Err())
+
+	// Reset value should be subtracted but only at the very end.
 	assert.NoError(t, pfx.Key("1").Put(client, statistics.Value{
+		ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+		SlicesCount:      1,
+		FirstRecordAt:    utctime.MustParse("2000-01-15T00:00:00.000Z"),
+		LastRecordAt:     utctime.MustParse("2000-01-25T00:00:00.000Z"),
+		RecordsCount:     5,
+		UncompressedSize: 1,
+		CompressedSize:   1,
+		StagingSize:      1,
+	}).Do(ctx).Err())
+
+	assert.NoError(t, pfx.Key("2").Put(client, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-10T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
@@ -36,7 +50,7 @@ func TestSumStats(t *testing.T) {
 		UncompressedSize: 2,
 		CompressedSize:   1,
 	}).Do(ctx).Err())
-	assert.NoError(t, pfx.Key("2").Put(client, statistics.Value{
+	assert.NoError(t, pfx.Key("3").Put(client, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-05T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-20T00:00:00.000Z"),
@@ -44,7 +58,7 @@ func TestSumStats(t *testing.T) {
 		UncompressedSize: 4,
 		CompressedSize:   2,
 	}).Do(ctx).Err())
-	assert.NoError(t, pfx.Key("3").Put(client, statistics.Value{
+	assert.NoError(t, pfx.Key("4").Put(client, statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    utctime.MustParse("2000-01-15T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-25T00:00:00.000Z"),
@@ -54,16 +68,19 @@ func TestSumStats(t *testing.T) {
 		StagingSize:      1,
 	}).Do(ctx).Err())
 
+	now, err := time.Parse(time.RFC3339, "2000-02-01T00:00:00.000Z")
+	assert.NoError(t, err)
+
 	// Sum
-	sum, err := repository.SumStats(ctx, pfx.GetAll(client))
+	sum, err := repository.SumStats(ctx, now, pfx.GetAll(client))
 	assert.NoError(t, err)
 	assert.Equal(t, statistics.Value{
-		SlicesCount:      3,
+		SlicesCount:      2,
 		FirstRecordAt:    utctime.MustParse("2000-01-05T00:00:00.000Z"),
 		LastRecordAt:     utctime.MustParse("2000-01-25T00:00:00.000Z"),
-		RecordsCount:     44,
-		UncompressedSize: 22,
-		CompressedSize:   6,
-		StagingSize:      1,
+		RecordsCount:     39,
+		UncompressedSize: 21,
+		CompressedSize:   5,
+		StagingSize:      0,
 	}, sum)
 }

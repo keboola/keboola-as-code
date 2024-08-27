@@ -187,8 +187,8 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 	if c.expectedStateFromFile != "" {
 		outDir := filepath.Join(filepath.Dir(c.expectedStateFromFile), ".out")              //nolint:forbidigo // no virtual FS
 		filePath := filepath.Join(outDir, filepath.Base(c.expectedStateFromFile)+".actual") //nolint:forbidigo // no virtual FS
-		assert.NoError(t, os.MkdirAll(outDir, 0o750))                                       //nolint:forbidigo // no virtual FS
-		assert.NoError(t, os.WriteFile(filePath, []byte(KVsToString(actualKVs)), 0o600))    //nolint:forbidigo // no virtual FS
+		assert.NoError(t, os.MkdirAll(outDir, 0o755))                                       //nolint:forbidigo // no virtual FS
+		assert.NoError(t, os.WriteFile(filePath, []byte(KVsToString(actualKVs)), 0o644))    //nolint:forbidigo // no virtual FS
 	}
 
 	// Compare expected and actual KVs

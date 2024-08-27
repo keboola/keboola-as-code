@@ -16,6 +16,8 @@ import (
 const (
 	// rollupSumKey contains the sum of all statistics from the object children that were deleted.
 	rollupSumKey = "_sum"
+	// rollupResetKey contains the sum of all statistics from the object children that are ignored.
+	rollupResetKey = "_reset"
 )
 
 type (
@@ -98,4 +100,8 @@ func (v schemaInLevel) inObject(objectKey fmt.Stringer) schemaInObject {
 
 func (v schemaInObject) Sum() KeyT[statistics.Value] {
 	return v.PrefixT.Key(rollupSumKey)
+}
+
+func (v schemaInObject) Reset() KeyT[statistics.Value] {
+	return v.PrefixT.Key(rollupResetKey)
 }

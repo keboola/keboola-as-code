@@ -37,29 +37,46 @@ func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoRe
 		}
 
 		var objectSum statistics.Value
+		var objectReset statistics.Value
 		var parentSum statistics.Value
+		var parentReset statistics.Value
 
 		// sumKey contains the sum of all statistics from the children that were deleted
 		sumKey := r.schema.InLevel(model.LevelTarget).InParentOf(objectKey).Sum()
 
+		// resetKey contains the sum of all statistics from the children that are ignored
+		resetKey := r.schema.InLevel(model.LevelTarget).InParentOf(objectKey).Reset()
+
 		// Get sum from the parent object
-		ops.Read(func(ctx context.Context) op.Op {
+		ops.Read(func(_ context.Context) op.Op {
 			return sumKey.GetOrEmpty(r.client).WithResultTo(&parentSum)
 		})
 
+		// Get reset sum from the parent object
+		ops.Read(func(_ context.Context) op.Op {
+			return resetKey.GetOrEmpty(r.client).WithResultTo(&parentReset)
+		})
+
 		// Get statistics of the object
-		ops.Read(func(context.Context) op.Op {
+		ops.Read(func(_ context.Context) op.Op {
 			objectSum = statistics.Value{}
-			return SumStatsOp(objectPfx.GetAll(r.client), &objectSum)
+			return sumStatsOp(r.clock.Now(), objectPfx.GetAll(r.client), &objectSum, &objectReset)
 		})
 
 		// Save update sum
-		ops.Write(func(ctx context.Context) op.Op {
-			if objectSum.RecordsCount > 0 {
-				return sumKey.Put(r.client, parentSum.Add(objectSum))
-			} else {
+		ops.Write(func(_ context.Context) op.Op {
+			if objectSum.RecordsCount <= 0 {
 				return nil
 			}
+			return sumKey.Put(r.client, parentSum.Add(objectSum))
+		})
+
+		// Save update reset
+		ops.Write(func(_ context.Context) op.Op {
+			if objectReset.RecordsCount <= 0 {
+				return nil
+			}
+			return resetKey.Put(r.client, parentReset.Add(objectReset))
 		})
 	}
 

@@ -29,6 +29,7 @@ package repository
 import (
 	"fmt"
 
+	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -57,6 +58,7 @@ type Repository struct {
 	client    *etcd.Client
 	plugins   *plugin.Plugins
 	storage   *storageRepo.Repository
+	clock     clock.Clock
 	schema    schema
 }
 
@@ -67,6 +69,7 @@ type dependencies interface {
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
 	StorageRepository() *storageRepo.Repository
+	Clock() clock.Clock
 }
 
 func New(d dependencies) *Repository {
@@ -76,6 +79,7 @@ func New(d dependencies) *Repository {
 		client:    d.EtcdClient(),
 		plugins:   d.Plugins(),
 		storage:   d.StorageRepository(),
+		clock:     d.Clock(),
 		schema:    newSchema(d.EtcdSerde()),
 	}
 
