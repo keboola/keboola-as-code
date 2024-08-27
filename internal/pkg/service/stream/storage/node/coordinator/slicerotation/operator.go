@@ -25,6 +25,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const dbOperationTimeout = 30 * time.Second
+
 type operator struct {
 	config       stagingConfig.OperatorConfig
 	clock        clock.Clock
@@ -291,7 +293,7 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	}
 
 	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
 	err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), stats.Local.RecordsCount == 0).Do(dbCtx).Err()

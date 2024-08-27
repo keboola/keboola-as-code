@@ -24,6 +24,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const dbOperationTimeout = 30 * time.Second
+
 type operator struct {
 	config     stagingConfig.OperatorConfig
 	clock      clock.Clock
@@ -204,7 +206,7 @@ func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, s
 		o.logger.Error(ctx, err.Error())
 
 		// Update the entity, the ctx may be cancelled
-		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 		defer dbCancel()
 
 		err = o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(dbCtx).Err()
@@ -237,7 +239,7 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 	}
 
 	// New context for database operation, we may be running out of time
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
 	// Switch slice to the uploaded state

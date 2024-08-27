@@ -24,6 +24,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const dbOperationTimeout = 30 * time.Second
+
 type operator struct {
 	config       targetConfig.OperatorConfig
 	clock        clock.Clock
@@ -352,7 +354,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	defer unlock()
 
 	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
 	// If there is no error, switch file to the importing state
