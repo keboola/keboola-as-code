@@ -3,11 +3,11 @@ package slicerotation
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/sinklock"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -248,16 +248,11 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	o.logger.Infof(ctx, "rotating slice for upload: %s", cause)
 
 	// Lock all file operations in the sink
-	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", slice.SliceKey.SinkKey))
-	if err := lock.Lock(ctx); err != nil {
-		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, slice.SliceKey.SinkKey)
+	if unlock == nil {
 		return
 	}
-	defer func() {
-		if err := lock.Unlock(ctx); err != nil {
-			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
-		}
-	}()
+	defer unlock()
 
 	// Rotate slice
 	err = o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()

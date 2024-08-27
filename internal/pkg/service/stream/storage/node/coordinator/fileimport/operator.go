@@ -224,11 +224,11 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	defer cancel()
 
 	// Lock all file operations in the sink
-	lock, unlocker := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
-	if unlocker == nil {
+	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
+	if unlock == nil {
 		return
 	}
-	defer unlocker()
+	defer unlock()
 
 	// Import file
 	err := o.doImportFile(ctx, lock, file)
@@ -269,11 +269,11 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 		}
 	}
 
-	// Update the entity, the ctx may be cancelled
+	// New context for database operation, we may be running out of time
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 
-	// Switch file to the importing state
+	// Switch file to the imported state
 	err := o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
 	if err != nil {
 		return errors.PrefixError(err, "cannot switch file to the imported state")

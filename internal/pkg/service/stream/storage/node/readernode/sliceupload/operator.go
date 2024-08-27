@@ -236,7 +236,7 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 		}
 	}
 
-	// Update the entity, the ctx may be cancelled
+	// New context for database operation, we may be running out of time
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer dbCancel()
 

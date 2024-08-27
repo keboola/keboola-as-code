@@ -35,8 +35,8 @@ func TestFileImport(t *testing.T) {
 	ts := setup(t, ctx)
 	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
-	file := ts.prepareFile(t, ctx)
-	slice := ts.prepareSlice(t, ctx)
+	file := ts.getFile(t, ctx)
+	slice := ts.getSlice(t, ctx)
 
 	ts.clk.Add(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
@@ -101,8 +101,8 @@ func TestFileImportError(t *testing.T) {
 	ts := setup(t, ctx)
 	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
-	file := ts.prepareFile(t, ctx)
-	slice := ts.prepareSlice(t, ctx)
+	file := ts.getFile(t, ctx)
+	slice := ts.getSlice(t, ctx)
 
 	// Fail first file import
 	ts.mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
@@ -210,8 +210,8 @@ func TestFileImportEmpty(t *testing.T) {
 	ts := setup(t, ctx)
 	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
-	file := ts.prepareFile(t, ctx)
-	slice := ts.prepareSlice(t, ctx)
+	file := ts.getFile(t, ctx)
+	slice := ts.getSlice(t, ctx)
 
 	// Import should pass regardless of this error because the file is empty
 	ts.mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
@@ -332,7 +332,7 @@ func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
 	require.NoError(t, ts.dependencies.DefinitionRepository().Sink().Create(&ts.sink, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
 }
 
-func (ts *testState) prepareFile(t *testing.T, ctx context.Context) model.File {
+func (ts *testState) getFile(t *testing.T, ctx context.Context) model.File {
 	t.Helper()
 	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
@@ -341,7 +341,7 @@ func (ts *testState) prepareFile(t *testing.T, ctx context.Context) model.File {
 	return files[0]
 }
 
-func (ts *testState) prepareSlice(t *testing.T, ctx context.Context) model.Slice {
+func (ts *testState) getSlice(t *testing.T, ctx context.Context) model.Slice {
 	t.Helper()
 	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)

@@ -298,11 +298,11 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	o.logger.Infof(ctx, "rotating file for import: %s", cause)
 
 	// Lock all file operations in the sink
-	lock, unlocker := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
-	if unlocker == nil {
+	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
+	if unlock == nil {
 		return
 	}
-	defer unlocker()
+	defer unlock()
 
 	// Rotate file
 	err = o.storage.File().Rotate(file.FileKey.SinkKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
@@ -345,11 +345,11 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	o.lock.RUnlock()
 
 	// Lock all file operations in the sink
-	lock, unlocker := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
-	if unlocker == nil {
+	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
+	if unlock == nil {
 		return
 	}
-	defer unlocker()
+	defer unlock()
 
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
