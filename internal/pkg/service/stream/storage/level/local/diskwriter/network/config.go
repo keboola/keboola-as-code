@@ -7,11 +7,15 @@ import (
 )
 
 const (
-	TransportProtocolKCP = TransportProtocol("kcp")
-	TransportProtocolTCP = TransportProtocol("tcp")
+	TransportProtocolKCP                = TransportProtocol("kcp")
+	TransportProtocolTCP                = TransportProtocol("tcp")
+	RandomBalancerType     BalancerType = "rand"
+	RoundRobinBalancerType BalancerType = "roundRobin"
 )
 
 type TransportProtocol string
+
+type BalancerType string
 
 type Config struct {
 	Listen                 string            `configKey:"listen" configUsage:"Listen address of the configuration HTTP API." validate:"required,hostname_port"`
@@ -26,6 +30,7 @@ type Config struct {
 	ShutdownTimeout        time.Duration     `configKey:"shutdownTimeout" configUsage:"How long the server waits for streams closing." validate:"required,minDuration=1s,max=600s"`
 	KCPInputBuffer         datasize.ByteSize `configKey:"kcpInputBuffer" configUsage:"Buffer size for transferring data between source and writer nodes (kcp)." validate:"required,minBytes=16kB,maxBytes=100MB"`
 	KCPResponseBuffer      datasize.ByteSize `configKey:"kcpResponseBuffer" configUsage:"Buffer size for transferring responses between writer and source node (kcp)." validate:"required,minBytes=16kB,maxBytes=100MB"`
+	PipelineBalancer       BalancerType      `configKey:"pipelineBalancer" configUsage:"Pipeline balancer type which balances the writing on particular nodes based on selected strategy" validate:"required,oneof=rand roundRobin"`
 }
 
 func NewConfig() Config {
@@ -42,5 +47,6 @@ func NewConfig() Config {
 		ShutdownTimeout:        30 * time.Second,
 		KCPInputBuffer:         8 * datasize.MB,
 		KCPResponseBuffer:      512 * datasize.KB,
+		PipelineBalancer:       RandomBalancerType,
 	}
 }

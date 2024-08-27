@@ -220,6 +220,8 @@ storage:
                     kcpInputBuffer: 8MB
                     # Buffer size for transferring responses between writer and source node (kcp). Validation rules: required,minBytes=16kB,maxBytes=100MB
                     kcpResponseBuffer: 512KB
+                    # Pipeline balancer type which balances the writing on particular nodes based on selected strategy. Validation rules: required,oneof=rand roundRobin
+                    pipelineBalancer: rand
                 allocation:
                     # Allocate disk space for each slice.
                     enabled: true

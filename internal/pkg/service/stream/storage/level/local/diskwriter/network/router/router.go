@@ -70,11 +70,16 @@ type dependencies interface {
 }
 
 func New(d dependencies, sourceNodeID, sourceType string, config network.Config) (r *Router, err error) {
+	balancer, err := NewBalancer(config.PipelineBalancer)
+	if err != nil {
+		return nil, err
+	}
+
 	r = &Router{
 		nodeID:      sourceNodeID,
 		config:      config,
 		logger:      d.Logger().WithComponent("storage.router"),
-		balancer:    NewRandomBalancer(),
+		balancer:    balancer,
 		connections: d.ConnectionManager(),
 		encoding:    d.EncodingManager(),
 		pipelines:   make(map[key.SinkKey]*balancedPipeline),
