@@ -121,8 +121,9 @@ func TestBridge_SendFileImportEvent_OkEvent(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	registerOkResponder(t, transport, &body)
 
+	cfg := keboolasink.NewConfig()
 	// Send event
-	b := bridge.New(d, nil)
+	b := bridge.New(d, nil, cfg)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
 	err := error(nil)
@@ -153,8 +154,9 @@ func TestBridge_SendFileImportEvent_ErrorEvent(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	registerOkResponder(t, transport, &body)
 
+	cfg := keboolasink.NewConfig()
 	// Send event
-	b := bridge.New(d, nil)
+	b := bridge.New(d, nil, cfg)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
 	err := errors.New("some error")
@@ -183,8 +185,9 @@ func TestBridge_SendFileImportEvent_HTTPError(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	registerErrorResponder(t, transport)
 
+	cfg := keboolasink.NewConfig()
 	// Send event
-	b := bridge.New(d, nil)
+	b := bridge.New(d, nil, cfg)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
 	err := error(nil)
