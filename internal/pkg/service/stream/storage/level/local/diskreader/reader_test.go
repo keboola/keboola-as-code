@@ -113,8 +113,8 @@ func TestVolume_NewReaderFor_MultipleFilesSingleVolume(t *testing.T) {
 		tc.Logger.AssertJSONMessages(collect, `
 {"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
-{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%sslice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%sslice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
 	`)
 	}, 5*time.Second, 10*time.Millisecond)
 }

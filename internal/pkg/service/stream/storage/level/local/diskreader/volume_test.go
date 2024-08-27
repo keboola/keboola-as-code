@@ -265,8 +265,8 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, vol.Close(context.Background()))
 	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
 		tc.Logger.AssertJSONMessages(collect, `
-{"level":"error","message":"cannot copy to writer \"/tmp/%s/slice-my-node.csv\": io: read/write on closed pipe","volume.id":"abcdef"}
-{"level":"error","message":"cannot copy to writer \"/tmp/%s/slice-my-node.csv\": io: read/write on closed pipe","volume.id":"abcdef"}
+{"level":"error","message":"cannot copy to writer \"%sslice-my-node.csv\": io: read/write on closed pipe","volume.id":"abcdef"}
+{"level":"error","message":"cannot copy to writer \"%sslice-my-node.csv\": io: read/write on closed pipe","volume.id":"abcdef"}
 	`)
 	}, 5*time.Second, 10*time.Millisecond)
 }
