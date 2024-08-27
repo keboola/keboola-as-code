@@ -257,5 +257,4 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 
 	o.logger.Info(ctx, "successfully uploaded slice")
 	return nil
-
 }

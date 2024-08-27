@@ -177,8 +177,8 @@ func TestSliceRotation(t *testing.T) {
 
 	// Trigger check - compressed size trigger
 	triggerCheck(t, true, `
-{"level":"info","message":"rotating slice for upload: size threshold met, compressed size: 5.0 MB, threshold: 5.0 MB","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
-{"level":"info","time":"%s","message":"successfully rotated slice","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotating slice for upload: size threshold met, compressed size: 5.0 MB, threshold: 5.0 MB","slice.id":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"successfully rotated slice","slice.id":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
 `)
 	// Other conditions are tested in "TestShouldUpload"
 
@@ -195,8 +195,8 @@ func TestSliceRotation(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sourceNode.Notify(ctx, resp.Header.Revision))
 	triggerCheck(t, false, `
-{"level":"info","time":"%s","message":"closing slice","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"successfully closed slice","slice.key":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"closing slice","slice.id":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"successfully closed slice","slice.id":"2000-01-01T00:00:02.000Z","component":"storage.node.operator.slice.rotation"}
 	`)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		slices, err = d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
