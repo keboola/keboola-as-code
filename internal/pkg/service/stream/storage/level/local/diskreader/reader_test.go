@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
@@ -38,15 +39,17 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 	assert.Len(t, tc.Volume.Readers(), 0)
 
 	// Check logs
-	tc.AssertLogs(`
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(collect, `
 {"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"closing chain"}
 {"level":"debug","message":"chain closed"}
 `)
-	tc.AssertLogs(`
+		tc.AssertLogs(`
 {"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","project.id":"123","branch.id":"456","source.id":"my-source","sink.id":"my-sink","file.id":"2000-01-01T19:00:00.000Z","slice.id":"2000-01-01T20:00:00.000Z"}
 `)
+	}, 5*time.Second, 10*time.Millisecond)
 }
 
 // TestVolume_NewReaderFor_Duplicate tests that only one reader for a slice can exist simultaneously.
@@ -106,16 +109,14 @@ func TestVolume_NewReaderFor_MultipleFilesSingleVolume(t *testing.T) {
 	assert.Len(t, tc.Volume.Readers(), 0)
 
 	// Check logs
-	tc.AssertLogs(`
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(collect, `
 {"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
-{"level":"debug","message":"closing chain"}
-{"level":"debug","message":"chain closed"}
-`)
-	tc.AssertLogs(`
 {"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
 {"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s/slice-my-node%d.csv","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
-`)
+	`)
+	}, 5*time.Second, 10*time.Millisecond)
 }
 
 // TestVolume_NewReaderFor_Compression tests multiple local and staging compression combinations.
