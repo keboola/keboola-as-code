@@ -143,12 +143,12 @@ func TestRepository_FilesStats(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey1, clk.Now()).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now()).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey1, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now(), false).Do(ctx).Err())
 
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey1, clk.Now(), false).Do(ctx).Err())
-		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now(), false).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey1, clk.Now()).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
 	}
 
 	// Files stats

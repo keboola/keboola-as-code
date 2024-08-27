@@ -86,7 +86,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	{
 		clk.Add(time.Hour)
 		require.NoError(t, sliceRepo.ListIn(fileKey).ForEach(func(s model.Slice, header *iterator.Header) error {
-			return sliceRepo.SwitchToUploading(s.SliceKey, clk.Now()).Do(ctx).Err()
+			return sliceRepo.SwitchToUploading(s.SliceKey, clk.Now(), false).Do(ctx).Err()
 		}).Do(ctx).Err())
 	}
 
@@ -95,7 +95,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	{
 		clk.Add(time.Hour)
 		require.NoError(t, sliceRepo.ListIn(fileKey).ForEach(func(s model.Slice, header *iterator.Header) error {
-			return sliceRepo.SwitchToUploaded(s.SliceKey, clk.Now(), false).Do(ctx).Err()
+			return sliceRepo.SwitchToUploaded(s.SliceKey, clk.Now()).Do(ctx).Err()
 		}).Do(ctx).Err())
 	}
 

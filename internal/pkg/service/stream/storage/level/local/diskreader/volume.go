@@ -14,7 +14,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -127,26 +129,26 @@ func (v *Volume) Metadata() volume.Metadata {
 	}
 }
 
-func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
+func (v *Volume) OpenReader(sliceKey model.SliceKey, slice localModel.Slice, encodingCompression, stagingCompression compression.Config) (r Reader, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
-		return nil, errors.PrefixErrorf(err, `reader for slice "%s" cannot be created: volume is closed`, slice.SliceKey.String())
+		return nil, errors.PrefixErrorf(err, `reader for slice "%s" cannot be created: volume is closed`, sliceKey.String())
 	}
 
 	// Setup logger
 	logger := v.logger.With(
-		attribute.String("projectId", slice.ProjectID.String()),
-		attribute.String("branchId", slice.BranchID.String()),
-		attribute.String("sourceId", slice.SourceID.String()),
-		attribute.String("sinkId", slice.SinkID.String()),
-		attribute.String("fileId", slice.FileID.String()),
-		attribute.String("sliceId", slice.SliceID.String()),
+		attribute.String("projectId", sliceKey.ProjectID.String()),
+		attribute.String("branchId", sliceKey.BranchID.String()),
+		attribute.String("sourceId", sliceKey.SourceID.String()),
+		attribute.String("sinkId", sliceKey.SinkID.String()),
+		attribute.String("fileId", sliceKey.FileID.String()),
+		attribute.String("sliceId", sliceKey.SliceID.String()),
 	)
 
 	// Check if the reader already exists, if not, register an empty reference to unlock immediately
-	ref, exists := v.addReader(slice.SliceKey)
+	ref, exists := v.addReader(sliceKey)
 	if exists {
-		return nil, errors.Errorf(`reader for slice "%s" already exists`, slice.SliceKey.String())
+		return nil, errors.Errorf(`reader for slice "%s" already exists`, sliceKey.String())
 	}
 
 	// Close resources on a creation error
@@ -164,7 +166,7 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 		}
 
 		// Unregister the reader
-		v.removeReader(slice.SliceKey)
+		v.removeReader(sliceKey)
 	}()
 
 	// Get file opener
@@ -174,7 +176,7 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 	}
 
 	// Open file
-	filePath := slice.LocalStorage.FileName(v.Path(), "my-node")
+	filePath := slice.FileName(v.Path(), "my-node")
 	logger = logger.With(attribute.String("file.path", filePath))
 	file, err = opener.OpenFile(filePath)
 	if err == nil {
@@ -185,7 +187,7 @@ func (v *Volume) OpenReader(slice *model.Slice) (r Reader, err error) {
 	}
 
 	// Init reader and chain
-	r, err = newReader(v.ctx, logger, slice.SliceKey, slice.Encoding.Compression, slice.StagingStorage.Compression, file, v.readerEvents)
+	r, err = newReader(v.ctx, logger, sliceKey, encodingCompression, stagingCompression, file, v.readerEvents)
 	if err != nil {
 		return nil, err
 	}

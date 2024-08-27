@@ -3,7 +3,6 @@ package fileimport
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -20,9 +19,13 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/sinklock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
+
+const dbOperationTimeout = 30 * time.Second
 
 type operator struct {
 	config       targetConfig.OperatorConfig
@@ -111,7 +114,6 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 					IsEmpty: file.StagingStorage.IsEmpty,
 					File: plugin.File{
 						FileKey:  file.FileKey,
-						SinkKey:  file.SinkKey,
 						Provider: file.TargetStorage.Provider,
 					},
 				}
@@ -224,41 +226,22 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	defer cancel()
 
 	// Lock all file operations in the sink
-	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", file.FileKey.SinkKey))
-	if err := lock.Lock(ctx); err != nil {
-		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
+	if unlock == nil {
 		return
 	}
-	defer func() {
-		if err := lock.Unlock(ctx); err != nil {
-			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
-		}
-	}()
+	defer unlock()
 
-	var err error
-	if !file.IsEmpty {
-		// Import the file to specific provider
-		err = o.plugins.ImportFile(ctx, &file.File)
-		if err != nil {
-			err = errors.PrefixError(err, "error when waiting for file import")
-		}
-	}
-
-	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-	defer dbCancel()
-
-	// If there is no error, switch file to the importing state
-	if err == nil {
-		err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
-		if err != nil {
-			err = errors.PrefixError(err, "cannot switch file to the imported state")
-		}
-	}
-
+	// Import file
+	err := o.doImportFile(ctx, lock, file)
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
+
+		// Update the entity, the ctx may be cancelled
+		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+		defer dbCancel()
+
 		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).Err()
 		if err != nil {
 			o.logger.Errorf(ctx, "cannot increment file import retry: %s", err)
@@ -269,8 +252,36 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
+}
 
-	if err == nil {
-		o.logger.Info(ctx, "successfully imported file")
+func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *fileData) error {
+	// Skip file import if the file is empty
+	if !file.IsEmpty {
+		// Get file statistics
+		var stats statistics.Aggregated
+		stats, err := o.statistics.FileStats(ctx, file.FileKey)
+		if err != nil {
+			return errors.PrefixError(err, "cannot get file statistics")
+		}
+
+		// Import the file to specific provider
+		err = o.plugins.ImportFile(ctx, &file.File, stats.Staging)
+		if err != nil {
+			return errors.PrefixError(err, "error when waiting for file import")
+		}
 	}
+
+	// New context for database operation, we may be running out of time
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+	defer dbCancel()
+
+	// Switch file to the imported state
+	err := o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
+	if err != nil {
+		return errors.PrefixError(err, "cannot switch file to the imported state")
+	}
+
+	o.logger.Info(ctx, "successfully imported file")
+
+	return nil
 }

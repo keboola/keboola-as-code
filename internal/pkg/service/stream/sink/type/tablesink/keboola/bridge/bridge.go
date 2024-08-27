@@ -73,11 +73,8 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 	b.setupOnFileOpen()
 	b.deleteCredentialsOnFileDelete()
 	b.deleteTokenOnSinkDeactivation()
-	b.registerFileImporter()
-	b.plugins.RegisterSliceUploader(
-		stagingFileProvider,
-		b.uploadSlice,
-	)
+	b.plugins.RegisterFileImporter(targetProvider, b.importFile)
+	b.plugins.RegisterSliceUploader(stagingFileProvider, b.uploadSlice)
 
 	return b
 }

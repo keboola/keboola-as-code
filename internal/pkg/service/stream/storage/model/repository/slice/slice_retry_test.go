@@ -91,7 +91,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey, clk.Now()).Do(ctx).Err())
+		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey, clk.Now(), false).Do(ctx).Err())
 	}
 
 	// Upload failed, increment retry attempt
@@ -131,7 +131,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Add(time.Hour)
-		slice, err := sliceRepo.SwitchToUploaded(sliceKey, clk.Now(), false).Do(ctx).ResultOrErr()
+		slice, err := sliceRepo.SwitchToUploaded(sliceKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploaded, slice.State)
 		assert.Equal(t, 0, slice.RetryAttempt)

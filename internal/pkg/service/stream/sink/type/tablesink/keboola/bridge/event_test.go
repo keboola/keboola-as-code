@@ -24,7 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
+func TestBridge_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
@@ -41,7 +41,7 @@ func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	duration := 3 * time.Second
 	err := error(nil)
 	slice := test.NewSlice()
-	b.SendSliceUploadEvent(ctx, api, duration, &err, slice, testStatsForSlice(slice.OpenedAt(), now))
+	b.SendSliceUploadEvent(ctx, api, duration, &err, slice.SliceKey, testStats(slice.OpenedAt(), now))
 
 	// Assert
 	require.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/events"])
@@ -57,7 +57,7 @@ func TestSender_SendSliceUploadEvent_OkEvent(t *testing.T) {
 }`, body)
 }
 
-func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
+func TestBridge_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
@@ -74,7 +74,7 @@ func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	duration := 3 * time.Second
 	err := errors.New("some error")
 	slice := test.NewSlice()
-	b.SendSliceUploadEvent(ctx, api, duration, &err, slice, testStatsForSlice(slice.OpenedAt(), now))
+	b.SendSliceUploadEvent(ctx, api, duration, &err, slice.SliceKey, testStats(slice.OpenedAt(), now))
 
 	// Assert
 	require.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/events"])
@@ -89,7 +89,7 @@ func TestSender_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 }`, body)
 }
 
-func TestSender_SendSliceUploadEvent_HTTPError(t *testing.T) {
+func TestBridge_SendSliceUploadEvent_HTTPError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
@@ -105,13 +105,100 @@ func TestSender_SendSliceUploadEvent_HTTPError(t *testing.T) {
 	duration := 3 * time.Second
 	err := error(nil)
 	slice := test.NewSlice()
-	b.SendSliceUploadEvent(ctx, api, duration, &err, slice, testStatsForSlice(slice.OpenedAt(), now))
+	b.SendSliceUploadEvent(ctx, api, duration, &err, slice.SliceKey, testStats(slice.OpenedAt(), now))
 
 	// Assert
 	require.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/events"])
 }
 
-func testStatsForSlice(firstAt, lastAt utctime.UTCTime) statistics.Value {
+func TestBridge_SendFileImportEvent_OkEvent(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
+	api := d.KeboolaPublicAPI().WithToken("my-token")
+
+	var body string
+	transport := mock.MockedHTTPTransport()
+	registerOkResponder(t, transport, &body)
+
+	cfg := keboolasink.NewConfig()
+	// Send event
+	b := bridge.New(d, nil, cfg)
+	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
+	duration := 3 * time.Second
+	err := error(nil)
+	file := test.NewFile()
+	b.SendFileImportEvent(ctx, api, duration, &err, file.FileKey, testStats(file.OpenedAt(), now))
+
+	// Assert
+	require.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/events"])
+	mock.DebugLogger().AssertJSONMessages(t, `{"level":"debug","message":"Sent eventID: 12345"}`)
+	wildcards.Assert(t, `
+{
+  "component": "keboola.keboola-buffer",
+  "duration": 3,
+  "message": "File import done.",
+  "params": "{\"eventName\":\"file-import\",\"task\":\"file-import\"}",
+  "results": "{\"exportId\":\"my-sink\",\"projectId\":123,\"receiverId\":\"my-source\",\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"statistics\":{\"bodySize\":104857600,\"compressedSize\":52428800,\"fileGZipSize\":52428800,\"fileSize\":104857600,\"firstRecordAt\":\"2000-01-01T01:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"recordsSize\":52428800,\"slicesCount\":1,\"stagingSize\":26214400,\"uncompressedSize\":104857600}}",
+  "type": "info"
+}`, body)
+}
+
+func TestBridge_SendFileImportEvent_ErrorEvent(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
+	api := d.KeboolaPublicAPI().WithToken("my-token")
+
+	var body string
+	transport := mock.MockedHTTPTransport()
+	registerOkResponder(t, transport, &body)
+
+	cfg := keboolasink.NewConfig()
+	// Send event
+	b := bridge.New(d, nil, cfg)
+	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
+	duration := 3 * time.Second
+	err := errors.New("some error")
+	file := test.NewFile()
+	b.SendFileImportEvent(ctx, api, duration, &err, file.FileKey, testStats(file.OpenedAt(), now))
+
+	// Assert
+	require.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/events"])
+	wildcards.Assert(t, `
+{
+  "component": "keboola.keboola-buffer",
+  "duration": 3,
+  "message": "File import failed.",
+  "params": "{\"eventName\":\"file-import\",\"task\":\"file-import\"}",
+  "results": "{\"error\":\"some error\",\"exportId\":\"my-sink\",\"projectId\":123,\"receiverId\":\"my-source\",\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\"}",
+  "type": "error"
+}`, body)
+}
+
+func TestBridge_SendFileImportEvent_HTTPError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	d, mock := dependencies.NewMockedServiceScope(t, ctx)
+	api := d.KeboolaPublicAPI().WithToken("my-token")
+
+	transport := mock.MockedHTTPTransport()
+	registerErrorResponder(t, transport)
+
+	cfg := keboolasink.NewConfig()
+	// Send event
+	b := bridge.New(d, nil, cfg)
+	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
+	duration := 3 * time.Second
+	err := error(nil)
+	file := test.NewFile()
+	b.SendFileImportEvent(ctx, api, duration, &err, file.FileKey, testStats(file.OpenedAt(), now))
+
+	// Assert
+	require.Equal(t, 1, transport.GetCallCountInfo()["POST /v2/storage/events"])
+}
+
+func testStats(firstAt, lastAt utctime.UTCTime) statistics.Value {
 	return statistics.Value{
 		SlicesCount:      1,
 		FirstRecordAt:    firstAt,

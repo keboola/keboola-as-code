@@ -31,7 +31,7 @@ func (b *Bridge) SendSliceUploadEvent(
 	api *keboola.AuthorizedAPI,
 	duration time.Duration,
 	errPtr *error,
-	slice *model.Slice,
+	sliceKey model.SliceKey,
 	stats statistics.Value,
 ) error {
 	var err error
@@ -54,9 +54,51 @@ func (b *Bridge) SendSliceUploadEvent(
 	}
 
 	err = b.sendEvent(ctx, api, duration, "slice-upload", err, formatMsg, Params{
-		ProjectID: slice.ProjectID,
-		SourceID:  slice.SourceID,
-		SinkID:    slice.SinkID,
+		ProjectID: sliceKey.ProjectID,
+		SourceID:  sliceKey.SourceID,
+		SinkID:    sliceKey.SinkID,
+		Stats:     stats,
+	})
+
+	// Throw panic
+	if panicErr != nil {
+		panic(panicErr)
+	}
+
+	return err
+}
+
+func (b *Bridge) SendFileImportEvent(
+	ctx context.Context,
+	api *keboola.AuthorizedAPI,
+	duration time.Duration,
+	errPtr *error,
+	fileKey model.FileKey,
+	stats statistics.Value,
+) error {
+	var err error
+	if errPtr != nil {
+		err = *errPtr
+	}
+
+	// Catch panic
+	panicErr := recover()
+	if panicErr != nil {
+		err = errors.Errorf(`%s`, panicErr)
+	}
+
+	formatMsg := func(err error) string {
+		if err != nil {
+			return "File import failed."
+		} else {
+			return "File import done."
+		}
+	}
+
+	err = b.sendEvent(ctx, api, duration, "file-import", err, formatMsg, Params{
+		ProjectID: fileKey.ProjectID,
+		SourceID:  fileKey.SourceID,
+		SinkID:    fileKey.SinkID,
 		Stats:     stats,
 	})
 

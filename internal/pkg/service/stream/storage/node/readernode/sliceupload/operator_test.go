@@ -106,9 +106,9 @@ func TestSliceUpload(t *testing.T) {
 	// Prevent duplicate file slice keys
 	clk.Add(1 * time.Second)
 	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now(), false).Do(ctx).Err())
 	logger.Truncate()
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[1].SliceKey, clk.Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[1].SliceKey, clk.Now(), false).Do(ctx).Err())
 
 	// Check that rotation and switch was performed
 	files, err = d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
@@ -129,9 +129,9 @@ func TestSliceUpload(t *testing.T) {
 	// Triggers slice upload
 	clk.Add(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"info","message":"uploading slice \"123/111/my-source/my-keboola-sink/2000-01-01T00:00:00.000Z/vol-1/2000-01-01T00:00:00.000Z\""}`)
-		logger.AssertJSONMessages(c, `{"level":"info","message":"slice was uploaded \"123/111/my-source/my-keboola-sink/2000-01-01T00:00:00.000Z/vol-1/2000-01-01T00:00:00.000Z\""}`)
-		logger.AssertJSONMessages(c, `{"level":"info","message":"slice was uploaded \"123/111/my-source/my-keboola-sink/2000-01-01T00:00:00.000Z/vol-2/2000-01-01T00:00:00.000Z\""}`)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"uploading slice"}`)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"successfully uploaded slice"}`)
+		logger.AssertJSONMessages(c, `{"level":"info","message":"successfully uploaded slice"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
@@ -141,46 +141,46 @@ func TestSliceUpload(t *testing.T) {
 
 	clk.Add(1 * time.Second)
 	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[2].SliceKey, clk.Now()).Do(ctx).Err())
 	logger.Truncate()
-	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[3].SliceKey, clk.Now()).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[2].SliceKey, clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[3].SliceKey, clk.Now(), true).Do(ctx).Err())
 
 	require.NoError(t, d.StatisticsRepository().Put(ctx, "node", []statistics.PerSlice{{SliceKey: slices[2].SliceKey, RecordsCount: 1}}))
 	waitForSlicesSync(t)
 	// Triggers slice upload
 	clk.Add(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"cannot upload slice to staging: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
 	slice, err := d.StorageRepository().Slice().Get(slices[2].SliceKey).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
-	failed := utctime.MustParse("2000-01-01T00:00:04.000Z")
+	failedAt := utctime.MustParse("2000-01-01T00:00:04.000Z")
 	retryAfter := utctime.MustParse("2000-01-01T00:02:04.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  1,
-		RetryReason:   "bla",
-		FirstFailedAt: &failed,
-		LastFailedAt:  &failed,
+		RetryReason:   "error when waiting for slice upload: bla",
+		FirstFailedAt: &failedAt,
+		LastFailedAt:  &failedAt,
 		RetryAfter:    &retryAfter,
 	}, slice.Retryable)
 
 	clk.Add(-clk.Now().Sub(retryAfter.Time()) + slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"cannot upload slice to staging: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","time":"%s","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
 	slice, err = d.StorageRepository().Slice().Get(slices[2].SliceKey).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
-	failed = utctime.MustParse("2000-01-01T00:00:04.000Z")
+	failedAt = utctime.MustParse("2000-01-01T00:00:04.000Z")
 	retryAfter = utctime.MustParse("2000-01-01T00:10:05.000Z")
 	lastFailed := utctime.MustParse("2000-01-01T00:02:05.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  2,
-		RetryReason:   "bla",
-		FirstFailedAt: &failed,
+		RetryReason:   "error when waiting for slice upload: bla",
+		FirstFailedAt: &failedAt,
 		LastFailedAt:  &lastFailed,
 		RetryAfter:    &retryAfter,
 	}, slice.Retryable)

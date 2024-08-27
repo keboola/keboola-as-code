@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	keboolasink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
 const (
@@ -115,62 +116,68 @@ func (b *Bridge) deleteCredentialsOnFileDelete() {
 	})
 }
 
-func (b *Bridge) registerFileImporter() {
-	b.plugins.RegisterFileImporter(
-		targetProvider,
-		func(ctx context.Context, file *plugin.File) error {
-			// Get authorization token
-			var token *keboolasink.Token
-			err := b.schema.Token().ForSink(file.SinkKey).GetOrNil(b.client).WithResultTo(&token).Do(ctx).Err()
-			if err != nil {
-				return err
-			}
+func (b *Bridge) importFile(ctx context.Context, file *plugin.File, stats statistics.Value) error {
+	start := time.Now()
 
-			// Get file upload credentials
-			var keboolaFile keboolasink.File
-			err = b.schema.File().ForFile(file.FileKey).GetOrErr(b.client).WithResultTo(&keboolaFile).Do(ctx).Err()
-			if err != nil {
-				return err
-			}
+	// Get authorization token
+	token, err := b.schema.Token().ForSink(file.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
+	if err != nil {
+		return err
+	}
 
-			// Authorized API
-			api := b.publicAPI.WithToken(token.TokenString())
+	// Get file details
+	keboolaFile, err := b.schema.File().ForFile(file.FileKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
+	if err != nil {
+		return err
+	}
 
-			// Check if job already exists
-			var job *keboola.StorageJob
-			if keboolaFile.StorageJobID != nil {
-				job, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: *keboolaFile.StorageJobID}).Send(ctx)
-				if err != nil {
-					return err
-				}
+	// Authorized API
+	api := b.publicAPI.WithToken(token.TokenString())
 
-				if job.Status == keboola.StorageJobStatusSuccess {
-					return nil
-				}
-			}
+	// Error when sending the event is not a fatal error
+	defer func() {
+		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
+		err = b.SendFileImportEvent(ctx, api, time.Since(start), &err, file.FileKey, stats)
+		cancel()
+		if err != nil {
+			b.logger.Errorf(ctx, "unable to send file import event: %v", err)
+			return
+		}
+	}()
 
-			// Create job to import data if no job exists yet or if it failed
-			if job == nil || job.Status == keboola.StorageJobStatusError {
-				job, err = api.LoadDataFromFileRequest(keboolaFile.TableKey, keboolaFile.FileKey).Send(ctx)
-				if err != nil {
-					return err
-				}
+	// Check if job already exists
+	var job *keboola.StorageJob
+	if keboolaFile.StorageJobID != nil {
+		job, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: *keboolaFile.StorageJobID}).Send(ctx)
+		if err != nil {
+			return err
+		}
 
-				// Save job ID to etcd
-				keboolaFile.StorageJobID = &job.ID
-				err = b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile).Do(ctx).Err()
-				if err != nil {
-					return err
-				}
-			}
-
-			// Wait for job to complete
-			err = api.WaitForStorageJob(ctx, job)
-			if err != nil {
-				return err
-			}
-
+		if job.Status == keboola.StorageJobStatusSuccess {
 			return nil
-		},
-	)
+		}
+	}
+
+	// Create job to import data if no job exists yet or if it failed
+	if job == nil || job.Status == keboola.StorageJobStatusError {
+		job, err = api.LoadDataFromFileRequest(keboolaFile.TableKey, keboolaFile.FileKey).Send(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Save job ID to etcd
+		keboolaFile.StorageJobID = &job.ID
+		err = b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile).Do(ctx).Err()
+		if err != nil {
+			return err
+		}
+	}
+
+	// Wait for job to complete
+	err = api.WaitForStorageJob(ctx, job)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

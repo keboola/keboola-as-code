@@ -3,7 +3,6 @@ package slicerotation
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -21,9 +20,12 @@ import (
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/sinklock"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
+
+const dbOperationTimeout = 30 * time.Second
 
 type operator struct {
 	config       stagingConfig.OperatorConfig
@@ -248,16 +250,11 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	o.logger.Infof(ctx, "rotating slice for upload: %s", cause)
 
 	// Lock all file operations in the sink
-	lock := o.locks.NewMutex(fmt.Sprintf("operator.sink.file.%s", slice.SliceKey.SinkKey))
-	if err := lock.Lock(ctx); err != nil {
-		o.logger.Errorf(ctx, "cannot lock %q: %s", lock.Key(), err)
+	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, slice.SliceKey.SinkKey)
+	if unlock == nil {
 		return
 	}
-	defer func() {
-		if err := lock.Unlock(ctx); err != nil {
-			o.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
-		}
-	}()
+	defer unlock()
 
 	// Rotate slice
 	err = o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
@@ -288,16 +285,23 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 		// continue! we waited long enough, the wait mechanism is probably broken
 	}
 
+	// Get slice statistics
+	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
+	if err != nil {
+		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
+		return
+	}
+
 	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
-	err := o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
+	err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), stats.Local.RecordsCount == 0).Do(dbCtx).Err()
 	if err != nil {
 		o.logger.Errorf(dbCtx, "cannot switch slice to the uploading state: %s", err.Error())
 
 		// Increment retry delay
-		err = o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+		err := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
 		if err != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
 			return

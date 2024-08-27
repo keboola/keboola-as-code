@@ -26,86 +26,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type testState struct {
-	interval     time.Duration
-	clk          *clock.Mock
-	logger       log.DebugLogger
-	client       *etcdPkg.Client
-	mock         dependencies.Mocked
-	dependencies dependencies.CoordinatorScope
-	session      *concurrency.Session
-	sink         definition.Sink
-}
-
-func setup(t *testing.T, ctx context.Context) *testState {
-	t.Helper()
-
-	// The interval triggers importing files check
-	importingFilesCheckInterval := time.Second
-
-	// Create dependencies
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
-	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
-		cfg.Storage.Level.Target.Operator.FileImportCheckInterval = duration.From(importingFilesCheckInterval)
-	}, commonDeps.WithClock(clk))
-
-	// Start file import coordinator
-	require.NoError(t, fileimport.Start(d, mock.TestConfig().Storage.Level.Target.Operator))
-
-	client := mock.TestEtcdClient()
-
-	// Register some volumes
-	session, err := concurrency.NewSession(client)
-	require.NoError(t, err)
-	test.RegisterWriterVolumes(t, ctx, d.StorageRepository().Volume(), session, 1)
-
-	return &testState{
-		interval:     importingFilesCheckInterval,
-		clk:          clk,
-		mock:         mock,
-		logger:       mock.DebugLogger(),
-		client:       client,
-		dependencies: d,
-		session:      session,
-	}
-}
-
-func (ts *testState) teardown(t *testing.T) {
-	t.Helper()
-	require.NoError(t, ts.session.Close())
-}
-
-func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
-	t.Helper()
-	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
-	branch := test.NewBranch(branchKey)
-	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
-	source := test.NewHTTPSource(sourceKey)
-	ts.sink = dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
-	require.NoError(t, ts.dependencies.DefinitionRepository().Branch().Create(&branch, ts.clk.Now(), test.ByUser()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.DefinitionRepository().Source().Create(&source, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
-	require.NoError(t, ts.dependencies.DefinitionRepository().Sink().Create(&ts.sink, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
-}
-
-func (ts *testState) prepareFile(t *testing.T, ctx context.Context) model.File {
-	t.Helper()
-	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	require.Len(t, files, 1)
-	require.Equal(t, model.FileWriting, files[0].State)
-	return files[0]
-}
-
-func (ts *testState) prepareSlice(t *testing.T, ctx context.Context) model.Slice {
-	t.Helper()
-	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	require.Len(t, slices, 1)
-	require.Equal(t, model.SliceWriting, slices[0].State)
-	return slices[0]
-}
-
 func TestFileImport(t *testing.T) {
 	t.Parallel()
 
@@ -115,13 +35,13 @@ func TestFileImport(t *testing.T) {
 	ts := setup(t, ctx)
 	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
-	file := ts.prepareFile(t, ctx)
-	slice := ts.prepareSlice(t, ctx)
+	file := ts.getFile(t, ctx)
+	slice := ts.getSlice(t, ctx)
 
 	ts.clk.Add(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
 
 	// Clear logs before this change so that we wait for mirror sync
 	ts.logger.Truncate()
@@ -181,16 +101,16 @@ func TestFileImportError(t *testing.T) {
 	ts := setup(t, ctx)
 	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
-	file := ts.prepareFile(t, ctx)
-	slice := ts.prepareSlice(t, ctx)
+	file := ts.getFile(t, ctx)
+	slice := ts.getSlice(t, ctx)
 
 	// Fail first file import
 	ts.mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
 
 	ts.clk.Add(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
 
 	// Clear logs before this change so that we wait for mirror sync
 	ts.logger.Truncate()
@@ -290,16 +210,16 @@ func TestFileImportEmpty(t *testing.T) {
 	ts := setup(t, ctx)
 	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
-	file := ts.prepareFile(t, ctx)
-	slice := ts.prepareSlice(t, ctx)
+	file := ts.getFile(t, ctx)
+	slice := ts.getSlice(t, ctx)
 
 	// Import should pass regardless of this error because the file is empty
 	ts.mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
 
 	ts.clk.Add(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now(), true).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), true).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
 
 	// Clear logs before this change so that we wait for mirror sync
 	ts.logger.Truncate()
@@ -348,4 +268,84 @@ func TestFileImportEmpty(t *testing.T) {
 
 	// No error is logged
 	ts.logger.AssertJSONMessages(t, "")
+}
+
+type testState struct {
+	interval     time.Duration
+	clk          *clock.Mock
+	logger       log.DebugLogger
+	client       *etcdPkg.Client
+	mock         dependencies.Mocked
+	dependencies dependencies.CoordinatorScope
+	session      *concurrency.Session
+	sink         definition.Sink
+}
+
+func setup(t *testing.T, ctx context.Context) *testState {
+	t.Helper()
+
+	// The interval triggers importing files check
+	importingFilesCheckInterval := time.Second
+
+	// Create dependencies
+	clk := clock.NewMock()
+	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
+		cfg.Storage.Level.Target.Operator.FileImportCheckInterval = duration.From(importingFilesCheckInterval)
+	}, commonDeps.WithClock(clk))
+
+	// Start file import coordinator
+	require.NoError(t, fileimport.Start(d, mock.TestConfig().Storage.Level.Target.Operator))
+
+	client := mock.TestEtcdClient()
+
+	// Register some volumes
+	session, err := concurrency.NewSession(client)
+	require.NoError(t, err)
+	test.RegisterWriterVolumes(t, ctx, d.StorageRepository().Volume(), session, 1)
+
+	return &testState{
+		interval:     importingFilesCheckInterval,
+		clk:          clk,
+		mock:         mock,
+		logger:       mock.DebugLogger(),
+		client:       client,
+		dependencies: d,
+		session:      session,
+	}
+}
+
+func (ts *testState) teardown(t *testing.T) {
+	t.Helper()
+	require.NoError(t, ts.session.Close())
+}
+
+func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
+	t.Helper()
+	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
+	branch := test.NewBranch(branchKey)
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	source := test.NewHTTPSource(sourceKey)
+	ts.sink = dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-sink"})
+	require.NoError(t, ts.dependencies.DefinitionRepository().Branch().Create(&branch, ts.clk.Now(), test.ByUser()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.DefinitionRepository().Source().Create(&source, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, ts.dependencies.DefinitionRepository().Sink().Create(&ts.sink, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+}
+
+func (ts *testState) getFile(t *testing.T, ctx context.Context) model.File {
+	t.Helper()
+	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+	require.Equal(t, model.FileWriting, files[0].State)
+	return files[0]
+}
+
+func (ts *testState) getSlice(t *testing.T, ctx context.Context) model.Slice {
+	t.Helper()
+	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Len(t, slices, 1)
+	require.Equal(t, model.SliceWriting, slices[0].State)
+	return slices[0]
 }

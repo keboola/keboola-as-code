@@ -18,12 +18,12 @@ func withIsEmpty(isEmpty bool) switchStateOption {
 	}
 }
 
-func (r *Repository) SwitchToUploading(k model.SliceKey, now time.Time) *op.AtomicOp[model.Slice] {
-	return r.stateTransition(k, now, model.SliceClosing, model.SliceUploading, withIsEmpty(false))
+func (r *Repository) SwitchToUploading(k model.SliceKey, now time.Time, isEmpty bool) *op.AtomicOp[model.Slice] {
+	return r.stateTransition(k, now, model.SliceClosing, model.SliceUploading, withIsEmpty(isEmpty))
 }
 
-func (r *Repository) SwitchToUploaded(k model.SliceKey, now time.Time, isEmpty bool) *op.AtomicOp[model.Slice] {
-	return r.stateTransition(k, now, model.SliceUploading, model.SliceUploaded, withIsEmpty(isEmpty))
+func (r *Repository) SwitchToUploaded(k model.SliceKey, now time.Time) *op.AtomicOp[model.Slice] {
+	return r.stateTransition(k, now, model.SliceUploading, model.SliceUploaded)
 }
 
 func (r *Repository) updateSlicesOnFileImport() {
@@ -93,7 +93,7 @@ func (r *Repository) switchStateInBatch(ctx context.Context, fileState model.Fil
 	var updated []model.Slice
 	txn := op.TxnWithResult(r.client, &updated)
 	for _, slice := range original {
-		txn.Merge(r.switchState(ctx, fileState, slice, now, from, to, withIsEmpty(slice.LocalStorage.IsEmpty)).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
+		txn.Merge(r.switchState(ctx, fileState, slice, now, from, to).OnSucceeded(func(r *op.TxnResult[model.Slice]) {
 			updated = append(updated, r.Result())
 		}))
 	}
