@@ -1,7 +1,6 @@
 package bridge
 
 import (
-	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/singleflight"
@@ -39,7 +38,6 @@ type Bridge struct {
 	publicAPI         *keboola.PublicAPI
 	apiProvider       apiProvider
 	storageRepository *storageRepo.Repository
-	clock             clock.Clock
 
 	getBucketOnce    *singleflight.Group
 	createBucketOnce *singleflight.Group
@@ -51,7 +49,6 @@ type dependencies interface {
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
 	KeboolaPublicAPI() *keboola.PublicAPI
-	Clock() clock.Clock
 	StorageRepository() *storageRepo.Repository
 }
 
@@ -65,7 +62,6 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 		publicAPI:         d.KeboolaPublicAPI(),
 		apiProvider:       apiProvider,
 		storageRepository: d.StorageRepository(),
-		clock:             d.Clock(),
 		getBucketOnce:     &singleflight.Group{},
 		createBucketOnce:  &singleflight.Group{},
 	}
