@@ -17,6 +17,11 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
+const (
+	BackendSnowflake = "snowflake"
+	BackendBigQuery  = "bigquery"
+)
+
 type Manifest = projectManifest.Manifest
 
 type InvalidManifestError = projectManifest.InvalidManifestError
