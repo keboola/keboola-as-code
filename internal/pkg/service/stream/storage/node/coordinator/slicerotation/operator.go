@@ -282,10 +282,10 @@ func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) e
 		o.logger.Errorf(ctx, "cannot rotate slice: %s", err)
 
 		// Increment retry delay
-		iErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if iErr != nil {
+		rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
-			return iErr
+			return rErr
 		}
 	}
 
@@ -300,7 +300,7 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
 	defer cancel()
 
-	err := o.switchSliceToImporting(ctx, slice)
+	err := o.switchSliceToUploading(ctx, slice)
 	if err != nil {
 		return
 	}
@@ -311,7 +311,7 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	slice.Processed = true
 }
 
-func (o *operator) switchSliceToImporting(ctx context.Context, slice *sliceData) error {
+func (o *operator) switchSliceToUploading(ctx context.Context, slice *sliceData) error {
 	if err := o.closeSyncer.WaitForRevision(ctx, slice.ModRevision); err != nil {
 		o.logger.Errorf(ctx, `error when waiting for slice closing: %s`)
 		// continue! we waited long enough, the wait mechanism is probably broken
