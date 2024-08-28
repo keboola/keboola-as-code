@@ -25,7 +25,8 @@
 //
 // # Hash Ring pattern
 //
-// The [Assigner] struct (embedded to the [Node] struct) implements local decision and assignment of a key to a specific node via hash ring pattern.
+// The [Assigner] struct (embedded to the [Node] struct) implements local decision and assignment of a key to
+// a specific node via hash ring pattern.
 //
 // The [Hash Ring pattern] (or Consistent Hashing) is a distributed system design that uses a ring structure
 // and hash function to efficiently partition and balance data across nodes without centralized coordination.

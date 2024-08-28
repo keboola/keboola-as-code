@@ -418,7 +418,7 @@ func TestRenderer_Template_Headers(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	assert.NoError(t, err)
-	assert.Equal(t, "\"gzip\"", val)
+	assert.Equal(t, `"gzip"`, val)
 }
 
 func TestRenderer_Template_Headers_Case(t *testing.T) {
@@ -434,7 +434,7 @@ func TestRenderer_Template_Headers_Case(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	assert.NoError(t, err)
-	assert.Equal(t, "\"gzip\"", val)
+	assert.Equal(t, `"gzip"`, val)
 }
 
 func TestRenderer_Template_Headers_All(t *testing.T) {

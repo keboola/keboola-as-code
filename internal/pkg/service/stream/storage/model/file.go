@@ -25,7 +25,7 @@ type File struct {
 	State       FileState        `json:"state" validate:"required,oneof=writing closing importing imported"`
 	ClosingAt   *utctime.UTCTime `json:"closingAt,omitempty" validate:"excluded_if=State writing,required_if=State closing,required_if=State importing,required_if=State imported"`
 	ImportingAt *utctime.UTCTime `json:"importingAt,omitempty" validate:"excluded_if=State writing,excluded_if=State closing,required_if=State importing,required_if=State imported"`
-	ImportedAt  *utctime.UTCTime `json:"importedAt,omitempty"  validate:"excluded_if=State writing,excluded_if=State closing,excluded_if=State importing,required_if=State imported"`
+	ImportedAt  *utctime.UTCTime `json:"importedAt,omitempty" validate:"excluded_if=State writing,excluded_if=State closing,excluded_if=State importing,required_if=State imported"`
 	// Mapping defines how an incoming record is mapping to the result format, for example to a tabular data.
 	Mapping table.Mapping `json:"mapping"` // in the future, here can be an interface - multiple mapping ways
 	// Encoding defines how is the result format encoded, for example a tabular data to the CSV file.

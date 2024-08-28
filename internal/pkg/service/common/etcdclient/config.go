@@ -15,7 +15,7 @@ const (
 
 type Config struct {
 	Endpoint          string        `configKey:"endpoint" configUsage:"Etcd endpoint." validate:"required"`
-	Namespace         string        `configKey:"namespace" configUsage:"Etcd namespace."  validate:"required"`
+	Namespace         string        `configKey:"namespace" configUsage:"Etcd namespace." validate:"required"`
 	Username          string        `configKey:"username" configUsage:"Etcd username."`
 	Password          string        `configKey:"password" configUsage:"Etcd password." sensitive:"true"`
 	ConnectTimeout    time.Duration `configKey:"connectTimeout" configUsage:"Etcd connect timeout." validate:"required"`

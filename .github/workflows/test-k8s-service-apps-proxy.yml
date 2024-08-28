@@ -10,6 +10,7 @@ on:
       - .github/workflows/test-k8s-service-apps-proxy.yml
       - provisioning/apps-proxy/**
       - provisioning/common/**
+      # When the config structure is changed it may be necessary to adjust k8s configmap.
       - internal/pkg/service/appsproxy/config/**
 
 env:

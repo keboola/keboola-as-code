@@ -7,7 +7,7 @@
   "createdAt": "%s",
   "finishedAt": "%s",
   "duration": %d,
-  "result": "Source settings has been updated successfully.",
+  "result": "Source settings have been updated successfully.",
   "outputs": {
     "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source",
     "projectId": %%TEST_KBC_PROJECT_ID%%,

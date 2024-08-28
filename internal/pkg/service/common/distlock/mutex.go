@@ -22,9 +22,9 @@ type Provider struct {
 
 type Config struct {
 	// GrantTimeout it the maximum time to wait for creating a new session.
-	GrantTimeout time.Duration `configKey:"grantTimeout" configUsage:"The maximum time to wait for creating a new session."  validate:"required,minDuration=1s,maxDuration=1m"`
+	GrantTimeout time.Duration `configKey:"grantTimeout" configUsage:"The maximum time to wait for creating a new session." validate:"required,minDuration=1s,maxDuration=1m"`
 	// TTLSeconds configures the number seconds after which all locks are automatically released if an outage occurs.
-	TTLSeconds int `configKey:"ttlSeconds" configUsage:"Seconds after which all locks are automatically released if an outage occurs."  validate:"required,min=1,max=30"`
+	TTLSeconds int `configKey:"ttlSeconds" configUsage:"Seconds after which all locks are automatically released if an outage occurs." validate:"required,min=1,max=30"`
 }
 
 type dependencies interface {

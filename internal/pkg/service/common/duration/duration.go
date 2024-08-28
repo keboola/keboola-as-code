@@ -39,7 +39,7 @@ func (v *Duration) UnmarshalText(text []byte) error {
 	return err
 }
 
-func (v *Duration) UnmarshalJSON(b []byte) (err error) {
+func (v *Duration) UnmarshalJSON(b []byte) error {
 	// String, for example, "1h20s"
 	if bytes.HasPrefix(b, []byte(`"`)) && bytes.HasSuffix(b, []byte(`"`)) {
 		return v.UnmarshalText(bytes.Trim(b, `"`))

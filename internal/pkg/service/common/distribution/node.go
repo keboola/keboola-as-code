@@ -32,7 +32,7 @@ type Node struct {
 // It is responsible for:
 // - Registration/un-registration of the node in the cluster, see register and unregister methods.
 // - Discovery of the self and other nodes in the cluster, see watch method.
-// - Embedded Assigner locally assigns a owner for a key, see documentation of the Assigner.
+// - Embedded Assigner locally assigns an owner for a key, see documentation of the Assigner.
 // - Embedded listeners listen for distribution changes, when a node is added or removed.
 type GroupNode struct {
 	*assigner
