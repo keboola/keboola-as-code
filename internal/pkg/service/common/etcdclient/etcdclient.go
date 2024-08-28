@@ -48,23 +48,13 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	logger = logger.WithComponent("etcd.client")
 
 	// Create a zap logger for etcd client
-	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
-	etcdLogger := zap.New(log.NewCallbackCore(func(entry zapcore.Entry, fields []zapcore.Field) {
-		// Skip debug messages
-		if entry.Level == log.DebugLevel {
-			return
-		}
-
+	etcdLogger := zap.New(
+		logger.(log.LoggerWithZapCore).ZapCore(),
 		// Add component=etcd.client field
-		fields = append(fields, zapcore.Field{Key: "component", String: "etcd.client", Type: zapcore.StringType})
-
-		// Encode and log message
-		if bytes, err := encoder.EncodeEntry(entry, fields); err == nil {
-			logger.Log(ctx, entry.Level.String(), strings.TrimRight(bytes.String(), "\n"))
-		} else {
-			logger.Warnf(ctx, "cannot log msg from etcd client: %s", err)
-		}
-	}))
+		zap.Fields(zapcore.Field{Key: "component", String: "etcd.client", Type: zapcore.StringType}),
+		// Skip debug messages
+		zap.IncreaseLevel(zapcore.InfoLevel),
+	)
 
 	// Create connect context
 	connectCtx, connectCancel := context.WithTimeout(ctx, cfg.ConnectTimeout)

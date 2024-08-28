@@ -23,8 +23,8 @@ type MemoryLogger struct {
 }
 
 func (l *MemoryLogger) CopyLogsTo(target Logger) {
-	if zap, ok := target.(loggerWithZapCore); ok {
-		targetCore := zap.zapCore()
+	if zap, ok := target.(LoggerWithZapCore); ok {
+		targetCore := zap.ZapCore()
 		for _, entry := range *l.core.entries {
 			if ce := targetCore.Check(entry.entry, nil); ce != nil {
 				ce.Write(entry.fields...)
