@@ -261,7 +261,6 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
-	o.logger.Info(ctx, "successfully rotated slice")
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	slice.Processed = true
@@ -287,6 +286,8 @@ func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) e
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
 			return rErr
 		}
+	} else {
+		o.logger.Info(ctx, "successfully rotated slice")
 	}
 
 	return nil
@@ -305,7 +306,6 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
-	o.logger.Info(ctx, "successfully closed slice")
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	slice.Processed = true
@@ -338,6 +338,8 @@ func (o *operator) switchSliceToUploading(ctx context.Context, slice *sliceData)
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
 			return rErr
 		}
+	} else {
+		o.logger.Info(ctx, "successfully closed slice")
 	}
 
 	return nil
