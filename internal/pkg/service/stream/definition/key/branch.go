@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // BranchIDOrDefault is used in the API payloads, it should contain "default" string, or branchID (int).
@@ -16,6 +17,13 @@ type BranchKey struct {
 
 func (v BranchKey) String() string {
 	return strconv.Itoa(int(v.ProjectID)) + "/" + v.BranchID.String()
+}
+
+func (v BranchKey) Telemetry() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("project.id", v.ProjectID.String()),
+		attribute.String("branch.id", v.BranchID.String()),
+	}
 }
 
 func (v BranchIDOrDefault) Default() bool {

@@ -136,14 +136,7 @@ func (v *Volume) OpenReader(sliceKey model.SliceKey, slice localModel.Slice, enc
 	}
 
 	// Setup logger
-	logger := v.logger.With(
-		attribute.String("projectId", sliceKey.ProjectID.String()),
-		attribute.String("branchId", sliceKey.BranchID.String()),
-		attribute.String("sourceId", sliceKey.SourceID.String()),
-		attribute.String("sinkId", sliceKey.SinkID.String()),
-		attribute.String("fileId", sliceKey.FileID.String()),
-		attribute.String("sliceId", sliceKey.SliceID.String()),
-	)
+	logger := v.logger.With(sliceKey.Telemetry()...)
 
 	// Check if the reader already exists, if not, register an empty reference to unlock immediately
 	ref, exists := v.addReader(sliceKey)

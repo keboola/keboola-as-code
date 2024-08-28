@@ -41,7 +41,7 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 	tc.AssertLogs(`
 {"level":"info","message":"opening volume"}
 {"level":"info","message":"opened volume"}
-{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","projectId":"123","branchId":"456","sourceId":"my-source","sinkId":"my-sink","fileId":"2000-01-01T19:00:00.000Z","sliceId":"2000-01-01T20:00:00.000Z"}
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","project.id":"123","branch.id":"456","source.id":"my-source","sink.id":"my-sink","file.id":"2000-01-01T19:00:00.000Z","slice.id":"2000-01-01T20:00:00.000Z"}
 {"level":"debug","message":"closing chain"}
 {"level":"debug","message":"chain closed"}
 `)

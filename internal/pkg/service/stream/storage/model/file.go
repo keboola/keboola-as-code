@@ -61,6 +61,12 @@ func (v FileKey) OpenedAt() utctime.UTCTime {
 	return v.FileID.OpenedAt
 }
 
+func (v FileKey) Telemetry() []attribute.KeyValue {
+	t := v.SinkKey.Telemetry()
+	t = append(t, attribute.String("file.id", v.FileID.String()))
+	return t
+}
+
 func (f File) LastStateChange() utctime.UTCTime {
 	switch {
 	case f.ImportedAt != nil:
@@ -76,15 +82,13 @@ func (f File) LastStateChange() utctime.UTCTime {
 
 func (f File) Telemetry() []attribute.KeyValue {
 	lastStateChange := f.LastStateChange().Time()
-	return []attribute.KeyValue{
-		attribute.String("project.id", f.ProjectID.String()),
-		attribute.String("branch.id", f.BranchID.String()),
-		attribute.String("source.id", f.SourceID.String()),
-		attribute.String("sink.id", f.SinkID.String()),
-		attribute.String("file.id", f.FileID.String()),
+	t := f.FileKey.Telemetry()
+	t = append(
+		t,
 		attribute.String("file.lastStateChange", lastStateChange.String()),
 		attribute.Int("file.retryAttempt", f.RetryAttempt),
-	}
+	)
+	return t
 }
 
 func NewFileIDFromKey(key, prefix string) FileID {
