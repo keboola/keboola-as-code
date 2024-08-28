@@ -188,15 +188,9 @@ func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice 
 		SourceNodeID: sourceNodeID,
 	}
 
-	logger := v.logger.With(
-		attribute.String("projectId", key.SliceKey.ProjectID.String()),
-		attribute.String("branchId", key.SliceKey.BranchID.String()),
-		attribute.String("sourceId", key.SliceKey.SourceID.String()),
-		attribute.String("sinkId", key.SliceKey.SinkID.String()),
-		attribute.String("fileId", key.SliceKey.FileID.String()),
-		attribute.String("sliceId", key.SliceKey.SliceID.String()),
-		attribute.String("sourceNodeID", key.SourceNodeID),
-	)
+	logger := v.logger.
+		With(sliceKey.Telemetry()...).
+		With(attribute.String("sourceNode.id", key.SourceNodeID))
 
 	// Check if the writer already exists, if not, register an empty reference to unlock immediately
 	ref, exists := v.addWriter(key)

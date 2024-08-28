@@ -7,6 +7,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -52,11 +53,15 @@ func (p *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) err
 	// Try open, if needed, and there is no retry backoff delay active
 	p.lock.Lock()
 	defer p.lock.Unlock()
+
+	// Add telemetry attributes
+	ctx = ctxattr.ContextWith(ctx, p.sinkKey.Telemetry()...)
+
 	if p.pipeline == nil && (p.openError == nil || timestamp.After(p.openRetryAfter)) {
 		var err error
 
 		// Use plugin system to create the pipeline
-		p.router.logger.Infof(ctx, `opening sink pipeline %q`, p.sinkKey)
+		p.router.logger.Infof(ctx, `opening sink pipeline`)
 		p.pipeline, err = p.router.plugins.OpenSinkPipeline(ctx, p.sinkKey, p.sinkType)
 
 		// Use retry backoff, don't try to open pipeline on each record
@@ -71,7 +76,7 @@ func (p *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) err
 			p.openError = nil
 			p.openBackoff = nil
 			p.openRetryAfter = time.Time{}
-			p.router.logger.Infof(ctx, `opened sink pipeline %q`, p.sinkKey)
+			p.router.logger.Infof(ctx, `opened sink pipeline`)
 		}
 	}
 
@@ -86,6 +91,9 @@ func (p *pipelineRef) close(ctx context.Context, reason string) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
+	// Add telemetry attributes
+	ctx = ctxattr.ContextWith(ctx, p.sinkKey.Telemetry()...)
+
 	// Detach pipeline from the router,
 	// so new pipeline can be created for next record, if any.
 	p.router.pipelinesLock.Lock()
@@ -98,17 +106,17 @@ func (p *pipelineRef) close(ctx context.Context, reason string) {
 	}
 
 	// Close pipeline in background, but wait for it on shutdown
-	p.router.logger.Infof(ctx, `closing sink pipeline %q: %s`, p.sinkKey, reason)
+	p.router.logger.Infof(ctx, `closing sink pipeline: %s`, reason)
 	p.router.wg.Add(1)
 	go func() {
 		defer p.router.wg.Done()
 		if err := p.pipeline.Close(ctx); err != nil {
-			err := errors.PrefixErrorf(err, "cannot close sink pipeline %q", p.sinkKey)
+			err := errors.PrefixErrorf(err, "cannot close sink pipeline")
 			p.router.logger.Error(ctx, err.Error())
 			return
 		}
 
-		p.router.logger.Infof(ctx, `closed sink pipeline %q: %s`, p.sinkKey, reason)
+		p.router.logger.Infof(ctx, `closed sink pipeline: %s`, reason)
 	}()
 }
 

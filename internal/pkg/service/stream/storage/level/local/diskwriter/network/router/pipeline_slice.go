@@ -37,20 +37,11 @@ type slicePipeline struct {
 }
 
 func newSlicePipeline(ctx context.Context, ready *readyNotifier, router *Router, slice *sliceData) *slicePipeline {
+	ctx = ctxattr.ContextWith(ctx, slice.SliceKey.Telemetry()...)
+	ctx = ctxattr.ContextWith(ctx, attribute.String("sourceNode.id", router.nodeID))
+
 	p := &slicePipeline{router: router, slice: slice}
 	p.ctx, p.cancel = context.WithCancel(context.WithoutCancel(ctx))
-
-	ctx = ctxattr.ContextWith(
-		ctx,
-		attribute.String("projectId", slice.SliceKey.ProjectID.String()),
-		attribute.String("branchId", slice.SliceKey.BranchID.String()),
-		attribute.String("sourceId", slice.SliceKey.SourceID.String()),
-		attribute.String("sinkId", slice.SliceKey.SinkID.String()),
-		attribute.String("fileId", slice.SliceKey.FileID.String()),
-		attribute.String("volumeId", slice.SliceKey.VolumeID.String()),
-		attribute.String("sliceId", slice.SliceKey.SliceID.String()),
-		attribute.String("sourceNodeId", router.nodeID),
-	)
 
 	// Try to open pipeline in background, see IsReady method
 	p.wg.Add(1)
