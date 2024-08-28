@@ -281,7 +281,7 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	defer cancel()
 
 	if err := o.closeSyncer.WaitForRevision(ctx, slice.ModRevision); err != nil {
-		o.logger.Errorf(ctx, `error when waiting for slice closing: %s`)
+		o.logger.Errorf(ctx, `error when waiting for slice closing: %s`, err.Error())
 		// continue! we waited long enough, the wait mechanism is probably broken
 	}
 
