@@ -15,7 +15,7 @@ import (
 
 func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewMocked(t, context.Background())
+	d, _ := dependencies.NewMocked(t, context.Background())
 	logger := d.DebugLogger()
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(configmetadata.NewMapper(mockedState, d))

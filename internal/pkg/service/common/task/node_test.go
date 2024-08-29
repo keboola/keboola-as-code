@@ -968,7 +968,7 @@ func createNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, lo
 func createDeps(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest) dependencies.Mocked {
 	t.Helper()
 
-	d := dependencies.NewMocked(
+	d, _ := dependencies.NewMocked(
 		t,
 		ctx,
 		dependencies.WithTelemetry(tel),

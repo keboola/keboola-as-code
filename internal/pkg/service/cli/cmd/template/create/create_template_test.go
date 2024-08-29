@@ -95,7 +95,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	// Set fake file editor
@@ -246,7 +246,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 
 	d, _ := dialog.NewForTest(t, false)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	// Flags
@@ -357,7 +357,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 
 	d, _ := dialog.NewForTest(t, false)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	f := Flags{

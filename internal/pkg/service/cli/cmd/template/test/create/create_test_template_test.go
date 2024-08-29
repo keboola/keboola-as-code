@@ -27,7 +27,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 

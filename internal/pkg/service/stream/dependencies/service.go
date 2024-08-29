@@ -140,7 +140,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, ctx context.Context, modifyC
 	tb.Helper()
 
 	// Create common mocked dependencies
-	commonMock := dependencies.NewMocked(tb, ctx, append(
+	commonMock, useRealAPIs := dependencies.NewMocked(tb, ctx, append(
 		[]dependencies.MockedOption{
 			dependencies.WithEnabledEtcdClient(),
 			dependencies.WithMockedStorageAPIHost("connection.keboola.local"),

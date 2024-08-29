@@ -926,7 +926,7 @@ func (tc *testCase) run(t *testing.T) {
 	require.NoError(t, err)
 
 	// Container
-	d := dependencies.NewMocked(t, context.Background())
+	d, _ := dependencies.NewMocked(t, context.Background())
 
 	// Register new IDs API responses
 	var ticketResponses []*http.Response

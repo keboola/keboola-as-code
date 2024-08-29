@@ -30,7 +30,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 
@@ -223,7 +223,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 
@@ -349,7 +349,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
@@ -512,7 +512,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 		InputsFile:   configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
 	}
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 
@@ -608,7 +608,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 		InstanceName: configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
 		InputsFile:   configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
 	}
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 

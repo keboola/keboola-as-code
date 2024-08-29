@@ -12,7 +12,7 @@ import (
 
 func createStateWithMapper(t *testing.T, templateRef model.TemplateRef, instanceID string, objectIds metadata.ObjectIdsMap, inputsUsage *metadata.InputsUsage) (*state.State, dependencies.Mocked) {
 	t.Helper()
-	d := dependencies.NewMocked(t, context.Background())
+	d, _ := dependencies.NewMocked(t, context.Background())
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(metadata.NewMapper(mockedState, templateRef, instanceID, objectIds, inputsUsage))
 	return mockedState, d

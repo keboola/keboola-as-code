@@ -22,7 +22,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{ID: 123}
@@ -81,7 +81,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 
 	d, _ := dialog.NewForTest(t, false)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{ID: 123}
