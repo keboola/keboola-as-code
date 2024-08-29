@@ -1,12 +1,14 @@
 package function
 
 import (
+	"testing"
+
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestSnowflakeWriterComponentID(t *testing.T) {

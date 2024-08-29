@@ -9,6 +9,7 @@ package function
 import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -147,7 +148,7 @@ func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.Native
 		Name:   `SnowflakeWriterComponentId`,
 		Params: ast.Identifiers{},
 		Func: func(params []any) (any, error) {
-			//for _, b := range backend {
+			// for _, b := range backend {
 			//	if b == project.BackendSnowflake {
 			//		if _, found := components.Get(SnowflakeWriterIDGCPS3); found {
 			//			return SnowflakeWriterIDGCPS3.String(), nil
