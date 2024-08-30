@@ -57,12 +57,24 @@ func (v FileVolumeKey) String() string {
 	return v.FileKey.String() + "/" + v.VolumeID.String()
 }
 
+func (v FileVolumeKey) Telemetry() []attribute.KeyValue {
+	t := v.FileKey.Telemetry()
+	t = append(t, attribute.String("volume.id", v.VolumeID.String()))
+	return t
+}
+
 func (v SliceKey) String() string {
 	return v.FileVolumeKey.String() + "/" + v.SliceID.String()
 }
 
 func (v SliceKey) OpenedAt() utctime.UTCTime {
 	return v.SliceID.OpenedAt
+}
+
+func (v SliceKey) Telemetry() []attribute.KeyValue {
+	t := v.FileVolumeKey.Telemetry()
+	t = append(t, attribute.String("slice.id", v.SliceID.String()))
+	return t
 }
 
 func (v SliceID) String() string {
@@ -89,15 +101,11 @@ func (s Slice) LastStateChange() utctime.UTCTime {
 
 func (s Slice) Telemetry() []attribute.KeyValue {
 	lastStateChange := s.LastStateChange().Time()
-	return []attribute.KeyValue{
-		attribute.String("project.id", s.ProjectID.String()),
-		attribute.String("branch.id", s.BranchID.String()),
-		attribute.String("source.id", s.SourceID.String()),
-		attribute.String("sink.id", s.SinkID.String()),
-		attribute.String("file.id", s.FileID.String()),
-		attribute.String("volume.id", s.VolumeID.String()),
-		attribute.String("slice.id", s.SliceID.String()),
+	t := s.SliceKey.Telemetry()
+	t = append(
+		t,
 		attribute.String("slice.lastStateChange", lastStateChange.String()),
 		attribute.Int("slice.retryAttempt", s.RetryAttempt),
-	}
+	)
+	return t
 }

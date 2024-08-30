@@ -1,6 +1,8 @@
 package key
 
 import (
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -20,4 +22,10 @@ func (v SinkID) String() string {
 
 func (v SinkKey) String() string {
 	return v.SourceKey.String() + "/" + v.SinkID.String()
+}
+
+func (v SinkKey) Telemetry() []attribute.KeyValue {
+	t := v.SourceKey.Telemetry()
+	t = append(t, attribute.String("sink.id", v.SinkID.String()))
+	return t
 }
