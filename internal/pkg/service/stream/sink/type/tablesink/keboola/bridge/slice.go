@@ -34,7 +34,7 @@ func (b *Bridge) uploadSlice(
 	// Error when sending the event is not a fatal error
 	defer func() {
 		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
-		err = b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), &err, slice.SliceKey, stats)
+		err = b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.TokenString()), time.Since(start), &err, slice.SliceKey, stats)
 		cancel()
 		if err != nil {
 			b.logger.Errorf(ctx, "unable to send slice upload event: %v", err)
