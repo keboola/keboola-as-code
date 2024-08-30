@@ -288,19 +288,22 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration())
 	defer cancel()
 
-	// Get file statistics
-	stats, err := o.statistics.FileStats(ctx, file.FileKey)
+	// Get file statistics from cache
+	stats, err := o.statisticsCache.FileStats(ctx, file.FileKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get file statistics: %s", err)
 		return
 	}
 
 	// Check conditions
-	cause, ok := shouldImport(file.ImportTrigger, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Local)
+	cause, ok := shouldImport(file.ImportTrigger, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
 	if !ok {
 		o.logger.Debugf(ctx, "skipping file rotation: %s", cause)
 		return
 	}
+
+	// Rotate file
+	o.logger.Infof(ctx, "rotating file, import conditions met: %s", cause)
 
 	// Lock all file operations in the sink
 	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
