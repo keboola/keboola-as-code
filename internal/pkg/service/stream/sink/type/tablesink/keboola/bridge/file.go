@@ -169,7 +169,14 @@ func (b *Bridge) importFile(ctx context.Context, file *plugin.File, stats statis
 
 	// Create job to import data if no job exists yet or if it failed
 	if job == nil || job.Status == keboola.StorageJobStatusError {
-		job, err = api.LoadDataFromFileRequest(keboolaFile.TableKey, keboolaFile.FileKey).Send(ctx)
+		tableKey := keboola.TableKey{BranchID: keboolaFile.SinkKey.BranchID, TableID: keboolaFile.TableID}
+		fileKey := keboola.FileKey{BranchID: keboolaFile.SinkKey.BranchID, FileID: keboolaFile.UploadCredentials.FileID}
+		opts := []keboola.LoadDataOption{
+			keboola.WithoutHeader(true),                     // the file is sliced, and without CSV header
+			keboola.WithColumnsHeaders(keboolaFile.Columns), // fail, if the table columns differs
+			keboola.WithIncrementalLoad(true),               // Append to file instead of overwritting
+		}
+		job, err = api.LoadDataFromFileRequest(tableKey, fileKey, opts...).Send(ctx)
 		if err != nil {
 			return err
 		}
