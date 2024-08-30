@@ -124,6 +124,7 @@ func newPipeline(
 		closed:   make(chan struct{}),
 	}
 
+	ctx = context.WithoutCancel(ctx)
 	ctx = ctxattr.ContextWith(ctx, attribute.String("slice", sliceKey.String()))
 	p.logger.Debug(ctx, "opening encoding pipeline")
 
@@ -387,6 +388,11 @@ func (p *pipeline) Close(ctx context.Context) error {
 
 	// Wait until all chunks are written
 	p.chunksWg.Wait()
+
+	// Close remote network file
+	if err := p.network.Close(ctx); err != nil {
+		errs.Append(err)
+	}
 
 	// Dispatch "close"" event
 	if err := p.events.DispatchOnClose(p, errs.ErrorOrNil()); err != nil {
