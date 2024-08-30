@@ -156,6 +156,7 @@ type Mocked interface {
 // MockControl allows modification of mocked scopes and access to the insides in a test.
 type MockControl interface {
 	DebugLogger() log.DebugLogger
+	UseRealAPIs() bool
 	TestTelemetry() telemetry.ForTest
 	TestEtcdConfig() etcdclient.Config
 	TestEtcdClient() *etcdPkg.Client

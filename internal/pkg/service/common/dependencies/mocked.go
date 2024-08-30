@@ -251,7 +251,7 @@ func newMockedConfig(tb testing.TB, opts []MockedOption) *MockedConfig {
 	return cfg
 }
 
-func NewMocked(tb testing.TB, ctx context.Context, opts ...MockedOption) (mock Mocked, useRealAPIs bool) {
+func NewMocked(tb testing.TB, ctx context.Context, opts ...MockedOption) Mocked {
 	tb.Helper()
 
 	// Default values
@@ -309,7 +309,11 @@ func NewMocked(tb testing.TB, ctx context.Context, opts ...MockedOption) (mock M
 
 	// Clear logs
 	cfg.debugLogger.Truncate()
-	return d, cfg.useRealAPIs
+	return d
+}
+
+func (v *mocked) UseRealAPIs() bool {
+	return v.config.useRealAPIs
 }
 
 func (v *mocked) DebugLogger() log.DebugLogger {

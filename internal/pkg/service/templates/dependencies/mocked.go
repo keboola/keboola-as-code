@@ -26,7 +26,7 @@ func NewMockedAPIScope(tb testing.TB, ctx context.Context, cfg config.Config, op
 	tb.Helper()
 
 	opts = append(opts, dependencies.WithEnabledEtcdClient())
-	mock, _ := dependencies.NewMocked(tb, ctx, opts...)
+	mock := dependencies.NewMocked(tb, ctx, opts...)
 
 	var err error
 	cfg.StorageAPIHost = mock.StorageAPIHost()
