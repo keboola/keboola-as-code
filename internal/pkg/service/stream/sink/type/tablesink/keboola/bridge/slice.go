@@ -72,7 +72,7 @@ func (b *Bridge) uploadSlice(
 	}
 
 	// Update file manifest atomically, acquire the lock
-	manifestLock := b.locks.NewMutex(fmt.Sprintf("upload.bridge.keboola.manifest.%s", slice.FileKey))
+	manifestLock := b.distributedLockProvider.NewMutex(fmt.Sprintf("upload.bridge.keboola.manifest.%s", slice.FileKey))
 	if err := manifestLock.Lock(ctx); err != nil {
 		b.logger.Errorf(ctx, "cannot acquire manifest lock %q: %s", manifestLock.Key(), err)
 		return err

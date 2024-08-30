@@ -149,7 +149,6 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, ctx context.Context, modifyC
 		[]dependencies.MockedOption{
 			dependencies.WithEnabledEtcdClient(),
 			dependencies.WithMockedStorageAPIHost("connection.keboola.local"),
-			dependencies.WithEnabledDistributedLocks(),
 		},
 		opts...,
 	)...)
