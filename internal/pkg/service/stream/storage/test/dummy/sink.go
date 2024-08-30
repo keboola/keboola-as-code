@@ -38,6 +38,7 @@ type SinkController struct {
 
 type Pipeline struct {
 	controller *SinkController
+	onClose    func()
 }
 
 func NewController() *SinkController {
@@ -83,9 +84,9 @@ func (c *SinkController) RegisterDummySinkTypes(plugins *plugin.Plugins, control
 	})
 
 	// Register dummy pipeline opener for tests
-	plugins.RegisterSinkPipelineOpener(func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType) (pipeline.Pipeline, error) {
+	plugins.RegisterSinkPipelineOpener(func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType, onClose func()) (pipeline.Pipeline, error) {
 		if sinkType == SinkType {
-			return controller.OpenPipeline()
+			return controller.OpenPipeline(onClose)
 		}
 
 		return nil, pipeline.NoOpenerFoundError{SinkType: sinkType}
@@ -107,11 +108,11 @@ func (c *SinkController) RegisterDummySinkTypes(plugins *plugin.Plugins, control
 	)
 }
 
-func (c *SinkController) OpenPipeline() (pipeline.Pipeline, error) {
+func (c *SinkController) OpenPipeline(onClose func()) (pipeline.Pipeline, error) {
 	if c.PipelineOpenError != nil {
 		return nil, c.PipelineOpenError
 	}
-	return &Pipeline{controller: c}, nil
+	return &Pipeline{controller: c, onClose: onClose}, nil
 }
 
 func (p *Pipeline) ReopenOnSinkModification() bool {
@@ -126,5 +127,6 @@ func (p *Pipeline) WriteRecord(_ recordctx.Context) (pipeline.RecordStatus, erro
 }
 
 func (p *Pipeline) Close(_ context.Context) error {
+	defer p.onClose()
 	return p.controller.PipelineCloseError
 }
