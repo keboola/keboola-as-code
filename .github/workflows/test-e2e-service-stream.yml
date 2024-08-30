@@ -10,7 +10,7 @@ on:
 
 env:
   TEST_PARALLELISM: 16
-  TEST_PARALLELISM_PKG: 1
+  TEST_PARALLELISM_PKG: 2
 
 # Required for aws-actions/configure-aws-credentials using OIDC, assume role
 permissions:
