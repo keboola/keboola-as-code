@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 )
@@ -16,7 +15,6 @@ import (
 type coordinatorScope struct {
 	ServiceScope
 	dependencies.DistributionScope
-	dependencies.DistributedLockScope
 	statisticsL1Cache *cache.L1
 	statisticsL2Cache *cache.L2
 }
@@ -29,8 +27,8 @@ func (v *coordinatorScope) StatisticsL2Cache() *cache.L2 {
 	return v.statisticsL2Cache
 }
 
-func NewCoordinatorScope(ctx context.Context, svcScope ServiceScope, distScp dependencies.DistributionScope, distLockScp dependencies.DistributedLockScope, cfg config.Config) (v CoordinatorScope, err error) {
-	return newCoordinatorScope(ctx, svcScope, distScp, distLockScp, cfg)
+func NewCoordinatorScope(ctx context.Context, svcScope ServiceScope, distScp dependencies.DistributionScope, cfg config.Config) (v CoordinatorScope, err error) {
+	return newCoordinatorScope(ctx, svcScope, distScp, cfg)
 }
 
 func NewMockedCoordinatorScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (CoordinatorScope, Mocked) {
@@ -43,23 +41,19 @@ func NewMockedCoordinatorScopeWithConfig(tb testing.TB, ctx context.Context, mod
 	svcScp, mock := NewMockedServiceScopeWithConfig(tb, ctx, modifyConfig, opts...)
 
 	distScp := dependencies.NewDistributionScope(mock.TestConfig().NodeID, mock.TestConfig().Distribution, svcScp)
-	distLockScp, err := dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), svcScp)
-	require.NoError(tb, err)
 
-	d, err := newCoordinatorScope(ctx, svcScp, distScp, distLockScp, mock.TestConfig())
+	d, err := newCoordinatorScope(ctx, svcScp, distScp, mock.TestConfig())
 	require.NoError(tb, err)
 
 	return d, mock
 }
 
-func newCoordinatorScope(_ context.Context, svcScp ServiceScope, distScp dependencies.DistributionScope, distLockScp dependencies.DistributedLockScope, cfg config.Config) (v CoordinatorScope, err error) {
+func newCoordinatorScope(_ context.Context, svcScp ServiceScope, distScp dependencies.DistributionScope, cfg config.Config) (v CoordinatorScope, err error) {
 	d := &coordinatorScope{}
 
 	d.ServiceScope = svcScp
 
 	d.DistributionScope = distScp
-
-	d.DistributedLockScope = distLockScp
 
 	d.statisticsL1Cache, err = cache.NewL1Cache(d)
 	if err != nil {

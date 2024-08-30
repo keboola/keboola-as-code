@@ -6,6 +6,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
@@ -38,6 +39,7 @@ type Bridge struct {
 	publicAPI         *keboola.PublicAPI
 	apiProvider       apiProvider
 	storageRepository *storageRepo.Repository
+	locks             *distlock.Provider
 
 	getBucketOnce    *singleflight.Group
 	createBucketOnce *singleflight.Group
@@ -50,6 +52,7 @@ type dependencies interface {
 	Plugins() *plugin.Plugins
 	KeboolaPublicAPI() *keboola.PublicAPI
 	StorageRepository() *storageRepo.Repository
+	DistributedLockProvider() *distlock.Provider
 }
 
 func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Bridge {
@@ -62,6 +65,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 		publicAPI:         d.KeboolaPublicAPI(),
 		apiProvider:       apiProvider,
 		storageRepository: d.StorageRepository(),
+		locks:             d.DistributedLockProvider(),
 		getBucketOnce:     &singleflight.Group{},
 		createBucketOnce:  &singleflight.Group{},
 	}

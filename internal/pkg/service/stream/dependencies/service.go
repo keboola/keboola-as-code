@@ -8,9 +8,11 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	aggregationRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/aggregation/repository"
@@ -37,6 +39,8 @@ type serviceScope struct {
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
+	dependencies.DistributedLockScope
+	logger                      log.Logger
 	plugins                     *plugin.Plugins
 	definitionRepository        *definitionRepo.Repository
 	storageRepository           *storageRepo.Repository
@@ -51,6 +55,7 @@ type parentScopes struct {
 	dependencies.EtcdClientScope
 	dependencies.TaskScope
 	dependencies.DistributionScope
+	dependencies.DistributedLockScope
 }
 
 func NewServiceScope(
@@ -70,7 +75,7 @@ func NewServiceScope(
 		return nil, err
 	}
 
-	return newServiceScope(p.BaseScope, p.PublicScope, p.EtcdClientScope, cfg, model.DefaultBackoff())
+	return newServiceScope(p.BaseScope, p.PublicScope, p.EtcdClientScope, p.DistributedLockScope, cfg, model.DefaultBackoff())
 }
 
 func newParentScopes(
@@ -118,6 +123,11 @@ func newParentScopes(
 		return nil, err
 	}
 
+	d.DistributedLockScope, err = dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), d)
+	if err != nil {
+		return nil, err
+	}
+
 	return d, nil
 }
 
@@ -147,19 +157,24 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, ctx context.Context, modifyC
 	// Create service mocked dependencies
 	mock := &mocked{Mocked: commonMock, config: cfg, dummySinkController: dummy.NewController()}
 
+	distLockScope, err := dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), mock)
+	require.NoError(tb, err)
+
 	backoff := model.NoRandomizationBackoff()
-	serviceScp, err := newServiceScope(mock, mock, mock, cfg, backoff)
+	serviceScp, err := newServiceScope(mock, mock, mock, distLockScope, cfg, backoff)
 	require.NoError(tb, err)
 
 	mock.DebugLogger().Truncate()
-	mock.MockedHTTPTransport().Reset()
+	if !useRealAPIs {
+		mock.MockedHTTPTransport().Reset()
+	}
 
 	mock.dummySinkController.RegisterDummySinkTypes(serviceScp.Plugins(), mock.TestDummySinkController())
 
 	return serviceScp, mock
 }
 
-func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.PublicScope, etcdClientScp dependencies.EtcdClientScope, cfg config.Config, storageBackoff model.RetryBackoff) (ServiceScope, error) {
+func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.PublicScope, etcdClientScp dependencies.EtcdClientScope, distLockScp dependencies.DistributedLockScope, cfg config.Config, storageBackoff model.RetryBackoff) (ServiceScope, error) {
 	var err error
 
 	d := &serviceScope{}
@@ -169,6 +184,10 @@ func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.Publ
 	d.PublicScope = publicScp
 
 	d.EtcdClientScope = etcdClientScp
+
+	d.DistributedLockScope = distLockScp
+
+	d.logger = baseScp.Logger().With(attribute.String("nodeId", cfg.NodeID))
 
 	d.plugins = plugin.New(d.Logger())
 
@@ -195,6 +214,10 @@ func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.Publ
 	d.aggregationRepository = aggregationRepo.New(d)
 
 	return d, nil
+}
+
+func (v *serviceScope) Logger() log.Logger {
+	return v.logger
 }
 
 func (v *serviceScope) Plugins() *plugin.Plugins {
