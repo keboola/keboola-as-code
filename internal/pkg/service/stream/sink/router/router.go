@@ -59,7 +59,7 @@ func New(d dependencies) (*Router, error) {
 
 	ctx, cancelStream := context.WithCancel(context.Background())
 	d.Process().OnShutdown(func(ctx context.Context) {
-		r.logger.Infof(ctx, "shutting down sink router")
+		r.logger.Infof(ctx, "closing sink router")
 
 		// Block new writes
 		close(r.closed)
@@ -73,7 +73,7 @@ func New(d dependencies) (*Router, error) {
 		// Wait for closing all pipelines
 		r.closeAllPipelines(ctx, "shutdown")
 
-		r.logger.Infof(ctx, "sink router shutdown done")
+		r.logger.Infof(ctx, "closed sink router")
 	})
 
 	// Start sinks mirroring, only necessary data is saved
