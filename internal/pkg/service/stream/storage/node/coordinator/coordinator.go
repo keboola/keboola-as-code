@@ -6,9 +6,6 @@ package coordinator
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/attribute"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/fileimport"
@@ -17,8 +14,6 @@ import (
 )
 
 func Start(ctx context.Context, d dependencies.CoordinatorScope, cfg config.Config) error {
-	ctx = ctxattr.ContextWith(ctx, attribute.String("nodeId", cfg.NodeID))
-
 	logger := d.Logger().WithComponent("storage.node.coordinator")
 	logger.Info(ctx, `starting storage coordinator node`)
 

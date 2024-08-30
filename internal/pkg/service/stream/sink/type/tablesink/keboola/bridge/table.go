@@ -15,14 +15,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKey, sink definition.Sink) error {
-	// Create bucket if not exists
-	if err := b.ensureBucketExists(ctx, tableKey.BucketKey()); err != nil {
-		return err
-	}
-
+func (b *Bridge) ensureTableExists(ctx context.Context, api *keboola.AuthorizedAPI, tableKey keboola.TableKey, sink definition.Sink) error {
 	// Get table
-	tab, err := b.getTable(ctx, tableKey)
+	tab, err := b.getTable(ctx, api, tableKey)
 
 	// Create table
 	columnsNames := sink.Table.Mapping.Columns.Names()
@@ -30,7 +25,7 @@ func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKe
 	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.tables.notFound" {
 		// Create table
-		tab, err = b.createTable(ctx, tableKey, columnsNames, primaryKey)
+		tab, err = b.createTable(ctx, api, tableKey, columnsNames, primaryKey)
 	}
 
 	// Handle get/create error
@@ -39,7 +34,7 @@ func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKe
 	}
 
 	// add table metadata
-	if err = b.addTableMetadata(ctx, tab, sink); err != nil {
+	if err = b.addTableMetadata(ctx, api, tab, sink); err != nil {
 		return err
 	}
 
@@ -61,16 +56,11 @@ func (b *Bridge) ensureTableExists(ctx context.Context, tableKey keboola.TableKe
 	return nil
 }
 
-func (b *Bridge) getTable(ctx context.Context, tableKey keboola.TableKey) (*keboola.Table, error) {
-	api, err := b.apiProvider.APIFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (b *Bridge) getTable(ctx context.Context, api *keboola.AuthorizedAPI, tableKey keboola.TableKey) (*keboola.Table, error) {
 	return api.GetTableRequest(tableKey).Send(ctx)
 }
 
-func (b *Bridge) createTable(ctx context.Context, tableKey keboola.TableKey, columnNames, primaryKey []string) (*keboola.Table, error) {
+func (b *Bridge) createTable(ctx context.Context, api *keboola.AuthorizedAPI, tableKey keboola.TableKey, columnNames, primaryKey []string) (*keboola.Table, error) {
 	ctx = ctxattr.ContextWith(
 		ctx,
 		attribute.String("table.key", tableKey.String()),
@@ -79,10 +69,6 @@ func (b *Bridge) createTable(ctx context.Context, tableKey keboola.TableKey, col
 	)
 
 	rb := rollback.FromContext(ctx)
-	api, err := b.apiProvider.APIFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	// Create table definition
 	tableDef := keboola.TableDefinition{PrimaryKeyNames: primaryKey}
@@ -108,12 +94,7 @@ func (b *Bridge) createTable(ctx context.Context, tableKey keboola.TableKey, col
 	return tab, nil
 }
 
-func (b *Bridge) addTableMetadata(ctx context.Context, table *keboola.Table, sink definition.Sink) error {
-	api, err := b.apiProvider.APIFromContext(ctx)
-	if err != nil {
-		return err
-	}
-
+func (b *Bridge) addTableMetadata(ctx context.Context, api *keboola.AuthorizedAPI, table *keboola.Table, sink definition.Sink) error {
 	foundSinkMetaKey := false
 	foundSourceMetaKey := false
 

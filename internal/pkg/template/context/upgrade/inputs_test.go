@@ -364,7 +364,7 @@ func (tc testCase) run(t *testing.T) {
 	ctx := context.Background()
 
 	// Create objects
-	d := dependencies.NewMocked(t, ctx)
+	d, _ := dependencies.NewMocked(t, ctx)
 	state := d.MockedState()
 	branchKey := model.BranchKey{ID: 123}
 	configKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "111"}

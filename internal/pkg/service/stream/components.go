@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -51,15 +50,6 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 		distScp = commonDeps.NewDistributionScope(cfg.NodeID, cfg.Distribution, serviceScp)
 	}
 
-	// Common distribution locks scope
-	var distLocksScp commonDeps.DistributedLockScope
-	if componentsMap[ComponentAPI] || componentsMap[ComponentStorageCoordinator] {
-		distLocksScp, err = commonDeps.NewDistributedLockScope(ctx, distlock.NewConfig(), serviceScp)
-		if err != nil {
-			return err
-		}
-	}
-
 	// Common storage scope
 	var storageScp dependencies.StorageScope
 	if componentsMap[ComponentStorageWriter] || componentsMap[ComponentStorageReader] {
@@ -71,7 +61,7 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 
 	// Start components, always in the same order
 	if componentsMap[ComponentStorageCoordinator] {
-		d, err := dependencies.NewCoordinatorScope(ctx, serviceScp, distScp, distLocksScp, cfg)
+		d, err := dependencies.NewCoordinatorScope(ctx, serviceScp, distScp, cfg)
 		if err != nil {
 			return err
 		}
@@ -101,7 +91,7 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 	}
 
 	if componentsMap[ComponentAPI] {
-		apiScp, err := dependencies.NewAPIScope(serviceScp, taskScp, distLocksScp, cfg) // nolint:forbidigo
+		apiScp, err := dependencies.NewAPIScope(serviceScp, taskScp, cfg) // nolint:forbidigo
 		if err != nil {
 			return err
 		}

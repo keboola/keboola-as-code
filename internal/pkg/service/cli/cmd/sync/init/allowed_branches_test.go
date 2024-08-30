@@ -23,7 +23,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -49,7 +49,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 
 	d, _ := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
@@ -73,7 +73,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -106,7 +106,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -139,7 +139,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{
@@ -193,7 +193,7 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{

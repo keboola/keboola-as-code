@@ -12,7 +12,8 @@ import (
 
 func TestNewProjectDeps_MasterTokenRequiredError(t *testing.T) {
 	t.Parallel()
-	d := NewMocked(t, context.Background())
+	d, useRealAPIs := NewMocked(t, context.Background())
+	assert.False(t, useRealAPIs)
 	token := keboola.Token{IsMaster: false}
 	_, err := newProjectScope(context.Background(), d, token)
 	assert.Error(t, err)

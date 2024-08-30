@@ -114,7 +114,7 @@ func NewSyncer(
 	ctx, s.cancel = context.WithCancel(ctx)
 	s.cancelled = ctx.Done()
 
-	s.logger.Infof(
+	s.logger.Debugf(
 		ctx,
 		`sync is enabled, mode=%s, sync each {count=%d or uncompressed=%s or compressed=%s or interval=%s}, check each %s`,
 		config.Mode,

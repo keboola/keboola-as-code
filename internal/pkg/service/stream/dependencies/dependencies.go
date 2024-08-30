@@ -78,6 +78,7 @@ type ServiceScope interface {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
+	dependencies.DistributedLockScope
 	Plugins() *plugin.Plugins
 	DefinitionRepository() *definitionRepo.Repository
 	StorageRepository() *storageRepo.Repository
@@ -89,7 +90,6 @@ type ServiceScope interface {
 type APIScope interface {
 	ServiceScope
 	dependencies.TaskScope
-	dependencies.DistributedLockScope
 	APIPublicURL() *url.URL
 	HTTPSourcePublicURL() *url.URL
 }
@@ -133,7 +133,6 @@ type SourceScope interface {
 type CoordinatorScope interface {
 	ServiceScope
 	dependencies.DistributionScope
-	dependencies.DistributedLockScope
 	StatisticsL1Cache() *cache.L1
 	StatisticsL2Cache() *cache.L2
 }

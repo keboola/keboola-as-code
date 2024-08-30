@@ -11,27 +11,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (b *Bridge) ensureBucketExists(ctx context.Context, bucketKey keboola.BucketKey) error {
+func (b *Bridge) ensureBucketExists(ctx context.Context, api *keboola.AuthorizedAPI, bucketKey keboola.BucketKey) error {
 	// Check if the bucket exists
-	_, err := b.getBucket(ctx, bucketKey)
+	_, err := b.getBucket(ctx, api, bucketKey)
 
 	// Try to create bucket, if not exists
 	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.buckets.notFound" {
-		_, err = b.createBucket(ctx, bucketKey)
+		_, err = b.createBucket(ctx, api, bucketKey)
 	}
 
 	return err
 }
 
-func (b *Bridge) getBucket(ctx context.Context, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
+func (b *Bridge) getBucket(ctx context.Context, api *keboola.AuthorizedAPI, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
 	ctx = ctxattr.ContextWith(ctx, attribute.String("bucket.key", bucketKey.String()))
 	bucket, err, _ := b.getBucketOnce.Do(bucketKey.String(), func() (any, error) {
-		api, err := b.apiProvider.APIFromContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-
 		return api.GetBucketRequest(bucketKey).Send(ctx)
 	})
 
@@ -50,15 +45,10 @@ func (b *Bridge) getBucket(ctx context.Context, bucketKey keboola.BucketKey) (*k
 	return bucket.(*keboola.Bucket), nil
 }
 
-func (b *Bridge) createBucket(ctx context.Context, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
+func (b *Bridge) createBucket(ctx context.Context, api *keboola.AuthorizedAPI, bucketKey keboola.BucketKey) (*keboola.Bucket, error) {
 	ctx = ctxattr.ContextWith(ctx, attribute.String("bucket.key", bucketKey.String()))
 
 	bucket, err, _ := b.createBucketOnce.Do(bucketKey.String(), func() (any, error) {
-		api, err := b.apiProvider.APIFromContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-
 		// Create bucket
 		b.logger.Info(ctx, "creating bucket")
 		bucket := &keboola.Bucket{BucketKey: bucketKey}

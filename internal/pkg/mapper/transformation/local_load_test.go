@@ -18,7 +18,7 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	d := dependencies.NewMocked(t, context.Background())
+	d, _ := dependencies.NewMocked(t, context.Background())
 	state := d.MockedState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))

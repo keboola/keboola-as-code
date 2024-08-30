@@ -309,7 +309,7 @@ func createNode(t *testing.T, ctx context.Context, clk clock.Clock, etcdCfg etcd
 
 func createDeps(t *testing.T, ctx context.Context, clk clock.Clock, logs io.Writer, etcdCfg etcdclient.Config) dependencies.Mocked {
 	t.Helper()
-	d := dependencies.NewMocked(
+	d, _ := dependencies.NewMocked(
 		t,
 		ctx,
 		dependencies.WithClock(clk),

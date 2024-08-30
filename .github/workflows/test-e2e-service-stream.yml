@@ -10,7 +10,7 @@ on:
 
 env:
   TEST_PARALLELISM: 16
-  TEST_PARALLELISM_PKG: 1
+  TEST_PARALLELISM_PKG: 2
 
 # Required for aws-actions/configure-aws-credentials using OIDC, assume role
 permissions:
@@ -79,6 +79,11 @@ jobs:
             STREAM_ETCD_ENDPOINT="etcd:2379" \
             STREAM_ETCD_USERNAME="root" \
             STREAM_ETCD_PASSWORD="toor" \
+            UNIT_ETCD_ENABLED="true" \
+            UNIT_ETCD_ENDPOINT="etcd:2379" \
+            UNIT_ETCD_USERNAME="root" \
+            UNIT_ETCD_PASSWORD="toor" \
+            UNIT_ETCD_NAMESPACE="unit" \
             TEST_BINARY_STREAM_SERVICE="$TEST_BINARY_STREAM_SERVICE" \
             TEST_BINARY_STREAM_SERVICE_HASH="$TEST_BINARY_STREAM_SERVICE_HASH" \
             TEST_PARALLELISM="$TEST_PARALLELISM" \
@@ -88,7 +93,7 @@ jobs:
             TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
             TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-          make tests-stream-api
+          make tests-stream-service
         env:
           TEST_BINARY_STREAM_SERVICE: "${{ runner.temp }}/test-build-stream-service"
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}

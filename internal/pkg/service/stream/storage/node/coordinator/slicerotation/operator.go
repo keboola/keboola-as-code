@@ -234,8 +234,6 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
-	o.logger.Info(ctx, "rotating slice")
-
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceRotationTimeout.Duration())
 	defer cancel()
 

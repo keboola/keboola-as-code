@@ -86,6 +86,11 @@ func (l *debugLogger) ConnectTo(writer io.Writer) {
 	l.all.ConnectTo(writer)
 }
 
+// ConnectInfoTo connects all messages except debug to a writer, for example os.Stdout.
+func (l *debugLogger) ConnectInfoTo(writer io.Writer) {
+	l.info.ConnectTo(writer)
+}
+
 // Truncate clear all messages.
 func (l *debugLogger) Truncate() {
 	for _, w := range l.allWriters() {

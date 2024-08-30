@@ -9,22 +9,20 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 )
 
 // apiSCope implements APIScope interface.
 type apiScope struct {
 	ServiceScope
-	dependencies.DistributedLockScope
 	dependencies.TaskScope
 	logger              log.Logger
 	apiPublicURL        *url.URL
 	httpSourcePublicURL *url.URL
 }
 
-func NewAPIScope(serviceScp ServiceScope, taskScp dependencies.TaskScope, distLocksScp dependencies.DistributedLockScope, cfg config.Config) (v APIScope, err error) {
-	return newAPIScope(serviceScp, taskScp, distLocksScp, cfg), nil
+func NewAPIScope(serviceScp ServiceScope, taskScp dependencies.TaskScope, cfg config.Config) (v APIScope, err error) {
+	return newAPIScope(serviceScp, taskScp, cfg), nil
 }
 
 func NewMockedAPIScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (APIScope, Mocked) {
@@ -40,23 +38,18 @@ func NewMockedAPIScopeWithConfig(tb testing.TB, ctx context.Context, modifyConfi
 	tasksScp, err := dependencies.NewTaskScope(ctx, mock.TestConfig().NodeID, exceptionIDPrefix, svcScp)
 	require.NoError(tb, err)
 
-	distLockScope, err := dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), svcScp)
-	require.NoError(tb, err)
-
-	apiScp := newAPIScope(svcScp, tasksScp, distLockScope, mock.TestConfig())
+	apiScp := newAPIScope(svcScp, tasksScp, mock.TestConfig())
 
 	mock.DebugLogger().Truncate()
 	return apiScp, mock
 }
 
-func newAPIScope(svcScope ServiceScope, tasksScp dependencies.TaskScope, distLocksScp dependencies.DistributedLockScope, cfg config.Config) APIScope {
+func newAPIScope(svcScope ServiceScope, tasksScp dependencies.TaskScope, cfg config.Config) APIScope {
 	d := &apiScope{}
 
 	d.ServiceScope = svcScope
 
 	d.TaskScope = tasksScp
-
-	d.DistributedLockScope = distLocksScp
 
 	d.logger = svcScope.Logger().WithComponent("api")
 

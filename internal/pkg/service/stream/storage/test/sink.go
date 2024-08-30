@@ -31,7 +31,7 @@ func NewKeboolaTableSink(k key.SinkKey) definition.Sink {
 		Table: &definition.TableSink{
 			Type: definition.TableTypeKeboola,
 			Keboola: &definition.KeboolaTable{
-				TableID: keboola.MustParseTableID("in.c-bucket.table"),
+				TableID: keboola.MustParseTableID("in.c-bucket.my-table"),
 			},
 			Mapping: table.Mapping{
 				Columns: column.Columns{

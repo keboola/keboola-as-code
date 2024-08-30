@@ -8,8 +8,9 @@ import (
 
 // File contains all Keboola-specific data we need for upload and import.
 type File struct {
-	key.SinkKey
-	keboola.TableKey
-	*keboola.StorageJobID
-	keboola.FileUploadCredentials
+	SinkKey           key.SinkKey
+	TableID           keboola.TableID
+	Columns           []string
+	StorageJobID      *keboola.StorageJobID
+	UploadCredentials keboola.FileUploadCredentials
 }

@@ -93,7 +93,7 @@ func TestSyncWriter_Write_Wait(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -143,7 +143,7 @@ func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -180,7 +180,7 @@ func TestSyncWriter_SkipEmptySync(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"info","message":"TEST: sync started"}
 {"level":"info","message":"TEST: sync done"}
@@ -253,7 +253,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -329,7 +329,7 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -382,7 +382,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}                            
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}                            
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -439,7 +439,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -515,7 +515,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -591,7 +591,7 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -644,7 +644,7 @@ func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -701,7 +701,7 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=cache, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -775,7 +775,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -845,7 +845,7 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -903,7 +903,7 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -960,7 +960,7 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"data1\""}
 {"level":"info","message":"TEST: write \"data2\""}
 {"level":"info","message":"TEST: write \"data3\""}
@@ -1034,7 +1034,7 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 
 	// Check logs
 	tc.AssertLogs(`
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=100 or uncompressed=128KB or compressed=128KB or interval=10ms}, check each 1ms"}
 {"level":"info","message":"TEST: write \"1234567890\""}
 {"level":"info","message":"TEST: write \"--------------------...\""}
 {"level":"debug","message":"starting sync to disk"}

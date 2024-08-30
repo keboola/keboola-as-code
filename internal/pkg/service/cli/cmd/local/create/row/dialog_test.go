@@ -24,7 +24,7 @@ func TestAskCreateRow(t *testing.T) {
 	d, console := dialog.NewForTest(t, true)
 
 	fs := aferofs.NewMemoryFs()
-	deps := dependencies.NewMocked(t, context.Background())
+	deps, _ := dependencies.NewMocked(t, context.Background())
 	ctx := context.Background()
 
 	// Create manifest file

@@ -92,7 +92,7 @@ func TestContext(t *testing.T) {
 	ctxWithVal := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
 
 	// Create template use context
-	d := dependenciesPkg.NewMocked(t, ctx)
+	d, _ := dependenciesPkg.NewMocked(t, ctx)
 	projectState := d.MockedState()
 	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
 
@@ -198,7 +198,7 @@ func TestComponentsFunctions(t *testing.T) {
 	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
 	assert.NoError(t, err)
 
-	d := dependenciesPkg.NewMocked(t, ctx)
+	d, _ := dependenciesPkg.NewMocked(t, ctx)
 	projectState := d.MockedState()
 	tickets := keboola.NewTicketProvider(context.Background(), api)
 	components := model.NewComponentsMap(keboola.Components{})
@@ -310,7 +310,7 @@ func TestHasBackendFunction(t *testing.T) {
 	)
 	ctx := context.Background()
 
-	d := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
+	d, _ := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
 
 	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", d.StorageAPIToken().Token, keboola.WithClient(&c))
 	assert.NoError(t, err)
@@ -350,7 +350,7 @@ func TestHasBackendFunction(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 2 backend 'bigquery'
-	d = dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithBigQueryBackend())
+	d, _ = dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithBigQueryBackend())
 
 	expected = `
 {

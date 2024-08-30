@@ -27,14 +27,34 @@ const (
 func (b *Bridge) setupOnFileOpen() {
 	b.plugins.Collection().OnFileOpen(func(ctx context.Context, now time.Time, sink definition.Sink, file *model.File) error {
 		if b.isKeboolaTableSink(&sink) {
-			// Create table if not exists
 			tableKey := keboola.TableKey{BranchID: sink.BranchID, TableID: sink.Table.Keboola.TableID}
-			if err := b.ensureTableExists(ctx, tableKey, sink); err != nil {
+
+			// Create bucket if not exists, but only if the operation is called via API.
+			// We need a token with right permissions, to be able to create the bucket.
+			// If the operation is not called via API, but from a background operator, the bucket should already exist.
+			if api, err := b.apiProvider.APIFromContext(ctx); err == nil {
+				if err := b.ensureBucketExists(ctx, api, tableKey.BucketKey()); err != nil {
+					return err
+				}
+			}
+
+			// Get token from the database, or create a new one.
+			token, err := b.tokenForSink(ctx, now, sink)
+			if err != nil {
+				return err
+			}
+
+			// Following API operations are always called using the limited token - scoped to the bucket.
+			api := b.publicAPI.WithToken(token.TokenString())
+			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", token.Token.ID))
+
+			// Create table if not exists
+			if err := b.ensureTableExists(ctx, api, tableKey, sink); err != nil {
 				return err
 			}
 
 			// Create file resource
-			uploadCredentials, err := b.createStagingFile(ctx, now, sink, file)
+			keboolaFile, err := b.createStagingFile(ctx, api, sink, file)
 			if err != nil {
 				return err
 			}
@@ -43,26 +63,17 @@ func (b *Bridge) setupOnFileOpen() {
 			file.Mapping = sink.Table.Mapping
 			file.StagingStorage.Provider = stagingFileProvider // staging file is provided by the Keboola
 			file.TargetStorage.Provider = targetProvider       // destination is a Keboola table
-			file.StagingStorage.Expiration = utctime.From(uploadCredentials.CredentialsExpiration())
+			file.StagingStorage.Expiration = utctime.From(keboolaFile.UploadCredentials.CredentialsExpiration())
 		}
 
 		return nil
 	})
 }
 
-func (b *Bridge) createStagingFile(ctx context.Context, now time.Time, sink definition.Sink, file *model.File) (keboolasink.File, error) {
-	// Get token
-	token, err := b.tokenForSink(ctx, now, sink)
-	if err != nil {
-		return keboolasink.File{}, err
-	}
-
-	// Get authorized Storage API
-	api := b.publicAPI.WithToken(token.TokenString())
-
+func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedAPI, sink definition.Sink, file *model.File) (keboolasink.File, error) {
 	name := fmt.Sprintf(`%s_%s_%s`, file.SourceID, file.SinkID, file.OpenedAt().Time().Format(fileNameDateFormat))
 	attributes := file.Telemetry()
-	attributes = append(attributes, attribute.String("token.ID", token.Token.ID), attribute.String("file.name", name))
+	attributes = append(attributes, attribute.String("file.name", name))
 	ctx = ctxattr.ContextWith(ctx, attributes...)
 
 	// Create staging file
@@ -89,12 +100,10 @@ func (b *Bridge) createStagingFile(ctx context.Context, now time.Time, sink defi
 	// Save credentials to database
 	ctx = ctxattr.ContextWith(ctx, attribute.String("file.resourceID", stagingFile.FileID.String()))
 	keboolaFile := keboolasink.File{
-		SinkKey: file.SinkKey,
-		TableKey: keboola.TableKey{
-			BranchID: sink.BranchID,
-			TableID:  sink.Table.Keboola.TableID,
-		},
-		FileUploadCredentials: *stagingFile,
+		SinkKey:           file.SinkKey,
+		TableID:           sink.Table.Keboola.TableID,
+		Columns:           sink.Table.Mapping.Columns.Names(),
+		UploadCredentials: *stagingFile,
 	}
 	op.AtomicOpFromCtx(ctx).Write(func(ctx context.Context) op.Op {
 		return b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile)
@@ -160,7 +169,14 @@ func (b *Bridge) importFile(ctx context.Context, file *plugin.File, stats statis
 
 	// Create job to import data if no job exists yet or if it failed
 	if job == nil || job.Status == keboola.StorageJobStatusError {
-		job, err = api.LoadDataFromFileRequest(keboolaFile.TableKey, keboolaFile.FileKey).Send(ctx)
+		tableKey := keboola.TableKey{BranchID: keboolaFile.SinkKey.BranchID, TableID: keboolaFile.TableID}
+		fileKey := keboola.FileKey{BranchID: keboolaFile.SinkKey.BranchID, FileID: keboolaFile.UploadCredentials.FileID}
+		opts := []keboola.LoadDataOption{
+			keboola.WithoutHeader(true),                     // the file is sliced, and without CSV header
+			keboola.WithColumnsHeaders(keboolaFile.Columns), // fail, if the table columns differs
+			keboola.WithIncrementalLoad(true),               // Append to file instead of overwritting
+		}
+		job, err = api.LoadDataFromFileRequest(tableKey, fileKey, opts...).Send(ctx)
 		if err != nil {
 			return err
 		}

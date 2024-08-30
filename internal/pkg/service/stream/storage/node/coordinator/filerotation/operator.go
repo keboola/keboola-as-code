@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
@@ -284,12 +285,10 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) rotateFile(ctx context.Context, file *fileData) {
-	o.logger.Info(ctx, "rotating file")
-
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration())
 	defer cancel()
 
-	// Get file statistics
+	// Get file statistics from cache
 	stats, err := o.statistics.FileStats(ctx, file.FileKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get file statistics: %s", err)
@@ -303,6 +302,9 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		return
 	}
 
+	// Rotate file
+	o.logger.Infof(ctx, "rotating file, import conditions met: %s", cause)
+
 	// Lock all file operations in the sink
 	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
 	if unlock == nil {
@@ -311,10 +313,15 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	defer unlock()
 
 	o.logger.Infof(ctx, "rotating file for import: %s", cause)
+	// Rollback when error occurs in ETCD/StorageAPI
+	rb := rollback.New(o.logger)
+	ctx = rollback.ContextWith(ctx, rb)
+
 	// Rotate file
 	err = o.storage.File().Rotate(file.FileKey.SinkKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
 	// Handle error
 	if err != nil {
+		rb.InvokeIfErr(ctx, &err)
 		o.logger.Errorf(ctx, "cannot rotate file: %s", err)
 
 		// Increment retry delay

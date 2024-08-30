@@ -250,7 +250,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (d
 	t.Helper()
 
 	// Mocked API response
-	d := dependencies.NewMocked(t, context.Background())
+	d, _ := dependencies.NewMocked(t, context.Background())
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]any{
 		"id":                     "ex-generic-v2",
 		"type":                   "extractor",

@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -34,7 +35,7 @@ func (b *Bridge) uploadSlice(
 	// Error when sending the event is not a fatal error
 	defer func() {
 		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
-		err = b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.String()), time.Since(start), &err, slice.SliceKey, stats)
+		err = b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.TokenString()), time.Since(start), &err, slice.SliceKey, stats)
 		cancel()
 		if err != nil {
 			b.logger.Errorf(ctx, "unable to send slice upload event: %v", err)
@@ -57,42 +58,55 @@ func (b *Bridge) uploadSlice(
 		return err
 	}
 
-	uploader, err := keboola.NewUploadSliceWriter(ctx, &keboolaFile.FileUploadCredentials, slice.String())
+	// Upload slice
+	uploader, err := keboola.NewUploadSliceWriter(ctx, &keboolaFile.UploadCredentials, slice.StagingStorage.Path)
 	if err != nil {
 		return err
 	}
-
-	// uploader already contains GZip writer, so no compression is needed.
 	_, err = reader.WriteTo(uploader)
 	if err != nil {
 		return err
 	}
-
 	if err := uploader.Close(); err != nil {
 		return err
 	}
 
-	// Get already uploaded slices and update the manifest with new uploaded slice
+	// Update file manifest atomically, acquire the lock
+	manifestLock := b.locks.NewMutex(fmt.Sprintf("upload.bridge.keboola.manifest.%s", slice.FileKey))
+	if err := manifestLock.Lock(ctx); err != nil {
+		b.logger.Errorf(ctx, "cannot acquire manifest lock %q: %s", manifestLock.Key(), err)
+		return err
+	}
+
+	// ! Release the lock, but only after the whole operation is completed/failed, and the slice is switched to uploaded state.
+	// Otherwise, uploading of another slice may overwrite the manifest record of the current slice.
+	go func() {
+		<-ctx.Done()
+
+		unlockCtx, unlockCancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+		defer unlockCancel()
+
+		if err := manifestLock.Unlock(unlockCtx); err != nil {
+			b.logger.Warnf(ctx, "cannot unlock manifest lock %q: %s", manifestLock.Key(), err)
+		}
+	}()
+
+	// Get already uploaded slices
 	slices, err := b.storageRepository.Slice().ListInState(slice.FileKey, model.SliceUploaded).Do(ctx).All()
 	if err != nil {
 		return err
 	}
 
-	uploadedSlices := make([]string, 0, len(slices)+1)
+	// Compose list of not empty uploaded slices, add the new one
+	manifestSlices := make([]string, 0, len(slices)+1)
 	for _, s := range slices {
-		// Skip empty slices
-		if s.LocalStorage.IsEmpty {
-			continue
+		if !s.LocalStorage.IsEmpty {
+			manifestSlices = append(manifestSlices, s.StagingStorage.Path)
 		}
-
-		uploadedSlices = append(uploadedSlices, s.StagingStorage.Path)
 	}
+	manifestSlices = append(manifestSlices, slice.StagingStorage.Path)
 
-	uploadedSlices = append(uploadedSlices, slice.StagingStorage.Path)
-	_, err = keboola.UploadSlicedFileManifest(ctx, &keboolaFile.FileUploadCredentials, uploadedSlices)
-	if err != nil {
-		return err
-	}
-
+	// Update the manifest
+	_, err = keboola.UploadSlicedFileManifest(ctx, &keboolaFile.UploadCredentials, manifestSlices)
 	return err
 }
