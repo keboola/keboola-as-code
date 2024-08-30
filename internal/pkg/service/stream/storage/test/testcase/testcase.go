@@ -157,7 +157,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	// Disable sink to force close the pipeline
 	require.NoError(t, tc.apiNode.DefinitionRepository().Sink().Disable(sink.SinkKey, tc.apiNode.Clock().Now(), test.ByUser(), "reason").Do(apiCtx).Err())
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		tc.logger.AssertJSONMessages(c, `{"level":"info","message":"closed sink pipeline \"%s\": sink disabled","component":"sink.router"}`)
+		tc.logger.AssertJSONMessages(c, `{"level":"info","message":"closed sink pipeline: sink disabled","component":"sink.router"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Get statistics
