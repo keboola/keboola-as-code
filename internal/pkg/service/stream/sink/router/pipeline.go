@@ -62,7 +62,7 @@ func (p *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) err
 
 		// Use plugin system to create the pipeline
 		p.router.logger.Infof(ctx, `opening sink pipeline`)
-		p.pipeline, err = p.router.plugins.OpenSinkPipeline(ctx, p.sinkKey, p.sinkType)
+		p.pipeline, err = p.router.plugins.OpenSinkPipeline(ctx, p.sinkKey, p.sinkType, p.unregister)
 
 		// Use retry backoff, don't try to open pipeline on each record
 		if err != nil {
@@ -87,18 +87,21 @@ func (p *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) err
 	return nil
 }
 
-func (p *pipelineRef) close(ctx context.Context, reason string) {
+func (p *pipelineRef) unregister() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	// Add telemetry attributes
-	ctx = ctxattr.ContextWith(ctx, p.sinkKey.Telemetry()...)
-
-	// Detach pipeline from the router,
-	// so new pipeline can be created for next record, if any.
+	// Unregister pipeline from the router, so new pipeline can be created for next record, if any.
 	p.router.pipelinesLock.Lock()
 	delete(p.router.pipelines, p.sinkKey)
 	p.router.pipelinesLock.Unlock()
+}
+
+func (p *pipelineRef) close(ctx context.Context, reason string) {
+	p.unregister()
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
 
 	// Stop if the pipeline was not successfully opened
 	if p.pipeline == nil {
