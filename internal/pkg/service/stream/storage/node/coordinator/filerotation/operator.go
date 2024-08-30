@@ -289,7 +289,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	defer cancel()
 
 	// Get file statistics from cache
-	stats, err := o.statisticsCache.FileStats(ctx, file.FileKey)
+	stats, err := o.statistics.FileStats(ctx, file.FileKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get file statistics: %s", err)
 		return

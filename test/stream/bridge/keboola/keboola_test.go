@@ -205,13 +205,13 @@ func (ts *testState) testSlicesUpload(
 		// Slices are uploaded independently, so we have to use multiple asserts
 		if half == 10 {
 			ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotating slice for upload: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotating slice for upload: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
 		`)
 		} else {
 			ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotating slice for upload: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotating slice for upload: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
 		`)
 		}
 		ts.logger.AssertJSONMessages(c, `

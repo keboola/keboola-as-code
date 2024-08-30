@@ -6,9 +6,6 @@ package coordinator
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/attribute"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/fileimport"
