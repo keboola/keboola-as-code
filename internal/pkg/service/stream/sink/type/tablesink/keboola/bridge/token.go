@@ -65,7 +65,10 @@ func (b *Bridge) deleteToken(api *keboola.AuthorizedAPI, sinkKey key.SinkKey) *o
 }
 
 func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definition.Sink) (keboolasink.Token, error) {
-	// Get token, if the sink is not new
+	// Get token from database, if any.
+	// The token is scoped to the sink bucket,
+	// but an API operation can modify the target bucket,
+	// then a new token must be generated.
 	var existingToken *keboolasink.Token
 	if !sink.CreatedAt().Time().Equal(now) {
 		err := b.schema.Token().ForSink(sink.SinkKey).GetOrNil(b.client).WithResultTo(&existingToken).Do(ctx).Err()
@@ -74,16 +77,21 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		}
 	}
 
-	// Use existing token, if the operation is not called from API
+	// Use token from the database, if the operation is not called from the API,
+	// so no modification of the sink target bucket is expected and the token should work.
 	api, err := b.apiProvider.APIFromContext(ctx)
 	if err != nil {
 		if existingToken == nil {
+			// Operation is not called from the API and there is no token in the database.
 			return keboolasink.Token{}, serviceError.NewResourceNotFoundError("sink token", sink.SinkKey.String(), "database")
-		} else {
-			return *existingToken, nil
 		}
+
+		// Operation is not called from the API and there is a token in the database, so we are using the token.
+		return *existingToken, nil
 	}
 
+	// Operation is called from the API (for example sink create/update), so we are creating a new token and deleting the old one,
+	// if present, because the target bucket could have changed, and the old token would not work.
 	name := fmt.Sprintf("[_internal] Stream Sink %s/%s", sink.SourceID, sink.SinkID)
 	bucketID := sink.Table.Keboola.TableID.BucketID
 	ctx = ctxattr.ContextWith(
