@@ -69,18 +69,19 @@ func TestFileRotation(t *testing.T) {
 	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
 	require.Len(t, slices, 4)
+	// files[0]
 	require.Equal(t, model.SliceClosing, slices[0].State)
 	require.Equal(t, model.SliceClosing, slices[1].State)
+	// files[1]
 	require.Equal(t, model.SliceWriting, slices[2].State)
 	require.Equal(t, model.SliceWriting, slices[3].State)
 
 	// Simulate some records count over the threshold
-	slice := slices[2]
 	require.NoError(t, ts.dependencies.StatisticsRepository().Put(ctx, "source-node-1", []statistics.PerSlice{
 		{
-			SliceKey:         slice.SliceKey,
-			FirstRecordAt:    slice.OpenedAt(),
-			LastRecordAt:     slice.OpenedAt().Add(time.Second),
+			SliceKey:         slices[2].SliceKey,
+			FirstRecordAt:    slices[2].OpenedAt(),
+			LastRecordAt:     slices[2].OpenedAt().Add(time.Second),
 			RecordsCount:     ts.importTrigger.Count/2 + 1,
 			UncompressedSize: 100 * datasize.B,
 			CompressedSize:   10 * datasize.B,
@@ -88,15 +89,21 @@ func TestFileRotation(t *testing.T) {
 	}))
 	require.NoError(t, ts.dependencies.StatisticsRepository().Put(ctx, "source-node-2", []statistics.PerSlice{
 		{
-			SliceKey:         slice.SliceKey,
-			FirstRecordAt:    slice.OpenedAt(),
-			LastRecordAt:     slice.OpenedAt().Add(time.Second),
+			SliceKey:         slices[3].SliceKey,
+			FirstRecordAt:    slices[3].OpenedAt(),
+			LastRecordAt:     slices[3].OpenedAt().Add(time.Second),
 			RecordsCount:     ts.importTrigger.Count/2 + 1,
 			UncompressedSize: 100 * datasize.B,
 			CompressedSize:   10 * datasize.B,
 		},
 	}))
 	ts.waitForStatsSync(t)
+
+	// Switch slice[2] to the Uploaded state before the conditions check.
+	// Part of the files[1] statistics in Local level and also in the Staging level.
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().Rotate(slices[2].SliceKey, ts.dependencies.Clock().Now()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slices[2].SliceKey, ts.dependencies.Clock().Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slices[2].SliceKey, ts.dependencies.Clock().Now()).Do(ctx).Err())
 
 	// Trigger check - records count trigger
 	ts.triggerCheck(t, true, ` 
@@ -119,46 +126,52 @@ func TestFileRotation(t *testing.T) {
 	require.Equal(t, model.FileWriting, files[2].State)
 	slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 	require.NoError(t, err)
-	require.Len(t, slices, 6)
+	require.Len(t, slices, 7)
+	// files[0]
 	require.Equal(t, model.SliceClosing, slices[0].State)
 	require.Equal(t, model.SliceClosing, slices[1].State)
-	require.Equal(t, model.SliceClosing, slices[2].State)
+	// files[1]
+	require.Equal(t, model.SliceUploaded, slices[2].State)
 	require.Equal(t, model.SliceClosing, slices[3].State)
-	require.Equal(t, model.SliceWriting, slices[4].State)
+	require.Equal(t, model.SliceClosing, slices[4].State)
+	// files[2]
 	require.Equal(t, model.SliceWriting, slices[5].State)
+	require.Equal(t, model.SliceWriting, slices[6].State)
 
-	// Unblock switching to the importing state
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, ts.dependencies.Clock().Now(), false).Do(ctx).Err())
+	// Unblock switching to the importing state - switch remaining slices of the files[0] and files[1] to the uploaded state
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, ts.dependencies.Clock().Now(), true).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slices[1].SliceKey, ts.dependencies.Clock().Now(), true).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slices[2].SliceKey, ts.dependencies.Clock().Now(), true).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slices[3].SliceKey, ts.dependencies.Clock().Now(), true).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slices[4].SliceKey, ts.dependencies.Clock().Now(), true).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slices[0].SliceKey, ts.dependencies.Clock().Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slices[1].SliceKey, ts.dependencies.Clock().Now()).Do(ctx).Err())
-	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slices[2].SliceKey, ts.dependencies.Clock().Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slices[3].SliceKey, ts.dependencies.Clock().Now()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slices[4].SliceKey, ts.dependencies.Clock().Now()).Do(ctx).Err())
 	ts.triggerCheck(t, false, "")
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		files, err = ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 		assert.NoError(c, err)
 		assert.Len(c, files, 3)
 		assert.Equal(c, model.FileImporting, files[0].State)
-		assert.False(c, files[0].StagingStorage.IsEmpty)
+		assert.True(c, files[0].StagingStorage.IsEmpty)
 		assert.Equal(c, model.FileImporting, files[1].State)
-		assert.True(c, files[1].StagingStorage.IsEmpty)
+		assert.False(c, files[1].StagingStorage.IsEmpty)
 		assert.Equal(c, model.FileWriting, files[2].State)
 		slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 		assert.NoError(c, err)
-		assert.Len(c, slices, 6)
+		assert.Len(c, slices, 7)
 		assert.Equal(c, model.SliceUploaded, slices[0].State)
-		assert.False(c, slices[0].LocalStorage.IsEmpty)
+		assert.True(c, slices[0].LocalStorage.IsEmpty)
 		assert.Equal(c, model.SliceUploaded, slices[1].State)
 		assert.True(c, slices[1].LocalStorage.IsEmpty)
 		assert.Equal(c, model.SliceUploaded, slices[2].State)
-		assert.True(c, slices[2].LocalStorage.IsEmpty)
+		assert.False(c, slices[2].LocalStorage.IsEmpty)
 		assert.Equal(c, model.SliceUploaded, slices[3].State)
 		assert.True(c, slices[3].LocalStorage.IsEmpty)
-		assert.Equal(c, model.SliceWriting, slices[4].State)
+		assert.Equal(c, model.SliceUploaded, slices[4].State)
+		assert.True(c, slices[3].LocalStorage.IsEmpty)
 		assert.Equal(c, model.SliceWriting, slices[5].State)
+		assert.Equal(c, model.SliceWriting, slices[6].State)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Shutdown

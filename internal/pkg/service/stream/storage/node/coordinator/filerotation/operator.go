@@ -297,7 +297,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	}
 
 	// Check conditions
-	cause, ok := shouldImport(file.ImportTrigger, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Local)
+	cause, ok := shouldImport(file.ImportTrigger, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
 	if !ok {
 		o.logger.Debugf(ctx, "skipping file rotation: %s", cause)
 		return
