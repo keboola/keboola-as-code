@@ -29,6 +29,7 @@ import (
 // Manager manages connections from the current source node to all disk writer nodes.
 type Manager struct {
 	logger log.Logger
+	nodeID string
 
 	// client opens connections to disk writer nodes.
 	client *transport.Client
@@ -57,6 +58,7 @@ type dependencies interface {
 func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, error) {
 	m := &Manager{
 		logger: d.Logger().WithComponent("storage.router.connections"),
+		nodeID: nodeID,
 	}
 
 	// Create transport client
@@ -114,6 +116,10 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 	}
 
 	return m, nil
+}
+
+func (m *Manager) NodeID() string {
+	return m.nodeID
 }
 
 func (m *Manager) ConnectionToVolume(volumeID volume.ID) (*transport.ClientConnection, bool) {
