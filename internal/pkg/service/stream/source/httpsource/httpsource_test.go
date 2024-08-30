@@ -534,7 +534,7 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 				// Wait for the router sync
 				assert.EventuallyWithT(t, func(c *assert.CollectT) {
 					f.logger.AssertJSONMessages(c, `
-{"level":"info","message":"closed sink pipeline \"123/222/my-source-1/my-sink-1\": sink disabled","component":"sink.router"}
+{"level":"info","message":"closed sink pipeline: sink disabled","branch.id":"222","project.id":"123","sink.id":"my-sink-1","source.id":"my-source-1","component":"sink.router"}
 `)
 				}, 10*time.Second, 100*time.Millisecond)
 			},
