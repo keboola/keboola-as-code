@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	NetworkFile_Open_FullMethodName  = "/pb.NetworkFile/Open"
-	NetworkFile_Write_FullMethodName = "/pb.NetworkFile/Write"
-	NetworkFile_Sync_FullMethodName  = "/pb.NetworkFile/Sync"
-	NetworkFile_Close_FullMethodName = "/pb.NetworkFile/Close"
+	NetworkFile_Open_FullMethodName                     = "/pb.NetworkFile/Open"
+	NetworkFile_WaitForServerTermination_FullMethodName = "/pb.NetworkFile/WaitForServerTermination"
+	NetworkFile_Write_FullMethodName                    = "/pb.NetworkFile/Write"
+	NetworkFile_Sync_FullMethodName                     = "/pb.NetworkFile/Sync"
+	NetworkFile_Close_FullMethodName                    = "/pb.NetworkFile/Close"
 )
 
 // NetworkFileClient is the client API for NetworkFile service.
@@ -30,6 +31,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NetworkFileClient interface {
 	Open(ctx context.Context, in *OpenRequest, opts ...grpc.CallOption) (*OpenResponse, error)
+	WaitForServerTermination(ctx context.Context, in *WaitForServerTerminationRequest, opts ...grpc.CallOption) (NetworkFile_WaitForServerTerminationClient, error)
 	Write(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error)
 	Sync(ctx context.Context, in *SyncRequest, opts ...grpc.CallOption) (*SyncResponse, error)
 	Close(ctx context.Context, in *CloseRequest, opts ...grpc.CallOption) (*CloseResponse, error)
@@ -51,6 +53,39 @@ func (c *networkFileClient) Open(ctx context.Context, in *OpenRequest, opts ...g
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *networkFileClient) WaitForServerTermination(ctx context.Context, in *WaitForServerTerminationRequest, opts ...grpc.CallOption) (NetworkFile_WaitForServerTerminationClient, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &NetworkFile_ServiceDesc.Streams[0], NetworkFile_WaitForServerTermination_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &networkFileWaitForServerTerminationClient{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type NetworkFile_WaitForServerTerminationClient interface {
+	Recv() (*ServerIsTerminatingResponse, error)
+	grpc.ClientStream
+}
+
+type networkFileWaitForServerTerminationClient struct {
+	grpc.ClientStream
+}
+
+func (x *networkFileWaitForServerTerminationClient) Recv() (*ServerIsTerminatingResponse, error) {
+	m := new(ServerIsTerminatingResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *networkFileClient) Write(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error) {
@@ -88,6 +123,7 @@ func (c *networkFileClient) Close(ctx context.Context, in *CloseRequest, opts ..
 // for forward compatibility
 type NetworkFileServer interface {
 	Open(context.Context, *OpenRequest) (*OpenResponse, error)
+	WaitForServerTermination(*WaitForServerTerminationRequest, NetworkFile_WaitForServerTerminationServer) error
 	Write(context.Context, *WriteRequest) (*WriteResponse, error)
 	Sync(context.Context, *SyncRequest) (*SyncResponse, error)
 	Close(context.Context, *CloseRequest) (*CloseResponse, error)
@@ -100,6 +136,9 @@ type UnimplementedNetworkFileServer struct {
 
 func (UnimplementedNetworkFileServer) Open(context.Context, *OpenRequest) (*OpenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Open not implemented")
+}
+func (UnimplementedNetworkFileServer) WaitForServerTermination(*WaitForServerTerminationRequest, NetworkFile_WaitForServerTerminationServer) error {
+	return status.Errorf(codes.Unimplemented, "method WaitForServerTermination not implemented")
 }
 func (UnimplementedNetworkFileServer) Write(context.Context, *WriteRequest) (*WriteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Write not implemented")
@@ -139,6 +178,27 @@ func _NetworkFile_Open_Handler(srv interface{}, ctx context.Context, dec func(in
 		return srv.(NetworkFileServer).Open(ctx, req.(*OpenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _NetworkFile_WaitForServerTermination_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WaitForServerTerminationRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(NetworkFileServer).WaitForServerTermination(m, &networkFileWaitForServerTerminationServer{ServerStream: stream})
+}
+
+type NetworkFile_WaitForServerTerminationServer interface {
+	Send(*ServerIsTerminatingResponse) error
+	grpc.ServerStream
+}
+
+type networkFileWaitForServerTerminationServer struct {
+	grpc.ServerStream
+}
+
+func (x *networkFileWaitForServerTerminationServer) Send(m *ServerIsTerminatingResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _NetworkFile_Write_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -219,6 +279,12 @@ var NetworkFile_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _NetworkFile_Close_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "WaitForServerTermination",
+			Handler:       _NetworkFile_WaitForServerTermination_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "networkFile.proto",
 }
