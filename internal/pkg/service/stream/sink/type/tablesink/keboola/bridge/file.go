@@ -45,7 +45,7 @@ func (b *Bridge) setupOnFileOpen() {
 			}
 
 			// Following API operations are always called using the limited token - scoped to the bucket.
-			api := b.publicAPI.WithToken(token.TokenString())
+			api := b.publicAPI.NewAuthorizedAPI(token.TokenString(), 1*time.Minute)
 			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", token.Token.ID))
 
 			// Create table if not exists
@@ -152,7 +152,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	)
 
 	// Authorized API
-	api := b.publicAPI.WithToken(token.TokenString())
+	api := b.publicAPI.NewAuthorizedAPI(token.TokenString(), 1*time.Minute)
 
 	// Skip import if the file is empty.
 	// The state is anyway switched to the FileImported by the operator.

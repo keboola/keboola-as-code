@@ -28,7 +28,7 @@ func TestBridge_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
-	api := d.KeboolaPublicAPI().WithToken("my-token")
+	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
 	var body string
 	transport := mock.MockedHTTPTransport()
@@ -61,7 +61,7 @@ func TestBridge_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
-	api := d.KeboolaPublicAPI().WithToken("my-token")
+	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
 	var body string
 	transport := mock.MockedHTTPTransport()
@@ -93,7 +93,7 @@ func TestBridge_SendSliceUploadEvent_HTTPError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
-	api := d.KeboolaPublicAPI().WithToken("my-token")
+	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
 	transport := mock.MockedHTTPTransport()
 	registerErrorResponder(t, transport)
@@ -115,7 +115,7 @@ func TestBridge_SendFileImportEvent_OkEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
-	api := d.KeboolaPublicAPI().WithToken("my-token")
+	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
 	var body string
 	transport := mock.MockedHTTPTransport()
@@ -148,7 +148,7 @@ func TestBridge_SendFileImportEvent_ErrorEvent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
-	api := d.KeboolaPublicAPI().WithToken("my-token")
+	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
 	var body string
 	transport := mock.MockedHTTPTransport()
@@ -180,7 +180,7 @@ func TestBridge_SendFileImportEvent_HTTPError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
-	api := d.KeboolaPublicAPI().WithToken("my-token")
+	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
 	transport := mock.MockedHTTPTransport()
 	registerErrorResponder(t, transport)
