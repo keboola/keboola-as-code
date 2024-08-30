@@ -168,19 +168,20 @@ func (v *Volume) OpenReader(sliceKey model.SliceKey, slice localModel.Slice, enc
 		opener = v.config.OverrideFileOpener
 	}
 
-	// Open file
-	filePath := slice.FileName(v.Path(), "my-node")
-	logger = logger.With(attribute.String("file.path", filePath))
-	file, err = opener.OpenFile(filePath)
-	if err == nil {
-		logger.Debug(v.ctx, "opened file")
-	} else {
-		logger.Errorf(v.ctx, `cannot open file "%s": %s`, filePath, err)
-		return nil, err
-	}
+	// <volumePath>/FilenamePrefix * FilenameExtension
+	path := slice.FileGlob(v.Path())
 
 	// Init reader and chain
-	r, err = newReader(v.ctx, logger, sliceKey, encodingCompression, stagingCompression, file, v.readerEvents)
+	r, err = newReader(
+		v.ctx,
+		logger,
+		sliceKey,
+		opener,
+		path,
+		encodingCompression,
+		stagingCompression,
+		v.readerEvents,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -21,6 +21,7 @@ import (
 	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 // TestOpenVolume_NonExistentPath tests that an error should occur if there is no access to the volume directory.
@@ -244,32 +245,30 @@ func TestVolume_Close_Errors(t *testing.T) {
 
 	// Create volume ID file
 	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
+	slice1 := test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z")
+	slice2 := test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z")
+	assert.NoError(tc.TB, os.MkdirAll(slice1.LocalStorage.DirName(tc.VolumePath), 0o750))
+	assert.NoError(tc.TB, os.MkdirAll(slice2.LocalStorage.DirName(tc.VolumePath), 0o750))
+	assert.NoError(tc.TB, os.WriteFile(slice1.LocalStorage.FileName(tc.VolumePath, "my-node"), []byte("abc"), 0o640))
+	assert.NoError(tc.TB, os.WriteFile(slice2.LocalStorage.FileName(tc.VolumePath, "my-node"), []byte("def"), 0o640))
 
 	// Open volume, replace file opener
 	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
-
 	// Open two writers
-	slice := test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z")
-	_, err = vol.OpenReader(slice.SliceKey, slice.LocalStorage, slice.Encoding.Compression, slice.StagingStorage.Compression)
+	_, err = vol.OpenReader(slice1.SliceKey, slice1.LocalStorage, slice1.Encoding.Compression, slice1.StagingStorage.Compression)
 	require.NoError(t, err)
-	slice = test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z")
-	_, err = vol.OpenReader(slice.SliceKey, slice.LocalStorage, slice.Encoding.Compression, slice.StagingStorage.Compression)
+	_, err = vol.OpenReader(slice2.SliceKey, slice2.LocalStorage, slice2.Encoding.Compression, slice2.StagingStorage.Compression)
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
-	err = vol.Close(context.Background())
-	if assert.Error(t, err) {
-		// Order of the errors is random, readers are closed in parallel
-		wildcards.Assert(t, strings.TrimSpace(`
-- cannot close reader for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s":
-  - chain close error:
-    - cannot close file: some close error
-- cannot close reader for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T%s":
-  - chain close error:
-    - cannot close file: some close error
-`), err.Error())
-	}
+	require.NoError(t, vol.Close(context.Background()))
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(collect, `
+{"level":"error","message":"cannot copy to writer %sslice-my-node.csv\": io: read/write on closed pipe","volume.id":"abcdef","volume.id":"my-volume"}
+{"level":"error","message":"cannot copy to writer %sslice-my-node.csv\": io: read/write on closed pipe","volume.id":"abcdef","volume.id":"my-volume"}
+	`)
+	}, 5*time.Second, 10*time.Millisecond)
 }
 
 // volumeTestCase is a helper to open disk reader volume in tests.
@@ -295,6 +294,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	})
 
 	logger := log.NewDebugLogger()
+	logger.ConnectTo(testhelper.VerboseStdout())
 	tmpDir := tb.TempDir()
 
 	return &volumeTestCase{
