@@ -48,7 +48,7 @@ func TestNetworkFile(t *testing.T) {
 	// Start disk writer node
 	writerNode := startDiskWriterNode(t, ctx, etcdCfg, "disk-writer", volumesPath)
 
-	// Create resources in a API node
+	// Create resources in an API node
 	apiScp, _ := dependencies.NewMockedAPIScope(t, ctx, commonDeps.WithEtcdConfig(etcdCfg))
 	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
 	branch := test.NewBranch(branchKey)
@@ -132,7 +132,8 @@ func openNetworkFile(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 	require.True(t, found)
 
 	// Open network file
-	file, err := rpc.OpenNetworkFile(ctx, sourceNodeID, conn, sliceKey, slice)
+	onServerTermination := func() {}
+	file, err := rpc.OpenNetworkFile(ctx, d.Logger(), sourceNodeID, conn, sliceKey, slice, onServerTermination)
 	require.NoError(t, err)
 
 	return file, m
