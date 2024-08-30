@@ -109,7 +109,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Wait for initialization
 	assert.EventuallyWithT(b, func(c *assert.CollectT) {
 		assert.Equal(c, 1, sinkRouter.SourcesCount())
-		assert.Equal(c, 1, storageRouter.SinksCount())
+		assert.Equal(c, 1, storageRouter.SlicesCount())
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Create data channel
