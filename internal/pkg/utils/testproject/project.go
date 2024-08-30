@@ -86,7 +86,7 @@ func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (
 
 	// Init storage API
 	httpClient := client.NewTestClient()
-	p.keboolaProjectAPI, err = keboola.NewAuthorizedAPI(ctx, p.StorageAPIHost(), p.Project.StorageAPIToken(), keboola.WithClient(&httpClient))
+	p.keboolaProjectAPI, err = keboola.NewAuthorizedAPI(ctx, p.StorageAPIHost(), p.Project.StorageAPIToken(), keboola.WithClient(&httpClient), keboola.WithOnSuccessTimeout(1*time.Minute))
 	if err != nil {
 		return nil, nil, err
 	}

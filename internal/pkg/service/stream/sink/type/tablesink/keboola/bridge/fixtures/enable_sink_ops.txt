@@ -11,32 +11,34 @@
 ✔️  TXN | succeeded: true
 ➡️  TXN
   ➡️  IF:
-  001 "lock/123/456/in.c-bucket.table/%s" CREATE EQUAL 0
+  001 "lock/123/456/in.c-bucket.my-table/%s" CREATE EQUAL 0
   ➡️  THEN:
-  001 ➡️  PUT "lock/123/456/in.c-bucket.table/%s"
-  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+  001 ➡️  PUT "lock/123/456/in.c-bucket.my-table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.my-table/", "lock/123/456/in.c-bucket.my-table0")
   ➡️  ELSE:
-  001 ➡️  GET "lock/123/456/in.c-bucket.table/%s"
-  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
+  001 ➡️  GET "lock/123/456/in.c-bucket.my-table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.my-table/", "lock/123/456/in.c-bucket.my-table0")
+// Delete lock on bucket table
 ✔️  TXN | succeeded: true
-➡️  DEL "lock/123/456/in.c-bucket.table/%s"
-✔️  DEL "lock/123/456/in.c-bucket.table/%s" | count: 1
-➡️  TXN
-  ➡️  IF:
-  001 "lock/123/456/in.c-bucket.table/%s" CREATE EQUAL 0
-  ➡️  THEN:
-  001 ➡️  PUT "lock/123/456/in.c-bucket.table/%s"
-  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
-  ➡️  ELSE:
-  001 ➡️  GET "lock/123/456/in.c-bucket.table/%s"
-  002 ➡️  GET ["lock/123/456/in.c-bucket.table/", "lock/123/456/in.c-bucket.table0")
-✔️  TXN | succeeded: true
-➡️  DEL "lock/123/456/in.c-bucket.table/%s"
-✔️  DEL "lock/123/456/in.c-bucket.table/%s" | count: 1
+➡️  DEL "lock/123/456/in.c-bucket.my-table/%s"
+✔️  DEL "lock/123/456/in.c-bucket.my-table/%s" | count: 1
 
 // READ: the Storage API token
 ➡️  GET "storage/keboola/secret/token/123/456/my-source/my-sink"
 ✔️  GET "storage/keboola/secret/token/123/456/my-source/my-sink" | count: 0
+
+➡️  TXN
+  ➡️  IF:
+  001 "lock/123/456/in.c-bucket.my-table/%s" CREATE EQUAL 0
+  ➡️  THEN:
+  001 ➡️  PUT "lock/123/456/in.c-bucket.my-table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.my-table/", "lock/123/456/in.c-bucket.my-table0")
+  ➡️  ELSE:
+  001 ➡️  GET "lock/123/456/in.c-bucket.my-table/%s"
+  002 ➡️  GET ["lock/123/456/in.c-bucket.my-table/", "lock/123/456/in.c-bucket.my-table0")
+✔️  TXN | succeeded: true
+➡️  DEL "lock/123/456/in.c-bucket.my-table/%s"
+✔️  DEL "lock/123/456/in.c-bucket.my-table/%s" | count: 1
 
 // READ: sink slices and their statistics to calculate pre-allocated disk space - there is no previous slice
 ➡️  TXN

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -25,7 +26,7 @@ func TestBranchRequestScope_DefaultBranch_String(t *testing.T) {
 	branchInput := key.BranchIDOrDefault("default")
 
 	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	api := d.KeboolaPublicAPI().NewAuthorizedAPI(mock.StorageAPIToken().Token, 1*time.Minute)
 	ctx = context.WithValue(ctx, KeboolaProjectAPICtxKey, api)
 
 	// Mock the Storage API call
@@ -114,7 +115,7 @@ func TestBranchRequestScope_DefaultBranch_Int(t *testing.T) {
 	branchInput := key.BranchIDOrDefault("456")
 
 	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	api := d.KeboolaPublicAPI().NewAuthorizedAPI(mock.StorageAPIToken().Token, 1*time.Minute)
 	ctx = context.WithValue(ctx, KeboolaProjectAPICtxKey, api)
 
 	// Mock the Storage API call
@@ -200,7 +201,7 @@ func TestBranchRequestScope_NotDefaultBranch(t *testing.T) {
 	branchInput := key.BranchIDOrDefault("456")
 
 	// Simulate that the operation is running in an API request authorized by a token
-	api := d.KeboolaPublicAPI().WithToken(mock.StorageAPIToken().Token)
+	api := d.KeboolaPublicAPI().NewAuthorizedAPI(mock.StorageAPIToken().Token, 1*time.Minute)
 	ctx = context.WithValue(ctx, KeboolaProjectAPICtxKey, api)
 
 	// Mock the Storage API call
