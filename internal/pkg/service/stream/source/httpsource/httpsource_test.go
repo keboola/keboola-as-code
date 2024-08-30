@@ -143,9 +143,9 @@ func TestStart(t *testing.T) {
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"shutting down HTTP source at \"0.0.0.0:%d\"","component":"http-source"}
 {"level":"info","message":"HTTP source shutdown done","component":"http-source"}
-{"level":"info","message":"shutting down sink router","component":"sink.router"}
+{"level":"info","message":"closing sink router","component":"sink.router"}
 {"level":"info","message":"watch stream consumer closed: context canceled","component":"sink.router"}
-{"level":"info","message":"sink router shutdown done","component":"sink.router"}
+{"level":"info","message":"closed sink router","component":"sink.router"}
 {"level":"info","message":"closing volumes stream","component":"volume.repository"}
 {"level":"info","message":"closed volumes stream","component":"volume.repository"}
 {"level":"info","message":"closing etcd connection","component":"etcd.client"}
