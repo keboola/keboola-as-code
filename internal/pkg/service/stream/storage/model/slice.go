@@ -1,6 +1,8 @@
 package model
 
 import (
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
@@ -68,4 +70,34 @@ func (v SliceID) String() string {
 		panic(errors.New("storage.SliceID.OpenedAt cannot be empty"))
 	}
 	return v.OpenedAt.String()
+}
+
+func (s Slice) LastStateChange() utctime.UTCTime {
+	switch {
+	case s.ClosingAt != nil:
+		return *s.ClosingAt
+	case s.UploadingAt != nil:
+		return *s.UploadingAt
+	case s.UploadedAt != nil:
+		return *s.UploadedAt
+	case s.ImportedAt != nil:
+		return *s.ImportedAt
+	default:
+		return s.OpenedAt()
+	}
+}
+
+func (s Slice) Telemetry() []attribute.KeyValue {
+	lastStateChange := s.LastStateChange().Time()
+	return []attribute.KeyValue{
+		attribute.String("project.id", s.ProjectID.String()),
+		attribute.String("branch.id", s.BranchID.String()),
+		attribute.String("source.id", s.SourceID.String()),
+		attribute.String("sink.id", s.SinkID.String()),
+		attribute.String("file.id", s.FileID.String()),
+		attribute.String("volume.id", s.VolumeID.String()),
+		attribute.String("slice.id", s.SliceID.String()),
+		attribute.String("slice.lastStateChange", lastStateChange.String()),
+		attribute.Int("slice.retryAttempt", s.RetryAttempt),
+	}
 }
