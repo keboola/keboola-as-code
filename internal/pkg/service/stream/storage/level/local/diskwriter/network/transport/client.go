@@ -32,7 +32,7 @@ func NewClient(logger log.Logger, config network.Config, nodeID string) (*Client
 	}
 
 	return &Client{
-		logger:      logger,
+		logger:      logger.WithComponent("transport"),
 		config:      config,
 		nodeID:      nodeID,
 		transport:   transport,
