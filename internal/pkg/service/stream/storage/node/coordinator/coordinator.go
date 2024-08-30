@@ -17,8 +17,6 @@ import (
 )
 
 func Start(ctx context.Context, d dependencies.CoordinatorScope, cfg config.Config) error {
-	ctx = ctxattr.ContextWith(ctx, attribute.String("nodeId", cfg.NodeID))
-
 	logger := d.Logger().WithComponent("storage.node.coordinator")
 	logger.Info(ctx, `starting storage coordinator node`)
 

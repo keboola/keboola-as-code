@@ -206,7 +206,7 @@ foo3
 	// Check logs
 	tc.AssertLogs(`
 {"level":"debug","message":"opening encoding pipeline"}
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"opened encoding pipeline"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"flushing writers"}
@@ -299,7 +299,7 @@ foo3
 	// Check logs
 	tc.AssertLogs(`
 {"level":"debug","message":"opening encoding pipeline"}
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=cache, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"opened encoding pipeline"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
@@ -370,7 +370,7 @@ foo4
 	// Check logs
 	tc.AssertLogs(`
 {"level":"debug","message":"opening encoding pipeline"}
-{"level":"info","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=disk, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"opened encoding pipeline"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"flushing writers"}
@@ -438,7 +438,7 @@ foo4
 	// Check logs
 	tc.AssertLogs(`
 {"level":"debug","message":"opening encoding pipeline"}
-{"level":"info","message":"sync is enabled, mode=cache, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
+{"level":"debug","message":"sync is enabled, mode=cache, sync each {count=500 or uncompressed=10MB or compressed=1MB or interval=50ms}, check each 1ms"}
 {"level":"debug","message":"opened encoding pipeline"}
 {"level":"debug","message":"starting sync to cache"}
 {"level":"debug","message":"flushing writers"}
