@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cast"
@@ -102,7 +103,7 @@ func newProjectScope(ctx context.Context, prjScp projectScopeDeps, token keboola
 	}
 
 	httpClient := prjScp.HTTPClient()
-	api, err := keboola.NewAuthorizedAPI(ctx, prjScp.StorageAPIHost(), token.Token, keboola.WithClient(&httpClient))
+	api, err := keboola.NewAuthorizedAPI(ctx, prjScp.StorageAPIHost(), token.Token, keboola.WithClient(&httpClient), keboola.WithOnSuccessTimeout(1*time.Minute))
 	if err != nil {
 		return nil, err
 	}
