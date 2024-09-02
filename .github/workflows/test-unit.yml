@@ -9,8 +9,8 @@ on:
         required: false
 
 env:
-  TEST_PARALLELISM: 12
-  TEST_PARALLELISM_PKG: 6
+  TEST_PARALLELISM: 16
+  TEST_PARALLELISM_PKG: 4
   TEST_COVERAGE: ${{ inputs.without-cache == true }}
 
 # Required for aws-actions/configure-aws-credentials using OIDC, assume role
@@ -86,6 +86,7 @@ jobs:
             HOME="$HOME" \
             PATH="$PATH" \
             GOFLAGS="$GOFLAGS" \
+            GOMEMLIMIT=3000MiB \
             APPDATA="$APPDATA" \
             DATADOG_ENABLED="false" \
             UNIT_ETCD_ENABLED="$UNIT_ETCD_ENABLED" \
