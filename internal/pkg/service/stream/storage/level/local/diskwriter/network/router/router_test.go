@@ -91,7 +91,7 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	require.Equal(t, http.StatusOK, result.StatusCode, result.Message)
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
-{"level":"debug","message":"opened sink pipeline to 2 slices","component":"storage.router"}
+{"level":"info","message":"opened sink pipeline to 2 slices","component":"storage.router"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
 	waitForMinRevInUse(t, sinkCreateRev)
@@ -101,7 +101,7 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	require.NoError(t, rotateResult.Err())
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
-{"level":"debug","message":"updated sink pipeline, 2 opened slices, 2 closed slices","component":"storage.router"}
+{"level":"info","message":"updated sink pipeline, 2 opened slices, 2 closed slices","component":"storage.router"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
 	waitForMinRevInUse(t, rotateResult.Header().Revision)
@@ -111,7 +111,7 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	require.NoError(t, disableResult.Err())
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
-{"level":"debug","message":"closed sink pipeline to 2 slices","component":"storage.router"}
+{"level":"info","message":"closed sink pipeline to 2 slices:%s","component":"storage.router"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
 	waitForMinRevInUse(t, disableResult.Header().Revision)
@@ -174,7 +174,7 @@ func TestRouter_ShutdownDiskWriterNodeFirst(t *testing.T) {
 	require.Equal(t, http.StatusOK, result.StatusCode, result.Message)
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
-{"level":"debug","message":"opened sink pipeline to 2 slices","component":"storage.router"}
+{"level":"info","message":"opened sink pipeline to 2 slices","component":"storage.router"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
 
@@ -193,11 +193,10 @@ func TestRouter_ShutdownDiskWriterNodeFirst(t *testing.T) {
 {"level":"info","message":"closed disk writer transport","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
 `)
 	logger.AssertJSONMessages(t, `
-{"level":"info","message":"closed slice pipeline","nodeId":"source","volume.id":"my-volume-%d","component":"storage.router"}
-{"level":"info","message":"closed slice pipeline","nodeId":"source","volume.id":"my-volume-%d","component":"storage.router"}
-{"level":"debug","message":"closing sink pipeline: no slice pipeline","nodeId":"source","component":"storage.router"}
-{"level":"debug","message":"closing sink pipeline to 0 slices","nodeId":"source","component":"storage.router"}
-{"level":"debug","message":"closed sink pipeline to 0 slices","nodeId":"source","component":"storage.router"}
+{"level":"info","message":"closed slice pipeline: remote server shutdown","nodeId":"source","volume.id":"my-volume-%d","component":"storage.router"}
+{"level":"info","message":"closed slice pipeline: remote server shutdown","nodeId":"source","volume.id":"my-volume-%d","component":"storage.router"}
+{"level":"debug","message":"closing sink pipeline to 0 slices: no slice pipeline","nodeId":"source","component":"storage.router"}
+{"level":"info","message":"closed sink pipeline to 0 slices: no slice pipeline","nodeId":"source","component":"storage.router"}
 
 `)
 
@@ -270,7 +269,7 @@ func TestRouter_ShutdownSourceNodeFirst(t *testing.T) {
 	require.Equal(t, http.StatusOK, result.StatusCode, result.Message)
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
-{"level":"debug","message":"opened sink pipeline to 2 slices","component":"storage.router"}
+{"level":"info","message":"opened sink pipeline to 2 slices","component":"storage.router"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
 
@@ -281,9 +280,9 @@ func TestRouter_ShutdownSourceNodeFirst(t *testing.T) {
 	logger.AssertJSONMessages(t, `
 {"level":"info","message":"closing storage router","nodeId":"source","component":"storage.router"}
 {"level":"info","message":"closing 1 sink pipelines","nodeId":"source","component":"storage.router"}
-{"level":"info","message":"closed slice pipeline","nodeId":"source","volume.id":"my-volume-%d","component":"storage.router"}
-{"level":"info","message":"closed slice pipeline","nodeId":"source","volume.id":"my-volume-%d","component":"storage.router"}
-{"level":"debug","message":"closed sink pipeline to 2 slices","nodeId":"source","component":"storage.router"}
+{"level":"info","message":"closed slice pipeline: shutdown","nodeId":"source","volume.id":"my-volume-%d","component":"storage.router"}
+{"level":"info","message":"closed slice pipeline: shutdown","nodeId":"source","volume.id":"my-volume-%d","component":"storage.router"}
+{"level":"info","message":"closed sink pipeline to 2 slices: shutdown","nodeId":"source","component":"storage.router"}
 {"level":"info","message":"closed storage router","nodeId":"source","component":"storage.router"}
 {"level":"info","message":"closing sink router","nodeId":"source","component":"sink.router"}
 {"level":"info","message":"closed sink router","nodeId":"source","component":"sink.router"}

@@ -162,7 +162,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Disable sink to force close the pipeline
 	require.NoError(b, wb.apiNode.DefinitionRepository().Sink().Disable(sink.SinkKey, wb.apiNode.Clock().Now(), test.ByUser(), "reason").Do(apiCtx).Err())
 	assert.EventuallyWithT(b, func(c *assert.CollectT) {
-		wb.logger.AssertJSONMessages(c, `{"level":"info","message":"closed sink pipeline: sink disabled","component":"sink.router"}`)
+		wb.logger.AssertJSONMessages(c, `{"level":"info","message":"closed sink pipeline:%s","component":"sink.router"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Get statistics
@@ -210,7 +210,7 @@ func (wb *WriterBenchmark) startNodes(b *testing.B, ctx context.Context, etcdCfg
 
 	// Wait for connection between nodes
 	assert.EventuallyWithT(b, func(c *assert.CollectT) {
-		wb.logger.AssertJSONMessages(c, `{"level":"info","message":"disk writer client connected from \"%s\" to \"disk-writer\" - \"%s\"","component":"storage.router.connections.client"}`)
+		wb.logger.AssertJSONMessages(c, `{"level":"info","message":"disk writer client connected from \"%s\" to \"disk-writer\" - \"%s\"","component":"storage.router.connections.client.transport"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
