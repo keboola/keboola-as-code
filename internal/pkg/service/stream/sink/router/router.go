@@ -18,6 +18,7 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -235,7 +236,7 @@ func (r *Router) SourcesCount() int {
 }
 
 func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult {
-	status, err := r.pipelineRef(sink).writeRecord(c)
+	status, err := r.writeRecord(sink, c)
 	result := &SinkResult{
 		SinkID:     sink.sinkKey.SinkID,
 		StatusCode: resultStatusCode(status, err),
@@ -250,6 +251,13 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 	return result
 }
 
+func (r *Router) writeRecord(sink *sinkData, c recordctx.Context) (pipeline.RecordStatus, error) {
+	if r.isClosed() {
+		return pipeline.RecordError, ShutdownError{}
+	}
+	return r.pipelineRef(sink).writeRecord(c)
+}
+
 // pipelineRef gets or creates sink pipeline.
 func (r *Router) pipelineRef(sink *sinkData) *pipelineRef {
 	// Get or create pipeline reference, with its own lock
@@ -257,7 +265,17 @@ func (r *Router) pipelineRef(sink *sinkData) *pipelineRef {
 	defer r.pipelinesLock.Unlock()
 	p := r.pipelines[sink.sinkKey]
 	if p == nil {
-		p = &pipelineRef{router: r, sinkKey: sink.sinkKey, sinkType: sink.sinkType}
+		// Unregister the pipeline on close
+		onClose := func(ctx context.Context) {
+			r.pipelinesLock.Lock()
+			defer r.pipelinesLock.Unlock()
+			delete(r.pipelines, sink.sinkKey)
+		}
+
+		// Create pipeline reference, the pipeline is opened of the first writer
+		p = newPipelineRef(sink, r.logger, &r.wg, r.plugins, onClose)
+
+		// Register the pipeline
 		r.pipelines[sink.sinkKey] = p
 	}
 	return p
