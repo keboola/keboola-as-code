@@ -48,9 +48,9 @@ type operator struct {
 }
 
 type fileData struct {
-	model.FileKey
-	model.FileState
-	model.Retryable
+	FileKey model.FileKey
+	State   model.FileState
+	Retry   model.Retryable
 	IsEmpty bool
 	File    plugin.File
 	Attrs   []attribute.KeyValue
@@ -64,7 +64,7 @@ type fileData struct {
 }
 
 type sinkData struct {
-	key.SinkKey
+	SinkKey key.SinkKey
 	Enabled bool
 }
 
@@ -123,10 +123,10 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 			},
 			func(_ string, file model.File, rawValue *op.KeyValue, oldValue **fileData) *fileData {
 				out := &fileData{
-					FileKey:   file.FileKey,
-					FileState: file.State,
-					Retryable: file.Retryable,
-					IsEmpty:   file.StagingStorage.IsEmpty,
+					FileKey: file.FileKey,
+					State:   file.State,
+					Retry:   file.Retryable,
+					IsEmpty: file.StagingStorage.IsEmpty,
 					File: plugin.File{
 						FileKey:  file.FileKey,
 						Provider: file.TargetStorage.Provider,
@@ -245,7 +245,7 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 		return
 	}
 
-	if !file.Retryable.Allowed(o.clock.Now()) {
+	if !file.Retry.Allowed(o.clock.Now()) {
 		return
 	}
 
@@ -255,7 +255,7 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 		return
 	}
 
-	switch file.FileState {
+	switch file.State {
 	case model.FileImporting:
 		o.importFile(ctx, file)
 	default:
@@ -270,7 +270,7 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	defer cancel()
 
 	// Lock all file operations in the sink
-	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.SinkKey)
+	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
 	if unlock == nil {
 		return
 	}

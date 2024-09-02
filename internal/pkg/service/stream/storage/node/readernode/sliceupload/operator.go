@@ -46,11 +46,11 @@ type operator struct {
 }
 
 type sliceData struct {
-	model.SliceKey
-	model.Retryable
-	model.SliceState
-	Slice plugin.Slice
-	Attrs []attribute.KeyValue
+	SliceKey model.SliceKey
+	Retry    model.Retryable
+	State    model.SliceState
+	Slice    plugin.Slice
+	Attrs    []attribute.KeyValue
 
 	// Lock prevents parallel check of the same slice.
 	Lock *sync.Mutex
@@ -61,7 +61,7 @@ type sliceData struct {
 }
 
 type sinkData struct {
-	key.SinkKey
+	SinkKey key.SinkKey
 	Enabled bool
 }
 
@@ -111,9 +111,9 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 			},
 			func(_ string, slice model.Slice, rawValue *op.KeyValue, oldValue **sliceData) *sliceData {
 				out := &sliceData{
-					SliceKey:   slice.SliceKey,
-					SliceState: slice.State,
-					Retryable:  slice.Retryable,
+					SliceKey: slice.SliceKey,
+					State:    slice.State,
+					Retry:    slice.Retryable,
 					Slice: plugin.Slice{
 						SliceKey:            slice.SliceKey,
 						LocalStorage:        slice.LocalStorage,
@@ -213,12 +213,12 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
-	if !slice.Retryable.Allowed(o.clock.Now()) {
+	if !slice.Retry.Allowed(o.clock.Now()) {
 		return
 	}
 
 	// Skip file import if sink is deleted or disabled
-	sink, ok := o.sinks.Get(slice.SinkKey)
+	sink, ok := o.sinks.Get(slice.SliceKey.SinkKey)
 	if !ok || !sink.Enabled {
 		return
 	}
@@ -229,7 +229,7 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
-	switch slice.SliceState {
+	switch slice.State {
 	case model.SliceUploading:
 		o.uploadSlice(ctx, volume, slice)
 	default:
