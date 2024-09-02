@@ -16,6 +16,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
@@ -35,9 +38,11 @@ type operator struct {
 	volumes    *diskreader.Volumes
 	statistics *statsRepo.Repository
 	storage    *storageRepo.Repository
+	definition *definitionRepo.Repository
 	plugins    *plugin.Plugins
 
 	slices *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
+	sinks  *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
 }
 
 type sliceData struct {
@@ -55,6 +60,11 @@ type sliceData struct {
 	Processed bool
 }
 
+type sinkData struct {
+	SinkKey key.SinkKey
+	Enabled bool
+}
+
 type dependencies interface {
 	Logger() log.Logger
 	Clock() clock.Clock
@@ -63,6 +73,7 @@ type dependencies interface {
 	Volumes() *diskreader.Volumes
 	StatisticsRepository() *statsRepo.Repository
 	StorageRepository() *storageRepo.Repository
+	DefinitionRepository() *definitionRepo.Repository
 	Plugins() *plugin.Plugins
 }
 
@@ -75,6 +86,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		volumes:    d.Volumes(),
 		storage:    d.StorageRepository(),
 		statistics: d.StatisticsRepository(),
+		definition: d.DefinitionRepository(),
 		plugins:    d.Plugins(),
 	}
 
@@ -131,6 +143,25 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		}
 	}
 
+	// Mirror sinks
+	{
+		o.sinks = etcdop.SetupMirrorMap[definition.Sink, key.SinkKey, *sinkData](
+			d.DefinitionRepository().Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()),
+			func(_ string, sink definition.Sink) key.SinkKey {
+				return sink.SinkKey
+			},
+			func(_ string, sink definition.Sink, rawValue *op.KeyValue, oldValue **sinkData) *sinkData {
+				return &sinkData{
+					SinkKey: sink.SinkKey,
+					Enabled: sink.IsEnabled(),
+				}
+			},
+		).BuildMirror()
+		if err = <-o.sinks.StartMirroring(ctx, wg, o.logger); err != nil {
+			return err
+		}
+	}
+
 	// Start conditions check ticker
 	{
 		wg.Add(1)
@@ -183,6 +214,12 @@ func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
 	}
 
 	if !data.Retryable.Allowed(o.clock.Now()) {
+		return
+	}
+
+	// Skip file import if sink is deleted or disabled
+	sink, ok := o.sinks.Get(data.SinkKey)
+	if !ok || !sink.Enabled {
 		return
 	}
 
