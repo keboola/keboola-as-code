@@ -80,13 +80,15 @@ jobs:
             export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
           fi
           
+          go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
+          
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
           env -i  \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \
             GOFLAGS="$GOFLAGS" \
-            GOMEMLIMIT=3000MiB \
+            GOMEMLIMIT=2000MiB \
             APPDATA="$APPDATA" \
             DATADOG_ENABLED="false" \
             UNIT_ETCD_ENABLED="$UNIT_ETCD_ENABLED" \
@@ -101,10 +103,15 @@ jobs:
             TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
             TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-          make tests-unit
+          go test -v -timeout 1200s -p 1 -parallel 1 -race ./internal/pkg/... | tee /tmp/gotest.log
         env:
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
           UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tests
+          path: /tmp/gotest.log
 
