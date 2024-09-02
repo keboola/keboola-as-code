@@ -144,7 +144,7 @@ func TestFileImportError(t *testing.T) {
 
 	// Await import error
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for file import:\n- File import to keboola failed","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"error","message":"file import failed: File import to keboola failed","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
@@ -157,7 +157,7 @@ func TestFileImportError(t *testing.T) {
 		assert.NotNil(t, files[0].FirstFailedAt)
 		assert.NotNil(t, files[0].LastFailedAt)
 		assert.NotNil(t, files[0].RetryAfter)
-		assert.Equal(t, "error when waiting for file import:\n- File import to keboola failed", files[0].RetryReason)
+		assert.Equal(t, "file import failed: File import to keboola failed", files[0].RetryReason)
 		assert.Equal(t, model.FileWriting, files[1].State)
 		slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 		require.NoError(t, err)
@@ -263,6 +263,48 @@ func TestFileImportEmpty(t *testing.T) {
 	assert.Len(t, slices, 2)
 	assert.Equal(t, model.SliceImported, slices[0].State)
 	assert.Equal(t, model.SliceWriting, slices[1].State)
+
+	// Shutdown
+	ts.dependencies.Process().Shutdown(ctx, errors.New("bye bye"))
+	ts.dependencies.Process().WaitForShutdown()
+
+	// No error is logged
+	ts.logger.AssertJSONMessages(t, "")
+}
+
+func TestFileImportDisabledSink(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	ts := setup(t, ctx)
+	defer ts.teardown(t)
+	ts.prepareFixtures(t, ctx)
+	file := ts.getFile(t, ctx)
+	slice := ts.getSlice(t, ctx)
+
+	// Make plugin throw an error, it should not be called during this test
+	ts.mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
+	// Disable sink, this causes fileimport operator to skip the files in this sink
+	require.NoError(t, ts.dependencies.DefinitionRepository().Sink().Disable(ts.sink.SinkKey, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+
+	ts.clk.Add(time.Second)
+	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
+	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
+
+	// Clear logs before this change so that we wait for mirror sync
+	ts.logger.Truncate()
+	require.NoError(t, ts.dependencies.StorageRepository().File().SwitchToImporting(file.FileKey, ts.clk.Now(), false).Do(ctx).Err())
+
+	// Wait for ETCD mirror to sync to latest state
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.file.import"}`)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Trigger import
+	ts.clk.Add(ts.interval)
 
 	// Shutdown
 	ts.dependencies.Process().Shutdown(ctx, errors.New("bye bye"))

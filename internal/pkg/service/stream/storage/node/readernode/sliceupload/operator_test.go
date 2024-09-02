@@ -150,7 +150,7 @@ func TestSliceUpload(t *testing.T) {
 	// Triggers slice upload
 	clk.Add(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","message":"slice upload failed: bla","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
@@ -160,7 +160,7 @@ func TestSliceUpload(t *testing.T) {
 	retryAfter := utctime.MustParse("2000-01-01T00:02:04.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  1,
-		RetryReason:   "error when waiting for slice upload: bla",
+		RetryReason:   "slice upload failed: bla",
 		FirstFailedAt: &failedAt,
 		LastFailedAt:  &failedAt,
 		RetryAfter:    &retryAfter,
@@ -168,7 +168,7 @@ func TestSliceUpload(t *testing.T) {
 
 	clk.Add(-clk.Now().Sub(retryAfter.Time()) + slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","message":"slice upload failed: bla","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
@@ -179,11 +179,103 @@ func TestSliceUpload(t *testing.T) {
 	lastFailed := utctime.MustParse("2000-01-01T00:02:05.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  2,
-		RetryReason:   "error when waiting for slice upload: bla",
+		RetryReason:   "slice upload failed: bla",
 		FirstFailedAt: &failedAt,
 		LastFailedAt:  &lastFailed,
 		RetryAfter:    &retryAfter,
 	}, slice.Retryable)
+
+	// Shutdown
+	d.Process().Shutdown(ctx, errors.New("bye bye"))
+	d.Process().WaitForShutdown()
+
+	// No error is logged
+	logger.AssertJSONMessages(t, "")
+}
+
+func TestSliceUploadDisabledSink(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	slicesCheckInterval := time.Second
+
+	volumesPath := t.TempDir()
+	volumePath1 := filepath.Join(volumesPath, "hdd", "001")
+	require.NoError(t, os.MkdirAll(volumePath1, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(volumePath1, volume.IDFile), []byte("vol-1"), 0o600))
+
+	// Create dependencies
+	clk := clock.NewMock()
+	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+
+	d, mock := dependencies.NewMockedStorageReaderScopeWithConfig(t, ctx, func(cfg *config.Config) {
+		cfg.Storage.VolumesPath = volumesPath
+		cfg.Storage.Level.Staging.Operator.SliceUploadCheckInterval = duration.From(slicesCheckInterval)
+	}, commonDeps.WithClock(clk))
+
+	// Make plugin throw an error, it should not be called during this test
+	blaErr := errors.New("bla")
+	mock.TestDummySinkController().UploadError = blaErr
+
+	// Start slice upload reader node
+	require.NoError(t, sliceupload.Start(d, mock.TestConfig().Storage.Level.Staging.Operator))
+
+	client := mock.TestEtcdClient()
+	// Register some volumes
+	session, err := concurrency.NewSession(client)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, session.Close()) }()
+	test.RegisterCustomWriterVolumes(t, ctx, d.StorageRepository().Volume(), session, []volume.Metadata{
+		{
+			ID:   "vol-1",
+			Spec: volume.Spec{NodeID: "node", NodeAddress: "localhost:1234", Type: "hdd", Label: "1", Path: "hdd/1"},
+		},
+	})
+
+	logger := mock.DebugLogger()
+	// Helpers
+	waitForSlicesSync := func(t *testing.T) {
+		t.Helper()
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.slice.upload"}`)
+		}, 5*time.Second, 10*time.Millisecond)
+	}
+
+	// Fixtures
+	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}
+	branch := test.NewBranch(branchKey)
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	source := test.NewHTTPSource(sourceKey)
+	sink := dummy.NewSinkWithLocalStorage(key.SinkKey{SourceKey: source.SourceKey, SinkID: "my-keboola-sink"})
+	// Disable sink, this causes sliceupload operator to skip the slices in this sink
+	sink.Disable(d.Clock().Now(), test.ByUser(), "test", true)
+	sink.Config = testconfig.LocalVolumeConfig(1, []string{"hdd"})
+	require.NoError(t, d.DefinitionRepository().Branch().Create(&branch, clk.Now(), test.ByUser()).Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Source().Create(&source, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+
+	// Prepare file and slice
+	files, err := d.StorageRepository().File().ListIn(sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+	require.Equal(t, model.FileWriting, files[0].State)
+	slices, err := d.StorageRepository().Slice().ListIn(sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Len(t, slices, 1)
+	require.Equal(t, model.SliceWriting, slices[0].State)
+
+	clk.Add(1 * time.Second)
+	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
+	logger.Truncate()
+	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now(), false).Do(ctx).Err())
+
+	require.NoError(t, d.StatisticsRepository().Put(ctx, "node", []statistics.PerSlice{{SliceKey: slices[0].SliceKey, RecordsCount: 1}}))
+	waitForSlicesSync(t)
+
+	// Triggers slice upload
+	clk.Add(slicesCheckInterval)
 
 	// Shutdown
 	d.Process().Shutdown(ctx, errors.New("bye bye"))

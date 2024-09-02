@@ -16,6 +16,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
@@ -35,17 +38,19 @@ type operator struct {
 	volumes    *diskreader.Volumes
 	statistics *statsRepo.Repository
 	storage    *storageRepo.Repository
+	definition *definitionRepo.Repository
 	plugins    *plugin.Plugins
 
 	slices *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
+	sinks  *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
 }
 
 type sliceData struct {
-	model.SliceKey
-	model.Retryable
-	model.SliceState
-	Slice plugin.Slice
-	Attrs []attribute.KeyValue
+	SliceKey model.SliceKey
+	Retry    model.Retryable
+	State    model.SliceState
+	Slice    plugin.Slice
+	Attrs    []attribute.KeyValue
 
 	// Lock prevents parallel check of the same slice.
 	Lock *sync.Mutex
@@ -53,6 +58,11 @@ type sliceData struct {
 	// Processed is true, if the entity has been modified.
 	// It prevents other processing. It takes a while for the watch stream to send updated state back.
 	Processed bool
+}
+
+type sinkData struct {
+	SinkKey key.SinkKey
+	Enabled bool
 }
 
 type dependencies interface {
@@ -63,6 +73,7 @@ type dependencies interface {
 	Volumes() *diskreader.Volumes
 	StatisticsRepository() *statsRepo.Repository
 	StorageRepository() *storageRepo.Repository
+	DefinitionRepository() *definitionRepo.Repository
 	Plugins() *plugin.Plugins
 }
 
@@ -75,6 +86,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		volumes:    d.Volumes(),
 		storage:    d.StorageRepository(),
 		statistics: d.StatisticsRepository(),
+		definition: d.DefinitionRepository(),
 		plugins:    d.Plugins(),
 	}
 
@@ -99,9 +111,9 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 			},
 			func(_ string, slice model.Slice, rawValue *op.KeyValue, oldValue **sliceData) *sliceData {
 				out := &sliceData{
-					SliceKey:   slice.SliceKey,
-					SliceState: slice.State,
-					Retryable:  slice.Retryable,
+					SliceKey: slice.SliceKey,
+					State:    slice.State,
+					Retry:    slice.Retryable,
 					Slice: plugin.Slice{
 						SliceKey:            slice.SliceKey,
 						LocalStorage:        slice.LocalStorage,
@@ -127,6 +139,25 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 			}).
 			BuildMirror()
 		if err = <-o.slices.StartMirroring(ctx, wg, o.logger); err != nil {
+			return err
+		}
+	}
+
+	// Mirror sinks
+	{
+		o.sinks = etcdop.SetupMirrorMap[definition.Sink, key.SinkKey, *sinkData](
+			d.DefinitionRepository().Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()),
+			func(_ string, sink definition.Sink) key.SinkKey {
+				return sink.SinkKey
+			},
+			func(_ string, sink definition.Sink, rawValue *op.KeyValue, oldValue **sinkData) *sinkData {
+				return &sinkData{
+					SinkKey: sink.SinkKey,
+					Enabled: sink.IsEnabled(),
+				}
+			},
+		).BuildMirror()
+		if err = <-o.sinks.StartMirroring(ctx, wg, o.logger); err != nil {
 			return err
 		}
 	}
@@ -167,34 +198,40 @@ func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
 	})
 }
 
-func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
+func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 	// Log/trace slice details
-	ctx = ctxattr.ContextWith(ctx, data.Attrs...)
+	ctx = ctxattr.ContextWith(ctx, slice.Attrs...)
 
 	// Prevent multiple checks of the same slice
-	if !data.Lock.TryLock() {
+	if !slice.Lock.TryLock() {
 		return
 	}
-	defer data.Lock.Unlock()
+	defer slice.Lock.Unlock()
 
 	// Slice has been modified by some previous check, but we haven't received an updated version from etcd yet
-	if data.Processed {
+	if slice.Processed {
 		return
 	}
 
-	if !data.Retryable.Allowed(o.clock.Now()) {
+	if !slice.Retry.Allowed(o.clock.Now()) {
 		return
 	}
 
-	volume, err := o.volumes.Collection().Volume(data.SliceKey.VolumeID)
+	// Skip file import if sink is deleted or disabled
+	sink, ok := o.sinks.Get(slice.SliceKey.SinkKey)
+	if !ok || !sink.Enabled {
+		return
+	}
+
+	volume, err := o.volumes.Collection().Volume(slice.SliceKey.VolumeID)
 	if err != nil {
-		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", data.SliceKey.VolumeID)
+		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", slice.SliceKey.VolumeID)
 		return
 	}
 
-	switch data.SliceState {
+	switch slice.State {
 	case model.SliceUploading:
-		o.uploadSlice(ctx, volume, data)
+		o.uploadSlice(ctx, volume, slice)
 	default:
 		// nop
 	}
@@ -241,7 +278,7 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 		// Use plugin system to upload slice to staging storage. Set as an in-progress upload
 		err = o.plugins.UploadSlice(ctx, volume, &slice.Slice, stats.Local)
 		if err != nil {
-			return errors.PrefixError(err, "error when waiting for slice upload")
+			return errors.PrefixError(err, "slice upload failed")
 		}
 	}
 
