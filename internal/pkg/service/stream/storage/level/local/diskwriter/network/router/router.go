@@ -85,7 +85,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 
 		// Close sink pipelines
 		r.logger.Infof(ctx, "closing %d sink pipelines", r.pipelines.Len())
-		r.pipelines.Close(ctx)
+		r.pipelines.Close(ctx, "shutdown")
 
 		r.logger.Info(ctx, "closed storage router")
 	})
@@ -156,15 +156,15 @@ func (r *Router) SlicesCount() int {
 	return r.slices.Len()
 }
 
-func (r *Router) OpenPipeline(ctx context.Context, sinkKey key.SinkKey, onClose func()) (pipelinePkg.Pipeline, error) {
+func (r *Router) OpenPipeline(ctx context.Context, sinkKey key.SinkKey, onClose func(ctx context.Context, cause string)) (pipelinePkg.Pipeline, error) {
 	assignedSlices := r.assignSinkSlices(sinkKey)
 	if len(assignedSlices) == 0 {
 		return nil, NoOpenedSliceFoundError{}
 	}
 
-	onClose2 := func(ctx context.Context, sinkKey key.SinkKey) {
+	onClose2 := func(ctx context.Context, cause string) {
 		r.pipelines.Unregister(ctx, sinkKey)
-		onClose()
+		onClose(ctx, cause)
 	}
 
 	p := pipeline.NewSinkPipeline(sinkKey, r.logger, r.connections, r.encoding, r.balancer, onClose2)

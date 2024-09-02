@@ -33,10 +33,10 @@ type Pipeline interface {
 	// Local storage sinks watch for changes in Slice entities, so this is not necessary, it would be duplicative.
 	ReopenOnSinkModification() bool
 	WriteRecord(c recordctx.Context) (RecordStatus, error)
-	Close(ctx context.Context) error
+	Close(ctx context.Context, cause string) error
 }
 
 // Opener opens Pipeline for the sink.
 // If the returned pipeline is nil, it means, the opener cannot handle the sink type,
 // then the plugin system will try the next opener.
-type Opener func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType, onClose func()) (Pipeline, error)
+type Opener func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType, onClose func(ctx context.Context, cause string)) (Pipeline, error)

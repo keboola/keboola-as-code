@@ -22,7 +22,7 @@ type Collection[K comparable, P pipeline[K]] struct {
 type pipeline[K comparable] interface {
 	Key() K
 	Type() string
-	Close(ctx context.Context) error
+	Close(ctx context.Context, cause string) error
 }
 
 func NewCollection[K comparable, P pipeline[K]](logger log.Logger) *Collection[K, P] {
@@ -112,7 +112,7 @@ func (c *Collection[K, P]) Swap(ctx context.Context, replace []P) (old []P) {
 }
 
 // Close all pipelines in parallel.
-func (c *Collection[K, P]) Close(ctx context.Context) {
+func (c *Collection[K, P]) Close(ctx context.Context, cause string) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -123,7 +123,7 @@ func (c *Collection[K, P]) Close(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := p.Close(ctx); err != nil {
+			if err := p.Close(ctx, cause); err != nil {
 				c.logger.Errorf(ctx, "cannot close %s pipeline: %s", p.Type(), err)
 			}
 		}()

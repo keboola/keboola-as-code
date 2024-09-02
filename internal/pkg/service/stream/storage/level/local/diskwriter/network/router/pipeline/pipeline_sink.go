@@ -26,7 +26,7 @@ type SinkPipeline struct {
 	connections *connection.Manager
 	encoding    *encoding.Manager
 	balancer    balancer.Balancer
-	onClose     func(ctx context.Context, sinkKey key.SinkKey)
+	onClose     func(ctx context.Context, cause string)
 
 	updateLock sync.Mutex
 	collection *Collection[model.SliceKey, *SlicePipeline]
@@ -37,7 +37,7 @@ type SinkPipeline struct {
 	closed chan struct{}
 }
 
-func NewSinkPipeline(sinkKey key.SinkKey, logger log.Logger, connections *connection.Manager, encoding *encoding.Manager, b balancer.Balancer, onClose func(ctx context.Context, sinkKey key.SinkKey)) *SinkPipeline {
+func NewSinkPipeline(sinkKey key.SinkKey, logger log.Logger, connections *connection.Manager, encoding *encoding.Manager, b balancer.Balancer, onClose func(ctx context.Context, cause string)) *SinkPipeline {
 	p := &SinkPipeline{
 		sinkKey:     sinkKey,
 		logger:      logger.With(sinkKey.Telemetry()...),
@@ -97,10 +97,10 @@ func (p *SinkPipeline) WriteRecord(c recordctx.Context) (pipelinePkg.RecordStatu
 	return p.balancer.WriteRecord(c, p.pipelines)
 }
 
-func (p *SinkPipeline) Close(ctx context.Context) error {
+func (p *SinkPipeline) Close(ctx context.Context, cause string) error {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
-	return p.close(ctx)
+	return p.close(ctx, cause)
 }
 
 // UpdateSlicePipelines reacts on slices changes - closes old pipelines and open new pipelines.
@@ -181,16 +181,16 @@ func (p *SinkPipeline) closeOnEmpty(ctx context.Context) error {
 	return p.Close(ctx, "no slice pipeline")
 }
 
-func (p *SinkPipeline) close(ctx context.Context) error {
+func (p *SinkPipeline) close(ctx context.Context, cause string) error {
 	if p.isClosed() {
 		return nil
 	}
 
 	close(p.closed)
 	l := p.collection.Len()
-	p.logger.Debugf(ctx, "closing sink pipeline to %d slices", l)
-	p.onClose(ctx, p.sinkKey)
-	p.collection.Close(ctx)
-	p.logger.Debugf(ctx, `closed sink pipeline to %d slices`, l)
+	p.logger.Debugf(ctx, "closing sink pipeline to %d slices: %s", l, cause)
+	p.onClose(ctx, cause)
+	p.collection.Close(ctx, cause)
+	p.logger.Infof(ctx, `closed sink pipeline to %d slices: %s`, l, cause)
 	return nil
 }

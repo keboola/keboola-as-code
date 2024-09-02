@@ -91,7 +91,7 @@ func newSourceScope(svcScp ServiceScope, distScp dependencies.DistributionScope,
 		return nil, err
 	}
 
-	d.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType, onClose func()) (pipeline.Pipeline, error) {
+	d.Plugins().RegisterSinkPipelineOpener(func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType, onClose func(ctx context.Context, cause string)) (pipeline.Pipeline, error) {
 		if d.Plugins().IsSinkWithLocalStorage(sinkType) {
 			return d.storageRouter.OpenPipeline(ctx, sinkKey, onClose)
 		}

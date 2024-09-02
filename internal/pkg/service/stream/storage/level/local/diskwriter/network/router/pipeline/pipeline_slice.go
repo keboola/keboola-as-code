@@ -121,8 +121,8 @@ func (p *SlicePipeline) WriteRecord(c recordctx.Context) (pipelinePkg.RecordStat
 	return pipelinePkg.RecordAccepted, nil
 }
 
-func (p *SlicePipeline) Close(ctx context.Context) (err error) {
-	p.logger.Debug(ctx, "closing slice pipeline")
+func (p *SlicePipeline) Close(ctx context.Context, cause string) (err error) {
+	p.logger.Debugf(ctx, "closing slice pipeline: %s", cause)
 
 	defer p.onClose(ctx, p.slice.SliceKey)
 
@@ -142,7 +142,7 @@ func (p *SlicePipeline) Close(ctx context.Context) (err error) {
 		if err != nil {
 			p.logger.Errorf(ctx, "cannot close slice pipeline: %s", err)
 		} else {
-			p.logger.Infof(ctx, "closed slice pipeline")
+			p.logger.Infof(ctx, "closed slice pipeline: %s", cause)
 		}
 		p.pipeline = nil
 	}
@@ -170,7 +170,7 @@ func (p *SlicePipeline) tryOpen() error {
 
 	// The disk writer node can notify us of its termination. In that case, we have to gracefully close the pipeline.
 	onServerTermination := func() {
-		if err := p.Close(ctx); err != nil {
+		if err := p.Close(ctx, "remote server shutdown"); err != nil {
 			p.logger.Errorf(ctx, "cannot close slice pipeline: %s", err)
 		}
 	}
