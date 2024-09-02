@@ -61,7 +61,7 @@ type sliceData struct {
 }
 
 type sinkData struct {
-	SinkKey key.SinkKey
+	key.SinkKey
 	Enabled bool
 }
 
@@ -198,40 +198,40 @@ func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
 	})
 }
 
-func (o *operator) checkSlice(ctx context.Context, data *sliceData) {
+func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 	// Log/trace slice details
-	ctx = ctxattr.ContextWith(ctx, data.Attrs...)
+	ctx = ctxattr.ContextWith(ctx, slice.Attrs...)
 
 	// Prevent multiple checks of the same slice
-	if !data.Lock.TryLock() {
+	if !slice.Lock.TryLock() {
 		return
 	}
-	defer data.Lock.Unlock()
+	defer slice.Lock.Unlock()
 
 	// Slice has been modified by some previous check, but we haven't received an updated version from etcd yet
-	if data.Processed {
+	if slice.Processed {
 		return
 	}
 
-	if !data.Retryable.Allowed(o.clock.Now()) {
+	if !slice.Retryable.Allowed(o.clock.Now()) {
 		return
 	}
 
 	// Skip file import if sink is deleted or disabled
-	sink, ok := o.sinks.Get(data.SinkKey)
+	sink, ok := o.sinks.Get(slice.SinkKey)
 	if !ok || !sink.Enabled {
 		return
 	}
 
-	volume, err := o.volumes.Collection().Volume(data.SliceKey.VolumeID)
+	volume, err := o.volumes.Collection().Volume(slice.SliceKey.VolumeID)
 	if err != nil {
-		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", data.SliceKey.VolumeID)
+		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", slice.SliceKey.VolumeID)
 		return
 	}
 
-	switch data.SliceState {
+	switch slice.SliceState {
 	case model.SliceUploading:
-		o.uploadSlice(ctx, volume, data)
+		o.uploadSlice(ctx, volume, slice)
 	default:
 		// nop
 	}
