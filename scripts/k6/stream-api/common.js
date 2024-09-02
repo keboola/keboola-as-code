@@ -123,6 +123,9 @@ export function setupSink(sourceId, body) {
 }
 
 export function teardownSource(sourceId) {
+  console.info("waiting 30s before source deletion")
+  sleep(30)
+
   const res = del(`v1/branches/default/sources/${sourceId}`);
   if (res.status !== 202) {
     console.error(res);
