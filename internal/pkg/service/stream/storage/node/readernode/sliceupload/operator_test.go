@@ -150,7 +150,7 @@ func TestSliceUpload(t *testing.T) {
 	// Triggers slice upload
 	clk.Add(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","message":"slice upload failed: bla","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
@@ -160,7 +160,7 @@ func TestSliceUpload(t *testing.T) {
 	retryAfter := utctime.MustParse("2000-01-01T00:02:04.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  1,
-		RetryReason:   "error when waiting for slice upload: bla",
+		RetryReason:   "slice upload failed: bla",
 		FirstFailedAt: &failedAt,
 		LastFailedAt:  &failedAt,
 		RetryAfter:    &retryAfter,
@@ -168,7 +168,7 @@ func TestSliceUpload(t *testing.T) {
 
 	clk.Add(-clk.Now().Sub(retryAfter.Time()) + slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for slice upload: bla","component":"storage.node.operator.slice.upload"}`)
+		logger.AssertJSONMessages(c, `{"level":"error","message":"slice upload failed: bla","component":"storage.node.operator.slice.upload"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 	logger.Truncate()
 
@@ -179,7 +179,7 @@ func TestSliceUpload(t *testing.T) {
 	lastFailed := utctime.MustParse("2000-01-01T00:02:05.000Z")
 	assert.Equal(t, model.Retryable{
 		RetryAttempt:  2,
-		RetryReason:   "error when waiting for slice upload: bla",
+		RetryReason:   "slice upload failed: bla",
 		FirstFailedAt: &failedAt,
 		LastFailedAt:  &lastFailed,
 		RetryAfter:    &retryAfter,

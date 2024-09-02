@@ -311,7 +311,7 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 		// Import the file to specific provider
 		err = o.plugins.ImportFile(ctx, &file.File, stats.Staging)
 		if err != nil {
-			return errors.PrefixError(err, "error when waiting for file import")
+			return errors.PrefixError(err, "file import failed")
 		}
 	}
 

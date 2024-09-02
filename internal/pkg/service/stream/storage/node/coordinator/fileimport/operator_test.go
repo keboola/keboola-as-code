@@ -144,7 +144,7 @@ func TestFileImportError(t *testing.T) {
 
 	// Await import error
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, `{"level":"error","message":"error when waiting for file import:\n- File import to keboola failed","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"error","message":"file import failed: File import to keboola failed","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
@@ -157,7 +157,7 @@ func TestFileImportError(t *testing.T) {
 		assert.NotNil(t, files[0].FirstFailedAt)
 		assert.NotNil(t, files[0].LastFailedAt)
 		assert.NotNil(t, files[0].RetryAfter)
-		assert.Equal(t, "error when waiting for file import:\n- File import to keboola failed", files[0].RetryReason)
+		assert.Equal(t, "file import failed: File import to keboola failed", files[0].RetryReason)
 		assert.Equal(t, model.FileWriting, files[1].State)
 		slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
 		require.NoError(t, err)

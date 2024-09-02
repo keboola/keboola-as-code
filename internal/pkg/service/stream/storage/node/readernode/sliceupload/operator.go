@@ -278,7 +278,7 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 		// Use plugin system to upload slice to staging storage. Set as an in-progress upload
 		err = o.plugins.UploadSlice(ctx, volume, &slice.Slice, stats.Local)
 		if err != nil {
-			return errors.PrefixError(err, "error when waiting for slice upload")
+			return errors.PrefixError(err, "slice upload failed")
 		}
 	}
 
