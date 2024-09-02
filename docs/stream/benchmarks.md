@@ -3,6 +3,8 @@
 ## Start the server
 
 ```sh
+export STREAM_COMPONENTS="api http-source storage-writer storage-reader storage-coordinator"
+export STREAM_ETCD_NAMESPACE=stream-bench-001
 export STREAM_NODE_ID=my-node
 export STREAM_HOSTNAME=localhost
 export STREAM_API_STORAGE_API_HOST=connection.keboola.com
@@ -20,6 +22,7 @@ docker compose run \
     -p 10000:10000 \
     -p 10001:10001 \
     -v "$STREAM_STORAGE_VOLUMES_PATH:$STREAM_STORAGE_VOLUMES_PATH" \
+    -e STREAM_ETCD_NAMESPACE \
     -e STREAM_NODE_ID \
     -e STREAM_HOSTNAME \
     -e STREAM_API_STORAGE_API_HOST \
@@ -31,8 +34,17 @@ docker compose run \
     -e STREAM_PPROF_ENABLED \
     -e STREAM_PPROF_LISTEN \
     --rm \
-dev make run-stream-service-once
+dev bash -c "go run ./cmd/stream/main.go -- $STREAM_COMPONENTS | jl"
 ```
+
+### Notes
+
+- Minimal `STREAM_COMPONENTS`: `api http-source storage-writer`
+- All `STREAM_COMPONENTS`: `api http-source storage-writer storage-reader storage-coordinator`
+- Use `jl -format logfmt` to show all log fields.
+- Monitor also system resource, for example via `htop`, use
+  - `F5` to enable tree view
+  - `F4` to filter the list
 
 ## Run the benchmark
 
@@ -63,16 +75,10 @@ PProf can be used to profile the application locally or on a testing stack.
 Enable PProf profiler via ENVs, flags or a config file:
 ```sh
 export STREAM_PPROF_ENABLED=true
-export STREAM_PPROF_LISTEN="0.0.0.0:4000"
-export STREAM_STORAGE_VOLUMES_PATH=/tmp/k6/volumes
-mkdir -p "$STREAM_STORAGE_VOLUMES_PATH/hdd/001"
+....
 ```
 
-Start stream service in the background:
-```
-make run-stream-service-once &
-(enter)
-```
+Start stream service in the background, see "Start the server" above.
 
 PProf profiles are then served on `http://localhost:4000/debug/pprof/`.
 
@@ -90,11 +96,11 @@ docker run --rm -it --net host keboolabot/keboola-as-code-dev bash
 
 Use `go tool pprof` to visualise profiles in a web browser:
 ```
-cpu:       go tool pprof -http=0.0.0.0:4001 http://localhost:4000/debug/pprof/profile?seconds=10
-memory:    go tool pprof -http=0.0.0.0:4001 http://localhost:4000/debug/pprof/heap?seconds=10
-block:     go tool pprof -http=0.0.0.0:4001 http://localhost:4000/debug/pprof/block?seconds=10
-mutex:     go tool pprof -http=0.0.0.0:4001 http://localhost:4000/debug/pprof/mutex?seconds=10
-goroutine: go tool pprof -http=0.0.0.0:4001 http://localhost:4000/debug/pprof/goroutine?seconds=10
+cpu:       go tool pprof -http=0.0.0.0:4001 "http://localhost:4000/debug/pprof/profile?seconds=10"
+memory:    go tool pprof -http=0.0.0.0:4001 "http://localhost:4000/debug/pprof/heap?seconds=10"
+block:     go tool pprof -http=0.0.0.0:4001 "http://localhost:4000/debug/pprof/block?seconds=10"
+mutex:     go tool pprof -http=0.0.0.0:4001 "http://localhost:4000/debug/pprof/mutex?seconds=10"
+goroutine: go tool pprof -http=0.0.0.0:4001 "http://localhost:4000/debug/pprof/goroutine?seconds=10"
 ```
 
 Open `http://localhost:4001` to see the profile visualisation.
@@ -108,7 +114,7 @@ docker run --rm -it --net host keboolabot/keboola-as-code-dev bash
 
 Download trace profile:
 ```sh
-curl -s -o /tmp/trace.out http://localhost:4000/debug/pprof/trace?seconds=10
+curl -s -o /tmp/trace.out "http://localhost:4000/debug/pprof/trace?seconds=10"
 ```
 
 Use `go tool trace` to visualise the trace profile:
