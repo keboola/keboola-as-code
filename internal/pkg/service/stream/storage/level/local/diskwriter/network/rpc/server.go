@@ -59,8 +59,14 @@ func StartNetworkFileServer(d serverDependencies, nodeID, hostname string, cfg l
 		f.volumesMap[vol.ID()] = true
 	}
 
+	// Init transport protocol
+	tr, err := transport.NewProtocol(cfg.Writer.Network)
+	if err != nil {
+		return err
+	}
+
 	// Listen for network connections
-	listener, err := transport.Listen(f.logger, nodeID, cfg.Writer.Network)
+	listener, err := transport.Listen(f.logger, nodeID, cfg.Writer.Network, tr)
 	if err != nil {
 		return err
 	}

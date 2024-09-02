@@ -17,7 +17,7 @@ type Client struct {
 	logger    log.Logger
 	config    network.Config
 	nodeID    string
-	transport Transport
+	transport Protocol
 
 	closed chan struct{}
 
@@ -26,7 +26,7 @@ type Client struct {
 }
 
 func NewClient(logger log.Logger, config network.Config, nodeID string) (*Client, error) {
-	transport, err := newTransport(config)
+	transport, err := NewProtocol(config)
 	if err != nil {
 		return nil, err
 	}

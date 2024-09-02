@@ -1,4 +1,4 @@
-package transport
+package kcp
 
 import (
 	"net"
@@ -9,15 +9,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type kcpTransport struct {
+type Protocol struct {
 	config network.Config
 }
 
-func newKCPTransport(config network.Config) Transport {
-	return &kcpTransport{config: config}
+func New(config network.Config) *Protocol {
+	return &Protocol{config: config}
 }
 
-func (t *kcpTransport) Listen() (net.Listener, error) {
+func (t *Protocol) Type() network.TransportProtocol {
+	return network.TransportProtocolKCP
+}
+
+func (t *Protocol) Listen() (net.Listener, error) {
 	listener, err := kcp.ListenWithOptions(t.config.Listen, nil, 0, 0)
 	if err != nil {
 		return nil, errors.PrefixError(err, "cannot create listener")
@@ -34,7 +38,7 @@ func (t *kcpTransport) Listen() (net.Listener, error) {
 	return listener, nil
 }
 
-func (t *kcpTransport) Accept(listener net.Listener) (net.Conn, error) {
+func (t *Protocol) Accept(listener net.Listener) (net.Conn, error) {
 	conn, err := listener.Accept()
 	if err != nil {
 		return nil, err
@@ -44,7 +48,7 @@ func (t *kcpTransport) Accept(listener net.Listener) (net.Conn, error) {
 	return conn, nil
 }
 
-func (t *kcpTransport) Dial(addr string) (net.Conn, error) {
+func (t *Protocol) Dial(addr string) (net.Conn, error) {
 	conn, err := kcp.DialWithOptions(addr, nil, 0, 0)
 	if err != nil {
 		return nil, err
@@ -62,7 +66,7 @@ func (t *kcpTransport) Dial(addr string) (net.Conn, error) {
 	return conn, nil
 }
 
-func (t *kcpTransport) setupConnection(conn net.Conn) {
+func (t *Protocol) setupConnection(conn net.Conn) {
 	c := conn.(*kcp.UDPSession)
 	c.SetWindowSize(512, 512)
 	c.SetWriteDelay(false)

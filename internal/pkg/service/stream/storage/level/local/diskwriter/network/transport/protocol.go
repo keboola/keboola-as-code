@@ -10,10 +10,12 @@ import (
 	"net"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport/tcp"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type Transport interface {
+type Protocol interface {
+	Type() network.TransportProtocol
 	// Listen for connections by the server.
 	Listen() (net.Listener, error)
 	// Accept new connection by the server.
@@ -22,12 +24,13 @@ type Transport interface {
 	Dial(addr string) (net.Conn, error)
 }
 
-func newTransport(config network.Config) (Transport, error) {
+func NewProtocol(config network.Config) (Protocol, error) {
 	switch config.Transport {
-	case network.TransportProtocolKCP:
-		return newKCPTransport(config), nil
+	// KCP is creating time scheduler instance even it is only imported, we don't use it now.
+	// case network.TransportProtocolKCP:
+	//	return kcp.New(config), nil
 	case network.TransportProtocolTCP:
-		return newTCPTransport(config), nil
+		return tcp.New(config), nil
 	default:
 		return nil, errors.Errorf(`unexpected transport protocol %q`, config.Transport)
 	}
