@@ -78,7 +78,7 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 		// Register the writer for the periodical sync, see bellow
 		k := w.SliceKey()
 
-		initialValue, err := c.repository.OpenSlice(k, c.nodeID).Do(ctx).ResultOrErr()
+		initialValue, err := c.repository.LastNodeValue(k, c.nodeID).Do(ctx).ResultOrErr()
 		if err != nil {
 			return err
 		}
