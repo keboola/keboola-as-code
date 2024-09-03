@@ -76,8 +76,7 @@ func testTransportSmallData(t *testing.T, transportFactory func(cfg network.Conf
 	// Setup client
 	clientLogger := log.NewDebugLogger()
 	clientLogger.ConnectTo(os.Stdout)
-	client, err := transport.NewClient(clientLogger, cfg, "client-node")
-	require.NoError(t, err)
+	client := transport.NewClient(clientLogger, cfg, "client-node", tr)
 	conn, err := client.OpenConnectionOrErr(ctx, "srv", addr)
 	require.NoError(t, err)
 
@@ -164,8 +163,7 @@ func testTransportBiggerData(t *testing.T, transportFactory func(cfg network.Con
 
 	// Setup client
 	clientLogger := log.NewDebugLogger()
-	client, err := transport.NewClient(clientLogger, cfg, "client-node")
-	require.NoError(t, err)
+	client := transport.NewClient(clientLogger, cfg, "client-node", tr)
 	conn, err := client.OpenConnectionOrErr(ctx, "srv", addr)
 	require.NoError(t, err)
 

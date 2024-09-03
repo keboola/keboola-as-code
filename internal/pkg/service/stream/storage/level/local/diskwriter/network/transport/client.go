@@ -25,12 +25,7 @@ type Client struct {
 	connections map[string]*ClientConnection
 }
 
-func NewClient(logger log.Logger, config network.Config, nodeID string) (*Client, error) {
-	transport, err := NewProtocol(config)
-	if err != nil {
-		return nil, err
-	}
-
+func NewClient(logger log.Logger, config network.Config, nodeID string, transport Protocol) *Client {
 	return &Client{
 		logger:      logger.WithComponent("transport"),
 		config:      config,
@@ -38,7 +33,7 @@ func NewClient(logger log.Logger, config network.Config, nodeID string) (*Client
 		transport:   transport,
 		closed:      make(chan struct{}),
 		connections: make(map[string]*ClientConnection),
-	}, nil
+	}
 }
 
 // OpenConnection starts a connection dial loop to the target address.
