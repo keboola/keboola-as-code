@@ -123,5 +123,5 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/slice_state_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/secret/|storage/volume/"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/slice_state_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/secret/|storage/volume/|storage/stats/"))
 }

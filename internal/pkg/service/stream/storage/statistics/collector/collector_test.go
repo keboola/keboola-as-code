@@ -8,11 +8,14 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
@@ -21,6 +24,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/collector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -28,12 +33,29 @@ import (
 func TestCollector(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Fixtures
+	projectID := keboola.ProjectID(123)
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
+
 	clk := clock.NewMock()
+	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	cfg := statistics.NewConfig().Collector
+
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/)|(storage/volume/)|(storage/file/)|(storage/slice/)")
 
 	d, mock := dependencies.NewMockedStorageScope(t, ctx, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
+
+	defRepo := d.DefinitionRepository()
+	storageRepo := d.StorageRepository()
+	volumeRepo := storageRepo.Volume()
+	sliceRepo := storageRepo.Slice()
+
 	writerEvents := &testEvents{}
 
 	syncCounter := 0
@@ -45,6 +67,32 @@ func TestCollector(t *testing.T) {
 		}, time.Second, 10*time.Millisecond)
 	}
 
+	// Register active volumes
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 2)
+	}
+
+	// Create branch, source, sink, file, slice
+	{
+		branch := test.NewBranch(branchKey)
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), test.ByUser()).Do(ctx).Err())
+		source := test.NewSource(sourceKey)
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), test.ByUser(), "Create source").Do(ctx).Err())
+		sink := dummy.NewSinkWithLocalStorage(sinkKey)
+		sink.Config = testconfig.LocalVolumeConfig(2, []string{"hdd"})
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), test.ByUser(), "Create sink").Do(ctx).Err())
+	}
+
+	// Get slices
+	slices, err := sliceRepo.ListIn(sinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Len(t, slices, 2)
+	slice1 := slices[0]
+	slice2 := slices[1]
+
 	// Start collector
 	collector.Start(d, writerEvents, cfg, "test-node")
 
@@ -52,15 +100,15 @@ func TestCollector(t *testing.T) {
 	require.NotNil(t, writerEvents.WriterOpen)
 	require.NotNil(t, writerEvents.WriterClose)
 
-	// Create 3 writers
-	w1 := &testWriter{SliceKeyValue: test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")}
-	w2 := &testWriter{SliceKeyValue: test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")}
+	// Create 2 writers
+	w1 := &testWriter{SliceKeyValue: slice1.SliceKey}
+	w2 := &testWriter{SliceKeyValue: slice2.SliceKey}
 	assert.NoError(t, writerEvents.WriterOpen(w1))
 	assert.NoError(t, writerEvents.WriterOpen(w2))
 
 	// Sync: no data
 	triggerSyncAndWait()
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_001.txt")
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_001.txt", ignoredEtcdKeys)
 
 	// Sync: one writer
 	w1.RowsCountValue = 1
@@ -69,11 +117,11 @@ func TestCollector(t *testing.T) {
 	w1.CompressedSizeValue = 10
 	w1.UncompressedSizeValue = 100
 	triggerSyncAndWait()
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_002.txt")
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_002.txt", ignoredEtcdKeys)
 
 	// Sync: no change
 	triggerSyncAndWait()
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_002.txt")
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_002.txt", ignoredEtcdKeys)
 
 	// sync: two writers
 	w1.RowsCountValue = 5
@@ -86,7 +134,7 @@ func TestCollector(t *testing.T) {
 	w2.CompressedSizeValue = 10
 	w2.UncompressedSizeValue = 100
 	triggerSyncAndWait()
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_003.txt")
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_003.txt", ignoredEtcdKeys)
 
 	// Close the writer 1
 	w1.RowsCountValue = 6
@@ -94,7 +142,7 @@ func TestCollector(t *testing.T) {
 	w1.CompressedSizeValue = 60
 	w1.UncompressedSizeValue = 600
 	assert.NoError(t, writerEvents.WriterClose(w1, nil))
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_004.txt")
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_004.txt", ignoredEtcdKeys)
 
 	// Shutdown: stop Collector and remaining writer 2
 	w2.RowsCountValue = 3
@@ -103,7 +151,7 @@ func TestCollector(t *testing.T) {
 	w2.UncompressedSizeValue = 300
 	d.Process().Shutdown(context.Background(), errors.New("bye bye"))
 	d.Process().WaitForShutdown()
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_005.txt")
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_005.txt", ignoredEtcdKeys)
 }
 
 type testEvents struct {

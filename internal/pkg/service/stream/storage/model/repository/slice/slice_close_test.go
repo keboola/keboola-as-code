@@ -85,5 +85,5 @@ func TestSliceRepository_CloseSliceOnFileClose(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_close_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/secret/|storage/volume/"))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/slice_close_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/|storage/slice/all/|storage/secret/|storage/volume/|storage/stats/"))
 }

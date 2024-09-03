@@ -31,7 +31,6 @@ func TestRepository_Put(t *testing.T) {
 
 	// Node1
 	nodeID1 := "test-node-1"
-	assert.NoError(t, repo.OpenSlice(sliceKey, nodeID1).Do(ctx).Err())
 	assert.NoError(t, repo.Put(ctx, nodeID1, []statistics.PerSlice{
 		{
 			SliceKey:         sliceKey,
@@ -46,7 +45,6 @@ func TestRepository_Put(t *testing.T) {
 
 	// Node2
 	nodeID2 := "test-node-2"
-	assert.NoError(t, repo.OpenSlice(sliceKey, nodeID2).Do(ctx).Err())
 	assert.NoError(t, repo.Put(ctx, nodeID2, []statistics.PerSlice{
 		{
 			SliceKey:         sliceKey,
@@ -78,5 +76,5 @@ func TestRepository_Put(t *testing.T) {
 	assert.NoError(t, repo.Put(ctx, nodeID3, records))
 	kvs, err := etcdhelper.DumpAll(ctx, d.EtcdClient())
 	assert.NoError(t, err)
-	assert.Equal(t, 1+2+150, len(kvs))
+	assert.Equal(t, 2+150, len(kvs))
 }

@@ -16,7 +16,7 @@ storage/stats/target/123/456/my-source/my-sink/_sum
 storage/stats/target/123/456/my-source/my-sink/_reset
 -----
 {
-  "slicesCount": 3,
+  "slicesCount": 4,
   "firstRecordAt": "2000-01-01T01:00:00.000Z",
   "lastRecordAt": "2000-01-01T10:00:00.000Z",
   "recordsCount": 112,
@@ -24,6 +24,16 @@ storage/stats/target/123/456/my-source/my-sink/_reset
   "compressedSize": "112B",
   "stagingSize": "112B",
   "resetAt": "2000-01-01T14:00:00.000Z"
+}
+>>>>>
+
+<<<<<
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T09:00:00.000Z/my-volume-1/2000-01-01T09:00:00.000Z/_open
+-----
+{
+  "slicesCount": 1,
+  "firstRecordAt": "",
+  "lastRecordAt": ""
 }
 >>>>>
 

@@ -29,7 +29,9 @@
   005 ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD GREATER 0
   006 ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD LESS %d
   007 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
-  008 ["storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z0") MOD EQUAL 0
+  008 ["storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z0") MOD GREATER 0
+  009 ["storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/", "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z0") MOD LESS %d
+  010 "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/_open" MOD GREATER 0
   ➡️  THEN:
   // Mark file and slice as imported, move stats
   001 ➡️  PUT "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
@@ -38,6 +40,8 @@
   004 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
   005 ➡️  PUT "storage/slice/level/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
   006 ➡️  DEL "storage/slice/level/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  007 ➡️  PUT "storage/stats/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/_open"
+  008 ➡️  DEL "storage/stats/staging/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/_open"
   ➡️  ELSE:
   // File doesn't exist error message
   001 ➡️  TXN

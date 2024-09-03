@@ -137,7 +137,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume|storage/stats/"))
 
 	// Switch file to the Imported state
 	// -----------------------------------------------------------------------------------------------------------------
@@ -151,5 +151,5 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_002.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_retry_snapshot_002.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume|storage/stats/"))
 }

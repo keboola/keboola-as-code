@@ -111,9 +111,6 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelLocalStaging(t *testing.T)
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		nodeID := "test-node"
-		assert.NoError(t, statsRepo.OpenSlice(sliceKey1, nodeID).Do(ctx).Err())
-		assert.NoError(t, statsRepo.OpenSlice(sliceKey2, nodeID).Do(ctx).Err())
-		assert.NoError(t, statsRepo.OpenSlice(sliceKey3, nodeID).Do(ctx).Err())
 		assert.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
 			{
 				SliceKey:         sliceKey1,
@@ -254,9 +251,6 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 
 	// Create records
 	nodeID := "test-node"
-	assert.NoError(t, statsRepo.OpenSlice(sliceKey1, nodeID).Do(ctx).Err())
-	assert.NoError(t, statsRepo.OpenSlice(sliceKey2, nodeID).Do(ctx).Err())
-	assert.NoError(t, statsRepo.OpenSlice(sliceKey3, nodeID).Do(ctx).Err())
 	assert.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
 		{
 			SliceKey:         sliceKey1,

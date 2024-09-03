@@ -19,15 +19,16 @@
   ➡️  IF:
   001 "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z" MOD EQUAL 0
   002 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD EQUAL 0
-  003 "definition/branch/active/123/456" MOD GREATER 0
-  004 "definition/branch/active/123/456" MOD LESS %d
-  005 "definition/source/active/123/456/my-source" MOD GREATER 0
-  006 "definition/source/active/123/456/my-source" MOD LESS %d
-  007 "definition/sink/active/123/456/my-source/my-sink" MOD EQUAL 0
-  008 ["definition/sink/active/123/456/my-source/", "definition/sink/active/123/456/my-source0") MOD EQUAL 0
-  009 "definition/sink/deleted/123/456/my-source/my-sink" MOD EQUAL 0
-  010 "definition/source/active/123/456/my-source" MOD GREATER 0
-  011 "definition/source/active/123/456/my-source" MOD LESS %d
+  003 "storage/stats/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/_open" VERSION EQUAL 0
+  004 "definition/branch/active/123/456" MOD GREATER 0
+  005 "definition/branch/active/123/456" MOD LESS %d
+  006 "definition/source/active/123/456/my-source" MOD GREATER 0
+  007 "definition/source/active/123/456/my-source" MOD LESS %d
+  008 "definition/sink/active/123/456/my-source/my-sink" MOD EQUAL 0
+  009 ["definition/sink/active/123/456/my-source/", "definition/sink/active/123/456/my-source0") MOD EQUAL 0
+  010 "definition/sink/deleted/123/456/my-source/my-sink" MOD EQUAL 0
+  011 "definition/source/active/123/456/my-source" MOD GREATER 0
+  012 "definition/source/active/123/456/my-source" MOD LESS %d
   ➡️  THEN:
   001 ➡️  PUT "definition/sink/active/123/456/my-source/my-sink"
   002 ➡️  PUT "definition/sink/version/123/456/my-source/my-sink/0000000001"
@@ -35,6 +36,7 @@
   004 ➡️  PUT "storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
   005 ➡️  PUT "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
   006 ➡️  PUT "storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z"
+  007 ➡️  PUT "storage/stats/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/_open"
   ➡️  ELSE:
   001 ➡️  TXN
   001   ➡️  IF:
@@ -42,5 +44,8 @@
   002 ➡️  TXN
   002   ➡️  IF:
   002   001 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD EQUAL 0
+  003 ➡️  TXN
+  003   ➡️  IF:
+  003   001 "storage/stats/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/_open" VERSION EQUAL 0
 ✔️  TXN | succeeded: true
 
