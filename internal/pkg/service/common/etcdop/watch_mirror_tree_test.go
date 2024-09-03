@@ -29,11 +29,11 @@ type testUserFullName string
 func TestMirrorTree(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 
 	// Create a typed prefix with some keys
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -109,16 +109,35 @@ func TestMirrorTree(t *testing.T) {
 		"Jacob Brown": 15,
 		"Luke Blue":   30,
 	}, mirror.ToMap())
+
+	// WaitForRevision - in the past
+	assert.NoError(t, mirror.WaitForRevision(ctx, header.Revision-1))
+	assert.NoError(t, mirror.WaitForRevision(ctx, header.Revision))
+
+	// WaitForRevision - in the future
+	revInFuture := header.Revision + 1
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, mirror.WaitForRevision(ctx, revInFuture))
+		assert.Equal(t, map[string]int{
+			"Jacob Brown": 16, // <<<<<<<<
+			"Luke Blue":   30,
+		}, mirror.ToMap())
+	}()
+	time.Sleep(50 * time.Millisecond)
+	header, err = pfx.Key("key1").Put(client, testUser{FirstName: "Jacob", LastName: "Brown", Age: 16}).Do(ctx).HeaderOrErr()
+	require.NoError(t, err)
 }
 
 func TestMirrorTree_WithOnUpdate(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 
 	// Create a typed prefix with some keys
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -203,11 +222,11 @@ func TestMirrorTree_WithOnUpdate(t *testing.T) {
 func TestMirrorTree_WithOnChanges(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 
 	// Create a typed prefix with some keys
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -338,11 +357,11 @@ func TestMirrorTree_WithOnChanges(t *testing.T) {
 func TestFullMirrorTree(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 
 	// Create a typed prefix with some keys
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))

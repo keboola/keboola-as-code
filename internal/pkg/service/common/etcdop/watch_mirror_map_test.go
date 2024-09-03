@@ -21,11 +21,11 @@ import (
 func TestMirrorMap(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 
 	// Create a typed prefix with some keys
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -103,16 +103,35 @@ func TestMirrorMap(t *testing.T) {
 		"Jacob Brown": 15,
 		"Luke Blue":   30,
 	}, mirror.CloneMap())
+
+	// WaitForRevision - in the past
+	assert.NoError(t, mirror.WaitForRevision(ctx, header.Revision-1))
+	assert.NoError(t, mirror.WaitForRevision(ctx, header.Revision))
+
+	// WaitForRevision - in the future
+	revInFuture := header.Revision + 1
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, mirror.WaitForRevision(ctx, revInFuture))
+		assert.Equal(t, map[testUserFullName]int{
+			"Jacob Brown": 16, // <<<<<<<<
+			"Luke Blue":   30,
+		}, mirror.CloneMap())
+	}()
+	time.Sleep(50 * time.Millisecond)
+	header, err = pfx.Key("key1").Put(client, testUser{FirstName: "Jacob", LastName: "Brown", Age: 16}).Do(ctx).HeaderOrErr()
+	require.NoError(t, err)
 }
 
 func TestMirror_WithOnUpdate(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 
 	// Create a typed prefix with some keys
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -199,11 +218,11 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 func TestMirrorMap_WithOnChanges(t *testing.T) {
 	t.Parallel()
 
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 
 	// Create a typed prefix with some keys
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))

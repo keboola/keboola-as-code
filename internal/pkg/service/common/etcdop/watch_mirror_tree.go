@@ -30,6 +30,9 @@ type MirrorTree[T any, V any] struct {
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[string, V])
 
+	updatedLock sync.RWMutex
+	updated     chan struct{}
+
 	tree         *prefixtree.AtomicTree[V]
 	revisionLock sync.RWMutex
 	revision     int64
@@ -78,6 +81,7 @@ func (s MirrorTreeSetup[T, V]) BuildMirror() *MirrorTree[T, V] {
 		tree:      prefixtree.New[V](),
 		onUpdate:  s.onUpdate,
 		onChanges: s.onChanges,
+		updated:   make(chan struct{}),
 	}
 }
 
@@ -147,7 +151,14 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 				m.revisionLock.Lock()
 				m.revision = header.Revision
 				m.revisionLock.Unlock()
+
 				logger.Debugf(ctx, `watch stream mirror synced to revision %d`, header.Revision)
+
+				// Unblock WaitForRevision loops
+				m.updatedLock.Lock()
+				close(m.updated)
+				m.updated = make(chan struct{})
+				m.updatedLock.Unlock()
 			})
 
 			// Call callbacks
@@ -193,6 +204,31 @@ func (m *MirrorTree[T, V]) Revision() int64 {
 	m.revisionLock.RLock()
 	defer m.revisionLock.RUnlock()
 	return m.revision
+}
+
+func (m *MirrorTree[T, V]) WaitForRevision(ctx context.Context, expected int64) error {
+	for {
+		m.revisionLock.RLock()
+		actual := m.revision
+		m.revisionLock.RUnlock()
+
+		// Is the condition already met?
+		if actual >= expected {
+			return nil
+		}
+
+		// Get update notifier
+		m.updatedLock.RLock()
+		notifier := m.updated
+		m.updatedLock.RUnlock()
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-notifier:
+			// try again
+		}
+	}
 }
 
 func (m *MirrorTree[T, V]) Atomic(do func(t prefixtree.TreeReadOnly[V])) {

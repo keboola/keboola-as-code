@@ -72,6 +72,10 @@ func (c *L1) Revision() int64 {
 	return c.cache.Revision()
 }
 
+func (c *L1) WaitForRevision(ctx context.Context, expected int64) error {
+	return c.cache.WaitForRevision(ctx, expected)
+}
+
 func (c *L1) aggregate(ctx context.Context, objectKey fmt.Stringer) (statistics.Aggregated, error) {
 	out, _ := c.aggregateWithRev(ctx, objectKey)
 	return out, nil
