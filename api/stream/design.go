@@ -277,7 +277,7 @@ var _ = Service("stream", func() {
 	})
 
 	Method("TestSource", func() {
-		Meta("openapi:summary", "Test source payload mapping.")
+		Meta("openapi:summary", "Test source payload mapping")
 		Description("Tests configured mapping of the source and its sinks.")
 		Result(TestResult)
 		Payload(TestSourceRequest)
@@ -296,6 +296,30 @@ var _ = Service("stream", func() {
 		Payload(GetSourceRequest)
 		HTTP(func() {
 			POST("/branches/{branchId}/sources/{sourceId}/statistics/clear")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+		})
+	})
+
+	Method("DisableSource", func() {
+		Meta("openapi:summary", "Disable source")
+		Description("Disables the source.")
+		Payload(GetSourceRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/disable")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+		})
+	})
+
+	Method("EnableSource", func() {
+		Meta("openapi:summary", "Enable source")
+		Description("Enables the source.")
+		Payload(GetSourceRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/enable")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -439,6 +463,32 @@ var _ = Service("stream", func() {
 		Payload(GetSinkRequest)
 		HTTP(func() {
 			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
+	Method("DisableSink", func() {
+		Meta("openapi:summary", "Disable sink")
+		Description("Disables the sink.")
+		Payload(GetSinkRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
+	Method("EnableSink", func() {
+		Meta("openapi:summary", "Enable sink")
+		Description("Enables the sink.")
+		Payload(GetSinkRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
