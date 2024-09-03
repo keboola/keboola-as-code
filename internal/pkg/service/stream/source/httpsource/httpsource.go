@@ -26,6 +26,7 @@ import (
 )
 
 const (
+	ServerHeader            = "Keboola/Stream/HTTPSource"
 	gracefulShutdownTimeout = 30 * time.Second
 )
 
@@ -53,6 +54,10 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 
 	// Static routes
 	router := routing.New()
+	router.Use(func(c *routing.Context) error {
+		c.Response.Header.Set("Server", ServerHeader)
+		return nil
+	})
 	router.NotFound(routing.MethodNotAllowedHandler, func(c *routing.Context) error {
 		errorHandler(c.RequestCtx, svcErrors.NewRouteNotFound(errors.New("not found, please send data using POST /stream/<projectID>/<sourceID>/<secret>")))
 		return nil
@@ -70,7 +75,6 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 
 	// Route import requests to the dispatcher
 	router.Post("/stream/<projectID>/<sourceID>/<secret>", func(c *routing.Context) error {
-		c.Response.Header.Set("Server", "Keboola stream HTTP source")
 		// Get parameters
 		projectIDStr := c.Param("projectID")
 		projectIDInt, err := strconv.Atoi(projectIDStr)

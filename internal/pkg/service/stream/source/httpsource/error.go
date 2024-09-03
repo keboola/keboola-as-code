@@ -28,6 +28,8 @@ func newErrorHandler(cfg Config, logger log.Logger) func(c *fasthttp.RequestCtx,
 	// Error handler
 	errorWriter := newErrorWriter(logger)
 	return func(c *fasthttp.RequestCtx, err error) {
+		c.Response.Header.Set("Server", ServerHeader)
+
 		var smallBufferErr *fasthttp.ErrSmallBuffer
 
 		switch {
