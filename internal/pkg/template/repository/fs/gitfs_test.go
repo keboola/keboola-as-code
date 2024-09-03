@@ -26,7 +26,7 @@ func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	d, _ := dependenciesLib.NewMocked(t, ctx)
+	d := dependenciesLib.NewMocked(t, ctx)
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()

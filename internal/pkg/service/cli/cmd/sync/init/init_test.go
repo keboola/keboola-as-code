@@ -23,7 +23,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps, _ := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, context.Background())
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
 	deps.MockedHTTPTransport().RegisterResponder(
@@ -92,7 +92,7 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps, _ := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, context.Background())
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
 	deps.MockedHTTPTransport().RegisterResponder(

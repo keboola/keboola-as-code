@@ -31,7 +31,7 @@ func (v *mocked) TestDNSServer() *dnsmock.Server {
 func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
 	tb.Helper()
 
-	commonMock, useRealAPIs := dependencies.NewMocked(tb, ctx, opts...)
+	commonMock := dependencies.NewMocked(tb, ctx, opts...)
 
 	// Fill in missing fields
 	if cfg.API.PublicURL == nil {
@@ -72,7 +72,7 @@ func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	require.NoError(tb, err)
 
 	mock.DebugLogger().Truncate()
-	if !useRealAPIs {
+	if !commonMock.UseRealAPIs() {
 		mock.MockedHTTPTransport().Reset()
 	}
 	return scope, mock

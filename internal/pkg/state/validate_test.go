@@ -26,7 +26,7 @@ func TestValidateState(t *testing.T) {
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 
 	// Container
-	d, _ := dependencies.NewMocked(t, ctx)
+	d := dependencies.NewMocked(t, ctx)
 	state := d.MockedState()
 
 	// Mocked component response

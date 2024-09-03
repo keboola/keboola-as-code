@@ -140,7 +140,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, ctx context.Context, modifyC
 	tb.Helper()
 
 	// Create common mocked dependencies
-	commonMock, useRealAPIs := dependencies.NewMocked(tb, ctx, append(
+	commonMock := dependencies.NewMocked(tb, ctx, append(
 		[]dependencies.MockedOption{
 			dependencies.WithEnabledEtcdClient(),
 			dependencies.WithMockedStorageAPIHost("connection.keboola.local"),
@@ -165,7 +165,7 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, ctx context.Context, modifyC
 	require.NoError(tb, err)
 
 	mock.DebugLogger().Truncate()
-	if !useRealAPIs {
+	if !commonMock.UseRealAPIs() {
 		mock.MockedHTTPTransport().Reset()
 	}
 
