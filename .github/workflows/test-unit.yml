@@ -59,14 +59,7 @@ jobs:
         run: |
           echo "BEFORE CLEAN-UP:"
           df -hI /dev/disk3s1s1
-          sudo rm -rf /Applications/Xcode_14.3.1.app
-          sudo rm -rf /Applications/Xcode_15.0.1.app
-          sudo rm -rf /Applications/Xcode_15.1.app
-          sudo rm -rf /Applications/Xcode_15.2.app
-          sudo rm -rf /Applications/Xcode_15.3.app
-          #sudo rm -rf ~/.dotnet
-          #sudo rm -rf /Library/Android
-          #sudo rm -rf /Library/Developer/CoreSimulator
+          sudo rm -rf /Applications/Xcode_*.app
           echo "AFTER CLEAN-UP:"
           df -hI /dev/disk3s1s1
         continue-on-error: true
