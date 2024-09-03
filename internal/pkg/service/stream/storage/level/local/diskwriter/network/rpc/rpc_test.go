@@ -132,7 +132,7 @@ func openNetworkFile(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 	require.True(t, found)
 
 	// Open network file
-	onServerTermination := func() {}
+	onServerTermination := func(ctx context.Context, cause string) {}
 	file, err := rpc.OpenNetworkFile(ctx, d.Logger(), sourceNodeID, conn, sliceKey, slice, onServerTermination)
 	require.NoError(t, err)
 

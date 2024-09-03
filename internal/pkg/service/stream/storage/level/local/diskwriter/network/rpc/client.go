@@ -31,7 +31,7 @@ type networkFile struct {
 	closed <-chan struct{}
 }
 
-func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string, conn *transport.ClientConnection, sliceKey model.SliceKey, slice localModel.Slice, onServerTermination func()) (encoding.NetworkOutput, error) {
+func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string, conn *transport.ClientConnection, sliceKey model.SliceKey, slice localModel.Slice, onServerTermination func(ctx context.Context, cause string)) (encoding.NetworkOutput, error) {
 	logger = logger.WithComponent("rpc")
 
 	// Use transport layer with multiplexer for connection
@@ -110,7 +110,7 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string
 				logger.Errorf(ctx, "rpc close send error: %s", err)
 			}
 		}
-		onServerTermination()
+		onServerTermination(ctx, "remote server shutdown")
 	}()
 
 	return f, nil
