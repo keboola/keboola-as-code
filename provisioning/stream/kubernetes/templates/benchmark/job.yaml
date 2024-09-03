@@ -23,6 +23,7 @@ spec:
       containers:
         - name: benchmark
           image: docker.io/keboolabot/stream-benchmark:latest
+          imagePullPolicy: Always
           command: ["k6"]
           args: ["run", "--out", "statsd", "/scripts/k6/stream-api/static.js"]
           resources:
