@@ -23,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/httpsource"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -166,6 +167,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Method:             http.MethodGet,
 			Path:               "/health-check",
 			ExpectedStatusCode: http.StatusOK,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedBody:       "OK\n",
 		},
 		{
@@ -173,6 +175,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Method:             http.MethodGet,
 			Path:               "/foo",
 			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedLogs:       `{"level":"info","message":"not found, please send data using POST /stream/<projectID>/<sourceID>/<secret>"}`,
 			ExpectedBody: `
 {
@@ -189,6 +192,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			ExpectedHeaders: map[string]string{
 				"Allow":          "OPTIONS, POST",
 				"Content-Length": "0",
+				"Server":         httpsource.ServerHeader,
 			},
 		},
 		{
@@ -197,6 +201,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/stream/foo/my-source/my-secret",
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedBody: `
 {
   "statusCode": 400,
@@ -210,6 +215,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/stream/1111/my-source/my-secret",
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedBody: `
 {
   "statusCode": 404,
@@ -223,6 +229,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/stream/123/my-source-1/" + ts.invalidSecret,
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedBody: `
 {
   "statusCode": 404,
@@ -236,6 +243,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/stream/123/my-source-2/" + ts.validSecret,
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedBody: `
 {
   "statusCode": 404,
@@ -257,6 +265,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			ExpectedStatusCode: http.StatusInternalServerError,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "application/json",
+				"Server":       httpsource.ServerHeader,
 			},
 			ExpectedLogs: `
 {"level":"error","message":"write record error: cannot open sink pipeline: some open error, next attempt after %s","component":"sink.router"}
@@ -318,6 +327,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			ExpectedStatusCode: http.StatusInternalServerError,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "application/json",
+				"Server":       httpsource.ServerHeader,
 			},
 			ExpectedLogs: `
 {"level":"error","message":"write record error: some write error","component":"sink.router"}
@@ -378,6 +388,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			ExpectedStatusCode: http.StatusAccepted,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "text/plain",
+				"Server":       httpsource.ServerHeader,
 			},
 			ExpectedBody: "OK",
 		},
@@ -395,6 +406,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			ExpectedStatusCode: http.StatusOK,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "text/plain",
+				"Server":       httpsource.ServerHeader,
 			},
 			ExpectedBody: "OK",
 		},
@@ -411,6 +423,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Query:              "verbose=true",
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusAccepted,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedBody: `
 {
   "statusCode": 202,
@@ -460,6 +473,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Query:              "verbose=true",
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusOK,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedBody: `
 {
   "statusCode": 200,
@@ -502,6 +516,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/stream/123/my-source-1/" + ts.validSecret,
 			Headers:            map[string]string{"foo": strings.Repeat(".", ts.maxHeaderSize+1)},
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedLogs:       `{"level":"info","message":"request header size is over the maximum \"2000B\"","error.type":"%s/errors.HeaderTooLargeError"}`,
 			ExpectedBody: `
 {
@@ -516,6 +531,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/stream/123/my-source/" + ts.validSecret,
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize+1)),
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedLogs:       `{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`,
 			ExpectedBody: `
 {
@@ -544,6 +560,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Query:              "verbose=true",
 			Body:               strings.NewReader("foo"),
 			ExpectedStatusCode: http.StatusOK,
+			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
 			ExpectedBody: `
 {
   "statusCode": 200,
