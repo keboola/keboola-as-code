@@ -337,7 +337,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	file.Processed = true
 
 	if err == nil {
-		o.logger.Info(ctx, "successfully rotated file")
+		o.logger.Info(ctx, "rotated file")
 	}
 }
 
@@ -397,7 +397,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 		defer o.lock.Unlock()
 		delete(o.fileNotEmpty, file.FileKey)
 
-		o.logger.Info(ctx, "successfully closed file")
+		o.logger.Info(ctx, "closed file")
 	}
 }
 

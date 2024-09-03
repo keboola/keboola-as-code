@@ -292,6 +292,6 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 		return errors.PrefixError(err, "cannot switch slice to the uploaded state")
 	}
 
-	o.logger.Info(ctx, "successfully uploaded slice")
+	o.logger.Info(ctx, "uploaded slice")
 	return nil
 }

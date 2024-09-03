@@ -285,7 +285,7 @@ func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) e
 			return rErr
 		}
 	} else {
-		o.logger.Info(ctx, "successfully rotated slice")
+		o.logger.Info(ctx, "rotated slice")
 	}
 
 	return nil
@@ -337,7 +337,7 @@ func (o *operator) switchSliceToUploading(ctx context.Context, slice *sliceData)
 			return rErr
 		}
 	} else {
-		o.logger.Info(ctx, "successfully closed slice")
+		o.logger.Info(ctx, "closed slice")
 	}
 
 	return nil

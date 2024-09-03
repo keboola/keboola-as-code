@@ -70,7 +70,7 @@ func TestFileImport(t *testing.T) {
 	// Await import success
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"importing file","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
-		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"successfully imported file","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"imported file","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
@@ -174,7 +174,7 @@ func TestFileImportError(t *testing.T) {
 
 	// Await import success
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"successfully imported file","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"imported file","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
@@ -249,7 +249,7 @@ func TestFileImportEmpty(t *testing.T) {
 	// Await import success
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"importing file","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
-		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"successfully imported file","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `{"level":"info","message":"imported file","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state

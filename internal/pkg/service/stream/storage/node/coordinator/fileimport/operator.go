@@ -325,7 +325,7 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 		return errors.PrefixError(err, "cannot switch file to the imported state")
 	}
 
-	o.logger.Info(ctx, "successfully imported file")
+	o.logger.Info(ctx, "imported file")
 
 	return nil
 }
