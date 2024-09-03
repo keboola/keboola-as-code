@@ -22,9 +22,9 @@ type Logger interface {
 	withAttributes
 }
 
-type loggerWithZapCore interface {
+type LoggerWithZapCore interface {
 	Logger
-	zapCore() zapcore.Core
+	ZapCore() zapcore.Core
 }
 
 // DebugLogger returns logs as string in tests.

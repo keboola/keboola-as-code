@@ -118,7 +118,7 @@ func (l *zapLogger) Sync() error {
 	return l.logger.Sync()
 }
 
-func (l *zapLogger) zapCore() zapcore.Core {
+func (l *zapLogger) ZapCore() zapcore.Core {
 	return l.core
 }
 
