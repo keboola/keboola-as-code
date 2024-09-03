@@ -30,13 +30,13 @@ import (
 const dbOperationTimeout = 30 * time.Second
 
 type operator struct {
-	config       stagingConfig.OperatorConfig
-	clock        clock.Clock
-	logger       log.Logger
-	storage      *storageRepo.Repository
-	statistics   *statsCache.L1
-	distribution *distribution.GroupNode
-	locks        *distlock.Provider
+	config          stagingConfig.OperatorConfig
+	clock           clock.Clock
+	logger          log.Logger
+	storage         *storageRepo.Repository
+	statisticsCache *statsCache.L1
+	distribution    *distribution.GroupNode
+	locks           *distlock.Provider
 
 	// closeSyncer signals when no source node is using the slice.
 	closeSyncer *closesync.CoordinatorNode
@@ -75,12 +75,12 @@ type dependencies interface {
 func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 	var err error
 	o := &operator{
-		config:     config,
-		clock:      d.Clock(),
-		logger:     d.Logger().WithComponent("storage.node.operator.slice.rotation"),
-		storage:    d.StorageRepository(),
-		statistics: d.StatisticsL1Cache(),
-		locks:      d.DistributedLockProvider(),
+		config:          config,
+		clock:           d.Clock(),
+		logger:          d.Logger().WithComponent("storage.node.operator.slice.rotation"),
+		storage:         d.StorageRepository(),
+		statisticsCache: d.StatisticsL1Cache(),
+		locks:           d.DistributedLockProvider(),
 	}
 
 	// Setup close sync utility
@@ -115,7 +115,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 	// Mirror slices
 	{
 		o.slices = etcdop.SetupMirrorMap[model.Slice, model.SliceKey, *sliceData](
-			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV()),
+			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV(), etcd.WithProgressNotify()),
 			func(_ string, slice model.Slice) model.SliceKey {
 				return slice.SliceKey
 			},
@@ -241,7 +241,7 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	defer cancel()
 
 	// Get slice statistics from cache
-	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
+	stats, err := o.statisticsCache.SliceStats(ctx, slice.SliceKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
 		return
@@ -301,8 +301,15 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 		// continue! we waited long enough, the wait mechanism is probably broken
 	}
 
+	// Make sure the statistics cache is up-to-date
+	if err := o.statisticsCache.WaitForRevision(ctx, slice.ModRevision); err != nil {
+		err = errors.PrefixError(err, "error when waiting for statistics cache revision")
+		o.logger.Error(ctx, err.Error())
+		return
+	}
+
 	// Get slice statistics
-	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
+	stats, err := o.statisticsCache.SliceStats(ctx, slice.SliceKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
 		return
@@ -313,7 +320,8 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	defer dbCancel()
 
 	// Switch slice to the uploading state
-	err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), stats.Local.RecordsCount == 0).Do(dbCtx).Err()
+	isEmpty := stats.Total.RecordsCount == 0
+	err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
 	if err != nil {
 		err = errors.PrefixError(err, "cannot switch slice to the uploading state")
 	}
