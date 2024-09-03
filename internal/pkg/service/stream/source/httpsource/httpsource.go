@@ -70,6 +70,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 
 	// Route import requests to the dispatcher
 	router.Post("/stream/<projectID>/<sourceID>/<secret>", func(c *routing.Context) error {
+		c.Response.Header.Set("Server", "Keboola stream HTTP source")
 		// Get parameters
 		projectIDStr := c.Param("projectID")
 		projectIDInt, err := strconv.Atoi(projectIDStr)

@@ -378,6 +378,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			ExpectedStatusCode: http.StatusAccepted,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "text/plain",
+				"Server":       "Keboola stream HTTP source",
 			},
 			ExpectedBody: "OK",
 		},
@@ -395,6 +396,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			ExpectedStatusCode: http.StatusOK,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "text/plain",
+				"Server":       "Keboola stream HTTP source",
 			},
 			ExpectedBody: "OK",
 		},
@@ -411,6 +413,9 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Query:              "verbose=true",
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusAccepted,
+			ExpectedHeaders: map[string]string{
+				"Server": "Keboola stream HTTP source",
+			},
 			ExpectedBody: `
 {
   "statusCode": 202,
@@ -460,6 +465,9 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Query:              "verbose=true",
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusOK,
+			ExpectedHeaders: map[string]string{
+				"Server": "Keboola stream HTTP source",
+			},
 			ExpectedBody: `
 {
   "statusCode": 200,
@@ -502,7 +510,8 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/stream/123/my-source-1/" + ts.validSecret,
 			Headers:            map[string]string{"foo": strings.Repeat(".", ts.maxHeaderSize+1)},
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
-			ExpectedLogs:       `{"level":"info","message":"request header size is over the maximum \"2000B\"","error.type":"%s/errors.HeaderTooLargeError"}`,
+			// No expected Server headers, fasthttp internal return
+			ExpectedLogs: `{"level":"info","message":"request header size is over the maximum \"2000B\"","error.type":"%s/errors.HeaderTooLargeError"}`,
 			ExpectedBody: `
 {
   "statusCode": 413,
@@ -516,7 +525,8 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/stream/123/my-source/" + ts.validSecret,
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize+1)),
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
-			ExpectedLogs:       `{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`,
+			// No expected Server headers, fasthttp internal return
+			ExpectedLogs: `{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`,
 			ExpectedBody: `
 {
   "statusCode": 413,
@@ -544,6 +554,9 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Query:              "verbose=true",
 			Body:               strings.NewReader("foo"),
 			ExpectedStatusCode: http.StatusOK,
+			ExpectedHeaders: map[string]string{
+				"Server": "Keboola stream HTTP source",
+			},
 			ExpectedBody: `
 {
   "statusCode": 200,
