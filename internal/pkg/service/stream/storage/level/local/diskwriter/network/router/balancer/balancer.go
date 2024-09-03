@@ -1,4 +1,4 @@
-package router
+package balancer
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
@@ -7,11 +7,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Balancer selects and writes to a slice pipeline.
-// If SlicePipeline.IsReady() == false, the pipeline should be ignored.
-// If no pipeline is ready, the NoPipelineReadyError should be returned.
+// Balancer selects from multiple SlicePipeline instances a one and writes to .
+// If SlicePipeline.IsReady() == false, the pipeline is ignored.
+// If no pipeline is ready, the NoPipelineReadyError is returned.
+// The implementation must provide high throughput.
 type Balancer interface {
 	WriteRecord(c recordctx.Context, pipelines []SlicePipeline) (pipeline.RecordStatus, error)
+}
+
+type SlicePipeline interface {
+	// WriteRecord method may return PipelineNotReadyError, then next pipeline will be tried.
+	WriteRecord(c recordctx.Context) (pipeline.RecordStatus, error)
 }
 
 func NewBalancer(pipelineBalancer network.BalancerType) (Balancer, error) {
@@ -23,6 +29,6 @@ func NewBalancer(pipelineBalancer network.BalancerType) (Balancer, error) {
 		return NewRoundRobinBalancer(), nil
 
 	default:
-		return nil, errors.New("inavlid balancer selected")
+		return nil, errors.New("invalid balancer selected")
 	}
 }

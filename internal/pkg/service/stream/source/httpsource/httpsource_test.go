@@ -45,7 +45,7 @@ type TestCase struct {
 	ExpectedLogs       string
 }
 
-type fixtures struct {
+type testState struct {
 	ctx             context.Context
 	logger          log.DebugLogger
 	url             string
@@ -70,82 +70,83 @@ type fixtures struct {
 }
 
 //nolint:tparallel // we want to run the subtests - requests sequentially and check the logs
-func TestStart(t *testing.T) {
+func TestHTTPSource(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-	f := &fixtures{}
-	f.ctx = context.Background()
-	f.maxHeaderSize = 2000
-	f.maxBodySize = 8000
+	ts := &testState{}
+	ts.ctx = ctx
+	ts.maxHeaderSize = 2000
+	ts.maxBodySize = 8000
 
 	// Dependencies
 	port := netutils.FreePortForTest(t)
 	listenAddr := fmt.Sprintf("localhost:%d", port)
-	f.url = fmt.Sprintf(`http://%s`, listenAddr)
-	f.clk = clock.NewMock()
-	f.d, f.mock = dependencies.NewMockedServiceScopeWithConfig(t, ctx, func(cfg *config.Config) {
+	ts.url = fmt.Sprintf(`http://%s`, listenAddr)
+	ts.clk = clock.NewMock()
+	ts.d, ts.mock = dependencies.NewMockedServiceScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Source.HTTP.Listen = fmt.Sprintf("0.0.0.0:%d", port)
-		cfg.Source.HTTP.ReadBufferSize = datasize.ByteSize(f.maxHeaderSize) * datasize.B // ReadBufferSize is a limit for headers, not for the body
-		cfg.Source.HTTP.MaxRequestBodySize = datasize.ByteSize(f.maxBodySize) * datasize.B
-	}, commonDeps.WithClock(f.clk))
-	f.logger = f.mock.DebugLogger()
+		cfg.Source.HTTP.ReadBufferSize = datasize.ByteSize(ts.maxHeaderSize) * datasize.B // ReadBufferSize is a limit for headers, not for the body
+		cfg.Source.HTTP.MaxRequestBodySize = datasize.ByteSize(ts.maxBodySize) * datasize.B
+	}, commonDeps.WithClock(ts.clk))
+	ts.logger = ts.mock.DebugLogger()
 
 	// Create sources and sinks
-	f.validSecret = strings.Repeat("1", 48)
-	f.invalidSecret = strings.Repeat("0", 48)
-	f.branchAKey = key.BranchKey{ProjectID: 123, BranchID: 111}
-	f.branchBKey = key.BranchKey{ProjectID: 123, BranchID: 222}
-	f.branchA = test.NewBranch(f.branchAKey)
-	f.branchB = test.NewBranch(f.branchBKey)
-	f.source1A = test.NewHTTPSource(key.SourceKey{BranchKey: f.branchAKey, SourceID: "my-source-1"})
-	f.source1A.HTTP.Secret = f.validSecret
-	f.source1B = test.NewHTTPSource(key.SourceKey{BranchKey: f.branchBKey, SourceID: "my-source-1"})
-	f.source1B.HTTP.Secret = f.validSecret
-	f.source2Disabled = test.NewHTTPSource(key.SourceKey{BranchKey: f.branchAKey, SourceID: "my-source-2"})
-	f.source2Disabled.HTTP.Secret = f.validSecret
-	f.sink1A1 = dummy.NewSink(key.SinkKey{SourceKey: f.source1A.SourceKey, SinkID: "my-sink-1"})
-	f.sink1B1 = dummy.NewSink(key.SinkKey{SourceKey: f.source1B.SourceKey, SinkID: "my-sink-1"})
-	f.sink1A2Disabled = dummy.NewSink(key.SinkKey{SourceKey: f.source1A.SourceKey, SinkID: "my-sink-2"})
-	f.sink1B2Disabled = dummy.NewSink(key.SinkKey{SourceKey: f.source1B.SourceKey, SinkID: "my-sink-2"})
-	require.NoError(t, f.d.DefinitionRepository().Branch().Create(&f.branchA, f.clk.Now(), test.ByUser()).Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Branch().Create(&f.branchB, f.clk.Now(), test.ByUser()).Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Source().Create(&f.source1A, f.clk.Now(), test.ByUser(), "create").Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Source().Create(&f.source1B, f.clk.Now(), test.ByUser(), "create").Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Source().Create(&f.source2Disabled, f.clk.Now(), test.ByUser(), "create").Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Source().Disable(f.source2Disabled.SourceKey, f.clk.Now(), test.ByUser(), "reason").Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Sink().Create(&f.sink1A1, f.clk.Now(), test.ByUser(), "create").Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Sink().Create(&f.sink1B1, f.clk.Now(), test.ByUser(), "create").Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Sink().Create(&f.sink1A2Disabled, f.clk.Now(), test.ByUser(), "create").Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Sink().Create(&f.sink1B2Disabled, f.clk.Now(), test.ByUser(), "create").Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Sink().Disable(f.sink1A2Disabled.SinkKey, f.clk.Now(), test.ByUser(), "reason").Do(f.ctx).Err())
-	require.NoError(t, f.d.DefinitionRepository().Sink().Disable(f.sink1B2Disabled.SinkKey, f.clk.Now(), test.ByUser(), "reason").Do(f.ctx).Err())
+	ts.validSecret = strings.Repeat("1", 48)
+	ts.invalidSecret = strings.Repeat("0", 48)
+	ts.branchAKey = key.BranchKey{ProjectID: 123, BranchID: 111}
+	ts.branchBKey = key.BranchKey{ProjectID: 123, BranchID: 222}
+	ts.branchA = test.NewBranch(ts.branchAKey)
+	ts.branchB = test.NewBranch(ts.branchBKey)
+	ts.source1A = test.NewHTTPSource(key.SourceKey{BranchKey: ts.branchAKey, SourceID: "my-source-1"})
+	ts.source1A.HTTP.Secret = ts.validSecret
+	ts.source1B = test.NewHTTPSource(key.SourceKey{BranchKey: ts.branchBKey, SourceID: "my-source-1"})
+	ts.source1B.HTTP.Secret = ts.validSecret
+	ts.source2Disabled = test.NewHTTPSource(key.SourceKey{BranchKey: ts.branchAKey, SourceID: "my-source-2"})
+	ts.source2Disabled.HTTP.Secret = ts.validSecret
+	ts.sink1A1 = dummy.NewSink(key.SinkKey{SourceKey: ts.source1A.SourceKey, SinkID: "my-sink-1"})
+	ts.sink1B1 = dummy.NewSink(key.SinkKey{SourceKey: ts.source1B.SourceKey, SinkID: "my-sink-1"})
+	ts.sink1A2Disabled = dummy.NewSink(key.SinkKey{SourceKey: ts.source1A.SourceKey, SinkID: "my-sink-2"})
+	ts.sink1B2Disabled = dummy.NewSink(key.SinkKey{SourceKey: ts.source1B.SourceKey, SinkID: "my-sink-2"})
+	require.NoError(t, ts.d.DefinitionRepository().Branch().Create(&ts.branchA, ts.clk.Now(), test.ByUser()).Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Branch().Create(&ts.branchB, ts.clk.Now(), test.ByUser()).Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Source().Create(&ts.source1A, ts.clk.Now(), test.ByUser(), "create").Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Source().Create(&ts.source1B, ts.clk.Now(), test.ByUser(), "create").Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Source().Create(&ts.source2Disabled, ts.clk.Now(), test.ByUser(), "create").Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Source().Disable(ts.source2Disabled.SourceKey, ts.clk.Now(), test.ByUser(), "reason").Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Sink().Create(&ts.sink1A1, ts.clk.Now(), test.ByUser(), "create").Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Sink().Create(&ts.sink1B1, ts.clk.Now(), test.ByUser(), "create").Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Sink().Create(&ts.sink1A2Disabled, ts.clk.Now(), test.ByUser(), "create").Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Sink().Create(&ts.sink1B2Disabled, ts.clk.Now(), test.ByUser(), "create").Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Sink().Disable(ts.sink1A2Disabled.SinkKey, ts.clk.Now(), test.ByUser(), "reason").Do(ts.ctx).Err())
+	require.NoError(t, ts.d.DefinitionRepository().Sink().Disable(ts.sink1B2Disabled.SinkKey, ts.clk.Now(), test.ByUser(), "reason").Do(ts.ctx).Err())
 
 	// Start
-	require.NoError(t, stream.StartComponents(f.ctx, f.d, f.mock.TestConfig(), stream.ComponentHTTPSource))
+	require.NoError(t, stream.StartComponents(ts.ctx, ts.d, ts.mock.TestConfig(), stream.ComponentHTTPSource))
 
 	// Wait for the HTTP server
-	require.NoError(t, netutils.WaitForHTTP(f.url, 10*time.Second))
-	f.logger.AssertJSONMessages(t, `
+	require.NoError(t, netutils.WaitForHTTP(ts.url, 10*time.Second))
+	ts.logger.AssertJSONMessages(t, `
 {"level":"info","message":"starting HTTP source node","component":"http-source"}
 {"level":"info","message":"started HTTP source on \"0.0.0.0:%d\"","component":"http-source"}
 `)
 
 	// Send testing requests
-	sendTestRequests(t, f)
+	sendTestRequests(t, ts)
 
 	// Shutdown
-	f.logger.Truncate()
-	f.d.Process().Shutdown(f.ctx, errors.New("bye bye"))
-	f.d.Process().WaitForShutdown()
-	f.logger.AssertJSONMessages(t, `
+	ts.logger.Truncate()
+	ts.d.Process().Shutdown(ts.ctx, errors.New("bye bye"))
+	ts.d.Process().WaitForShutdown()
+	ts.logger.AssertJSONMessages(t, `
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"shutting down HTTP source at \"0.0.0.0:%d\"","component":"http-source"}
 {"level":"info","message":"HTTP source shutdown done","component":"http-source"}
-{"level":"info","message":"shutting down sink router","component":"sink.router"}
+{"level":"info","message":"closing sink router","component":"sink.router"}
 {"level":"info","message":"watch stream consumer closed: context canceled","component":"sink.router"}
-{"level":"info","message":"sink router shutdown done","component":"sink.router"}
+{"level":"info","message":"closed sink router","component":"sink.router"}
 {"level":"info","message":"closing volumes stream","component":"volume.repository"}
 {"level":"info","message":"closed volumes stream","component":"volume.repository"}
 {"level":"info","message":"closing etcd connection","component":"etcd.client"}
@@ -154,10 +155,10 @@ func TestStart(t *testing.T) {
 `)
 }
 
-func testCases(t *testing.T, f *fixtures) []TestCase {
+func testCases(t *testing.T, ts *testState) []TestCase {
 	t.Helper()
 
-	require.Less(t, f.maxHeaderSize, f.maxBodySize)
+	require.Less(t, ts.maxHeaderSize, ts.maxBodySize)
 
 	return []TestCase{
 		{
@@ -194,7 +195,7 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name:               "stream input - POST - invalid project ID",
 			Method:             http.MethodPost,
 			Path:               "/stream/foo/my-source/my-secret",
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusBadRequest,
 			ExpectedBody: `
 {
@@ -207,7 +208,7 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name:               "stream input - POST - not found",
 			Method:             http.MethodPost,
 			Path:               "/stream/1111/my-source/my-secret",
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusNotFound,
 			ExpectedBody: `
 {
@@ -219,8 +220,8 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 		{
 			Name:               "stream input - POST - not found - invalid secret",
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-1/" + f.invalidSecret,
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Path:               "/stream/123/my-source-1/" + ts.invalidSecret,
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusNotFound,
 			ExpectedBody: `
 {
@@ -232,8 +233,8 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 		{
 			Name:               "stream input - POST - not found - disabled source",
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-2/" + f.validSecret,
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Path:               "/stream/123/my-source-2/" + ts.validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusNotFound,
 			ExpectedBody: `
 {
@@ -247,12 +248,12 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := f.mock.TestDummySinkController()
+				c := ts.mock.TestDummySinkController()
 				c.PipelineOpenError = errors.New("some open error")
 			},
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-1/" + f.validSecret,
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Path:               "/stream/123/my-source-1/" + ts.validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusInternalServerError,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "application/json",
@@ -306,14 +307,14 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name: "stream input - POST - write error",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				f.clk.Add(10 * time.Second) // skip backoff delay for open pipeline operation
-				c := f.mock.TestDummySinkController()
+				ts.clk.Add(10 * time.Second) // skip backoff delay for open pipeline operation
+				c := ts.mock.TestDummySinkController()
 				c.PipelineOpenError = nil
 				c.PipelineWriteError = errors.New("some write error")
 			},
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-1/" + f.validSecret,
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Path:               "/stream/123/my-source-1/" + ts.validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusInternalServerError,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "application/json",
@@ -367,13 +368,13 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name: "stream input - POST - ok - accepted",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := f.mock.TestDummySinkController()
+				c := ts.mock.TestDummySinkController()
 				c.PipelineWriteError = nil
 				c.PipelineWriteRecordStatus = pipeline.RecordAccepted
 			},
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-1/" + f.validSecret,
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Path:               "/stream/123/my-source-1/" + ts.validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusAccepted,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "text/plain",
@@ -384,13 +385,13 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name: "stream input - POST - ok - processed",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := f.mock.TestDummySinkController()
+				c := ts.mock.TestDummySinkController()
 				c.PipelineWriteError = nil
 				c.PipelineWriteRecordStatus = pipeline.RecordProcessed
 			},
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-1/" + f.validSecret,
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Path:               "/stream/123/my-source-1/" + ts.validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusOK,
 			ExpectedHeaders: map[string]string{
 				"Content-Type": "text/plain",
@@ -401,14 +402,14 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name: "stream input - POST - ok - accepted - verbose",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := f.mock.TestDummySinkController()
+				c := ts.mock.TestDummySinkController()
 				c.PipelineWriteError = nil
 				c.PipelineWriteRecordStatus = pipeline.RecordAccepted
 			},
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-1/" + f.validSecret,
+			Path:               "/stream/123/my-source-1/" + ts.validSecret,
 			Query:              "verbose=true",
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusAccepted,
 			ExpectedBody: `
 {
@@ -450,14 +451,14 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 			Name: "stream input - POST - ok - processed - verbose",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				c := f.mock.TestDummySinkController()
+				c := ts.mock.TestDummySinkController()
 				c.PipelineWriteError = nil
 				c.PipelineWriteRecordStatus = pipeline.RecordProcessed
 			},
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-1/" + f.validSecret,
+			Path:               "/stream/123/my-source-1/" + ts.validSecret,
 			Query:              "verbose=true",
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize)),
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize)),
 			ExpectedStatusCode: http.StatusOK,
 			ExpectedBody: `
 {
@@ -498,8 +499,8 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 		{
 			Name:               "stream input - POST - over maximum header size",
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-1/" + f.validSecret,
-			Headers:            map[string]string{"foo": strings.Repeat(".", f.maxHeaderSize+1)},
+			Path:               "/stream/123/my-source-1/" + ts.validSecret,
+			Headers:            map[string]string{"foo": strings.Repeat(".", ts.maxHeaderSize+1)},
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
 			ExpectedLogs:       `{"level":"info","message":"request header size is over the maximum \"2000B\"","error.type":"%s/errors.HeaderTooLargeError"}`,
 			ExpectedBody: `
@@ -512,8 +513,8 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 		{
 			Name:               "stream input - POST - over maximum body size",
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source/" + f.validSecret,
-			Body:               strings.NewReader(strings.Repeat(".", f.maxBodySize+1)),
+			Path:               "/stream/123/my-source/" + ts.validSecret,
+			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize+1)),
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
 			ExpectedLogs:       `{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`,
 			ExpectedBody: `
@@ -529,17 +530,17 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 				t.Helper()
 
 				// Disable the sink
-				require.NoError(t, f.d.DefinitionRepository().Sink().Disable(f.sink1B1.SinkKey, f.clk.Now(), test.ByUser(), "reason").Do(f.ctx).Err())
+				require.NoError(t, ts.d.DefinitionRepository().Sink().Disable(ts.sink1B1.SinkKey, ts.clk.Now(), test.ByUser(), "reason").Do(ts.ctx).Err())
 
 				// Wait for the router sync
 				assert.EventuallyWithT(t, func(c *assert.CollectT) {
-					f.logger.AssertJSONMessages(c, `
-{"level":"info","message":"closed sink pipeline: sink disabled","branch.id":"222","project.id":"123","sink.id":"my-sink-1","source.id":"my-source-1","component":"sink.router"}
+					ts.logger.AssertJSONMessages(c, `
+{"level":"info","message":"closed sink pipeline:%s","branch.id":"222","project.id":"123","sink.id":"my-sink-1","source.id":"my-source-1","component":"sink.router"}
 `)
 				}, 10*time.Second, 100*time.Millisecond)
 			},
 			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source-1/" + f.validSecret,
+			Path:               "/stream/123/my-source-1/" + ts.validSecret,
 			Query:              "verbose=true",
 			Body:               strings.NewReader("foo"),
 			ExpectedStatusCode: http.StatusOK,
@@ -575,7 +576,7 @@ func testCases(t *testing.T, f *fixtures) []TestCase {
 	}
 }
 
-func sendTestRequests(t *testing.T, f *fixtures) {
+func sendTestRequests(t *testing.T, f *testState) {
 	t.Helper()
 
 	logger := f.mock.DebugLogger()

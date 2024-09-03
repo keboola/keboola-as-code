@@ -13,9 +13,9 @@ func (p *Plugins) RegisterSinkPipelineOpener(fn pipeline.Opener) {
 	p.sinkPipelineOpeners = append(p.sinkPipelineOpeners, fn)
 }
 
-func (p *Plugins) OpenSinkPipeline(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType) (pipeline.Pipeline, error) {
+func (p *Plugins) OpenSinkPipeline(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType, onClose func(ctx context.Context, cause string)) (pipeline.Pipeline, error) {
 	for _, fn := range p.sinkPipelineOpeners {
-		p, err := fn(ctx, sinkKey, sinkType)
+		p, err := fn(ctx, sinkKey, sinkType, onClose)
 		if errors.As(err, &pipeline.NoOpenerFoundError{}) {
 			continue
 		}

@@ -52,7 +52,7 @@ func Listen(logger log.Logger, nodeID string, config network.Config) (*Server, e
 	}
 
 	s := &Server{
-		logger:    logger.WithComponent("server"),
+		logger:    logger.WithComponent("transport"),
 		config:    config,
 		transport: transport,
 		accept:    make(chan *ServerStream),
@@ -105,7 +105,7 @@ func (s *Server) Close() error {
 
 	ctx := context.Background()
 
-	s.logger.Info(ctx, "closing disk writer server")
+	s.logger.Info(ctx, "closing disk writer transport")
 
 	// Waiting for streams
 	{
@@ -179,7 +179,7 @@ func (s *Server) Close() error {
 	s.logger.Info(ctx, "waiting for goroutines")
 	s.listenWg.Wait()
 
-	s.logger.Info(ctx, "closed disk writer server")
+	s.logger.Info(ctx, "closed disk writer transport")
 	return nil
 }
 

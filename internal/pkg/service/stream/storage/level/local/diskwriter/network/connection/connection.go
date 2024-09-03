@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/hashicorp/yamux"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -24,11 +25,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Manager manages connections from the current source node to all disk writer nodes.
 type Manager struct {
 	logger log.Logger
+	nodeID string
 
 	// client opens connections to disk writer nodes.
 	client *transport.Client
@@ -57,6 +60,7 @@ type dependencies interface {
 func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, error) {
 	m := &Manager{
 		logger: d.Logger().WithComponent("storage.router.connections"),
+		nodeID: nodeID,
 	}
 
 	// Create transport client
@@ -116,6 +120,10 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 	return m, nil
 }
 
+func (m *Manager) NodeID() string {
+	return m.nodeID
+}
+
 func (m *Manager) ConnectionToVolume(volumeID volume.ID) (*transport.ClientConnection, bool) {
 	vol, found := m.volumes.Get(volumeID)
 	if !found {
@@ -173,7 +181,7 @@ func (m *Manager) updateConnections(ctx context.Context) {
 	}
 	for _, node := range toOpen {
 		// Start dial loop, errors are logged
-		if _, err := m.client.OpenConnection(ctx, node.ID, node.Address.String()); err != nil {
+		if _, err := m.client.OpenConnection(ctx, node.ID, node.Address.String()); err != nil && !errors.Is(err, yamux.ErrSessionShutdown) {
 			m.logger.Errorf(ctx, "cannot open connection to %q - %q: %s", node.ID, node.Address, err)
 		}
 	}

@@ -7,19 +7,25 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type pipelineRef struct {
-	router   *Router
 	sinkKey  key.SinkKey
 	sinkType definition.SinkType
+	logger   log.Logger
+	wg       *sync.WaitGroup
+	plugins  *plugin.Plugins
+	onClose  func(ctx context.Context, cause string)
+
 	// lock protects pipeline field
 	lock sync.RWMutex
 	// pipeline to write data to the sink,
@@ -31,93 +37,93 @@ type pipelineRef struct {
 	openRetryAfter time.Time
 }
 
-func (p *pipelineRef) writeRecord(c recordctx.Context) (pipeline.RecordStatus, error) {
-	if p.router.isClosed() {
-		return pipeline.RecordError, ShutdownError{}
+func newPipelineRef(sink *sinkData, logger log.Logger, wg *sync.WaitGroup, plugins *plugin.Plugins, onClose func(ctx context.Context, cause string)) *pipelineRef {
+	return &pipelineRef{
+		logger:   logger.With(sink.sinkKey.Telemetry()...),
+		sinkKey:  sink.sinkKey,
+		sinkType: sink.sinkType,
+		wg:       wg,
+		plugins:  plugins,
+		onClose:  onClose,
 	}
-	if err := p.ensureOpened(c.Ctx(), c.Timestamp()); err != nil {
-		return pipeline.RecordError, err
-	}
-	return p.pipeline.WriteRecord(c)
 }
 
-func (p *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) error {
+func (r *pipelineRef) writeRecord(c recordctx.Context) (pipeline.RecordStatus, error) {
+	if err := r.ensureOpened(c.Ctx(), c.Timestamp()); err != nil {
+		return pipeline.RecordError, err
+	}
+	return r.pipeline.WriteRecord(c)
+}
+
+func (r *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) error {
 	// Fast check
-	p.lock.RLock()
-	opened := p.pipeline != nil
-	p.lock.RUnlock()
+	r.lock.RLock()
+	opened := r.pipeline != nil
+	r.lock.RUnlock()
 	if opened {
 		return nil
 	}
 
 	// Try open, if needed, and there is no retry backoff delay active
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
 	// Add telemetry attributes
-	ctx = ctxattr.ContextWith(ctx, p.sinkKey.Telemetry()...)
+	ctx = ctxattr.ContextWith(ctx, r.sinkKey.Telemetry()...)
 
-	if p.pipeline == nil && (p.openError == nil || timestamp.After(p.openRetryAfter)) {
+	if r.pipeline == nil && (r.openError == nil || timestamp.After(r.openRetryAfter)) {
 		var err error
 
 		// Use plugin system to create the pipeline
-		p.router.logger.Infof(ctx, `opening sink pipeline`)
-		p.pipeline, err = p.router.plugins.OpenSinkPipeline(ctx, p.sinkKey, p.sinkType)
+		r.logger.Infof(ctx, `opening sink pipeline`)
+		r.pipeline, err = r.plugins.OpenSinkPipeline(ctx, r.sinkKey, r.sinkType, r.unregister)
 
 		// Use retry backoff, don't try to open pipeline on each record
 		if err != nil {
-			if p.openBackoff == nil {
-				p.openBackoff = newOpenPipelineBackoff()
+			if r.openBackoff == nil {
+				r.openBackoff = newOpenPipelineBackoff()
 			}
-			delay := p.openBackoff.NextBackOff()
-			p.openRetryAfter = timestamp.Add(delay)
-			p.openError = errors.Errorf("cannot open sink pipeline: %w, next attempt after %s", err, utctime.From(p.openRetryAfter).String())
+			delay := r.openBackoff.NextBackOff()
+			r.openRetryAfter = timestamp.Add(delay)
+			r.openError = errors.Errorf("cannot open sink pipeline: %w, next attempt after %s", err, utctime.From(r.openRetryAfter).String())
 		} else {
-			p.openError = nil
-			p.openBackoff = nil
-			p.openRetryAfter = time.Time{}
-			p.router.logger.Infof(ctx, `opened sink pipeline`)
+			r.openError = nil
+			r.openBackoff = nil
+			r.openRetryAfter = time.Time{}
+			r.logger.Infof(ctx, `opened sink pipeline`)
 		}
 	}
 
-	if p.openError != nil {
-		return p.openError
+	if r.openError != nil {
+		return r.openError
 	}
 
 	return nil
 }
 
-func (p *pipelineRef) close(ctx context.Context, reason string) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
+func (r *pipelineRef) unregister(ctx context.Context, cause string) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
-	// Add telemetry attributes
-	ctx = ctxattr.ContextWith(ctx, p.sinkKey.Telemetry()...)
-
-	// Detach pipeline from the router,
-	// so new pipeline can be created for next record, if any.
-	p.router.pipelinesLock.Lock()
-	delete(p.router.pipelines, p.sinkKey)
-	p.router.pipelinesLock.Unlock()
-
-	// Stop if the pipeline was not successfully opened
-	if p.pipeline == nil {
+	if r.pipeline == nil {
 		return
 	}
 
-	// Close pipeline in background, but wait for it on shutdown
-	p.router.logger.Infof(ctx, `closing sink pipeline: %s`, reason)
-	p.router.wg.Add(1)
-	go func() {
-		defer p.router.wg.Done()
-		if err := p.pipeline.Close(ctx); err != nil {
-			err := errors.PrefixErrorf(err, "cannot close sink pipeline")
-			p.router.logger.Error(ctx, err.Error())
-			return
-		}
+	r.logger.Infof(ctx, `closed sink pipeline: %s`, cause)
 
-		p.router.logger.Infof(ctx, `closed sink pipeline: %s`, reason)
-	}()
+	r.onClose(ctx, cause)
+
+	r.pipeline = nil
+}
+
+func (r *pipelineRef) close(ctx context.Context, cause string) {
+	r.lock.Lock()
+	p := r.pipeline
+	r.lock.Unlock()
+	if p != nil {
+		r.logger.Debugf(ctx, "closing sink pipeline: %s", cause)
+		p.Close(ctx, cause)
+	}
 }
 
 func newOpenPipelineBackoff() *backoff.ExponentialBackOff {

@@ -233,11 +233,11 @@ func shutdown(t *testing.T, srv *transport.Server, client *transport.Client, srv
 	srvLogger.AssertJSONMessages(t, `
 {"level":"info","message":"disk writer listening on \"%s\""}
 {"level":"info","message":"accepted connection from \"%s\" to \"%s\""}
-{"level":"info","message":"closing disk writer server"}
+{"level":"info","message":"closing disk writer transport"}
 {"level":"info","message":"waiting 30s for %d streams"}
 {"level":"info","message":"waiting for streams done"}
 {"level":"info","message":"closing %d streams"}
 {"level":"info","message":"closing %d sessions"}
-{"level":"info","message":"closed disk writer server"}
+{"level":"info","message":"closed disk writer transport"}
 `)
 }
