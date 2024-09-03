@@ -21,7 +21,7 @@ import (
 type Server struct {
 	logger    log.Logger
 	config    network.Config
-	transport Transport
+	transport Protocol
 	listener  net.Listener
 
 	accept    chan *ServerStream
@@ -39,17 +39,12 @@ type Server struct {
 type StreamHandler func(ctx context.Context, stream *yamux.Stream)
 
 // Listen function is called by the Writer node, to listen for slices data.
-func Listen(logger log.Logger, nodeID string, config network.Config) (*Server, error) {
+func Listen(logger log.Logger, nodeID string, config network.Config, transport Protocol) (*Server, error) {
 	ctx := ctxattr.ContextWith(
 		context.Background(),
 		attribute.String("nodeId", nodeID),
 		attribute.String("listenAddress", config.Listen),
 	)
-
-	transport, err := newTransport(config)
-	if err != nil {
-		return nil, err
-	}
 
 	s := &Server{
 		logger:    logger.WithComponent("transport"),

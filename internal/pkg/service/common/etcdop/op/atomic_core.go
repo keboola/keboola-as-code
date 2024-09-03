@@ -120,7 +120,7 @@ func (v *AtomicOpCore) setProcessorFactory(fn atomicOpCoreProcessorFactory) {
 
 func (v *AtomicOpCore) locksIfs() (cmps []etcd.Cmp, err error) {
 	for _, lock := range v.locks {
-		if key := lock.Key(); key == "" || key == "\x00" {
+		if !lock.IsLocked() {
 			return nil, NotLockedError{}
 		}
 		cmps = append(cmps, lock.IsOwner())

@@ -97,3 +97,8 @@ if ! command -v protoc-gen-go-grpc &> /dev/null
 then
   go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 fi
+
+if ! command -v jl &> /dev/null
+then
+  go install github.com/mightyguava/jl/cmd/jl@latest
+fi

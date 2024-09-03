@@ -21,34 +21,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func TestTransportSmallData_TCP(t *testing.T) {
-	t.Parallel()
-	testTransportSmallData(t, network.TransportProtocolTCP)
-}
-
-func TestTransport_SmallData_KCP(t *testing.T) {
-	t.Parallel()
-	testTransportSmallData(t, network.TransportProtocolKCP)
-}
-
-func TestTransportBiggerData_TCP(t *testing.T) {
-	t.Parallel()
-	testTransportBiggerData(t, network.TransportProtocolTCP)
-}
-
-func TestTransportBiggerData_KCP(t *testing.T) {
-	t.Parallel()
-	testTransportBiggerData(t, network.TransportProtocolKCP)
-}
-
-func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
+func testTransportSmallData(t *testing.T, transportFactory func(cfg network.Config) transport.Protocol) {
 	t.Helper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	cfg := network.NewConfig()
-	cfg.Transport = protocol
 	cfg.Listen = "localhost:0" // use a random port
 	cfg.StreamOpenTimeout = 15 * time.Second
 	cfg.StreamCloseTimeout = 15 * time.Second
@@ -56,10 +35,13 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	cfg.ShutdownTimeout = 30 * time.Second
 	cfg.KeepAliveInterval = 30 * time.Second // to not interfere with the test
 
+	tr := transportFactory(cfg)
+	cfg.Transport = tr.Type()
+
 	// Start server
 	srvLogger := log.NewDebugLogger()
 	srvLogger.ConnectTo(os.Stdout)
-	srv, err := transport.Listen(srvLogger, "server-node", cfg)
+	srv, err := transport.Listen(srvLogger, "server-node", cfg, tr)
 	require.NoError(t, err)
 	addr := srv.Addr().String()
 
@@ -94,8 +76,7 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	// Setup client
 	clientLogger := log.NewDebugLogger()
 	clientLogger.ConnectTo(os.Stdout)
-	client, err := transport.NewClient(clientLogger, cfg, "client-node")
-	require.NoError(t, err)
+	client := transport.NewClient(clientLogger, cfg, "client-node", tr)
 	conn, err := client.OpenConnectionOrErr(ctx, "srv", addr)
 	require.NoError(t, err)
 
@@ -129,14 +110,13 @@ func testTransportSmallData(t *testing.T, protocol network.TransportProtocol) {
 	shutdown(t, srv, client, srvLogger, clientLogger)
 }
 
-func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
+func testTransportBiggerData(t *testing.T, transportFactory func(cfg network.Config) transport.Protocol) {
 	t.Helper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	cfg := network.NewConfig()
-	cfg.Transport = protocol
 	cfg.Listen = "localhost:0" // use a random port
 	cfg.StreamOpenTimeout = 15 * time.Second
 	cfg.StreamCloseTimeout = 15 * time.Second
@@ -144,12 +124,15 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	cfg.ShutdownTimeout = 30 * time.Second
 	cfg.KeepAliveInterval = 30 * time.Second // to not interfere with the test
 
+	tr := transportFactory(cfg)
+	cfg.Transport = tr.Type()
+
 	dataSize := 2 * datasize.MB
 	data := []byte(strings.Repeat(".", int(dataSize.Bytes())))
 
 	// Start Setup
 	srvLogger := log.NewDebugLogger()
-	srv, err := transport.Listen(srvLogger, "server-node", cfg)
+	srv, err := transport.Listen(srvLogger, "server-node", cfg, tr)
 	require.NoError(t, err)
 	addr := srv.Addr().String()
 
@@ -180,8 +163,7 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 
 	// Setup client
 	clientLogger := log.NewDebugLogger()
-	client, err := transport.NewClient(clientLogger, cfg, "client-node")
-	require.NoError(t, err)
+	client := transport.NewClient(clientLogger, cfg, "client-node", tr)
 	conn, err := client.OpenConnectionOrErr(ctx, "srv", addr)
 	require.NoError(t, err)
 
@@ -192,7 +174,7 @@ func testTransportBiggerData(t *testing.T, protocol network.TransportProtocol) {
 	_, err = io.Copy(s, bytes.NewReader(data))
 	assert.NoError(t, err)
 	require.NoError(t, s.Close())
-	t.Logf(`%s: write duration: %s`, protocol, time.Since(startTime).String())
+	t.Logf(`%s: write duration: %s`, tr.Type(), time.Since(startTime).String())
 
 	// Wait for server handler
 	select {

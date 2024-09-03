@@ -45,25 +45,36 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string
 
 	// https://grpc.io/docs/guides/retry/
 	// https://grpc.io/docs/guides/service-config/
-	serviceConfig := `{
-		"methodConfig": [
-          {
-		    "name": [{}],
-		    "waitForReady": true,
-            "timeout": "10s",
-		    "retryPolicy": {
-              "MaxAttempts": 5,
-			  "InitialBackoff": ".01s",
-			  "MaxBackoff": ".05s",
-			  "BackoffMultiplier": 2.0,
-			  "RetryableStatusCodes": [ "UNAVAILABLE" ]
-		    }
-          },
-          {
-		    "name": [{"service":"pb.NetworkFile","method":"WaitForServerTermination"}],
-            "timeout": null
-          }
-        ]}`
+	serviceConfig := `
+{
+	"methodConfig": [
+		{
+			"name": [
+				{}
+			],
+			"waitForReady": true,
+			"timeout": "10s",
+			"retryPolicy": {
+				"MaxAttempts": 5,
+				"InitialBackoff": ".01s",
+				"MaxBackoff": ".05s",
+				"BackoffMultiplier": 2.0,
+				"RetryableStatusCodes": [
+					"UNAVAILABLE"
+				]
+			}
+		},
+		{
+			"name": [
+				{
+					"service": "pb.NetworkFile",
+					"method": "WaitForServerTermination"
+				}
+			],
+			"timeout": null
+		}
+	]
+}`
 
 	// Create gRPC client
 	clientConn, err := grpc.NewClient(

@@ -63,12 +63,14 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 		nodeID: nodeID,
 	}
 
-	// Create transport client
-	var err error
-	m.client, err = transport.NewClient(m.logger.WithComponent("client"), cfg, nodeID)
+	// Create transport
+	tr, err := transport.NewProtocol(cfg)
 	if err != nil {
 		return nil, err
 	}
+
+	// Create transport client
+	m.client = transport.NewClient(m.logger.WithComponent("client"), cfg, nodeID, tr)
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
