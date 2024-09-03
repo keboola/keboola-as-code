@@ -11,6 +11,10 @@ services:
     volumes:
       - ./:/code:z
       - cache:/tmp/cache
+    ulimits:
+      nofile:
+        soft: 50000
+        hard: 50000
     environment:
       # For all
       - TEST_KBC_PROJECTS_FILE=/code/projects.json
@@ -102,6 +106,10 @@ services:
       - ./scripts:/scripts
     image: grafana/k6
     network_mode: host
+    ulimits:
+      nofile:
+        soft: 50000
+        hard: 50000
     environment:
       - API_USE_HTTPS
       - API_HOST
