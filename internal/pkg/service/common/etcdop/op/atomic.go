@@ -49,6 +49,7 @@ type AtomicOpInterface interface {
 // Mutex abstracts concurrency.Mutex and etcdop.Mutex types.
 type Mutex interface {
 	Key() string
+	IsLocked() bool
 	IsOwner() etcd.Cmp
 }
 

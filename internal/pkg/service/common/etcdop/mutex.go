@@ -69,9 +69,17 @@ func newMutexStore(session *Session) *mutexStore {
 // Key method match the concurrency.Mutex.Key method.
 func (l *Mutex) Key() string {
 	if l.locked == nil {
-		return ""
+		return l.name
 	}
 	return l.locked.dbMutex.Key()
+}
+
+func (l *Mutex) IsLocked() bool {
+	if l.locked == nil {
+		return false
+	}
+	k := l.locked.dbMutex.Key()
+	return k != "" && k != "\x00"
 }
 
 // Header method match the concurrency.Mutex.Header method.
