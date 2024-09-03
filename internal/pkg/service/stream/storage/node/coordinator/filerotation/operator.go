@@ -3,6 +3,7 @@ package filerotation
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"sync"
 	"time"
 
@@ -22,7 +23,6 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/sinklock"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -305,8 +305,8 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	// Rotate file
 	o.logger.Infof(ctx, "rotating file, import conditions met: %s", cause)
 
-	// Lock all file operations in the sink
-	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
+	// Lock all file operations
+	lock, unlock := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
 	if unlock == nil {
 		return
 	}
@@ -358,8 +358,8 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	fileEmpty := !o.fileNotEmpty[file.FileKey]
 	o.lock.RUnlock()
 
-	// Lock all file operations in the sink
-	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
+	// Lock all file operations
+	lock, unlock := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
 	if unlock == nil {
 		return
 	}

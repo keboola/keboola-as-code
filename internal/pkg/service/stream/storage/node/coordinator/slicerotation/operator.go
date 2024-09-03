@@ -3,6 +3,7 @@ package slicerotation
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"sync"
 	"time"
 
@@ -22,7 +23,6 @@ import (
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/sinklock"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -265,8 +265,8 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) error {
-	// Lock all file operations in the sink
-	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, slice.SliceKey.SinkKey)
+	// Lock all file operations
+	lock, unlock := clusterlock.LockFile(ctx, o.locks, o.logger, slice.SliceKey.FileKey)
 	if unlock == nil {
 		return errors.New("unable to lock file")
 	}
