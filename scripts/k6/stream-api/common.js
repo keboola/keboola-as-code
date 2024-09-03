@@ -8,7 +8,7 @@ const TOKEN = __ENV.API_TOKEN;
 const HOST = __ENV.API_HOST || "http://localhost:8001";
 const ITERATIONS = __ENV.K6_ITERATIONS || 100000;
 const PARALLELISM = __ENV.K6_PARALLELISM || 1000;
-const TIMEOUT = __ENV.K6_TIMEOUT || "10m";
+const TIMEOUT = __ENV.K6_TIMEOUT || "20m";
 // MAX_VIRTUAL_USERS is maximum number of connections.
 const MAX_VIRTUAL_USERS = __ENV.K6_MAX_VIRTUAL_USERS || 100;
 
@@ -171,7 +171,7 @@ export function teardownSource(sourceId) {
   console.info("waiting 50s before source deletion")
   sleep(50)
   const res = del(`v1/branches/default/sources/${sourceId}`);
-  if (res.status !== 200) {
+  if (res.status !== 202) {
     console.error(res);
     throw new Error("failed to delete source");
   }
