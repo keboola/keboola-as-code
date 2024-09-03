@@ -124,7 +124,7 @@ API development uses [Goa code generator](https://goa.design/).
 
 To run the API locally:
 1. Start `bash` in the dev container, run `docker compose run --rm -u "$UID:$GID" --service-ports dev bash`.
-2. Set env var with Keboola stack: `export TEMPLATES_STORAGE_API_HOST=connection.keboola.com` (or `STREAM_API_STORAGE_API_HOST`)
+2. Set env var with Keboola stack: `export TEMPLATES_STORAGE_API_HOST=connection.keboola.com` (or `STREAM_STORAGE_API_HOST`)
 3. In the container run `make run-templates-api` (or `make run-stream-service`)
  - The API is exposed to `http://localhost:8000/` (or `http://localhost:8001/`
  - When the code changes, the API recompiles and restarts.

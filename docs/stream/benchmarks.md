@@ -7,7 +7,7 @@ export STREAM_COMPONENTS="api http-source storage-writer storage-reader storage-
 export STREAM_ETCD_NAMESPACE=stream-bench-001
 export STREAM_NODE_ID=my-node
 export STREAM_HOSTNAME=localhost
-export STREAM_API_STORAGE_API_HOST=connection.keboola.com
+export STREAM_STORAGE_API_HOST=connection.keboola.com
 export STREAM_API_LISTEN=0.0.0.0:10000
 export STREAM_API_PUBLIC_URL=http://localhost:10000
 export STREAM_SOURCE_HTTP_LISTEN=0.0.0.0:10001
@@ -25,7 +25,7 @@ docker compose run \
     -e STREAM_ETCD_NAMESPACE \
     -e STREAM_NODE_ID \
     -e STREAM_HOSTNAME \
-    -e STREAM_API_STORAGE_API_HOST \
+    -e STREAM_STORAGE_API_HOST \
     -e STREAM_API_LISTEN \
     -e STREAM_API_PUBLIC_URL \
     -e STREAM_SOURCE_HTTP_LISTEN \
