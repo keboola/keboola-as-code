@@ -3,7 +3,6 @@ package slicerotation
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"sync"
 	"time"
 
@@ -23,6 +22,7 @@ import (
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -37,7 +37,9 @@ type operator struct {
 	statistics   *statsCache.L1
 	distribution *distribution.GroupNode
 	locks        *distlock.Provider
-	closeSyncer  *closesync.CoordinatorNode
+
+	// closeSyncer signals when no source node is using the slice.
+	closeSyncer *closesync.CoordinatorNode
 
 	slices *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
 }
@@ -219,6 +221,7 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
+	// Skip if RetryAfter < now
 	if !slice.Retry.Allowed(o.clock.Now()) {
 		return
 	}
@@ -237,7 +240,7 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceRotationTimeout.Duration())
 	defer cancel()
 
-	// Get slice statistics
+	// Get slice statistics from cache
 	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
@@ -252,28 +255,19 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
-	// Rotate slice
+	// Log cause
 	o.logger.Infof(ctx, "rotating slice, upload conditions met: %s", cause)
-	err = o.rotateSliceWithState(ctx, slice)
-	if err != nil {
-		return
-	}
 
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	slice.Processed = true
-}
-
-func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) error {
 	// Lock all file operations
-	lock, unlock := clusterlock.LockFile(ctx, o.locks, o.logger, slice.SliceKey.FileKey)
-	if unlock == nil {
-		return errors.New("unable to lock file")
+	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, slice.SliceKey.FileKey)
+	if err != nil {
+		o.logger.Errorf(ctx, `slice rotation lock error: %s`, err)
+		return
 	}
 	defer unlock()
 
 	// Rotate slice
-	err := o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
+	err = o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
 	// Handle error
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot rotate slice: %s", err)
@@ -281,35 +275,27 @@ func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) e
 		// Increment retry delay
 		rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
 		if rErr != nil {
-			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
-			return rErr
+			o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", err)
+			return
 		}
-	} else {
-		o.logger.Info(ctx, "rotated slice")
-	}
-
-	return nil
-}
-
-func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
-	// Rotate slice
-	o.logger.Infof(ctx, "closing slice")
-
-	// Wait until no source node is using the slice
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
-	defer cancel()
-
-	err := o.switchSliceToUploading(ctx, slice)
-	if err != nil {
-		return
 	}
 
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	slice.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "rotated slice")
+	}
 }
 
-func (o *operator) switchSliceToUploading(ctx context.Context, slice *sliceData) error {
+func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
+	defer cancel()
+
+	o.logger.Infof(ctx, "closing slice")
+
+	// Wait until no source node is using the slice
 	if err := o.closeSyncer.WaitForRevision(ctx, slice.ModRevision); err != nil {
 		o.logger.Errorf(ctx, `error when waiting for slice closing: %s`, err.Error())
 		// continue! we waited long enough, the wait mechanism is probably broken
@@ -319,26 +305,34 @@ func (o *operator) switchSliceToUploading(ctx context.Context, slice *sliceData)
 	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
-		return nil
+		return
 	}
 
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
+	// Switch slice to the uploading state
 	err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), stats.Local.RecordsCount == 0).Do(dbCtx).Err()
 	if err != nil {
-		o.logger.Errorf(dbCtx, "cannot switch slice to the uploading state: %s", err.Error())
+		err = errors.PrefixError(err, "cannot switch slice to the uploading state")
+	}
 
-		// Increment retry delay
+	// If there is an error, increment retry delay
+	if err != nil {
+		o.logger.Error(dbCtx, err.Error())
 		rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
-			return rErr
+			return
 		}
-	} else {
-		o.logger.Info(ctx, "closed slice")
 	}
 
-	return nil
+	// Prevents other processing, if the entity has been modified.
+	// It takes a while to watch stream send the updated state back.
+	slice.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "closed slice")
+	}
 }

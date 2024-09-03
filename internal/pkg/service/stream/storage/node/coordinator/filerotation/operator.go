@@ -3,7 +3,6 @@ package filerotation
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"sync"
 	"time"
 
@@ -23,6 +22,7 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -270,6 +270,7 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 		return
 	}
 
+	// Skip if RetryAfter < now
 	if !file.Retry.Allowed(o.clock.Now()) {
 		return
 	}
@@ -302,12 +303,13 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		return
 	}
 
-	// Rotate file
+	// Log cause
 	o.logger.Infof(ctx, "rotating file, import conditions met: %s", cause)
 
 	// Lock all file operations
-	lock, unlock := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
-	if unlock == nil {
+	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
+	if err != nil {
+		o.logger.Errorf(ctx, `file rotation lock error: %s`, err)
 		return
 	}
 	defer unlock()
@@ -324,9 +326,9 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		o.logger.Errorf(ctx, "cannot rotate file: %s", err)
 
 		// Increment retry delay
-		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file rotation retry: %s", err)
+		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+		if rErr != nil {
+			o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", rErr)
 			return
 		}
 	}
@@ -341,15 +343,17 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
-	o.logger.Info(ctx, "closing file")
-
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
-	// Wait until all slices are uploaded
+	o.logger.Info(ctx, "closing file")
+
+	// Wait until all file slices are uploaded
 	err := o.waitForSlicesUpload(ctx, file.FileKey)
 	if err != nil {
 		err = errors.PrefixError(err, "error when waiting for file slices upload")
+		o.logger.Error(ctx, err.Error())
+		return
 	}
 
 	// Find if file is empty
@@ -358,8 +362,9 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	o.lock.RUnlock()
 
 	// Lock all file operations
-	lock, unlock := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
-	if unlock == nil {
+	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
+	if err != nil {
+		o.logger.Errorf(ctx, `file close error: %s`, err)
 		return
 	}
 	defer unlock()
@@ -368,19 +373,17 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
-	// If there is no error, switch file to the importing state
-	if err == nil {
-		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), fileEmpty).RequireLock(lock).Do(dbCtx).Err()
-		if err != nil {
-			err = errors.PrefixError(err, "cannot switch file to the importing state")
-		}
+	// Switch file to the importing state
+	err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), fileEmpty).RequireLock(lock).Do(dbCtx).Err()
+	if err != nil {
+		err = errors.PrefixError(err, "cannot switch file to the importing state")
 	}
 
 	// If there is an error, increment retry delay
 	if err != nil {
-		o.logger.Error(ctx, err.Error())
-		err = o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if err != nil {
+		o.logger.Error(dbCtx, err.Error())
+		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment file close retry", err)
 			return
 		}
