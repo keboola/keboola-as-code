@@ -253,7 +253,7 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	}
 
 	// Rotate slice
-	o.logger.Infof(ctx, "rotating slice for upload: %s", cause)
+	o.logger.Infof(ctx, "rotating slice, upload conditions met: %s", cause)
 	err = o.rotateSliceWithState(ctx, slice)
 	if err != nil {
 		return

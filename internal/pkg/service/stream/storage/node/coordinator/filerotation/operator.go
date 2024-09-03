@@ -312,7 +312,6 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	}
 	defer unlock()
 
-	o.logger.Infof(ctx, "rotating file for import: %s", cause)
 	// Rollback when error occurs in ETCD/StorageAPI
 	rb := rollback.New(o.logger)
 	ctx = rollback.ContextWith(ctx, rb)
