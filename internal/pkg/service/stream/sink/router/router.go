@@ -18,6 +18,7 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -31,11 +32,12 @@ type Router struct {
 	definitions *definitionRepo.Repository
 	collection  *collection
 
-	pipelinesLock sync.Mutex
-	pipelines     map[key.SinkKey]*pipelineRef
+	lock      sync.Mutex
+	pipelines map[key.SinkKey]*pipelineRef
 
 	// closed channel block new writer during shutdown
 	closed chan struct{}
+
 	// wg waits for all writes/goroutines
 	wg sync.WaitGroup
 }
@@ -108,7 +110,7 @@ func New(d dependencies) (*Router, error) {
 
 				// Check that all opened pipeline match an active sink
 				var deleted, disabled []*pipelineRef
-				r.pipelinesLock.Lock()
+				r.lock.Lock()
 				for _, p := range r.pipelines {
 					if sink, _ := r.collection.sink(p.sinkKey); sink == nil {
 						deleted = append(deleted, p)
@@ -116,7 +118,7 @@ func New(d dependencies) (*Router, error) {
 						disabled = append(disabled, p)
 					}
 				}
-				r.pipelinesLock.Unlock()
+				r.lock.Unlock()
 				for _, p := range deleted {
 					p.close(ctx, "sink deleted")
 				}
@@ -235,7 +237,7 @@ func (r *Router) SourcesCount() int {
 }
 
 func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult {
-	status, err := r.pipelineRef(sink).writeRecord(c)
+	status, err := r.writeRecord(sink, c)
 	result := &SinkResult{
 		SinkID:     sink.sinkKey.SinkID,
 		StatusCode: resultStatusCode(status, err),
@@ -250,14 +252,31 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 	return result
 }
 
+func (r *Router) writeRecord(sink *sinkData, c recordctx.Context) (pipeline.RecordStatus, error) {
+	if r.isClosed() {
+		return pipeline.RecordError, ShutdownError{}
+	}
+	return r.pipelineRef(sink).writeRecord(c)
+}
+
 // pipelineRef gets or creates sink pipeline.
 func (r *Router) pipelineRef(sink *sinkData) *pipelineRef {
 	// Get or create pipeline reference, with its own lock
-	r.pipelinesLock.Lock()
-	defer r.pipelinesLock.Unlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	p := r.pipelines[sink.sinkKey]
 	if p == nil {
-		p = &pipelineRef{router: r, sinkKey: sink.sinkKey, sinkType: sink.sinkType}
+		// Unregister the pipeline on close
+		unregister := func(ctx context.Context, _ string) {
+			r.lock.Lock()
+			defer r.lock.Unlock()
+			delete(r.pipelines, sink.sinkKey)
+		}
+
+		// Create pipeline reference, the pipeline is opened on the first writer, the lock is locked for a short time
+		p = newPipelineRef(sink, r.logger, &r.wg, r.plugins, unregister)
+
+		// Register the pipeline
 		r.pipelines[sink.sinkKey] = p
 	}
 	return p
@@ -265,18 +284,25 @@ func (r *Router) pipelineRef(sink *sinkData) *pipelineRef {
 
 // pipelineRefOrNil gets sink pipeline reference if exists.
 func (r *Router) pipelineRefOrNil(sinkKey key.SinkKey) *pipelineRef {
-	r.pipelinesLock.Lock()
-	defer r.pipelinesLock.Unlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	return r.pipelines[sinkKey]
 }
 
 func (r *Router) closeAllPipelines(ctx context.Context, reason string) {
-	r.pipelinesLock.Lock()
+	r.lock.Lock()
 	pipelines := maps.Values(r.pipelines)
-	r.pipelinesLock.Unlock()
+	r.lock.Unlock()
+
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 
 	for _, p := range pipelines {
-		p.close(ctx, reason) // non blocking
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			p.close(ctx, reason)
+		}()
 	}
 }
 
