@@ -121,6 +121,12 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my
 >>>>>
 
 <<<<<
+storage/stats/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id/%s/my-volume/%s/_open
+-----
+%A
+>>>>>
+
+<<<<<
 storage/file/level/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-custom-id/%s
 -----
 {
