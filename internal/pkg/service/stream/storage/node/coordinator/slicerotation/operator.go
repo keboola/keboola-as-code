@@ -22,6 +22,7 @@ import (
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	sliceRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/slice"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -274,13 +275,18 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	err = o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
 	// Handle error
 	if err != nil {
-		o.logger.Errorf(ctx, "cannot rotate slice: %s", err)
+		var stateErr sliceRepo.UnexpectedFileSliceStatesError
+		if errors.As(err, &stateErr) && stateErr.FileState != model.FileWriting {
+			o.logger.Info(ctx, "skipped slice rotation, file is already closed")
+		} else {
+			o.logger.Errorf(ctx, "cannot rotate slice: %s", err)
 
-		// Increment retry delay
-		rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if rErr != nil {
-			o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", err)
-			return
+			// Increment retry delay
+			rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+			if rErr != nil {
+				o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", err)
+				return
+			}
 		}
 	}
 
