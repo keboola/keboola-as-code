@@ -2,15 +2,24 @@ package slice
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type switchStateOption func(file *model.Slice)
+
+type UnexpectedFileSliceStatesError struct {
+	FileState  model.FileState
+	SliceState model.SliceState
+}
+
+func (e UnexpectedFileSliceStatesError) Error() string {
+	return fmt.Sprintf(`unexpected combination: file state "%s" and slice state "%s"`, e.FileState, e.SliceState)
+}
 
 func withIsEmpty(isEmpty bool) switchStateOption {
 	return func(file *model.Slice) {
@@ -163,7 +172,5 @@ func validateFileAndSliceState(fileState model.FileState, sliceState model.Slice
 		panic(errors.Errorf(`unexpected file state "%s`, fileState))
 	}
 
-	return serviceError.NewBadRequestError(
-		errors.Errorf(`unexpected combination: file state "%s" and slice state "%s"`, fileState, sliceState),
-	)
+	return UnexpectedFileSliceStatesError{FileState: fileState, SliceState: sliceState}
 }
