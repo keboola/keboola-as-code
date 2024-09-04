@@ -6,21 +6,21 @@ import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 const TOKEN = __ENV.API_TOKEN;
 const HOST = __ENV.API_HOST || "http://localhost:8001";
-const ITERATIONS = __ENV.K6_ITERATIONS || 100000;
-const PARALLELISM = __ENV.K6_PARALLELISM || 1000;
-const TIMEOUT = __ENV.K6_TIMEOUT || "20m";
-// MAX_VIRTUAL_USERS is maximum number of connections.
-const MAX_VIRTUAL_USERS = __ENV.K6_MAX_VIRTUAL_USERS || 100;
 
-// PARALLEL_REQS_PER_USER is number of parallel requests per VU/connection.
+const SCENARIO = __ENV.K6_SCENARIO|| "constant";
+
+// Common for all scenarios
 const PARALLEL_REQS_PER_USER = __ENV.K6_PARALLEL_REQS_PER_USER || 10;
 
-// RAMPING_DURATION defines the duration of initial increasing and final decreasing of the rate.
+// Constant VUs / iterations count scenario
+const CONST_VIRTUAL_USERS = __ENV.K6_CONST_VIRTUAL_USERS || 1000;
+const ITERATIONS = __ENV.K6_ITERATIONS || 1000000;
+const TIMEOUT = __ENV.K6_TIMEOUT || "20m";
+
+// Ramping scenario
+const MAX_VIRTUAL_USERS = __ENV.K6_MAX_VIRTUAL_USERS || 1000;
 const RAMPING_DURATION = __ENV.K6_RAMPING_DURATION || "2m";
-
-// STABLE_RATE_DURATION defines the duration of the maximum rate.
 const STABLE_RATE_DURATION = __ENV.K6_STABLE_RATE_DURATION || "2m";
-
 
 const SYNC_MODE = __ENV.STREAM_SYNC_MODE || "disabled"; // disabled / cache / disk
 const SYNC_WAIT = __ENV.STREAM_SYNC_WAIT || "1"; // 1 = enabled, 0 = disabled
@@ -32,28 +32,31 @@ const commonHeaders = {
 
 const errors_metrics = new Counter("failed_imports");
 
+
+const scenarios = {
+  constant: {
+    executor: "shared-iterations",
+    vus: CONST_VIRTUAL_USERS,
+    iterations: ITERATIONS,
+    maxDuration: TIMEOUT,
+  },
+  ramping: {
+    executor: 'ramping-vus',
+    startVUs: 0,
+    stages: [
+      {target: MAX_VIRTUAL_USERS, duration: RAMPING_DURATION},
+      {target: MAX_VIRTUAL_USERS, duration: STABLE_RATE_DURATION},
+      {target: 0, duration: RAMPING_DURATION},
+    ],
+  }
+}
+
 export const options = {
   teardownTimeout: '120s',
   batch: PARALLEL_REQS_PER_USER,
   batchPerHost: PARALLEL_REQS_PER_USER,
   scenarios: {
-    default: {
-      executor: "shared-iterations",
-      vus: PARALLELISM,
-      iterations: ITERATIONS,
-      maxDuration: TIMEOUT,
-    },
-    vus_scenario: {
-      executor: 'ramping-vus',
-      startVUs: 5,
-      stages: [
-        { target: 0, duration: '20s' },
-        { target: MAX_VIRTUAL_USERS, duration: RAMPING_DURATION },
-        { target: MAX_VIRTUAL_USERS, duration: STABLE_RATE_DURATION },
-        { target: 0, duration: RAMPING_DURATION },
-        { target: 0, duration: '10s' },
-      ],
-    },
+    [SCENARIO]: scenarios[SCENARIO]
   },
   // Workaround: https://k6.io/docs/using-k6/workaround-to-calculate-iteration_duration/
   thresholds: {
