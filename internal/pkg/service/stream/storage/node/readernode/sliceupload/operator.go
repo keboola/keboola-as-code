@@ -213,38 +213,40 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
+	// Skip if RetryAfter < now
 	if !slice.Retry.Allowed(o.clock.Now()) {
 		return
 	}
 
-	// Skip file import if sink is deleted or disabled
+	// Skip slice upload if sink is deleted or disabled
 	sink, ok := o.sinks.Get(slice.SliceKey.SinkKey)
 	if !ok || !sink.Enabled {
 		return
 	}
 
+	switch slice.State {
+	case model.SliceUploading:
+		o.uploadSlice(ctx, slice)
+	default:
+		// nop
+	}
+}
+
+func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
+	defer cancel()
+
+	o.logger.Info(ctx, "uploading slice")
+
+	// Get volume with the data
 	volume, err := o.volumes.Collection().Volume(slice.SliceKey.VolumeID)
 	if err != nil {
 		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", slice.SliceKey.VolumeID)
 		return
 	}
 
-	switch slice.State {
-	case model.SliceUploading:
-		o.uploadSlice(ctx, volume, slice)
-	default:
-		// nop
-	}
-}
-
-func (o *operator) uploadSlice(ctx context.Context, volume *diskreader.Volume, slice *sliceData) {
-	o.logger.Info(ctx, "uploading slice")
-
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
-	defer cancel()
-
 	// Upload slice
-	err := o.doUploadSlice(ctx, volume, slice)
+	err = o.doUploadSlice(ctx, volume, slice)
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
@@ -275,7 +277,7 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 			return errors.PrefixError(err, "cannot get slice statistics")
 		}
 
-		// Use plugin system to upload slice to staging storage. Set as an in-progress upload
+		// Upload the file using the specific provider
 		err = o.plugins.UploadSlice(ctx, volume, &slice.Slice, stats.Local)
 		if err != nil {
 			return errors.PrefixError(err, "slice upload failed")
@@ -292,6 +294,6 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 		return errors.PrefixError(err, "cannot switch slice to the uploaded state")
 	}
 
-	o.logger.Info(ctx, "successfully uploaded slice")
+	o.logger.Info(ctx, "uploaded slice")
 	return nil
 }

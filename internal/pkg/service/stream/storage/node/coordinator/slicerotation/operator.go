@@ -22,7 +22,8 @@ import (
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/sinklock"
+	sliceRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/slice"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -30,14 +31,16 @@ import (
 const dbOperationTimeout = 30 * time.Second
 
 type operator struct {
-	config       stagingConfig.OperatorConfig
-	clock        clock.Clock
-	logger       log.Logger
-	storage      *storageRepo.Repository
-	statistics   *statsCache.L1
-	distribution *distribution.GroupNode
-	locks        *distlock.Provider
-	closeSyncer  *closesync.CoordinatorNode
+	config          stagingConfig.OperatorConfig
+	clock           clock.Clock
+	logger          log.Logger
+	storage         *storageRepo.Repository
+	statisticsCache *statsCache.L1
+	distribution    *distribution.GroupNode
+	locks           *distlock.Provider
+
+	// closeSyncer signals when no source node is using the slice.
+	closeSyncer *closesync.CoordinatorNode
 
 	slices *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
 }
@@ -73,12 +76,12 @@ type dependencies interface {
 func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 	var err error
 	o := &operator{
-		config:     config,
-		clock:      d.Clock(),
-		logger:     d.Logger().WithComponent("storage.node.operator.slice.rotation"),
-		storage:    d.StorageRepository(),
-		statistics: d.StatisticsL1Cache(),
-		locks:      d.DistributedLockProvider(),
+		config:          config,
+		clock:           d.Clock(),
+		logger:          d.Logger().WithComponent("storage.node.operator.slice.rotation"),
+		storage:         d.StorageRepository(),
+		statisticsCache: d.StatisticsL1Cache(),
+		locks:           d.DistributedLockProvider(),
 	}
 
 	// Setup close sync utility
@@ -113,7 +116,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 	// Mirror slices
 	{
 		o.slices = etcdop.SetupMirrorMap[model.Slice, model.SliceKey, *sliceData](
-			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV()),
+			d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV(), etcd.WithProgressNotify()),
 			func(_ string, slice model.Slice) model.SliceKey {
 				return slice.SliceKey
 			},
@@ -219,9 +222,14 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
+	// Skip if RetryAfter < now
 	if !slice.Retry.Allowed(o.clock.Now()) {
 		return
 	}
+
+	// The operation is NOT skipped when the sink is deleted or disabled.
+	//  rotateSlice: When the sink is deactivated, the slice state is atomically switched to the SliceClosing state.
+	//  closeSlice: We want to switch slice from the SliceClosing to the SliceUploading state, when it is no more used.
 
 	switch slice.State {
 	case model.SliceWriting:
@@ -237,8 +245,8 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceRotationTimeout.Duration())
 	defer cancel()
 
-	// Get slice statistics
-	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
+	// Get slice statistics from cache
+	stats, err := o.statisticsCache.SliceStats(ctx, slice.SliceKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
 		return
@@ -252,93 +260,97 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
-	// Rotate slice
-	o.logger.Infof(ctx, "rotating slice for upload: %s", cause)
-	err = o.rotateSliceWithState(ctx, slice)
+	// Log cause
+	o.logger.Infof(ctx, "rotating slice, upload conditions met: %s", cause)
+
+	// Lock all file operations
+	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, slice.SliceKey.FileKey)
 	if err != nil {
+		o.logger.Errorf(ctx, `slice rotation lock error: %s`, err)
 		return
-	}
-
-	// Prevents other processing, if the entity has been modified.
-	// It takes a while to watch stream send the updated state back.
-	slice.Processed = true
-}
-
-func (o *operator) rotateSliceWithState(ctx context.Context, slice *sliceData) error {
-	// Lock all file operations in the sink
-	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, slice.SliceKey.SinkKey)
-	if unlock == nil {
-		return errors.New("unable to lock file")
 	}
 	defer unlock()
 
 	// Rotate slice
-	err := o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
+	err = o.storage.Slice().Rotate(slice.SliceKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
 	// Handle error
 	if err != nil {
-		o.logger.Errorf(ctx, "cannot rotate slice: %s", err)
+		var stateErr sliceRepo.UnexpectedFileSliceStatesError
+		if errors.As(err, &stateErr) && stateErr.FileState != model.FileWriting {
+			o.logger.Info(ctx, "skipped slice rotation, file is already closed")
+		} else {
+			o.logger.Errorf(ctx, "cannot rotate slice: %s", err)
 
-		// Increment retry delay
-		rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if rErr != nil {
-			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
-			return rErr
+			// Increment retry delay
+			rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+			if rErr != nil {
+				o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", err)
+				return
+			}
 		}
-	} else {
-		o.logger.Info(ctx, "successfully rotated slice")
-	}
-
-	return nil
-}
-
-func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
-	// Rotate slice
-	o.logger.Infof(ctx, "closing slice")
-
-	// Wait until no source node is using the slice
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
-	defer cancel()
-
-	err := o.switchSliceToUploading(ctx, slice)
-	if err != nil {
-		return
 	}
 
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	slice.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "rotated slice")
+	}
 }
 
-func (o *operator) switchSliceToUploading(ctx context.Context, slice *sliceData) error {
+func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
+	defer cancel()
+
+	o.logger.Infof(ctx, "closing slice")
+
+	// Wait until no source node is using the slice
 	if err := o.closeSyncer.WaitForRevision(ctx, slice.ModRevision); err != nil {
 		o.logger.Errorf(ctx, `error when waiting for slice closing: %s`, err.Error())
 		// continue! we waited long enough, the wait mechanism is probably broken
 	}
 
+	// Make sure the statistics cache is up-to-date
+	if err := o.statisticsCache.WaitForRevision(ctx, slice.ModRevision); err != nil {
+		err = errors.PrefixError(err, "error when waiting for statistics cache revision")
+		o.logger.Error(ctx, err.Error())
+		return
+	}
+
 	// Get slice statistics
-	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
+	stats, err := o.statisticsCache.SliceStats(ctx, slice.SliceKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
-		return nil
+		return
 	}
 
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
-	err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), stats.Local.RecordsCount == 0).Do(dbCtx).Err()
+	// Switch slice to the uploading state
+	isEmpty := stats.Total.RecordsCount == 0
+	err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
 	if err != nil {
-		o.logger.Errorf(dbCtx, "cannot switch slice to the uploading state: %s", err.Error())
+		err = errors.PrefixError(err, "cannot switch slice to the uploading state")
+	}
 
-		// Increment retry delay
+	// If there is an error, increment retry delay
+	if err != nil {
+		o.logger.Error(dbCtx, err.Error())
 		rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
-			return rErr
+			return
 		}
-	} else {
-		o.logger.Info(ctx, "successfully closed slice")
 	}
 
-	return nil
+	// Prevents other processing, if the entity has been modified.
+	// It takes a while to watch stream send the updated state back.
+	slice.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "closed slice")
+	}
 }

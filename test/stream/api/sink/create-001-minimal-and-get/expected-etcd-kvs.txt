@@ -130,6 +130,16 @@ storage/file/level/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-s
 >>>>>
 
 <<<<<
+storage/stats/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s/my-volume/%s/_open
+-----
+{
+  "slicesCount": 1,
+  "firstRecordAt": "",
+  "lastRecordAt": ""
+}
+>>>>>
+
+<<<<<
 storage/slice/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s/my-volume/%s
 -----
 %A
@@ -144,3 +154,4 @@ storage/slice/level/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-
   "state": "writing",
 %A
 >>>>>
+

@@ -28,6 +28,16 @@ storage/stats/target/123/456/my-source/my-sink/_reset
 >>>>>
 
 <<<<<
+storage/stats/target/123/456/my-source/my-sink/2000-01-01T09:00:00.000Z/my-volume-1/2000-01-01T09:00:00.000Z/_open
+-----
+{
+  "slicesCount": 1,
+  "firstRecordAt": "",
+  "lastRecordAt": ""
+}
+>>>>>
+
+<<<<<
 storage/stats/target/123/456/my-source/my-sink/2000-01-01T09:00:00.000Z/my-volume-1/2000-01-01T09:00:00.000Z/test-node
 -----
 {

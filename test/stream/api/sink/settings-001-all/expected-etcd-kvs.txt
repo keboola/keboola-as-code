@@ -248,6 +248,24 @@ storage/slice/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/m
 >>>>>
 
 <<<<<
+storage/stats/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s/my-volume/%s/_open
+-----
+%A
+>>>>>
+
+<<<<<
+storage/stats/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s/my-volume/%s/_open
+-----
+%A
+>>>>>
+
+<<<<<
+storage/stats/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s/my-volume/%s/_open
+-----
+%A
+>>>>>
+
+<<<<<
 storage/slice/level/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s
 -----
 %A

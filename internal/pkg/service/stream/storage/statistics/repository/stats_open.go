@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"context"
+	"time"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -9,6 +12,13 @@ import (
 const (
 	sliceOpenKey = "_open"
 )
+
+func (r *Repository) openStatisticsOnSliceOpen() {
+	r.plugins.Collection().OnSliceOpen(func(ctx context.Context, now time.Time, file model.File, slice *model.Slice) error {
+		op.AtomicOpFromCtx(ctx).AddFrom(r.openSlice(slice.SliceKey))
+		return nil
+	})
+}
 
 // OpenSlice is called by the statistics Collector when a slice writer is opened by a source node.
 //
@@ -20,11 +30,23 @@ const (
 // The result of the TXN is a snapshot of the statistics for the source node and slice,
 // so the Collector can continue where it left off.
 // A non-empty value is returned only if the source node was already writing to the slice, but there was a crash/restart.
-func (r *Repository) OpenSlice(k model.SliceKey, nodeID string) *op.TxnOp[statistics.Value] {
-	openKey := r.schema.InLevel(model.LevelLocal).InSlice(k).Key(sliceOpenKey)
-	nodeKey := r.schema.InLevel(model.LevelLocal).InSliceSourceNode(k, nodeID)
-	var statsValue statistics.Value
-	return op.TxnWithResult(r.client, &statsValue).
-		ThenTxn(openKey.PutIfNotExists(r.client, statistics.Value{SlicesCount: 1})).
-		Then(nodeKey.GetOrEmpty(r.client).WithResultTo(&statsValue))
+func (r *Repository) openSlice(k model.SliceKey) *op.AtomicOp[op.NoResult] {
+	return op.
+		Atomic(r.client, &op.NoResult{}).
+		Write(func(ctx context.Context) op.Op {
+			return r.schema.
+				InLevel(model.LevelLocal).InSlice(k).Key(sliceOpenKey).
+				PutIfNotExists(r.client, statistics.Value{SlicesCount: 1})
+		})
+}
+
+// LastNodeValue is called by the statistics Collector when a slice writer is opened by a source node.
+//
+// The result is a snapshot of the statistics for the source node and slice,
+// so the Collector can continue where it left off.
+// A non-empty value is returned only if the source node was already writing to the slice, but there was a crash/restart.
+func (r *Repository) LastNodeValue(k model.SliceKey, nodeID string) op.WithResult[statistics.Value] {
+	return r.schema.
+		InLevel(model.LevelLocal).InSliceSourceNode(k, nodeID).
+		GetOrEmpty(r.client)
 }

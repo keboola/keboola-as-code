@@ -11,6 +11,10 @@ services:
     volumes:
       - ./:/code:z
       - cache:/tmp/cache
+    ulimits:
+      nofile:
+        soft: 50000
+        hard: 50000
     environment:
       # For all
       - TEST_KBC_PROJECTS_FILE=/code/projects.json
@@ -24,7 +28,6 @@ services:
       # For Stream Service
       - STREAM_NODE_ID=my-node
       - STREAM_HOSTNAME=localhost
-      - STREAM_API_STORAGE_API_HOST=connection.keboola.com
       - STREAM_API_LISTEN=0.0.0.0:8001
       - STREAM_API_PUBLIC_URL=http://localhost:8001
       - STREAM_SOURCE_HTTP_LISTEN=0.0.0.0:8010
@@ -103,6 +106,10 @@ services:
       - ./scripts:/scripts
     image: grafana/k6
     network_mode: host
+    ulimits:
+      nofile:
+        soft: 50000
+        hard: 50000
     environment:
       - API_USE_HTTPS
       - API_HOST

@@ -36,7 +36,7 @@ func TestNode(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/slice/all/|runtime/`)
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/slice/all/|storage/stats/|runtime/`)
 
 	// Get services
 	d, mocked := dependencies.NewMockedCoordinatorScope(t, ctx, commonDeps.WithClock(clk))

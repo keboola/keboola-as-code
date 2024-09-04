@@ -6,9 +6,24 @@ import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 const TOKEN = __ENV.API_TOKEN;
 const HOST = __ENV.API_HOST || "http://localhost:8001";
-const ITERATIONS = __ENV.K6_ITERATIONS || 100000;
-const PARALLELISM = __ENV.K6_PARALLELISM || 1000;
-const TIMEOUT = __ENV.K6_TIMEOUT || "60s";
+
+const SCENARIO = __ENV.K6_SCENARIO|| "constant";
+
+// Common for all scenarios
+const PARALLEL_REQS_PER_USER = __ENV.K6_PARALLEL_REQS_PER_USER || 10;
+
+// Constant VUs / iterations count scenario
+const CONST_VIRTUAL_USERS = __ENV.K6_CONST_VIRTUAL_USERS || 1000;
+const ITERATIONS = __ENV.K6_ITERATIONS || 1000000;
+const TIMEOUT = __ENV.K6_TIMEOUT || "20m";
+
+// Ramping scenario
+const MAX_VIRTUAL_USERS = __ENV.K6_MAX_VIRTUAL_USERS || 1000;
+const RAMPING_DURATION = __ENV.K6_RAMPING_DURATION || "2m";
+const STABLE_RATE_DURATION = __ENV.K6_STABLE_RATE_DURATION || "2m";
+
+const SYNC_MODE = __ENV.STREAM_SYNC_MODE || "disabled"; // disabled / cache / disk
+const SYNC_WAIT = __ENV.STREAM_SYNC_WAIT || "1"; // 1 = enabled, 0 = disabled
 
 const commonHeaders = {
   "Content-Type": "application/json",
@@ -17,14 +32,31 @@ const commonHeaders = {
 
 const errors_metrics = new Counter("failed_imports");
 
+
+const scenarios = {
+  constant: {
+    executor: "shared-iterations",
+    vus: CONST_VIRTUAL_USERS,
+    iterations: ITERATIONS,
+    maxDuration: TIMEOUT,
+  },
+  ramping: {
+    executor: 'ramping-vus',
+    startVUs: 0,
+    stages: [
+      {target: MAX_VIRTUAL_USERS, duration: RAMPING_DURATION},
+      {target: MAX_VIRTUAL_USERS, duration: STABLE_RATE_DURATION},
+      {target: 0, duration: RAMPING_DURATION},
+    ],
+  }
+}
+
 export const options = {
+  teardownTimeout: '120s',
+  batch: PARALLEL_REQS_PER_USER,
+  batchPerHost: PARALLEL_REQS_PER_USER,
   scenarios: {
-    default: {
-      executor: "shared-iterations",
-      vus: PARALLELISM,
-      iterations: ITERATIONS,
-      maxDuration: TIMEOUT,
-    },
+    [SCENARIO]: scenarios[SCENARIO]
   },
   // Workaround: https://k6.io/docs/using-k6/workaround-to-calculate-iteration_duration/
   thresholds: {
@@ -36,6 +68,25 @@ export const options = {
     'iteration_duration{group:::teardown}': [`max>=0`],
   },
 };
+
+export function awaitTask(url) {
+  const createSourceTimeoutSec = 60
+  const taskUrl = stripUrlHost(url)
+  for (let retries = createSourceTimeoutSec; retries > 0; retries--) {
+    let res = get(taskUrl)
+    if (res.status !== 200) {
+      console.error(res);
+      throw new Error("failed to get task");
+    }
+    if (res.json().status !== "processing") {
+      if (res.json().error) {
+        throw new Error("task failed: " + res.json().error);
+      }
+      break
+    }
+    sleep(1)
+  }
+}
 
 export function setupSource() {
   if (!TOKEN) throw new Error("Please set the `API_TOKEN` env var.");
@@ -51,35 +102,43 @@ export function setupSource() {
     throw new Error("failed to create source task");
   }
 
-  const createSourceTimeoutSec = 60
-  const taskUrl = res.json().url
-  for (let retries = createSourceTimeoutSec; retries > 0; retries--) {
-    res = get(taskUrl)
-    if (res.status !== 200) {
-      console.error(res);
-      throw new Error("failed to get source task");
-    }
-    if (res.json().status !== "processing") {
-      if (res.json().error) {
-        throw new Error("failed to create source: " + res.json().error);
-      }
-      break
-    }
-    sleep(1)
-  }
+  awaitTask(res.json().url)
+
+  /*res = patch(`v1/branches/default/sources/${sourceId}/settings`, {
+    settings: [
+      {
+        key: "storage.level.local.encoding.sync.mode",
+        value: SYNC_MODE,
+      },
+      {
+        key: "storage.level.local.encoding.sync.wait",
+        value: SYNC_WAIT === "1",
+      },
+    ],
+  });
+
+  awaitTask(res.json().url)*/
 
   res = get(`v1/branches/default/sources/${sourceId}`);
   if (res.status !== 200) {
     throw new Error("failed to get source");
   }
 
+
   const sourceUrl = res.json().http.url
   if (!sourceUrl) {
     throw new Error("source url is not set");
   }
+  /*const sourceUrl = stripUrlHost(res.json().http.url)
+  if (!sourceUrl) {
+    throw new Error("source url is not set");
+  }*/
 
   console.log("Source url: " + sourceUrl)
-  return { id: sourceId, url: sourceUrl }
+  // Change source URL to point on service itself
+  const replacedUrl = sourceUrl.replace("https://stream-in.eu-west-1.aws.keboola.dev", "http://stream-http-source.stream.svc.cluster.local")
+  console.log("Source url after change: " + replacedUrl)
+  return { id: sourceId, url: replacedUrl }
 }
 
 export function setupSink(sourceId, body) {
@@ -91,22 +150,7 @@ export function setupSink(sourceId, body) {
     throw new Error("failed to create sink task");
   }
 
-  const createSinkTimeoutSec = 60
-  const taskUrl = res.json().url
-  for (let retries = createSinkTimeoutSec; retries > 0; retries--) {
-    res = get(taskUrl)
-    if (res.status !== 200) {
-      console.error(res);
-      throw new Error("failed to get sink task");
-    }
-    if (res.json().status !== "processing") {
-      if (res.json().error) {
-        throw new Error("failed to create sink: " + res.json().error);
-      }
-      break
-    }
-    sleep(1)
-  }
+  awaitTask(res.json().url)
 
   res = get(`v1/branches/default/sources/${sourceId}/sinks/${body.sinkId}`);
   if (res.status !== 200) {
@@ -122,10 +166,13 @@ export function setupSink(sourceId, body) {
   return { id: sinkId }
 }
 
-export function teardownSource(sourceId) {
-  console.info("waiting 30s before source deletion")
-  sleep(30)
+export function stripUrlHost(url) {
+  return (new URL(url)).pathname
+}
 
+export function teardownSource(sourceId) {
+  console.info("waiting 50s before source deletion")
+  sleep(50)
   const res = del(`v1/branches/default/sources/${sourceId}`);
   if (res.status !== 202) {
     console.error(res);
@@ -141,6 +188,12 @@ export function get(url, headers = {}) {
 
 export function post(url, data, headers = {}) {
   return http.post(normalizeUrl(url), JSON.stringify(data), {
+    headers: Object.assign({}, commonHeaders, headers),
+  });
+}
+
+export function patch(url, data, headers = {}) {
+  return http.patch(normalizeUrl(url), JSON.stringify(data), {
     headers: Object.assign({}, commonHeaders, headers),
   });
 }

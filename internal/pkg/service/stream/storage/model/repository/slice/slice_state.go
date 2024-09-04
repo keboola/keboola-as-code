@@ -2,15 +2,24 @@ package slice
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type switchStateOption func(file *model.Slice)
+
+type UnexpectedFileSliceStatesError struct {
+	FileState  model.FileState
+	SliceState model.SliceState
+}
+
+func (e UnexpectedFileSliceStatesError) Error() string {
+	return fmt.Sprintf(`unexpected combination: file state "%s" and slice state "%s"`, e.FileState, e.SliceState)
+}
 
 func withIsEmpty(isEmpty bool) switchStateOption {
 	return func(file *model.Slice) {
@@ -134,10 +143,17 @@ func (r *Repository) validateSliceStates(file model.File) *op.AtomicOp[[]model.S
 // ValidateFileAndSliceState validates combination of file and slice state.
 func validateFileAndSliceState(fileState model.FileState, sliceState model.SliceState) error {
 	switch fileState {
-	case model.FileWriting, model.FileClosing:
-		// Check allowed states
+	case model.FileWriting:
 		switch sliceState {
 		case model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded:
+			return nil
+		default:
+			// error
+		}
+	case model.FileClosing:
+		// State SliceWriting is not allow, on file close/rotation are all opened slices switched to the SliceClosing state.
+		switch sliceState {
+		case model.SliceClosing, model.SliceUploading, model.SliceUploaded:
 			return nil
 		default:
 			// error
@@ -156,7 +172,5 @@ func validateFileAndSliceState(fileState model.FileState, sliceState model.Slice
 		panic(errors.Errorf(`unexpected file state "%s`, fileState))
 	}
 
-	return serviceError.NewBadRequestError(
-		errors.Errorf(`unexpected combination: file state "%s" and slice state "%s"`, fileState, sliceState),
-	)
+	return UnexpectedFileSliceStatesError{FileState: fileState, SliceState: sliceState}
 }

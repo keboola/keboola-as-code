@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"syscall"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -102,6 +103,14 @@ func run(ctx context.Context, cfg config.Config, posArgs []string) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	// Check max opened files limit
+	var limit syscall.Rlimit
+	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit); err != nil {
+		logger.Warnf(ctx, `cannot get opened file descriptors limit value: %s`, err)
+	} else if limit.Cur < 10000 {
+		logger.Warnf(ctx, `opened file descriptors limit is too small: %d`, limit.Cur)
 	}
 
 	// Create dependencies

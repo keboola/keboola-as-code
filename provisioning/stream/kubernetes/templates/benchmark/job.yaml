@@ -1,0 +1,67 @@
+---
+kind: Job
+apiVersion: batch/v1
+metadata:
+  name: benchmark
+  namespace: stream-benchmark
+  labels:
+    app: stream-benchmark
+spec:
+  template:
+    metadata:
+      labels:
+        app: load-test
+        stream-etcd-client: "true"
+        tags.datadoghq.com/env: "$KEBOOLA_STACK"
+        tags.datadoghq.com/service: "load-test"
+        tags.datadoghq.com/version: "stream-benchmark"
+      annotations:
+        log: "true"
+    spec:
+      terminationGracePeriodSeconds: 300
+      restartPolicy: Never
+      containers:
+        - name: benchmark
+          image: docker.io/keboolabot/stream-benchmark:latest
+          imagePullPolicy: Always
+          command: ["k6"]
+          args: ["run", "--out", "statsd", "/scripts/k6/stream-api/static.js"]
+          resources:
+            requests:
+              cpu: "1"
+              memory: "2Gi"
+          env:
+            # 80% of the resources.limits.memory 8125
+            - name: GOMEMLIMIT
+              value: "1600MiB"
+            - name: API_HOST
+              value: "http://stream-api.stream.svc.cluster.local"
+            - name: API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: benchmark
+                  key: api-token
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_STATSD_PORT
+              value: "8125"
+            - name: K6_STATSD_ADDR
+              value: $(DD_AGENT_HOST):$(DD_STATSD_PORT)
+            - name: K6_STATSD_ENABLE_TAGS
+              value: "true"
+            - name: K6_MAX_VIRTUAL_USERS
+              value: "150"
+            - name: K6_PARALLEL_REQS_PER_USER
+              value: "15"
+            - name: K6_RAMPING_DURATION
+              value: "5m"
+            - name: K6_STABLE_RATE_DURATION
+              value: "5m"
+      tolerations:
+        - key: app
+          operator: Exists
+          effect: NoSchedule
+      nodeSelector:
+        nodepool: main

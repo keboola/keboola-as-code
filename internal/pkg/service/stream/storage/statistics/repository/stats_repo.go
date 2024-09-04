@@ -86,6 +86,7 @@ func New(d dependencies) *Repository {
 	// Setup Provider interface
 	r._provider = NewProvider(r.aggregate)
 
+	r.openStatisticsOnSliceOpen()
 	r.moveStatisticsOnSliceUpdate()
 	r.rollupStatisticsOnFileDelete()
 	r.estimateSliceSizeOnSliceOpen()

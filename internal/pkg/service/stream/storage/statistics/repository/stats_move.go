@@ -72,6 +72,9 @@ func (r *Repository) moveAll(parentKey fmt.Stringer, from, to model.Level, trans
 			}
 
 			if txn.Empty() {
+				// Even empty slice should have at least one statistics records with slicesCount==1
+				// This also ensures that the statistics L1 cache - etcd mirror - is updated after every slice state change, so we can wait for the new revision.
+				r.logger.Warn(ctx, `no statistics records found`)
 				return nil
 			}
 

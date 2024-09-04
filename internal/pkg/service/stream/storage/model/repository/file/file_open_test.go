@@ -93,5 +93,5 @@ func TestFileRepository_OpenFileOnSinkActivation(t *testing.T) {
 
 	// Check etcd state
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, "fixtures/file_open_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume/"))
+	etcdhelper.AssertKVsFromFile(t, client, "fixtures/file_open_snapshot_001.txt", etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume/|storage/stats/"))
 }

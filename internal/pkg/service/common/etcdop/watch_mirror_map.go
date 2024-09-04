@@ -28,6 +28,9 @@ type MirrorMap[T any, K comparable, V any] struct {
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[K, V])
 
+	updatedLock sync.RWMutex
+	updated     chan struct{}
+
 	mapLock      sync.RWMutex
 	mapData      map[K]V
 	revisionLock sync.RWMutex
@@ -64,6 +67,7 @@ func (s MirrorMapSetup[T, K, V]) BuildMirror() *MirrorMap[T, K, V] {
 		mapData:   make(map[K]V),
 		onUpdate:  s.onUpdate,
 		onChanges: s.onChanges,
+		updated:   make(chan struct{}),
 	}
 }
 
@@ -137,7 +141,14 @@ func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGr
 			m.revisionLock.Lock()
 			m.revision = header.Revision
 			m.revisionLock.Unlock()
+
 			logger.Debugf(ctx, `watch stream mirror synced to revision %d`, header.Revision)
+
+			// Unblock WaitForRevision loops
+			m.updatedLock.Lock()
+			close(m.updated)
+			m.updated = make(chan struct{})
+			m.updatedLock.Unlock()
 
 			// Call callbacks
 			for _, fn := range m.onUpdate {
@@ -182,6 +193,31 @@ func (m *MirrorMap[T, K, V]) Revision() int64 {
 	m.revisionLock.RLock()
 	defer m.revisionLock.RUnlock()
 	return m.revision
+}
+
+func (m *MirrorMap[T, K, V]) WaitForRevision(ctx context.Context, expected int64) error {
+	for {
+		m.revisionLock.RLock()
+		actual := m.revision
+		m.revisionLock.RUnlock()
+
+		// Is the condition already met?
+		if actual >= expected {
+			return nil
+		}
+
+		// Get update notifier
+		m.updatedLock.RLock()
+		notifier := m.updated
+		m.updatedLock.RUnlock()
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-notifier:
+			// try again
+		}
+	}
 }
 
 func (m *MirrorMap[T, K, V]) Len() int {

@@ -5,9 +5,10 @@
 ```sh
 export STREAM_COMPONENTS="api http-source storage-writer storage-reader storage-coordinator"
 export STREAM_ETCD_NAMESPACE=stream-bench-001
+export STREAM_DEBUG_LOG=false
 export STREAM_NODE_ID=my-node
 export STREAM_HOSTNAME=localhost
-export STREAM_API_STORAGE_API_HOST=connection.keboola.com
+export STREAM_STORAGE_API_HOST=connection.keboola.com
 export STREAM_API_LISTEN=0.0.0.0:10000
 export STREAM_API_PUBLIC_URL=http://localhost:10000
 export STREAM_SOURCE_HTTP_LISTEN=0.0.0.0:10001
@@ -17,15 +18,17 @@ export STREAM_PPROF_ENABLED=false
 export STREAM_PPROF_LISTEN="0.0.0.0:4000"
 mkdir -p "$STREAM_STORAGE_VOLUMES_PATH/hdd/001"
 docker compose run \
+    --rm \
     -u "$UID:$GID" \
     -p 4000:4000 \
     -p 10000:10000 \
     -p 10001:10001 \
     -v "$STREAM_STORAGE_VOLUMES_PATH:$STREAM_STORAGE_VOLUMES_PATH" \
     -e STREAM_ETCD_NAMESPACE \
+    -e STREAM_DEBUG_LOG \
     -e STREAM_NODE_ID \
     -e STREAM_HOSTNAME \
-    -e STREAM_API_STORAGE_API_HOST \
+    -e STREAM_STORAGE_API_HOST \
     -e STREAM_API_LISTEN \
     -e STREAM_API_PUBLIC_URL \
     -e STREAM_SOURCE_HTTP_LISTEN \
@@ -33,7 +36,6 @@ docker compose run \
     -e STREAM_STORAGE_VOLUMES_PATH \
     -e STREAM_PPROF_ENABLED \
     -e STREAM_PPROF_LISTEN \
-    --rm \
 dev bash -c "go run ./cmd/stream/main.go -- $STREAM_COMPONENTS | jl"
 ```
 
@@ -51,7 +53,7 @@ dev bash -c "go run ./cmd/stream/main.go -- $STREAM_COMPONENTS | jl"
 ```sh
 export API_TOKEN=<token>
 export API_HOST=$STREAM_API_PUBLIC_URL
-docker compose run -u "$UID:$GID" k6 run /scripts/k6/stream-api/<name>
+docker compose run --rm -u "$UID:$GID" k6 run /scripts/k6/stream-api/<name>
 ```
 
 Where `<name>` is one of the following benchmark names:

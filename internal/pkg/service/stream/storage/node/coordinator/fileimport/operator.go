@@ -24,7 +24,7 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/sinklock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -245,6 +245,7 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 		return
 	}
 
+	// Skip if RetryAfter < now
 	if !file.Retry.Allowed(o.clock.Now()) {
 		return
 	}
@@ -264,20 +265,21 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) importFile(ctx context.Context, file *fileData) {
-	o.logger.Info(ctx, "importing file")
-
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
 	defer cancel()
 
-	// Lock all file operations in the sink
-	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
-	if unlock == nil {
+	o.logger.Info(ctx, "importing file")
+
+	// Lock all file operations
+	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
+	if err != nil {
+		o.logger.Errorf(ctx, `file import lock error: %s`, err)
 		return
 	}
 	defer unlock()
 
 	// Import file
-	err := o.doImportFile(ctx, lock, file)
+	err = o.doImportFile(ctx, lock, file)
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
@@ -299,7 +301,7 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *fileData) error {
-	// Skip file import if the file is empty
+	// Skip file import if the file is empty, just switch the state to the FileImported.
 	if !file.IsEmpty {
 		// Get file statistics
 		var stats statistics.Aggregated
@@ -308,7 +310,7 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 			return errors.PrefixError(err, "cannot get file statistics")
 		}
 
-		// Import the file to specific provider
+		// Import the file using the specific provider
 		err = o.plugins.ImportFile(ctx, &file.File, stats.Staging)
 		if err != nil {
 			return errors.PrefixError(err, "file import failed")
@@ -325,7 +327,6 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 		return errors.PrefixError(err, "cannot switch file to the imported state")
 	}
 
-	o.logger.Info(ctx, "successfully imported file")
-
+	o.logger.Info(ctx, "imported file")
 	return nil
 }

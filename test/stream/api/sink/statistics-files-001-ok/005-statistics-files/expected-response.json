@@ -25,7 +25,11 @@
     },
     {
       "state": "writing",
-      "openedAt": "%s"
+      "openedAt": "%s",
+      "statistics": {
+        "total": null,
+        "levels": {}
+      }
     }
   ]
 }

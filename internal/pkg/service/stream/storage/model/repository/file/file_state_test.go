@@ -122,5 +122,5 @@ func TestFileRepository_StateTransition(t *testing.T) {
 
 	// Check etcd state - there is no file
 	// -----------------------------------------------------------------------------------------------------------------
-	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_state_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume"))
+	etcdhelper.AssertKVsFromFile(t, client, `fixtures/file_state_snapshot_001.txt`, etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/|storage/secret/|storage/volume/|storage/stats/"))
 }

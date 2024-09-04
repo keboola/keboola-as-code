@@ -19,10 +19,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/sinklock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -30,20 +33,20 @@ import (
 const dbOperationTimeout = 30 * time.Second
 
 type operator struct {
-	config       targetConfig.OperatorConfig
-	clock        clock.Clock
-	logger       log.Logger
-	storage      *storageRepo.Repository
-	statistics   *statsCache.L1
-	distribution *distribution.GroupNode
-	locks        *distlock.Provider
+	config          targetConfig.OperatorConfig
+	clock           clock.Clock
+	logger          log.Logger
+	storage         *storageRepo.Repository
+	statisticsCache *statsCache.L1
+	distribution    *distribution.GroupNode
+	locks           *distlock.Provider
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
+	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
 
 	lock                 sync.RWMutex
 	openedSlicesNotifier chan struct{}
 	openedSlicesCount    map[model.FileKey]int
-	fileNotEmpty         map[model.FileKey]bool
 }
 
 type fileData struct {
@@ -52,6 +55,7 @@ type fileData struct {
 	Expiration    utctime.UTCTime
 	ImportTrigger targetConfig.ImportTrigger
 	Retry         model.Retryable
+	ModRevision   int64
 	Attrs         []attribute.KeyValue
 
 	// Lock prevents parallel check of the same file.
@@ -62,11 +66,17 @@ type fileData struct {
 	Processed bool
 }
 
+type sinkData struct {
+	SinkKey key.SinkKey
+	Enabled bool
+}
+
 type dependencies interface {
 	Logger() log.Logger
 	Clock() clock.Clock
 	Process() *servicectx.Process
 	StorageRepository() *storageRepo.Repository
+	DefinitionRepository() *definitionRepo.Repository
 	StatisticsL1Cache() *statsCache.L1
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
@@ -75,12 +85,12 @@ type dependencies interface {
 func Start(d dependencies, config targetConfig.OperatorConfig) error {
 	var err error
 	o := &operator{
-		config:     config,
-		clock:      d.Clock(),
-		logger:     d.Logger().WithComponent("storage.node.operator.file.rotation"),
-		storage:    d.StorageRepository(),
-		statistics: d.StatisticsL1Cache(),
-		locks:      d.DistributedLockProvider(),
+		config:          config,
+		clock:           d.Clock(),
+		logger:          d.Logger().WithComponent("storage.node.operator.file.rotation"),
+		storage:         d.StorageRepository(),
+		statisticsCache: d.StatisticsL1Cache(),
+		locks:           d.DistributedLockProvider(),
 	}
 
 	// Join the distribution group
@@ -107,7 +117,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 	// Mirror files
 	{
 		o.files = etcdop.SetupMirrorMap[model.File, model.FileKey, *fileData](
-			d.StorageRepository().File().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV()),
+			d.StorageRepository().File().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV(), etcd.WithProgressNotify()),
 			func(_ string, file model.File) model.FileKey {
 				return file.FileKey
 			},
@@ -118,6 +128,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 					Expiration:    file.StagingStorage.Expiration,
 					ImportTrigger: file.TargetStorage.Import.Trigger,
 					Retry:         file.Retryable,
+					ModRevision:   rawValue.ModRevision,
 					Attrs:         file.Telemetry(),
 				}
 
@@ -150,7 +161,6 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 	{
 		o.openedSlicesNotifier = make(chan struct{})
 		o.openedSlicesCount = make(map[model.FileKey]int)
-		o.fileNotEmpty = make(map[model.FileKey]bool)
 		slices := d.StorageRepository().Slice().GetAllInLevelAndWatch(ctx, model.LevelLocal, etcd.WithPrevKV()).
 			SetupConsumer().
 			WithForEach(func(events []etcdop.WatchEvent[model.Slice], header *etcdop.Header, restart bool) {
@@ -159,7 +169,6 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 
 				if restart {
 					o.openedSlicesCount = make(map[model.FileKey]int)
-					o.fileNotEmpty = make(map[model.FileKey]bool)
 				}
 
 				for _, event := range events {
@@ -177,16 +186,6 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 							delete(o.openedSlicesCount, fileKey)
 						}
 					}
-
-					// Detect if all slices are empty, per file
-					switch event.Type {
-					case etcdop.CreateEvent, etcdop.UpdateEvent:
-						if event.Value.State == model.SliceUploading {
-							o.fileNotEmpty[fileKey] = o.fileNotEmpty[fileKey] || !event.Value.LocalStorage.IsEmpty
-						}
-					case etcdop.DeleteEvent:
-						// nop
-					}
 				}
 
 				// Notify
@@ -195,6 +194,25 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 			}).
 			BuildConsumer()
 		if err = <-slices.StartConsumer(ctx, wg, o.logger); err != nil {
+			return err
+		}
+	}
+
+	// Mirror sinks
+	{
+		o.sinks = etcdop.SetupMirrorMap[definition.Sink, key.SinkKey, *sinkData](
+			d.DefinitionRepository().Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()),
+			func(_ string, sink definition.Sink) key.SinkKey {
+				return sink.SinkKey
+			},
+			func(_ string, sink definition.Sink, rawValue *op.KeyValue, oldValue **sinkData) *sinkData {
+				return &sinkData{
+					SinkKey: sink.SinkKey,
+					Enabled: sink.IsEnabled(),
+				}
+			},
+		).BuildMirror()
+		if err = <-o.sinks.StartMirroring(ctx, wg, o.logger); err != nil {
 			return err
 		}
 	}
@@ -270,7 +288,16 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 		return
 	}
 
+	// Skip if RetryAfter < now
 	if !file.Retry.Allowed(o.clock.Now()) {
+		return
+	}
+
+	// Skip check if sink is deleted or disabled:
+	//  rotateFile: When the sink is deactivated, the file state is atomically switched to the FileClosing state.
+	//  closeFile: The state of the slices will not change, there is no reason to wait for slices upload.
+	sink, ok := o.sinks.Get(file.FileKey.SinkKey)
+	if !ok || !sink.Enabled {
 		return
 	}
 
@@ -289,7 +316,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	defer cancel()
 
 	// Get file statistics from cache
-	stats, err := o.statistics.FileStats(ctx, file.FileKey)
+	stats, err := o.statisticsCache.FileStats(ctx, file.FileKey)
 	if err != nil {
 		o.logger.Errorf(ctx, "cannot get file statistics: %s", err)
 		return
@@ -302,17 +329,17 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		return
 	}
 
-	// Rotate file
+	// Log cause
 	o.logger.Infof(ctx, "rotating file, import conditions met: %s", cause)
 
-	// Lock all file operations in the sink
-	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
-	if unlock == nil {
+	// Lock all file operations
+	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
+	if err != nil {
+		o.logger.Errorf(ctx, `file rotation lock error: %s`, err)
 		return
 	}
 	defer unlock()
 
-	o.logger.Infof(ctx, "rotating file for import: %s", cause)
 	// Rollback when error occurs in ETCD/StorageAPI
 	rb := rollback.New(o.logger)
 	ctx = rollback.ContextWith(ctx, rb)
@@ -325,9 +352,9 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		o.logger.Errorf(ctx, "cannot rotate file: %s", err)
 
 		// Increment retry delay
-		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file rotation retry: %s", err)
+		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+		if rErr != nil {
+			o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", rErr)
 			return
 		}
 	}
@@ -337,30 +364,41 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	file.Processed = true
 
 	if err == nil {
-		o.logger.Info(ctx, "successfully rotated file")
+		o.logger.Info(ctx, "rotated file")
 	}
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
-	o.logger.Info(ctx, "closing file")
-
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
-	// Wait until all slices are uploaded
-	err := o.waitForSlicesUpload(ctx, file.FileKey)
-	if err != nil {
+	o.logger.Info(ctx, "closing file")
+
+	// Wait until all file slices are uploaded
+	if err := o.waitForSlicesUpload(ctx, file.FileKey); err != nil {
 		err = errors.PrefixError(err, "error when waiting for file slices upload")
+		o.logger.Error(ctx, err.Error())
+		return
 	}
 
-	// Find if file is empty
-	o.lock.RLock()
-	fileEmpty := !o.fileNotEmpty[file.FileKey]
-	o.lock.RUnlock()
+	// Make sure the statistics cache is up-to-date
+	if err := o.statisticsCache.WaitForRevision(ctx, file.ModRevision); err != nil {
+		err = errors.PrefixError(err, "error when waiting for statistics cache revision")
+		o.logger.Error(ctx, err.Error())
+		return
+	}
 
-	// Lock all file operations in the sink
-	lock, unlock := sinklock.LockSinkFileOperations(ctx, o.locks, o.logger, file.FileKey.SinkKey)
-	if unlock == nil {
+	// Get file statistics
+	stats, err := o.statisticsCache.FileStats(ctx, file.FileKey)
+	if err != nil {
+		o.logger.Errorf(ctx, "cannot get file statistics: %s", err)
+		return
+	}
+
+	// Lock all file operations
+	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
+	if err != nil {
+		o.logger.Errorf(ctx, `file close error: %s`, err)
 		return
 	}
 	defer unlock()
@@ -369,19 +407,18 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
-	// If there is no error, switch file to the importing state
-	if err == nil {
-		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), fileEmpty).RequireLock(lock).Do(dbCtx).Err()
-		if err != nil {
-			err = errors.PrefixError(err, "cannot switch file to the importing state")
-		}
+	// Switch file to the importing state
+	isEmpty := stats.Total.RecordsCount == 0
+	err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), isEmpty).RequireLock(lock).Do(dbCtx).Err()
+	if err != nil {
+		err = errors.PrefixError(err, "cannot switch file to the importing state")
 	}
 
 	// If there is an error, increment retry delay
 	if err != nil {
-		o.logger.Error(ctx, err.Error())
-		err = o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
-		if err != nil {
+		o.logger.Error(dbCtx, err.Error())
+		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment file close retry", err)
 			return
 		}
@@ -392,12 +429,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	file.Processed = true
 
 	if err == nil {
-		// Clean memory
-		o.lock.Lock()
-		defer o.lock.Unlock()
-		delete(o.fileNotEmpty, file.FileKey)
-
-		o.logger.Info(ctx, "successfully closed file")
+		o.logger.Info(ctx, "closed file")
 	}
 }
 

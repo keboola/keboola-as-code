@@ -168,7 +168,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 	ts.sendRecords(t, ctx, 69)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"successfully closed file","component":"storage.node.operator.file.rotation"}
+{"level":"info","message":"closed file","component":"storage.node.operator.file.rotation"}
 		`)
 	}, 15*time.Second, 100*time.Millisecond)
 }
@@ -223,22 +223,22 @@ func (ts *testState) testSlicesUpload(
 		// Slices are uploaded independently, so we have to use multiple asserts
 		if half == 10 {
 			ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"rotating slice for upload: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"rotating slice for upload: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
 		`)
 		} else {
 			ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"rotating slice for upload: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"rotating slice for upload: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
 		`)
 		}
 		ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"successfully rotated slice","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"successfully rotated slice","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotated slice","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotated slice","component":"storage.node.operator.slice.rotation"}
 		`)
 		ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"successfully closed slice","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"successfully closed slice","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
 		`)
 	}, 10*time.Second, 10*time.Millisecond)
 
@@ -250,8 +250,8 @@ func (ts *testState) testSlicesUpload(
 {"level":"info","message":"uploading slice","component":"storage.node.operator.slice.upload"}
 		`)
 		ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"successfully uploaded slice","component":"storage.node.operator.slice.upload"}
-{"level":"info","message":"successfully uploaded slice","component":"storage.node.operator.slice.upload"}
+{"level":"info","message":"uploaded slice","component":"storage.node.operator.slice.upload"}
+{"level":"info","message":"uploaded slice","component":"storage.node.operator.slice.upload"}
 		`)
 	}, 15*time.Second, 10*time.Millisecond)
 
@@ -345,12 +345,12 @@ func (ts *testState) testFileImport(
 		if expectedFileImport.expectedCount > 30 {
 			ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"rotating file, import conditions met: count threshold met, records count: %d, threshold: 30","component":"storage.node.operator.file.rotation"}
-{"level":"info","message":"successfully rotated file","component":"storage.node.operator.file.rotation"}
+{"level":"info","message":"rotated file","component":"storage.node.operator.file.rotation"}
 		`)
 		} else {
 			ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"rotating file, import conditions met: count threshold met, records count: 30, threshold: 30","component":"storage.node.operator.file.rotation"}
-{"level":"info","message":"successfully rotated file","component":"storage.node.operator.file.rotation"}
+{"level":"info","message":"rotated file","component":"storage.node.operator.file.rotation"}
 		`)
 		}
 	}, 10*time.Second, 100*time.Millisecond)
@@ -362,19 +362,19 @@ func (ts *testState) testFileImport(
 {"level":"info","message":"closing file","component":"storage.node.operator.file.rotation"}
 		`)
 		ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"successfully closed slice","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"successfully closed slice","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
 		`)
 		ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"uploading slice","component":"storage.node.operator.slice.upload"}
 {"level":"info","message":"uploading slice","component":"storage.node.operator.slice.upload"}
 		`)
 		ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"successfully uploaded slice","component":"storage.node.operator.slice.upload"}
-{"level":"info","message":"successfully uploaded slice","component":"storage.node.operator.slice.upload"}
+{"level":"info","message":"uploaded slice","component":"storage.node.operator.slice.upload"}
+{"level":"info","message":"uploaded slice","component":"storage.node.operator.slice.upload"}
 		`)
 		ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"successfully closed file","component":"storage.node.operator.file.rotation"}
+{"level":"info","message":"closed file","component":"storage.node.operator.file.rotation"}
 		`)
 	}, 15*time.Second, 100*time.Millisecond)
 
@@ -383,7 +383,7 @@ func (ts *testState) testFileImport(
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"importing file","component":"storage.node.operator.file.import"}
-{"level":"info","message":"successfully imported file","component":"storage.node.operator.file.import"}
+{"level":"info","message":"imported file","component":"storage.node.operator.file.import"}
 		`)
 	}, 60*time.Second, 100*time.Millisecond)
 

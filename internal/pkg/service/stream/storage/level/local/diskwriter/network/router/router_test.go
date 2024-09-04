@@ -186,7 +186,6 @@ func TestRouter_ShutdownDiskWriterNodeFirst(t *testing.T) {
 {"level":"info","message":"waiting for close of 2 disk writers by source nodes","nodeId":"disk-writer","component":"storage.node.writer.rpc"}
 {"level":"info","message":"all writers have been gracefully closed","nodeId":"disk-writer","component":"storage.node.writer.rpc"}
 {"level":"info","message":"closing disk writer transport","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
-{"level":"info","message":"waiting 30s for 0 streams","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
 {"level":"info","message":"waiting for streams done","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
 {"level":"info","message":"closing 0 streams","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
 {"level":"info","message":"closing 1 sessions","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
@@ -307,7 +306,6 @@ func TestRouter_ShutdownSourceNodeFirst(t *testing.T) {
 {"level":"info","message":"waiting for close of 0 disk writers by source nodes","nodeId":"disk-writer","component":"storage.node.writer.rpc"}
 {"level":"info","message":"all writers have been gracefully closed","nodeId":"disk-writer","component":"storage.node.writer.rpc"}
 {"level":"info","message":"closing disk writer transport","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
-{"level":"info","message":"waiting 30s for 0 streams","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
 {"level":"info","message":"waiting for streams done","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
 {"level":"info","message":"closing 0 streams","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}
 {"level":"info","message":"closing 0 sessions","nodeId":"disk-writer","component":"storage.node.writer.rpc.transport"}

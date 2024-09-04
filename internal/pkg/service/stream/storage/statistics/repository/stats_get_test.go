@@ -96,30 +96,46 @@ func TestProvider(t *testing.T) {
 	// Empty
 	// -----------------------------------------------------------------------------------------------------------------
 	{
+		expectedThreeEmptyFilesSlices := statistics.Aggregated{
+			Local: statistics.Value{
+				SlicesCount: 3,
+			},
+			Total: statistics.Value{
+				SlicesCount: 3,
+			},
+		}
+
 		v, err := statsRepo.ProjectStats(ctx, sliceKey1.ProjectID)
-		assert.Empty(t, v)
 		assert.NoError(t, err)
+		assert.Equal(t, expectedThreeEmptyFilesSlices, v)
 		v, err = statsRepo.SourceStats(ctx, sliceKey1.SourceKey)
-		assert.Empty(t, v)
 		assert.NoError(t, err)
+		assert.Equal(t, expectedThreeEmptyFilesSlices, v)
 		v, err = statsRepo.SinkStats(ctx, sliceKey1.SinkKey)
-		assert.Empty(t, v)
 		assert.NoError(t, err)
+		assert.Equal(t, expectedThreeEmptyFilesSlices, v)
+
+		expectedEmptySlice := statistics.Aggregated{
+			Local: statistics.Value{
+				SlicesCount: 1,
+			},
+			Total: statistics.Value{
+				SlicesCount: 1,
+			},
+		}
+
 		v, err = statsRepo.FileStats(ctx, sliceKey1.FileKey)
-		assert.Empty(t, v)
 		assert.NoError(t, err)
+		assert.Equal(t, expectedEmptySlice, v)
 		v, err = statsRepo.SliceStats(ctx, sliceKey1)
-		assert.Empty(t, v)
 		assert.NoError(t, err)
+		assert.Equal(t, expectedEmptySlice, v)
 	}
 
 	// Add some statistics
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		nodeID1 := "test-node-1"
-		assert.NoError(t, statsRepo.OpenSlice(sliceKey1, nodeID1).Do(ctx).Err())
-		assert.NoError(t, statsRepo.OpenSlice(sliceKey2, nodeID1).Do(ctx).Err())
-		assert.NoError(t, statsRepo.OpenSlice(sliceKey3, nodeID1).Do(ctx).Err())
 		assert.NoError(t, statsRepo.Put(ctx, nodeID1, []statistics.PerSlice{
 			{
 				SliceKey:         sliceKey1,
@@ -148,8 +164,6 @@ func TestProvider(t *testing.T) {
 		}))
 	}
 	nodeID2 := "test-node-2"
-	assert.NoError(t, statsRepo.OpenSlice(sliceKey2, nodeID2).Do(ctx).Err())
-	assert.NoError(t, statsRepo.OpenSlice(sliceKey3, nodeID2).Do(ctx).Err())
 	assert.NoError(t, statsRepo.Put(ctx, nodeID2, []statistics.PerSlice{
 		{
 			SliceKey:         sliceKey2,
