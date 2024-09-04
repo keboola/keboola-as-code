@@ -134,10 +134,17 @@ func (r *Repository) validateSliceStates(file model.File) *op.AtomicOp[[]model.S
 // ValidateFileAndSliceState validates combination of file and slice state.
 func validateFileAndSliceState(fileState model.FileState, sliceState model.SliceState) error {
 	switch fileState {
-	case model.FileWriting, model.FileClosing:
-		// Check allowed states
+	case model.FileWriting:
 		switch sliceState {
 		case model.SliceWriting, model.SliceClosing, model.SliceUploading, model.SliceUploaded:
+			return nil
+		default:
+			// error
+		}
+	case model.FileClosing:
+		// State SliceWriting is not allow, on file close/rotation are all opened slices switched to the SliceClosing state.
+		switch sliceState {
+		case model.SliceClosing, model.SliceUploading, model.SliceUploaded:
 			return nil
 		default:
 			// error
