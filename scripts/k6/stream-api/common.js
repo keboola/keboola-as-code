@@ -232,3 +232,10 @@ export function randomStrings() {
 export function randomElement(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
+
+export function batchWithCheckResponse(req) {
+  req.url = normalizeUrl(req.url)
+  const requests = Array.from({length: PARALLEL_REQS_PER_USER}, () => req)
+  const responses = http.batch(requests);
+  responses.forEach((res) => checkResponse(res))
+}

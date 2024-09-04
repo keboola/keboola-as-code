@@ -52,13 +52,13 @@ spec:
             - name: K6_STATSD_ENABLE_TAGS
               value: "true"
             - name: K6_MAX_VIRTUAL_USERS
-              value: "150"
+              value: "1000"
             - name: K6_PARALLEL_REQS_PER_USER
-              value: "15"
+              value: "10"
             - name: K6_RAMPING_DURATION
-              value: "5m"
+              value: "2m"
             - name: K6_STABLE_RATE_DURATION
-              value: "5m"
+              value: "10m"
       tolerations:
         - key: app
           operator: Exists
