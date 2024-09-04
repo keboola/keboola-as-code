@@ -226,6 +226,10 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 		return
 	}
 
+	// The operation is NOT skipped when the sink is deleted or disabled.
+	//  rotateSlice: When the sink is deactivated, the slice state is atomically switched to the SliceClosing state.
+	//  closeSlice: We want to switch slice from the SliceClosing to the SliceUploading state, when it is no more used.
+
 	switch slice.State {
 	case model.SliceWriting:
 		o.rotateSlice(ctx, slice)
