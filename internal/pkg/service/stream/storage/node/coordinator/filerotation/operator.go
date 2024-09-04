@@ -19,6 +19,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
@@ -39,6 +42,7 @@ type operator struct {
 	locks           *distlock.Provider
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
+	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
 
 	lock                 sync.RWMutex
 	openedSlicesNotifier chan struct{}
@@ -62,11 +66,17 @@ type fileData struct {
 	Processed bool
 }
 
+type sinkData struct {
+	SinkKey key.SinkKey
+	Enabled bool
+}
+
 type dependencies interface {
 	Logger() log.Logger
 	Clock() clock.Clock
 	Process() *servicectx.Process
 	StorageRepository() *storageRepo.Repository
+	DefinitionRepository() *definitionRepo.Repository
 	StatisticsL1Cache() *statsCache.L1
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
@@ -188,6 +198,25 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		}
 	}
 
+	// Mirror sinks
+	{
+		o.sinks = etcdop.SetupMirrorMap[definition.Sink, key.SinkKey, *sinkData](
+			d.DefinitionRepository().Sink().GetAllAndWatch(ctx, etcd.WithPrevKV()),
+			func(_ string, sink definition.Sink) key.SinkKey {
+				return sink.SinkKey
+			},
+			func(_ string, sink definition.Sink, rawValue *op.KeyValue, oldValue **sinkData) *sinkData {
+				return &sinkData{
+					SinkKey: sink.SinkKey,
+					Enabled: sink.IsEnabled(),
+				}
+			},
+		).BuildMirror()
+		if err = <-o.sinks.StartMirroring(ctx, wg, o.logger); err != nil {
+			return err
+		}
+	}
+
 	// Restarts stream on distribution change
 	{
 		wg.Add(1)
@@ -261,6 +290,14 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 
 	// Skip if RetryAfter < now
 	if !file.Retry.Allowed(o.clock.Now()) {
+		return
+	}
+
+	// Skip check if sink is deleted or disabled:
+	//  rotateFile: When the sink is deactivated, the file state is atomically switched to the FileClosing state.
+	//  closeFile: The state of the slices will not change, there is no reason to wait for slices upload.
+	sink, ok := o.sinks.Get(file.FileKey.SinkKey)
+	if !ok || !sink.Enabled {
 		return
 	}
 
