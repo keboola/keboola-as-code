@@ -112,18 +112,16 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string
 		return nil, err
 	}
 	go func() {
-		for {
-			if _, err := termStream.Recv(); err != nil {
-				if err == io.EOF {
-					continue
-				}
-
-				if s, ok := status.FromError(err); !ok || s.Code() != codes.Canceled {
-					logger.Errorf(ctx, "error when waiting for network file server termination: %s", err)
-				}
+		// It is expected to receive only one message, `io.EOF` or `message` that the termination is done
+		if _, err := termStream.Recv(); err != nil {
+			if err == io.EOF {
+				onServerTermination(ctx, "remote server shutdown")
+				return
 			}
 
-			break
+			if s, ok := status.FromError(err); !ok || s.Code() != codes.Canceled {
+				logger.Errorf(ctx, "error when waiting for network file server termination: %s", err)
+			}
 		}
 
 		if err := termStream.CloseSend(); err != nil {
