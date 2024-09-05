@@ -32,7 +32,7 @@ type ConfigPatch struct {
 func NewConfig() Config {
 	return Config{
 		Encoder:               encoder.NewConfig(),
-		InputBuffer:           1 * datasize.MB,
+		InputBuffer:           2 * datasize.MB,
 		Compression:           compression.NewConfig(),
 		Sync:                  writesync.NewConfig(),
 		MaxChunkSize:          512 * datasize.KB,

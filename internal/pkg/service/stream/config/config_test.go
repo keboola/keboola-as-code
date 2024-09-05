@@ -167,7 +167,7 @@ storage:
                     # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
                     concurrency: 0
                 # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
-                inputBuffer: 1MB
+                inputBuffer: 2MB
                 # Max size of a chunk sent over the network to a disk writer node. Validation rules: required,minBytes=64kB,maxBytes=1MB
                 maxChunkSize: 512KB
                 # If the defined number of chunks cannot be sent, the pipeline is marked as not ready. Validation rules: required,min=1,max=100
@@ -396,8 +396,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.local.encoding.inputBuffer",
     "type": "string",
     "description": "Max size of the buffer before compression, if compression is enabled. 0 = disabled",
-    "value": "1MB",
-    "defaultValue": "1MB",
+    "value": "2MB",
+    "defaultValue": "2MB",
     "overwritten": false,
     "protected": true,
     "validation": "maxBytes=16MB"

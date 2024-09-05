@@ -47,7 +47,7 @@ storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
       "type": "csv",
       "concurrency": 0
     },
-    "inputBuffer": "1MB",
+    "inputBuffer": "2MB",
     "maxChunkSize": "512KB",
     "failedChunksThreshold": 3,
     "compression": {
@@ -152,7 +152,7 @@ storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-
       "type": "csv",
       "concurrency": 0
     },
-    "inputBuffer": "1MB",
+    "inputBuffer": "2MB",
     "maxChunkSize": "512KB",
     "failedChunksThreshold": 3,
     "compression": {

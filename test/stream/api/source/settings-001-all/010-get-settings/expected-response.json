@@ -83,8 +83,8 @@
       "key": "storage.level.local.encoding.inputBuffer",
       "type": "string",
       "description": "Max size of the buffer before compression, if compression is enabled. 0 = disabled",
-      "value": "1MB",
-      "defaultValue": "1MB",
+      "value": "2MB",
+      "defaultValue": "2MB",
       "overwritten": false,
       "protected": true,
       "validation": "maxBytes=16MB"
