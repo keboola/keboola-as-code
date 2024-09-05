@@ -2,12 +2,14 @@ package etcdop
 
 import (
 	"context"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
+	toxiproxy "github.com/Shopify/toxiproxy/v2"
 	"github.com/cenkalti/backoff/v4"
-	"github.com/shopify/toxiproxy"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -27,9 +29,7 @@ func TestSession_Retries(t *testing.T) {
 	etcdCfg := etcdhelper.TmpNamespace(t)
 
 	// Setup proxy to drop etcd connection
-	proxy := toxiproxy.NewProxy()
-	proxy.Name = "etcd-bridge"
-	proxy.Upstream = etcdCfg.Endpoint
+	proxy := toxiproxy.NewProxy(toxiproxy.NewServer(toxiproxy.NewMetricsContainer(nil), zerolog.New(os.Stderr)), "etcd-bridge", "", etcdCfg.Endpoint)
 	require.NoError(t, proxy.Start())
 	defer proxy.Stop()
 
