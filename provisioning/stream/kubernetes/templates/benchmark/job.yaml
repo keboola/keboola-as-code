@@ -7,6 +7,7 @@ metadata:
   labels:
     app: stream-benchmark
 spec:
+  backoffLimit: 0
   template:
     metadata:
       labels:
@@ -52,7 +53,7 @@ spec:
             - name: K6_STATSD_ENABLE_TAGS
               value: "true"
             - name: K6_PARALLEL_REQS_PER_USER
-              value: "10"
+              value: "100"
             - name: K6_SCENARIO
               value: "ramping"
             - name: K6_CONST_VIRTUAL_USERS
@@ -62,7 +63,7 @@ spec:
             - name: K6_CONST_TIMEOUT
               value: "20m"
             - name: K6_RAMPING_MAX_VIRTUAL_USERS
-              value: "1000"
+              value: "100"
             - name: K6_RAMPING_UP_DURATION
               value: "2m"
             - name: K6_RAMPING_STABLE_DURATION
