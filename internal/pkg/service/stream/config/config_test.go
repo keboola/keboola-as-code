@@ -274,7 +274,7 @@ storage:
                     size: 50MB
                     # Duration from the last import to trigger the next import. Validation rules: required,minDuration=60s,maxDuration=24h
                     interval: 15m0s
-                    # Number of slices in the file to trigger file import. Validation rules: required,min=1,max=50000
+                    # Number of slices in the file to trigger file import. Validation rules: required,min=1,max=1000
                     slicesCount: 100
                     # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
                     expiration: 30m0s
@@ -583,7 +583,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "defaultValue": 100,
     "overwritten": false,
     "protected": true,
-    "validation": "required,min=1,max=50000"
+    "validation": "required,min=1,max=1000"
   }
 ]
 `), strings.TrimSpace(json.MustEncodeString(kvs, true)))

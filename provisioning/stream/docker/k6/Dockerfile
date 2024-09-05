@@ -1,3 +1,3 @@
-FROM grafana/k6:0.52.0
+FROM grafana/k6:0.53.0
 
 COPY scripts /scripts
