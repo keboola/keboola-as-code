@@ -26,7 +26,7 @@ spec:
           image: docker.io/keboolabot/stream-benchmark:latest
           imagePullPolicy: Always
           command: ["k6"]
-          args: ["run", "--out", "statsd", "/scripts/k6/stream-api/static.js"]
+          args: ["run", "--out", "output-statsd", "/scripts/k6/stream-api/static.js"]
           resources:
             requests:
               cpu: "1"
@@ -50,6 +50,12 @@ spec:
               value: "8125"
             - name: K6_STATSD_ADDR
               value: $(DD_AGENT_HOST):$(DD_STATSD_PORT)
+            - name: K6_STATSD_NAMESPACE
+              value: "k6."
+            - name: K6_STATSD_PUSH_INTERVAL
+              value: "5s"
+            - name: K6_STATSD_BUFFER_SIZE
+              value: "1000"
             - name: K6_STATSD_ENABLE_TAGS
               value: "true"
             - name: K6_PARALLEL_REQS_PER_USER
