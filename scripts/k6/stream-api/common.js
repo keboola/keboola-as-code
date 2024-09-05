@@ -3,6 +3,7 @@ import { URL } from 'https://jslib.k6.io/url/1.0.0/index.js';
 import { sleep, check } from 'k6';
 import { Counter } from 'k6/metrics';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import { SharedArray } from 'k6/data';
 
 const TOKEN = __ENV.API_TOKEN;
 const HOST = __ENV.API_HOST || "http://localhost:8001";
@@ -235,11 +236,13 @@ export function randomStrings() {
 }
 
 export function randomPayloads() {
-  let payloads = []
-  for (let i = 0; i < 100; i++) {
-    payloads.push({ a: "b", c: { d: "e", f: { g: randomString(10) } } })
-  }
-  return payloads
+  return new SharedArray('k6 random payloads', function () {
+    let payloads = []
+    for (let i = 0; i < 100; i++) {
+      payloads.push({a: "b", c: {d: "e", f: {g: randomString(10)}}})
+    }
+    return payloads
+  })
 }
 
 export function randomElement(list) {
