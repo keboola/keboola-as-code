@@ -115,7 +115,7 @@ func (cu *ConfigurationUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "Configuration.name": %w`, err)}
 		}
 	}
-	if _, ok := cu.mutation.ParentID(); cu.mutation.ParentCleared() && !ok {
+	if cu.mutation.ParentCleared() && len(cu.mutation.ParentIDs()) > 0 {
 		return errors.New(`model: clearing a required unique edge "Configuration.parent"`)
 	}
 	return nil
@@ -265,7 +265,7 @@ func (cuo *ConfigurationUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "Configuration.name": %w`, err)}
 		}
 	}
-	if _, ok := cuo.mutation.ParentID(); cuo.mutation.ParentCleared() && !ok {
+	if cuo.mutation.ParentCleared() && len(cuo.mutation.ParentIDs()) > 0 {
 		return errors.New(`model: clearing a required unique edge "Configuration.parent"`)
 	}
 	return nil
