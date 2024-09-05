@@ -38,7 +38,7 @@ const scenarios = {
   constant: {
     executor: "shared-iterations",
     vus: CONST_VIRTUAL_USERS,
-    iterations: CONST_TOTAL_REQUESTS/PARALLEL_REQS_PER_USER,
+    iterations: CONST_TOTAL_REQUESTS / PARALLEL_REQS_PER_USER,
     maxDuration: CONST_TIMEOUT,
   },
   ramping: {
