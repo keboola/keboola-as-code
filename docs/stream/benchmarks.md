@@ -93,7 +93,7 @@ http://localhost:4000/debug/pprof/goroutine?debug=2
 
 Start a Go container to run `go tool` commands:
 ```
-docker run --rm -it --net host keboolabot/keboola-as-code-dev bash
+docker run --rm -u "$UID:$GID" -it --net host keboolabot/keboola-as-code-dev bash
 ```
 
 Use `go tool pprof` to visualise profiles in a web browser:
