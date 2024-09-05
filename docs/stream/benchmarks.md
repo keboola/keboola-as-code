@@ -53,20 +53,21 @@ dev bash -c "go run ./cmd/stream/main.go -- $STREAM_COMPONENTS | jl"
 ```sh
 export API_TOKEN=<token>
 export API_HOST=$STREAM_API_PUBLIC_URL
+export K6_PARALLEL_REQS_PER_USER="100"
+export K6_SCENARIO="ramping"
+export K6_CONST_VIRTUAL_USERS="100"
+export K6_CONST_TOTAL_REQUESTS="1000000"
+export K6_CONST_TIMEOUT="20m"
+export K6_RAMPING_MAX_VIRTUAL_USERS="100"
+export K6_RAMPING_UP_DURATION="2m"
+export K6_RAMPING_STABLE_DURATION="10m"
+export K6_RAMPING_DOWN_DURATION="2m"
 docker compose run --rm -u "$UID:$GID" k6 run /scripts/k6/stream-api/<name>
 ```
 
 Where `<name>` is one of the following benchmark names:
 - `static.js` - Source with a single sink. Sink only has static columns.
 - `template.js` - source with a single sink. Sink has a template column.
-
-Available environment variables:
-
-- `API_TOKEN` - Storage API Token (required)
-- `API_HOST` - Stream API host (default: `http://localhost:8001`)
-- `K6_TIMEOUT` - max duration of the test (default: `60s`)
-- `K6_ITERATIONS` - number of all requests (default: `10 000`)
-- `K6_PARALLELISM` - number of workers that send requests (default: `1000`)
 
 ## Profiling
 
