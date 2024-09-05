@@ -176,7 +176,7 @@ export function stripUrlHost(url) {
 }
 
 export function teardownSource(sourceId) {
-  console.info("waiting 12s before source deletion")
+  console.info("waiting 120s before source deletion")
   sleep(120)
   const res = del(`v1/branches/default/sources/${sourceId}`);
   if (res.status !== 202) {
