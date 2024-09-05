@@ -51,14 +51,24 @@ spec:
               value: $(DD_AGENT_HOST):$(DD_STATSD_PORT)
             - name: K6_STATSD_ENABLE_TAGS
               value: "true"
-            - name: K6_MAX_VIRTUAL_USERS
-              value: "1000"
             - name: K6_PARALLEL_REQS_PER_USER
               value: "10"
-            - name: K6_RAMPING_DURATION
+            - name: K6_SCENARIO
+              value: "ramping"
+            - name: K6_CONST_VIRTUAL_USERS
+              value: "1000"
+            - name: K6_CONST_TOTAL_REQUESTS
+              value: "1000000"
+            - name: K6_CONST_TIMEOUT
+              value: "20m"
+            - name: K6_RAMPING_MAX_VIRTUAL_USERS
+              value: "1000"
+            - name: K6_RAMPING_UP_DURATION
               value: "2m"
-            - name: K6_STABLE_RATE_DURATION
+            - name: K6_RAMPING_STABLE_DURATION
               value: "10m"
+            - name: K6_RAMPING_DOWN_DURATION
+              value: "2m"
       tolerations:
         - key: app
           operator: Exists

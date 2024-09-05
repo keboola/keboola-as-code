@@ -3,7 +3,7 @@ import * as common from "./common.js";
 export const options = common.options;
 
 export function setup() {
-  let strings = common.randomStrings()
+  let payloads = common.randomPayloads()
 
   let source = common.setupSource();
 
@@ -33,7 +33,7 @@ export function setup() {
     "My-Custom-Header": "custom header value abcd",
   };
 
-  return { source, sink, strings, headers };
+  return { source, sink, payloads, headers };
 }
 
 export function teardown(data) {
@@ -41,12 +41,10 @@ export function teardown(data) {
 }
 
 export default function(data) {
-  const payload = { a: "b", c: { d: "e", f: { g: common.randomElement(data.strings) } } };
-
   common.batchWithCheckResponse({
     method: 'POST',
     url: data.source.url,
-    body: payload,
+    body: common.randomElement(data.payloads),
     params: {headers: data.headers,},
   });
 }

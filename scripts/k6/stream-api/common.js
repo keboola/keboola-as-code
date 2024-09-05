@@ -14,15 +14,16 @@ const PARALLEL_REQS_PER_USER = __ENV.K6_PARALLEL_REQS_PER_USER || 10;
 
 // Constant VUs / iterations count scenario
 const CONST_VIRTUAL_USERS = __ENV.K6_CONST_VIRTUAL_USERS || 1000;
-const ITERATIONS = __ENV.K6_ITERATIONS || 1000000;
-const TIMEOUT = __ENV.K6_TIMEOUT || "20m";
+const CONST_TOTAL_REQUESTS = __ENV.K6_CONST_TOTAL_REQUESTS || 1000000;
+const CONST_TIMEOUT = __ENV.K6_CONST_TIMEOUT || "20m";
 
 // Ramping scenario
-const MAX_VIRTUAL_USERS = __ENV.K6_MAX_VIRTUAL_USERS || 1000;
-const RAMPING_DURATION = __ENV.K6_RAMPING_DURATION || "2m";
-const STABLE_RATE_DURATION = __ENV.K6_STABLE_RATE_DURATION || "2m";
+const RAMPING_MAX_VIRTUAL_USERS = __ENV.K6_RAMPING_MAX_VIRTUAL_USERS || 1000;
+const RAMPING_UP_DURATION = __ENV.K6_RAMPING_UP_DURATION|| "2m";
+const RAMPING_STABLE_DURATION = __ENV.K6_RAMPING_STABLE_DURATION || "10m";
+const RAMPING_DOWN_DURATION = __ENV.K6_RAMPING_DOWN_DURATION || "2m";
 
-const SYNC_MODE = __ENV.STREAM_SYNC_MODE || "disabled"; // disabled / cache / disk
+const SYNC_MODE = __ENV.STREAM_SYNC_MODE || "disk"; // cache / disk
 const SYNC_WAIT = __ENV.STREAM_SYNC_WAIT || "1"; // 1 = enabled, 0 = disabled
 
 const commonHeaders = {
@@ -37,16 +38,16 @@ const scenarios = {
   constant: {
     executor: "shared-iterations",
     vus: CONST_VIRTUAL_USERS,
-    iterations: ITERATIONS,
-    maxDuration: TIMEOUT,
+    iterations: CONST_TOTAL_REQUESTS/PARALLEL_REQS_PER_USER,
+    maxDuration: CONST_TIMEOUT,
   },
   ramping: {
     executor: 'ramping-vus',
     startVUs: 0,
     stages: [
-      {target: MAX_VIRTUAL_USERS, duration: RAMPING_DURATION},
-      {target: MAX_VIRTUAL_USERS, duration: STABLE_RATE_DURATION},
-      {target: 0, duration: RAMPING_DURATION},
+      {target: RAMPING_MAX_VIRTUAL_USERS, duration: RAMPING_UP_DURATION},
+      {target: RAMPING_MAX_VIRTUAL_USERS, duration: RAMPING_STABLE_DURATION},
+      {target: 0, duration: RAMPING_DOWN_DURATION},
     ],
   }
 }
@@ -58,12 +59,16 @@ export const options = {
   scenarios: {
     [SCENARIO]: scenarios[SCENARIO]
   },
+  // Improve results table
   // Workaround: https://k6.io/docs/using-k6/workaround-to-calculate-iteration_duration/
   thresholds: {
-    'http_req_duration{scenario:default}': [`max>=0`],
+    [`http_req_duration{scenario:${SCENARIO}}`]: [`max>=0`],
     'http_req_duration{group:::setup}': [`max>=0`],
     'http_req_duration{group:::teardown}': [`max>=0`],
-    'iteration_duration{scenario:default}': [`max>=0`],
+    [`http_reqs{scenario:${SCENARIO}}`]: [`rate>=0`],
+    'http_reqs{group:::setup}': [`rate>=0`],
+    'http_reqs{group:::teardown}': [`rate>=0`],
+    [`iteration_duration{scenario:${SCENARIO}}`]: [`max>=0`],
     'iteration_duration{group:::setup}': [`max>=0`],
     'iteration_duration{group:::teardown}': [`max>=0`],
   },
@@ -213,7 +218,7 @@ export function normalizeUrl(url) {
 
 export function checkResponse(res) {
   let passed = check(res, {
-    "status is 200": (r) => r.status === 200,
+    "status is 200/202": (r) => r.status === 200 || r.status === 202,
   })
   if (!passed) {
     console.error(`Request to ${res.request.url} with status ${res.status} failed the checks!`, res);
@@ -227,6 +232,14 @@ export function randomStrings() {
     strings.push(randomString(10))
   }
   return strings
+}
+
+export function randomPayloads() {
+  let payloads = []
+  for (let i = 0; i < 100; i++) {
+    payloads.push({ a: "b", c: { d: "e", f: { g: randomString(10) } } })
+  }
+  return payloads
 }
 
 export function randomElement(list) {
