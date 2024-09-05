@@ -104,7 +104,10 @@ services:
   k6:
     volumes:
       - ./scripts:/scripts
-    image: grafana/k6
+    image: keboolabot/stream-benchmark
+    build:
+      context: .
+      dockerfile: ./provisioning/stream/docker/k6/Dockerfile
     network_mode: host
     ulimits:
       nofile:

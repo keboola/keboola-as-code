@@ -7,6 +7,7 @@ cd "$(dirname "$0")"
 
 # TODO: if we want to push
 #docker login --username keboolabot --password $DOCKER_REGISTRY_PASSWORD docker.io
+#docker compose build k6
 #docker push keboolabot/stream-benchmark:latest
 #docker logout
 
