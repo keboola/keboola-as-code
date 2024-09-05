@@ -179,7 +179,7 @@ func (cc *ConfigurationCreate) check() error {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`model: validator failed for field "Configuration.id": %w`, err)}
 		}
 	}
-	if _, ok := cc.mutation.ParentID(); !ok {
+	if len(cc.mutation.ParentIDs()) == 0 {
 		return &ValidationError{Name: "parent", err: errors.New(`model: missing required edge "Configuration.parent"`)}
 	}
 	return nil

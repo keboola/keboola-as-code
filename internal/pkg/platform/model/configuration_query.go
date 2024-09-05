@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -86,7 +87,7 @@ func (cq *ConfigurationQuery) QueryParent() *BranchQuery {
 // First returns the first Configuration entity from the query.
 // Returns a *NotFoundError when no Configuration was found.
 func (cq *ConfigurationQuery) First(ctx context.Context) (*Configuration, error) {
-	nodes, err := cq.Limit(1).All(setContextOp(ctx, cq.ctx, "First"))
+	nodes, err := cq.Limit(1).All(setContextOp(ctx, cq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +110,7 @@ func (cq *ConfigurationQuery) FirstX(ctx context.Context) *Configuration {
 // Returns a *NotFoundError when no Configuration ID was found.
 func (cq *ConfigurationQuery) FirstID(ctx context.Context) (id key.ConfigurationKey, err error) {
 	var ids []key.ConfigurationKey
-	if ids, err = cq.Limit(1).IDs(setContextOp(ctx, cq.ctx, "FirstID")); err != nil {
+	if ids, err = cq.Limit(1).IDs(setContextOp(ctx, cq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -132,7 +133,7 @@ func (cq *ConfigurationQuery) FirstIDX(ctx context.Context) key.ConfigurationKey
 // Returns a *NotSingularError when more than one Configuration entity is found.
 // Returns a *NotFoundError when no Configuration entities are found.
 func (cq *ConfigurationQuery) Only(ctx context.Context) (*Configuration, error) {
-	nodes, err := cq.Limit(2).All(setContextOp(ctx, cq.ctx, "Only"))
+	nodes, err := cq.Limit(2).All(setContextOp(ctx, cq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +161,7 @@ func (cq *ConfigurationQuery) OnlyX(ctx context.Context) *Configuration {
 // Returns a *NotFoundError when no entities are found.
 func (cq *ConfigurationQuery) OnlyID(ctx context.Context) (id key.ConfigurationKey, err error) {
 	var ids []key.ConfigurationKey
-	if ids, err = cq.Limit(2).IDs(setContextOp(ctx, cq.ctx, "OnlyID")); err != nil {
+	if ids, err = cq.Limit(2).IDs(setContextOp(ctx, cq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -185,7 +186,7 @@ func (cq *ConfigurationQuery) OnlyIDX(ctx context.Context) key.ConfigurationKey 
 
 // All executes the query and returns a list of Configurations.
 func (cq *ConfigurationQuery) All(ctx context.Context) ([]*Configuration, error) {
-	ctx = setContextOp(ctx, cq.ctx, "All")
+	ctx = setContextOp(ctx, cq.ctx, ent.OpQueryAll)
 	if err := cq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -207,7 +208,7 @@ func (cq *ConfigurationQuery) IDs(ctx context.Context) (ids []key.ConfigurationK
 	if cq.ctx.Unique == nil && cq.path != nil {
 		cq.Unique(true)
 	}
-	ctx = setContextOp(ctx, cq.ctx, "IDs")
+	ctx = setContextOp(ctx, cq.ctx, ent.OpQueryIDs)
 	if err = cq.Select(configuration.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -225,7 +226,7 @@ func (cq *ConfigurationQuery) IDsX(ctx context.Context) []key.ConfigurationKey {
 
 // Count returns the count of the given query.
 func (cq *ConfigurationQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, cq.ctx, "Count")
+	ctx = setContextOp(ctx, cq.ctx, ent.OpQueryCount)
 	if err := cq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -243,7 +244,7 @@ func (cq *ConfigurationQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (cq *ConfigurationQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, cq.ctx, "Exist")
+	ctx = setContextOp(ctx, cq.ctx, ent.OpQueryExist)
 	switch _, err := cq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -537,7 +538,7 @@ func (cgb *ConfigurationGroupBy) Aggregate(fns ...AggregateFunc) *ConfigurationG
 
 // Scan applies the selector query and scans the result into the given value.
 func (cgb *ConfigurationGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, cgb.build.ctx, ent.OpQueryGroupBy)
 	if err := cgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -585,7 +586,7 @@ func (cs *ConfigurationSelect) Aggregate(fns ...AggregateFunc) *ConfigurationSel
 
 // Scan applies the selector query and scans the result into the given value.
 func (cs *ConfigurationSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, cs.ctx, "Select")
+	ctx = setContextOp(ctx, cs.ctx, ent.OpQuerySelect)
 	if err := cs.prepareQuery(ctx); err != nil {
 		return err
 	}
