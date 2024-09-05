@@ -143,8 +143,13 @@ func (s *NetworkFileServer) Open(ctx context.Context, req *pb.OpenRequest) (*pb.
 }
 
 func (s *NetworkFileServer) WaitForServerTermination(_ *pb.WaitForServerTerminationRequest, stream pb.NetworkFile_WaitForServerTerminationServer) error {
-	<-s.terminating
-	return stream.Send(&pb.ServerIsTerminatingResponse{})
+	select {
+	case <-s.terminating:
+		return stream.Send(&pb.ServerIsTerminatingResponse{})
+
+	case <-stream.Context().Done():
+		return nil
+	}
 }
 
 func (s *NetworkFileServer) Write(ctx context.Context, req *pb.WriteRequest) (*pb.WriteResponse, error) {
