@@ -59,6 +59,9 @@ extraEnvVars:
   # GOMEMLIMIT to prevent OOM kill, update the value together with "resources" spec.
   - name: GOMEMLIMIT
     value: "256MiB"
+  # Increase limit of operations in transaction.
+  - name: ETCD_MAX_TXN_OPS
+    value: "1000"
 
 # The root password is used for authentication, the client gets a JWT token with short expiration.
 auth:
