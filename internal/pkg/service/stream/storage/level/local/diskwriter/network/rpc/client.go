@@ -114,7 +114,7 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string
 	go func() {
 		// It is expected to receive only one message, `io.EOF` or `message` that the termination is done
 		if _, err := termStream.Recv(); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				onServerTermination(ctx, "remote server shutdown")
 				return
 			}
