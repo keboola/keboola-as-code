@@ -43,6 +43,11 @@ export function teardown(data) {
 export default function(data) {
   const payload = { a: "b", c: { d: "e", f: { g: common.randomElement(data.strings) } } };
 
-  common.checkResponse(common.post(data.source.url, payload, data.headers));
+  common.batchWithCheckResponse({
+    method: 'POST',
+    url: data.source.url,
+    body: payload,
+    params: {headers: data.headers,},
+  });
 }
 

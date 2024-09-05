@@ -19,4 +19,6 @@ envsubst < ./templates/benchmark/job.yaml > deploy/benchmark/job.yaml
 
 kubectl apply -f ./deploy/benchmark/namespace.yaml
 kubectl apply -f ./deploy/benchmark/secret.yaml
+
+kubectl delete job -n stream-benchmark benchmark --ignore-not-found
 kubectl apply -f ./deploy/benchmark/job.yaml
