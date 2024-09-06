@@ -13,8 +13,8 @@ mkdir -p "$TARGET_DIR"
 statusPath="$TARGET_DIR/status.log"
 logsPath="$TARGET_DIR/logs.log"
 
-echo "Saving minikube status \"$statusPath\""
-minikube status > "$statusPath"
+#echo "Saving minikube status \"$statusPath\""
+#minikube status > "$statusPath"
 
 echo "Saving minikube logs \"$logsPath\""
 minikube logs   > "$logsPath"

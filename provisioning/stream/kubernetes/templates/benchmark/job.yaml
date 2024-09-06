@@ -26,18 +26,17 @@ spec:
           image: docker.io/keboolabot/stream-benchmark:latest
           imagePullPolicy: Always
           command: ["k6"]
-          args: ["run", "--out", "statsd", "/scripts/k6/stream-api/static.js"]
+          args: ["run", "--no-thresholds", "--out", "output-statsd", "/scripts/k6/stream-api/main.js"]
           resources:
             requests:
               cpu: "1"
-              memory: "2Gi"
+              memory: "4Gi"
           env:
-            # 80% of the resources.limits.memory 8125
-            - name: GOMEMLIMIT
-              value: "1600MiB"
-            - name: API_HOST
+            - name: DD_STATSD_PORT
+              value: "8125"
+            - name: K6_API_HOST
               value: "http://stream-api.stream.svc.cluster.local"
-            - name: API_TOKEN
+            - name: K6_API_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: benchmark
@@ -46,16 +45,24 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: DD_STATSD_PORT
-              value: "8125"
+            - name: K6_OVERWRITE_SOURCE_HOST
+              value: "http://stream-http-source.stream.svc.cluster.local"
             - name: K6_STATSD_ADDR
               value: $(DD_AGENT_HOST):$(DD_STATSD_PORT)
+            - name: K6_STATSD_NAMESPACE
+              value: "k6."
+            - name: K6_STATSD_PUSH_INTERVAL
+              value: "5s"
+            - name: K6_STATSD_BUFFER_SIZE
+              value: "10"
             - name: K6_STATSD_ENABLE_TAGS
               value: "true"
-            - name: K6_PARALLEL_REQS_PER_USER
-              value: "100"
             - name: K6_SCENARIO
               value: "ramping"
+            - name: K6_TABLE_MAPPING
+              value: "static"
+            - name: K6_PARALLEL_REQS_PER_USER
+              value: "1"
             - name: K6_CONST_VIRTUAL_USERS
               value: "1000"
             - name: K6_CONST_TOTAL_REQUESTS
@@ -63,13 +70,13 @@ spec:
             - name: K6_CONST_TIMEOUT
               value: "20m"
             - name: K6_RAMPING_MAX_VIRTUAL_USERS
-              value: "100"
+              value: "1000"
             - name: K6_RAMPING_UP_DURATION
-              value: "2m"
+              value: "1m"
             - name: K6_RAMPING_STABLE_DURATION
-              value: "10m"
-            - name: K6_RAMPING_DOWN_DURATION
               value: "2m"
+            - name: K6_RAMPING_DOWN_DURATION
+              value: "1m"
       tolerations:
         - key: app
           operator: Exists

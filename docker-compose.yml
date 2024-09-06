@@ -114,12 +114,19 @@ services:
         soft: 50000
         hard: 50000
     environment:
-      - API_USE_HTTPS
-      - API_HOST
-      - API_PORT
-      - API_TOKEN
-      - K6_USERS
-      - K6_DURATION
+      - K6_API_TOKEN
+      - K6_API_HOST
+      - K6_CLOUD_API_TOKEN
+      - K6_SCENARIO
+      - K6_TABLE_MAPPING
+      - K6_PARALLEL_REQS_PER_USER
+      - K6_CONST_VIRTUAL_USERS
+      - K6_CONST_TOTAL_REQUESTS
+      - K6_CONST_TIMEOUT
+      - K6_RAMPING_MAX_VIRTUAL_USERS
+      - K6_RAMPING_UP_DURATION
+      - K6_RAMPING_STABLE_DURATION
+      - K6_RAMPING_DOWN_DURATION
 
   sandboxesMock:
       image: mockserver/mockserver:latest

@@ -1,3 +1,17 @@
-FROM grafana/k6:0.53.0
+FROM grafana/xk6:latest AS build
+
+RUN xk6 build --with github.com/LeonAdato/xk6-output-statsd
+
+FROM alpine:3.20
+
+RUN apk add --no-cache bash
+
+COPY --from=build /xk6/k6 /usr/bin/k6
 
 COPY scripts /scripts
+
+COPY provisioning/stream/docker/k6/entrypoint.sh /entrypoint.sh
+
+ENV K6_CLOUD_API_TOKEN=""
+
+ENTRYPOINT ["/entrypoint.sh"]

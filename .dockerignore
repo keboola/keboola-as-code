@@ -5,6 +5,7 @@
 build
 docs
 provisioning
+!provisioning/stream/docker/k6/entrypoint.sh
 target
 test
 vendor
