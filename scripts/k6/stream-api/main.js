@@ -78,6 +78,7 @@ const mappings = {
 
 // K6 options
 export const options = {
+  systemTags: ['status', 'group'],
   discardResponseBodies: true, // we are checking only status codes
   teardownTimeout: '120s',
   batch: PARALLEL_REQS_PER_USER,
