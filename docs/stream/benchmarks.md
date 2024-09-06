@@ -51,23 +51,24 @@ dev bash -c "go run ./cmd/stream/main.go -- $STREAM_COMPONENTS | jl"
 ## Run the benchmark
 
 ```sh
-export API_TOKEN=<token>
-export API_HOST=$STREAM_API_PUBLIC_URL
-export K6_PARALLEL_REQS_PER_USER="100"
+export K6_API_TOKEN=<token>
+export K6_API_HOST=$STREAM_API_PUBLIC_URL
 export K6_SCENARIO="ramping"
-export K6_CONST_VIRTUAL_USERS="100"
+export K6_TABLE_MAPPING="static"
+export K6_PARALLEL_REQS_PER_USER="1"
+export K6_CONST_VIRTUAL_USERS="1000"
 export K6_CONST_TOTAL_REQUESTS="1000000"
 export K6_CONST_TIMEOUT="20m"
-export K6_RAMPING_MAX_VIRTUAL_USERS="100"
+export K6_RAMPING_MAX_VIRTUAL_USERS="1000"
 export K6_RAMPING_UP_DURATION="2m"
 export K6_RAMPING_STABLE_DURATION="10m"
 export K6_RAMPING_DOWN_DURATION="2m"
-docker compose run --rm -u "$UID:$GID" k6 run /scripts/k6/stream-api/<name>
+docker compose run --rm k6 run /scripts/k6/stream-api/main.js
 ```
 
-Where `<name>` is one of the following benchmark names:
-- `static.js` - Source with a single sink. Sink only has static columns.
-- `template.js` - source with a single sink. Sink has a template column.
+Options:
+- `K6_TABLE_MAPPING`: `static`, `template`
+- `K6_SCENARIO`: `constant`, `ramping`
 
 ## Profiling
 
