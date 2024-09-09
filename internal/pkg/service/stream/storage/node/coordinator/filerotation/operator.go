@@ -50,13 +50,13 @@ type operator struct {
 }
 
 type fileData struct {
-	FileKey       model.FileKey
-	State         model.FileState
-	Expiration    utctime.UTCTime
-	ImportTrigger targetConfig.ImportTrigger
-	Retry         model.Retryable
-	ModRevision   int64
-	Attrs         []attribute.KeyValue
+	FileKey      model.FileKey
+	State        model.FileState
+	Expiration   utctime.UTCTime
+	ImportConfig targetConfig.ImportConfig
+	Retry        model.Retryable
+	ModRevision  int64
+	Attrs        []attribute.KeyValue
 
 	// Lock prevents parallel check of the same file.
 	Lock *sync.Mutex
@@ -123,13 +123,13 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 			},
 			func(_ string, file model.File, rawValue *op.KeyValue, oldValue **fileData) *fileData {
 				out := &fileData{
-					FileKey:       file.FileKey,
-					State:         file.State,
-					Expiration:    file.StagingStorage.Expiration,
-					ImportTrigger: file.TargetStorage.Import.Trigger,
-					Retry:         file.Retryable,
-					ModRevision:   rawValue.ModRevision,
-					Attrs:         file.Telemetry(),
+					FileKey:      file.FileKey,
+					State:        file.State,
+					Expiration:   file.StagingStorage.Expiration,
+					ImportConfig: file.TargetStorage.Import,
+					Retry:        file.Retryable,
+					ModRevision:  rawValue.ModRevision,
+					Attrs:        file.Telemetry(),
 				}
 
 				// Keep the same lock, to prevent parallel processing of the same file.
@@ -323,7 +323,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	}
 
 	// Check conditions
-	cause, ok := shouldImport(file.ImportTrigger, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
+	cause, ok := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
 	if !ok {
 		o.logger.Debugf(ctx, "skipping file rotation: %s", cause)
 		return

@@ -46,12 +46,12 @@ type operator struct {
 }
 
 type sliceData struct {
-	SliceKey      model.SliceKey
-	State         model.SliceState
-	UploadTrigger stagingConfig.UploadTrigger
-	Retry         model.Retryable
-	ModRevision   int64
-	Attrs         []attribute.KeyValue
+	SliceKey     model.SliceKey
+	State        model.SliceState
+	UploadConfig stagingConfig.UploadConfig
+	Retry        model.Retryable
+	ModRevision  int64
+	Attrs        []attribute.KeyValue
 
 	// Lock prevents parallel check of the same slice.
 	Lock *sync.Mutex
@@ -122,12 +122,12 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 			},
 			func(_ string, slice model.Slice, rawValue *op.KeyValue, oldValue **sliceData) *sliceData {
 				out := &sliceData{
-					SliceKey:      slice.SliceKey,
-					State:         slice.State,
-					UploadTrigger: slice.StagingStorage.Upload.Trigger,
-					Retry:         slice.Retryable,
-					ModRevision:   rawValue.ModRevision,
-					Attrs:         slice.Telemetry(),
+					SliceKey:     slice.SliceKey,
+					State:        slice.State,
+					UploadConfig: slice.StagingStorage.Upload,
+					Retry:        slice.Retryable,
+					ModRevision:  rawValue.ModRevision,
+					Attrs:        slice.Telemetry(),
 				}
 
 				// Keep the same lock, to prevent parallel processing of the same slice.
@@ -254,7 +254,7 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 
 	// Check conditions
 	now := o.clock.Now()
-	cause, ok := shouldUpload(slice.UploadTrigger, now, slice.SliceKey.OpenedAt().Time(), stats.Local)
+	cause, ok := shouldUpload(slice.UploadConfig, now, slice.SliceKey.OpenedAt().Time(), stats.Local)
 	if !ok {
 		o.logger.Debugf(ctx, "skipping slice rotation: %s", cause)
 		return

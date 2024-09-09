@@ -30,6 +30,7 @@ func NewConfig() Config {
 			FileImportTimeout:         duration.From(15 * time.Minute),
 		},
 		Import: ImportConfig{
+			MinInterval: duration.From(60 * time.Second),
 			Trigger: ImportTrigger{
 				Count:       50000,
 				Size:        50 * datasize.MB,
@@ -51,7 +52,8 @@ type OperatorConfig struct {
 
 // ImportConfig configures the file import.
 type ImportConfig struct {
-	Trigger ImportTrigger `json:"trigger" configKey:"trigger"`
+	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Min duration from the last import to trigger the next, takes precedence over other settings." validate:"required,minDuration=60s,maxDuration=24h"`
+	Trigger     ImportTrigger     `json:"trigger" configKey:"trigger"`
 }
 
 // ImportConfigPatch is same as the ImportConfig, but with optional/nullable fields.
