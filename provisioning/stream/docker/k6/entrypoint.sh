@@ -6,6 +6,8 @@ set -o nounset          # Disallow expansion of unset variables
 set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
+K6_CLOUD_API_TOKEN="${K6_CLOUD_API_TOKEN:-}"
+
 if [[ -n "$K6_CLOUD_API_TOKEN" ]]; then
     k6 cloud login --token "$K6_CLOUD_API_TOKEN"
 fi
