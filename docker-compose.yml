@@ -116,6 +116,7 @@ services:
     environment:
       - K6_API_TOKEN
       - K6_API_HOST
+      - K6_OVERWRITE_SOURCE_HOST
       - K6_CLOUD_API_TOKEN
       - K6_SCENARIO
       - K6_TABLE_MAPPING

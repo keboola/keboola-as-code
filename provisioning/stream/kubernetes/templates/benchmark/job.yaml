@@ -8,6 +8,7 @@ metadata:
     app: stream-benchmark
 spec:
   backoffLimit: 0
+  parallelism: 4
   template:
     metadata:
       labels:
@@ -19,6 +20,30 @@ spec:
       annotations:
         log: "true"
     spec:
+      affinity:
+        # Node affinity says that the deployment is successful only when
+        # the benchmarks are deployed on other hostnames that are listed below
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              # We would like to have the benchmarks deployed on other nodes than
+              # on HTTP source ones, as we would like to benchmark with full load.
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                - gke-dev-keboola-gcp-us-central-main-a-c6968d17-jm8r
+                - gke-dev-keboola-gcp-us-central-main-a-c6968d17-6zmw
+        # Pod anti affinity says that the deployment of benchmark is successful
+        # Only when one benchmark pod is deployed on one node.
+        # So we have always 1 pod on 1 node with this configuration.
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: Exists
       terminationGracePeriodSeconds: 300
       restartPolicy: Never
       containers:
@@ -74,12 +99,13 @@ spec:
             - name: K6_RAMPING_UP_DURATION
               value: "1m"
             - name: K6_RAMPING_STABLE_DURATION
-              value: "2m"
+              value: "4m"
             - name: K6_RAMPING_DOWN_DURATION
-              value: "1m"
+              value: "2m"
       tolerations:
         - key: app
           operator: Exists
           effect: NoSchedule
       nodeSelector:
         nodepool: main
+
