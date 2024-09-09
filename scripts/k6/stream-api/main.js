@@ -1,5 +1,6 @@
 import { check } from 'k6';
 import http from "k6/http";
+import { TextEncoder } from "https://raw.githubusercontent.com/inexorabletash/text-encoding/master/index.js"
 import { Counter } from 'k6/metrics';
 import { randomItem } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 import { URL } from 'https://jslib.k6.io/url/1.0.0/index.js';
@@ -30,6 +31,9 @@ const RAMPING_DOWN_DURATION = __ENV.K6_RAMPING_DOWN_DURATION || "2m";
 // Stream configuration
 const SYNC_MODE = __ENV.STREAM_SYNC_MODE || "disk"; // cache / disk
 const SYNC_WAIT = __ENV.STREAM_SYNC_WAIT || "1"; // 1 = enabled, 0 = disabled
+
+// Payload configuration
+const PAYLOAD_SIZE = __ENV.STREAM_PAYLOAD_SIZE || 1 // 1 = 54B, 1024 = ~1KB (1077B), 1048576 = ~1MB (1048629)
 
 // Available scenarios, use K6_SCENARIO env to select one
 const scenarios = {
@@ -105,7 +109,7 @@ const api = new Api(API_HOST, API_TOKEN)
 
 const errors_metrics = new Counter("failed_imports");
 
-const payloads = randomPayloads()
+const payloads = randomPayloads(PAYLOAD_SIZE)
 
 export function setup() {
   // Create source

@@ -128,6 +128,7 @@ services:
       - K6_RAMPING_UP_DURATION
       - K6_RAMPING_STABLE_DURATION
       - K6_RAMPING_DOWN_DURATION
+      - STREAM_PAYLOAD_SIZE
 
   sandboxesMock:
       image: mockserver/mockserver:latest
