@@ -64,6 +64,7 @@ func NewFileOpenedAt(openedAtStr string) *model.File {
 		StagingStorage: stagingModel.File{
 			Compression: compression.NewNoneConfig(),
 			Upload: staging.UploadConfig{
+				MinInterval: duration.From(1 * time.Second),
 				Trigger: staging.UploadTrigger{
 					Count:    10000,
 					Size:     1 * datasize.MB,

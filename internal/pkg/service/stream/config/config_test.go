@@ -226,7 +226,7 @@ storage:
                     # Buffer size for transferring responses between writer and source node (kcp). Validation rules: required,minBytes=16kB,maxBytes=100MB
                     kcpResponseBuffer: 512KB
                     # Pipeline balancer type which balances the writing on particular nodes based on selected strategy. Validation rules: required,oneof=rand roundRobin
-                    pipelineBalancer: rand
+                    pipelineBalancer: roundRobin
                 allocation:
                     # Allocate disk space for each slice.
                     enabled: true
@@ -247,6 +247,8 @@ storage:
                 # Timeout of the slice upload operation. Validation rules: required,minDuration=30s,maxDuration=60m
                 sliceUploadTimeout: 15m0s
             upload:
+                # Min duration from the last upload to trigger the next, takes precedence over other settings. Validation rules: required,minDuration=1s,maxDuration=30m
+                minInterval: 10s
                 trigger:
                     # Records count to trigger slice upload. Validation rules: required,min=1,max=10000000
                     count: 10000
@@ -267,12 +269,14 @@ storage:
                 # Timeout of the file import operation. Validation rules: required,minDuration=30s,maxDuration=60m
                 fileImportTimeout: 15m0s
             import:
+                # Min duration from the last import to trigger the next, takes precedence over other settings. Validation rules: required,minDuration=30s,maxDuration=24h
+                minInterval: 1m0s
                 trigger:
                     # Records count to trigger file import. Validation rules: required,min=1,max=10000000
                     count: 50000
                     # Records size to trigger file import. Validation rules: required,minBytes=100B,maxBytes=500MB
                     size: 50MB
-                    # Duration from the last import to trigger the next import. Validation rules: required,minDuration=60s,maxDuration=24h
+                    # Duration from the last import to trigger the next import. Validation rules: required,minDuration=30s,maxDuration=24h
                     interval: 15m0s
                     # Number of slices in the file to trigger file import. Validation rules: required,min=1,max=1000
                     slicesCount: 100
@@ -563,7 +567,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "defaultValue": "15m0s",
     "overwritten": false,
     "protected": false,
-    "validation": "required,minDuration=60s,maxDuration=24h"
+    "validation": "required,minDuration=30s,maxDuration=24h"
   },
   {
     "key": "storage.level.target.import.trigger.size",

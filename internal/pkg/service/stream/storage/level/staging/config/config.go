@@ -50,7 +50,7 @@ type OperatorConfig struct {
 
 // UploadConfig configures the slice upload.
 type UploadConfig struct {
-	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Min duration from the last upload to trigger the next, takes precedence over other settings." validate:"required,minDuration=10s,maxDuration=30m"`
+	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Min duration from the last upload to trigger the next, takes precedence over other settings." validate:"required,minDuration=1s,maxDuration=30m"`
 	Trigger     UploadTrigger     `json:"trigger" configKey:"trigger"`
 }
 
@@ -64,7 +64,7 @@ type UploadConfigPatch struct {
 type UploadTrigger struct {
 	Count    uint64            `json:"count" configKey:"count" configUsage:"Records count to trigger slice upload." modAllowed:"true" validate:"required,min=1,max=10000000"`
 	Size     datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size to trigger slice upload." modAllowed:"true" validate:"required,minBytes=100B,maxBytes=50MB"`
-	Interval duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last slice upload to trigger the next upload." modAllowed:"true" validate:"required,minDuration=10s,maxDuration=30m"`
+	Interval duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last slice upload to trigger the next upload." modAllowed:"true" validate:"required,minDuration=1s,maxDuration=30m"`
 }
 
 // UploadTriggerPatch is same as the UploadTrigger, but with optional/nullable fields.
