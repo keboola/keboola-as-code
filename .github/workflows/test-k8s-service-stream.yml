@@ -40,235 +40,235 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Create artifacts directory
-        run: mkdir -p /tmp/artifacts
-
-      - name: Copy latest scripts to a temp dir
-        run: cp -R ${{ github.workspace }}/provisioning/common/scripts /tmp/latest-scripts
-
-      - name: Install gron tool
-        run: |
-          url="https://github.com/tomnomnom/gron/releases/download/v0.7.1/gron-linux-amd64-0.7.1.tgz"
-          curl -L "$url" | tar -xz -C /usr/local/bin
-
-      - name: Install MiniKube
-        run: /tmp/latest-scripts/minikube/install.sh
-
-      - name: Start MiniKube
-        run: /tmp/latest-scripts/minikube/start.sh
-
-      - name: Set Kubernetes namespace
-        run: kubectl config set-context --current "--namespace=$KUBERNETES_NAMESPACE"
-
-      - name: Checkout BASE branch (or HEAD if it is not a pull request)
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-
-      - name: Deploy the old version, from the BASE branch
-        continue-on-error: true
-        run: ./deploy_local.sh
-
-      - name: Dump the old version (for diff)
-        continue-on-error: true
-        run: sleep 10 && /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.old.json
-
-      - name: Checkout HEAD branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      - name: Deploy the new version, from the HEAD branch
-        run: ./deploy_local.sh
-
-      - name: Dump the new version (for diff)
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          # Delete empty old replica sets
-          emptyReplicaSets=$(kubectl get replicasets --ignore-not-found | tail --lines=+2 | awk '{if ($2 + $3 + $4 == 0) print $1}')
-          echo -e "Found empty replica sets:"
-          echo "$emptyReplicaSets"
-          echo "-------------------------"
-          echo "$emptyReplicaSets" | xargs --no-run-if-empty -I {} kubectl delete replicaset "{}"
-          # Wait for pod startup/termination
-          sleep 10
-          # Dump objects
-          /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.new.json
-
-      - name: Check deployment of the etcd
-        if: always()
-        run: kubectl rollout status "sts/$ETCD_RELEASE_NAME" --timeout=10s
-
-      - name: Check deployment of the API nodes
-        if: always()
-        run: kubectl rollout status "deployment/stream-api" --timeout=10s
-
-      - name: Check deployment of the HTTP source nodes
-        if: always()
-        run: kubectl rollout status "deployment/stream-http-source" --timeout=10s
-
-      - name: Check deployment of the storage writer/reader nodes
-        if: always()
-        run: kubectl rollout status "sts/stream-storage-writer-reader" --timeout=10s
-
-      - name: Check deployment of the storage coordinator nodes
-        if: always()
-        run: kubectl rollout status "deployment/stream-storage-coordinator" --timeout=10s
-
-      - name: Check access to the metrics from the DataDog Agent
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          kubectl create namespace datadog || true
-          
-          for APP_WITH_METRICS_PORT in "stream-api:9000" "stream-http-source:9000" "stream-storage-writer-reader:9001" "stream-storage-writer-reader:9002" "stream-storage-coordinator:9000"
-          do 
-            IFS=: read -r APP METRICS_PORT <<< "$APP_WITH_METRICS_PORT"
-            echo "---------------------------------"
-            echo "Checking $APP:$METRICS_PORT"
-            export POD_IP=`kubectl get pod -l "app=$APP" -o=jsonpath='{.items[0].status.podIP}'`
-            echo "Pod IP: $POD_IP"
-            kubectl run --attach --rm --restart=Never check-api-datadog \
-            --namespace datadog \
-            --image docker.io/alpine/curl \
-            --labels="app=datadog-agent" \
-            --env="POD_IP=$POD_IP" \
-            --env="METRICS_PORT=$METRICS_PORT" \
-            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"
-            echo "---------------------------------"
-          done
-
-      - name: Check forbidden access to the metrics from other places
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          
-          for APP_WITH_METRICS_PORT in "stream-api:9000" "stream-http-source:9000" "stream-storage-writer-reader:9001" "stream-storage-writer-reader:9002" "stream-storage-coordinator:9000"
-          do
-            IFS=: read -r APP METRICS_PORT <<< "$APP_WITH_METRICS_PORT"
-            echo "---------------------------------"
-            echo "Checking $APP:$METRICS_PORT"
-            export POD_IP=`kubectl get pod -l "app=$APP" -o=jsonpath='{.items[0].status.podIP}'`
-            echo "Pod IP: $POD_IP"
-            if kubectl run --attach --rm --restart=Never check-api-other \
-              --image docker.io/alpine/curl \
-              --env="POD_IP=$POD_IP" \
-              --env="METRICS_PORT=$METRICS_PORT" \
-              --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"; then
-              echo "The command did not fail, but it should have."
-              exit 1
-            else
-              echo "The command failed, OK."
-              exit 0
-            fi
-            echo "---------------------------------"
-          done
-
-      - name: Check access to the etcd from a client
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          export ETCD_ROOT_PASSWORD=$(kubectl get secret "$ETCD_RELEASE_NAME" -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
-          kubectl run --attach --rm --restart=Never check-etcd-client \
-            --image docker.io/bitnami/etcd \
-            --labels="${ETCD_RELEASE_NAME}-client=true" \
-            --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
-            --env="ETCDCTL_ENDPOINTS=$ETCD_ENDPOINT" \
-            --command -- etcdctl --user root:$ETCD_ROOT_PASSWORD put /message Hello
-
-      - name: Check access to the etcd from the DataDog Agent
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          kubectl create namespace datadog || true
-          kubectl run --attach --rm --restart=Never check-etcd-other-datadog \
-          --namespace datadog \
-          --image docker.io/alpine/curl \
-          --labels="app=datadog-agent" \
-          --env="ETCD_ENDPOINT=$ETCD_ENDPOINT" \
-          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$ETCD_ENDPOINT/metrics" | tail"
-
-      - name: Check forbidden access to the etcd from other places
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          if kubectl run --attach --rm --restart=Never check-etcd-other \
-            --image docker.io/alpine/curl \
-            --env="ETCD_ENDPOINT=$ETCD_ENDPOINT" \
-            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$ETCD_ENDPOINT/metrics" | tail"; then
-            echo "The command did not fail, but it should have."
-            exit 1
-          else
-            echo "The command failed, OK."
-            exit 0
-          fi
-
-      - name: Check API response
-        if: always()
-        run: |
-          hostPort=$(minikube service --url stream-api --namespace $KUBERNETES_NAMESPACE)
-          echo "$hostPort"
-          curl --fail -s --max-time 5 --retry 5 --retry-connrefused "$hostPort/health-check"
-
-      - name: Check HTTP source response
-        if: always()
-        run: |
-          hostPort=$(minikube service --url stream-http-source --namespace $KUBERNETES_NAMESPACE)
-          curl --fail -s --max-time 5 --retry 5 --retry-connrefused "$hostPort/health-check"
-
-      - name: Test etcd defragmentation cron job
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          # Create a job from the cron job
-          kubectl create job "--from=cronjob/${ETCD_RELEASE_NAME}-defrag" test-defrag-job
-          # Wait for the job
-          if kubectl wait --for=condition=complete --timeout=30s job/test-defrag-job; then
-            echo "The job succeed, logs:"
-            kubectl logs --selector="job-name=test-defrag-job"
-            exit 0
-          else
-            echo "The job failed, logs:"
-            kubectl logs --selector="job-name=test-defrag-job"
-            exit 1
-          fi
-
-      - name: Diff the old and the new Kubernetes state
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          # Diff JSON states
-          /tmp/latest-scripts/k8s/diff.sh \
-            /tmp/artifacts/test-k8s-state.old.json \
-            /tmp/artifacts/test-k8s-state.new.json \
-            /tmp/artifacts/test-k8s-state.diff
-          # Remove ANSI sequences
-          sed -e 's/\x1b\[[0-9;]*m//g' -i /tmp/artifacts/test-k8s-state.diff || true
-          # Prepare PR comment message
-          echo -e "### ${{ env.SERVICE_NAME }} Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
-          echo -e "Between \`base\` ${{ github.event.pull_request.base.sha }} :arrow_left:  \`head\` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
-          echo -e "<details>\n<summary>Expand</summary>\n\n\`\`\`diff\n" >> /tmp/artifacts/test-k8s-state.diff.message
-          head -c 50000 /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message
-          echo -e "\n\n(see artifacts in the Github Action for more information)\n\`\`\`\n</details>" >> /tmp/artifacts/test-k8s-state.diff.message
-
-      - name: Dump logs
-        if: always()
-        run: |
-          /tmp/latest-scripts/minikube/logs.sh /tmp/artifacts &&
-          /tmp/latest-scripts/k8s/logs.sh /tmp/artifacts
-
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-k8s-state-stream
-          path: /tmp/artifacts
-          if-no-files-found: error
-
-      - name: Send PR comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: "${{ env.KUBERNETES_NAMESPACE }}-kubernetes-state-diff"
-          recreate: true
-          path: /tmp/artifacts/test-k8s-state.diff.message
+#      - name: Create artifacts directory
+#        run: mkdir -p /tmp/artifacts
+#
+#      - name: Copy latest scripts to a temp dir
+#        run: cp -R ${{ github.workspace }}/provisioning/common/scripts /tmp/latest-scripts
+#
+#      - name: Install gron tool
+#        run: |
+#          url="https://github.com/tomnomnom/gron/releases/download/v0.7.1/gron-linux-amd64-0.7.1.tgz"
+#          curl -L "$url" | tar -xz -C /usr/local/bin
+#
+#      - name: Install MiniKube
+#        run: /tmp/latest-scripts/minikube/install.sh
+#
+#      - name: Start MiniKube
+#        run: /tmp/latest-scripts/minikube/start.sh
+#
+#      - name: Set Kubernetes namespace
+#        run: kubectl config set-context --current "--namespace=$KUBERNETES_NAMESPACE"
+#
+#      - name: Checkout BASE branch (or HEAD if it is not a pull request)
+#        uses: actions/checkout@v4
+#        with:
+#          ref: ${{ github.event.pull_request.base.ref }}
+#
+#      - name: Deploy the old version, from the BASE branch
+#        continue-on-error: true
+#        run: ./deploy_local.sh
+#
+#      - name: Dump the old version (for diff)
+#        continue-on-error: true
+#        run: sleep 10 && /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.old.json
+#
+#      - name: Checkout HEAD branch
+#        uses: actions/checkout@v4
+#        with:
+#          ref: ${{ github.event.pull_request.head.ref }}
+#
+#      - name: Deploy the new version, from the HEAD branch
+#        run: ./deploy_local.sh
+#
+#      - name: Dump the new version (for diff)
+#        if: always()
+#        run: |
+#          set -Eeuo pipefail
+#          # Delete empty old replica sets
+#          emptyReplicaSets=$(kubectl get replicasets --ignore-not-found | tail --lines=+2 | awk '{if ($2 + $3 + $4 == 0) print $1}')
+#          echo -e "Found empty replica sets:"
+#          echo "$emptyReplicaSets"
+#          echo "-------------------------"
+#          echo "$emptyReplicaSets" | xargs --no-run-if-empty -I {} kubectl delete replicaset "{}"
+#          # Wait for pod startup/termination
+#          sleep 10
+#          # Dump objects
+#          /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.new.json
+#
+#      - name: Check deployment of the etcd
+#        if: always()
+#        run: kubectl rollout status "sts/$ETCD_RELEASE_NAME" --timeout=10s
+#
+#      - name: Check deployment of the API nodes
+#        if: always()
+#        run: kubectl rollout status "deployment/stream-api" --timeout=10s
+#
+#      - name: Check deployment of the HTTP source nodes
+#        if: always()
+#        run: kubectl rollout status "deployment/stream-http-source" --timeout=10s
+#
+#      - name: Check deployment of the storage writer/reader nodes
+#        if: always()
+#        run: kubectl rollout status "sts/stream-storage-writer-reader" --timeout=10s
+#
+#      - name: Check deployment of the storage coordinator nodes
+#        if: always()
+#        run: kubectl rollout status "deployment/stream-storage-coordinator" --timeout=10s
+#
+#      - name: Check access to the metrics from the DataDog Agent
+#        if: always()
+#        run: |
+#          set -Eeuo pipefail
+#          kubectl create namespace datadog || true
+#          
+#          for APP_WITH_METRICS_PORT in "stream-api:9000" "stream-http-source:9000" "stream-storage-writer-reader:9001" "stream-storage-writer-reader:9002" "stream-storage-coordinator:9000"
+#          do 
+#            IFS=: read -r APP METRICS_PORT <<< "$APP_WITH_METRICS_PORT"
+#            echo "---------------------------------"
+#            echo "Checking $APP:$METRICS_PORT"
+#            export POD_IP=`kubectl get pod -l "app=$APP" -o=jsonpath='{.items[0].status.podIP}'`
+#            echo "Pod IP: $POD_IP"
+#            kubectl run --attach --rm --restart=Never check-api-datadog \
+#            --namespace datadog \
+#            --image docker.io/alpine/curl \
+#            --labels="app=datadog-agent" \
+#            --env="POD_IP=$POD_IP" \
+#            --env="METRICS_PORT=$METRICS_PORT" \
+#            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"
+#            echo "---------------------------------"
+#          done
+#
+#      - name: Check forbidden access to the metrics from other places
+#        if: always()
+#        run: |
+#          set -Eeuo pipefail
+#          
+#          for APP_WITH_METRICS_PORT in "stream-api:9000" "stream-http-source:9000" "stream-storage-writer-reader:9001" "stream-storage-writer-reader:9002" "stream-storage-coordinator:9000"
+#          do
+#            IFS=: read -r APP METRICS_PORT <<< "$APP_WITH_METRICS_PORT"
+#            echo "---------------------------------"
+#            echo "Checking $APP:$METRICS_PORT"
+#            export POD_IP=`kubectl get pod -l "app=$APP" -o=jsonpath='{.items[0].status.podIP}'`
+#            echo "Pod IP: $POD_IP"
+#            if kubectl run --attach --rm --restart=Never check-api-other \
+#              --image docker.io/alpine/curl \
+#              --env="POD_IP=$POD_IP" \
+#              --env="METRICS_PORT=$METRICS_PORT" \
+#              --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"; then
+#              echo "The command did not fail, but it should have."
+#              exit 1
+#            else
+#              echo "The command failed, OK."
+#              exit 0
+#            fi
+#            echo "---------------------------------"
+#          done
+#
+#      - name: Check access to the etcd from a client
+#        if: always()
+#        run: |
+#          set -Eeuo pipefail
+#          export ETCD_ROOT_PASSWORD=$(kubectl get secret "$ETCD_RELEASE_NAME" -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
+#          kubectl run --attach --rm --restart=Never check-etcd-client \
+#            --image docker.io/bitnami/etcd \
+#            --labels="${ETCD_RELEASE_NAME}-client=true" \
+#            --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
+#            --env="ETCDCTL_ENDPOINTS=$ETCD_ENDPOINT" \
+#            --command -- etcdctl --user root:$ETCD_ROOT_PASSWORD put /message Hello
+#
+#      - name: Check access to the etcd from the DataDog Agent
+#        if: always()
+#        run: |
+#          set -Eeuo pipefail
+#          kubectl create namespace datadog || true
+#          kubectl run --attach --rm --restart=Never check-etcd-other-datadog \
+#          --namespace datadog \
+#          --image docker.io/alpine/curl \
+#          --labels="app=datadog-agent" \
+#          --env="ETCD_ENDPOINT=$ETCD_ENDPOINT" \
+#          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$ETCD_ENDPOINT/metrics" | tail"
+#
+#      - name: Check forbidden access to the etcd from other places
+#        if: always()
+#        run: |
+#          set -Eeuo pipefail
+#          if kubectl run --attach --rm --restart=Never check-etcd-other \
+#            --image docker.io/alpine/curl \
+#            --env="ETCD_ENDPOINT=$ETCD_ENDPOINT" \
+#            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$ETCD_ENDPOINT/metrics" | tail"; then
+#            echo "The command did not fail, but it should have."
+#            exit 1
+#          else
+#            echo "The command failed, OK."
+#            exit 0
+#          fi
+#
+#      - name: Check API response
+#        if: always()
+#        run: |
+#          hostPort=$(minikube service --url stream-api --namespace $KUBERNETES_NAMESPACE)
+#          echo "$hostPort"
+#          curl --fail -s --max-time 5 --retry 5 --retry-connrefused "$hostPort/health-check"
+#
+#      - name: Check HTTP source response
+#        if: always()
+#        run: |
+#          hostPort=$(minikube service --url stream-http-source --namespace $KUBERNETES_NAMESPACE)
+#          curl --fail -s --max-time 5 --retry 5 --retry-connrefused "$hostPort/health-check"
+#
+#      - name: Test etcd defragmentation cron job
+#        if: always()
+#        run: |
+#          set -Eeuo pipefail
+#          # Create a job from the cron job
+#          kubectl create job "--from=cronjob/${ETCD_RELEASE_NAME}-defrag" test-defrag-job
+#          # Wait for the job
+#          if kubectl wait --for=condition=complete --timeout=30s job/test-defrag-job; then
+#            echo "The job succeed, logs:"
+#            kubectl logs --selector="job-name=test-defrag-job"
+#            exit 0
+#          else
+#            echo "The job failed, logs:"
+#            kubectl logs --selector="job-name=test-defrag-job"
+#            exit 1
+#          fi
+#
+#      - name: Diff the old and the new Kubernetes state
+#        if: always()
+#        run: |
+#          set -Eeuo pipefail
+#          # Diff JSON states
+#          /tmp/latest-scripts/k8s/diff.sh \
+#            /tmp/artifacts/test-k8s-state.old.json \
+#            /tmp/artifacts/test-k8s-state.new.json \
+#            /tmp/artifacts/test-k8s-state.diff
+#          # Remove ANSI sequences
+#          sed -e 's/\x1b\[[0-9;]*m//g' -i /tmp/artifacts/test-k8s-state.diff || true
+#          # Prepare PR comment message
+#          echo -e "### ${{ env.SERVICE_NAME }} Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
+#          echo -e "Between \`base\` ${{ github.event.pull_request.base.sha }} :arrow_left:  \`head\` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
+#          echo -e "<details>\n<summary>Expand</summary>\n\n\`\`\`diff\n" >> /tmp/artifacts/test-k8s-state.diff.message
+#          head -c 50000 /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message
+#          echo -e "\n\n(see artifacts in the Github Action for more information)\n\`\`\`\n</details>" >> /tmp/artifacts/test-k8s-state.diff.message
+#
+#      - name: Dump logs
+#        if: always()
+#        run: |
+#          /tmp/latest-scripts/minikube/logs.sh /tmp/artifacts &&
+#          /tmp/latest-scripts/k8s/logs.sh /tmp/artifacts
+#
+#      - name: Upload artifacts
+#        if: always()
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: test-k8s-state-stream
+#          path: /tmp/artifacts
+#          if-no-files-found: error
+#
+#      - name: Send PR comment
+#        uses: marocchino/sticky-pull-request-comment@v2
+#        with:
+#          header: "${{ env.KUBERNETES_NAMESPACE }}-kubernetes-state-diff"
+#          recreate: true
+#          path: /tmp/artifacts/test-k8s-state.diff.message

@@ -78,12 +78,8 @@ spec:
             - name: config
               mountPath: /stream/config
               readOnly: true
-            - name: fast-001
-              mountPath: /stream/volumes/fast/fast-001
             - name: medium-001
               mountPath: /stream/volumes/medium/medium-001
-            - name: slow-001
-              mountPath: /stream/volumes/medium/slow-001
           env:
             - name: GOMEMLIMIT
               valueFrom:
@@ -136,12 +132,8 @@ spec:
             - name: config
               mountPath: /stream/config
               readOnly: true
-            - name: fast-001
-              mountPath: /stream/volumes/fast/fast-001
             - name: medium-001
               mountPath: /stream/volumes/medium/medium-001
-            - name: slow-001
-              mountPath: /stream/volumes/medium/slow-001
           env:
             - name: GOMEMLIMIT
               value: "${STREAM_STORAGE_READER_MEMORY_SOFT_LIMIT}B"
@@ -187,14 +179,6 @@ spec:
     # Storage classes: $STREAM_VOLUME_FAST_STORAGE_CLASS_NAME / $STREAM_VOLUME_MEDIUM_STORAGE_CLASS_NAME / $STREAM_VOLUME_SLOW_STORAGE_CLASS_NAME
     # Edit also writer and reader containers "volumeMounts" section!
     - metadata:
-        name: fast-001
-      spec:
-        accessModes: [ "ReadWriteOnce" ] # or ReadWriteOncePod
-        storageClassName: "$STREAM_VOLUME_FAST_STORAGE_CLASS_NAME"
-        resources:
-          requests:
-            storage: "$STREAM_VOLUME_FAST_STORAGE_SIZE"
-    - metadata:
         name: medium-001
       spec:
         accessModes: [ "ReadWriteOnce" ] # or ReadWriteOncePod
@@ -202,12 +186,3 @@ spec:
         resources:
           requests:
             storage: "$STREAM_VOLUME_MEDIUM_STORAGE_SIZE"
-    - metadata:
-        name: slow-001
-      spec:
-        accessModes: [ "ReadWriteOnce" ] # or ReadWriteOncePod
-        storageClassName: "$STREAM_VOLUME_SLOW_STORAGE_CLASS_NAME"
-        resources:
-          requests:
-            storage: "$STREAM_VOLUME_SLOW_STORAGE_SIZE"
-

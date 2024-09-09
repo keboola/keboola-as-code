@@ -1,9 +1,9 @@
-import {check} from 'k6';
+import { check } from 'k6';
 import http from "k6/http";
 import { Counter } from 'k6/metrics';
-import {randomItem} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import { randomItem } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 import { URL } from 'https://jslib.k6.io/url/1.0.0/index.js';
-import {Api, randomPayloads} from "./api.js";
+import { Api, randomPayloads } from "./api.js";
 
 const SCENARIO = __ENV.K6_SCENARIO || "constant"; // constant or ramping
 const TABLE_MAPPING = __ENV.K6_TABLE_MAPPING || "static"; // static or template
@@ -43,9 +43,9 @@ const scenarios = {
     executor: 'ramping-vus',
     startVUs: 0,
     stages: [
-      {target: RAMPING_MAX_VIRTUAL_USERS, duration: RAMPING_UP_DURATION},
-      {target: RAMPING_MAX_VIRTUAL_USERS, duration: RAMPING_STABLE_DURATION},
-      {target: 0, duration: RAMPING_DOWN_DURATION},
+      { target: RAMPING_MAX_VIRTUAL_USERS, duration: RAMPING_UP_DURATION },
+      { target: RAMPING_MAX_VIRTUAL_USERS, duration: RAMPING_STABLE_DURATION },
+      { target: 0, duration: RAMPING_DOWN_DURATION },
     ],
   }
 }
@@ -53,16 +53,16 @@ const scenarios = {
 const mappings = {
   static: {
     columns: [
-      {type: "uuid", name: "id", primaryKey: true},
-      {type: "datetime", name: "datetime"},
-      {type: "ip", name: "ip"},
-      {type: "body", name: "body"},
-      {type: "headers", name: "headers"},
+      { type: "uuid", name: "id", primaryKey: true },
+      { type: "datetime", name: "datetime" },
+      { type: "ip", name: "ip" },
+      { type: "body", name: "body" },
+      { type: "headers", name: "headers" },
     ],
   },
   template: {
     columns: [
-      {type: "uuid", name: "id", primaryKey: true},
+      { type: "uuid", name: "id", primaryKey: true },
       {
         type: "template",
         name: "template",
@@ -117,6 +117,7 @@ export function setup() {
     const replacement = new URL(OVERWRITE_SOURCE_HOST)
     sourceUrl.protocol = replacement.protocol
     sourceUrl.hostname = replacement.hostname
+    sourceUrl.port = replacement.port
   }
   console.log("Source url: " + sourceUrl)
 
@@ -130,14 +131,14 @@ export function setup() {
     }
   }
 
-  return {sourceId: source.id, sourceUrl: sourceUrl.toString(), params};
+  return { sourceId: source.id, sourceUrl: sourceUrl.toString(), params };
 }
 
 export function teardown(data) {
   api.deleteSource(data.sourceId)
 }
 
-export default function (data) {
+export default function(data) {
   // Single request
   if (PARALLEL_REQS_PER_USER <= 1) {
     checkResponse(http.post(data.sourceUrl, randomItem(payloads), data.params))
@@ -145,7 +146,7 @@ export default function (data) {
   }
 
   // Parallel requests
-  http.batch(Array.from({length: PARALLEL_REQS_PER_USER}, () => {
+  http.batch(Array.from({ length: PARALLEL_REQS_PER_USER }, () => {
     return {
       method: 'POST',
       url: data.sourceUrl,
@@ -162,6 +163,6 @@ function checkResponse(res) {
   })
   if (!passed) {
     console.error(`Request to ${res.request.url} with status ${res.status} failed the checks!`, res);
-    errors_metrics.add(1, {url: res.request.url});
+    errors_metrics.add(1, { url: res.request.url });
   }
 }
