@@ -250,7 +250,7 @@
       "defaultValue": "15m0s",
       "overwritten": false,
       "protected": false,
-      "validation": "required,minDuration=60s,maxDuration=24h"
+      "validation": "required,minDuration=30s,maxDuration=24h"
     },
     {
       "key": "storage.level.target.import.trigger.size",

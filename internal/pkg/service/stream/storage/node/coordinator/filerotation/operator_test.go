@@ -206,13 +206,18 @@ func setup(t *testing.T, ctx context.Context) *testState {
 	}
 
 	// The interval triggers import conditions check
-	conditionsCheckInterval := time.Second
+	minImportInterval := 1 * time.Second
+	conditionsCheckInterval := 1 * time.Second
+	require.GreaterOrEqual(t, conditionsCheckInterval, minImportInterval)
 
 	// Create dependencies
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
-		cfg.Storage.Level.Target.Import.Trigger = importTrigger
+		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
+			MinInterval: duration.From(minImportInterval),
+			Trigger:     importTrigger,
+		}
 		cfg.Storage.Level.Target.Operator.FileRotationCheckInterval = duration.From(conditionsCheckInterval)
 	}, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()

@@ -47,6 +47,6 @@ func NewConfig() Config {
 		ShutdownTimeout:        30 * time.Second,
 		KCPInputBuffer:         8 * datasize.MB,
 		KCPResponseBuffer:      512 * datasize.KB,
-		PipelineBalancer:       RandomBalancerType,
+		PipelineBalancer:       RoundRobinBalancerType,
 	}
 }

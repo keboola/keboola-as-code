@@ -41,13 +41,18 @@ func TestSliceRotation(t *testing.T) {
 	}
 
 	// The interval triggers upload conditions check
-	conditionsCheckInterval := time.Second
+	minUploadInterval := 1 * time.Second
+	conditionsCheckInterval := 1 * time.Second
+	require.GreaterOrEqual(t, conditionsCheckInterval, minUploadInterval)
 
 	// Create dependencies
 	clk := clock.NewMock()
 	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
-		cfg.Storage.Level.Staging.Upload.Trigger = uploadTrigger
+		cfg.Storage.Level.Staging.Upload = stagingConfig.UploadConfig{
+			MinInterval: duration.From(minUploadInterval),
+			Trigger:     uploadTrigger,
+		}
 		cfg.Storage.Level.Staging.Operator.SliceRotationCheckInterval = duration.From(conditionsCheckInterval)
 	}, commonDeps.WithClock(clk))
 	logger := mock.DebugLogger()

@@ -57,19 +57,25 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 		cfg.Storage.Level.Local.Writer.Network.PipelineBalancer = network.RoundRobinBalancerType
 
 		// In the test, we trigger the slice upload via the records count, the other values are intentionally high.
-		cfg.Storage.Level.Staging.Upload.Trigger = stagingConfig.UploadTrigger{
-			Count:    10,
-			Size:     1000 * datasize.MB,
-			Interval: duration.From(30 * time.Minute),
+		cfg.Storage.Level.Staging.Upload = stagingConfig.UploadConfig{
+			MinInterval: duration.From(1 * time.Second), // minimum
+			Trigger: stagingConfig.UploadTrigger{
+				Count:    10,
+				Size:     1000 * datasize.MB,
+				Interval: duration.From(30 * time.Minute),
+			},
 		}
 
 		// In the test, we trigger the file import via the records count, the other values are intentionally high.
-		cfg.Storage.Level.Target.Import.Trigger = targetConfig.ImportTrigger{
-			Count:       30,
-			Size:        1000 * datasize.MB,
-			Interval:    duration.From(30 * time.Minute),
-			SlicesCount: 100,
-			Expiration:  duration.From(30 * time.Minute),
+		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
+			MinInterval: duration.From(30 * time.Second), // minimum
+			Trigger: targetConfig.ImportTrigger{
+				Count:       30,
+				Size:        1000 * datasize.MB,
+				Interval:    duration.From(30 * time.Minute),
+				SlicesCount: 100,
+				Expiration:  duration.From(30 * time.Minute),
+			},
 		}
 	}
 
@@ -204,7 +210,7 @@ func (ts *testState) testSlicesUpload(
 	// sink.router and storage.router logs have no telemetry/details, for example: opened sink pipeline, opened encoding pipeline .... add info about slice/file...
 
 	// Expect slice rotation
-	ts.logSection(t, "expecting slices rotation")
+	ts.logSection(t, "expecting slices rotation (1s+)")
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		lastSlice := len(expectedUpload.expectedSlicesState)
 		// Both slices contain 10 records, deterministic RoundRobinBalancer has been used
@@ -334,13 +340,7 @@ func (ts *testState) testFileImport(
 	ts.sendRecords(t, ctx, 10)
 
 	// Expect file rotation
-	ts.logSection(t, "expecting file rotation")
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		lastFile := len(expectedFileImport.expectedFilesState)
-		stats1, err := ts.apiScp.StatisticsRepository().FileStats(ctx, files[lastFile-1].FileKey)
-		assert.NoError(c, err)
-		assert.Equal(c, uint64(30), stats1.Staging.RecordsCount)
-	}, 10*time.Second, 10*time.Millisecond)
+	ts.logSection(t, "expecting file rotation (30s+)")
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		if expectedFileImport.expectedCount > 30 {
 			ts.logger.AssertJSONMessages(c, `
@@ -353,7 +353,11 @@ func (ts *testState) testFileImport(
 {"level":"info","message":"rotated file","component":"storage.node.operator.file.rotation"}
 		`)
 		}
-	}, 10*time.Second, 100*time.Millisecond)
+		lastFile := len(expectedFileImport.expectedFilesState)
+		stats1, err := ts.apiScp.StatisticsRepository().FileStats(ctx, files[lastFile-1].FileKey)
+		assert.NoError(c, err)
+		assert.Equal(c, uint64(30), stats1.Staging.RecordsCount)
+	}, 60*time.Second, 100*time.Millisecond)
 
 	// Expect slices closing, upload and file closing
 	ts.logSection(t, "expecting file closing and slices upload")

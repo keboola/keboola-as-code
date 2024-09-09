@@ -31,6 +31,7 @@ func TestConfig_Validation(t *testing.T) {
 - "operator.sliceCloseTimeout" is a required field
 - "operator.sliceUploadCheckInterval" is a required field
 - "operator.sliceUploadTimeout" is a required field
+- "upload.minInterval" is a required field
 - "upload.trigger.count" is a required field
 - "upload.trigger.size" is a required field
 - "upload.trigger.interval" is a required field

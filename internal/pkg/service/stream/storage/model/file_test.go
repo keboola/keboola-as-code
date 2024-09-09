@@ -151,10 +151,12 @@ func TestFile_Validation(t *testing.T) {
 - "staging.provider" is a required field
 - "staging.compression" is a required field
 - "staging.expiration" is a required field
+- "staging.upload.minInterval" is a required field
 - "staging.upload.trigger.count" is a required field
 - "staging.upload.trigger.size" is a required field
 - "staging.upload.trigger.interval" is a required field
 - "target.provider" is a required field
+- "target.import.minInterval" is a required field
 - "target.import.trigger.count" is a required field
 - "target.import.trigger.size" is a required field
 - "target.import.trigger.interval" is a required field
