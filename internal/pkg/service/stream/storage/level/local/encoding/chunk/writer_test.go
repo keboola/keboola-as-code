@@ -53,7 +53,7 @@ func TestWriter_Ok(t *testing.T) {
 	n, err = w.Write([]byte("67890"))
 	assert.Equal(t, 5, n)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, w.CompletedChunks())
+	assert.Equal(t, 1, w.CompletedChunks())
 	expectedChunks = append(expectedChunks, "aligned = false, data = 1234567890")
 
 	// Write over the maximum
@@ -75,13 +75,13 @@ func TestWriter_Ok(t *testing.T) {
 	expectedChunks = append(expectedChunks, "aligned = true, data = kl")
 
 	// Write long message, which requires more than 2 chunks
-	n, err = w.Write([]byte("012345678901234567890123456789abc"))
+	n, err = w.Write([]byte("111111111122222222223333333333abc"))
 	assert.Equal(t, 33, n)
 	assert.NoError(t, err)
 	assert.Equal(t, 6, w.CompletedChunks())
-	expectedChunks = append(expectedChunks, "aligned = false, data = 0123456789")
-	expectedChunks = append(expectedChunks, "aligned = false, data = 0123456789")
-	expectedChunks = append(expectedChunks, "aligned = false, data = 0123456789")
+	expectedChunks = append(expectedChunks, "aligned = false, data = 1111111111")
+	expectedChunks = append(expectedChunks, "aligned = false, data = 2222222222")
+	expectedChunks = append(expectedChunks, "aligned = false, data = 3333333333")
 
 	// Flush
 	assert.NoError(t, w.Flush())

@@ -54,54 +54,44 @@ func (w *Writer) Write(p []byte) (total int, err error) {
 		return 0, errors.New("chunk.Writer is closed")
 	}
 
+	// Finalization, write all or nothing
+	var newChunks []*Chunk
+	activeChunkSnapshot := w.activeChunk.buffer.Len()
+	defer func() {
+		if err != nil {
+			// Revert all changes
+			w.activeChunk.buffer.Truncate(activeChunkSnapshot)
+			w.freeChunks(newChunks...)
+			return
+		}
+
+		// Confirm all changes
+		w.swapChunks(newChunks...)
+	}()
+
+	// Split payload to N chunks
 	toWrite := p
+	chunk := w.activeChunk
 	for len(toWrite) > 0 {
-		// Shortcut: write to the active chunk, if there is a free space
-		activeChunkSize := w.activeChunk.buffer.Len()
-		if activeChunkSize+len(toWrite) <= w.maxChunkSize {
-			n, err := w.activeChunk.write(toWrite)
-			if err != nil {
-				return total, err
-			}
-			total += n
-			break
-		}
-
 		// Get remaining space in the active chunk
-		remainingSpace := w.maxChunkSize - activeChunkSize
+		remainingSpace := w.maxChunkSize - chunk.buffer.Len()
 
-		// Determine how big part of the payload fits to the active chunk
-		toActual := toWrite[:remainingSpace]
+		// Determine how big part of the payload fits to the chunk
+		toActual := toWrite[:min(len(toWrite), remainingSpace)]
+		toWrite = toWrite[len(toActual):]
 
-		// Determine how big part overflows to the next chunk
-		toWrite = toWrite[remainingSpace:]
-		nextChunkSize := min(len(toWrite), w.maxChunkSize)
-
-		// Write overflow bytes to the new chunk
-		// This is before the code block bellow, because on error, we can throw the new chunk away.
-		next := w.emptyChunk()
-		{
-			n, err := next.write(toWrite[:nextChunkSize])
-			if err != nil {
-				w.freeChunk(next)
-				return total, err
-			}
-			total += n
-			toWrite = toWrite[nextChunkSize:]
+		// Write
+		n, err := chunk.write(toActual)
+		if err != nil {
+			return total, err
 		}
+		total += n
 
-		// Write bytes to the active chunk, up to the max chunk size, if there is some space
-		if len(toActual) > 0 {
-			n, err := w.activeChunk.write(toActual)
-			if err != nil {
-				w.freeChunk(next)
-				return total, err
-			}
-			total += n
+		// Create new chunk
+		if chunk.buffer.Len() == w.maxChunkSize {
+			chunk = w.emptyChunk()
+			newChunks = append(newChunks, chunk)
 		}
-
-		// Actual chunk is full, swap
-		w.swapChunks(next)
 	}
 
 	return total, nil
@@ -205,31 +195,35 @@ func (w *Writer) ProcessCompletedChunks(fn func(chunk *Chunk) error) error {
 			return err
 		}
 		processedIndex++
-		w.freeChunk(chunk)
+		w.freeChunks(chunk)
 	}
 
 	w.logger.Debugf(context.Background(), "%d chunks written", processedIndex)
 	return nil
 }
 
-// freeChunk after it is no longer used.
-func (w *Writer) freeChunk(v *Chunk) {
-	w.chunksPool.Put(v)
+// freeChunks after it is no longer used.
+func (w *Writer) freeChunks(all ...*Chunk) {
+	for _, v := range all {
+		w.chunksPool.Put(v)
+	}
 }
 
-func (w *Writer) swapChunks(newChunk *Chunk) {
-	if l := w.activeChunk.buffer.Len(); l > 0 {
-		w.maxChunkRealSize = min(w.maxChunkRealSize, l)
-		w.completedChunks = append(w.completedChunks, w.activeChunk)
-		w.logger.Debugf(context.Background(), "chunk completed, aligned = %t, size = %q", w.activeChunk.Aligned(), datasize.ByteSize(l).String())
+func (w *Writer) swapChunks(all ...*Chunk) {
+	for _, next := range all {
+		if l := w.activeChunk.buffer.Len(); l > 0 {
+			w.maxChunkRealSize = min(w.maxChunkRealSize, l)
+			w.completedChunks = append(w.completedChunks, w.activeChunk)
+			w.logger.Debugf(context.Background(), "chunk completed, aligned = %t, size = %q", w.activeChunk.Aligned(), datasize.ByteSize(l).String())
 
-		// Unblock WaitForChunkCh method
-		close(w.newChunkNotifier)
-		w.newChunkNotifier = make(chan struct{})
-	} else {
-		w.freeChunk(w.activeChunk)
+			// Unblock WaitForChunkCh method
+			close(w.newChunkNotifier)
+			w.newChunkNotifier = make(chan struct{})
+		} else {
+			w.freeChunks(w.activeChunk)
+		}
+		w.activeChunk = next
 	}
-	w.activeChunk = newChunk
 }
 
 func (w *Writer) emptyChunk() *Chunk {
