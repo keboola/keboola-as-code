@@ -299,7 +299,7 @@ func TestRenderer_Path_FormData_Full(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
-	assert.Equal(t, `{"key1":"bar1","key2[]":["bar2","bar3"]}`, val)
+	assert.Equal(t, `{"key1":"bar1","key2":["bar2","bar3"]}`, val)
 }
 
 func TestRenderer_Template_Json_Scalar(t *testing.T) {
@@ -435,7 +435,7 @@ func TestRenderer_Template_FormData_Full(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
-	assert.Equal(t, `{"key1":"bar1","key2[]":["bar2","bar3"]}`, val)
+	assert.Equal(t, `{"key1":"bar1","key2":["bar2","bar3"]}`, val)
 }
 
 func TestRenderer_Template_Headers(t *testing.T) {
