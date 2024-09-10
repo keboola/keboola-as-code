@@ -46,7 +46,7 @@ func NewWriter(logger log.Logger, maxChunkSize int) *Writer {
 }
 
 // Write data to the active chunk, overflow is written to a new chunk.
-func (w *Writer) Write(p []byte) (n int, err error) {
+func (w *Writer) Write(p []byte) (total int, err error) {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
@@ -54,34 +54,57 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 		return 0, errors.New("chunk.Writer is closed")
 	}
 
-	// Write to the active chunk, if there is a free space
-	l := w.activeChunk.buffer.Len()
-	if l+len(p) <= w.maxChunkSize {
-		return w.activeChunk.write(p)
-	}
-
-	// The write operation overflows the max chunk size
-	split := w.maxChunkSize - l
-
-	// Write overflow bytes to the new chunk
-	next := w.emptyChunk()
-	n2, err := next.write(p[split:])
-	if err != nil {
-		return 0, err
-	}
-
-	// Write bytes to the active chunk, up to the max chunk size, if there is some space
-	var n1 int
-	if split > 0 {
-		n1, err = w.activeChunk.write(p[:split])
-		if err != nil {
-			w.freeChunk(next)
-			return 0, err
+	toWrite := p
+	for len(toWrite) > 0 {
+		// Shortcut: write to the active chunk, if there is a free space
+		activeChunkSize := w.activeChunk.buffer.Len()
+		if activeChunkSize+len(toWrite) <= w.maxChunkSize {
+			n, err := w.activeChunk.write(toWrite)
+			if err != nil {
+				return total, err
+			}
+			total += n
+			break
 		}
+
+		// Get remaining space in the active chunk
+		remainingSpace := w.maxChunkSize - activeChunkSize
+
+		// Determine how big part of the payload fits to the active chunk
+		toActual := toWrite[:remainingSpace]
+
+		// Determine how big part overflows to the next chunk
+		toWrite = toWrite[remainingSpace:]
+		nextChunkSize := min(len(toWrite), w.maxChunkSize)
+
+		// Write overflow bytes to the new chunk
+		// This is before the code block bellow, because on error, we can throw the new chunk away.
+		next := w.emptyChunk()
+		{
+			n, err := next.write(toWrite[:nextChunkSize])
+			if err != nil {
+				w.freeChunk(next)
+				return total, err
+			}
+			total += n
+			toWrite = toWrite[nextChunkSize:]
+		}
+
+		// Write bytes to the active chunk, up to the max chunk size, if there is some space
+		if len(toActual) > 0 {
+			n, err := w.activeChunk.write(toActual)
+			if err != nil {
+				w.freeChunk(next)
+				return total, err
+			}
+			total += n
+		}
+
+		// Actual chunk is full, swap
+		w.swapChunks(next)
 	}
 
-	w.swapChunks(next)
-	return n1 + n2, nil
+	return total, nil
 }
 
 // Flush operation closes the active chunk with Aligned flag set to true.

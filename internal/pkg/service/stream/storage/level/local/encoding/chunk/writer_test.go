@@ -74,16 +74,30 @@ func TestWriter_Ok(t *testing.T) {
 	assert.Equal(t, 3, w.CompletedChunks())
 	expectedChunks = append(expectedChunks, "aligned = true, data = kl")
 
+	// Write long message, which requires more than 2 chunks
+	n, err = w.Write([]byte("012345678901234567890123456789abc"))
+	assert.Equal(t, 33, n)
+	assert.NoError(t, err)
+	assert.Equal(t, 6, w.CompletedChunks())
+	expectedChunks = append(expectedChunks, "aligned = false, data = 0123456789")
+	expectedChunks = append(expectedChunks, "aligned = false, data = 0123456789")
+	expectedChunks = append(expectedChunks, "aligned = false, data = 0123456789")
+
+	// Flush
+	assert.NoError(t, w.Flush())
+	assert.Equal(t, 7, w.CompletedChunks())
+	expectedChunks = append(expectedChunks, "aligned = true, data = abc")
+
 	// Empty flush
 	assert.NoError(t, w.Flush())
-	assert.Equal(t, 3, w.CompletedChunks())
+	assert.Equal(t, 7, w.CompletedChunks())
 
 	// Close
 	n, err = w.Write([]byte("xyz"))
 	assert.Equal(t, 3, n)
 	assert.NoError(t, err)
 	assert.NoError(t, w.Close())
-	assert.Equal(t, 4, w.CompletedChunks())
+	assert.Equal(t, 8, w.CompletedChunks())
 	expectedChunks = append(expectedChunks, "aligned = true, data = xyz")
 
 	// Compare
