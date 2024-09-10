@@ -4,6 +4,8 @@
 package terminal
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -21,6 +23,7 @@ import (
 )
 
 const (
+	termEscChar   = '\x1b'
 	sendDelay     = 20 * time.Millisecond
 	expectTimeout = 15 * time.Second
 )
@@ -32,12 +35,52 @@ type console struct {
 	tty   *tty
 }
 
+// ansiSplitReader is workaround for the issue in the vtx10/survey libraries.
+// There is an edge-case, when an <stdin> message and some <ansi> terminal escape sequence are read together: "<stdin><ansi>".
+// The "survey" library does not recognize <ansi> expression and waits endlessly.
+// It only happens in tests, in reality such a situation probably cannot happen.
+// We do not know if it is a bug in the vtx10 terminal emulator or in the survey CLI library.
+// Workaround: Split "<stdin><ansi>", to "<stdin>", "<ansi>" on read, using the Scanner.
+type ansiSplitReader struct {
+	scanner *bufio.Scanner
+}
+
+func newAnsiSplitReader(in io.Reader) io.Reader {
+	r := &ansiSplitReader{}
+	r.scanner = bufio.NewScanner(in)
+	r.scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		// Return the part up to the first ANSI escape sequence
+		if i := bytes.IndexByte(data, termEscChar); i >= 1 {
+			return i, data[0:i], nil
+		}
+		// No ANSI escape sequence, return all
+		return len(data), data, nil
+	})
+	return r
+}
+
+func (r *ansiSplitReader) Read(b []byte) (int, error) {
+	if !r.scanner.Scan() {
+		return 0, io.EOF
+	}
+	if err := r.scanner.Err(); err != nil {
+		return 0, err
+	}
+	s := r.scanner.Bytes()
+	if len(b) < len(s) {
+		panic(errors.Errorf("small buffer %d, required %d", len(b), len(s)))
+	}
+	copy(b, s)
+	return len(s), nil
+}
+
 // tty implements Tty, it is an os.File wrapper for virtual terminal TTY.
 // Unlike os.File, when Close() is called,
 // all running Read and Write operations are immediately terminated,
 // so the test timeout does not occur.
 type tty struct {
 	file   *os.File
+	reader io.Reader
 	closed chan struct{}
 }
 
@@ -59,7 +102,9 @@ func New(t *testing.T, opts ...expect.ConsoleOpt) (Console, error) {
 	)
 
 	out.Console, out.state, err = vt10x.NewVT10XConsole(opts...)
-	out.tty = &tty{file: out.Console.Tty(), closed: make(chan struct{})}
+
+	ttyFile := out.Console.Tty()
+	out.tty = &tty{file: ttyFile, reader: newAnsiSplitReader(ttyFile), closed: make(chan struct{})}
 	return out, err
 }
 
@@ -168,7 +213,7 @@ func (t *tty) Read(p []byte) (int, error) {
 	done := make(chan struct{})
 
 	go func() {
-		n, err = t.file.Read(p)
+		n, err = t.reader.Read(p)
 		close(done)
 	}()
 
