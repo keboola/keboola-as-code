@@ -253,8 +253,7 @@ func (t *tty) Close() error {
 		return errors.New("tty already closed")
 	default:
 		close(t.closed)
-		err := t.file.Close()
-		return err
+		return t.file.Close()
 	}
 }
 
