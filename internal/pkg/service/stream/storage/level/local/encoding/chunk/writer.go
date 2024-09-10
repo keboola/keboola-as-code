@@ -83,7 +83,7 @@ func (w *Writer) Write(p []byte) (total int, err error) {
 		// Write
 		n, err := chunk.write(toActual)
 		if err != nil {
-			return total, err
+			return 0, err
 		}
 		total += n
 
