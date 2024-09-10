@@ -302,6 +302,154 @@ func TestRenderer_Path_FormData_Full(t *testing.T) {
 	assert.Equal(t, `{"key1":"bar1","key2":["bar2","bar3"]}`, val)
 }
 
+func TestRenderer_Path_FormData_Scalar(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key1",
+	}
+
+	body := `key1=bar1&key2[]=bar2&key2[]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `"bar1"`, val)
+}
+
+func TestRenderer_Path_FormData_RawString(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path:      "key1",
+		RawString: true,
+	}
+
+	body := `key1=42`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `42`, val)
+}
+
+func TestRenderer_Path_FormData_Object(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key",
+	}
+
+	body := `key[x]=bar2&key[y]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `{"x":"bar2","y":"bar3"}`, val)
+}
+
+func TestRenderer_Path_FormData_ArrayOfObjects(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key",
+	}
+
+	body := `key[0][x]=bar2&key[1][x]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `[{"x":"bar2"},{"x":"bar3"}]`, val)
+}
+
+func TestRenderer_Path_FormData_ArrayIndex(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key[1]",
+	}
+
+	body := `key[0][x]=bar2&key[1][x]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `{"x":"bar3"}`, val)
+}
+
+func TestRenderer_Path_FormData_UndefinedKey_Error(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key2",
+	}
+
+	body := `key[0][x]=bar2&key[1][x]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	require.Error(t, err)
+	assert.Equal(t, `path "key2" not found in the body`, err.Error())
+}
+
+func TestRenderer_Path_FormData_UndefinedIndex_Error(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path: "key[2]",
+	}
+
+	body := `key[0][x]=bar2&key[1][x]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	require.Error(t, err)
+	assert.Equal(t, `path "key[2]" not found in the body`, err.Error())
+}
+
+func TestRenderer_Path_FormData_UndefinedKey_DefaultValue(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path:         "key2",
+		DefaultValue: ptr.Ptr("123"),
+	}
+
+	body := `key[0][x]=bar2&key[1][x]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `"123"`, val)
+}
+
+func TestRenderer_Path_FormData_UndefinedKey_DefaultValue_RawString(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path:         "key2",
+		DefaultValue: ptr.Ptr("123"),
+		RawString:    true,
+	}
+
+	body := `key[0][x]=bar2&key[1][x]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, `123`, val)
+}
+
 func TestRenderer_Template_Json_Scalar(t *testing.T) {
 	t.Parallel()
 
