@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/httputils"
 )
 
 type Renderer struct {
@@ -47,9 +48,9 @@ func (r *Renderer) CSVValue(c Column, ctx recordctx.Context) (string, error) {
 	case IP:
 		return ctx.ClientIP().String(), nil
 	case Path:
-		contentType := ctx.HeadersMap().GetOrNil("Content-Type")
+		contentType, ok := ctx.HeadersMap().GetOrNil("Content-Type").(string)
 
-		if contentType == "application/json" {
+		if ok && httputils.IsContentTypeJSON(contentType) {
 			return r.jsonPathCSVValue(c, ctx)
 		}
 
