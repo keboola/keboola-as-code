@@ -96,8 +96,7 @@ func parseKey(str string) (path orderedmap.Path, sliceAppend bool, err error) {
 			return path, sliceAppend, err
 		}
 
-		if isNumeric(part) {
-			v, _ := strconv.Atoi(part)
+		if v, err := strconv.ParseInt(part, 10, 64); err == nil {
 			path = append(path, orderedmap.SliceStep(v))
 		} else {
 			path = append(path, orderedmap.MapStep(part))
@@ -105,13 +104,4 @@ func parseKey(str string) (path orderedmap.Path, sliceAppend bool, err error) {
 	}
 
 	return path, sliceAppend, err
-}
-
-func isNumeric(s string) bool {
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
 }
