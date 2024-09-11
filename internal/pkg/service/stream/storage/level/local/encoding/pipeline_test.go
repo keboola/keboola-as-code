@@ -598,12 +598,14 @@ func newDummyEncoder(out io.Writer, writeDone chan struct{}) *dummyEncoder {
 }
 
 func (w *dummyEncoder) WriteRecord(record recordctx.Context) error {
-	body, err := record.BodyString()
+	body, err := record.BodyBytes()
 	if err != nil {
 		return err
 	}
 
-	_, err = w.out.Write([]byte(body + "\n"))
+	body = append(body, '\n')
+
+	_, err = w.out.Write(body)
 	if err == nil && w.writeDone != nil {
 		w.writeDone <- struct{}{}
 	}

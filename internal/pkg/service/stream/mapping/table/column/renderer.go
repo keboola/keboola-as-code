@@ -22,10 +22,10 @@ func NewRenderer() *Renderer {
 	}
 }
 
-func (r *Renderer) CSVValue(c Column, ctx recordctx.Context) (string, error) {
+func (r *Renderer) CSVValue(c Column, ctx recordctx.Context) (any, error) {
 	switch c := c.(type) {
 	case Body:
-		return ctx.BodyString()
+		return ctx.BodyBytes()
 	case Datetime:
 		// Time is always in UTC, time format has fixed length
 		return ctx.Timestamp().UTC().Format(TimeFormat), nil

@@ -120,7 +120,7 @@ func bodyStrFn(fnName string, vm *jsonnet.VM[recordctx.Context]) *jsonnet.Native
 				return nil, errors.Errorf("no parameter expected, found %d", len(params))
 			}
 
-			body, err := vm.Payload().BodyString()
+			body, err := vm.Payload().BodyBytes()
 			if err != nil {
 				return nil, err
 			}

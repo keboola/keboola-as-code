@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofrs/uuid/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
@@ -23,7 +24,9 @@ func TestRenderer_UUID(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{}))
 	assert.NoError(t, err)
-	id, err := uuid.FromString(val)
+	valStr, ok := val.(string)
+	require.True(t, ok)
+	id, err := uuid.FromString(valStr)
 	assert.NoError(t, err)
 	assert.Equal(t, uuid.V7, id.Version())
 }
@@ -60,7 +63,7 @@ func TestRenderer_Body(t *testing.T) {
 	body := "a,b,c"
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
-	assert.Equal(t, "a,b,c", val)
+	assert.Equal(t, []byte("a,b,c"), val)
 }
 
 func TestRenderer_Headers(t *testing.T) {

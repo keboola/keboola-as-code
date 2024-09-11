@@ -23,8 +23,6 @@ type httpContext struct {
 	clientIP      net.IP
 	headersMap    *orderedmap.OrderedMap
 	headersString *string
-	bodyString    *string
-	bodyStringErr error
 	bodyBytes     []byte
 	bodyBytesErr  error
 	bodyMap       *orderedmap.OrderedMap
@@ -79,26 +77,6 @@ func (c *httpContext) HeadersMap() *orderedmap.OrderedMap {
 		c.headersMap = c.headersToMap()
 	}
 	return c.headersMap
-}
-
-func (c *httpContext) BodyString() (string, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	if c.bodyString == nil && c.bodyStringErr == nil {
-		if bytes, err := c.bodyBytesWithoutLock(); err == nil {
-			v := string(bytes)
-			c.bodyString = &v
-		} else {
-			c.bodyStringErr = err
-		}
-	}
-
-	if c.bodyStringErr != nil {
-		return "", c.bodyStringErr
-	}
-
-	return *c.bodyString, nil
 }
 
 func (c *httpContext) BodyBytes() ([]byte, error) {

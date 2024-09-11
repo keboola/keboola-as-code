@@ -23,8 +23,6 @@ type fastHTTPContext struct {
 	clientIP      net.IP
 	headersMap    *orderedmap.OrderedMap
 	headersString *string
-	bodyString    *string
-	bodyStringErr error
 	bodyMap       *orderedmap.OrderedMap
 	bodyMapErr    error
 }
@@ -79,26 +77,6 @@ func (c *fastHTTPContext) HeadersMap() *orderedmap.OrderedMap {
 		c.headersMap = c.headersToMap()
 	}
 	return c.headersMap
-}
-
-func (c *fastHTTPContext) BodyString() (string, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	if c.bodyString == nil && c.bodyStringErr == nil {
-		if bytes, err := c.BodyBytes(); err == nil {
-			v := string(bytes)
-			c.bodyString = &v
-		} else {
-			c.bodyStringErr = err
-		}
-	}
-
-	if c.bodyStringErr != nil {
-		return "", c.bodyStringErr
-	}
-
-	return *c.bodyString, nil
 }
 
 func (c *fastHTTPContext) BodyBytes() ([]byte, error) {

@@ -47,11 +47,11 @@ func (w *Encoder) WriteRecord(record recordctx.Context) error {
 
 	// Map the record to tabular data
 	for i, col := range w.columns {
-		str, err := columnRenderer.CSVValue(col, record)
+		value, err := columnRenderer.CSVValue(col, record)
 		if err != nil {
 			return errors.PrefixErrorf(err, "cannot convert column %q to CSV value", col)
 		}
-		(*values)[i] = str
+		(*values)[i] = value
 	}
 
 	// Encode the values to CSV format
