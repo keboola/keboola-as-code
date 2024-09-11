@@ -103,6 +103,8 @@ data:
         writeBufferSize: 4KB
         # Max size of the HTTP request body. Validation rules: required
         maxRequestBodySize: 1MB
+        # Whether the requests should be streamed into server. Validation rules: required
+        streamRequestBody: false
     storage:
       # Mounted volumes path, each volume is in "{type}/{label}" subdir. Validation rules: required
       volumesPath: "/stream/volumes"

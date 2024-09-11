@@ -16,6 +16,7 @@ type Config struct {
 	ReadBufferSize     datasize.ByteSize `configKey:"readBufferSize" configUsage:"Read buffer size, all HTTP headers must fit in" validate:"required"`
 	WriteBufferSize    datasize.ByteSize `configKey:"writeBufferSize" configUsage:"Write buffer size." validate:"required"`
 	MaxRequestBodySize datasize.ByteSize `configKey:"maxRequestBodySize" configUsage:"Max size of the HTTP request body." validate:"required"`
+	StreamRequestBody  bool              `configKey:"streamRequestBody" configUsage:"Whether the requests should be streamed into server."`
 }
 
 func NewConfig() Config {
@@ -28,5 +29,6 @@ func NewConfig() Config {
 		ReadBufferSize:     16 * datasize.KB,
 		WriteBufferSize:    4 * datasize.KB,
 		MaxRequestBodySize: 1 * datasize.MB,
+		StreamRequestBody:  false,
 	}
 }

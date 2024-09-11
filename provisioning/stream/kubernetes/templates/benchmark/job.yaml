@@ -102,6 +102,8 @@ spec:
               value: "4m"
             - name: K6_RAMPING_DOWN_DURATION
               value: "2m"
+            - name: STREAM_PAYLOAD_SIZE
+              value: "1"
       tolerations:
         - key: app
           operator: Exists
