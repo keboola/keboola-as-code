@@ -33,7 +33,7 @@ const SYNC_MODE = __ENV.STREAM_SYNC_MODE || "disk"; // cache / disk
 const SYNC_WAIT = __ENV.STREAM_SYNC_WAIT || "1"; // 1 = enabled, 0 = disabled
 
 // Payload configuration
-const PAYLOAD_SIZE = __ENV.STREAM_PAYLOAD_SIZE || 1 // 1 = 54B, 1024 = ~1KB (1077B), 1048576 = ~1MB (1048629)
+const PAYLOAD_SIZE = __ENV.STREAM_PAYLOAD_SIZE || 1 // 1 = 54B, 1024 = ~1KB (1077B), 1048500 = ~1MB (1048576)
 
 // Available scenarios, use K6_SCENARIO env to select one
 const scenarios = {
