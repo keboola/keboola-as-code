@@ -146,57 +146,23 @@ func (r *Renderer) jsonPathCSVValue(c Path, ctx recordctx.Context) (string, erro
 	}
 
 	if resultErr == nil {
-		// Optimize TypeObject to avoid json decode and re-encode.
-		if value.Type() == fastjson.TypeObject {
-			return value.GetObject().String(), nil
+		if value.Type() == fastjson.TypeString && c.RawString {
+			return string(value.GetStringBytes()), nil
 		}
 
-		result, resultErr = r.getJSONValue(value)
+		return value.String(), nil
 	} else if c.DefaultValue != nil {
 		result = *c.DefaultValue
 		resultErr = nil
-	}
 
-	if resultErr != nil {
-		return "", resultErr
-	}
-
-	if c.RawString {
-		if stringValue, ok := result.(string); ok {
-			return stringValue, nil
-		}
-	}
-
-	return json.EncodeString(result, false)
-}
-
-func (r *Renderer) getJSONValue(value *fastjson.Value) (any, error) {
-	switch value.Type() {
-	case fastjson.TypeObject:
-		var result any
-		err := json.DecodeString(value.GetObject().String(), &result)
-		return result, err
-	case fastjson.TypeArray:
-		result := []any{}
-		for _, v := range value.GetArray() {
-			jsonValue, err := r.getJSONValue(v)
-			if err != nil {
-				return nil, err
+		if c.RawString {
+			if stringValue, ok := result.(string); ok {
+				return stringValue, nil
 			}
-			result = append(result, jsonValue)
 		}
-		return result, nil
-	case fastjson.TypeString:
-		return string(value.GetStringBytes()), nil
-	case fastjson.TypeNumber:
-		return value.GetFloat64(), nil
-	case fastjson.TypeTrue:
-		return true, nil
-	case fastjson.TypeFalse:
-		return false, nil
-	case fastjson.TypeNull:
-		return nil, nil
+
+		return json.EncodeString(result, false)
 	}
 
-	return nil, errors.New("Unexpected fastjson type")
+	return "", resultErr
 }
