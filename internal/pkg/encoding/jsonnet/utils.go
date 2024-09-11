@@ -1,10 +1,11 @@
 package jsonnet
 
 import (
+	"unsafe"
+
 	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
-	"unsafe"
 )
 
 // ValueToLiteral converts Go value to jsonnet.Ast literal.
