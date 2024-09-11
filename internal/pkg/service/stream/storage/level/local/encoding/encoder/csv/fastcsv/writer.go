@@ -3,10 +3,8 @@ package fastcsv
 import (
 	"bytes"
 	"io"
-	"strconv"
-	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/csvfmt"
 )
 
 // writer is simplified and optimized version of CSV writer.
@@ -26,7 +24,7 @@ func (w *writer) WriteRow(cols *[]any) error {
 	// Write each column
 	for n, col := range *cols {
 		// Cast the value to string
-		toWrite, err := w.toCSVValue(col)
+		toWrite, err := csvfmt.Format(col)
 		if err != nil {
 			return ValueError{ColumnIndex: n, err: err}
 		}
@@ -46,13 +44,13 @@ func (w *writer) WriteRow(cols *[]any) error {
 		// Write all until a special character
 		for len(toWrite) > 0 {
 			// Search for special characters
-			stop := strings.IndexRune(toWrite, '"')
+			stop := bytes.IndexRune(toWrite, '"')
 			if stop < 0 {
 				stop = len(toWrite)
 			}
 
 			// Copy verbatim everything before the special character.
-			if _, err := w.row.WriteString(toWrite[:stop]); err != nil {
+			if _, err := w.row.Write(toWrite[:stop]); err != nil {
 				return err
 			}
 
@@ -86,44 +84,4 @@ func (w *writer) WriteRow(cols *[]any) error {
 	}
 
 	return nil
-}
-
-func (w *writer) toCSVValue(v any) (string, error) {
-	// Inspired by cast.ToStringE(), but without slow reflection
-	switch s := v.(type) {
-	case string:
-		return s, nil
-	case bool:
-		return strconv.FormatBool(s), nil
-	case float64:
-		return strconv.FormatFloat(s, 'f', -1, 64), nil
-	case float32:
-		return strconv.FormatFloat(float64(s), 'f', -1, 32), nil
-	case int:
-		return strconv.FormatInt(int64(s), 10), nil
-	case int64:
-		return strconv.FormatInt(s, 10), nil
-	case int32:
-		return strconv.FormatInt(int64(s), 10), nil
-	case int16:
-		return strconv.FormatInt(int64(s), 10), nil
-	case int8:
-		return strconv.FormatInt(int64(s), 10), nil
-	case uint:
-		return strconv.FormatUint(uint64(s), 10), nil
-	case uint64:
-		return strconv.FormatUint(s, 10), nil
-	case uint32:
-		return strconv.FormatUint(uint64(s), 10), nil
-	case uint16:
-		return strconv.FormatUint(uint64(s), 10), nil
-	case uint8:
-		return strconv.FormatUint(uint64(s), 10), nil
-	case []byte:
-		return string(s), nil
-	case nil:
-		return "", nil
-	default:
-		return "", errors.Errorf("unable to cast %#v of type %T to string", v, v)
-	}
 }

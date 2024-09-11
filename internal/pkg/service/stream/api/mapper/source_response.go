@@ -10,6 +10,7 @@ import (
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/csvfmt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -79,9 +80,14 @@ func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definiti
 				return nil, err
 			}
 
+			csvValueBytes, err := csvfmt.Format(csvValue)
+			if err != nil {
+				return nil, err
+			}
+
 			row.Columns = append(row.Columns, &api.TestResultColumn{
 				Name:  c.ColumnName(),
-				Value: csvValue,
+				Value: string(csvValueBytes),
 			})
 		}
 

@@ -1,6 +1,8 @@
 package jsonnet
 
 import (
+	"unsafe"
+
 	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
@@ -48,19 +50,29 @@ func ValueToLiteral(v any) ast.Node {
 
 // ValueToJSONType converts Go value to a Json value for the Jsonnet VM.
 func ValueToJSONType(in any) any {
-	if v, ok := in.(*orderedmap.OrderedMap); ok {
+	switch v := in.(type) {
+	case []byte:
+		return bytesToStr(v)
+	case *orderedmap.OrderedMap:
 		m := make(map[string]any)
 		for _, k := range v.Keys() {
 			m[k], _ = v.Get(k)
 			m[k] = ValueToJSONType(m[k])
 		}
 		return m
-	}
-	if v, ok := in.([]any); ok {
+	case []any:
 		for i, arrVal := range v {
 			v[i] = ValueToJSONType(arrVal)
 		}
 		return v
 	}
+
 	return in
+}
+
+func bytesToStr(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	return unsafe.String(unsafe.SliceData(b), len(b))
 }
