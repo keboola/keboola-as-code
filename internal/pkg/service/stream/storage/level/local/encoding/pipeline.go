@@ -281,12 +281,8 @@ func (p *pipeline) WriteRecord(record recordctx.Context) error {
 	// Increments number of high-level writes in progress
 	p.acceptedWrites.Add(timestamp, 1)
 
-	// Set sync timeout
-	ctx, cancel := context.WithTimeout(record.Ctx(), 20*time.Second)
-	defer cancel()
-
 	// Wait for sync and return sync error, if any
-	if err := notifier.Wait(ctx); err != nil {
+	if err := notifier.Wait(record.Ctx()); err != nil {
 		return errors.PrefixError(err, "error when waiting for sync")
 	}
 
