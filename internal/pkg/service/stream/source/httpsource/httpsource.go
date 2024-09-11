@@ -129,6 +129,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		WriteBufferSize:              int(cfg.WriteBufferSize.Bytes()),
 		ReduceMemoryUsage:            false, // aggressively reduces memory usage at the cost of higher CPU usage
 		MaxRequestBodySize:           int(cfg.MaxRequestBodySize.Bytes()),
+		StreamRequestBody:            cfg.StreamRequestBody,
 		TCPKeepalive:                 true,
 		NoDefaultServerHeader:        true,
 		DisablePreParseMultipartForm: true,
