@@ -583,7 +583,7 @@ task/123/my-receiver/my-export/some.task/%s
 					attribute.Bool("is_success", false),
 					attribute.Bool("is_application_error", true),
 					attribute.String("error", "no space right on device"),
-					attribute.String("error_type", "other"),
+					attribute.String("error_type", "insufficientStorage"),
 				},
 				Events: []tracesdk.Event{
 					{
@@ -650,7 +650,7 @@ task/123/my-receiver/my-export/some.task/%s
 								attribute.String("task_type", "some.task"),
 								attribute.Bool("is_success", false),
 								attribute.Bool("is_application_error", true),
-								attribute.String("error_type", "other"),
+								attribute.String("error_type", "insufficientStorage"),
 							),
 						},
 					},

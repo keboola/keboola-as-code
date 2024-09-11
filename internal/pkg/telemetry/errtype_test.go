@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -25,4 +26,5 @@ func TestErrorType(t *testing.T) {
 	assert.Equal(t, "queue_api_123", ErrorType(&keboola.QueueError{ErrCode: 123}))
 	assert.Equal(t, "workspaces_api", ErrorType(&keboola.WorkspacesError{}))
 	assert.Equal(t, "other", ErrorType(errors.New("some error")))
+	assert.Equal(t, "badGateway", ErrorType(&svcerrors.BadGatewayError{}))
 }
