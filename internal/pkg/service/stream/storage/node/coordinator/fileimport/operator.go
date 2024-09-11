@@ -280,7 +280,6 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 
 	// Import file
 	err = o.doImportFile(ctx, lock, file)
-	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
 
@@ -288,16 +287,23 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 		defer dbCancel()
 
-		err := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).Err()
-		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file import retry: %s", err)
+		// If there is an error, increment retry delay
+		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).ResultOrErr()
+		if rErr != nil {
+			o.logger.Errorf(ctx, "cannot increment file import retry: %s", rErr)
 			return
 		}
+
+		o.logger.Infof(ctx, "file import will be retried after %q", fileEntity.RetryAfter.String())
 	}
 
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "imported file")
+	}
 }
 
 func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *fileData) error {
@@ -327,6 +333,5 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 		return errors.PrefixError(err, "cannot switch file to the imported state")
 	}
 
-	o.logger.Info(ctx, "imported file")
 	return nil
 }

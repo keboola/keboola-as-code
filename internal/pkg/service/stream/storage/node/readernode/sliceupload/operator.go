@@ -247,7 +247,6 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 
 	// Upload slice
 	err = o.doUploadSlice(ctx, volume, slice)
-	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
 
@@ -255,16 +254,23 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 		defer dbCancel()
 
-		err = o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(dbCtx).Err()
-		if err != nil {
-			o.logger.Errorf(ctx, "cannot increment file import retry: %s", err)
+		// If there is an error, increment retry delay
+		sliceEntity, rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(dbCtx).ResultOrErr()
+		if rErr != nil {
+			o.logger.Errorf(ctx, "cannot increment file import retry: %s", rErr)
 			return
 		}
+
+		o.logger.Infof(ctx, "slice upload will be retried after %q", sliceEntity.RetryAfter.String())
 	}
 
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	slice.Processed = true
+
+	if err == nil {
+		o.logger.Info(ctx, "uploaded slice")
+	}
 }
 
 func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume, slice *sliceData) error {
@@ -294,6 +300,5 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 		return errors.PrefixError(err, "cannot switch slice to the uploaded state")
 	}
 
-	o.logger.Info(ctx, "uploaded slice")
 	return nil
 }

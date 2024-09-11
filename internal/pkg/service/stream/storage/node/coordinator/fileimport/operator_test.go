@@ -144,19 +144,24 @@ func TestFileImportError(t *testing.T) {
 
 	// Await import error
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		ts.logger.AssertJSONMessages(c, `{"level":"error","message":"file import failed: File import to keboola failed","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}`)
+		ts.logger.AssertJSONMessages(c, `
+{"level":"error","message":"file import failed: File import to keboola failed","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}
+{"level":"info","message":"file import will be retried after \"2000-01-01T00:02:02.000Z\"","file.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.file.import"}
+`)
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Check state
+	failedAt := utctime.MustParse("2000-01-01T00:00:02.000Z")
+	retryAfter := utctime.MustParse("2000-01-01T00:02:02.000Z")
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		files, err = ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
 		require.NoError(c, err)
 		assert.Len(c, files, 2)
 		assert.Equal(c, model.FileImporting, files[0].State)
 		assert.Equal(c, 1, files[0].RetryAttempt)
-		assert.NotNil(c, files[0].FirstFailedAt)
-		assert.NotNil(c, files[0].LastFailedAt)
-		assert.NotNil(c, files[0].RetryAfter)
+		assert.Equal(c, &failedAt, files[0].FirstFailedAt)
+		assert.Equal(c, &failedAt, files[0].LastFailedAt)
+		assert.Equal(c, &retryAfter, files[0].RetryAfter)
 		assert.Equal(c, "file import failed: File import to keboola failed", files[0].RetryReason)
 		assert.Equal(c, model.FileWriting, files[1].State)
 		slices, err = ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
