@@ -73,7 +73,13 @@ az network application-gateway address-pool update \
   --gateway-name="$APPLICATION_GATEWAY_NAME" \
   --resource-group "$RESOURCE_GROUP" \
   --name=stream \
-  --servers "$API_IP_ADDRESS" "$HTTP_SOURCE_IP_ADDRESS"
+  --servers "$API_IP_ADDRESS"
+
+az network application-gateway address-pool update \
+  --gateway-name="$APPLICATION_GATEWAY_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --name=stream-in \
+  --servers "$HTTP_SOURCE_IP_ADDRESS"
 
 az network application-gateway probe update \
   --gateway-name="$APPLICATION_GATEWAY_NAME" \
