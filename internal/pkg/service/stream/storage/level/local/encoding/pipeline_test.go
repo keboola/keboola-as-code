@@ -46,8 +46,12 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 	assert.Equal(t, slice.SliceKey, w.SliceKey())
 
 	// Test write methods
-	assert.NoError(t, w.WriteRecord(recordctx.FromHTTP(d.Clock().Now(), &http.Request{Body: io.NopCloser(strings.NewReader("foo"))})))
-	assert.NoError(t, w.WriteRecord(recordctx.FromHTTP(d.Clock().Now(), &http.Request{Body: io.NopCloser(strings.NewReader("bar"))})))
+	n, err := w.WriteRecord(recordctx.FromHTTP(d.Clock().Now(), &http.Request{Body: io.NopCloser(strings.NewReader("foo"))}))
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
+	n, err = w.WriteRecord(recordctx.FromHTTP(d.Clock().Now(), &http.Request{Body: io.NopCloser(strings.NewReader("bar"))}))
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
 
 	// Test Close method
 	assert.NoError(t, w.Close(ctx))
@@ -158,12 +162,16 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
+		n, err := w.WriteRecord(tc.TestRecord("foo1"))
+		assert.NoError(t, err)
+		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
+		n, err := w.WriteRecord(tc.TestRecord("foo1"))
+		assert.NoError(t, err)
+		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
@@ -174,7 +182,9 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
+		n, err := w.WriteRecord(tc.TestRecord("foo2"))
+		assert.NoError(t, err)
+		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
@@ -185,7 +195,9 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
+		n, err := w.WriteRecord(tc.TestRecord("foo3"))
+		assert.NoError(t, err)
+		assert.Equal(t, 5, n)
 	}()
 	tc.ExpectWritesCount(t, 1)
 
@@ -253,12 +265,16 @@ func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
+		n, err := w.WriteRecord(tc.TestRecord("foo1"))
+		assert.NoError(t, err)
+		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
+		n, err := w.WriteRecord(tc.TestRecord("foo1"))
+		assert.NoError(t, err)
+		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
@@ -269,7 +285,9 @@ func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
+		n, err := w.WriteRecord(tc.TestRecord("foo2"))
+		assert.NoError(t, err)
+		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
@@ -280,7 +298,9 @@ func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
+		n, err := w.WriteRecord(tc.TestRecord("foo3"))
+		assert.NoError(t, err)
+		assert.Equal(t, 5, n)
 	}()
 	tc.ExpectWritesCount(t, 1)
 
@@ -342,18 +362,26 @@ func TestEncodingPipeline_Sync_NoWait_ToDisk(t *testing.T) {
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
+	n, err := w.WriteRecord(tc.TestRecord("foo1"))
+	assert.NoError(t, err)
+	assert.Equal(t, 5, n)
+	n, err = w.WriteRecord(tc.TestRecord("foo2"))
+	assert.NoError(t, err)
+	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
+	n, err = w.WriteRecord(tc.TestRecord("foo3"))
+	assert.NoError(t, err)
+	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo4")))
+	n, err = w.WriteRecord(tc.TestRecord("foo4"))
+	assert.NoError(t, err)
+	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
@@ -410,18 +438,26 @@ func TestEncodingPipeline_Sync_NoWait_ToDiskCache(t *testing.T) {
 	// Writes are NOT BLOCKING, write doesn't wait for the next sync
 
 	// Write two rows and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo1")))
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo2")))
+	n, err := w.WriteRecord(tc.TestRecord("foo1"))
+	assert.NoError(t, err)
+	assert.Equal(t, 5, n)
+	n, err = w.WriteRecord(tc.TestRecord("foo2"))
+	assert.NoError(t, err)
+	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 2)
 	tc.TriggerSync(t)
 
 	// Write one row and trigger sync
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo3")))
+	n, err = w.WriteRecord(tc.TestRecord("foo3"))
+	assert.NoError(t, err)
+	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
 	// Last write
-	assert.NoError(t, w.WriteRecord(tc.TestRecord("foo4")))
+	n, err = w.WriteRecord(tc.TestRecord("foo4"))
+	assert.NoError(t, err)
+	assert.Equal(t, 5, n)
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
@@ -597,19 +633,19 @@ func newDummyEncoder(out io.Writer, writeDone chan struct{}) *dummyEncoder {
 	return &dummyEncoder{out: out, writeDone: writeDone}
 }
 
-func (w *dummyEncoder) WriteRecord(record recordctx.Context) error {
+func (w *dummyEncoder) WriteRecord(record recordctx.Context) (int, error) {
 	body, err := record.BodyBytes()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	body = append(body, '\n')
 
-	_, err = w.out.Write(body)
+	n, err := w.out.Write(body)
 	if err == nil && w.writeDone != nil {
 		w.writeDone <- struct{}{}
 	}
-	return err
+	return n, err
 }
 
 func (w *dummyEncoder) Flush() error {

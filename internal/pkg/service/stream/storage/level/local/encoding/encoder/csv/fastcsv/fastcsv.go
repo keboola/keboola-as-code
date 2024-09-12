@@ -39,7 +39,7 @@ func NewWritersPool(out io.Writer, writers int) *WritersPool {
 	return p
 }
 
-func (p *WritersPool) WriteRow(cols *[]any) error {
+func (p *WritersPool) WriteRow(cols *[]any) (int, error) {
 	// The algorithm below is more efficient than
 	// if we send a pointer to a free writer directly through the channel.
 	//
@@ -49,8 +49,8 @@ func (p *WritersPool) WriteRow(cols *[]any) error {
 	// Read more: https://victoriametrics.com/blog/tsdb-performance-techniques-sync-pool/
 	<-p.sem
 	w := p.pool.Get().(*writer)
-	err := w.WriteRow(cols)
+	n, err := w.WriteRow(cols)
 	p.pool.Put(w)
 	p.sem <- struct{}{}
-	return err
+	return n, err
 }

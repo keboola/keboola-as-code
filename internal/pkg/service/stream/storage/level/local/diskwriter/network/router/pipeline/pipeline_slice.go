@@ -98,27 +98,28 @@ func (p *SlicePipeline) Type() string {
 	return "slice"
 }
 
-func (p *SlicePipeline) WriteRecord(c recordctx.Context) (pipelinePkg.RecordStatus, error) {
+func (p *SlicePipeline) WriteRecord(c recordctx.Context) (pipelinePkg.RecordStatus, int, error) {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 
 	// Pipeline must be opened and underlying network connection is healthy.
 	if p.pipeline == nil || !p.pipeline.IsReady() {
-		return pipelinePkg.RecordError, balancer.PipelineNotReadyError{}
+		return pipelinePkg.RecordError, 0, balancer.PipelineNotReadyError{}
 	}
 
 	// pipeline is not nil, SinkPipeline checks IsReady method
-	if err := p.pipeline.WriteRecord(c); err != nil {
-		return pipelinePkg.RecordError, err
+	n, err := p.pipeline.WriteRecord(c)
+	if err != nil {
+		return pipelinePkg.RecordError, n, err
 	}
 
 	// Record has been stored to OS disk cache or physical disk
 	if p.slice.Encoding.Sync.Wait {
-		return pipelinePkg.RecordProcessed, nil
+		return pipelinePkg.RecordProcessed, n, nil
 	}
 
 	// Record has been stored in an in-memory buffer
-	return pipelinePkg.RecordAccepted, nil
+	return pipelinePkg.RecordAccepted, n, nil
 }
 
 func (p *SlicePipeline) Close(ctx context.Context, cause string) {

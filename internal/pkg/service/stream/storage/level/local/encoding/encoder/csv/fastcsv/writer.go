@@ -17,28 +17,35 @@ func newWriter(out io.Writer) *writer {
 	return &writer{out: out}
 }
 
-func (w *writer) WriteRow(cols *[]any) error {
+func (w *writer) WriteRow(cols *[]any) (int, error) {
+	// Bytes written
+	n := 0
+
 	// Reset re-used buffer
 	w.row.Reset()
 
 	// Write each column
-	for n, col := range *cols {
+	for i, col := range *cols {
 		// Cast the value to string
 		toWrite, err := csvfmt.Format(col)
 		if err != nil {
-			return ValueError{ColumnIndex: n, err: err}
+			return n, ValueError{ColumnIndex: i, err: err}
 		}
 
 		// Comma between values
-		if n > 0 {
-			if _, err := w.row.WriteRune(','); err != nil {
-				return err
+		if i > 0 {
+			if b, err := w.row.WriteRune(','); err != nil {
+				return n, err
+			} else {
+				n += b
 			}
 		}
 
 		// Value start quote
-		if _, err := w.row.WriteRune('"'); err != nil {
-			return err
+		if b, err := w.row.WriteRune('"'); err != nil {
+			return n, err
+		} else {
+			n += b
 		}
 
 		// Write all until a special character
@@ -50,38 +57,46 @@ func (w *writer) WriteRow(cols *[]any) error {
 			}
 
 			// Copy verbatim everything before the special character.
-			if _, err := w.row.Write(toWrite[:stop]); err != nil {
-				return err
+			if b, err := w.row.Write(toWrite[:stop]); err != nil {
+				return n, err
+			} else {
+				n += b
 			}
 
 			toWrite = toWrite[stop:]
 
 			// Encode the special character
 			if len(toWrite) > 0 && toWrite[0] == '"' {
-				if _, err := w.row.WriteString(`""`); err != nil {
-					return err
+				if b, err := w.row.WriteString(`""`); err != nil {
+					return n, err
+				} else {
+					n += b
 				}
 				toWrite = toWrite[1:]
 			}
 		}
 
 		// Value end quote
-		if _, err = w.row.WriteRune('"'); err != nil {
-			return err
+		if b, err := w.row.WriteRune('"'); err != nil {
+			return n, err
+		} else {
+			n += b
 		}
 	}
 
 	// Row separator
-	_, err := w.row.WriteRune('\n')
-	if err != nil {
-		return err
+	if b, err := w.row.WriteRune('\n'); err != nil {
+		return n, err
+	} else {
+		n += b
 	}
 
 	// Flush the whole row or nothing
-	_, err = w.row.WriteTo(w.out)
-	if err != nil {
-		return err
+	if b, err := w.row.WriteTo(w.out); err != nil {
+		return n, err
+	} else {
+		n += int(b)
 	}
 
-	return nil
+	return n, nil
 }

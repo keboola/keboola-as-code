@@ -283,7 +283,7 @@ func (r *Router) SourcesCount() int {
 func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult {
 	startTime := r.clock.Now()
 
-	status, err := r.writeRecord(sink, c)
+	status, _, err := r.writeRecord(sink, c)
 	result := &SinkResult{
 		SinkID:     sink.sinkKey.SinkID,
 		StatusCode: resultStatusCode(status, err),
@@ -312,9 +312,9 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 	return result
 }
 
-func (r *Router) writeRecord(sink *sinkData, c recordctx.Context) (pipeline.RecordStatus, error) {
+func (r *Router) writeRecord(sink *sinkData, c recordctx.Context) (pipeline.RecordStatus, int, error) {
 	if r.isClosed() {
-		return pipeline.RecordError, ShutdownError{}
+		return pipeline.RecordError, 0, ShutdownError{}
 	}
 	return r.pipelineRef(sink).writeRecord(c)
 }
