@@ -54,7 +54,8 @@ type Router struct {
 
 type meters struct {
 	sourceDuration metric.Float64Histogram
-	sinkDuration metric.Float64Histogram
+	sourceBytes    metric.Int64Histogram
+	sinkDuration   metric.Float64Histogram
 }
 
 type dependencies interface {
@@ -76,8 +77,9 @@ func New(d dependencies, sourceType string) (*Router, error) {
 		collection:  newCollection(),
 		closed:      make(chan struct{}),
 		pipelines:   make(map[key.SinkKey]*pipelineRef),
-		meters:      &meters{
+		meters: &meters{
 			sourceDuration: d.Telemetry().Meter().FloatHistogram("keboola.go.stream.source.in.duration", "Duration of source requests.", "ms"),
+			sourceBytes:    d.Telemetry().Meter().IntHistogram("keboola.go.stream.source.in.bytes", "Source request length.", "B"),
 			sinkDuration:   d.Telemetry().Meter().FloatHistogram("keboola.go.stream.sink.in.duration", "Duration of source requests dispatched to sink.", "ms"),
 		},
 	}
@@ -267,6 +269,9 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	)
 	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	r.meters.sourceDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	if bytes, err := c.BodyBytes(); err == nil {
+		r.meters.sourceBytes.Record(finalizationCtx, int64(len(bytes)), metric.WithAttributes(attrs...))
+	}
 
 	return result
 }
