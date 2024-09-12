@@ -105,31 +105,32 @@ func (r *Renderer) mapPathCSVValue(c Path, ctx recordctx.Context) (string, error
 }
 
 func (r *Renderer) jsonPathCSVValue(c Path, ctx recordctx.Context) (string, error) {
+	// Get fastjson.Value, needs to be cached in recordctx as it might be used in multiple columns
 	value, err := ctx.JSONValue(r.fastjsonPool)
 	if err != nil {
 		return "", err
 	}
 
-	path := orderedmap.PathFromStr(c.Path)
-
-	keys := []string{}
-	for _, step := range path {
-		var key string
-
-		switch step := step.(type) {
-		case orderedmap.MapStep:
-			key = step.Key()
-		case orderedmap.SliceStep:
-			key = strconv.Itoa(step.Index())
-		}
-
-		keys = append(keys, key)
-	}
-
-	var result any
 	var resultErr error
 
-	if len(keys) > 0 {
+	path := orderedmap.PathFromStr(c.Path)
+	if len(path) > 0 {
+		// Transform orderedmap.Path to a slice of keys used by fastjson
+		keys := []string{}
+		for _, step := range path {
+			var key string
+
+			switch step := step.(type) {
+			case orderedmap.MapStep:
+				key = step.Key()
+			case orderedmap.SliceStep:
+				key = strconv.Itoa(step.Index())
+			}
+
+			keys = append(keys, key)
+		}
+
+		// Fetch the desired value from the json
 		if value.Exists(keys...) {
 			value = value.Get(keys...)
 		} else {
@@ -138,14 +139,16 @@ func (r *Renderer) jsonPathCSVValue(c Path, ctx recordctx.Context) (string, erro
 	}
 
 	if resultErr == nil {
+		// Return unquoted string if the value is a string and RawString is set to true.
 		if value.Type() == fastjson.TypeString && c.RawString {
 			return string(value.GetStringBytes()), nil
 		}
 
+		// Return the found value (json encoded)
 		return value.String(), nil
 	} else if c.DefaultValue != nil {
-		result = *c.DefaultValue
-		resultErr = nil
+		// An error happened while processing the path, but we have a DefaultValue to use.
+		var result any = *c.DefaultValue
 
 		if c.RawString {
 			if stringValue, ok := result.(string); ok {
