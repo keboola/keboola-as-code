@@ -216,7 +216,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t Task, fn runTaskF
 	// so locally can be determined that the task is already running.
 	ok, unlock := n.lockTaskLocally(lock.Key())
 	if !ok {
-		return Task{}, nil, nil
+		return Task{}, nil, TaskLockError{errors.Errorf("task already running %q", taskKey)}
 	}
 
 	// Create task model

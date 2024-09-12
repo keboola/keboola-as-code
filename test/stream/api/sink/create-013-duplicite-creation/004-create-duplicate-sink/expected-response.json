@@ -1,0 +1,5 @@
+{
+  "statusCode": 409,
+  "error": "stream.api.sinkAlreadyExists",
+  "message": "Sink \"%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink\" already exists in the source."
+}

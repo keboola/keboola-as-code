@@ -10,6 +10,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
@@ -18,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 //nolint:dupl // CreateSource method is similar
@@ -64,6 +66,10 @@ func (s *service) CreateSink(ctx context.Context, d dependencies.SourceRequestSc
 		},
 	})
 	if err != nil {
+		if errors.As(err, &task.TaskLockError{}) {
+			return nil, svcerrors.NewResourceAlreadyExistsError("sink", sink.SinkKey.String(), "source")
+		}
+
 		return nil, err
 	}
 
