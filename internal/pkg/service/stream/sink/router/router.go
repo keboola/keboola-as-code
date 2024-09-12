@@ -77,8 +77,8 @@ func New(d dependencies, sourceType string) (*Router, error) {
 		closed:      make(chan struct{}),
 		pipelines:   make(map[key.SinkKey]*pipelineRef),
 		meters:      &meters{
-			sourceDuration: d.Telemetry().Meter().Histogram("keboola.go.stream.source.in.duration", "Duration of source requests.", "ms"),
-			sinkDuration:   d.Telemetry().Meter().Histogram("keboola.go.stream.sink.in.duration", "Duration of source requests dispatched to sink.", "ms"),
+			sourceDuration: d.Telemetry().Meter().FloatHistogram("keboola.go.stream.source.in.duration", "Duration of source requests.", "ms"),
+			sinkDuration:   d.Telemetry().Meter().FloatHistogram("keboola.go.stream.sink.in.duration", "Duration of source requests dispatched to sink.", "ms"),
 		},
 	}
 
