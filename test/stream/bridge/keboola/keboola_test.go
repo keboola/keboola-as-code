@@ -18,7 +18,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
@@ -27,28 +26,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
-type withProcess interface {
-	Process() *servicectx.Process
-}
-
-type sliceUpload struct {
-	startCount                  int                // Last uploaded slice count
-	count                       int                // How many slices should we upload
-	expectedFilesState          []model.FileState  // Files state that we expect to be slices inserted into
-	expectedSlicesState         []model.SliceState // Initial state of slices before upload
-	expectedUploadedSlicesState []model.SliceState // State of slices that were uploaded + slices that were rotated during upload
-}
-
-type fileImport struct {
-	expectedCount       int                // How many slices within files should be uploaded
-	expectedFilesState  []model.FileState  // Intial state of files before import
-	expectedSlicesState []model.SliceState // Slices that are expected to be imported
-}
+// To see details run: TEST_VERBOSE=true go test ./test/stream/bridge/... -v
 
 func TestKeboolaBridgeWorkflow(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
 	// Update configuration to make the cluster testable
@@ -82,162 +65,249 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 	ts := setup(t, ctx, configFn)
 	defer ts.teardown(t, ctx)
 
+	// Check initial state
+	ts.checkState(t, ctx, []file{
+		{
+			state: model.FileWriting,
+			volumes: []volume{
+				{
+					slices: []model.SliceState{
+						model.SliceWriting,
+					},
+				},
+				{
+					slices: []model.SliceState{
+						model.SliceWriting,
+					},
+				},
+			},
+		},
+	})
+
+	// First upload
+	ts.logSection(t, "testing first upload")
+	ts.testSlicesUpload(t, ctx, sliceUpload{
+		records: records{
+			startID: 1,
+			count:   20,
+		},
+		expectedFiles: []file{
+			{
+				state: model.FileWriting,
+				volumes: []volume{
+					{
+						slices: []model.SliceState{
+							model.SliceUploaded, // <<<<<
+							model.SliceWriting,
+						},
+					},
+					{
+						slices: []model.SliceState{
+							model.SliceUploaded, // <<<<<
+							model.SliceWriting,
+						},
+					},
+				},
+			},
+		},
+	})
+
+	// First import
+	ts.logSection(t, "testing first import")
+	ts.testFileImport(t, ctx, fileImport{
+		sendRecords: records{
+			startID: 21,
+			count:   10,
+		},
+		expectedFileRecords: records{
+			startID: 1,
+			count:   30,
+		},
+		expectedTableRecords: records{
+			startID: 1,
+			count:   30,
+		},
+		expectedFiles: []file{
+			{
+				state: model.FileImported, // <<<<<
+				volumes: []volume{
+					{
+						slices: []model.SliceState{
+							model.SliceImported,
+							model.SliceImported,
+						},
+					},
+					{
+						slices: []model.SliceState{
+							model.SliceImported,
+							model.SliceImported,
+						},
+					},
+				},
+			},
+			{
+				state: model.FileWriting,
+				volumes: []volume{
+					{
+						slices: []model.SliceState{
+							model.SliceWriting,
+						},
+					},
+					{
+						slices: []model.SliceState{
+							model.SliceWriting,
+						},
+					},
+				},
+			},
+		},
+	})
+
+	ts.logSection(t, "testing second upload")
 	ts.testSlicesUpload(
 		t,
 		ctx,
 		sliceUpload{
-			0,
-			20,
-			[]model.FileState{
-				model.FileWriting,
+			records: records{
+				startID: 31,
+				count:   20,
 			},
-			[]model.SliceState{
-				model.SliceWriting,
-				model.SliceWriting,
-			},
-			[]model.SliceState{
-				model.SliceUploaded,
-				model.SliceWriting,
-				model.SliceUploaded,
-				model.SliceWriting,
-			},
-		},
-	)
-	ts.testFileImport(
-		t,
-		ctx,
-		fileImport{
-			30,
-			[]model.FileState{model.FileWriting},
-			[]model.SliceState{
-				model.SliceUploaded,
-				model.SliceWriting,
-				model.SliceUploaded,
-				model.SliceWriting,
-			},
-		},
-	)
-	// Trigger new import of file by pushing another 30 slices
-	ts.testSlicesUpload(
-		t,
-		ctx,
-		sliceUpload{
-			30,
-			20,
-			[]model.FileState{
-				model.FileImported,
-				model.FileWriting,
-			},
-			[]model.SliceState{
-				model.SliceImported,
-				model.SliceImported,
-				model.SliceImported,
-				model.SliceImported,
-				model.SliceWriting,
-				model.SliceWriting,
-			},
-			[]model.SliceState{
-				model.SliceImported,
-				model.SliceImported,
-				model.SliceImported,
-				model.SliceImported,
-				model.SliceUploaded,
-				model.SliceWriting,
-				model.SliceUploaded,
-				model.SliceWriting,
-			},
-		},
-	)
-	ts.testFileImport(
-		t,
-		ctx,
-		fileImport{
-			60,
-			[]model.FileState{
-				model.FileImported,
-				model.FileWriting,
-			},
-			[]model.SliceState{
-				model.SliceImported,
-				model.SliceImported,
-				model.SliceImported,
-				model.SliceImported,
-				model.SliceUploaded,
-				model.SliceWriting,
-				model.SliceUploaded,
-				model.SliceWriting,
+			expectedFiles: []file{
+				{
+					state: model.FileImported,
+					volumes: []volume{
+						{
+							slices: []model.SliceState{
+								model.SliceImported,
+								model.SliceImported,
+							},
+						},
+						{
+							slices: []model.SliceState{
+								model.SliceImported,
+								model.SliceImported,
+							},
+						},
+					},
+				},
+				{
+					state: model.FileWriting,
+					volumes: []volume{
+						{
+							slices: []model.SliceState{
+								model.SliceUploaded, // <<<<<
+								model.SliceWriting,
+							},
+						},
+						{
+							slices: []model.SliceState{
+								model.SliceUploaded, // <<<<<
+								model.SliceWriting,
+							},
+						},
+					},
+				},
 			},
 		},
 	)
 
-	// Test simultanous slice and file rotations
-	ts.sendRecords(t, ctx, 69)
+	ts.logSection(t, "testing second import")
+	ts.testFileImport(t, ctx, fileImport{
+		sendRecords: records{
+			startID: 51,
+			count:   10,
+		},
+		expectedFileRecords: records{
+			startID: 31,
+			count:   30,
+		},
+		expectedTableRecords: records{
+			startID: 1,
+			count:   60,
+		},
+		expectedFiles: []file{
+			{
+				state: model.FileImported,
+				volumes: []volume{
+					{
+						slices: []model.SliceState{
+							model.SliceImported,
+							model.SliceImported,
+						},
+					},
+					{
+						slices: []model.SliceState{
+							model.SliceImported,
+							model.SliceImported,
+						},
+					},
+				},
+			},
+			{
+				state: model.FileImported, // <<<<<
+				volumes: []volume{
+					{
+						slices: []model.SliceState{
+							model.SliceImported,
+							model.SliceImported,
+						},
+					},
+					{
+						slices: []model.SliceState{
+							model.SliceImported,
+							model.SliceImported,
+						},
+					},
+				},
+			},
+			{
+				state: model.FileWriting,
+				volumes: []volume{
+					{
+						slices: []model.SliceState{
+							model.SliceWriting,
+						},
+					},
+					{
+						slices: []model.SliceState{
+							model.SliceWriting,
+						},
+					},
+				},
+			},
+		},
+	})
+
+	// Test simultaneous slice and file rotations
+	ts.logSection(t, "testing simultaneous file and slice rotations, both conditions are met")
+	ts.logger.Truncate()
+	ts.sendRecords(t, ctx, 61, 69)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"closed file","component":"storage.node.operator.file.rotation"}
+{"level":"info","message":"importing file","component":"storage.node.operator.file.import"}
+{"level":"info","message":"imported file","component":"storage.node.operator.file.import"}
 		`)
-	}, 15*time.Second, 100*time.Millisecond)
+	}, 60*time.Second, 100*time.Millisecond)
+	ts.checkKeboolaTable(t, ctx, 1, 129)
 }
 
-func (ts *testState) testSlicesUpload(
-	t *testing.T,
-	ctx context.Context,
-	expectedUpload sliceUpload,
-) {
+func (ts *testState) testSlicesUpload(t *testing.T, ctx context.Context, expectations sliceUpload) {
 	t.Helper()
-	// Check file/slices state.
-	// There is one opened file (FileWriting), two disk writer nodes, each with one volume, with one opened slice (SliceWriting)
-	files := ts.getFiles(t, ctx)
-	slices := ts.getSlices(t, ctx)
-	assert.Len(t, files, len(expectedUpload.expectedFilesState))
-	assert.Len(t, slices, len(expectedUpload.expectedSlicesState))
-	for i, fileState := range expectedUpload.expectedFilesState {
-		assert.Equal(t, fileState, files[i].State)
-	}
-
-	half := len(expectedUpload.expectedSlicesState) / 2
-	for i := range half {
-		// Volume 1
-		assert.Equal(t, expectedUpload.expectedSlicesState[i], slices[i].State)
-		// Volume 2
-		assert.Equal(t, expectedUpload.expectedSlicesState[half+i], slices[half+i].State)
-	}
-
-	// Write 10 records to both slices to trigger slices upload
 	ts.logger.Truncate()
-	ts.sendRecords(t, ctx, expectedUpload.count)
 
-	// sink.router and storage.router logs have no telemetry/details, for example: opened sink pipeline, opened encoding pipeline .... add info about slice/file...
+	// Check records count
+	require.Equal(t, 0, expectations.records.count%2, "records count cannot be balanced evenly into 2 slices")
+
+	// Write N records to both slices to trigger slices upload
+	ts.sendRecords(t, ctx, expectations.records.startID, expectations.records.count)
 
 	// Expect slice rotation
 	ts.logSection(t, "expecting slices rotation (1s+)")
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		lastSlice := len(expectedUpload.expectedSlicesState)
-		// Both slices contain 10 records, deterministic RoundRobinBalancer has been used
-		stats1, err := ts.apiScp.StatisticsRepository().SliceStats(ctx, slices[lastSlice-2].SliceKey)
-		assert.NoError(c, err)
-		if half == 10 {
-			assert.Equal(c, uint64(10), stats1.Total.RecordsCount)
-		}
-		stats2, err := ts.apiScp.StatisticsRepository().SliceStats(ctx, slices[lastSlice-1].SliceKey)
-		assert.NoError(c, err)
-		if half == 10 {
-			assert.Equal(c, uint64(10), stats2.Total.RecordsCount)
-		}
-	}, 10*time.Second, 10*time.Millisecond)
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		// Slices are uploaded independently, so we have to use multiple asserts
-		if half == 10 {
-			ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: 10, threshold: 10","component":"storage.node.operator.slice.rotation"}
-		`)
-		} else {
-			ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
-{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}
-		`)
-		}
+		rotatingMsg := fmt.Sprintf(`{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}`, expectations.records.count/2)
+		ts.logger.AssertJSONMessages(c, fmt.Sprintf("%s\n%s\n", rotatingMsg, rotatingMsg))
 		ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"rotated slice","component":"storage.node.operator.slice.rotation"}
 {"level":"info","message":"rotated slice","component":"storage.node.operator.slice.rotation"}
@@ -262,29 +332,37 @@ func (ts *testState) testSlicesUpload(
 	}, 15*time.Second, 10*time.Millisecond)
 
 	// Check file/slices state after the upload
-	files = ts.getFiles(t, ctx)
-	slices = ts.getSlices(t, ctx)
-	assert.Len(t, files, len(expectedUpload.expectedFilesState))
-	assert.Len(t, slices, len(expectedUpload.expectedUploadedSlicesState))
-	for i, fileState := range expectedUpload.expectedFilesState {
-		assert.Equal(t, fileState, files[i].State)
+	files := ts.checkState(t, ctx, expectations.expectedFiles)
+
+	// Get uploaded slices from the last file
+	var uploadedSlices []model.Slice
+	for _, s := range files[len(files)-1].slices {
+		if s.State == model.SliceUploaded {
+			uploadedSlices = append(uploadedSlices, s)
+		}
 	}
 
-	for i := range expectedUpload.expectedUploadedSlicesState {
-		assert.Equal(t, expectedUpload.expectedUploadedSlicesState[i], slices[i].State)
-		assert.False(t, slices[i].LocalStorage.IsEmpty)
-	}
+	// Check statistics
+	assert.Len(t, uploadedSlices, 2)
+	sliceStats1, err := ts.apiScp.StatisticsRepository().SliceStats(ctx, uploadedSlices[0].SliceKey)
+	assert.NoError(t, err)
+	sliceStats2, err := ts.apiScp.StatisticsRepository().SliceStats(ctx, uploadedSlices[1].SliceKey)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, sliceStats1.Staging.RecordsCount)
+	assert.NotEmpty(t, sliceStats2.Staging.RecordsCount)
+	assert.Equal(t, expectations.records.count/2, int(sliceStats1.Staging.RecordsCount))
+	assert.Equal(t, expectations.records.count/2, int(sliceStats2.Staging.RecordsCount))
 
 	// Check slices manifest in the staging storage
 	ts.logSection(t, "checking slices manifest in the staging storage")
 	keboolaFiles, err := ts.project.ProjectAPI().ListFilesRequest(ts.branchID).Send(ctx)
 	require.NoError(t, err)
-	require.Len(t, *keboolaFiles, len(expectedUpload.expectedFilesState))
+	require.Len(t, *keboolaFiles, len(expectations.expectedFiles))
 	downloadCred, err := ts.project.ProjectAPI().GetFileWithCredentialsRequest((*keboolaFiles)[len(*keboolaFiles)-1].FileKey).Send(ctx)
 	require.NoError(t, err)
 	slicesList, err := keboola.DownloadManifest(ctx, downloadCred)
 	require.NoError(t, err)
-	require.Len(t, slicesList, expectedUpload.count/10)
+	require.Len(t, slicesList, len(uploadedSlices))
 
 	// Check content of slices in the staging storage
 	ts.logSection(t, "checking slices content in the staging storage")
@@ -297,66 +375,30 @@ func (ts *testState) testSlicesUpload(
 		sliceContentBytes, err := io.ReadAll(gzipReader)
 		require.NoError(t, err)
 		sliceContent := string(sliceContentBytes)
-		if half == 10 {
-			assert.Equal(t, expectedUpload.count/2, strings.Count(sliceContent, "\n"))
-		}
+		assert.Equal(t, expectations.records.count/2, strings.Count(sliceContent, "\n"))
 		allSlicesContent += sliceContent
 		require.NoError(t, gzipReader.Close())
 		require.NoError(t, rawReader.Close())
 	}
-
-	for i := range expectedUpload.count {
-		assert.True(t, strings.Contains(allSlicesContent, fmt.Sprintf(`,"foo%d"`, expectedUpload.startCount+i+1)))
+	for i := range expectations.records.count {
+		assert.True(t, strings.Contains(allSlicesContent, fmt.Sprintf(`,"foo%d"`, expectations.records.startID+i)))
 	}
 }
 
-func (ts *testState) testFileImport(
-	t *testing.T,
-	ctx context.Context,
-	expectedFileImport fileImport,
-) {
-	// Check file/slices state
-	// There is one opened file (FileWriting), two disk writer nodes, each with one volume - with one opened slice (SliceWriting)
-	// There are also two already uploaded slices.
+func (ts *testState) testFileImport(t *testing.T, ctx context.Context, expectations fileImport) {
 	t.Helper()
-	files := ts.getFiles(t, ctx)
-	slices := ts.getSlices(t, ctx)
-	assert.Len(t, files, len(expectedFileImport.expectedFilesState))
-	assert.Len(t, slices, len(expectedFileImport.expectedSlicesState))
-	for i, fileState := range expectedFileImport.expectedFilesState {
-		assert.Equal(t, fileState, files[i].State)
-	}
-
-	half := len(expectedFileImport.expectedSlicesState) / 2
-	for i := range half {
-		// Volume 1
-		assert.Equal(t, expectedFileImport.expectedSlicesState[i], slices[i].State)
-		// Volume 2
-		assert.Equal(t, expectedFileImport.expectedSlicesState[half+i], slices[half+i].State)
-	}
-
-	// Write 5 records to both slices to trigger file import
 	ts.logger.Truncate()
-	ts.sendRecords(t, ctx, 10)
+
+	// Send N records to both slices to trigger file import
+	ts.sendRecords(t, ctx, expectations.sendRecords.startID, expectations.sendRecords.count)
 
 	// Expect file rotation
-	ts.logSection(t, "expecting file rotation (30s+)")
+	ts.logSection(t, "expecting file rotation (min 30s from the previous)")
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		if expectedFileImport.expectedCount > 30 {
-			ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"rotating file, import conditions met: count threshold met, records count: %d, threshold: 30","component":"storage.node.operator.file.rotation"}
-{"level":"info","message":"rotated file","component":"storage.node.operator.file.rotation"}
-		`)
-		} else {
-			ts.logger.AssertJSONMessages(c, `
+		ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"rotating file, import conditions met: count threshold met, records count: 30, threshold: 30","component":"storage.node.operator.file.rotation"}
 {"level":"info","message":"rotated file","component":"storage.node.operator.file.rotation"}
 		`)
-		}
-		lastFile := len(expectedFileImport.expectedFilesState)
-		stats1, err := ts.apiScp.StatisticsRepository().FileStats(ctx, files[lastFile-1].FileKey)
-		assert.NoError(c, err)
-		assert.Equal(c, uint64(30), stats1.Staging.RecordsCount)
 	}, 60*time.Second, 100*time.Millisecond)
 
 	// Expect slices closing, upload and file closing
@@ -391,30 +433,46 @@ func (ts *testState) testFileImport(
 		`)
 	}, 60*time.Second, 100*time.Millisecond)
 
+	// Check file/slices state after the upload
+	files := ts.checkState(t, ctx, expectations.expectedFiles)
+
+	// Check statistics
+	prevFile := files[len(files)-2]
+	fileStats, err := ts.apiScp.StatisticsRepository().FileStats(ctx, prevFile.file.FileKey)
+	assert.NoError(t, err)
+	assert.Equal(t, expectations.expectedFileRecords.count, int(fileStats.Target.RecordsCount))
+
 	// Check Keboola table
-	ts.logSection(t, "checking Keboola table after the file import")
-	tablePreview, err := ts.project.ProjectAPI().PreviewTableRequest(keboola.TableKey{BranchID: ts.branchID, TableID: ts.tableID}, keboola.WithLimitRows(100)).Send(ctx)
+	ts.checkKeboolaTable(t, ctx, expectations.expectedTableRecords.startID, expectations.expectedTableRecords.count)
+}
+
+func (ts *testState) checkKeboolaTable(t *testing.T, ctx context.Context, start, expectedCount int) {
+	t.Helper()
+
+	ts.logSection(t, fmt.Sprintf("checking Keboola table, expected records %d - %d", start, start+expectedCount-1))
+	tablePreview, err := ts.project.ProjectAPI().PreviewTableRequest(keboola.TableKey{BranchID: ts.branchID, TableID: ts.tableID}, keboola.WithLimitRows(500)).Send(ctx)
 	require.NoError(t, err)
+
 	assert.Equal(t, []string{"datetime", "body"}, tablePreview.Columns)
-	assert.Len(t, tablePreview.Rows, expectedFileImport.expectedCount)
+	assert.Len(t, tablePreview.Rows, expectedCount)
+
 	tablePreviewStr := json.MustEncodeString(tablePreview, true)
-	for i := range expectedFileImport.expectedCount {
-		assert.True(t, strings.Contains(tablePreviewStr, fmt.Sprintf("foo%d", i+1)))
+	for i := range expectedCount {
+		assert.True(t, strings.Contains(tablePreviewStr, fmt.Sprintf("foo%d", start+i)))
 	}
 }
 
-func (ts *testState) sendRecords(t *testing.T, ctx context.Context, n int) {
+func (ts *testState) sendRecords(t *testing.T, ctx context.Context, start, n int) {
 	t.Helper()
-	ts.logSection(t, fmt.Sprintf("sending %d HTTP records", n))
-	for range n {
-		ts.recordID++
+	ts.logSection(t, fmt.Sprintf("sending HTTP records %d - %d", start, start+n-1))
+	for i := range n {
 		// Distribute requests to store keys evenly on source nodes
 		sourceURL := ts.sourceURL1
-		if ts.recordID%2 == 1 {
+		if i%2 == 1 {
 			sourceURL = ts.sourceURL2
 		}
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, sourceURL, strings.NewReader(fmt.Sprintf("foo%d", ts.recordID)))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, sourceURL, strings.NewReader(fmt.Sprintf("foo%d", start+i)))
 		require.NoError(t, err)
 		resp, err := ts.httpClient.Do(req)
 		if assert.NoError(t, err) {
@@ -422,20 +480,6 @@ func (ts *testState) sendRecords(t *testing.T, ctx context.Context, n int) {
 			assert.NoError(t, resp.Body.Close())
 		}
 	}
-}
-
-func (ts *testState) getSlices(t *testing.T, ctx context.Context) []model.Slice {
-	t.Helper()
-	slices, err := ts.apiScp.StorageRepository().Slice().ListIn(ts.sinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	return slices
-}
-
-func (ts *testState) getFiles(t *testing.T, ctx context.Context) []model.File {
-	t.Helper()
-	files, err := ts.apiScp.StorageRepository().File().ListIn(ts.sinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	return files
 }
 
 func (ts *testState) logSection(t *testing.T, section string) {
