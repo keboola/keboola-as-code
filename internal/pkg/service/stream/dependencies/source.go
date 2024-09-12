@@ -81,7 +81,7 @@ func newSourceScope(svcScp ServiceScope, distScp dependencies.DistributionScope,
 
 	statsCollector.Start(d, d.encodingManager.Events(), cfg.Storage.Statistics.Collector, cfg.NodeID)
 
-	d.sinkRouter, err = sinkRouter.New(d)
+	d.sinkRouter, err = sinkRouter.New(d, sourceType)
 	if err != nil {
 		return nil, err
 	}

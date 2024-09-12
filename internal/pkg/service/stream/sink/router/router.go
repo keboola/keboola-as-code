@@ -6,8 +6,12 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"time"
 
+	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -19,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -27,6 +32,8 @@ const (
 )
 
 type Router struct {
+	sourceType  string
+	clock       clock.Clock
 	logger      log.Logger
 	plugins     *plugin.Plugins
 	definitions *definitionRepo.Repository
@@ -40,23 +47,39 @@ type Router struct {
 
 	// wg waits for all writes/goroutines
 	wg sync.WaitGroup
+
+	// OTEL metrics
+	meters *meters
+}
+
+type meters struct {
+	sourceDuration metric.Float64Histogram
+	sinkDuration metric.Float64Histogram
 }
 
 type dependencies interface {
+	Clock() clock.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
 	Plugins() *plugin.Plugins
 	DefinitionRepository() *definitionRepo.Repository
+	Telemetry() telemetry.Telemetry
 }
 
-func New(d dependencies) (*Router, error) {
+func New(d dependencies, sourceType string) (*Router, error) {
 	r := &Router{
+		sourceType:  sourceType,
+		clock:       d.Clock(),
 		logger:      d.Logger().WithComponent("sink.router"),
 		plugins:     d.Plugins(),
 		definitions: d.DefinitionRepository(),
 		collection:  newCollection(),
 		closed:      make(chan struct{}),
 		pipelines:   make(map[key.SinkKey]*pipelineRef),
+		meters:      &meters{
+			sourceDuration: d.Telemetry().Meter().Histogram("keboola.go.stream.source.in.duration", "Duration of source requests.", "ms"),
+			sinkDuration:   d.Telemetry().Meter().Histogram("keboola.go.stream.sink.in.duration", "Duration of source requests dispatched to sink.", "ms"),
+		},
 	}
 
 	ctx, cancelStream := context.WithCancel(context.Background())
@@ -175,6 +198,8 @@ func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context)
 }
 
 func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) *SourceResult {
+	startTime := r.clock.Now()
+
 	result := &SourceResult{
 		ProjectID:  sourceKey.ProjectID,
 		SourceID:   sourceKey.SourceID,
@@ -229,6 +254,20 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 		result.Finalize()
 	}
 
+	// Create context for task finalization, the original context could have timed out.
+	// If release of the lock takes longer than the ttl, lease is expired anyway.
+	finalizationCtx, finalizationCancel := context.WithTimeout(context.WithoutCancel(c.Ctx()), 5*time.Second)
+	defer finalizationCancel()
+
+	// Update telemetry
+	attrs := append(
+		sourceKey.Telemetry(),
+		attribute.Bool("has_error", result.FailedSinks > 0),
+		attribute.String("source_type", r.sourceType),
+	)
+	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	r.meters.sourceDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+
 	return result
 }
 
@@ -237,6 +276,8 @@ func (r *Router) SourcesCount() int {
 }
 
 func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult {
+	startTime := r.clock.Now()
+
 	status, err := r.writeRecord(sink, c)
 	result := &SinkResult{
 		SinkID:     sink.sinkKey.SinkID,
@@ -248,6 +289,20 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 	if result.StatusCode == http.StatusInternalServerError {
 		r.logger.Errorf(context.Background(), `write record error: %s`, err.Error())
 	}
+
+	// Create context for task finalization, the original context could have timed out.
+	// If release of the lock takes longer than the ttl, lease is expired anyway.
+	finalizationCtx, finalizationCancel := context.WithTimeout(context.WithoutCancel(c.Ctx()), 5*time.Second)
+	defer finalizationCancel()
+
+	// Update telemetry
+	attrs := append(
+		sink.sinkKey.Telemetry(),
+		attribute.String("error_type", telemetry.ErrorType(err)),
+		attribute.String("sink_type", sink.sinkType.String()),
+	)
+	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	r.meters.sinkDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
 
 	return result
 }
