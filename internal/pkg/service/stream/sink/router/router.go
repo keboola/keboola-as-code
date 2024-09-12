@@ -56,6 +56,7 @@ type meters struct {
 	sourceDuration metric.Float64Histogram
 	sourceBytes    metric.Int64Histogram
 	sinkDuration   metric.Float64Histogram
+	sinkBytes      metric.Int64Histogram
 }
 
 type dependencies interface {
@@ -81,6 +82,7 @@ func New(d dependencies, sourceType string) (*Router, error) {
 			sourceDuration: d.Telemetry().Meter().FloatHistogram("keboola.go.stream.source.in.duration", "Duration of source requests.", "ms"),
 			sourceBytes:    d.Telemetry().Meter().IntHistogram("keboola.go.stream.source.in.bytes", "Source request length.", "B"),
 			sinkDuration:   d.Telemetry().Meter().FloatHistogram("keboola.go.stream.sink.in.duration", "Duration of source requests dispatched to sink.", "ms"),
+			sinkBytes:      d.Telemetry().Meter().IntHistogram("keboola.go.stream.sink.in.bytes", "Bytes written to sink.", "B"),
 		},
 	}
 
@@ -283,7 +285,7 @@ func (r *Router) SourcesCount() int {
 func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult {
 	startTime := r.clock.Now()
 
-	status, _, err := r.writeRecord(sink, c)
+	status, n, err := r.writeRecord(sink, c)
 	result := &SinkResult{
 		SinkID:     sink.sinkKey.SinkID,
 		StatusCode: resultStatusCode(status, err),
@@ -308,6 +310,7 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 	)
 	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	r.meters.sinkDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	r.meters.sinkBytes.Record(finalizationCtx, int64(n), metric.WithAttributes(attrs...))
 
 	return result
 }
