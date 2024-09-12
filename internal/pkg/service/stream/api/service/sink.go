@@ -40,8 +40,8 @@ func (s *service) CreateSink(ctx context.Context, d dependencies.SourceRequestSc
 		ProjectID: d.ProjectID(),
 		ObjectKey: sink.SinkKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			// Lock: create only one sink per source at a time
-			lock := s.locks.NewMutex(fmt.Sprintf("api.source.create.sink.%s", sink.SourceKey))
+			// Lock: create/modify only one sink per source at a time
+			lock := s.locks.NewMutex(fmt.Sprintf("api.source.sinks.%s", sink.SourceKey))
 			if err := lock.Lock(ctx); err != nil {
 				return task.ErrResult(err)
 			}
@@ -125,6 +125,17 @@ func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScop
 		ProjectID: d.ProjectID(),
 		ObjectKey: d.SinkKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			// Lock: create/modify only one sink per source at a time
+			lock := s.locks.NewMutex(fmt.Sprintf("api.source.sinks.%s", sink.SourceKey))
+			if err := lock.Lock(ctx); err != nil {
+				return task.ErrResult(err)
+			}
+			defer func() {
+				if err := lock.Unlock(ctx); err != nil {
+					s.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
+				}
+			}()
+
 			// Update the sink, with retries on a collision
 			if err := s.definition.Sink().Update(d.SinkKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err == nil {
 				result := task.OkResult("Sink has been updated successfully.")
