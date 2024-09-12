@@ -64,6 +64,15 @@ const mappings = {
       { type: "headers", name: "headers" },
     ],
   },
+  path: {
+    columns: [
+      {type: "uuid", name: "id", primaryKey: true},
+      {type: "path", name: "int", path: "a"},
+      {type: "path", name: "object", path: "c"},
+      {type: "path", name: "string", path: "c.f.g", rawString: true},
+      {type: "path", name: "undefined", path: "x", defaultValue: "default"},
+    ],
+  },
   template: {
     columns: [
       { type: "uuid", name: "id", primaryKey: true },
@@ -72,8 +81,24 @@ const mappings = {
         name: "template",
         template: {
           language: "jsonnet",
-          undefinedValueStrategy: "null",
           content: `Body('a')+":"+Body('c.f.g')`,
+        },
+      },
+      {
+        type: "template",
+        name: "object",
+        template: {
+          language: "jsonnet",
+          content: `Body('c')`,
+        },
+      },
+      {
+        type: "template",
+        name: "undefined",
+        template: {
+          language: "jsonnet",
+          undefinedValueStrategy: "null",
+          content: `Body('x')`,
         },
       },
     ],

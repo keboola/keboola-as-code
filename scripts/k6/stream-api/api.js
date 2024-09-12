@@ -125,7 +125,7 @@ export function randomPayloads(payloadLength) {
   return new SharedArray('payloads', function() {
     let payloads = []
     for (let i = 0; i < 100; i++) {
-      payloads.push(JSON.stringify({ a: "b", c: { d: "e", f: { g: randomString(10), h: "a".repeat(payloadLength) } } }))
+      payloads.push(JSON.stringify({ a: 1, c: { d: "e", f: { g: randomString(10), h: "a".repeat(payloadLength) } } }))
     }
     return payloads
   })
