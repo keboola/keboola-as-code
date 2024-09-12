@@ -140,7 +140,7 @@ func (r *Renderer) jsonPathCSVValue(c Path, ctx recordctx.Context) (string, erro
 
 	if resultErr == nil {
 		// Return unquoted string if the value is a string and RawString is set to true.
-		if value.Type() == fastjson.TypeString && c.RawString {
+		if c.RawString && value.Type() == fastjson.TypeString {
 			return string(value.GetStringBytes()), nil
 		}
 
@@ -148,15 +148,11 @@ func (r *Renderer) jsonPathCSVValue(c Path, ctx recordctx.Context) (string, erro
 		return value.String(), nil
 	} else if c.DefaultValue != nil {
 		// An error happened while processing the path, but we have a DefaultValue to use.
-		var result any = *c.DefaultValue
-
 		if c.RawString {
-			if stringValue, ok := result.(string); ok {
-				return stringValue, nil
-			}
+			return *c.DefaultValue, nil
 		}
 
-		return json.EncodeString(result, false)
+		return json.EncodeString(*c.DefaultValue, false)
 	}
 
 	return "", resultErr
