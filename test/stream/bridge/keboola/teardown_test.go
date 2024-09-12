@@ -5,8 +5,13 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
+
+type withProcess interface {
+	Process() *servicectx.Process
+}
 
 func (ts *testState) teardown(t *testing.T, ctx context.Context) {
 	t.Helper()

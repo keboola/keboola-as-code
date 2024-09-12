@@ -26,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -372,65 +373,70 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
-	o.logger.Info(ctx, "closing file")
-
-	// Wait until all file slices are uploaded
-	if err := o.waitForSlicesUpload(ctx, file.FileKey); err != nil {
-		err = errors.PrefixError(err, "error when waiting for file slices upload")
-		o.logger.Error(ctx, err.Error())
-		return
-	}
-
-	// Make sure the statistics cache is up-to-date
-	if err := o.statisticsCache.WaitForRevision(ctx, file.ModRevision); err != nil {
-		err = errors.PrefixError(err, "error when waiting for statistics cache revision")
-		o.logger.Error(ctx, err.Error())
-		return
-	}
-
-	// Get file statistics
-	stats, err := o.statisticsCache.FileStats(ctx, file.FileKey)
-	if err != nil {
-		o.logger.Errorf(ctx, "cannot get file statistics: %s", err)
-		return
-	}
-
-	// Lock all file operations
-	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
-	if err != nil {
-		o.logger.Errorf(ctx, `file close error: %s`, err)
-		return
-	}
-	defer unlock()
+	// Wait for all slices upload, get statistics
+	stats, opErr := o.waitForFileClosing(ctx, file)
 
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
-	// Switch file to the importing state
-	isEmpty := stats.Total.RecordsCount == 0
-	err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), isEmpty).RequireLock(lock).Do(dbCtx).Err()
-	if err != nil {
-		err = errors.PrefixError(err, "cannot switch file to the importing state")
+	// Lock all file operations
+	lock, unlock, lockErr := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
+	if lockErr != nil {
+		o.logger.Errorf(ctx, `file close error: %s`, lockErr)
+		return
+	}
+	defer unlock()
+
+	// Switch file to the importing state, if the waitForFileClosing has been successful
+	if opErr == nil {
+		isEmpty := stats.Total.RecordsCount == 0
+		opErr = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), isEmpty).RequireLock(lock).Do(dbCtx).Err()
+		if opErr != nil {
+			opErr = errors.PrefixError(opErr, "cannot switch file to the importing state")
+		}
 	}
 
 	// If there is an error, increment retry delay
-	if err != nil {
-		o.logger.Error(dbCtx, err.Error())
-		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+	if opErr != nil {
+		o.logger.Error(dbCtx, opErr.Error())
+		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), opErr.Error()).RequireLock(lock).Do(ctx).ResultOrErr()
 		if rErr != nil {
-			o.logger.Errorf(ctx, "cannot increment file close retry", err)
+			o.logger.Errorf(ctx, "cannot increment file close retry", rErr)
 			return
 		}
+		o.logger.Infof(ctx, "file closing will be retried after %q", fileEntity.RetryAfter.String())
 	}
 
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
 
-	if err == nil {
+	if opErr == nil {
 		o.logger.Info(ctx, "closed file")
 	}
+}
+
+func (o *operator) waitForFileClosing(ctx context.Context, file *fileData) (statistics.Aggregated, error) {
+	o.logger.Info(ctx, "closing file")
+
+	// Wait until all file slices are uploaded
+	if err := o.waitForSlicesUpload(ctx, file.FileKey); err != nil {
+		return statistics.Aggregated{}, errors.PrefixError(err, "error when waiting for file slices upload")
+	}
+
+	// Make sure the statistics cache is up-to-date
+	if err := o.statisticsCache.WaitForRevision(ctx, file.ModRevision); err != nil {
+		return statistics.Aggregated{}, errors.PrefixError(err, "error when waiting for statistics cache revision")
+	}
+
+	// Get file statistics
+	stats, err := o.statisticsCache.FileStats(ctx, file.FileKey)
+	if err != nil {
+		return statistics.Aggregated{}, errors.PrefixError(err, "cannot get file statistics")
+	}
+
+	return stats, nil
 }
 
 func (o *operator) waitForSlicesUpload(ctx context.Context, fileKey model.FileKey) error {

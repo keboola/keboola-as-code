@@ -69,9 +69,8 @@ type testState struct {
 	coordinatorScp2  dependencies.CoordinatorScope
 	coordinatorMock2 dependencies.Mocked
 
-	sinkKey  key.SinkKey
-	tableID  keboola.TableID
-	recordID int
+	sinkKey key.SinkKey
+	tableID keboola.TableID
 }
 
 func setup(t *testing.T, ctx context.Context, modifyConfig func(cfg *config.Config)) testState {
