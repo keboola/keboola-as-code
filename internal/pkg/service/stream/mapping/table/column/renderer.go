@@ -105,15 +105,7 @@ func (r *Renderer) mapPathCSVValue(c Path, ctx recordctx.Context) (string, error
 }
 
 func (r *Renderer) jsonPathCSVValue(c Path, ctx recordctx.Context) (string, error) {
-	body, err := ctx.BodyBytes()
-	if err != nil {
-		return "", err
-	}
-
-	parser := r.fastjsonPool.Get()
-	defer r.fastjsonPool.Put(parser)
-
-	value, err := parser.ParseBytes(body)
+	value, err := ctx.JSONValue(r.fastjsonPool)
 	if err != nil {
 		return "", err
 	}

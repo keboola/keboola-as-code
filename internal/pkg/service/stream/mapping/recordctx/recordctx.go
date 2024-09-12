@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/valyala/fastjson"
 )
 
 type Context interface {
@@ -18,4 +19,5 @@ type Context interface {
 	BodyString() (string, error)
 	BodyBytes() ([]byte, error)
 	BodyMap() (*orderedmap.OrderedMap, error)
+	JSONValue(*fastjson.ParserPool) (*fastjson.Value, error)
 }

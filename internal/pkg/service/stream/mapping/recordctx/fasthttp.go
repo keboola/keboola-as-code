@@ -11,6 +11,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/valyala/fasthttp"
+	"github.com/valyala/fastjson"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -27,6 +28,8 @@ type fastHTTPContext struct {
 	bodyStringErr error
 	bodyMap       *orderedmap.OrderedMap
 	bodyMapErr    error
+	jsonValue     *fastjson.Value
+	jsonValueErr  error
 }
 
 func FromFastHTTP(ctx context.Context, timestamp time.Time, req *fasthttp.RequestCtx) Context {
@@ -120,6 +123,28 @@ func (c *fastHTTPContext) BodyMap() (*orderedmap.OrderedMap, error) {
 	}
 
 	return c.bodyMap, c.bodyMapErr
+}
+
+func (c *fastHTTPContext) JSONValue(parserPool *fastjson.ParserPool) (*fastjson.Value, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.jsonValue == nil && c.jsonValueErr == nil {
+		if body, err := c.BodyBytes(); err != nil {
+			c.jsonValueErr = err
+		} else {
+			parser := parserPool.Get()
+			defer parserPool.Put(parser)
+
+			if jsonValue, err := parser.ParseBytes(body); err != nil {
+				c.jsonValueErr = errors.PrefixError(err, "cannot parse request json")
+			} else {
+				c.jsonValue = jsonValue
+			}
+		}
+	}
+
+	return c.jsonValue, c.jsonValueErr
 }
 
 func (c *fastHTTPContext) headersToMap() *orderedmap.OrderedMap {
