@@ -392,16 +392,20 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	if opErr == nil {
 		isEmpty := stats.Total.RecordsCount == 0
 		opErr = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), isEmpty).RequireLock(lock).Do(dbCtx).Err()
+		if opErr != nil {
+			opErr = errors.PrefixError(opErr, "cannot switch file to the importing state")
+		}
 	}
 
 	// If there is an error, increment retry delay
 	if opErr != nil {
 		o.logger.Error(dbCtx, opErr.Error())
-		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), opErr.Error()).RequireLock(lock).Do(ctx).Err()
+		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), opErr.Error()).RequireLock(lock).Do(ctx).ResultOrErr()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment file close retry", rErr)
 			return
 		}
+		o.logger.Infof(ctx, "file closing will be retried after %q", fileEntity.RetryAfter.String())
 	}
 
 	// Prevents other processing, if the entity has been modified.

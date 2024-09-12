@@ -24,6 +24,7 @@ import (
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	sliceRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/slice"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -303,54 +304,62 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
 	defer cancel()
 
-	o.logger.Infof(ctx, "closing slice")
-
-	// Wait until no source node is using the slice
-	if err := o.closeSyncer.WaitForRevision(ctx, slice.ModRevision); err != nil {
-		o.logger.Errorf(ctx, `error when waiting for slice closing: %s`, err.Error())
-		// continue! we waited long enough, the wait mechanism is probably broken
-	}
-
-	// Make sure the statistics cache is up-to-date
-	if err := o.statisticsCache.WaitForRevision(ctx, slice.ModRevision); err != nil {
-		err = errors.PrefixError(err, "error when waiting for statistics cache revision")
-		o.logger.Error(ctx, err.Error())
-		return
-	}
-
-	// Get slice statistics
-	stats, err := o.statisticsCache.SliceStats(ctx, slice.SliceKey)
-	if err != nil {
-		o.logger.Errorf(ctx, "cannot get slice statistics: %s", err)
-		return
-	}
+	// Wait for all slices upload, get statistics
+	stats, opErr := o.waitForSliceClosing(ctx, slice)
 
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
 	// Switch slice to the uploading state
-	isEmpty := stats.Total.RecordsCount == 0
-	err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
-	if err != nil {
-		err = errors.PrefixError(err, "cannot switch slice to the uploading state")
+	if opErr == nil {
+		isEmpty := stats.Total.RecordsCount == 0
+		opErr = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
+		if opErr != nil {
+			opErr = errors.PrefixError(opErr, "cannot switch slice to the uploading state")
+		}
 	}
 
 	// If there is an error, increment retry delay
-	if err != nil {
-		o.logger.Error(dbCtx, err.Error())
-		rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).Err()
+	if opErr != nil {
+		o.logger.Error(dbCtx, opErr.Error())
+		sliceEntity, rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), opErr.Error()).Do(ctx).ResultOrErr()
 		if rErr != nil {
-			o.logger.Errorf(ctx, "cannot increment slice retry: %s", err)
+			o.logger.Errorf(ctx, "cannot increment slice retry: %s", rErr)
 			return
 		}
+
+		o.logger.Infof(ctx, "slice closing will be retried after %q", sliceEntity.RetryAfter.String())
 	}
 
 	// Prevents other processing, if the entity has been modified.
 	// It takes a while to watch stream send the updated state back.
 	slice.Processed = true
 
-	if err == nil {
+	if opErr == nil {
 		o.logger.Info(ctx, "closed slice")
 	}
+}
+
+func (o *operator) waitForSliceClosing(ctx context.Context, slice *sliceData) (statistics.Aggregated, error) {
+	o.logger.Infof(ctx, "closing slice")
+
+	// Wait until no source node is using the slice
+	if err := o.closeSyncer.WaitForRevision(ctx, slice.ModRevision); err != nil {
+		o.logger.Errorf(ctx, `error when waiting for slice closing, waiting skipped: %s`, err.Error())
+		// continue! we waited long enough, the wait mechanism is probably broken
+	}
+
+	// Make sure the statistics cache is up-to-date
+	if err := o.statisticsCache.WaitForRevision(ctx, slice.ModRevision); err != nil {
+		return statistics.Aggregated{}, errors.PrefixError(err, "error when waiting for statistics cache revision")
+	}
+
+	// Get slice statistics
+	stats, err := o.statisticsCache.SliceStats(ctx, slice.SliceKey)
+	if err != nil {
+		return statistics.Aggregated{}, errors.PrefixError(err, "cannot get slice statistics")
+	}
+
+	return stats, nil
 }
