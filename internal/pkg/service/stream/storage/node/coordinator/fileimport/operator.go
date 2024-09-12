@@ -48,12 +48,10 @@ type operator struct {
 }
 
 type fileData struct {
-	FileKey model.FileKey
-	State   model.FileState
-	Retry   model.Retryable
-	IsEmpty bool
-	File    plugin.File
-	Attrs   []attribute.KeyValue
+	plugin.File
+	State model.FileState
+	Retry model.Retryable
+	Attrs []attribute.KeyValue
 
 	// Lock prevents parallel check of the same file.
 	Lock *sync.Mutex
@@ -123,14 +121,13 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 			},
 			func(_ string, file model.File, rawValue *op.KeyValue, oldValue **fileData) *fileData {
 				out := &fileData{
-					FileKey: file.FileKey,
-					State:   file.State,
-					Retry:   file.Retryable,
-					IsEmpty: file.StagingStorage.IsEmpty,
 					File: plugin.File{
 						FileKey:  file.FileKey,
+						IsEmpty:  file.StagingStorage.IsEmpty,
 						Provider: file.TargetStorage.Provider,
 					},
+					State: file.State,
+					Retry: file.Retryable,
 					Attrs: file.Telemetry(),
 				}
 
@@ -307,20 +304,18 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *fileData) error {
-	// Skip file import if the file is empty, just switch the state to the FileImported.
-	if !file.IsEmpty {
-		// Get file statistics
-		var stats statistics.Aggregated
-		stats, err := o.statistics.FileStats(ctx, file.FileKey)
-		if err != nil {
-			return errors.PrefixError(err, "cannot get file statistics")
-		}
+	// Get file statistics
+	var stats statistics.Aggregated
+	stats, err := o.statistics.FileStats(ctx, file.FileKey)
+	if err != nil {
+		return errors.PrefixError(err, "cannot get file statistics")
+	}
 
-		// Import the file using the specific provider
-		err = o.plugins.ImportFile(ctx, &file.File, stats.Staging)
-		if err != nil {
-			return errors.PrefixError(err, "file import failed")
-		}
+	// Import the file using the specific provider
+	// Empty file import can be skipped in the import implementation.
+	err = o.plugins.ImportFile(ctx, file.File, stats.Staging)
+	if err != nil {
+		return errors.PrefixError(err, "file import failed")
 	}
 
 	// New context for database operation, we may be running out of time
@@ -328,7 +323,7 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	defer dbCancel()
 
 	// Switch file to the imported state
-	err := o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
+	err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
 	if err != nil {
 		return errors.PrefixError(err, "cannot switch file to the imported state")
 	}
