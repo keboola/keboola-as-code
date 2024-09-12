@@ -24,7 +24,7 @@ type Slice struct {
 type uploadSliceFn func(
 	ctx context.Context,
 	volume *diskreader.Volume,
-	slice *Slice,
+	slice Slice,
 	stats statistics.Value,
 ) error
 
@@ -35,7 +35,7 @@ func (p *Plugins) RegisterSliceUploader(provider stagingModel.FileProvider, fn u
 func (p *Plugins) UploadSlice(
 	ctx context.Context,
 	volume *diskreader.Volume,
-	slice *Slice,
+	slice Slice,
 	stats statistics.Value,
 ) error {
 	if _, ok := p.sliceUploader[slice.StagingStorage.Provider]; !ok {

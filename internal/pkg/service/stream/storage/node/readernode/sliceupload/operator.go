@@ -46,11 +46,10 @@ type operator struct {
 }
 
 type sliceData struct {
-	SliceKey model.SliceKey
-	Retry    model.Retryable
-	State    model.SliceState
-	Slice    plugin.Slice
-	Attrs    []attribute.KeyValue
+	plugin.Slice
+	Retry model.Retryable
+	State model.SliceState
+	Attrs []attribute.KeyValue
 
 	// Lock prevents parallel check of the same slice.
 	Lock *sync.Mutex
@@ -111,15 +110,14 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 			},
 			func(_ string, slice model.Slice, rawValue *op.KeyValue, oldValue **sliceData) *sliceData {
 				out := &sliceData{
-					SliceKey: slice.SliceKey,
-					State:    slice.State,
-					Retry:    slice.Retryable,
 					Slice: plugin.Slice{
 						SliceKey:            slice.SliceKey,
 						LocalStorage:        slice.LocalStorage,
 						StagingStorage:      slice.StagingStorage,
 						EncodingCompression: slice.Encoding.Compression,
 					},
+					State: slice.State,
+					Retry: slice.Retryable,
 					Attrs: slice.Telemetry(),
 				}
 
@@ -274,20 +272,18 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume, slice *sliceData) error {
-	// Skip upload if the slice is empty, just switch the state to the SliceUploaded.
-	if !slice.Slice.LocalStorage.IsEmpty {
-		// Get slice statistics
-		var stats statistics.Aggregated
-		stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
-		if err != nil {
-			return errors.PrefixError(err, "cannot get slice statistics")
-		}
+	// Get slice statistics
+	// Empty slice upload can be skipped in the upload implementation.
+	var stats statistics.Aggregated
+	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
+	if err != nil {
+		return errors.PrefixError(err, "cannot get slice statistics")
+	}
 
-		// Upload the file using the specific provider
-		err = o.plugins.UploadSlice(ctx, volume, &slice.Slice, stats.Local)
-		if err != nil {
-			return errors.PrefixError(err, "slice upload failed")
-		}
+	// Upload the file using the specific provider
+	err = o.plugins.UploadSlice(ctx, volume, slice.Slice, stats.Local)
+	if err != nil {
+		return errors.PrefixError(err, "slice upload failed")
 	}
 
 	// New context for database operation, we may be running out of time
@@ -295,7 +291,7 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 	defer dbCancel()
 
 	// Switch slice to the uploaded state
-	err := o.storage.Slice().SwitchToUploaded(slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
+	err = o.storage.Slice().SwitchToUploaded(slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
 	if err != nil {
 		return errors.PrefixError(err, "cannot switch slice to the uploaded state")
 	}
