@@ -400,8 +400,8 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), opErr.Error()).RequireLock(lock).Do(ctx).Err()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment file close retry", rErr)
+			return
 		}
-		return
 	}
 
 	// Prevents other processing, if the entity has been modified.
