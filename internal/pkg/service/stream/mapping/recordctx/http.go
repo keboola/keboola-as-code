@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/valyala/fastjson"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
@@ -27,6 +28,8 @@ type httpContext struct {
 	bodyBytesErr  error
 	bodyMap       *orderedmap.OrderedMap
 	bodyMapErr    error
+	jsonValue     *fastjson.Value
+	jsonValueErr  error
 }
 
 func FromHTTP(timestamp time.Time, req *http.Request) Context {
@@ -100,6 +103,28 @@ func (c *httpContext) BodyMap() (*orderedmap.OrderedMap, error) {
 	}
 
 	return c.bodyMap, c.bodyMapErr
+}
+
+func (c *httpContext) JSONValue(parserPool *fastjson.ParserPool) (*fastjson.Value, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.jsonValue == nil && c.jsonValueErr == nil {
+		if body, err := c.bodyBytesWithoutLock(); err != nil {
+			c.jsonValueErr = err
+		} else {
+			parser := parserPool.Get()
+			defer parserPool.Put(parser)
+
+			if jsonValue, err := parser.ParseBytes(body); err != nil {
+				c.jsonValueErr = errors.PrefixError(err, "cannot parse request json")
+			} else {
+				c.jsonValue = jsonValue
+			}
+		}
+	}
+
+	return c.jsonValue, c.jsonValueErr
 }
 
 func (c *httpContext) bodyBytesWithoutLock() ([]byte, error) {

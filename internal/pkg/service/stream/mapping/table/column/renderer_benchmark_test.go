@@ -20,10 +20,11 @@ func BenchmarkColumn_Path(b *testing.B) {
 
 	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
-	reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))})
 	renderer := column.NewRenderer()
 
 	for i := 0; i < b.N; i++ {
+		// reqCtx needs to be created separately for each request, otherwise the parsed json is cached
+		reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))})
 		val, err := renderer.CSVValue(c, reqCtx)
 		assert.NoError(b, err)
 		assert.Equal(b, `"val3"`, val)
@@ -38,10 +39,10 @@ func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
 
 	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
 	header := http.Header{"Content-Type": []string{"application/json"}}
-	reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))})
 	renderer := column.NewRenderer()
 
 	for i := 0; i < b.N; i++ {
+		reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))})
 		val, err := renderer.CSVValue(c, reqCtx)
 		assert.NoError(b, err)
 		assert.Equal(b, `"val3"`, val)
@@ -51,10 +52,10 @@ func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
 func BenchmarkColumn_UUID(b *testing.B) {
 	c := column.UUID{}
 
-	reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{})
 	renderer := column.NewRenderer()
 
 	for i := 0; i < b.N; i++ {
+		reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{})
 		val, err := renderer.CSVValue(c, reqCtx)
 		assert.NoError(b, err)
 		assert.Len(b, val, 36)

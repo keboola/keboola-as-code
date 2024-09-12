@@ -39,7 +39,7 @@ require (
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-client v1.26.6
-	github.com/keboola/go-utils v1.0.3
+	github.com/keboola/go-utils v1.1.0
 	github.com/klauspost/compress v1.17.9
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0
@@ -67,6 +67,7 @@ require (
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	github.com/urfave/negroni v1.0.0
 	github.com/valyala/fasthttp v1.55.0
+	github.com/valyala/fastjson v1.6.4
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
 	github.com/xtaci/kcp-go/v5 v5.6.8
 	go.etcd.io/etcd/api/v3 v3.5.14
