@@ -96,7 +96,7 @@ func parseKey(str string) (path orderedmap.Path, sliceAppend bool, err error) {
 			return path, sliceAppend, err
 		}
 
-		if v, err := strconv.ParseInt(part, 10, 64); err == nil {
+		if v, err := strconv.Atoi(part); err == nil {
 			path = append(path, orderedmap.SliceStep(v))
 		} else {
 			path = append(path, orderedmap.MapStep(part))
