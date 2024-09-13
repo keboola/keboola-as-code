@@ -49,10 +49,10 @@ type Router struct {
 	wg sync.WaitGroup
 
 	// OTEL metrics
-	meters *meters
+	metrics *metrics
 }
 
-type meters struct {
+type metrics struct {
 	sourceDuration metric.Float64Histogram
 	sourceBytes    metric.Int64Counter
 	sinkDuration   metric.Float64Histogram
@@ -78,7 +78,7 @@ func New(d dependencies, sourceType string) (*Router, error) {
 		collection:  newCollection(),
 		closed:      make(chan struct{}),
 		pipelines:   make(map[key.SinkKey]*pipelineRef),
-		meters: &meters{
+		metrics: &metrics{
 			sourceDuration: d.Telemetry().Meter().FloatHistogram("keboola.go.stream.source.record.duration", "Duration of source requests.", "ms"),
 			sourceBytes:    d.Telemetry().Meter().IntCounter("keboola.go.stream.source.in.bytes", "Source request length.", "B"),
 			sinkDuration:   d.Telemetry().Meter().FloatHistogram("keboola.go.stream.sink.record.duration", "Duration of source requests dispatched to sink.", "ms"),
@@ -267,8 +267,8 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 		attribute.String("source_type", r.sourceType),
 	)
 	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
-	r.meters.sourceDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	r.meters.sourceBytes.Add(finalizationCtx, int64(c.BodyLength()), metric.WithAttributes(attrs...))
+	r.metrics.sourceDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	r.metrics.sourceBytes.Add(finalizationCtx, int64(c.BodyLength()), metric.WithAttributes(attrs...))
 
 	return result
 }
@@ -301,8 +301,8 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 		attribute.String("sink_type", sink.sinkType.String()),
 	)
 	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
-	r.meters.sinkDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	r.meters.sinkBytes.Add(finalizationCtx, int64(writeResult.Bytes), metric.WithAttributes(attrs...))
+	r.metrics.sinkDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	r.metrics.sinkBytes.Add(finalizationCtx, int64(writeResult.Bytes), metric.WithAttributes(attrs...))
 
 	return result
 }
