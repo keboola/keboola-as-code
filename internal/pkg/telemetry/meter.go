@@ -4,6 +4,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
+// link:https://opentelemetry.io/docs/concepts/signals/metrics/#metric-instruments
 type Meter interface {
 	IntCounter(name, desc, unit string, opts ...metric.Int64CounterOption) metric.Int64Counter
 	IntUpDownCounter(name, desc, unit string, opts ...metric.Int64UpDownCounterOption) metric.Int64UpDownCounter
