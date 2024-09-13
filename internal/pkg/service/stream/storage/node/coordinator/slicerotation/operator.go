@@ -9,6 +9,7 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -23,9 +24,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	sliceRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/slice"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -44,6 +47,9 @@ type operator struct {
 	closeSyncer *closesync.CoordinatorNode
 
 	slices *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
+
+	// OTEL metrics
+	metrics *node.Metrics
 }
 
 type sliceData struct {
@@ -72,6 +78,7 @@ type dependencies interface {
 	StatisticsL1Cache() *statsCache.L1
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
+	Telemetry() telemetry.Telemetry
 }
 
 func Start(d dependencies, config stagingConfig.OperatorConfig) error {
@@ -83,6 +90,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		storage:         d.StorageRepository(),
 		statisticsCache: d.StatisticsL1Cache(),
 		locks:           d.DistributedLockProvider(),
+		metrics:         node.NewMetrics(d.Telemetry().Meter()),
 	}
 
 	// Setup close sync utility
@@ -301,6 +309,8 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
+	startTime := o.clock.Now()
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
 	defer cancel()
 
@@ -339,6 +349,19 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	if opErr == nil {
 		o.logger.Info(ctx, "closed slice")
 	}
+
+	finalizationCtx := context.WithoutCancel(ctx)
+
+	// Update telemetry
+	attrs := append(
+		slice.SliceKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
+		attribute.String("error_type", telemetry.ErrorType(opErr)),
+		attribute.String("operation", "slicerotation"),
+	)
+	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	o.metrics.Compressed.Add(finalizationCtx, int64(stats.Total.CompressedSize), metric.WithAttributes(attrs...))
+	o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.Total.UncompressedSize), metric.WithAttributes(attrs...))
 }
 
 func (o *operator) waitForSliceClosing(ctx context.Context, slice *sliceData) (statistics.Aggregated, error) {
