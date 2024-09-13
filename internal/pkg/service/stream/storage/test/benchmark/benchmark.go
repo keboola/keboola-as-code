@@ -196,7 +196,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	b.ReportMetric(float64(sliceStats.Total.UncompressedSize)/float64(sliceStats.Total.CompressedSize), "ratio")
 
 	// No error should be logged
-	wb.logger.AssertJSONMessages(b, "")
+	wb.logger.AssertNoErrorMessage(b)
 }
 
 func (wb *WriterBenchmark) startNodes(b *testing.B, ctx context.Context, etcdCfg etcdclient.Config) {

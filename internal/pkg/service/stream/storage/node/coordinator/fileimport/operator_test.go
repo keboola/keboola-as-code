@@ -90,7 +90,7 @@ func TestFileImport(t *testing.T) {
 	ts.dependencies.Process().WaitForShutdown()
 
 	// No error is logged
-	ts.logger.AssertJSONMessages(t, "")
+	ts.logger.AssertNoErrorMessage(t)
 }
 
 func TestFileImportError(t *testing.T) {
@@ -204,7 +204,7 @@ func TestFileImportError(t *testing.T) {
 	ts.dependencies.Process().WaitForShutdown()
 
 	// No error is logged
-	ts.logger.AssertJSONMessages(t, "")
+	ts.logger.AssertNoErrorMessage(t)
 }
 
 func TestFileImportDisabledSink(t *testing.T) {
@@ -246,7 +246,7 @@ func TestFileImportDisabledSink(t *testing.T) {
 	ts.dependencies.Process().WaitForShutdown()
 
 	// No error is logged
-	ts.logger.AssertJSONMessages(t, "")
+	ts.logger.AssertNoErrorMessage(t)
 }
 
 type testState struct {

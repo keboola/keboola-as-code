@@ -38,7 +38,7 @@ func (ts *testState) teardown(t *testing.T, ctx context.Context) {
 	ts.shutdown(t, ctx, nodes)
 
 	// No error is logged in the remaining logs
-	ts.logger.AssertJSONMessages(t, "")
+	ts.logger.AssertNoErrorMessage(t)
 
 	ts.logSection(t, "teardown done")
 }

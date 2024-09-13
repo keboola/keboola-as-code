@@ -217,5 +217,5 @@ func TestSliceRotation(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	// No error is logged
-	logger.AssertJSONMessages(t, "")
+	logger.AssertNoErrorMessage(t)
 }

@@ -198,7 +198,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	tc.Validator(t, string(content))
 
 	// No error should be logged
-	tc.logger.AssertJSONMessages(t, "")
+	tc.logger.AssertNoErrorMessage(t)
 }
 
 func (tc *WriterTestCase) assertResult(t *testing.T, result *router.SourceResult) {

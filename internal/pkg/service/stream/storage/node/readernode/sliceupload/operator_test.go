@@ -204,7 +204,7 @@ func TestSliceUpload(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	// No error is logged
-	logger.AssertJSONMessages(t, "")
+	logger.AssertNoErrorMessage(t)
 }
 
 func TestSliceUploadDisabledSink(t *testing.T) {
@@ -296,5 +296,5 @@ func TestSliceUploadDisabledSink(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	// No error is logged
-	logger.AssertJSONMessages(t, "")
+	logger.AssertNoErrorMessage(t)
 }

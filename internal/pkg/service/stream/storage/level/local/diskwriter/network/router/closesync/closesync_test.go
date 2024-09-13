@@ -166,5 +166,5 @@ runtime/closesync/source/node/source-node-3 (lease)
 	waitForEtcdState(t, ``)
 
 	// No error is logged
-	mock.DebugLogger().AssertJSONMessages(t, "")
+	mock.DebugLogger().AssertNoErrorMessage(t)
 }
