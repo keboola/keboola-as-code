@@ -13,12 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
-func (b *Bridge) uploadSlice(
-	ctx context.Context,
-	volume *diskreader.Volume,
-	slice plugin.Slice,
-	stats statistics.Value,
-) error {
+func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, slice plugin.Slice, stats statistics.Value) error {
 	// Skip upload if the slice is empty.
 	// The state is anyway switched to the SliceUploaded by the operator.
 	if slice.LocalStorage.IsEmpty {
