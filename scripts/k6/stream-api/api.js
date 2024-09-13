@@ -57,14 +57,14 @@ export class Api {
     return { id: sourceId, url: sourceUrl }
   }
 
-  createKeboolaTableSink(sourceId, mapping) {
+  createKeboolaTableSink(sourceId, mapping_type, mapping) {
     const body = {
       sinkId: "test-sink",
-      name: "test-sink",
+      name: "test-sink" + mapping_type,
       type: "table",
       table: {
         type: "keboola",
-        tableId: "in.c-bucket.test-sink",
+        tableId: "in.c-bucket.test-sink" + mapping_type,
         mapping: mapping,
       },
     }

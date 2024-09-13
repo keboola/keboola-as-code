@@ -1,13 +1,12 @@
 import { check } from 'k6';
 import http from "k6/http";
-import { TextEncoder } from "https://raw.githubusercontent.com/inexorabletash/text-encoding/master/index.js"
 import { Counter } from 'k6/metrics';
 import { randomItem } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 import { URL } from 'https://jslib.k6.io/url/1.0.0/index.js';
 import { Api, randomPayloads } from "./api.js";
 
 const SCENARIO = __ENV.K6_SCENARIO || "constant"; // constant or ramping
-const TABLE_MAPPING = __ENV.K6_TABLE_MAPPING || "static"; // static or template
+const TABLE_MAPPING = __ENV.K6_TABLE_MAPPING || "static"; // static, path or template
 
 // Target
 const API_TOKEN = __ENV.K6_API_TOKEN;
@@ -66,11 +65,11 @@ const mappings = {
   },
   path: {
     columns: [
-      {type: "uuid", name: "id", primaryKey: true},
-      {type: "path", name: "int", path: "a"},
-      {type: "path", name: "object", path: "c"},
-      {type: "path", name: "string", path: "c.f.g", rawString: true},
-      {type: "path", name: "undefined", path: "x", defaultValue: "default"},
+      { type: "uuid", name: "id", primaryKey: true },
+      { type: "path", name: "int", path: "a" },
+      { type: "path", name: "object", path: "c" },
+      { type: "path", name: "string", path: "c.f.g", rawString: true },
+      { type: "path", name: "undefined", path: "x", defaultValue: "default" },
     ],
   },
   template: {
@@ -97,8 +96,7 @@ const mappings = {
         name: "undefined",
         template: {
           language: "jsonnet",
-          undefinedValueStrategy: "null",
-          content: `Body('x')`,
+          content: `Body('x', 'x')`,
         },
       },
     ],
@@ -151,12 +149,13 @@ export function setup() {
   console.log("Source url: " + sourceUrl)
 
   // Create sink
-  const sink = api.createKeboolaTableSink(source.id, mappings[TABLE_MAPPING])
+  const sink = api.createKeboolaTableSink(source.id, TABLE_MAPPING, mappings[TABLE_MAPPING])
   console.log("Sink ID: " + sink.id)
 
   const params = {
     headers: {
       "My-Custom-Header": "custom header value",
+      "Content-Type": "application/json"
     }
   }
 
