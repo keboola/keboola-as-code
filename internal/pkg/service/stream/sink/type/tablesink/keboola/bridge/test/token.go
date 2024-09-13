@@ -60,7 +60,7 @@ func MockTokenStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) 
 				return nil, err
 			}
 
-			if tokenIDInt < tokenCounter {
+			if tokenIDInt > tokenCounter {
 				return nil, errors.Errorf(`unexpected token ID "%d"`, tokenIDInt)
 			}
 

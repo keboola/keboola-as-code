@@ -140,6 +140,10 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 		return err
 	}
 
+	// Compose keys
+	tableKey := keboola.TableKey{BranchID: keboolaFile.SinkKey.BranchID, TableID: keboolaFile.TableID}
+	fileKey := keboola.FileKey{BranchID: keboolaFile.SinkKey.BranchID, FileID: keboolaFile.UploadCredentials.FileID}
+
 	// Authorized API
 	api := b.publicAPI.WithToken(token.TokenString())
 
@@ -147,11 +151,10 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	// The state is anyway switched to the FileImported by the operator.
 	if file.IsEmpty {
 		b.logger.Info(ctx, "empty file, skipped import, deleting empty staging file")
-		keboolaFileKey := keboolaFile.UploadCredentials.FileKey
-		if err := api.DeleteFileRequest(keboolaFileKey).SendOrErr(ctx); err != nil {
+		if err := api.DeleteFileRequest(fileKey).SendOrErr(ctx); err != nil {
 			attrs := []attribute.KeyValue{
 				attribute.String("stagingFile.Name", keboolaFile.UploadCredentials.Name),
-				attribute.String("stagingFile.ID", keboolaFileKey.FileID.String()),
+				attribute.String("stagingFile.ID", fileKey.FileID.String()),
 			}
 			b.logger.With(attrs...).Warnf(ctx, "cannot delete empty staging file: %s", err.Error())
 		}
@@ -184,8 +187,6 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 
 	// Create job to import data if no job exists yet or if it failed
 	if job == nil || job.Status == keboola.StorageJobStatusError {
-		tableKey := keboola.TableKey{BranchID: keboolaFile.SinkKey.BranchID, TableID: keboolaFile.TableID}
-		fileKey := keboola.FileKey{BranchID: keboolaFile.SinkKey.BranchID, FileID: keboolaFile.UploadCredentials.FileID}
 		opts := []keboola.LoadDataOption{
 			keboola.WithoutHeader(true),                     // the file is sliced, and without CSV header
 			keboola.WithColumnsHeaders(keboolaFile.Columns), // fail, if the table columns differs
