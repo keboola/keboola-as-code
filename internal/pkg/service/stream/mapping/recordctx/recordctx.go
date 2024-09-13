@@ -17,6 +17,7 @@ type Context interface {
 	HeadersString() string
 	HeadersMap() *orderedmap.OrderedMap
 	BodyBytes() ([]byte, error)
+	BodyLength() int
 	BodyMap() (*orderedmap.OrderedMap, error)
 	JSONValue(*fastjson.ParserPool) (*fastjson.Value, error)
 }

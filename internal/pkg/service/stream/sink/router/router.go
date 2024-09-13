@@ -54,9 +54,9 @@ type Router struct {
 
 type meters struct {
 	sourceDuration metric.Float64Histogram
-	sourceBytes    metric.Int64Histogram
+	sourceBytes    metric.Int64Counter
 	sinkDuration   metric.Float64Histogram
-	sinkBytes      metric.Int64Histogram
+	sinkBytes      metric.Int64Counter
 }
 
 type dependencies interface {
@@ -79,10 +79,10 @@ func New(d dependencies, sourceType string) (*Router, error) {
 		closed:      make(chan struct{}),
 		pipelines:   make(map[key.SinkKey]*pipelineRef),
 		meters: &meters{
-			sourceDuration: d.Telemetry().Meter().FloatHistogram("keboola.go.stream.source.in.duration", "Duration of source requests.", "ms"),
-			sourceBytes:    d.Telemetry().Meter().IntHistogram("keboola.go.stream.source.in.bytes", "Source request length.", "B"),
-			sinkDuration:   d.Telemetry().Meter().FloatHistogram("keboola.go.stream.sink.in.duration", "Duration of source requests dispatched to sink.", "ms"),
-			sinkBytes:      d.Telemetry().Meter().IntHistogram("keboola.go.stream.sink.in.bytes", "Bytes written to sink.", "B"),
+			sourceDuration: d.Telemetry().Meter().FloatHistogram("keboola.go.stream.source.record.duration", "Duration of source requests.", "ms"),
+			sourceBytes:    d.Telemetry().Meter().IntCounter("keboola.go.stream.source.in.bytes", "Source request length.", "B"),
+			sinkDuration:   d.Telemetry().Meter().FloatHistogram("keboola.go.stream.sink.record.duration", "Duration of source requests dispatched to sink.", "ms"),
+			sinkBytes:      d.Telemetry().Meter().IntCounter("keboola.go.stream.sink.encoded.bytes", "Bytes written to sink.", "B"),
 		},
 	}
 
@@ -258,10 +258,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 		result.Finalize()
 	}
 
-	// Create context for task finalization, the original context could have timed out.
-	// If release of the lock takes longer than the ttl, lease is expired anyway.
-	finalizationCtx, finalizationCancel := context.WithTimeout(context.WithoutCancel(c.Ctx()), 5*time.Second)
-	defer finalizationCancel()
+	finalizationCtx := context.WithoutCancel(c.Ctx())
 
 	// Update telemetry
 	attrs := append(
@@ -271,9 +268,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	)
 	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	r.meters.sourceDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	if bytes, err := c.BodyBytes(); err == nil {
-		r.meters.sourceBytes.Record(finalizationCtx, int64(len(bytes)), metric.WithAttributes(attrs...))
-	}
+	r.meters.sourceBytes.Add(finalizationCtx, int64(c.BodyLength()), metric.WithAttributes(attrs...))
 
 	return result
 }
@@ -297,10 +292,7 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 		r.logger.Errorf(context.Background(), `write record error: %s`, err.Error())
 	}
 
-	// Create context for task finalization, the original context could have timed out.
-	// If release of the lock takes longer than the ttl, lease is expired anyway.
-	finalizationCtx, finalizationCancel := context.WithTimeout(context.WithoutCancel(c.Ctx()), 5*time.Second)
-	defer finalizationCancel()
+	finalizationCtx := context.WithoutCancel(c.Ctx())
 
 	// Update telemetry
 	attrs := append(
@@ -310,7 +302,7 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 	)
 	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	r.meters.sinkDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	r.meters.sinkBytes.Record(finalizationCtx, int64(n), metric.WithAttributes(attrs...))
+	r.meters.sinkBytes.Add(finalizationCtx, int64(n), metric.WithAttributes(attrs...))
 
 	return result
 }

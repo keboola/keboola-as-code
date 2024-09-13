@@ -86,6 +86,10 @@ func (c *fastHTTPContext) BodyBytes() ([]byte, error) {
 	return c.req.Request.Body(), nil // returned buffer is valid until the request is released
 }
 
+func (c *fastHTTPContext) BodyLength() int {
+	return len(c.req.Request.Body())
+}
+
 func (c *fastHTTPContext) BodyMap() (*orderedmap.OrderedMap, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()

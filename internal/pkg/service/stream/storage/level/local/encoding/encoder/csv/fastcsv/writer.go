@@ -25,17 +25,17 @@ func (w *writer) WriteRow(cols *[]any) (int, error) {
 	w.row.Reset()
 
 	// Write each column
-	for i, col := range *cols {
+	for index, col := range *cols {
 		// Cast the value to string
 		toWrite, err := csvfmt.Format(col)
 		if err != nil {
-			return n, ValueError{ColumnIndex: i, err: err}
+			return 0, ValueError{ColumnIndex: index, err: err}
 		}
 
 		// Comma between values
-		if i > 0 {
+		if index > 0 {
 			if b, err := w.row.WriteRune(','); err != nil {
-				return n, err
+				return 0, err
 			} else {
 				n += b
 			}
@@ -43,7 +43,7 @@ func (w *writer) WriteRow(cols *[]any) (int, error) {
 
 		// Value start quote
 		if b, err := w.row.WriteRune('"'); err != nil {
-			return n, err
+			return 0, err
 		} else {
 			n += b
 		}
@@ -58,7 +58,7 @@ func (w *writer) WriteRow(cols *[]any) (int, error) {
 
 			// Copy verbatim everything before the special character.
 			if b, err := w.row.Write(toWrite[:stop]); err != nil {
-				return n, err
+				return 0, err
 			} else {
 				n += b
 			}
@@ -68,7 +68,7 @@ func (w *writer) WriteRow(cols *[]any) (int, error) {
 			// Encode the special character
 			if len(toWrite) > 0 && toWrite[0] == '"' {
 				if b, err := w.row.WriteString(`""`); err != nil {
-					return n, err
+					return 0, err
 				} else {
 					n += b
 				}
@@ -78,7 +78,7 @@ func (w *writer) WriteRow(cols *[]any) (int, error) {
 
 		// Value end quote
 		if b, err := w.row.WriteRune('"'); err != nil {
-			return n, err
+			return 0, err
 		} else {
 			n += b
 		}
@@ -86,14 +86,14 @@ func (w *writer) WriteRow(cols *[]any) (int, error) {
 
 	// Row separator
 	if b, err := w.row.WriteRune('\n'); err != nil {
-		return n, err
+		return 0, err
 	} else {
 		n += b
 	}
 
 	// Flush the whole row or nothing
 	if b, err := w.row.WriteTo(w.out); err != nil {
-		return n, err
+		return 0, err
 	} else {
 		n += int(b)
 	}
