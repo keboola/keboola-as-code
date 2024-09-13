@@ -184,6 +184,16 @@ func (l *debugLogger) AssertJSONMessages(t assert.TestingT, expected string, msg
 	return AssertJSONMessages(t, expected, l.AllMessages(), msgAndArgs)
 }
 
+// AssertNoErrorMessage is a shortcut to check there is no warning/error message logged.
+func (l *debugLogger) AssertNoErrorMessage(t assert.TestingT) {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
+
+	// No message is excepted, but the AssertJSONMessages always stop on a warning or error.
+	l.AssertJSONMessages(t, "")
+}
+
 func (l *debugLogger) allWriters() []*ioutil.AtomicWriter {
 	return []*ioutil.AtomicWriter{l.all, l.debug, l.info, l.warn, l.warnOrError, l.error}
 }
