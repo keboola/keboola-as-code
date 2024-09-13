@@ -126,13 +126,6 @@ func (b *Bridge) deleteCredentialsOnFileDelete() {
 }
 
 func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statistics.Value) error {
-	// Skip import if the file is empty.
-	// The state is anyway switched to the FileImported by the operator.
-	if file.IsEmpty {
-		b.logger.Info(ctx, "empty file, skipped import")
-		return nil
-	}
-
 	start := time.Now()
 
 	// Get authorization token
@@ -149,6 +142,21 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 
 	// Authorized API
 	api := b.publicAPI.WithToken(token.TokenString())
+
+	// Skip import if the file is empty.
+	// The state is anyway switched to the FileImported by the operator.
+	if file.IsEmpty {
+		b.logger.Info(ctx, "empty file, skipped import, deleting empty staging file")
+		keboolaFileKey := keboolaFile.UploadCredentials.FileKey
+		if err := api.DeleteFileRequest(keboolaFileKey).SendOrErr(ctx); err != nil {
+			attrs := []attribute.KeyValue{
+				attribute.String("stagingFile.Name", keboolaFile.UploadCredentials.Name),
+				attribute.String("stagingFile.ID", keboolaFileKey.FileID.String()),
+			}
+			b.logger.With(attrs...).Warnf(ctx, "cannot delete empty staging file: %s", err.Error())
+		}
+		return nil
+	}
 
 	// Error when sending the event is not a fatal error
 	defer func() {
