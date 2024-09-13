@@ -89,7 +89,7 @@ func (p *SinkPipeline) ReopenOnSinkModification() bool {
 	return false
 }
 
-func (p *SinkPipeline) WriteRecord(c recordctx.Context) (pipelinePkg.RecordStatus, int, error) {
+func (p *SinkPipeline) WriteRecord(c recordctx.Context) (pipelinePkg.WriteResult, error) {
 	p.writeLock.RLock()
 	defer p.writeLock.RUnlock()
 	return p.balancer.WriteRecord(c, p.pipelines)

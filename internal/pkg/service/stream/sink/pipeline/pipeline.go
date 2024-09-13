@@ -20,6 +20,11 @@ const (
 
 type RecordStatus int
 
+type WriteResult struct {
+	Status RecordStatus
+	Bytes  int
+}
+
 type NoOpenerFoundError struct {
 	SinkType definition.SinkType
 }
@@ -32,7 +37,7 @@ type Pipeline interface {
 	// ReopenOnSinkModification - if true, the pipeline will be reopened on the Sink entity modification, by the sink router.
 	// Local storage sinks watch for changes in Slice entities, so this is not necessary, it would be duplicative.
 	ReopenOnSinkModification() bool
-	WriteRecord(c recordctx.Context) (RecordStatus, int, error)
+	WriteRecord(c recordctx.Context) (WriteResult, error)
 	Close(ctx context.Context, cause string)
 }
 

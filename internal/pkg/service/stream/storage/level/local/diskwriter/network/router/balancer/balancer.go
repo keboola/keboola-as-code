@@ -12,12 +12,12 @@ import (
 // If no pipeline is ready, the NoPipelineReadyError is returned.
 // The implementation must provide high throughput.
 type Balancer interface {
-	WriteRecord(c recordctx.Context, pipelines []SlicePipeline) (pipeline.RecordStatus, int, error)
+	WriteRecord(c recordctx.Context, pipelines []SlicePipeline) (pipeline.WriteResult, error)
 }
 
 type SlicePipeline interface {
 	// WriteRecord method may return PipelineNotReadyError, then next pipeline will be tried.
-	WriteRecord(c recordctx.Context) (pipeline.RecordStatus, int, error)
+	WriteRecord(c recordctx.Context) (pipeline.WriteResult, error)
 }
 
 func NewBalancer(pipelineBalancer network.BalancerType) (Balancer, error) {

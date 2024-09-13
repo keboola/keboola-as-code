@@ -30,23 +30,23 @@ func TestRandomBalancer(t *testing.T) {
 	p3 := NewTestPipeline("pipeline3", test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z"), &logger)
 	pipelines := []balancer.SlicePipeline{p1, p2, p3}
 	expectWriteToPipeline := func(expectedPipeline *TestPipeline) {
-		status, _, err := b.WriteRecord(c, pipelines)
-		assert.Equal(t, status, pipeline.RecordProcessed)
+		result, err := b.WriteRecord(c, pipelines)
+		assert.Equal(t, pipeline.RecordProcessed, result.Status)
 		assert.NoError(t, err)
 		assert.Equal(t, "write "+expectedPipeline.Name, strings.TrimSpace(logger.String()))
 		logger.Reset()
 	}
 	expectWriteError := func(expectedErr string) {
-		status, _, err := b.WriteRecord(c, pipelines)
-		assert.Equal(t, status, pipeline.RecordError)
+		result, err := b.WriteRecord(c, pipelines)
+		assert.Equal(t, pipeline.RecordError, result.Status)
 		if assert.Error(t, err) {
 			assert.Equal(t, expectedErr, err.Error())
 		}
 	}
 
 	// No pipeline
-	status, _, err := b.WriteRecord(c, nil)
-	assert.Equal(t, pipeline.RecordError, status)
+	result, err := b.WriteRecord(c, nil)
+	assert.Equal(t, pipeline.RecordError, result.Status)
 	if assert.Error(t, err) {
 		assert.Equal(t, "no pipeline", err.Error())
 	}

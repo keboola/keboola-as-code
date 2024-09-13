@@ -280,11 +280,11 @@ func (r *Router) SourcesCount() int {
 func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult {
 	startTime := r.clock.Now()
 
-	status, n, err := r.writeRecord(sink, c)
+	writeResult, err := r.writeRecord(sink, c)
 	result := &SinkResult{
 		SinkID:     sink.sinkKey.SinkID,
-		StatusCode: resultStatusCode(status, err),
-		status:     status,
+		StatusCode: resultStatusCode(writeResult.Status, err),
+		status:     writeResult.Status,
 		error:      err,
 	}
 
@@ -302,14 +302,14 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 	)
 	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	r.meters.sinkDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	r.meters.sinkBytes.Add(finalizationCtx, int64(n), metric.WithAttributes(attrs...))
+	r.meters.sinkBytes.Add(finalizationCtx, int64(writeResult.Bytes), metric.WithAttributes(attrs...))
 
 	return result
 }
 
-func (r *Router) writeRecord(sink *sinkData, c recordctx.Context) (pipeline.RecordStatus, int, error) {
+func (r *Router) writeRecord(sink *sinkData, c recordctx.Context) (pipeline.WriteResult, error) {
 	if r.isClosed() {
-		return pipeline.RecordError, 0, ShutdownError{}
+		return pipeline.WriteResult{Status: pipeline.RecordError}, ShutdownError{}
 	}
 	return r.pipelineRef(sink).writeRecord(c)
 }

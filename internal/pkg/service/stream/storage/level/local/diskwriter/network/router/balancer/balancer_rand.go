@@ -19,31 +19,31 @@ func NewRandomBalancerWithRandomizer(r Randomizer) Balancer {
 	return &RandomBalancer{rand: r}
 }
 
-func (b RandomBalancer) WriteRecord(c recordctx.Context, pipelines []SlicePipeline) (pipeline.RecordStatus, int, error) {
+func (b RandomBalancer) WriteRecord(c recordctx.Context, pipelines []SlicePipeline) (pipeline.WriteResult, error) {
 	length := len(pipelines)
 
 	if length == 0 {
-		return pipeline.RecordError, 0, NoPipelineError{}
+		return pipeline.WriteResult{Status: pipeline.RecordError}, NoPipelineError{}
 	}
 
 	if length == 1 {
-		status, n, err := pipelines[0].WriteRecord(c)
+		result, err := pipelines[0].WriteRecord(c)
 		if errors.As(err, &PipelineNotReadyError{}) {
-			return pipeline.RecordError, n, NoPipelineReadyError{}
+			return pipeline.WriteResult{Status: pipeline.RecordError, Bytes: result.Bytes}, NoPipelineReadyError{}
 		}
-		return status, n, err
+		return result, err
 	}
 
 	start := b.rand.IntN(length)
 	for i := range length {
 		index := (start + i) % length
-		status, n, err := pipelines[index].WriteRecord(c)
+		result, err := pipelines[index].WriteRecord(c)
 		if errors.As(err, &PipelineNotReadyError{}) {
 			// Pipeline is not ready, try next
 			continue
 		}
-		return status, n, err
+		return result, err
 	}
 
-	return pipeline.RecordError, 0, NoPipelineReadyError{}
+	return pipeline.WriteResult{Status: pipeline.RecordError}, NoPipelineReadyError{}
 }
