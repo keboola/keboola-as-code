@@ -9,6 +9,7 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -25,9 +26,11 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -48,6 +51,9 @@ type operator struct {
 	lock                 sync.RWMutex
 	openedSlicesNotifier chan struct{}
 	openedSlicesCount    map[model.FileKey]int
+
+	// OTEL metrics
+	metrics *node.Metrics
 }
 
 type fileData struct {
@@ -81,6 +87,7 @@ type dependencies interface {
 	StatisticsL1Cache() *statsCache.L1
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
+	Telemetry() telemetry.Telemetry
 }
 
 func Start(d dependencies, config targetConfig.OperatorConfig) error {
@@ -92,6 +99,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		storage:         d.StorageRepository(),
 		statisticsCache: d.StatisticsL1Cache(),
 		locks:           d.DistributedLockProvider(),
+		metrics:         node.NewMetrics(d.Telemetry().Meter()),
 	}
 
 	// Join the distribution group
@@ -370,6 +378,8 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
+	startTime := o.clock.Now()
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
@@ -402,7 +412,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 		o.logger.Error(dbCtx, opErr.Error())
 		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), opErr.Error()).RequireLock(lock).Do(ctx).ResultOrErr()
 		if rErr != nil {
-			o.logger.Errorf(ctx, "cannot increment file close retry", rErr)
+			o.logger.Errorf(ctx, "cannot increment file close retry: %s", rErr)
 			return
 		}
 		o.logger.Infof(ctx, "file closing will be retried after %q", fileEntity.RetryAfter.String())
@@ -415,6 +425,19 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	if opErr == nil {
 		o.logger.Info(ctx, "closed file")
 	}
+
+	finalizationCtx := context.WithoutCancel(ctx)
+
+	// Update telemetry
+	attrs := append(
+		file.FileKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
+		attribute.String("error_type", telemetry.ErrorType(opErr)),
+		attribute.String("operation", "filerotation"),
+	)
+	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	o.metrics.Compressed.Add(finalizationCtx, int64(stats.Total.CompressedSize), metric.WithAttributes(attrs...))
+	o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.Total.UncompressedSize), metric.WithAttributes(attrs...))
 }
 
 func (o *operator) waitForFileClosing(ctx context.Context, file *fileData) (statistics.Aggregated, error) {
