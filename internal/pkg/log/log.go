@@ -44,6 +44,7 @@ type DebugLogger interface {
 
 	CompareJSONMessages(expected string) error
 	AssertJSONMessages(t assert.TestingT, expected string, msgAndArgs ...any) bool
+	AssertNoErrorMessage(t assert.TestingT)
 }
 
 type contextLogger interface {

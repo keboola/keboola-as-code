@@ -31,8 +31,10 @@ type SinkController struct {
 	PipelineOpenError                error
 	PipelineWriteRecordStatus        pipeline.RecordStatus
 	PipelineWriteError               error
-	ImportError                      error
+	UploadHandler                    func(ctx context.Context, volume *diskreader.Volume, slice plugin.Slice, stats statistics.Value) error
 	UploadError                      error
+	ImportHandler                    func(ctx context.Context, file plugin.File, stats statistics.Value) error
+	ImportError                      error
 }
 
 type Pipeline struct {
@@ -94,14 +96,20 @@ func (c *SinkController) RegisterDummySinkTypes(plugins *plugin.Plugins, control
 	// Register dummy file importer
 	plugins.RegisterFileImporter(
 		Provider,
-		func(ctx context.Context, file *plugin.File, stats statistics.Value) error {
+		func(ctx context.Context, file plugin.File, stats statistics.Value) error {
+			if c.ImportHandler != nil {
+				return c.ImportHandler(ctx, file, stats)
+			}
 			return c.ImportError
 		},
 	)
 	// Register dummy sink with local storage support for tests
 	plugins.RegisterSliceUploader(
 		FileProvider,
-		func(ctx context.Context, volume *diskreader.Volume, slice *plugin.Slice, stats statistics.Value) error {
+		func(ctx context.Context, volume *diskreader.Volume, slice plugin.Slice, stats statistics.Value) error {
+			if c.UploadHandler != nil {
+				return c.UploadHandler(ctx, volume, slice, stats)
+			}
 			return c.UploadError
 		},
 	)

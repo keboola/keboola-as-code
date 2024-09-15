@@ -18,6 +18,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/readernode/sliceupload"
@@ -136,8 +138,12 @@ func TestSliceUpload(t *testing.T) {
 	logger.Truncate()
 
 	// Test when error on operator occurs
-	blaErr := errors.New("bla")
-	mock.TestDummySinkController().UploadError = blaErr
+	mock.TestDummySinkController().UploadHandler = func(ctx context.Context, volume *diskreader.Volume, slice plugin.Slice, stats statistics.Value) error {
+		if !slice.LocalStorage.IsEmpty {
+			return errors.New("bla")
+		}
+		return nil
+	}
 
 	clk.Add(1 * time.Second)
 	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
@@ -198,7 +204,7 @@ func TestSliceUpload(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	// No error is logged
-	logger.AssertJSONMessages(t, "")
+	logger.AssertNoErrorMessage(t)
 }
 
 func TestSliceUploadDisabledSink(t *testing.T) {
@@ -290,5 +296,5 @@ func TestSliceUploadDisabledSink(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	// No error is logged
-	logger.AssertJSONMessages(t, "")
+	logger.AssertNoErrorMessage(t)
 }

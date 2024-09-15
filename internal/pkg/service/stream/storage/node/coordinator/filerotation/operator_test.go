@@ -179,7 +179,7 @@ func TestFileRotation(t *testing.T) {
 	ts.dependencies.Process().WaitForShutdown()
 
 	// No error is logged
-	ts.logger.AssertJSONMessages(t, "")
+	ts.logger.AssertNoErrorMessage(t)
 }
 
 type testState struct {
