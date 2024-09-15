@@ -26,6 +26,7 @@ type httpContext struct {
 	headersString *string
 	bodyBytes     []byte
 	bodyBytesErr  error
+	bodyLength    int
 	bodyMap       *orderedmap.OrderedMap
 	bodyMapErr    error
 	jsonValue     *fastjson.Value
@@ -88,6 +89,13 @@ func (c *httpContext) BodyBytes() ([]byte, error) {
 	return c.bodyBytesWithoutLock()
 }
 
+func (c *httpContext) BodyLength() int {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	_, _ = c.bodyBytesWithoutLock()
+	return c.bodyLength
+}
+
 func (c *httpContext) BodyMap() (*orderedmap.OrderedMap, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -130,6 +138,7 @@ func (c *httpContext) JSONValue(parserPool *fastjson.ParserPool) (*fastjson.Valu
 func (c *httpContext) bodyBytesWithoutLock() ([]byte, error) {
 	if c.bodyBytes == nil && c.bodyBytesErr == nil {
 		c.bodyBytes, c.bodyBytesErr = io.ReadAll(c.req.Body)
+		c.bodyLength = len(c.bodyBytes)
 	}
 	return c.bodyBytes, c.bodyBytesErr
 }

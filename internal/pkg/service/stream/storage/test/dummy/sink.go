@@ -126,11 +126,11 @@ func (p *Pipeline) ReopenOnSinkModification() bool {
 	return p.controller.PipelineReopenOnSinkModification
 }
 
-func (p *Pipeline) WriteRecord(_ recordctx.Context) (pipeline.RecordStatus, error) {
+func (p *Pipeline) WriteRecord(_ recordctx.Context) (pipeline.WriteResult, error) {
 	if err := p.controller.PipelineWriteError; err != nil {
-		return pipeline.RecordError, err
+		return pipeline.WriteResult{Status: pipeline.RecordError}, err
 	}
-	return p.controller.PipelineWriteRecordStatus, nil
+	return pipeline.WriteResult{Status: p.controller.PipelineWriteRecordStatus}, nil
 }
 
 func (p *Pipeline) Close(ctx context.Context, cause string) {

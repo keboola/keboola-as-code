@@ -33,16 +33,16 @@ func (p *TestPipeline) SliceKey() model.SliceKey {
 	return p.sliceKey
 }
 
-func (p *TestPipeline) WriteRecord(c recordctx.Context) (pipeline.RecordStatus, error) {
+func (p *TestPipeline) WriteRecord(c recordctx.Context) (pipeline.WriteResult, error) {
 	if !p.Ready {
-		return pipeline.RecordError, balancer.PipelineNotReadyError{}
+		return pipeline.WriteResult{Status: pipeline.RecordError}, balancer.PipelineNotReadyError{}
 	}
 
 	_, _ = fmt.Fprintf(p.logger, "write %s\n", p.Name)
 	if p.WriteError != nil {
-		return pipeline.RecordError, p.WriteError
+		return pipeline.WriteResult{Status: pipeline.RecordError}, p.WriteError
 	}
-	return pipeline.RecordProcessed, nil
+	return pipeline.WriteResult{Status: pipeline.RecordProcessed}, nil
 }
 
 func (p *TestPipeline) Close(_ context.Context) error {

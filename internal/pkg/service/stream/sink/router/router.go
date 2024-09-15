@@ -6,8 +6,12 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"time"
 
+	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -19,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -27,6 +32,8 @@ const (
 )
 
 type Router struct {
+	sourceType  string
+	clock       clock.Clock
 	logger      log.Logger
 	plugins     *plugin.Plugins
 	definitions *definitionRepo.Repository
@@ -40,23 +47,43 @@ type Router struct {
 
 	// wg waits for all writes/goroutines
 	wg sync.WaitGroup
+
+	// OTEL metrics
+	metrics *metrics
+}
+
+type metrics struct {
+	sourceDuration metric.Float64Histogram
+	sourceBytes    metric.Int64Counter
+	sinkDuration   metric.Float64Histogram
+	sinkBytes      metric.Int64Counter
 }
 
 type dependencies interface {
+	Clock() clock.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
 	Plugins() *plugin.Plugins
 	DefinitionRepository() *definitionRepo.Repository
+	Telemetry() telemetry.Telemetry
 }
 
-func New(d dependencies) (*Router, error) {
+func New(d dependencies, sourceType string) (*Router, error) {
 	r := &Router{
+		sourceType:  sourceType,
+		clock:       d.Clock(),
 		logger:      d.Logger().WithComponent("sink.router"),
 		plugins:     d.Plugins(),
 		definitions: d.DefinitionRepository(),
 		collection:  newCollection(),
 		closed:      make(chan struct{}),
 		pipelines:   make(map[key.SinkKey]*pipelineRef),
+		metrics: &metrics{
+			sourceDuration: d.Telemetry().Meter().FloatHistogram("keboola.go.stream.source.record.duration", "Duration of source requests.", "ms"),
+			sourceBytes:    d.Telemetry().Meter().IntCounter("keboola.go.stream.source.in.bytes", "Source request length.", "B"),
+			sinkDuration:   d.Telemetry().Meter().FloatHistogram("keboola.go.stream.sink.record.duration", "Duration of source requests dispatched to sink.", "ms"),
+			sinkBytes:      d.Telemetry().Meter().IntCounter("keboola.go.stream.sink.encoded.bytes", "Bytes written to sink.", "B"),
+		},
 	}
 
 	ctx, cancelStream := context.WithCancel(context.Background())
@@ -175,6 +202,8 @@ func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context)
 }
 
 func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) *SourceResult {
+	startTime := r.clock.Now()
+
 	result := &SourceResult{
 		ProjectID:  sourceKey.ProjectID,
 		SourceID:   sourceKey.SourceID,
@@ -229,6 +258,18 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 		result.Finalize()
 	}
 
+	finalizationCtx := context.WithoutCancel(c.Ctx())
+
+	// Update telemetry
+	attrs := append(
+		sourceKey.Telemetry(),
+		attribute.Bool("has_error", result.FailedSinks > 0),
+		attribute.String("source_type", r.sourceType),
+	)
+	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	r.metrics.sourceDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	r.metrics.sourceBytes.Add(finalizationCtx, int64(c.BodyLength()), metric.WithAttributes(attrs...))
+
 	return result
 }
 
@@ -237,11 +278,13 @@ func (r *Router) SourcesCount() int {
 }
 
 func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult {
-	status, err := r.writeRecord(sink, c)
+	startTime := r.clock.Now()
+
+	writeResult, err := r.writeRecord(sink, c)
 	result := &SinkResult{
 		SinkID:     sink.sinkKey.SinkID,
-		StatusCode: resultStatusCode(status, err),
-		status:     status,
+		StatusCode: resultStatusCode(writeResult.Status, err),
+		status:     writeResult.Status,
 		error:      err,
 	}
 
@@ -249,12 +292,24 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 		r.logger.Errorf(context.Background(), `write record error: %s`, err.Error())
 	}
 
+	finalizationCtx := context.WithoutCancel(c.Ctx())
+
+	// Update telemetry
+	attrs := append(
+		sink.sinkKey.Telemetry(),
+		attribute.String("error_type", telemetry.ErrorType(err)),
+		attribute.String("sink_type", sink.sinkType.String()),
+	)
+	durationMs := float64(r.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	r.metrics.sinkDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	r.metrics.sinkBytes.Add(finalizationCtx, int64(writeResult.Bytes), metric.WithAttributes(attrs...))
+
 	return result
 }
 
-func (r *Router) writeRecord(sink *sinkData, c recordctx.Context) (pipeline.RecordStatus, error) {
+func (r *Router) writeRecord(sink *sinkData, c recordctx.Context) (pipeline.WriteResult, error) {
 	if r.isClosed() {
-		return pipeline.RecordError, ShutdownError{}
+		return pipeline.WriteResult{Status: pipeline.RecordError}, ShutdownError{}
 	}
 	return r.pipelineRef(sink).writeRecord(c)
 }

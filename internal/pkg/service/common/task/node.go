@@ -42,8 +42,8 @@ type runTaskFn func() (Result, error)
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
 type Node struct {
-	tracer telemetry.Tracer
-	meters *meters
+	tracer  telemetry.Tracer
+	metrics *metrics
 
 	clock  clock.Clock
 	logger log.Logger
@@ -90,7 +90,7 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, opts ...No
 	taskPrefix := etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
 		tracer:            d.Telemetry().Tracer(),
-		meters:            newMeters(d.Telemetry().Meter()),
+		metrics:           newMetrics(d.Telemetry().Meter()),
 		clock:             d.Clock(),
 		logger:            d.Logger().WithComponent("task"),
 		client:            d.EtcdClient(),
@@ -271,7 +271,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 
 	// Setup telemetry
 	ctx, span := n.tracer.Start(ctx, spanName, trace.WithAttributes(spanStartAttrs(&task)...))
-	n.meters.running.Add(ctx, 1, metric.WithAttributes(meterStartAttrs(&task)...))
+	n.metrics.running.Add(ctx, 1, metric.WithAttributes(meterStartAttrs(&task)...))
 
 	// Process results in defer to catch panic
 	defer span.End(&result.Error)
@@ -365,8 +365,8 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	defer finalizationCancel()
 
 	// Update telemetry
-	n.meters.running.Add(finalizationCtx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
-	n.meters.duration.Record(finalizationCtx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
+	n.metrics.running.Add(finalizationCtx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
+	n.metrics.duration.Record(finalizationCtx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
 
 	// Update task and release lock in etcd
 	finalizeTaskOp := op.MergeToTxn(

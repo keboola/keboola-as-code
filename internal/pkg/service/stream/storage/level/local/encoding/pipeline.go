@@ -39,7 +39,7 @@ type Pipeline interface {
 	// IsReady is used for load balancing, to detect health pipelines.
 	IsReady() bool
 	// WriteRecord blocks until the record is written and synced to the local storage, if the wait is enabled.
-	WriteRecord(record recordctx.Context) error
+	WriteRecord(record recordctx.Context) (int, error)
 	// Events provides listening to the writer lifecycle.
 	Events() *events.Events[Pipeline]
 	// Close the writer and sync data to the disk.
@@ -256,7 +256,7 @@ func (p *pipeline) IsReady() bool {
 	return p.ready
 }
 
-func (p *pipeline) WriteRecord(record recordctx.Context) error {
+func (p *pipeline) WriteRecord(record recordctx.Context) (int, error) {
 	timestamp := record.Timestamp()
 
 	// Block Close method
@@ -266,14 +266,14 @@ func (p *pipeline) WriteRecord(record recordctx.Context) error {
 
 	// Check if the writer is closed
 	if p.isClosed() {
-		return errors.New(`writer is closed`)
+		return 0, errors.New(`writer is closed`)
 	}
 
 	// Format and write table row
-	err := p.encoder.WriteRecord(record)
+	n, err := p.encoder.WriteRecord(record)
 	p.writeWg.Done()
 	if err != nil {
-		return err
+		return n, err
 	}
 
 	notifier := p.syncer.Notifier()
@@ -283,12 +283,12 @@ func (p *pipeline) WriteRecord(record recordctx.Context) error {
 
 	// Wait for sync and return sync error, if any
 	if err := notifier.Wait(record.Ctx()); err != nil {
-		return errors.PrefixError(err, "error when waiting for sync")
+		return n, errors.PrefixError(err, "error when waiting for sync")
 	}
 
 	// Increase the count of successful writes
 	p.completedWrites.Add(timestamp, 1)
-	return nil
+	return n, nil
 }
 
 func (p *pipeline) SliceKey() model.SliceKey {

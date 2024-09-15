@@ -7,15 +7,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-type meters struct {
+type metrics struct {
 	running  metric.Int64UpDownCounter
 	duration metric.Float64Histogram
 }
 
-func newMeters(meter telemetry.Meter) *meters {
-	return &meters{
-		running:  meter.UpDownCounter("keboola.go.task.running", "Background running tasks count.", ""),
-		duration: meter.Histogram("keboola.go.task.duration", "Background task duration.", "ms"),
+func newMetrics(meter telemetry.Meter) *metrics {
+	return &metrics{
+		running:  meter.IntUpDownCounter("keboola.go.task.running", "Background running tasks count.", ""),
+		duration: meter.FloatHistogram("keboola.go.task.duration", "Background task duration.", "ms"),
 	}
 }
 

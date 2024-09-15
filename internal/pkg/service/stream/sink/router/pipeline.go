@@ -48,9 +48,9 @@ func newPipelineRef(sink *sinkData, logger log.Logger, wg *sync.WaitGroup, plugi
 	}
 }
 
-func (r *pipelineRef) writeRecord(c recordctx.Context) (pipeline.RecordStatus, error) {
+func (r *pipelineRef) writeRecord(c recordctx.Context) (pipeline.WriteResult, error) {
 	if err := r.ensureOpened(c.Ctx(), c.Timestamp()); err != nil {
-		return pipeline.RecordError, err
+		return pipeline.WriteResult{Status: pipeline.RecordError}, err
 	}
 	return r.pipeline.WriteRecord(c)
 }

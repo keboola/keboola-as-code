@@ -206,7 +206,7 @@ func (w *testWriter) UncompressedSize() datasize.ByteSize {
 	return w.UncompressedSizeValue
 }
 
-func (w *testWriter) WriteRecord(recordctx.Context) error {
+func (w *testWriter) WriteRecord(recordctx.Context) (int, error) {
 	panic(errors.New("method should not be called"))
 }
 

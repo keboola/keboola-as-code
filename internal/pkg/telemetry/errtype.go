@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -18,6 +19,7 @@ func ErrorType(err error) string {
 	var schedulerAPIErr *keboola.SchedulerError
 	var queueAPIErr *keboola.QueueError
 	var workspacesAPIErr *keboola.WorkspacesError
+	var errWithName svcerrors.WithName
 	errors.As(err, &netErr)
 	switch {
 	case err == nil:
@@ -40,6 +42,8 @@ func ErrorType(err error) string {
 		return "queue_api_" + strconv.Itoa(queueAPIErr.ErrCode)
 	case errors.As(err, &workspacesAPIErr):
 		return "workspaces_api"
+	case errors.As(err, &errWithName):
+		return errWithName.ErrorName()
 	default:
 		return "other"
 	}

@@ -40,7 +40,7 @@ func NewEncoder(concurrency int, mapping any, out io.Writer) (*Encoder, error) {
 	}, nil
 }
 
-func (w *Encoder) WriteRecord(record recordctx.Context) error {
+func (w *Encoder) WriteRecord(record recordctx.Context) (int, error) {
 	// Reduce memory allocations
 	values := w.valuesPool.Get().(*[]any)
 	defer w.valuesPool.Put(values)
@@ -49,23 +49,23 @@ func (w *Encoder) WriteRecord(record recordctx.Context) error {
 	for i, col := range w.columns {
 		value, err := columnRenderer.CSVValue(col, record)
 		if err != nil {
-			return errors.PrefixErrorf(err, "cannot convert column %q to CSV value", col)
+			return 0, errors.PrefixErrorf(err, "cannot convert column %q to CSV value", col)
 		}
 		(*values)[i] = value
 	}
 
 	// Encode the values to CSV format
-	err := w.writersPool.WriteRow(values)
+	n, err := w.writersPool.WriteRow(values)
 	if err != nil {
 		var valErr fastcsv.ValueError
 		if errors.As(err, &valErr) {
 			columnName := w.columns[valErr.ColumnIndex].ColumnName()
-			return errors.Errorf(`cannot convert value of the column "%s" to the string: %w`, columnName, err)
+			return n, errors.Errorf(`cannot convert value of the column "%s" to the string: %w`, columnName, err)
 		}
-		return err
+		return n, err
 	}
 
-	return nil
+	return n, nil
 }
 
 func (w *Encoder) Flush() error {
