@@ -303,13 +303,11 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 		return statistics.Value{}, errors.PrefixError(err, "cannot get slice statistics")
 	}
 
-	value := stats.Local
-
 	// Upload the file using the specific provider
 	// Empty slice upload can be skipped in the upload implementation.
-	err = o.plugins.UploadSlice(ctx, volume, slice.Slice, value)
+	err = o.plugins.UploadSlice(ctx, volume, slice.Slice, stats.Local)
 	if err != nil {
-		return value, errors.PrefixError(err, "slice upload failed")
+		return stats.Local, errors.PrefixError(err, "slice upload failed")
 	}
 
 	// New context for database operation, we may be running out of time
@@ -319,8 +317,8 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 	// Switch slice to the uploaded state
 	err = o.storage.Slice().SwitchToUploaded(slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
 	if err != nil {
-		return value, errors.PrefixError(err, "cannot switch slice to the uploaded state")
+		return stats.Local, errors.PrefixError(err, "cannot switch slice to the uploaded state")
 	}
 
-	return value, nil
+	return stats.Local, nil
 }

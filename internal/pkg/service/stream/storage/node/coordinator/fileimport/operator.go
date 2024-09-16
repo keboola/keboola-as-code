@@ -335,13 +335,11 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 		return statistics.Value{}, errors.PrefixError(err, "cannot get file statistics")
 	}
 
-	value := stats.Staging
-
 	// Import the file using the specific provider
 	// Empty file import can be skipped in the import implementation.
-	err = o.plugins.ImportFile(ctx, file.File, value)
+	err = o.plugins.ImportFile(ctx, file.File, stats.Staging)
 	if err != nil {
-		return value, errors.PrefixError(err, "file import failed")
+		return stats.Staging, errors.PrefixError(err, "file import failed")
 	}
 
 	// New context for database operation, we may be running out of time
@@ -351,8 +349,8 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	// Switch file to the imported state
 	err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
 	if err != nil {
-		return value, errors.PrefixError(err, "cannot switch file to the imported state")
+		return stats.Staging, errors.PrefixError(err, "cannot switch file to the imported state")
 	}
 
-	return value, nil
+	return stats.Staging, nil
 }
