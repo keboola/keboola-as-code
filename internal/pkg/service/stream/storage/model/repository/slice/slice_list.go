@@ -7,6 +7,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
+// ListAll slices, in all storage levels.
+func (r *Repository) ListAll(opts ...iterator.Option) iterator.DefinitionT[model.Slice] {
+	return r.schema.AllLevels().GetAll(r.client, opts...)
+}
+
 // ListIn lists slices in the parent, in all storage levels.
 func (r *Repository) ListIn(parentKey fmt.Stringer, opts ...iterator.Option) iterator.DefinitionT[model.Slice] {
 	return r.schema.AllLevels().InObject(parentKey).GetAll(r.client, opts...)
