@@ -22,7 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestNode(t *testing.T) {
+func TestMetadataCleanup(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -57,6 +57,9 @@ func TestNode(t *testing.T) {
 	cfg.Interval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
+
+	// Start metadata cleanup node
+	// -----------------------------------------------------------------------------------------------------------------
 	require.NoError(t, metacleanup.Start(d, cfg))
 
 	// Prepare doCleanup helper

@@ -109,11 +109,11 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 	defer span.End(&err)
 
 	// Measure count of deleted files
-	count := atomic.NewInt64(0)
+	counter := atomic.NewInt64(0)
 	defer func() {
-		cnt := count.Load()
-		span.SetAttributes(attribute.Int64("deletedFilesCount", cnt))
-		n.logger.With(attribute.Int64("deletedFilesCount", cnt)).Info(ctx, `deleted "<deletedFilesCount>" files`)
+		count := counter.Load()
+		span.SetAttributes(attribute.Int64("deletedFilesCount", count))
+		n.logger.With(attribute.Int64("deletedFilesCount", count)).Info(ctx, `deleted "<deletedFilesCount>" files`)
 	}()
 
 	// Delete files in parallel, but with limit
@@ -129,7 +129,7 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 			grp.Go(func() error {
 				err, deleted := n.cleanFile(ctx, file)
 				if deleted {
-					count.Add(1)
+					counter.Add(1)
 				}
 				return err
 			})
