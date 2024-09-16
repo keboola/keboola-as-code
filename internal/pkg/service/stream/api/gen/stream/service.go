@@ -322,6 +322,8 @@ type Level struct {
 	// Timestamp of the last received record.
 	LastRecordAt *string
 	RecordsCount uint64
+	// Compressed size of data in bytes.
+	CompressedSize uint64
 	// Uncompressed size of data in bytes.
 	UncompressedSize uint64
 }

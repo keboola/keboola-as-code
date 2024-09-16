@@ -968,6 +968,10 @@ var Level = Type("Level", func() {
 	})
 	Attribute("recordsCount", UInt64)
 	Required("recordsCount")
+	Attribute("compressedSize", UInt64, func() {
+		Description("Compressed size of data in bytes.")
+	})
+	Required("compressedSize")
 	Attribute("uncompressedSize", UInt64, func() {
 		Description("Uncompressed size of data in bytes.")
 	})

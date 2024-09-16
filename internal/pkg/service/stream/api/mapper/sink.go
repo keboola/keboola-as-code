@@ -66,6 +66,7 @@ func mapValueToLevel(value statistics.Value) *stream.Level {
 		FirstRecordAt:    timeToStringPointer(&value.FirstRecordAt),
 		LastRecordAt:     timeToStringPointer(&value.LastRecordAt),
 		RecordsCount:     value.RecordsCount,
+		CompressedSize:   uint64(value.CompressedSize),
 		UncompressedSize: uint64(value.UncompressedSize),
 	}
 }
