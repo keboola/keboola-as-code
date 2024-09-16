@@ -322,8 +322,10 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	)
 	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	o.metrics.Compressed.Add(finalizationCtx, int64(stats.CompressedSize), metric.WithAttributes(attrs...))
-	o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.UncompressedSize), metric.WithAttributes(attrs...))
+	if err == nil {
+		o.metrics.Compressed.Add(finalizationCtx, int64(stats.CompressedSize), metric.WithAttributes(attrs...))
+		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.UncompressedSize), metric.WithAttributes(attrs...))
+	}
 }
 
 func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *fileData) (statistics.Value, error) {

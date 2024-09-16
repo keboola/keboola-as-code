@@ -290,8 +290,10 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 	)
 	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	o.metrics.Compressed.Add(finalizationCtx, int64(stats.CompressedSize), metric.WithAttributes(attrs...))
-	o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.UncompressedSize), metric.WithAttributes(attrs...))
+	if err == nil {
+		o.metrics.Compressed.Add(finalizationCtx, int64(stats.CompressedSize), metric.WithAttributes(attrs...))
+		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.UncompressedSize), metric.WithAttributes(attrs...))
+	}
 }
 
 func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume, slice *sliceData) (statistics.Value, error) {

@@ -436,8 +436,10 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	)
 	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	o.metrics.Compressed.Add(finalizationCtx, int64(stats.Total.CompressedSize), metric.WithAttributes(attrs...))
-	o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.Total.UncompressedSize), metric.WithAttributes(attrs...))
+	if opErr == nil {
+		o.metrics.Compressed.Add(finalizationCtx, int64(stats.Total.CompressedSize), metric.WithAttributes(attrs...))
+		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.Total.UncompressedSize), metric.WithAttributes(attrs...))
+	}
 }
 
 func (o *operator) waitForFileClosing(ctx context.Context, file *fileData) (statistics.Aggregated, error) {
