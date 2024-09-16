@@ -218,7 +218,7 @@ func TestComponentsFunctions(t *testing.T) {
 	code := `
 {
 "keboola.wr-db-snowflake": ComponentIsAvailable("keboola.wr-db-snowflake"),
-"keboola.wr-db-snowflake-gcs": ComponentIsAvailable("keboola.wr-db-snowflake-gcs"),
+"keboola.wr-db-snowflake-gcs-s3": ComponentIsAvailable("keboola.wr-db-snowflake-gcs-s3"),
 "keboola.wr-snowflake-blob-storage": ComponentIsAvailable("keboola.wr-snowflake-blob-storage"),
 "wr-snowflake": SnowflakeWriterComponentId(),
 }
@@ -238,7 +238,7 @@ func TestComponentsFunctions(t *testing.T) {
 	expected = `
 {
   "keboola.wr-db-snowflake": true,
-  "keboola.wr-db-snowflake-gcs": false,
+  "keboola.wr-db-snowflake-gcs-s3": false,
   "keboola.wr-snowflake-blob-storage": false,
   "wr-snowflake": "keboola.wr-db-snowflake"
 }
@@ -254,7 +254,7 @@ func TestComponentsFunctions(t *testing.T) {
 	expected = `
 {
   "keboola.wr-db-snowflake": false,
-  "keboola.wr-db-snowflake-gcs": false,
+  "keboola.wr-db-snowflake-gcs-s3": false,
   "keboola.wr-snowflake-blob-storage": true,
   "wr-snowflake": "keboola.wr-snowflake-blob-storage"
 }
@@ -265,14 +265,14 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Case 4: Only Google Snowflake Writer
 	components = model.NewComponentsMap(keboola.Components{
-		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCP}},
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCPS3}},
 	})
 	expected = `
 {
   "keboola.wr-db-snowflake": false,
-  "keboola.wr-db-snowflake-gcs": true,
+  "keboola.wr-db-snowflake-gcs-s3": true,
   "keboola.wr-snowflake-blob-storage": false,
-  "wr-snowflake": "keboola.wr-db-snowflake-gcs"
+  "wr-snowflake": "keboola.wr-db-snowflake-gcs-s3"
 }
 `
 	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
@@ -287,7 +287,7 @@ func TestComponentsFunctions(t *testing.T) {
 	expected = `
 {
   "keboola.wr-db-snowflake": true,
-  "keboola.wr-db-snowflake-gcs": false,
+  "keboola.wr-db-snowflake-gcs-s3": false,
   "keboola.wr-snowflake-blob-storage": true,
   "wr-snowflake": "keboola.wr-db-snowflake"
 }
