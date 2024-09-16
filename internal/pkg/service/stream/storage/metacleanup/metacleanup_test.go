@@ -1,4 +1,4 @@
-package cleanup_test
+package metacleanup_test
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
@@ -53,11 +53,11 @@ func TestNode(t *testing.T) {
 	cleanupInterval := 12 * time.Hour
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := cleanup.NewConfig()
+	cfg := metacleanup.NewConfig()
 	cfg.Interval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
-	require.NoError(t, cleanup.Start(d, cfg))
+	require.NoError(t, metacleanup.Start(d, cfg))
 
 	// Prepare doCleanup helper
 	// -----------------------------------------------------------------------------------------------------------------
