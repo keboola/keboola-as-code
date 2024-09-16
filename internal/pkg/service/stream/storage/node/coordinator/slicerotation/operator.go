@@ -251,6 +251,8 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
+	startTime := o.clock.Now()
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceRotationTimeout.Duration())
 	defer cancel()
 
@@ -306,11 +308,24 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	if err == nil {
 		o.logger.Info(ctx, "rotated slice")
 	}
+
+	finalizationCtx := context.WithoutCancel(ctx)
+
+	// Update telemetry
+	attrs := append(
+		slice.SliceKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
+		attribute.String("error_type", telemetry.ErrorType(err)),
+		attribute.String("operation", "slicerotation"),
+	)
+	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	if err == nil {
+		o.metrics.Compressed.Add(finalizationCtx, int64(stats.Total.CompressedSize), metric.WithAttributes(attrs...))
+		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.Total.UncompressedSize), metric.WithAttributes(attrs...))
+	}
 }
 
 func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
-	startTime := o.clock.Now()
-
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
 	defer cancel()
 
@@ -348,21 +363,6 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 
 	if opErr == nil {
 		o.logger.Info(ctx, "closed slice")
-	}
-
-	finalizationCtx := context.WithoutCancel(ctx)
-
-	// Update telemetry
-	attrs := append(
-		slice.SliceKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
-		attribute.String("error_type", telemetry.ErrorType(opErr)),
-		attribute.String("operation", "slicerotation"),
-	)
-	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
-	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	if opErr == nil {
-		o.metrics.Compressed.Add(finalizationCtx, int64(stats.Total.CompressedSize), metric.WithAttributes(attrs...))
-		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.Total.UncompressedSize), metric.WithAttributes(attrs...))
 	}
 }
 

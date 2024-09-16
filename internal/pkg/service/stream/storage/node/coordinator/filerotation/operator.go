@@ -321,6 +321,8 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) rotateFile(ctx context.Context, file *fileData) {
+	startTime := o.clock.Now()
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration())
 	defer cancel()
 
@@ -375,11 +377,24 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	if err == nil {
 		o.logger.Info(ctx, "rotated file")
 	}
+
+	finalizationCtx := context.WithoutCancel(ctx)
+
+	// Update telemetry
+	attrs := append(
+		file.FileKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
+		attribute.String("error_type", telemetry.ErrorType(err)),
+		attribute.String("operation", "filerotation"),
+	)
+	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	if err == nil {
+		o.metrics.Compressed.Add(finalizationCtx, int64(stats.Total.CompressedSize), metric.WithAttributes(attrs...))
+		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.Total.UncompressedSize), metric.WithAttributes(attrs...))
+	}
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
-	startTime := o.clock.Now()
-
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
@@ -424,21 +439,6 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 
 	if opErr == nil {
 		o.logger.Info(ctx, "closed file")
-	}
-
-	finalizationCtx := context.WithoutCancel(ctx)
-
-	// Update telemetry
-	attrs := append(
-		file.FileKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
-		attribute.String("error_type", telemetry.ErrorType(opErr)),
-		attribute.String("operation", "filerotation"),
-	)
-	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
-	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
-	if opErr == nil {
-		o.metrics.Compressed.Add(finalizationCtx, int64(stats.Total.CompressedSize), metric.WithAttributes(attrs...))
-		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.Total.UncompressedSize), metric.WithAttributes(attrs...))
 	}
 }
 
