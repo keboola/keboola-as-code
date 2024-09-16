@@ -265,14 +265,14 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 
 	// Check conditions
 	now := o.clock.Now()
-	cause, ok := shouldUpload(slice.UploadConfig, now, slice.SliceKey.OpenedAt().Time(), stats.Local)
-	if !ok {
-		o.logger.Debugf(ctx, "skipping slice rotation: %s", cause)
+	result := shouldUpload(slice.UploadConfig, now, slice.SliceKey.OpenedAt().Time(), stats.Local)
+	if !result.ShouldImport() {
+		o.logger.Debugf(ctx, "skipping slice rotation: %s", result.Cause())
 		return
 	}
 
 	// Log cause
-	o.logger.Infof(ctx, "rotating slice, upload conditions met: %s", cause)
+	o.logger.Infof(ctx, "rotating slice, upload conditions met: %s", result.Cause())
 
 	// Lock all file operations
 	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, slice.SliceKey.FileKey)
@@ -316,6 +316,7 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 		slice.SliceKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
 		attribute.String("error_type", telemetry.ErrorType(err)),
 		attribute.String("operation", "slicerotation"),
+		attribute.String("condition", result.String()),
 	)
 	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
