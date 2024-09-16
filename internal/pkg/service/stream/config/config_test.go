@@ -117,8 +117,6 @@ source:
         writeBufferSize: 4KB
         # Max size of the HTTP request body. Validation rules: required
         maxRequestBodySize: 1MB
-        # Whether the requests should be streamed into server.
-        streamRequestBody: false
 sink:
     table:
         keboola:
