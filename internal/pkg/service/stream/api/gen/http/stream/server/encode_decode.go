@@ -2501,6 +2501,7 @@ func marshalStreamLevelToLevelResponseBody(v *stream.Level) *LevelResponseBody {
 		FirstRecordAt:    v.FirstRecordAt,
 		LastRecordAt:     v.LastRecordAt,
 		RecordsCount:     v.RecordsCount,
+		CompressedSize:   v.CompressedSize,
 		UncompressedSize: v.UncompressedSize,
 	}
 

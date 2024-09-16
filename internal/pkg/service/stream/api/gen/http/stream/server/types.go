@@ -992,6 +992,8 @@ type LevelResponseBody struct {
 	// Timestamp of the last received record.
 	LastRecordAt *string `form:"lastRecordAt,omitempty" json:"lastRecordAt,omitempty" xml:"lastRecordAt,omitempty"`
 	RecordsCount uint64  `form:"recordsCount" json:"recordsCount" xml:"recordsCount"`
+	// Compressed size of data in bytes.
+	CompressedSize uint64 `form:"compressedSize" json:"compressedSize" xml:"compressedSize"`
 	// Uncompressed size of data in bytes.
 	UncompressedSize uint64 `form:"uncompressedSize" json:"uncompressedSize" xml:"uncompressedSize"`
 }
