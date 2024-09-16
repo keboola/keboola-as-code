@@ -10,6 +10,7 @@ type Meter interface {
 	IntUpDownCounter(name, desc, unit string, opts ...metric.Int64UpDownCounterOption) metric.Int64UpDownCounter
 	IntHistogram(name, desc, unit string, opts ...metric.Int64HistogramOption) metric.Int64Histogram
 	FloatHistogram(name, desc, unit string, opts ...metric.Float64HistogramOption) metric.Float64Histogram
+	IntObservableGauge(name, desc, unit string, callback metric.Int64Callback, opts ...metric.Int64ObservableGaugeOption) metric.Int64ObservableGauge
 }
 
 type meter struct {
@@ -34,6 +35,11 @@ func (m *meter) IntHistogram(name, desc, unit string, opts ...metric.Int64Histog
 func (m *meter) FloatHistogram(name, desc, unit string, opts ...metric.Float64HistogramOption) metric.Float64Histogram {
 	opts = append(opts, metric.WithDescription(desc), metric.WithUnit(unit))
 	return MustInstrument(m.meter.Float64Histogram(name, opts...))
+}
+
+func (m *meter) IntObservableGauge(name, desc, unit string, callback metric.Int64Callback, opts ...metric.Int64ObservableGaugeOption) metric.Int64ObservableGauge {
+	opts = append(opts, metric.WithDescription(desc), metric.WithUnit(unit), metric.WithInt64Callback(callback))
+	return MustInstrument(m.meter.Int64ObservableGauge(name, opts...))
 }
 
 func MustInstrument[T any](instrument T, err error) T {
