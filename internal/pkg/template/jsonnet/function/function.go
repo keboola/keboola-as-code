@@ -9,7 +9,6 @@ package function
 import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-client/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -20,6 +19,7 @@ const (
 	SnowflakeWriterIDAws   = keboola.ComponentID("keboola.wr-db-snowflake")
 	SnowflakeWriterIDAzure = keboola.ComponentID("keboola.wr-snowflake-blob-storage")
 	SnowflakeWriterIDGCP   = keboola.ComponentID("keboola.wr-db-snowflake-gcs")
+	SnowflakeWriterIDGCPS3 = keboola.ComponentID("keboola.wr-db-snowflake-gcs-s3")
 )
 
 // ConfigID Jsonnet function maps configuration ID used in the template
@@ -147,12 +147,19 @@ func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.Native
 		Name:   `SnowflakeWriterComponentId`,
 		Params: ast.Identifiers{},
 		Func: func(params []any) (any, error) {
+			//for _, b := range backend {
+			//	if b == project.BackendSnowflake {
+			//		if _, found := components.Get(SnowflakeWriterIDGCPS3); found {
+			//			return SnowflakeWriterIDGCPS3.String(), nil
+			//		}
+			//	}
+			//}
 			if _, found := components.Get(SnowflakeWriterIDAws); found {
 				return SnowflakeWriterIDAws.String(), nil
 			} else if _, found := components.Get(SnowflakeWriterIDAzure); found {
 				return SnowflakeWriterIDAzure.String(), nil
-			} else if _, found := components.Get(SnowflakeWriterIDGCP); found {
-				return SnowflakeWriterIDGCP.String(), nil
+			} else if _, found := components.Get(SnowflakeWriterIDGCPS3); found {
+				return SnowflakeWriterIDGCPS3.String(), nil
 			} else {
 				return nil, errors.New("no Snowflake Writer component found")
 			}
