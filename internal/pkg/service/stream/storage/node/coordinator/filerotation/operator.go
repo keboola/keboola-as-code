@@ -334,14 +334,14 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	}
 
 	// Check conditions
-	cause, ok := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
-	if !ok {
-		o.logger.Debugf(ctx, "skipping file rotation: %s", cause)
+	result := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
+	if !result.ShouldImport() {
+		o.logger.Debugf(ctx, "skipping file rotation: %s", result.Cause())
 		return
 	}
 
 	// Log cause
-	o.logger.Infof(ctx, "rotating file, import conditions met: %s", cause)
+	o.logger.Infof(ctx, "rotating file, import conditions met: %s", result.Cause())
 
 	// Lock all file operations
 	lock, unlock, err := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
@@ -385,6 +385,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		file.FileKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
 		attribute.String("error_type", telemetry.ErrorType(err)),
 		attribute.String("operation", "filerotation"),
+		attribute.String("condition", result.String()),
 	)
 	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
