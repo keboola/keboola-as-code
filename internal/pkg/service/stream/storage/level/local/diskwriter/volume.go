@@ -1,4 +1,4 @@
-// Package volume provides detection and opening of volumes intended for slices writing.
+// Package diskwriter provides detection and opening of volumes intended for slices writing.
 package diskwriter
 
 import (
