@@ -1,8 +1,6 @@
 package local
 
 import (
-	"path/filepath"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
@@ -15,7 +13,7 @@ func NewFile(path string, c config.Config) model.File {
 	}
 }
 
-func NewSlice(path string, f model.File, compressionCfg compression.Config) (model.Slice, error) {
+func NewSlice(path string, compressionCfg compression.Config) (model.Slice, error) {
 	// Filename extension according to the compression type
 	extension, err := compression.Filename("csv", compressionCfg.Type)
 	if err != nil {
@@ -23,7 +21,7 @@ func NewSlice(path string, f model.File, compressionCfg compression.Config) (mod
 	}
 
 	s := model.Slice{
-		Dir:               filepath.Join(f.Dir, NormalizeDirPath(path)),
+		Dir:               path,
 		FilenamePrefix:    "slice",
 		FilenameExtension: extension,
 	}

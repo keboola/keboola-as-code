@@ -8,11 +8,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode/diskcleanup"
 )
 
 func Start(ctx context.Context, d dependencies.StorageWriterScope, cfg config.Config) error {
 	logger := d.Logger().WithComponent("storage.node.writer")
 	logger.Info(ctx, `starting storage writer node`)
 
-	return rpc.StartNetworkFileServer(d, cfg.NodeID, cfg.Hostname, cfg.Storage.Level.Local)
+	if err := rpc.StartNetworkFileServer(d, cfg.NodeID, cfg.Hostname, cfg.Storage.Level.Local); err != nil {
+		return err
+	}
+
+	if err := diskcleanup.Start(d, cfg.Storage.DiskCleanup); err != nil {
+		return err
+	}
+
+	return nil
 }
