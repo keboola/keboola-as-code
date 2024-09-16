@@ -44,7 +44,7 @@ type Node struct {
 	storage   *storageRepo.Repository
 }
 
-func NewNode(cfg Config, d dependencies) error {
+func Start(d dependencies, cfg Config) error {
 	n := &Node{
 		config:    cfg,
 		clock:     d.Clock(),

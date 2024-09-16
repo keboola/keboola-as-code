@@ -108,7 +108,7 @@ func newGroupMember(nodeID, groupID string, cfg Config, d dependencies) (*GroupN
 	})
 
 	// Log node ID
-	g.logger.Info(ctx, "starting")
+	g.logger.Info(ctx, "joining distribution group")
 
 	// Register node
 	_, err := etcdop.

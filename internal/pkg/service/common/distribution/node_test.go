@@ -173,7 +173,7 @@ node3
 
 	// Logs differs in number of "the node ... gone" messages
 	loggers[0].AssertJSONMessages(t, `
-{"level":"info","message":"starting","component":"distribution","distribution.node":"node1","distribution.group":"my-group"}
+{"level":"info","message":"joining distribution group","component":"distribution","distribution.node":"node1","distribution.group":"my-group"}
 {"level":"info","message":"creating etcd session"}
 {"level":"info","message":"created etcd session"}
 {"level":"info","message":"registering the node \"node1\""}
@@ -195,7 +195,7 @@ node3
 `)
 
 	loggers[1].AssertJSONMessages(t, `
-{"level":"info","message":"starting","component":"distribution","distribution.node":"node2","distribution.group":"my-group"}
+{"level":"info","message":"joining distribution group","component":"distribution","distribution.node":"node2","distribution.group":"my-group"}
 {"level":"info","message":"creating etcd session"}
 {"level":"info","message":"created etcd session"}
 {"level":"info","message":"registering the node \"node2\""}
@@ -218,7 +218,7 @@ node3
 `)
 
 	loggers[2].AssertJSONMessages(t, `
-{"level":"info","message":"starting","component":"distribution","distribution.node":"node3","distribution.group":"my-group"}
+{"level":"info","message":"joining distribution group","component":"distribution","distribution.node":"node3","distribution.group":"my-group"}
 {"level":"info","message":"creating etcd session"}
 {"level":"info","message":"created etcd session"}
 {"level":"info","message":"registering the node \"node3\""}
@@ -263,7 +263,7 @@ node4
 	etcdhelper.AssertKVsString(t, client, "")
 
 	d4.DebugLogger().AssertJSONMessages(t, `
-{"level":"info","message":"starting","component":"distribution","distribution.node":"node4","distribution.group":"my-group"}
+{"level":"info","message":"joining distribution group","component":"distribution","distribution.node":"node4","distribution.group":"my-group"}
 {"level":"info","message":"creating etcd session"}
 {"level":"info","message":"created etcd session"}
 {"level":"info","message":"registering the node \"node4\""}

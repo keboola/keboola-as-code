@@ -57,7 +57,7 @@ func TestNode(t *testing.T) {
 	cfg.Interval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
-	require.NoError(t, cleanup.NewNode(cfg, d))
+	require.NoError(t, cleanup.Start(d, cfg))
 
 	// Prepare doCleanup helper
 	// -----------------------------------------------------------------------------------------------------------------
