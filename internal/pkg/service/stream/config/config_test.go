@@ -139,17 +139,24 @@ storage:
                 enabled: true
                 # Statistics L2 in-memory cache invalidation interval. Validation rules: required,minDuration=100ms,maxDuration=5s
                 interval: 1s
-    cleanup:
-        # Enable storage cleanup.
+    metadataCleanup:
+        # Enable local storage metadata cleanup.
         enabled: true
         # Cleanup interval. Validation rules: required,minDuration=5m,maxDuration=24h
-        interval: 30m0s
+        interval: 5m0s
         # How many files are deleted in parallel. Validation rules: required,min=1,max=500
-        concurrency: 100
+        concurrency: 50
         # Expiration interval of a file that has not yet been imported. Validation rules: required,minDuration=1h,maxDuration=720h,gtefield=ArchivedFileExpiration
         activeFileExpiration: 168h0m0s
         # Expiration interval of a file that has already been imported. Validation rules: required,minDuration=15m,maxDuration=720h
-        archivedFileExpiration: 24h0m0s
+        archivedFileExpiration: 6h0m0s
+    diskCleanup:
+        # Enable local storage disks cleanup.
+        enabled: true
+        # Cleanup interval. Validation rules: required,minDuration=5m,maxDuration=24h
+        interval: 5m0s
+        # How many directories are removed in parallel. Validation rules: required,min=1,max=500
+        concurrency: 50
     level:
         local:
             volume:

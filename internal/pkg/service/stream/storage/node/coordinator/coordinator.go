@@ -30,7 +30,7 @@ func Start(ctx context.Context, d dependencies.CoordinatorScope, cfg config.Conf
 		return err
 	}
 
-	if err := metacleanup.Start(d, cfg.Storage.Cleanup); err != nil {
+	if err := metacleanup.Start(d, cfg.Storage.MetadataCleanup); err != nil {
 		return err
 	}
 
