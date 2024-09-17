@@ -18,7 +18,7 @@ func NewMetrics(meter telemetry.Meter) *Metrics {
 			"keboola.go.stream.operation.duration",
 			"Duration of operator processing.",
 			"ms",
-			metric.WithExplicitBucketBoundaries(0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000),
+			metric.WithExplicitBucketBoundaries(0, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000),
 		),
 		Compressed:   meter.IntCounter("keboola.go.stream.operation.bytes.compressed", "Compressed bytes processed by operator.", "B"),
 		Uncompressed: meter.IntCounter("keboola.go.stream.operation.bytes.uncompressed", "Uncompressed bytes processed by operator.", "B"),
