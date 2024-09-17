@@ -88,10 +88,8 @@ runs:
         REGISTRY: ${{ inputs.gcpRegistry }}
         REPOSITORY: ${{ inputs.gcpRepository }}
       run: |
-        docker pull $REGISTRY/$REPOSITORY:apps-proxy-v1.0.2
-        docker tag $REGISTRY/$REPOSITORY:apps-proxy-v1.0.2 europe-west3-docker.pkg.dev/gitops-stacks-provisioning/keboola-as-code/apps-proxy:apps-proxy-v1.0.2
-        # docker tag $IMAGE:$TAG $REGISTRY/$REPOSITORY:$TAG
-        # docker push $REGISTRY/$REPOSITORY:$TAG
+        docker pull $REGISTRY/$REPOSITORY:stream-v0.3.6
+        docker tag $REGISTRY/$REPOSITORY:stream-v0.3.6 europe-west3-docker.pkg.dev/gitops-stacks-provisioning/keboola-as-code/stream-service:stream-v0.3.6
 
     # - name: Login to Azure ACR
     #   uses: azure/docker-login@v2

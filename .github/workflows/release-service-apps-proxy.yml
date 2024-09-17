@@ -11,18 +11,18 @@ env:
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # Proxy image
-  IMAGE_NAME: "keboola/apps-proxy"
+  IMAGE_NAME: "keboola/stream-service"
   IMAGE_TAG: ${{ github.ref_name }}
   ECR_REGION: "us-east-1"
-  ECR_REPOSITORY: "keboola/apps-proxy"
+  ECR_REPOSITORY: "keboola/stream-service"
   ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-AppsProxyPushRole-Lpj0s3ixYUiN"
   GCP_REGISTRY: "us-central1-docker.pkg.dev"
-  GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/apps-proxy"
+  GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/stream-service"
   GCP_IDENTITY_PROVIDER: "projects/388088979044/locations/global/workloadIdentityPools/github/providers/github"
   GCP_SERVICE_ACCOUNT: "keboola-as-code-ci-push@keboola-prod-artifacts.iam.gserviceaccount.com"
-  ACR_REPOSITORY: "apps-proxy"
+  ACR_REPOSITORY: "stream-service"
   ACR_REGISTRY: "keboola.azurecr.io"
-  ACR_USERNAME: "apps-proxy-push"
+  ACR_USERNAME: "stream-service-push"
 
 jobs:
   # test-lint:
@@ -98,8 +98,7 @@ jobs:
       - name: Tag and push the Docker image
         shell: bash
         run: |
-          # docker tag keboola/sandboxes-service:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
-          docker push europe-west3-docker.pkg.dev/gitops-stacks-provisioning/keboola-as-code/apps-proxy:apps-proxy-v1.0.2
+          docker push europe-west3-docker.pkg.dev/gitops-stacks-provisioning/keboola-as-code/stream-service:stream-v0.3.6
 
   # publish-images-main:
   #   name: Publish images (production tag)
