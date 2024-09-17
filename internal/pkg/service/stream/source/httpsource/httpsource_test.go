@@ -190,9 +190,13 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/stream/1234/my-source/my-secret",
 			ExpectedStatusCode: http.StatusOK,
 			ExpectedHeaders: map[string]string{
-				"Allow":          "OPTIONS, POST",
-				"Content-Length": "0",
-				"Server":         httpsource.ServerHeader,
+				"Allow":                         "OPTIONS, POST",
+				"Access-Control-Allow-Methods":  "OPTIONS, POST",
+				"Access-Control-Allow-Headers":  "*",
+				"Access-Control-Expose-Headers": "*",
+				"Access-Control-Allow-Origin":   "*",
+				"Content-Length":                "0",
+				"Server":                        httpsource.ServerHeader,
 			},
 		},
 		{
