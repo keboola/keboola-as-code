@@ -9,6 +9,7 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -24,9 +25,11 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsCache "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/cache"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -45,6 +48,9 @@ type operator struct {
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
 	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
+
+	// OTEL metrics
+	metrics *node.Metrics
 }
 
 type fileData struct {
@@ -76,6 +82,7 @@ type dependencies interface {
 	Plugins() *plugin.Plugins
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
+	Telemetry() telemetry.Telemetry
 }
 
 func Start(d dependencies, config targetConfig.OperatorConfig) error {
@@ -89,6 +96,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		statistics: d.StatisticsL1Cache(),
 		locks:      d.DistributedLockProvider(),
 		plugins:    d.Plugins(),
+		metrics:    node.NewMetrics(d.Telemetry().Meter()),
 	}
 
 	// Join the distribution group
@@ -262,6 +270,8 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) importFile(ctx context.Context, file *fileData) {
+	startTime := o.clock.Now()
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
 	defer cancel()
 
@@ -276,7 +286,7 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	defer unlock()
 
 	// Import file
-	err = o.doImportFile(ctx, lock, file)
+	stats, err := o.doImportFile(ctx, lock, file)
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
 
@@ -301,21 +311,35 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	if err == nil {
 		o.logger.Info(ctx, "imported file")
 	}
+
+	finalizationCtx := context.WithoutCancel(ctx)
+
+	// Update telemetry
+	attrs := append(
+		file.FileKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
+		attribute.String("error_type", telemetry.ErrorType(err)),
+		attribute.String("operation", "fileimport"),
+	)
+	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	if err == nil {
+		o.metrics.Compressed.Add(finalizationCtx, int64(stats.CompressedSize), metric.WithAttributes(attrs...))
+		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.UncompressedSize), metric.WithAttributes(attrs...))
+	}
 }
 
-func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *fileData) error {
+func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *fileData) (statistics.Value, error) {
 	// Get file statistics
-	var stats statistics.Aggregated
 	stats, err := o.statistics.FileStats(ctx, file.FileKey)
 	if err != nil {
-		return errors.PrefixError(err, "cannot get file statistics")
+		return statistics.Value{}, errors.PrefixError(err, "cannot get file statistics")
 	}
 
 	// Import the file using the specific provider
 	// Empty file import can be skipped in the import implementation.
 	err = o.plugins.ImportFile(ctx, file.File, stats.Staging)
 	if err != nil {
-		return errors.PrefixError(err, "file import failed")
+		return stats.Staging, errors.PrefixError(err, "file import failed")
 	}
 
 	// New context for database operation, we may be running out of time
@@ -325,8 +349,8 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	// Switch file to the imported state
 	err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
 	if err != nil {
-		return errors.PrefixError(err, "cannot switch file to the imported state")
+		return stats.Staging, errors.PrefixError(err, "cannot switch file to the imported state")
 	}
 
-	return nil
+	return stats.Staging, nil
 }

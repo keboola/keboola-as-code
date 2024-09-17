@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -24,8 +25,10 @@ import (
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -43,6 +46,9 @@ type operator struct {
 
 	slices *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
 	sinks  *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
+
+	// OTEL metrics
+	metrics *node.Metrics
 }
 
 type sliceData struct {
@@ -74,6 +80,7 @@ type dependencies interface {
 	StorageRepository() *storageRepo.Repository
 	DefinitionRepository() *definitionRepo.Repository
 	Plugins() *plugin.Plugins
+	Telemetry() telemetry.Telemetry
 }
 
 func Start(d dependencies, config stagingConfig.OperatorConfig) error {
@@ -87,6 +94,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		statistics: d.StatisticsRepository(),
 		definition: d.DefinitionRepository(),
 		plugins:    d.Plugins(),
+		metrics:    node.NewMetrics(d.Telemetry().Meter()),
 	}
 
 	// Graceful shutdown
@@ -231,6 +239,8 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
+	startTime := o.clock.Now()
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
 	defer cancel()
 
@@ -244,7 +254,7 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 	}
 
 	// Upload slice
-	err = o.doUploadSlice(ctx, volume, slice)
+	stats, err := o.doUploadSlice(ctx, volume, slice)
 	if err != nil {
 		o.logger.Error(ctx, err.Error())
 
@@ -269,21 +279,35 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 	if err == nil {
 		o.logger.Info(ctx, "uploaded slice")
 	}
+
+	finalizationCtx := context.WithoutCancel(ctx)
+
+	// Update telemetry
+	attrs := append(
+		slice.SliceKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
+		attribute.String("error_type", telemetry.ErrorType(err)),
+		attribute.String("operation", "sliceupload"),
+	)
+	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
+	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
+	if err == nil {
+		o.metrics.Compressed.Add(finalizationCtx, int64(stats.CompressedSize), metric.WithAttributes(attrs...))
+		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.UncompressedSize), metric.WithAttributes(attrs...))
+	}
 }
 
-func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume, slice *sliceData) error {
+func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume, slice *sliceData) (statistics.Value, error) {
 	// Get slice statistics
-	// Empty slice upload can be skipped in the upload implementation.
-	var stats statistics.Aggregated
 	stats, err := o.statistics.SliceStats(ctx, slice.SliceKey)
 	if err != nil {
-		return errors.PrefixError(err, "cannot get slice statistics")
+		return statistics.Value{}, errors.PrefixError(err, "cannot get slice statistics")
 	}
 
 	// Upload the file using the specific provider
+	// Empty slice upload can be skipped in the upload implementation.
 	err = o.plugins.UploadSlice(ctx, volume, slice.Slice, stats.Local)
 	if err != nil {
-		return errors.PrefixError(err, "slice upload failed")
+		return stats.Local, errors.PrefixError(err, "slice upload failed")
 	}
 
 	// New context for database operation, we may be running out of time
@@ -293,8 +317,8 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 	// Switch slice to the uploaded state
 	err = o.storage.Slice().SwitchToUploaded(slice.SliceKey, o.clock.Now()).Do(dbCtx).Err()
 	if err != nil {
-		return errors.PrefixError(err, "cannot switch slice to the uploaded state")
+		return stats.Local, errors.PrefixError(err, "cannot switch slice to the uploaded state")
 	}
 
-	return nil
+	return stats.Local, nil
 }
