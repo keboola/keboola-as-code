@@ -11,18 +11,18 @@ env:
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # Proxy image
-  IMAGE_NAME: "keboola/stream-service"
+  IMAGE_NAME: "keboola/templates-api"
   IMAGE_TAG: ${{ github.ref_name }}
   ECR_REGION: "us-east-1"
-  ECR_REPOSITORY: "keboola/stream-service"
+  ECR_REPOSITORY: "keboola/templates-api"
   ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-AppsProxyPushRole-Lpj0s3ixYUiN"
   GCP_REGISTRY: "us-central1-docker.pkg.dev"
-  GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/stream-service"
+  GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/templates-api"
   GCP_IDENTITY_PROVIDER: "projects/388088979044/locations/global/workloadIdentityPools/github/providers/github"
   GCP_SERVICE_ACCOUNT: "keboola-as-code-ci-push@keboola-prod-artifacts.iam.gserviceaccount.com"
-  ACR_REPOSITORY: "stream-service"
+  ACR_REPOSITORY: "templates-api"
   ACR_REGISTRY: "keboola.azurecr.io"
-  ACR_USERNAME: "stream-service-push"
+  ACR_USERNAME: "templates-api-push"
 
 jobs:
   # test-lint:
@@ -98,7 +98,7 @@ jobs:
       - name: Tag and push the Docker image
         shell: bash
         run: |
-          docker push europe-west3-docker.pkg.dev/gitops-stacks-provisioning/keboola-as-code/stream-service:stream-v0.3.6
+          docker push europe-west3-docker.pkg.dev/gitops-stacks-provisioning/keboola-as-code/templates-api:templates-api-v1.11.0
 
   # publish-images-main:
   #   name: Publish images (production tag)
