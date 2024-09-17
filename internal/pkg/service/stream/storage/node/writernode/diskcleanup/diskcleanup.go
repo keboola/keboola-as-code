@@ -4,9 +4,11 @@ package diskcleanup
 
 import (
 	"context"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -157,6 +159,10 @@ func (n *Node) cleanDisk(ctx context.Context) (err error) {
 		return err
 	}
 
+	// We have to later remove empty parent dirs
+	var parentDirsLock sync.Mutex
+	parentDirsMap := make(map[string]bool)
+
 	// Remove dirs present only on the disk, not in DB
 	grp.Go(func() error {
 		for _, vol := range volumes {
@@ -178,6 +184,22 @@ func (n *Node) cleanDisk(ctx context.Context) (err error) {
 						n.logger.Debugf(ctx, "removed directory %q", path)
 						counter.Add(1)
 
+						// Store parent dirs to check if they are not empty
+						parentDir := path
+						for {
+							parentDir = filepath.Dir(parentDir)
+
+							// Don't go over the volume path
+							if !strings.HasPrefix(parentDir, vol.VolumePath+string(filepath.Separator)) {
+								break
+							}
+
+							// Store the path and try parent dir
+							parentDirsLock.Lock()
+							parentDirsMap[parentDir] = true
+							parentDirsLock.Unlock()
+						}
+
 						return nil
 					})
 				}
@@ -186,8 +208,15 @@ func (n *Node) cleanDisk(ctx context.Context) (err error) {
 		return nil
 	})
 
-	// Handle error group error
-	return grp.Wait()
+	if err := grp.Wait(); err != nil {
+		return err
+	}
+
+	if err := n.removeEmptyDirs(ctx, parentDirsMap); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (n *Node) volumeDiskDirs(volume *diskwriter.Volume) (out []string, err error) {
@@ -204,7 +233,7 @@ func (n *Node) volumeDiskDirs(volume *diskwriter.Volume) (out []string, err erro
 			}
 
 			// Collect the path if the depth match
-			if relPath != "" && strings.Count(relPath, string(os.PathSeparator)) == slice.DirPathSegments-1 {
+			if strings.Count(relPath, string(os.PathSeparator)) == slice.DirPathSegments-1 {
 				out = append(out, absPath)
 
 				// Don't go deeper
@@ -220,4 +249,46 @@ func (n *Node) volumeDiskDirs(volume *diskwriter.Volume) (out []string, err erro
 	}
 
 	return out, nil
+}
+
+func (n *Node) removeEmptyDirs(ctx context.Context, dirsMap map[string]bool) error {
+	var dirs []string
+	for dir := range dirsMap {
+		dirs = append(dirs, dir)
+	}
+
+	// Sort most nested path first
+	sort.SliceStable(dirs, func(i, j int) bool {
+		return len(dirs[i]) > len(dirs[j])
+	})
+
+	for _, dir := range dirs {
+		if err := n.removeDirIfEmpty(ctx, dir); err != nil {
+			return errors.PrefixErrorf(err, "cannot remove empty dir %q", dir)
+		}
+	}
+
+	return nil
+}
+
+func (n *Node) removeDirIfEmpty(ctx context.Context, path string) error {
+	fd, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := fd.Close(); err != nil {
+			n.logger.Errorf(ctx, "cannot close dir %q", path)
+		}
+	}()
+
+	// Check if the dir is empty
+	if _, err = fd.Readdirnames(1); errors.Is(err, io.EOF) {
+		// Remove dir
+		if err := os.Remove(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

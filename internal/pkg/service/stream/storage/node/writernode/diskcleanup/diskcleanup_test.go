@@ -135,10 +135,13 @@ func TestDiskCleanup(t *testing.T) {
 	// Create another slice directory, without a record in the DB
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		unexpectedSliceDir := filepath.Join("project", "branch", "source", "sink", "file", "unexpected-slice")
-		require.Equal(t, sliceRepoPkg.DirPathSegments-1, strings.Count(unexpectedSliceDir, string(filepath.Separator)))
+		unexpectedSliceKey := slice.SliceKey
+		unexpectedSliceKey.SinkID = "unexpected-sink"
+		unexpectedSliceDir := unexpectedSliceKey.FileKey.String() + string(filepath.Separator) + unexpectedSliceKey.SliceID.String() // without volume ID
+		require.Equal(t, sliceRepoPkg.DirPathSegments-1, strings.Count(unexpectedSliceDir, string(filepath.Separator)), unexpectedSliceDir)
 		require.NoError(t, os.MkdirAll(filepath.Join(vol.Path(), unexpectedSliceDir), 0o750))
 		require.NoError(t, os.WriteFile(filepath.Join(vol.Path(), unexpectedSliceDir, "foo"), []byte("bar\n"), 0o640))
+		require.DirExists(t, filepath.Join(vol.Path(), "123", "456", "my-source", "unexpected-sink"))
 	}
 
 	// Trigger cleanup
@@ -147,9 +150,12 @@ func TestDiskCleanup(t *testing.T) {
 		doCleanup()
 		logger.AssertJSONMessages(t, `
 {"level":"info","message":"removing expired files without DB record from disk","component":"storage.disk.cleanup"}
-{"level":"debug","message":"removed directory \"%s/001/hdd/my-volume/project/branch/source/sink/file/unexpected-slice\"","path":"%s/001/hdd/my-volume/project/branch/source/sink/file/unexpected-slice","volume.ID":"my-volume","component":"storage.disk.cleanup"}
+{"level":"debug","message":"removed directory \"%s/001/hdd/my-volume/123/456/my-source/unexpected-sink/2000-01-01T00:00:00.000Z/2000-01-01T00:00:00.000Z\"","path":"%s/001/hdd/my-volume/123/456/my-source/unexpected-sink/2000-01-01T00:00:00.000Z/2000-01-01T00:00:00.000Z","volume.ID":"my-volume","component":"storage.disk.cleanup"}
 {"level":"info","message":"removed \"1\" directories","nodeId":"test-node","removedDirectoriesCount":1,"component":"storage.disk.cleanup"}
 `)
+		assert.DirExists(t, vol.Path())
+		assert.DirExists(t, filepath.Join(vol.Path(), "123", "456", "my-source", "my-sink"))
+		assert.NoDirExists(t, filepath.Join(vol.Path(), "123", "456", "my-source", "unexpected-sink"))
 	}
 
 	// Trigger cleanup again
@@ -180,5 +186,8 @@ func TestDiskCleanup(t *testing.T) {
 {"level":"debug","message":"removed directory \"%s/001/hdd/my-volume/123/456/my-source/my-sink/2000-01-01T00-00-00-000Z/2000-01-01T00-00-00-000Z\"","path":"%s/001/hdd/my-volume/123/456/my-source/my-sink/2000-01-01T00-00-00-000Z/2000-01-01T00-00-00-000Z","volume.ID":"my-volume","component":"storage.disk.cleanup"}
 {"level":"info","message":"removed \"1\" directories","nodeId":"test-node","removedDirectoriesCount":1,"component":"storage.disk.cleanup"}
 `)
+		assert.DirExists(t, vol.Path())
+		assert.NoDirExists(t, filepath.Join(vol.Path(), "123"))
+		assert.NoDirExists(t, filepath.Join(vol.Path(), "123", "456", "my-source", "my-sink"))
 	}
 }
