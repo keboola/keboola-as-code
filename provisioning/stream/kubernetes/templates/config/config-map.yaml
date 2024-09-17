@@ -260,7 +260,7 @@ data:
               # Records size to trigger file import. Validation rules: required,minBytes=100B,maxBytes=500MB
               size: 50MB
               # Duration from the last import to trigger the next import. Validation rules: required,minDuration=30s,maxDuration=24h
-              interval: 15m0s
+              interval: 1m0s
               # Number of slices in the file to trigger file import. Validation rules: required,min=1,max=1000
               slicesCount: 100
               # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
