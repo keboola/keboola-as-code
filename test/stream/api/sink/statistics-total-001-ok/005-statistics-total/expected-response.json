@@ -3,6 +3,7 @@
     "firstRecordAt": "2000-01-20T00:00:00.000Z",
     "lastRecordAt": "2000-01-21T00:00:00.000Z",
     "recordsCount": 1,
+    "compressedSize": 1,
     "uncompressedSize": 1
   },
   "levels": {
@@ -10,6 +11,7 @@
       "firstRecordAt": "2000-01-20T00:00:00.000Z",
       "lastRecordAt": "2000-01-21T00:00:00.000Z",
       "recordsCount": 1,
+      "compressedSize": 1,
       "uncompressedSize": 1
     }
   }

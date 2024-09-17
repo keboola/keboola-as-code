@@ -212,22 +212,26 @@ paths:
                                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                 recordsCount: 1
+                                                compressedSize: 1
                                                 uncompressedSize: 1
                                             levels:
                                                 local:
                                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                     recordsCount: 1
+                                                    compressedSize: 1
                                                     uncompressedSize: 1
                                                 staging:
                                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                     recordsCount: 1
+                                                    compressedSize: 1
                                                     uncompressedSize: 1
                                                 target:
                                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                     recordsCount: 1
+                                                    compressedSize: 1
                                                     uncompressedSize: 1
                                             files:
                                                 - state: writing
@@ -243,22 +247,26 @@ paths:
                                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                         recordsCount: 1
+                                                        compressedSize: 1
                                                         uncompressedSize: 1
                                                     levels:
                                                         local:
                                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                             recordsCount: 1
+                                                            compressedSize: 1
                                                             uncompressedSize: 1
                                                         staging:
                                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                             recordsCount: 1
+                                                            compressedSize: 1
                                                             uncompressedSize: 1
                                                         target:
                                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                             recordsCount: 1
+                                                            compressedSize: 1
                                                             uncompressedSize: 1
             security:
                 - storage-api-token: []
@@ -1590,22 +1598,26 @@ paths:
                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                             recordsCount: 1
+                                            compressedSize: 1
                                             uncompressedSize: 1
                                         levels:
                                             local:
                                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                 recordsCount: 1
+                                                compressedSize: 1
                                                 uncompressedSize: 1
                                             staging:
                                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                 recordsCount: 1
+                                                compressedSize: 1
                                                 uncompressedSize: 1
                                             target:
                                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                 recordsCount: 1
+                                                compressedSize: 1
                                                 uncompressedSize: 1
                 "404":
                     description: 'stream.api.sinkNotFound: Sink not found error.'
@@ -1667,22 +1679,26 @@ paths:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 levels:
                                     local:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                                     staging:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                                     target:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                 "404":
                     description: 'stream.api.sinkNotFound: Sink not found error.'
@@ -2003,22 +2019,26 @@ components:
                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                         recordsCount: 1
+                        compressedSize: 1
                         uncompressedSize: 1
                     levels:
                         local:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                             recordsCount: 1
+                            compressedSize: 1
                             uncompressedSize: 1
                         staging:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                             recordsCount: 1
+                            compressedSize: 1
                             uncompressedSize: 1
                         target:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                             recordsCount: 1
+                            compressedSize: 1
                             uncompressedSize: 1
                     files:
                         - state: writing
@@ -2034,22 +2054,26 @@ components:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             levels:
                                 local:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 staging:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 target:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
             required:
                 - projectId
@@ -2165,22 +2189,26 @@ components:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             levels:
                                 local:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 staging:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 target:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                             files:
                                 - state: writing
@@ -2196,22 +2224,26 @@ components:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                                     levels:
                                         local:
                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                             recordsCount: 1
+                                            compressedSize: 1
                                             uncompressedSize: 1
                                         staging:
                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                             recordsCount: 1
+                                            compressedSize: 1
                                             uncompressedSize: 1
                                         target:
                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                             recordsCount: 1
+                                            compressedSize: 1
                                             uncompressedSize: 1
                 sourceId:
                     type: string
@@ -2341,22 +2373,26 @@ components:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                             recordsCount: 1
+                            compressedSize: 1
                             uncompressedSize: 1
                         levels:
                             local:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             staging:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             target:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                         files:
                             - state: writing
@@ -2372,22 +2408,26 @@ components:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 levels:
                                     local:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                                     staging:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                                     target:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
             required:
                 - projectId
@@ -2531,22 +2571,26 @@ components:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 levels:
                                     local:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                                     staging:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                                     target:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                                 files:
                                     - state: writing
@@ -2562,22 +2606,26 @@ components:
                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                             recordsCount: 1
+                                            compressedSize: 1
                                             uncompressedSize: 1
                                         levels:
                                             local:
                                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                 recordsCount: 1
+                                                compressedSize: 1
                                                 uncompressedSize: 1
                                             staging:
                                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                 recordsCount: 1
+                                                compressedSize: 1
                                                 uncompressedSize: 1
                                             target:
                                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                                 recordsCount: 1
+                                                compressedSize: 1
                                                 uncompressedSize: 1
             example:
                 projectId: 123
@@ -2702,22 +2750,26 @@ components:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             levels:
                                 local:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 staging:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 target:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                             files:
                                 - state: writing
@@ -2733,22 +2785,26 @@ components:
                                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                                         recordsCount: 1
+                                        compressedSize: 1
                                         uncompressedSize: 1
                                     levels:
                                         local:
                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                             recordsCount: 1
+                                            compressedSize: 1
                                             uncompressedSize: 1
                                         staging:
                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                             recordsCount: 1
+                                            compressedSize: 1
                                             uncompressedSize: 1
                                         target:
                                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                                             recordsCount: 1
+                                            compressedSize: 1
                                             uncompressedSize: 1
             required:
                 - projectId
@@ -2776,22 +2832,26 @@ components:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             levels:
                                 local:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 staging:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 target:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                 levels:
                     $ref: '#/components/schemas/Levels'
@@ -2802,22 +2862,26 @@ components:
                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                     recordsCount: 1
+                    compressedSize: 1
                     uncompressedSize: 1
                 levels:
                     local:
                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                         recordsCount: 1
+                        compressedSize: 1
                         uncompressedSize: 1
                     staging:
                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                         recordsCount: 1
+                        compressedSize: 1
                         uncompressedSize: 1
                     target:
                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                         recordsCount: 1
+                        compressedSize: 1
                         uncompressedSize: 1
                 files:
                     - state: writing
@@ -2833,22 +2897,26 @@ components:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                             recordsCount: 1
+                            compressedSize: 1
                             uncompressedSize: 1
                         levels:
                             local:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             staging:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             target:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
             required:
                 - total
@@ -3068,6 +3136,11 @@ components:
         Level:
             type: object
             properties:
+                compressedSize:
+                    type: integer
+                    description: Compressed size of data in bytes.
+                    example: 1
+                    format: int64
                 firstRecordAt:
                     type: string
                     description: Timestamp of the first received record.
@@ -3091,9 +3164,11 @@ components:
                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                 recordsCount: 1
+                compressedSize: 1
                 uncompressedSize: 1
             required:
                 - recordsCount
+                - compressedSize
                 - uncompressedSize
         Levels:
             type: object
@@ -3109,16 +3184,19 @@ components:
                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                     recordsCount: 1
+                    compressedSize: 1
                     uncompressedSize: 1
                 staging:
                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                     recordsCount: 1
+                    compressedSize: 1
                     uncompressedSize: 1
                 target:
                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                     recordsCount: 1
+                    compressedSize: 1
                     uncompressedSize: 1
         PaginatedResponse:
             type: object
@@ -3449,22 +3527,26 @@ components:
                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                         recordsCount: 1
+                        compressedSize: 1
                         uncompressedSize: 1
                     levels:
                         local:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                             recordsCount: 1
+                            compressedSize: 1
                             uncompressedSize: 1
                         staging:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                             recordsCount: 1
+                            compressedSize: 1
                             uncompressedSize: 1
                         target:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                             recordsCount: 1
+                            compressedSize: 1
                             uncompressedSize: 1
             required:
                 - state
@@ -3490,22 +3572,26 @@ components:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             levels:
                                 local:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 staging:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
                                 target:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                                     recordsCount: 1
+                                    compressedSize: 1
                                     uncompressedSize: 1
             example:
                 files:
@@ -3522,22 +3608,26 @@ components:
                             firstRecordAt: "2022-04-28T14:20:04.000Z"
                             lastRecordAt: "2022-04-28T14:20:04.000Z"
                             recordsCount: 1
+                            compressedSize: 1
                             uncompressedSize: 1
                         levels:
                             local:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             staging:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
                             target:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
                                 lastRecordAt: "2022-04-28T14:20:04.000Z"
                                 recordsCount: 1
+                                compressedSize: 1
                                 uncompressedSize: 1
             required:
                 - files
@@ -3553,22 +3643,26 @@ components:
                     firstRecordAt: "2022-04-28T14:20:04.000Z"
                     lastRecordAt: "2022-04-28T14:20:04.000Z"
                     recordsCount: 1
+                    compressedSize: 1
                     uncompressedSize: 1
                 levels:
                     local:
                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                         recordsCount: 1
+                        compressedSize: 1
                         uncompressedSize: 1
                     staging:
                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                         recordsCount: 1
+                        compressedSize: 1
                         uncompressedSize: 1
                     target:
                         firstRecordAt: "2022-04-28T14:20:04.000Z"
                         lastRecordAt: "2022-04-28T14:20:04.000Z"
                         recordsCount: 1
+                        compressedSize: 1
                         uncompressedSize: 1
             required:
                 - levels
