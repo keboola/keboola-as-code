@@ -51,7 +51,9 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	etcdLogger := zap.New(
 		logger.(log.LoggerWithZapCore).ZapCore(),
 		// Add component=etcd.client field
-		zap.Fields(zapcore.Field{Key: "component", String: "etcd.client", Type: zapcore.StringType}),
+		zap.Fields(zap.String("component", "etcd.client")),
+		// Log stack trace for warnings/errors
+		zap.AddStacktrace(zap.WarnLevel),
 		// Skip debug messages
 		zap.IncreaseLevel(zapcore.InfoLevel),
 	)
