@@ -4,6 +4,7 @@ package httpsource
 import (
 	"context"
 	"net"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -74,6 +75,15 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	}
 
 	// Route import requests to the dispatcher
+	router.Options("/stream/<projectID>/<sourceID>/<secret>", func(c *routing.Context) error {
+		c.Response.Header.Set("Allow", "OPTIONS, POST")
+		c.Response.Header.Set("Access-Control-Allow-Methods", "OPTIONS, POST")
+		c.Response.Header.Set("Access-Control-Allow-Headers", "*")
+		c.Response.Header.Set("Access-Control-Expose-Headers", "*")
+		c.Response.Header.Set("Access-Control-Allow-Origin", "*")
+		c.Response.SetStatusCode(http.StatusOK)
+		return nil
+	})
 	router.Post("/stream/<projectID>/<sourceID>/<secret>", func(c *routing.Context) error {
 		// Get parameters
 		projectIDStr := c.Param("projectID")
