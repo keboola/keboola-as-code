@@ -207,7 +207,7 @@
       "type": "string",
       "description": "Duration from the last slice upload to trigger the next upload.",
       "value": "45s",
-      "defaultValue": "5m0s",
+      "defaultValue": "30s",
       "overwritten": true,
       "protected": false,
       "validation": "required,minDuration=1s,maxDuration=30m"

@@ -238,7 +238,7 @@ data:
               # Records size to trigger slice upload. Validation rules: required,minBytes=100B,maxBytes=50MB
               size: 5MB
               # Duration from the last slice upload to trigger the next upload. Validation rules: required,minDuration=1s,maxDuration=30m
-              interval: 5m0s
+              interval: 30s
         target:
           operator:
             # Import triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s

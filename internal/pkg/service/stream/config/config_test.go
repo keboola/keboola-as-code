@@ -257,7 +257,7 @@ storage:
                     # Records size to trigger slice upload. Validation rules: required,minBytes=100B,maxBytes=50MB
                     size: 5MB
                     # Duration from the last slice upload to trigger the next upload. Validation rules: required,minDuration=1s,maxDuration=30m
-                    interval: 5m0s
+                    interval: 30s
         target:
             operator:
                 # Import triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s
@@ -525,8 +525,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.staging.upload.trigger.interval",
     "type": "string",
     "description": "Duration from the last slice upload to trigger the next upload.",
-    "value": "5m0s",
-    "defaultValue": "5m0s",
+    "value": "30s",
+    "defaultValue": "30s",
     "overwritten": false,
     "protected": false,
     "validation": "required,minDuration=1s,maxDuration=30m"
