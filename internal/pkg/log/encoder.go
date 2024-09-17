@@ -27,11 +27,13 @@ func newConsoleEncoder(verbose bool) zapcore.Encoder {
 func newJSONEncoder() zapcore.Encoder {
 	// Log time, level, msg
 	return zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		TimeKey:     "time",
-		LevelKey:    "level",
-		MessageKey:  "message",
-		EncodeLevel: zapcore.LowercaseLevelEncoder,
-		EncodeTime:  zapcore.ISO8601TimeEncoder,
+		TimeKey:       "time",
+		LevelKey:      "level",
+		MessageKey:    "message",
+		CallerKey:     "caller",
+		StacktraceKey: "stack",
+		EncodeLevel:   zapcore.LowercaseLevelEncoder,
+		EncodeTime:    zapcore.ISO8601TimeEncoder,
 	})
 }
 

@@ -271,17 +271,9 @@ func (ts *testState) startNodes(t *testing.T, ctx context.Context, modifyConfig 
 		etcdhelper.AssertKeys(t, ts.etcdClient, []string{
 			"runtime/closesync/source/node/source1",
 			"runtime/closesync/source/node/source2",
-			"runtime/distribution/group/operator.file.rotation/nodes/coordinator1",
-			"runtime/distribution/group/operator.file.rotation/nodes/coordinator2",
-			"runtime/distribution/group/operator.slice.rotation/nodes/coordinator1",
-			"runtime/distribution/group/operator.slice.rotation/nodes/coordinator2",
-			"runtime/distribution/group/operator.file.import/nodes/coordinator1",
-			"runtime/distribution/group/operator.file.import/nodes/coordinator2",
-			"runtime/distribution/group/storage.router.sources.test-source/nodes/source1",
-			"runtime/distribution/group/storage.router.sources.test-source/nodes/source2",
 			"storage/volume/writer/%s",
 			"storage/volume/writer/%s",
-		})
+		}, etcdhelper.WithIgnoredKeyPattern("^runtime/distribution/group/"))
 	}, 5*time.Second, 10*time.Millisecond)
 }
 

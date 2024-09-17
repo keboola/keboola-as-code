@@ -1,9 +1,9 @@
-package cleanup
+package metacleanup
 
 import "time"
 
 type Config struct {
-	Enabled                bool          `configKey:"enabled"  configUsage:"Enable storage cleanup."`
+	Enabled                bool          `configKey:"enabled"  configUsage:"Enable local storage metadata cleanup."`
 	Interval               time.Duration `configKey:"interval"  configUsage:"Cleanup interval." validate:"required,minDuration=5m,maxDuration=24h"`
 	Concurrency            int           `configKey:"concurrency"  configUsage:"How many files are deleted in parallel." validate:"required,min=1,max=500"`
 	ActiveFileExpiration   time.Duration `configKey:"activeFileExpiration"  configUsage:"Expiration interval of a file that has not yet been imported." validate:"required,minDuration=1h,maxDuration=720h,gtefield=ArchivedFileExpiration"` // maxDuration=30 days
@@ -13,9 +13,9 @@ type Config struct {
 func NewConfig() Config {
 	return Config{
 		Enabled:                true,
-		Interval:               30 * time.Minute,
-		Concurrency:            100,
+		Interval:               5 * time.Minute,
+		Concurrency:            50,
 		ActiveFileExpiration:   7 * 24 * time.Hour, // 7 days
-		ArchivedFileExpiration: 24 * time.Hour,     // 1 day
+		ArchivedFileExpiration: 6 * time.Hour,
 	}
 }

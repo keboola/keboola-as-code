@@ -10,6 +10,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const (
+	// DirPathSegments defines how many segments are in "<projectID>/<branchID>/<sourceID>/<sinkID>/<fileID>".
+	DirPathSegments = 5
+)
+
 // newFile creates file entity.
 func (r *Repository) newFile(cfg level.Config, k model.FileKey, sink definition.Sink) (f model.File, err error) {
 	if !r.plugins.IsSinkWithLocalStorage(sink.Type) {

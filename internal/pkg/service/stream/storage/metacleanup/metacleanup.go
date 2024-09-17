@@ -1,4 +1,6 @@
-package cleanup
+// Package metacleanup provides cleanup of expired file/slice metadata from DB.
+// The metadata cleanup then triggers cleanup of the physical disk files in the storage writer nodes.
+package metacleanup
 
 import (
 	"context"
@@ -44,17 +46,17 @@ type Node struct {
 	storage   *storageRepo.Repository
 }
 
-func NewNode(cfg Config, d dependencies) error {
+func Start(d dependencies, cfg Config) error {
 	n := &Node{
 		config:    cfg,
 		clock:     d.Clock(),
-		logger:    d.Logger().WithComponent("storage.cleanup"),
+		logger:    d.Logger().WithComponent("storage.metadata.cleanup"),
 		telemetry: d.Telemetry(),
 		locks:     d.DistributedLockProvider(),
 		storage:   d.StorageRepository(),
 	}
 
-	if dist, err := d.DistributionNode().Group("storage.cleanup"); err == nil {
+	if dist, err := d.DistributionNode().Group("storage.metadata.cleanup"); err == nil {
 		n.dist = dist
 	} else {
 		return err
@@ -62,7 +64,7 @@ func NewNode(cfg Config, d dependencies) error {
 
 	ctx := context.Background()
 	if !n.config.Enabled {
-		n.logger.Info(ctx, "storage cleanup is disabled")
+		n.logger.Info(ctx, "local storage metadata cleanup is disabled")
 		return nil
 	}
 
@@ -85,8 +87,8 @@ func NewNode(cfg Config, d dependencies) error {
 		defer ticker.Stop()
 
 		for {
-			if err := n.cleanFiles(ctx); err != nil && !errors.Is(err, context.Canceled) {
-				n.logger.Errorf(ctx, `storage cleanup failed: %s`, err)
+			if err := n.cleanMetadata(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				n.logger.Errorf(ctx, `local storage metadata cleanup failed: %s`, err)
 			}
 
 			select {
@@ -101,17 +103,20 @@ func NewNode(cfg Config, d dependencies) error {
 	return nil
 }
 
-// cleanFiles iterates all files and deletes the expired ones.
-func (n *Node) cleanFiles(ctx context.Context) (err error) {
-	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.node.cleanFiles")
+// cleanMetadata iterates all files and deletes the expired ones.
+func (n *Node) cleanMetadata(ctx context.Context) (err error) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Minute)
+	defer cancel()
+
+	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanMetadata")
 	defer span.End(&err)
 
 	// Measure count of deleted files
-	count := atomic.NewInt64(0)
+	counter := atomic.NewInt64(0)
 	defer func() {
-		cnt := count.Load()
-		span.SetAttributes(attribute.Int64("deletedFilesCount", cnt))
-		n.logger.With(attribute.Int64("deletedFilesCount", cnt)).Info(ctx, `deleted "<deletedFilesCount>" files`)
+		count := counter.Load()
+		span.SetAttributes(attribute.Int64("deletedFilesCount", count))
+		n.logger.With(attribute.Int64("deletedFilesCount", count)).Info(ctx, `deleted "<deletedFilesCount>" files`)
 	}()
 
 	// Delete files in parallel, but with limit
@@ -127,7 +132,7 @@ func (n *Node) cleanFiles(ctx context.Context) (err error) {
 			grp.Go(func() error {
 				err, deleted := n.cleanFile(ctx, file)
 				if deleted {
-					count.Add(1)
+					counter.Add(1)
 				}
 				return err
 			})
@@ -157,7 +162,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 	ctx = ctxattr.ContextWith(ctx, attrs...)
 
 	// Trace each file
-	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.node.cleanFile")
+	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanFile")
 	defer span.End(&err)
 
 	// Check if the file is expired
