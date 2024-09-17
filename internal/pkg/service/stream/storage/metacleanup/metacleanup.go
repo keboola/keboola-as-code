@@ -105,6 +105,9 @@ func Start(d dependencies, cfg Config) error {
 
 // cleanMetadata iterates all files and deletes the expired ones.
 func (n *Node) cleanMetadata(ctx context.Context) (err error) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Minute)
+	defer cancel()
+
 	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanMetadata")
 	defer span.End(&err)
 

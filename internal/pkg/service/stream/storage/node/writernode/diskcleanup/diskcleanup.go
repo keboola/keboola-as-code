@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/benbjohnson/clock"
 	"go.opentelemetry.io/otel/attribute"
@@ -108,6 +109,9 @@ func Start(d dependencies, cfg Config) error {
 
 // cleanDisk iterates directories in the local storage, and delete those without a File record in DB.
 func (n *Node) cleanDisk(ctx context.Context) (err error) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Minute)
+	defer cancel()
+
 	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.disk.cleanDisk")
 	defer span.End(&err)
 
