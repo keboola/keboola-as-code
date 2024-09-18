@@ -149,7 +149,7 @@ jobs:
             --labels="${ETCD_RELEASE_NAME}-client=true" \
             --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
             --env="ETCDCTL_ENDPOINTS=$ETCD_ENDPOINT" \
-            --command -- etcdctl --user root:$ETCD_ROOT_PASSWORD put /message Hello
+            --command -- etcdctl --dial-timeout=10s --user root:$ETCD_ROOT_PASSWORD put /message Hello
 
       - name: Check access to the etcd from the DataDog Agent
         if: always()
