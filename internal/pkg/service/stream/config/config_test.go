@@ -262,7 +262,7 @@ storage:
                     # Records size to trigger slice upload. Validation rules: required,minBytes=100B,maxBytes=50MB
                     size: 5MB
                     # Duration from the last slice upload to trigger the next upload. Validation rules: required,minDuration=1s,maxDuration=30m
-                    interval: 5m0s
+                    interval: 30s
         target:
             operator:
                 # Import triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s
@@ -284,7 +284,7 @@ storage:
                     # Records size to trigger file import. Validation rules: required,minBytes=100B,maxBytes=500MB
                     size: 50MB
                     # Duration from the last import to trigger the next import. Validation rules: required,minDuration=30s,maxDuration=24h
-                    interval: 15m0s
+                    interval: 1m0s
                     # Number of slices in the file to trigger file import. Validation rules: required,min=1,max=1000
                     slicesCount: 100
                     # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
@@ -530,8 +530,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.staging.upload.trigger.interval",
     "type": "string",
     "description": "Duration from the last slice upload to trigger the next upload.",
-    "value": "5m0s",
-    "defaultValue": "5m0s",
+    "value": "30s",
+    "defaultValue": "30s",
     "overwritten": false,
     "protected": false,
     "validation": "required,minDuration=1s,maxDuration=30m"
@@ -570,8 +570,8 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "key": "storage.level.target.import.trigger.interval",
     "type": "string",
     "description": "Duration from the last import to trigger the next import.",
-    "value": "15m0s",
-    "defaultValue": "15m0s",
+    "value": "1m0s",
+    "defaultValue": "1m0s",
     "overwritten": false,
     "protected": false,
     "validation": "required,minDuration=30s,maxDuration=24h"

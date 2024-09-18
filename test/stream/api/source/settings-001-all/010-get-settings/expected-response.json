@@ -207,7 +207,7 @@
       "type": "string",
       "description": "Duration from the last slice upload to trigger the next upload.",
       "value": "45s",
-      "defaultValue": "5m0s",
+      "defaultValue": "30s",
       "overwritten": true,
       "protected": false,
       "validation": "required,minDuration=1s,maxDuration=30m"
@@ -246,8 +246,8 @@
       "key": "storage.level.target.import.trigger.interval",
       "type": "string",
       "description": "Duration from the last import to trigger the next import.",
-      "value": "15m0s",
-      "defaultValue": "15m0s",
+      "value": "1m0s",
+      "defaultValue": "1m0s",
       "overwritten": false,
       "protected": false,
       "validation": "required,minDuration=30s,maxDuration=24h"

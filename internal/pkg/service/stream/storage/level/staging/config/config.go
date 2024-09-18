@@ -34,7 +34,7 @@ func NewConfig() Config {
 			Trigger: UploadTrigger{
 				Count:    10000,
 				Size:     5 * datasize.MB,
-				Interval: duration.From(5 * time.Minute),
+				Interval: duration.From(30 * time.Second),
 			},
 		},
 	}

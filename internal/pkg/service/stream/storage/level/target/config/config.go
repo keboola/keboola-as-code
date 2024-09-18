@@ -34,7 +34,7 @@ func NewConfig() Config {
 			Trigger: ImportTrigger{
 				Count:       50000,
 				Size:        50 * datasize.MB,
-				Interval:    duration.From(15 * time.Minute),
+				Interval:    duration.From(1 * time.Minute),
 				SlicesCount: 100,
 				Expiration:  duration.From(30 * time.Minute),
 			},
