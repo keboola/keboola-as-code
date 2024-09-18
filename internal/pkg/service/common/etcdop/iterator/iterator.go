@@ -328,11 +328,11 @@ func (v Result) Err() error {
 	return v.error
 }
 
-func newFirstPageOp(cfg config) op.GetManyOp {
+func newFirstPageOp(cfg config) op.WithResult[[]*op.KeyValue] {
 	return nextPageOp(cfg.client, cfg.start(), cfg.end(), cfg.sort, cfg.pageSize, cfg.revision)
 }
 
-func nextPageOp(client etcd.KV, start, end string, sort etcd.SortOrder, pageSize int, revision int64) op.GetManyOp {
+func nextPageOp(client etcd.KV, start, end string, sort etcd.SortOrder, pageSize int, revision int64) op.WithResult[[]*op.KeyValue] {
 	// Range options
 	opts := []etcd.OpOption{
 		etcd.WithFromKey(),
@@ -346,7 +346,7 @@ func nextPageOp(client etcd.KV, start, end string, sort etcd.SortOrder, pageSize
 		opts = append(opts, etcd.WithRev(revision), etcd.WithSerializable())
 	}
 
-	return op.NewGetManyOp(
+	return op.NewForType(
 		client,
 		func(ctx context.Context) (etcd.Op, error) {
 			return etcd.OpGet(start, opts...), nil
