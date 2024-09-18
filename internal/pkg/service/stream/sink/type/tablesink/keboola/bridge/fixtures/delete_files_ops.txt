@@ -9,8 +9,7 @@
   ➡️  THEN:
   001 ➡️  GET ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0")
   002 ➡️  GET "storage/stats/target/123/456/my-source/my-sink/_sum"
-  003 ➡️  GET "storage/stats/target/123/456/my-source/my-sink/_reset"
-  004 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/stats/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0")
+  003 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/stats/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0")
 ✔️  TXN | succeeded: true
 
 ➡️  TXN
@@ -21,8 +20,7 @@
   004 ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD LESS %d
   005 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z" MOD GREATER 0
   006 "storage/stats/target/123/456/my-source/my-sink/_sum" MOD EQUAL 0
-  007 "storage/stats/target/123/456/my-source/my-sink/_reset" MOD EQUAL 0
-  008 ["storage/stats/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/stats/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD EQUAL 0
+  007 ["storage/stats/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/", "storage/stats/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z0") MOD EQUAL 0
   ➡️  THEN:
   // Delete file
   001 ➡️  DEL "storage/file/all/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z"
@@ -49,8 +47,7 @@
   ➡️  THEN:
   001 ➡️  GET ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z0")
   002 ➡️  GET "storage/stats/target/123/456/my-source/my-sink/_sum"
-  003 ➡️  GET "storage/stats/target/123/456/my-source/my-sink/_reset"
-  004 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/", "storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z0")
+  003 ➡️  GET ["storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/", "storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z0")
 ✔️  TXN | succeeded: true
 
 ➡️  TXN
@@ -62,8 +59,7 @@
   004 ["storage/slice/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/", "storage/slice/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z0") MOD LESS %d
   005 "storage/slice/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/my-volume-1/2000-01-01T03:00:00.000Z" MOD GREATER 0
   006 "storage/stats/target/123/456/my-source/my-sink/_sum" MOD EQUAL 0
-  007 "storage/stats/target/123/456/my-source/my-sink/_reset" MOD EQUAL 0
-  008 ["storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/", "storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z0") MOD EQUAL 0
+  007 ["storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z/", "storage/stats/target/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z0") MOD EQUAL 0
   ➡️  THEN:
   001 ➡️  DEL "storage/file/all/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"
   002 ➡️  DEL "storage/file/level/local/123/456/my-source/my-sink/2000-01-01T03:00:00.000Z"
