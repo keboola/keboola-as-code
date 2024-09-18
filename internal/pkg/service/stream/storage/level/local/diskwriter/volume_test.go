@@ -25,6 +25,27 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+func TestSpace(t *testing.T) {
+	t.Parallel()
+
+	tc := newVolumeTestCase(t)
+	vol, err := tc.OpenVolume()
+	require.NoError(t, err)
+
+	used, err := vol.UsedSpace()
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, used)
+
+	total, err := vol.TotalSpace()
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, total)
+
+	assert.Less(t, used, total)
+
+	// Lock is release by Close method
+	assert.NoError(t, vol.Close(context.Background()))
+}
+
 func TestOpen_NonExistentPath(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)

@@ -177,6 +177,15 @@ func (v *Volume) Metadata() volume.Metadata {
 	}
 }
 
+func (v *Volume) Telemetry() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("volume.id", v.ID().String()),
+		attribute.String("volume.type", v.Type()),
+		attribute.String("volume.label", v.Label()),
+		attribute.String("volume.path", v.Path()),
+	}
+}
+
 func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice localModel.Slice) (w Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
