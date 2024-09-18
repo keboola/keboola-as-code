@@ -63,6 +63,10 @@ func (v *UTCTime) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func Zero() UTCTime {
+	return From(time.Time{})
+}
+
 func FormatTime(t time.Time) string {
 	return t.UTC().Format(TimeFormat)
 }
