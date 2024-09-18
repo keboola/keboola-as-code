@@ -121,3 +121,19 @@ func (v Value) sub(v2 Value) Value {
 	}
 	return v
 }
+
+func (a Aggregated) Add(l model.Level, partial Value) {
+	switch l {
+	case model.LevelLocal:
+		a.Local = a.Local.Add(partial)
+		a.Total = a.Total.Add(partial)
+	case model.LevelStaging:
+		a.Staging = a.Staging.Add(partial)
+		a.Total = a.Total.Add(partial)
+	case model.LevelTarget:
+		a.Target = a.Target.Add(partial)
+		a.Total = a.Total.Add(partial)
+	default:
+		panic(errors.Errorf(`unexpected statistics level "%v"`, l))
+	}
+}
