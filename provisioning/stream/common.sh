@@ -30,8 +30,8 @@ fi
 
 # Etcd memory usage depends primarily on the amount of stored data and ETCD_SNAPSHOT_COUNT setting.
 # GOMEMLIMIT env is set, so etcd garbage collector knows what the maximum is and will not accidentally exceed it.
-export STREAM_ETCD_MEMORY_SOFT_LIMIT="${STREAM_ETCD_MEMORY:="1800Mi"}"
-export STREAM_ETCD_MEMORY_HARD_LIMIT="${STREAM_ETCD_MEMORY:="2000Mi"}"
+export STREAM_ETCD_MEMORY_SOFT_LIMIT="${STREAM_ETCD_MEMORY_SOFT_LIMIT:="1800Mi"}"
+export STREAM_ETCD_MEMORY_HARD_LIMIT="${STREAM_ETCD_MEMORY_HARD_LIMIT:="2000Mi"}"
 
 # Configuration API reads and writes stream configurations to etcd, waits for resources to be created in the Storage API.
 # Memory/CPU usage is minimal.
