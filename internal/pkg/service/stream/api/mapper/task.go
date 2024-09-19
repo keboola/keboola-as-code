@@ -48,7 +48,7 @@ func (m *Mapper) NewTaskResponse(entity task.Task) (*api.Task, error) {
 	case entity.IsFailed():
 		response.Status = streamDesign.TaskStatusError
 		response.IsFinished = true
-		response.Error = &entity.Error
+		response.Error = &entity.UserError.Message
 	default:
 		panic(errors.New("unexpected task status"))
 	}
