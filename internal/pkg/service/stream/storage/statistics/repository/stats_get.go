@@ -71,7 +71,7 @@ func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Ag
 		// Get stats prefix for the slice state
 		pfx := r.schema.InLevel(l).InObject(objectKey)
 
-		// Sum
+		// Sum all values except reset
 		txn.Then(pfx.GetAll(r.client).ForEach(func(v statistics.Value, header *iterator.Header) error {
 			if v.ResetAt == nil {
 				aggregate.Aggregate(l, v, &result)
@@ -80,13 +80,10 @@ func (r *Repository) AggregateIn(objectKey fmt.Stringer) *op.TxnOp[statistics.Ag
 		}))
 	}
 
-	// Get reset sum for target level
+	// Get reset for the object
 	pfx := r.schema.InLevel(model.LevelTarget).InObject(objectKey).Reset()
-
-	txn.Then(pfx.GetOrNil(r.client).WithOnResult(func(v *statistics.Value) {
-		if v != nil && v.ResetAt != nil {
-			aggregate.Aggregate(model.LevelTarget, *v, &result)
-		}
+	txn.Then(pfx.GetOrEmpty(r.client).WithOnResult(func(v statistics.Value) {
+		aggregate.Aggregate(model.LevelTarget, v, &result)
 	}))
 
 	return txn

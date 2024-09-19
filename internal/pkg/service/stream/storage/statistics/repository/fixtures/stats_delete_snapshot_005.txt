@@ -13,7 +13,7 @@ storage/stats/target/123/456/my-source/my-sink/_sum
 >>>>>
 
 <<<<<
-storage/stats/target/123/456/my-source/my-sink/_reset
+storage/stats/target/123/456/my-source/my-sink/~reset
 -----
 {
   "slicesCount": 3,

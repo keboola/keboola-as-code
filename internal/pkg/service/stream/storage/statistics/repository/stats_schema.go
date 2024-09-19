@@ -17,7 +17,9 @@ const (
 	// rollupSumKey contains the sum of all statistics from the object children that were deleted.
 	rollupSumKey = "_sum"
 	// rollupResetKey contains the sum of all statistics from the object children that are ignored.
-	rollupResetKey = "_reset"
+	// ~ char is important, in alphabetical order, the reset will always be at the end - after the statistics to which it belongs.
+	// We are using uint64 types, so we have to prevent underflow - the reset must be subtracted at the end.
+	rollupResetKey = "~reset"
 )
 
 type (

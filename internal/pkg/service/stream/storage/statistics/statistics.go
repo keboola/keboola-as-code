@@ -17,6 +17,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Value contains statistics for a slice or summarized statistics for a parent object.
@@ -67,30 +68,40 @@ type Aggregated struct {
 	Total Value
 }
 
-// Add returns a sum of the value and the given second value.
-// If only one of the values is a reset value then it returns a non-reset value using subtraction.
-// Note that the value can't be negative, in case of an underflow the fields will be 0.
-func (v Value) Add(v2 Value) Value {
-	r := v
-	if (r.ResetAt == nil) != (v2.ResetAt == nil) {
-		if r.ResetAt != nil {
-			return v2.Add(r)
-		}
-		r = r.sub(v2)
+func (v Value) With(v2 Value) Value {
+	if v.ResetAt != nil {
+		panic(errors.New("statistics/Value.With method cannot be called on a reset value"))
+	}
+
+	if v2.ResetAt == nil {
+		return v.add(v2)
 	} else {
-		r.SlicesCount += v2.SlicesCount
-		r.RecordsCount += v2.RecordsCount
-		r.UncompressedSize += v2.UncompressedSize
-		r.CompressedSize += v2.CompressedSize
-		r.StagingSize += v2.StagingSize
+		return v.sub(v2)
 	}
-	if r.FirstRecordAt.IsZero() || (!v2.FirstRecordAt.IsZero() && r.FirstRecordAt.After(v2.FirstRecordAt)) {
-		r.FirstRecordAt = v2.FirstRecordAt
+}
+
+// Add returns a sum of the value and the argument value.
+func (v Value) add(v2 Value) Value {
+	isReset1 := v.ResetAt != nil
+	isReset2 := v2.ResetAt != nil
+	if isReset1 != isReset2 {
+		panic(errors.Errorf("cannot sum stats, the IsReset flag is different, %t!=%t", isReset1, isReset2))
 	}
-	if v2.LastRecordAt.After(r.LastRecordAt) {
-		r.LastRecordAt = v2.LastRecordAt
+
+	v.SlicesCount += v2.SlicesCount
+	v.RecordsCount += v2.RecordsCount
+	v.UncompressedSize += v2.UncompressedSize
+	v.CompressedSize += v2.CompressedSize
+	v.StagingSize += v2.StagingSize
+
+	if v.FirstRecordAt.IsZero() || (!v2.FirstRecordAt.IsZero() && v.FirstRecordAt.After(v2.FirstRecordAt)) {
+		v.FirstRecordAt = v2.FirstRecordAt
 	}
-	return r
+	if v2.LastRecordAt.After(v.LastRecordAt) {
+		v.LastRecordAt = v2.LastRecordAt
+	}
+
+	return v
 }
 
 func (v Value) sub(v2 Value) Value {
@@ -99,25 +110,46 @@ func (v Value) sub(v2 Value) Value {
 	} else {
 		v.SlicesCount -= v2.SlicesCount
 	}
+
 	if v2.RecordsCount > v.RecordsCount {
 		v.RecordsCount = 0
 	} else {
 		v.RecordsCount -= v2.RecordsCount
 	}
+
 	if v2.UncompressedSize > v.UncompressedSize {
 		v.UncompressedSize = 0
 	} else {
 		v.UncompressedSize -= v2.UncompressedSize
 	}
+
 	if v2.CompressedSize > v.CompressedSize {
 		v.CompressedSize = 0
 	} else {
 		v.CompressedSize -= v2.CompressedSize
 	}
+
 	if v2.StagingSize > v.StagingSize {
 		v.StagingSize = 0
 	} else {
 		v.StagingSize -= v2.StagingSize
 	}
+
 	return v
+}
+
+func (a *Aggregated) Add(l model.Level, partial Value) {
+	switch l {
+	case model.LevelLocal:
+		a.Local = a.Local.With(partial)
+		a.Total = a.Total.With(partial)
+	case model.LevelStaging:
+		a.Staging = a.Staging.With(partial)
+		a.Total = a.Total.With(partial)
+	case model.LevelTarget:
+		a.Target = a.Target.With(partial)
+		a.Total = a.Total.With(partial)
+	default:
+		panic(errors.Errorf(`unexpected statistics level "%v"`, l))
+	}
 }
