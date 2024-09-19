@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -36,47 +37,33 @@ func (r *Repository) deleteOrRollup(objectKey fmt.Stringer) *op.AtomicOp[op.NoRe
 			continue
 		}
 
-		var objectSum statistics.Value
-		var objectReset statistics.Value
+		// parentSumKey contains the sum of all statistics from the children that were deleted
+		parentSumKey := r.schema.InLevel(model.LevelTarget).InParentOf(objectKey).Sum()
+
+		// Get old value of parent sum
 		var parentSum statistics.Value
-		var parentReset statistics.Value
-
-		// sumKey contains the sum of all statistics from the children that were deleted
-		sumKey := r.schema.InLevel(model.LevelTarget).InParentOf(objectKey).Sum()
-
-		// resetKey contains the sum of all statistics from the children that are ignored
-		resetKey := r.schema.InLevel(model.LevelTarget).InParentOf(objectKey).Reset()
-
-		// Get sum from the parent object
 		ops.Read(func(_ context.Context) op.Op {
-			return sumKey.GetOrEmpty(r.client).WithResultTo(&parentSum)
-		})
-
-		// Get reset sum from the parent object
-		ops.Read(func(_ context.Context) op.Op {
-			return resetKey.GetOrEmpty(r.client).WithResultTo(&parentReset)
+			parentSum = statistics.Value{}
+			return parentSumKey.GetOrEmpty(r.client).WithResultTo(&parentSum)
 		})
 
 		// Get statistics of the object
+		var objectSum statistics.Value
 		ops.Read(func(_ context.Context) op.Op {
-			objectSum = statistics.Value{}
-			return sumStatsOp(r.clock.Now(), objectPfx.GetAll(r.client), &objectSum, &objectReset)
+			return objectPfx.GetAll(r.client).ForEach(func(item statistics.Value, _ *iterator.Header) error {
+				objectSum = objectSum.With(item)
+				return nil
+			})
 		})
 
-		// Save update sum
+		// Save updated parent sum
 		ops.Write(func(_ context.Context) op.Op {
-			if objectSum.RecordsCount <= 0 {
-				return nil
+			if objectSum.RecordsCount > 0 {
+				return parentSumKey.Put(r.client, parentSum.With(objectSum))
 			}
-			return sumKey.Put(r.client, parentSum.Add(objectSum))
-		})
 
-		// Save update reset
-		ops.Write(func(_ context.Context) op.Op {
-			if objectReset.RecordsCount <= 0 {
-				return nil
-			}
-			return resetKey.Put(r.client, parentReset.Add(objectReset))
+			// Nop
+			return nil
 		})
 	}
 
