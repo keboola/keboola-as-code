@@ -47,7 +47,7 @@ spec:
           args: [ "--config-file", "/stream/config/config.yaml", "http-source" ] # run HTTP source component
           resources:
             requests:
-              cpu: "200m"
+              cpu: "$STREAM_HTTP_SOURCE_CPU_SOFT_LIMIT"
               memory: "$STREAM_HTTP_SOURCE_MEMORY_SOFT_LIMIT" # also GOMEMLIMIT soft limit
             limits:
               memory: "$STREAM_HTTP_SOURCE_MEMORY_HARD_LIMIT"
