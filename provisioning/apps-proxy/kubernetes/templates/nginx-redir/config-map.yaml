@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: apps-proxy
+data:
+  nginx.conf: |
+    events {
+      # Events block is needed
+    }
+    http {
+        server {
+            listen 8000;
+            server_name ~^(?<subdomain>.+)\.hub\.csas\.keboola\.cloud$;
+
+            location / {
+                return 302 https://$subdomain.hub.cs.keboola.cloud$request_uri;
+            }
+        }
+    }
