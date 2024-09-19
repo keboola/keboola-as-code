@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"

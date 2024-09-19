@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"time"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
