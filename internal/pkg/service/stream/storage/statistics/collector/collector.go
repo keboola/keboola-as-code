@@ -160,7 +160,7 @@ func (c *Collector) sync(filter *model.SliceKey) error {
 		// Collect all writers
 		for _, s := range c.writers {
 			if changed := c.collect(s.writer, &s.value); changed {
-				value := s.initialValue.Add(s.value)
+				value := s.initialValue.With(s.value)
 				forSync = append(forSync, statistics.PerSlice{
 					SliceKey:         s.sliceKey,
 					FirstRecordAt:    value.FirstRecordAt,
@@ -174,7 +174,7 @@ func (c *Collector) sync(filter *model.SliceKey) error {
 	} else if s, found := c.writers[*filter]; found {
 		// Collect one writer
 		if changed := c.collect(s.writer, &s.value); changed {
-			value := s.initialValue.Add(s.value)
+			value := s.initialValue.With(s.value)
 			forSync = append(forSync, statistics.PerSlice{
 				SliceKey:         s.sliceKey,
 				FirstRecordAt:    value.FirstRecordAt,

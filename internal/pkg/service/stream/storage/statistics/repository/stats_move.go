@@ -58,7 +58,7 @@ func (r *Repository) moveAll(parentKey fmt.Stringer, from, to model.Level, trans
 				}
 
 				// Add value to the sum
-				sum = sum.Add(kv.Value)
+				sum = sum.With(kv.Value)
 
 				// Compose typed key from the result KV
 				oldKey := etcdop.NewTypedKey[statistics.Value](kv.Key(), r.schema.Serde())

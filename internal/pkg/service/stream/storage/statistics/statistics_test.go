@@ -17,7 +17,7 @@ type testCase struct {
 	expected statistics.Value
 }
 
-func TestValue_Add(t *testing.T) {
+func TestValue_With(t *testing.T) {
 	t.Parallel()
 
 	testCases := []testCase{
