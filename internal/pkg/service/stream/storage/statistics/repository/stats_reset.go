@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
@@ -34,12 +35,14 @@ func (r *Repository) ResetSinkStats(sinkKey key.SinkKey) *op.AtomicOp[op.NoResul
 	// resetKey contains the sum of all statistics from the children that were deleted
 	resetKey := r.schema.InLevel(model.LevelTarget).InObject(sinkKey).Reset()
 
-	// Get statistics of the object
+	// Get statistics of the object - exclude actual reset value
 	ops.Read(func(context.Context) op.Op {
-		// resetSum is intentionally unused
-		resetSum := statistics.Value{}
-		objectSum = statistics.Value{}
-		return sumStatsOp(r.clock.Now(), objectPfx.GetAll(r.client), &objectSum, &resetSum)
+		return objectPfx.GetAll(r.client).ForEach(func(item statistics.Value, _ *iterator.Header) error {
+			if item.ResetAt == nil {
+				objectSum = objectSum.With(item)
+			}
+			return nil
+		})
 	})
 
 	// Save reset key
