@@ -235,7 +235,7 @@ storage:
                     # Pipeline balancer type which balances the writing on particular nodes based on selected strategy. Validation rules: required,oneof=rand roundRobin
                     pipelineBalancer: roundRobin
                 allocation:
-                    # Allocate disk space for each slice.
+                    # Allocate disk space for each slice. Useless for SSD.
                     enabled: true
                     # Size of allocated disk space for a slice. Validation rules: required
                     static: 100MB

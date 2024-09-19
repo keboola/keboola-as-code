@@ -146,7 +146,7 @@ data:
           volume:
             assignment:
               # Volumes count simultaneously utilized per sink. Validation rules: required,min=1,max=100
-              count: 1
+              count: 2
               # List of preferred volume types, start with the most preferred. Validation rules: required,min=1
               preferredTypes:
                 - medium
@@ -158,9 +158,9 @@ data:
               # Encoder type. Validation rules: required,oneof=csv
               type: csv
               # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
-              concurrency: 0
+              concurrency: 1
             # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
-            inputBuffer: 2MB
+            inputBuffer: 1MB
             # Max size of a chunk sent over the network to a disk writer node. Validation rules: required,minBytes=64kB,maxBytes=1MB
             maxChunkSize: 512KB
             # If the defined number of chunks cannot be sent, the pipeline is marked as not ready. Validation rules: required,min=1,max=100
@@ -172,7 +172,7 @@ data:
                 # GZIP compression level: 1-9. Validation rules: min=1,max=9
                 level: 1
                 # GZIP implementation: standard, fast, parallel. Validation rules: required,oneof=standard fast parallel
-                implementation: parallel
+                implementation: fast
                 # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
                 blockSize: 256KB
                 # GZIP parallel concurrency, 0 = auto.
@@ -221,8 +221,8 @@ data:
               # Pipeline balancer type which balances the writing on particular nodes based on selected strategy. Validation rules: required,oneof=rand roundRobin
               pipelineBalancer: roundRobin
             allocation:
-              # Allocate disk space for each slice.
-              enabled: true
+              # Allocate disk space for each slice. Useless for SSD.
+              enabled: false
               # Size of allocated disk space for a slice. Validation rules: required
               static: 100MB
               # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500

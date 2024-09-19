@@ -5,7 +5,7 @@ import "github.com/c2h5oh/datasize"
 // Config configures allocation of the disk space for file slices.
 type Config struct {
 	// Enabled enables disk space allocation.
-	Enabled bool `json:"enabled" configKey:"enabled" configUsage:"Allocate disk space for each slice."`
+	Enabled bool `json:"enabled" configKey:"enabled" configUsage:"Allocate disk space for each slice. Useless for SSD."`
 	// Static size of the first slice in a sink.
 	Static datasize.ByteSize `json:"static" configKey:"static" validate:"required" configUsage:"Size of allocated disk space for a slice."`
 	// Relative size of new slice.
