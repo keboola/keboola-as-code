@@ -1,0 +1,34 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "type": "http",
+  "name": "My Source",
+  "description": "",
+  "http": {
+    "url": "https://stream-in.keboola.local/stream/%%TEST_KBC_PROJECT_ID%%/my-source/%s"
+  },
+  "version": {
+    "number": 3,
+    "hash": "%s",
+    "description": "Enabled.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  }
+}
