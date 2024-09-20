@@ -305,11 +305,12 @@ var _ = Service("stream", func() {
 	Method("DisableSource", func() {
 		Meta("openapi:summary", "Disable source")
 		Description("Disables the source.")
+		Result(Task)
 		Payload(GetSourceRequest)
 		HTTP(func() {
 			POST("/branches/{branchId}/sources/{sourceId}/disable")
 			Meta("openapi:tag:configuration")
-			Response(StatusOK)
+			Response(StatusAccepted)
 			SourceNotFoundError()
 		})
 	})
@@ -317,11 +318,12 @@ var _ = Service("stream", func() {
 	Method("EnableSource", func() {
 		Meta("openapi:summary", "Enable source")
 		Description("Enables the source.")
+		Result(Task)
 		Payload(GetSourceRequest)
 		HTTP(func() {
 			POST("/branches/{branchId}/sources/{sourceId}/enable")
 			Meta("openapi:tag:configuration")
-			Response(StatusOK)
+			Response(StatusAccepted)
 			SourceNotFoundError()
 		})
 	})
@@ -473,11 +475,12 @@ var _ = Service("stream", func() {
 	Method("DisableSink", func() {
 		Meta("openapi:summary", "Disable sink")
 		Description("Disables the sink.")
+		Result(Task)
 		Payload(GetSinkRequest)
 		HTTP(func() {
 			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable")
 			Meta("openapi:tag:configuration")
-			Response(StatusOK)
+			Response(StatusAccepted)
 			SourceNotFoundError()
 			SinkNotFoundError()
 		})
@@ -486,11 +489,12 @@ var _ = Service("stream", func() {
 	Method("EnableSink", func() {
 		Meta("openapi:summary", "Enable sink")
 		Description("Enables the sink.")
+		Result(Task)
 		Payload(GetSinkRequest)
 		HTTP(func() {
 			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable")
 			Meta("openapi:tag:configuration")
-			Response(StatusOK)
+			Response(StatusAccepted)
 			SourceNotFoundError()
 			SinkNotFoundError()
 		})
