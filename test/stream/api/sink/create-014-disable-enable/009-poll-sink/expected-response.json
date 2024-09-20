@@ -1,0 +1,18 @@
+{
+  "taskId": "api.enable.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s",
+  "type": "api.enable.sink",
+  "url": "https://stream.keboola.local/v1/tasks/api.enable.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s",
+  "status": "success",
+  "isFinished": true,
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "duration": %d,
+  "result": "Sink has been enabled successfully.",
+  "outputs": {
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source/sinks/my-sink",
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "sourceId": "my-source",
+    "sinkId": "my-sink"
+  }
+}
