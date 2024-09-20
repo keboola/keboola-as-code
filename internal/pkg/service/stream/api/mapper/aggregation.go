@@ -51,8 +51,12 @@ func (m *Mapper) NewAggregationSource(entity definition.Source) (*api.Aggregated
 	// Type
 	switch out.Type {
 	case definition.SourceTypeHTTP:
+		u, err := entity.FormatHTTPSourceURL(m.httpSourcePublicURL.String())
+		if err != nil {
+			return nil, err
+		}
 		out.HTTP = &api.HTTPSource{
-			URL: m.formatHTTPSourceURL(entity),
+			URL: u,
 		}
 	default:
 		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))

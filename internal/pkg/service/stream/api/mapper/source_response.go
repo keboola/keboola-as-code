@@ -33,8 +33,13 @@ func (m *Mapper) NewSourceResponse(entity definition.Source) (*api.Source, error
 	// Type
 	switch out.Type {
 	case definition.SourceTypeHTTP:
+		u, err := entity.FormatHTTPSourceURL(m.httpSourcePublicURL.String())
+		if err != nil {
+			return nil, err
+		}
+
 		out.HTTP = &api.HTTPSource{
-			URL: m.formatHTTPSourceURL(entity),
+			URL: u,
 		}
 	default:
 		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))
@@ -99,10 +104,4 @@ func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definiti
 	}
 
 	return result, nil
-}
-
-func (m *Mapper) formatHTTPSourceURL(entity definition.Source) string {
-	return m.httpSourcePublicURL.
-		JoinPath("stream", entity.ProjectID.String(), entity.SourceID.String(), entity.HTTP.Secret).
-		String()
 }
