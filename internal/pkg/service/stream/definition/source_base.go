@@ -31,6 +31,5 @@ func (s *Source) FormatHTTPSourceURL(httpSourcePublicURL string) (string, error)
 		return "", err
 	}
 
-	return u.JoinPath("stream", s.ProjectID.String(), s.SourceID.String(), s.HTTP.Secret).
-		String(), nil
+	return u.JoinPath("stream", s.ProjectID.String(), s.SourceID.String(), s.HTTP.Secret).String(), nil
 }
