@@ -606,6 +606,13 @@ type TableColumn struct {
 	Type column.Type
 	// Column name.
 	Name string
+	// Path to the value.
+	Path *string
+	// Fallback value if path doesn't exist.
+	DefaultValue *string
+	// Set to true if path value should use raw string instead of json-encoded
+	// value.
+	RawString *bool
 	// Template mapping details. Only for "type" = "template".
 	Template *TableColumnTemplate
 }

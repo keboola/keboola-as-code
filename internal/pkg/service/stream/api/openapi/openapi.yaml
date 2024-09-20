@@ -1285,6 +1285,11 @@ definitions:
                           name: headers-col
                         - type: body
                           name: body-col
+                        - type: path
+                          name: path-col
+                          path: foo.bar[0]
+                          rawString: true
+                          defaultValue: ""
                         - type: template
                           name: template-col
                           template:
@@ -1456,6 +1461,11 @@ definitions:
                                   name: headers-col
                                 - type: body
                                   name: body-col
+                                - type: path
+                                  name: path-col
+                                  path: foo.bar[0]
+                                  rawString: true
+                                  defaultValue: ""
                                 - type: template
                                   name: template-col
                                   template:
@@ -1640,6 +1650,11 @@ definitions:
                               name: headers-col
                             - type: body
                               name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
                             - type: template
                               name: template-col
                               template:
@@ -2357,6 +2372,11 @@ definitions:
                           name: headers-col
                         - type: body
                           name: body-col
+                        - type: path
+                          name: path-col
+                          path: foo.bar[0]
+                          rawString: true
+                          defaultValue: ""
                         - type: template
                           name: template-col
                           template:
@@ -2611,6 +2631,11 @@ definitions:
                                       name: headers-col
                                     - type: body
                                       name: body-col
+                                    - type: path
+                                      name: path-col
+                                      path: foo.bar[0]
+                                      rawString: true
+                                      defaultValue: ""
                                     - type: template
                                       name: template-col
                                       template:
@@ -2790,6 +2815,11 @@ definitions:
                                   name: headers-col
                                 - type: body
                                   name: body-col
+                                - type: path
+                                  name: path-col
+                                  path: foo.bar[0]
+                                  rawString: true
+                                  defaultValue: ""
                                 - type: template
                                   name: template-col
                                   template:
@@ -2946,6 +2976,11 @@ definitions:
                           name: headers-col
                         - type: body
                           name: body-col
+                        - type: path
+                          name: path-col
+                          path: foo.bar[0]
+                          rawString: true
+                          defaultValue: ""
                         - type: template
                           name: template-col
                           template:
@@ -4016,6 +4051,11 @@ definitions:
                           name: headers-col
                         - type: body
                           name: body-col
+                        - type: path
+                          name: path-col
+                          path: foo.bar[0]
+                          rawString: true
+                          defaultValue: ""
                         - type: template
                           name: template-col
                           template:
@@ -4516,6 +4556,11 @@ definitions:
                                   name: headers-col
                                 - type: body
                                   name: body-col
+                                - type: path
+                                  name: path-col
+                                  path: foo.bar[0]
+                                  rawString: true
+                                  defaultValue: ""
                                 - type: template
                                   name: template-col
                                   template:
@@ -4595,6 +4640,11 @@ definitions:
                               name: headers-col
                             - type: body
                               name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
                             - type: template
                               name: template-col
                               template:
@@ -5207,6 +5257,11 @@ definitions:
                           name: headers-col
                         - type: body
                           name: body-col
+                        - type: path
+                          name: path-col
+                          path: foo.bar[0]
+                          rawString: true
+                          defaultValue: ""
                         - type: template
                           name: template-col
                           template:
@@ -5789,15 +5844,27 @@ definitions:
         title: TableColumnRequestBody
         type: object
         properties:
+            defaultValue:
+                type: string
+                description: Fallback value if path doesn't exist.
+                example: "1"
             name:
                 type: string
                 description: Column name.
                 example: id-col
+            path:
+                type: string
+                description: Path to the value.
+                example: foo.bar[0]
             primaryKey:
                 type: boolean
                 description: Sets this column as a part of the primary key of the destination table.
                 default: false
                 example: false
+            rawString:
+                type: boolean
+                description: Set to true if path value should use raw string instead of json-encoded value.
+                example: true
             template:
                 $ref: '#/definitions/TableColumnTemplateRequestBody'
             type:
@@ -5817,6 +5884,9 @@ definitions:
             primaryKey: false
             type: body
             name: id-col
+            path: foo.bar[0]
+            defaultValue: "1"
+            rawString: true
             template:
                 language: jsonnet
                 content: body.foo + "-" + body.bar
@@ -5827,15 +5897,27 @@ definitions:
         title: TableColumnResponseBody
         type: object
         properties:
+            defaultValue:
+                type: string
+                description: Fallback value if path doesn't exist.
+                example: "1"
             name:
                 type: string
                 description: Column name.
                 example: id-col
+            path:
+                type: string
+                description: Path to the value.
+                example: foo.bar[0]
             primaryKey:
                 type: boolean
                 description: Sets this column as a part of the primary key of the destination table.
                 default: false
                 example: false
+            rawString:
+                type: boolean
+                description: Set to true if path value should use raw string instead of json-encoded value.
+                example: true
             template:
                 $ref: '#/definitions/TableColumnTemplateResponseBody'
             type:
@@ -5855,6 +5937,9 @@ definitions:
             primaryKey: false
             type: body
             name: id-col
+            path: foo.bar[0]
+            defaultValue: "1"
+            rawString: true
             template:
                 language: jsonnet
                 content: body.foo + "-" + body.bar
@@ -5923,6 +6008,11 @@ definitions:
                       name: headers-col
                     - type: body
                       name: body-col
+                    - type: path
+                      name: path-col
+                      path: foo.bar[0]
+                      rawString: true
+                      defaultValue: ""
                     - type: template
                       name: template-col
                       template:
@@ -5944,6 +6034,11 @@ definitions:
                   name: headers-col
                 - type: body
                   name: body-col
+                - type: path
+                  name: path-col
+                  path: foo.bar[0]
+                  rawString: true
+                  defaultValue: ""
                 - type: template
                   name: template-col
                   template:
@@ -5971,6 +6066,11 @@ definitions:
                       name: headers-col
                     - type: body
                       name: body-col
+                    - type: path
+                      name: path-col
+                      path: foo.bar[0]
+                      rawString: true
+                      defaultValue: ""
                     - type: template
                       name: template-col
                       template:
@@ -5992,6 +6092,11 @@ definitions:
                   name: headers-col
                 - type: body
                   name: body-col
+                - type: path
+                  name: path-col
+                  path: foo.bar[0]
+                  rawString: true
+                  defaultValue: ""
                 - type: template
                   name: template-col
                   template:
@@ -6030,6 +6135,11 @@ definitions:
                       name: headers-col
                     - type: body
                       name: body-col
+                    - type: path
+                      name: path-col
+                      path: foo.bar[0]
+                      rawString: true
+                      defaultValue: ""
                     - type: template
                       name: template-col
                       template:
@@ -6070,6 +6180,11 @@ definitions:
                       name: headers-col
                     - type: body
                       name: body-col
+                    - type: path
+                      name: path-col
+                      path: foo.bar[0]
+                      rawString: true
+                      defaultValue: ""
                     - type: template
                       name: template-col
                       template:
@@ -6110,6 +6225,11 @@ definitions:
                       name: headers-col
                     - type: body
                       name: body-col
+                    - type: path
+                      name: path-col
+                      path: foo.bar[0]
+                      rawString: true
+                      defaultValue: ""
                     - type: template
                       name: template-col
                       template:
