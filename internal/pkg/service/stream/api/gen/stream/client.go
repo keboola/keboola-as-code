@@ -29,6 +29,8 @@ type Client struct {
 	UpdateSourceSettingsEndpoint  goa.Endpoint
 	TestSourceEndpoint            goa.Endpoint
 	SourceStatisticsClearEndpoint goa.Endpoint
+	DisableSourceEndpoint         goa.Endpoint
+	EnableSourceEndpoint          goa.Endpoint
 	CreateSinkEndpoint            goa.Endpoint
 	GetSinkEndpoint               goa.Endpoint
 	GetSinkSettingsEndpoint       goa.Endpoint
@@ -39,12 +41,14 @@ type Client struct {
 	SinkStatisticsTotalEndpoint   goa.Endpoint
 	SinkStatisticsFilesEndpoint   goa.Endpoint
 	SinkStatisticsClearEndpoint   goa.Endpoint
+	DisableSinkEndpoint           goa.Endpoint
+	EnableSinkEndpoint            goa.Endpoint
 	GetTaskEndpoint               goa.Endpoint
 	AggregationSourcesEndpoint    goa.Endpoint
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, getTask, aggregationSources goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, getTask, aggregationSources goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:          aPIRootIndex,
 		APIVersionIndexEndpoint:       aPIVersionIndex,
@@ -58,6 +62,8 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		UpdateSourceSettingsEndpoint:  updateSourceSettings,
 		TestSourceEndpoint:            testSource,
 		SourceStatisticsClearEndpoint: sourceStatisticsClear,
+		DisableSourceEndpoint:         disableSource,
+		EnableSourceEndpoint:          enableSource,
 		CreateSinkEndpoint:            createSink,
 		GetSinkEndpoint:               getSink,
 		GetSinkSettingsEndpoint:       getSinkSettings,
@@ -68,6 +74,8 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		SinkStatisticsTotalEndpoint:   sinkStatisticsTotal,
 		SinkStatisticsFilesEndpoint:   sinkStatisticsFiles,
 		SinkStatisticsClearEndpoint:   sinkStatisticsClear,
+		DisableSinkEndpoint:           disableSink,
+		EnableSinkEndpoint:            enableSink,
 		GetTaskEndpoint:               getTask,
 		AggregationSourcesEndpoint:    aggregationSources,
 	}
@@ -214,6 +222,32 @@ func (c *Client) SourceStatisticsClear(ctx context.Context, p *SourceStatisticsC
 	return
 }
 
+// DisableSource calls the "DisableSource" endpoint of the "stream" service.
+// DisableSource may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - error: internal error
+func (c *Client) DisableSource(ctx context.Context, p *DisableSourcePayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.DisableSourceEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
+}
+
+// EnableSource calls the "EnableSource" endpoint of the "stream" service.
+// EnableSource may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - error: internal error
+func (c *Client) EnableSource(ctx context.Context, p *EnableSourcePayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.EnableSourceEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
+}
+
 // CreateSink calls the "CreateSink" endpoint of the "stream" service.
 // CreateSink may return the following errors:
 //   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
@@ -353,6 +387,34 @@ func (c *Client) SinkStatisticsFiles(ctx context.Context, p *SinkStatisticsFiles
 func (c *Client) SinkStatisticsClear(ctx context.Context, p *SinkStatisticsClearPayload) (err error) {
 	_, err = c.SinkStatisticsClearEndpoint(ctx, p)
 	return
+}
+
+// DisableSink calls the "DisableSink" endpoint of the "stream" service.
+// DisableSink may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
+//   - error: internal error
+func (c *Client) DisableSink(ctx context.Context, p *DisableSinkPayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.DisableSinkEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
+}
+
+// EnableSink calls the "EnableSink" endpoint of the "stream" service.
+// EnableSink may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
+//   - error: internal error
+func (c *Client) EnableSink(ctx context.Context, p *EnableSinkPayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.EnableSinkEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
 }
 
 // GetTask calls the "GetTask" endpoint of the "stream" service.

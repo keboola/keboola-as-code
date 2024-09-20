@@ -303,6 +303,90 @@ paths:
                 - https
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/disable:
+        post:
+            tags:
+                - configuration
+            summary: Disable source
+            description: Disables the source.
+            operationId: DisableSource
+            parameters:
+                - name: branchId
+                  in: path
+                  description: ID of the branch or "default".
+                  required: true
+                  type: string
+                - name: sourceId
+                  in: path
+                  description: Unique ID of the source.
+                  required: true
+                  type: string
+            responses:
+                "202":
+                    description: Accepted response.
+                    schema:
+                        $ref: '#/definitions/StreamDisableSourceResponseBody'
+                        required:
+                            - taskId
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/StreamDisableSourceStreamAPISourceNotFoundResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/enable:
+        post:
+            tags:
+                - configuration
+            summary: Enable source
+            description: Enables the source.
+            operationId: EnableSource
+            parameters:
+                - name: branchId
+                  in: path
+                  description: ID of the branch or "default".
+                  required: true
+                  type: string
+                - name: sourceId
+                  in: path
+                  description: Unique ID of the source.
+                  required: true
+                  type: string
+            responses:
+                "202":
+                    description: Accepted response.
+                    schema:
+                        $ref: '#/definitions/StreamEnableSourceResponseBody'
+                        required:
+                            - taskId
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/StreamEnableSourceStreamAPISourceNotFoundResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/settings:
         get:
             tags:
@@ -651,6 +735,100 @@ paths:
                 - https
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable:
+        post:
+            tags:
+                - configuration
+            summary: Disable sink
+            description: Disables the sink.
+            operationId: DisableSink
+            parameters:
+                - name: branchId
+                  in: path
+                  description: ID of the branch or "default".
+                  required: true
+                  type: string
+                - name: sourceId
+                  in: path
+                  description: Unique ID of the source.
+                  required: true
+                  type: string
+                - name: sinkId
+                  in: path
+                  description: Unique ID of the sink.
+                  required: true
+                  type: string
+            responses:
+                "202":
+                    description: Accepted response.
+                    schema:
+                        $ref: '#/definitions/StreamDisableSinkResponseBody'
+                        required:
+                            - taskId
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/StreamDisableSinkStreamAPISinkNotFoundResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable:
+        post:
+            tags:
+                - configuration
+            summary: Enable sink
+            description: Enables the sink.
+            operationId: EnableSink
+            parameters:
+                - name: branchId
+                  in: path
+                  description: ID of the branch or "default".
+                  required: true
+                  type: string
+                - name: sourceId
+                  in: path
+                  description: Unique ID of the source.
+                  required: true
+                  type: string
+                - name: sinkId
+                  in: path
+                  description: Unique ID of the sink.
+                  required: true
+                  type: string
+            responses:
+                "202":
+                    description: Accepted response.
+                    schema:
+                        $ref: '#/definitions/StreamEnableSinkResponseBody'
+                        required:
+                            - taskId
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/StreamEnableSinkStreamAPISinkNotFoundResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings:
         get:
             tags:
@@ -902,7 +1080,7 @@ paths:
         post:
             tags:
                 - test
-            summary: Test source payload mapping.
+            summary: Test source payload mapping
             description: Tests configured mapping of the source and its sinks.
             operationId: TestSource
             parameters:
@@ -3290,6 +3468,458 @@ definitions:
             - createdAt
     StreamDeleteSourceStreamAPISourceNotFoundResponseBody:
         title: StreamDeleteSourceStreamAPISourceNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Source not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sourceNotFound
+            message: Source "github-pull-requests" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamDisableSinkResponseBody:
+        title: StreamDisableSinkResponseBody
+        type: object
+        properties:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: abc123
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            taskId:
+                type: string
+                example: task_1234
+            type:
+                type: string
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
+        example:
+            taskId: task_1234
+            type: abc123
+            url: abc123
+            status: success
+            isFinished: false
+            createdAt: "2022-04-28T14:20:04.000Z"
+            finishedAt: "2022-04-28T14:20:04.000Z"
+            duration: 123456789
+            result: abc123
+            error: abc123
+            outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+        required:
+            - taskId
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
+    StreamDisableSinkStreamAPISinkNotFoundResponseBody:
+        title: StreamDisableSinkStreamAPISinkNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Sink not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sinkNotFound
+            message: Sink "github-changed-files" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamDisableSinkStreamAPISourceNotFoundResponseBody:
+        title: StreamDisableSinkStreamAPISourceNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Source not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sourceNotFound
+            message: Source "github-pull-requests" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamDisableSourceResponseBody:
+        title: StreamDisableSourceResponseBody
+        type: object
+        properties:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: abc123
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            taskId:
+                type: string
+                example: task_1234
+            type:
+                type: string
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
+        example:
+            taskId: task_1234
+            type: abc123
+            url: abc123
+            status: success
+            isFinished: false
+            createdAt: "2022-04-28T14:20:04.000Z"
+            finishedAt: "2022-04-28T14:20:04.000Z"
+            duration: 123456789
+            result: abc123
+            error: abc123
+            outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+        required:
+            - taskId
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
+    StreamDisableSourceStreamAPISourceNotFoundResponseBody:
+        title: StreamDisableSourceStreamAPISourceNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Source not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sourceNotFound
+            message: Source "github-pull-requests" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamEnableSinkResponseBody:
+        title: StreamEnableSinkResponseBody
+        type: object
+        properties:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: abc123
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            taskId:
+                type: string
+                example: task_1234
+            type:
+                type: string
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
+        example:
+            taskId: task_1234
+            type: abc123
+            url: abc123
+            status: success
+            isFinished: false
+            createdAt: "2022-04-28T14:20:04.000Z"
+            finishedAt: "2022-04-28T14:20:04.000Z"
+            duration: 123456789
+            result: abc123
+            error: abc123
+            outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+        required:
+            - taskId
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
+    StreamEnableSinkStreamAPISinkNotFoundResponseBody:
+        title: StreamEnableSinkStreamAPISinkNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Sink not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sinkNotFound
+            message: Sink "github-changed-files" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamEnableSinkStreamAPISourceNotFoundResponseBody:
+        title: StreamEnableSinkStreamAPISourceNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: stream.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Source not found error.
+        example:
+            statusCode: 404
+            error: stream.api.sourceNotFound
+            message: Source "github-pull-requests" not found.
+        required:
+            - statusCode
+            - error
+            - message
+    StreamEnableSourceResponseBody:
+        title: StreamEnableSourceResponseBody
+        type: object
+        properties:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: abc123
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
+            result:
+                type: string
+                example: abc123
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            taskId:
+                type: string
+                example: task_1234
+            type:
+                type: string
+                description: Task type.
+                example: abc123
+            url:
+                type: string
+                description: URL of the task.
+                example: abc123
+        example:
+            taskId: task_1234
+            type: abc123
+            url: abc123
+            status: success
+            isFinished: false
+            createdAt: "2022-04-28T14:20:04.000Z"
+            finishedAt: "2022-04-28T14:20:04.000Z"
+            duration: 123456789
+            result: abc123
+            error: abc123
+            outputs:
+                url: abc123
+                projectId: 123
+                branchId: 345
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+        required:
+            - taskId
+            - type
+            - url
+            - status
+            - isFinished
+            - createdAt
+    StreamEnableSourceStreamAPISourceNotFoundResponseBody:
+        title: StreamEnableSourceStreamAPISourceNotFoundResponseBody
         type: object
         properties:
             error:

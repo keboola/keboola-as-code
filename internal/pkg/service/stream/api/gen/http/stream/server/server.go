@@ -33,6 +33,8 @@ type Server struct {
 	UpdateSourceSettings  http.Handler
 	TestSource            http.Handler
 	SourceStatisticsClear http.Handler
+	DisableSource         http.Handler
+	EnableSource          http.Handler
 	CreateSink            http.Handler
 	GetSink               http.Handler
 	GetSinkSettings       http.Handler
@@ -43,6 +45,8 @@ type Server struct {
 	SinkStatisticsTotal   http.Handler
 	SinkStatisticsFiles   http.Handler
 	SinkStatisticsClear   http.Handler
+	DisableSink           http.Handler
+	EnableSink            http.Handler
 	GetTask               http.Handler
 	AggregationSources    http.Handler
 	CORS                  http.Handler
@@ -112,6 +116,8 @@ func New(
 			{"UpdateSourceSettings", "PATCH", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
 			{"TestSource", "POST", "/v1/branches/{branchId}/sources/{sourceId}/test"},
 			{"SourceStatisticsClear", "POST", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
+			{"DisableSource", "POST", "/v1/branches/{branchId}/sources/{sourceId}/disable"},
+			{"EnableSource", "POST", "/v1/branches/{branchId}/sources/{sourceId}/enable"},
 			{"CreateSink", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"GetSink", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"GetSinkSettings", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
@@ -122,6 +128,8 @@ func New(
 			{"SinkStatisticsTotal", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"SinkStatisticsFiles", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files"},
 			{"SinkStatisticsClear", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
+			{"DisableSink", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable"},
+			{"EnableSink", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable"},
 			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
 			{"AggregationSources", "GET", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/"},
@@ -132,12 +140,16 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/test"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/disable"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/enable"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable"},
 			{"CORS", "OPTIONS", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
@@ -163,6 +175,8 @@ func New(
 		UpdateSourceSettings:  NewUpdateSourceSettingsHandler(e.UpdateSourceSettings, mux, decoder, encoder, errhandler, formatter),
 		TestSource:            NewTestSourceHandler(e.TestSource, mux, decoder, encoder, errhandler, formatter),
 		SourceStatisticsClear: NewSourceStatisticsClearHandler(e.SourceStatisticsClear, mux, decoder, encoder, errhandler, formatter),
+		DisableSource:         NewDisableSourceHandler(e.DisableSource, mux, decoder, encoder, errhandler, formatter),
+		EnableSource:          NewEnableSourceHandler(e.EnableSource, mux, decoder, encoder, errhandler, formatter),
 		CreateSink:            NewCreateSinkHandler(e.CreateSink, mux, decoder, encoder, errhandler, formatter),
 		GetSink:               NewGetSinkHandler(e.GetSink, mux, decoder, encoder, errhandler, formatter),
 		GetSinkSettings:       NewGetSinkSettingsHandler(e.GetSinkSettings, mux, decoder, encoder, errhandler, formatter),
@@ -173,6 +187,8 @@ func New(
 		SinkStatisticsTotal:   NewSinkStatisticsTotalHandler(e.SinkStatisticsTotal, mux, decoder, encoder, errhandler, formatter),
 		SinkStatisticsFiles:   NewSinkStatisticsFilesHandler(e.SinkStatisticsFiles, mux, decoder, encoder, errhandler, formatter),
 		SinkStatisticsClear:   NewSinkStatisticsClearHandler(e.SinkStatisticsClear, mux, decoder, encoder, errhandler, formatter),
+		DisableSink:           NewDisableSinkHandler(e.DisableSink, mux, decoder, encoder, errhandler, formatter),
+		EnableSink:            NewEnableSinkHandler(e.EnableSink, mux, decoder, encoder, errhandler, formatter),
 		GetTask:               NewGetTaskHandler(e.GetTask, mux, decoder, encoder, errhandler, formatter),
 		AggregationSources:    NewAggregationSourcesHandler(e.AggregationSources, mux, decoder, encoder, errhandler, formatter),
 		CORS:                  NewCORSHandler(),
@@ -201,6 +217,8 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.UpdateSourceSettings = m(s.UpdateSourceSettings)
 	s.TestSource = m(s.TestSource)
 	s.SourceStatisticsClear = m(s.SourceStatisticsClear)
+	s.DisableSource = m(s.DisableSource)
+	s.EnableSource = m(s.EnableSource)
 	s.CreateSink = m(s.CreateSink)
 	s.GetSink = m(s.GetSink)
 	s.GetSinkSettings = m(s.GetSinkSettings)
@@ -211,6 +229,8 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.SinkStatisticsTotal = m(s.SinkStatisticsTotal)
 	s.SinkStatisticsFiles = m(s.SinkStatisticsFiles)
 	s.SinkStatisticsClear = m(s.SinkStatisticsClear)
+	s.DisableSink = m(s.DisableSink)
+	s.EnableSink = m(s.EnableSink)
 	s.GetTask = m(s.GetTask)
 	s.AggregationSources = m(s.AggregationSources)
 	s.CORS = m(s.CORS)
@@ -233,6 +253,8 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountUpdateSourceSettingsHandler(mux, h.UpdateSourceSettings)
 	MountTestSourceHandler(mux, h.TestSource)
 	MountSourceStatisticsClearHandler(mux, h.SourceStatisticsClear)
+	MountDisableSourceHandler(mux, h.DisableSource)
+	MountEnableSourceHandler(mux, h.EnableSource)
 	MountCreateSinkHandler(mux, h.CreateSink)
 	MountGetSinkHandler(mux, h.GetSink)
 	MountGetSinkSettingsHandler(mux, h.GetSinkSettings)
@@ -243,6 +265,8 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountSinkStatisticsTotalHandler(mux, h.SinkStatisticsTotal)
 	MountSinkStatisticsFilesHandler(mux, h.SinkStatisticsFiles)
 	MountSinkStatisticsClearHandler(mux, h.SinkStatisticsClear)
+	MountDisableSinkHandler(mux, h.DisableSink)
+	MountEnableSinkHandler(mux, h.EnableSink)
 	MountGetTaskHandler(mux, h.GetTask)
 	MountAggregationSourcesHandler(mux, h.AggregationSources)
 	MountCORSHandler(mux, h.CORS)
@@ -836,6 +860,108 @@ func NewSourceStatisticsClearHandler(
 	})
 }
 
+// MountDisableSourceHandler configures the mux to serve the "stream" service
+// "DisableSource" endpoint.
+func MountDisableSourceHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/disable", f)
+}
+
+// NewDisableSourceHandler creates a HTTP handler which loads the HTTP request
+// and calls the "stream" service "DisableSource" endpoint.
+func NewDisableSourceHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeDisableSourceRequest(mux, decoder)
+		encodeResponse = EncodeDisableSourceResponse(encoder)
+		encodeError    = EncodeDisableSourceError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "DisableSource")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountEnableSourceHandler configures the mux to serve the "stream" service
+// "EnableSource" endpoint.
+func MountEnableSourceHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/enable", f)
+}
+
+// NewEnableSourceHandler creates a HTTP handler which loads the HTTP request
+// and calls the "stream" service "EnableSource" endpoint.
+func NewEnableSourceHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeEnableSourceRequest(mux, decoder)
+		encodeResponse = EncodeEnableSourceResponse(encoder)
+		encodeError    = EncodeEnableSourceError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "EnableSource")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountCreateSinkHandler configures the mux to serve the "stream" service
 // "CreateSink" endpoint.
 func MountCreateSinkHandler(mux goahttp.Muxer, h http.Handler) {
@@ -1346,6 +1472,108 @@ func NewSinkStatisticsClearHandler(
 	})
 }
 
+// MountDisableSinkHandler configures the mux to serve the "stream" service
+// "DisableSink" endpoint.
+func MountDisableSinkHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable", f)
+}
+
+// NewDisableSinkHandler creates a HTTP handler which loads the HTTP request
+// and calls the "stream" service "DisableSink" endpoint.
+func NewDisableSinkHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeDisableSinkRequest(mux, decoder)
+		encodeResponse = EncodeDisableSinkResponse(encoder)
+		encodeError    = EncodeDisableSinkError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "DisableSink")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountEnableSinkHandler configures the mux to serve the "stream" service
+// "EnableSink" endpoint.
+func MountEnableSinkHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable", f)
+}
+
+// NewEnableSinkHandler creates a HTTP handler which loads the HTTP request and
+// calls the "stream" service "EnableSink" endpoint.
+func NewEnableSinkHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeEnableSinkRequest(mux, decoder)
+		encodeResponse = EncodeEnableSinkResponse(encoder)
+		encodeError    = EncodeEnableSinkError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "EnableSink")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountGetTaskHandler configures the mux to serve the "stream" service
 // "GetTask" endpoint.
 func MountGetTaskHandler(mux goahttp.Muxer, h http.Handler) {
@@ -1491,12 +1719,16 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/settings", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/test", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/disable", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/enable", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/tasks/{*taskId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/aggregation/sources", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)

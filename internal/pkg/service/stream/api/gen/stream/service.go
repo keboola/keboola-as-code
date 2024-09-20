@@ -48,6 +48,10 @@ type Service interface {
 	TestSource(context.Context, dependencies.SourceRequestScope, *TestSourcePayload, io.ReadCloser) (res *TestResult, err error)
 	// Clears all statistics of the source.
 	SourceStatisticsClear(context.Context, dependencies.SourceRequestScope, *SourceStatisticsClearPayload) (err error)
+	// Disables the source.
+	DisableSource(context.Context, dependencies.SourceRequestScope, *DisableSourcePayload) (res *Task, err error)
+	// Enables the source.
+	EnableSource(context.Context, dependencies.SourceRequestScope, *EnableSourcePayload) (res *Task, err error)
 	// Create a new sink in the source.
 	CreateSink(context.Context, dependencies.SourceRequestScope, *CreateSinkPayload) (res *Task, err error)
 	// Get the sink definition.
@@ -68,6 +72,10 @@ type Service interface {
 	SinkStatisticsFiles(context.Context, dependencies.SinkRequestScope, *SinkStatisticsFilesPayload) (res *SinkStatisticsFilesResult, err error)
 	// Clears all statistics of the sink.
 	SinkStatisticsClear(context.Context, dependencies.SinkRequestScope, *SinkStatisticsClearPayload) (err error)
+	// Disables the sink.
+	DisableSink(context.Context, dependencies.SinkRequestScope, *DisableSinkPayload) (res *Task, err error)
+	// Enables the sink.
+	EnableSink(context.Context, dependencies.SinkRequestScope, *EnableSinkPayload) (res *Task, err error)
 	// Get details of a task.
 	GetTask(context.Context, dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
 	// Details about sources for the UI.
@@ -94,7 +102,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [24]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "GetTask", "AggregationSources"}
+var MethodNames = [28]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "GetTask", "AggregationSources"}
 
 // A mapping from imported data to a destination table.
 type AggregatedSink struct {
@@ -250,6 +258,23 @@ type DeletedEntity struct {
 	By *By
 }
 
+// DisableSinkPayload is the payload type of the stream service DisableSink
+// method.
+type DisableSinkPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	SinkID          SinkID
+}
+
+// DisableSourcePayload is the payload type of the stream service DisableSource
+// method.
+type DisableSourcePayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+}
+
 // Information about the disabled entity.
 type DisabledEntity struct {
 	// Date and time of disabling.
@@ -258,6 +283,23 @@ type DisabledEntity struct {
 	By *By
 	// Why was the entity disabled?
 	Reason string
+}
+
+// EnableSinkPayload is the payload type of the stream service EnableSink
+// method.
+type EnableSinkPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	SinkID          SinkID
+}
+
+// EnableSourcePayload is the payload type of the stream service EnableSource
+// method.
+type EnableSourcePayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
 }
 
 type FileState = model.FileState

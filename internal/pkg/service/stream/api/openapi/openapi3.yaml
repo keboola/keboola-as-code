@@ -666,6 +666,130 @@ paths:
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/disable:
+        post:
+            tags:
+                - configuration
+            summary: Disable source
+            description: Disables the source.
+            operationId: DisableSource
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
+                "404":
+                    description: 'stream.api.sourceNotFound: Source not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sourceNotFound
+                                message: Source "github-pull-requests" not found.
+            security:
+                - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/enable:
+        post:
+            tags:
+                - configuration
+            summary: Enable source
+            description: Enables the source.
+            operationId: EnableSource
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
+                "404":
+                    description: 'stream.api.sourceNotFound: Source not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sourceNotFound
+                                message: Source "github-pull-requests" not found.
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/settings:
         get:
             tags:
@@ -1342,6 +1466,150 @@ paths:
                                 message: Sink "github-changed-files" not found.
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable:
+        post:
+            tags:
+                - configuration
+            summary: Disable sink
+            description: Disables the sink.
+            operationId: DisableSink
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+                - name: sinkId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                  example: github-pr-table-sink
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
+                "404":
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sinkNotFound
+                                message: Sink "github-changed-files" not found.
+            security:
+                - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable:
+        post:
+            tags:
+                - configuration
+            summary: Enable sink
+            description: Enables the sink.
+            operationId: EnableSink
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+                - name: sinkId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                  example: github-pr-table-sink
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
+                "404":
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sinkNotFound
+                                message: Sink "github-changed-files" not found.
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings:
         get:
             tags:
@@ -1757,7 +2025,7 @@ paths:
         post:
             tags:
                 - test
-            summary: Test source payload mapping.
+            summary: Test source payload mapping
             description: Tests configured mapping of the source and its sinks.
             operationId: TestSource
             parameters:
