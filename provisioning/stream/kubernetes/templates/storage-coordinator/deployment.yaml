@@ -47,7 +47,7 @@ spec:
           args: [ "--config-file", "/stream/config/config.yaml", "storage-coordinator" ] # run storage coordinator component
           resources:
             requests:
-              cpu: "200m"
+              cpu: "$STREAM_STORAGE_COORDINATOR_CPU_SOFT_LIMIT"
               memory: "$STREAM_STORAGE_COORDINATOR_MEMORY_SOFT_LIMIT" # also GOMEMLIMIT soft limit
             limits:
               memory: "$STREAM_STORAGE_COORDINATOR_MEMORY_HARD_LIMIT"

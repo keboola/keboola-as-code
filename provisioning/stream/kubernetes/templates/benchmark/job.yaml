@@ -110,4 +110,3 @@ spec:
           effect: NoSchedule
       nodeSelector:
         nodepool: main
-
