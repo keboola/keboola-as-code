@@ -279,6 +279,7 @@ func (ts *testState) startNodes(t *testing.T, ctx context.Context, modifyConfig 
 
 func (ts *testState) setupSink(t *testing.T, ctx context.Context) {
 	t.Helper()
+	var err error
 	ts.logSection(t, "creating sink")
 	apiCtx := context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, ts.project.ProjectAPI())
 	apiCtx = rollback.ContextWith(apiCtx, rollback.New(ts.logger))
@@ -291,8 +292,10 @@ func (ts *testState) setupSink(t *testing.T, ctx context.Context) {
 	require.NoError(t, ts.apiScp.DefinitionRepository().Branch().Create(&branch, time.Now(), test.ByUser()).Do(apiCtx).Err())
 	require.NoError(t, ts.apiScp.DefinitionRepository().Source().Create(&source, time.Now(), test.ByUser(), "create").Do(apiCtx).Err())
 	require.NoError(t, ts.apiScp.DefinitionRepository().Sink().Create(&sink, time.Now(), test.ByUser(), "create").Do(apiCtx).Err())
-	ts.sourceURL1 = formatHTTPSourceURL(t, fmt.Sprintf("http://localhost:%d", ts.sourcePort1), source)
-	ts.sourceURL2 = formatHTTPSourceURL(t, fmt.Sprintf("http://localhost:%d", ts.sourcePort2), source)
+	ts.sourceURL1, err = source.FormatHTTPSourceURL(fmt.Sprintf("http://localhost:%d", ts.sourcePort1))
+	require.NoError(t, err)
+	ts.sourceURL2, err = source.FormatHTTPSourceURL(fmt.Sprintf("http://localhost:%d", ts.sourcePort2))
+	require.NoError(t, err)
 	ts.logSection(t, "created sink")
 	ts.sinkKey = sink.SinkKey
 	ts.tableID = sink.Table.Keboola.TableID
