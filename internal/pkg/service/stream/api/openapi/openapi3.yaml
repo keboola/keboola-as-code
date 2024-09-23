@@ -672,7 +672,7 @@ paths:
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/disable:
-        post:
+        put:
             tags:
                 - configuration
             summary: Disable source
@@ -734,7 +734,7 @@ paths:
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/enable:
-        post:
+        put:
             tags:
                 - configuration
             summary: Enable source
@@ -1492,7 +1492,7 @@ paths:
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable:
-        post:
+        put:
             tags:
                 - configuration
             summary: Disable sink
@@ -1564,7 +1564,7 @@ paths:
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable:
-        post:
+        put:
             tags:
                 - configuration
             summary: Enable sink
@@ -1783,7 +1783,7 @@ paths:
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear:
-        post:
+        delete:
             tags:
                 - configuration
             summary: Clear sink statistics
@@ -2006,7 +2006,7 @@ paths:
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/statistics/clear:
-        post:
+        delete:
             tags:
                 - configuration
             summary: Clear source statistics

@@ -115,9 +115,9 @@ func New(
 			{"GetSourceSettings", "GET", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
 			{"UpdateSourceSettings", "PATCH", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
 			{"TestSource", "POST", "/v1/branches/{branchId}/sources/{sourceId}/test"},
-			{"SourceStatisticsClear", "POST", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
-			{"DisableSource", "POST", "/v1/branches/{branchId}/sources/{sourceId}/disable"},
-			{"EnableSource", "POST", "/v1/branches/{branchId}/sources/{sourceId}/enable"},
+			{"SourceStatisticsClear", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
+			{"DisableSource", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/disable"},
+			{"EnableSource", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/enable"},
 			{"CreateSink", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"GetSink", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"GetSinkSettings", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
@@ -127,9 +127,9 @@ func New(
 			{"DeleteSink", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"SinkStatisticsTotal", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"SinkStatisticsFiles", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files"},
-			{"SinkStatisticsClear", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
-			{"DisableSink", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable"},
-			{"EnableSink", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable"},
+			{"SinkStatisticsClear", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
+			{"DisableSink", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable"},
+			{"EnableSink", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable"},
 			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
 			{"AggregationSources", "GET", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/"},
@@ -818,7 +818,7 @@ func MountSourceStatisticsClearHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear", f)
+	mux.Handle("DELETE", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear", f)
 }
 
 // NewSourceStatisticsClearHandler creates a HTTP handler which loads the HTTP
@@ -869,7 +869,7 @@ func MountDisableSourceHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/disable", f)
+	mux.Handle("PUT", "/v1/branches/{branchId}/sources/{sourceId}/disable", f)
 }
 
 // NewDisableSourceHandler creates a HTTP handler which loads the HTTP request
@@ -920,7 +920,7 @@ func MountEnableSourceHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/enable", f)
+	mux.Handle("PUT", "/v1/branches/{branchId}/sources/{sourceId}/enable", f)
 }
 
 // NewEnableSourceHandler creates a HTTP handler which loads the HTTP request
@@ -1430,7 +1430,7 @@ func MountSinkStatisticsClearHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear", f)
+	mux.Handle("DELETE", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear", f)
 }
 
 // NewSinkStatisticsClearHandler creates a HTTP handler which loads the HTTP
@@ -1481,7 +1481,7 @@ func MountDisableSinkHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable", f)
+	mux.Handle("PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable", f)
 }
 
 // NewDisableSinkHandler creates a HTTP handler which loads the HTTP request
@@ -1532,7 +1532,7 @@ func MountEnableSinkHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable", f)
+	mux.Handle("PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable", f)
 }
 
 // NewEnableSinkHandler creates a HTTP handler which loads the HTTP request and
