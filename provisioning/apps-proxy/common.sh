@@ -45,3 +45,10 @@ kubectl apply -f ./kubernetes/deploy/proxy/config-map.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/pdb.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/network-policy.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/deployment.yaml
+
+# CSAS migration dataaps users redirector
+export CSAS_MIGRATION_APPS_PROXY_REDIRECT_REPLICAS="${CSAS_MIGRATION_APPS_PROXY_REDIRECT_REPLICAS:=0}"
+if [ "$CSAS_MIGRATION_APPS_PROXY_REDIRECT_REPLICAS" -gt 0 ]; then
+  kubectl apply -f ./kubernetes/deploy/nginx-redir/config-map.yaml
+  kubectl apply -f ./kubernetes/deploy/nginx-redir/deployment.yaml
+fi

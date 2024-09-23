@@ -14,6 +14,11 @@ envsubst < templates/proxy/pdb.yaml            > deploy/proxy/pdb.yaml
 envsubst < templates/proxy/network-policy.yaml > deploy/proxy/network-policy.yaml
 envsubst < templates/proxy/deployment.yaml     > deploy/proxy/deployment.yaml
 
+# CSAS migration, without condition because it's trashed after build
+envsubst < templates/nginx-redir/deployment.yaml > deploy/nginx-redir/deployment.yaml
+# required NGINX configuration breaks ideal templating so skipping it
+cat templates/nginx-redir/config-map.yaml        > deploy/nginx-redir/config-map.yaml
+
 # Remove resources requests/limits to fit all pods to the CI environment
 REMOVE_RESOURCES_LIMITS="${REMOVE_RESOURCES_LIMITS:=false}"
 if [[ "$REMOVE_RESOURCES_LIMITS" == "true" ]]; then
