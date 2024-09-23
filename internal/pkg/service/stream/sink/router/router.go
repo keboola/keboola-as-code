@@ -39,7 +39,7 @@ type Router struct {
 	definitions *definitionRepo.Repository
 	collection  *collection
 
-	lock      sync.Mutex
+	lock      sync.RWMutex
 	pipelines map[key.SinkKey]*pipelineRef
 
 	// closed channel block new writer during shutdown
@@ -316,10 +316,20 @@ func (r *Router) writeRecord(sink *sinkData, c recordctx.Context) (pipeline.Writ
 
 // pipelineRef gets or creates sink pipeline.
 func (r *Router) pipelineRef(sink *sinkData) *pipelineRef {
-	// Get or create pipeline reference, with its own lock
+	// Fast check - read lock
+	r.lock.RLock()
+	p := r.pipelines[sink.sinkKey]
+	r.lock.RUnlock()
+	if p != nil {
+		return p
+	}
+
+	// Create pipeline reference, it is only empty reference, the lock is locked for a short time
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	p := r.pipelines[sink.sinkKey]
+
+	// Important! Check again, it may be already created by another goroutine (during waiting for the lock)
+	p = r.pipelines[sink.sinkKey]
 	if p == nil {
 		// Unregister the pipeline on close
 		unregister := func(ctx context.Context, _ string) {
