@@ -27,7 +27,7 @@ func (r *Repository) rotateFileOnSinkModification() {
 		}
 
 		// Rotate file, close active file, if any, and open a new file
-		op.AtomicOpFromCtx(ctx).AddFrom(r.rotate(now, sink.SinkKey, plugin.SourceFromContext(ctx, sink.SourceKey), sink))
+		op.AtomicOpCtxFrom(ctx).AddFrom(r.rotate(now, sink.SinkKey, plugin.SourceFromContext(ctx, sink.SourceKey), sink))
 
 		return nil
 	})

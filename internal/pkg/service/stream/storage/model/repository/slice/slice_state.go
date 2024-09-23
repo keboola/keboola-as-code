@@ -38,7 +38,7 @@ func (r *Repository) SwitchToUploaded(k model.SliceKey, now time.Time) *op.Atomi
 func (r *Repository) updateSlicesOnFileImport() {
 	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, file *model.File) error {
 		if original != nil && original.State != file.State && file.State == model.FileImported {
-			op.AtomicOpFromCtx(ctx).AddFrom(r.switchSlicesToImported(*file, now))
+			op.AtomicOpCtxFrom(ctx).AddFrom(r.switchSlicesToImported(*file, now))
 		}
 		return nil
 	})
@@ -49,7 +49,7 @@ func (r *Repository) validateSlicesOnFileStateTransition() {
 		if original != nil && original.State != file.State && file.State != model.FileClosing && file.State != model.FileImported {
 			// FileClosing state is handled by the closeSliceOnFileClose method.
 			// FileImported state is handled by the updateSlicesOnFileImport method.
-			op.AtomicOpFromCtx(ctx).AddFrom(r.validateSliceStates(*file))
+			op.AtomicOpCtxFrom(ctx).AddFrom(r.validateSliceStates(*file))
 		}
 		return nil
 	})

@@ -17,7 +17,7 @@ import (
 func TestAtomicFromCtx_Misuse1(t *testing.T) {
 	t.Parallel()
 	assert.PanicsWithError(t, "no atomic operation found in the context", func() {
-		op.AtomicOpFromCtx(context.Background())
+		op.AtomicOpCtxFrom(context.Background())
 	})
 }
 
@@ -33,7 +33,7 @@ func TestAtomicFromCtx_Misuse2(t *testing.T) {
 			return etcdop.
 				NewKey("keys/key").Put(client, "value").
 				WithOnResult(func(result op.NoResult) {
-					op.AtomicOpFromCtx(ctx) // <<<<<<<<< panic
+					op.AtomicOpCtxFrom(ctx) // <<<<<<<<< panic
 				})
 		})
 
@@ -66,11 +66,11 @@ func TestAtomicFromCtx_Complex(t *testing.T) {
 			// 1. Read the reference key - value is key location
 			return refKey.Get(client).WithOnResult(func(r *op.KeyValue) {
 				key := string(r.Value)
-				op.AtomicOpFromCtx(ctx). // <<<<<<<<<<<<<<
+				op.AtomicOpCtxFrom(ctx). // <<<<<<<<<<<<<<
 					// 2. Read the key (based on the result of the previous read!)
 					Read(func(ctx context.Context) op.Op {
 						return etcdop.NewKey(key).Get(client).WithOnResult(func(r *op.KeyValue) {
-							op.AtomicOpFromCtx(ctx). // <<<<<<<<<<<<<<
+							op.AtomicOpCtxFrom(ctx). // <<<<<<<<<<<<<<
 								// 3. Write the key copy
 								Write(func(ctx context.Context) op.Op {
 									return etcdop.NewKey(key+"-copy").Put(client, string(r.Value))

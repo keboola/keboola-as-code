@@ -33,7 +33,7 @@ func (b *Bridge) deleteTokenOnSinkDeactivation() {
 				return err
 			}
 
-			op.AtomicOpFromCtx(ctx).AddFrom(b.deleteToken(api, sink.SinkKey))
+			op.AtomicOpCtxFrom(ctx).AddFrom(b.deleteToken(api, sink.SinkKey))
 		}
 		return nil
 	})
@@ -129,7 +129,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 
 	// Update atomic operation
 	newToken = keboolasink.Token{SinkKey: sink.SinkKey, Token: *result}
-	op.AtomicOpFromCtx(ctx).AddFrom(op.Atomic(b.client, &newToken).
+	op.AtomicOpCtxFrom(ctx).AddFrom(op.Atomic(b.client, &newToken).
 		// Save token to database
 		Write(func(ctx context.Context) op.Op {
 			return b.schema.Token().ForSink(sink.SinkKey).Put(b.client, newToken)

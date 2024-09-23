@@ -27,7 +27,7 @@ func (r *Repository) Enable(k key.SinkKey, now time.Time, by definition.By) *op.
 
 func (r *Repository) enableSinksOnSourceEnable() {
 	r.plugins.Collection().OnSourceEnabled(func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Source) error {
-		op.AtomicOpFromCtx(ctx).AddFrom(r.enableAllFrom(sink.SourceKey, now, by, false))
+		op.AtomicOpCtxFrom(ctx).AddFrom(r.enableAllFrom(sink.SourceKey, now, by, false))
 		return nil
 	})
 }
