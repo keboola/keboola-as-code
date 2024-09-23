@@ -242,6 +242,62 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 	return d.StatisticsRepository().ResetAllSinksStats(ctx, sinkKeys)
 }
 
+func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (res *api.Task, err error) {
+	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+		return nil, err
+	}
+
+	// Disable source in a task
+	t, err := s.startTask(ctx, taskConfig{
+		Type:      "disable.source",
+		Timeout:   5 * time.Minute,
+		ProjectID: d.ProjectID(),
+		ObjectKey: d.SourceKey(),
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			if err := s.definition.Source().Disable(d.SourceKey(), d.Clock().Now(), d.RequestUser(), "API").Do(ctx).Err(); err == nil {
+				result := task.OkResult("Source has been disabled successfully.")
+				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+				return result
+			} else {
+				return task.ErrResult(err)
+			}
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewTaskResponse(t)
+}
+
+func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.EnableSourcePayload) (res *api.Task, err error) {
+	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+		return nil, err
+	}
+
+	// Enable source in a task
+	t, err := s.startTask(ctx, taskConfig{
+		Type:      "enable.source",
+		Timeout:   5 * time.Minute,
+		ProjectID: d.ProjectID(),
+		ObjectKey: d.SourceKey(),
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			if err := s.definition.Source().Enable(d.SourceKey(), d.Clock().Now(), d.RequestUser()).Do(ctx).Err(); err == nil {
+				result := task.OkResult("Source has been enabled successfully.")
+				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+				return result
+			} else {
+				return task.ErrResult(err)
+			}
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewTaskResponse(t)
+}
+
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {
 	return s.definition.Source().MustNotExists(k).Do(ctx).Err()
 }

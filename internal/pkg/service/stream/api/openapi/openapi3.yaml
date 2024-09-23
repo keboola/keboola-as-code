@@ -166,6 +166,11 @@ paths:
                                                       name: headers-col
                                                     - type: body
                                                       name: body-col
+                                                    - type: path
+                                                      name: path-col
+                                                      path: foo.bar[0]
+                                                      rawString: true
+                                                      defaultValue: ""
                                                     - type: template
                                                       name: template-col
                                                       template:
@@ -666,6 +671,130 @@ paths:
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/disable:
+        put:
+            tags:
+                - configuration
+            summary: Disable source
+            description: Disables the source.
+            operationId: DisableSource
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
+                "404":
+                    description: 'stream.api.sourceNotFound: Source not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sourceNotFound
+                                message: Source "github-pull-requests" not found.
+            security:
+                - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/enable:
+        put:
+            tags:
+                - configuration
+            summary: Enable source
+            description: Enables the source.
+            operationId: EnableSource
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
+                "404":
+                    description: 'stream.api.sourceNotFound: Source not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sourceNotFound
+                                message: Source "github-pull-requests" not found.
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/settings:
         get:
             tags:
@@ -882,6 +1011,11 @@ paths:
                                                   name: headers-col
                                                 - type: body
                                                   name: body-col
+                                                - type: path
+                                                  name: path-col
+                                                  path: foo.bar[0]
+                                                  rawString: true
+                                                  defaultValue: ""
                                                 - type: template
                                                   name: template-col
                                                   template:
@@ -987,6 +1121,11 @@ paths:
                                           name: headers-col
                                         - type: body
                                           name: body-col
+                                        - type: path
+                                          name: path-col
+                                          path: foo.bar[0]
+                                          rawString: true
+                                          defaultValue: ""
                                         - type: template
                                           name: template-col
                                           template:
@@ -1186,6 +1325,11 @@ paths:
                                               name: headers-col
                                             - type: body
                                               name: body-col
+                                            - type: path
+                                              name: path-col
+                                              path: foo.bar[0]
+                                              rawString: true
+                                              defaultValue: ""
                                             - type: template
                                               name: template-col
                                               template:
@@ -1301,11 +1445,160 @@ paths:
                                           name: headers-col
                                         - type: body
                                           name: body-col
+                                        - type: path
+                                          name: path-col
+                                          path: foo.bar[0]
+                                          rawString: true
+                                          defaultValue: ""
                                         - type: template
                                           name: template-col
                                           template:
                                             language: jsonnet
                                             content: body.foo + "-" + body.bar
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
+                "404":
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sinkNotFound
+                                message: Sink "github-changed-files" not found.
+            security:
+                - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable:
+        put:
+            tags:
+                - configuration
+            summary: Disable sink
+            description: Disables the sink.
+            operationId: DisableSink
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+                - name: sinkId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                  example: github-pr-table-sink
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
+                "404":
+                    description: 'stream.api.sinkNotFound: Sink not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sinkNotFound
+                                message: Sink "github-changed-files" not found.
+            security:
+                - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable:
+        put:
+            tags:
+                - configuration
+            summary: Enable sink
+            description: Enables the sink.
+            operationId: EnableSink
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+                - name: sinkId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                  example: github-pr-table-sink
             responses:
                 "202":
                     description: Accepted response.
@@ -1490,7 +1783,7 @@ paths:
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear:
-        post:
+        delete:
             tags:
                 - configuration
             summary: Clear sink statistics
@@ -1713,7 +2006,7 @@ paths:
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/statistics/clear:
-        post:
+        delete:
             tags:
                 - configuration
             summary: Clear source statistics
@@ -1757,7 +2050,7 @@ paths:
         post:
             tags:
                 - test
-            summary: Test source payload mapping.
+            summary: Test source payload mapping
             description: Tests configured mapping of the source and its sinks.
             operationId: TestSource
             parameters:
@@ -1973,6 +2266,11 @@ components:
                               name: headers-col
                             - type: body
                               name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
                             - type: template
                               name: template-col
                               template:
@@ -2143,6 +2441,11 @@ components:
                                       name: headers-col
                                     - type: body
                                       name: body-col
+                                    - type: path
+                                      name: path-col
+                                      path: foo.bar[0]
+                                      rawString: true
+                                      defaultValue: ""
                                     - type: template
                                       name: template-col
                                       template:
@@ -2327,6 +2630,11 @@ components:
                                   name: headers-col
                                 - type: body
                                   name: body-col
+                                - type: path
+                                  name: path-col
+                                  path: foo.bar[0]
+                                  rawString: true
+                                  defaultValue: ""
                                 - type: template
                                   name: template-col
                                   template:
@@ -2525,6 +2833,11 @@ components:
                                           name: headers-col
                                         - type: body
                                           name: body-col
+                                        - type: path
+                                          name: path-col
+                                          path: foo.bar[0]
+                                          rawString: true
+                                          defaultValue: ""
                                         - type: template
                                           name: template-col
                                           template:
@@ -2704,6 +3017,11 @@ components:
                                       name: headers-col
                                     - type: body
                                       name: body-col
+                                    - type: path
+                                      name: path-col
+                                      path: foo.bar[0]
+                                      rawString: true
+                                      defaultValue: ""
                                     - type: template
                                       name: template-col
                                       template:
@@ -3005,6 +3323,11 @@ components:
                               name: headers-col
                             - type: body
                               name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
                             - type: template
                               name: template-col
                               template:
@@ -3419,6 +3742,11 @@ components:
                               name: headers-col
                             - type: body
                               name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
                             - type: template
                               name: template-col
                               template:
@@ -3708,6 +4036,11 @@ components:
                                       name: headers-col
                                     - type: body
                                       name: body-col
+                                    - type: path
+                                      name: path-col
+                                      path: foo.bar[0]
+                                      rawString: true
+                                      defaultValue: ""
                                     - type: template
                                       name: template-col
                                       template:
@@ -3787,6 +4120,11 @@ components:
                                   name: headers-col
                                 - type: body
                                   name: body-col
+                                - type: path
+                                  name: path-col
+                                  path: foo.bar[0]
+                                  rawString: true
+                                  defaultValue: ""
                                 - type: template
                                   name: template-col
                                   template:
@@ -4054,15 +4392,27 @@ components:
         TableColumn:
             type: object
             properties:
+                defaultValue:
+                    type: string
+                    description: Fallback value if path doesn't exist.
+                    example: "1"
                 name:
                     type: string
                     description: Column name.
                     example: id-col
+                path:
+                    type: string
+                    description: Path to the value.
+                    example: foo.bar[0]
                 primaryKey:
                     type: boolean
                     description: Sets this column as a part of the primary key of the destination table.
                     default: false
                     example: false
+                rawString:
+                    type: boolean
+                    description: Set to true if path value should use raw string instead of json-encoded value.
+                    example: true
                 template:
                     $ref: '#/components/schemas/TableColumnTemplate'
                 type:
@@ -4082,6 +4432,9 @@ components:
                 primaryKey: false
                 type: body
                 name: id-col
+                path: foo.bar[0]
+                defaultValue: "1"
+                rawString: true
                 template:
                     language: jsonnet
                     content: body.foo + "-" + body.bar
@@ -4127,6 +4480,11 @@ components:
                           name: headers-col
                         - type: body
                           name: body-col
+                        - type: path
+                          name: path-col
+                          path: foo.bar[0]
+                          rawString: true
+                          defaultValue: ""
                         - type: template
                           name: template-col
                           template:
@@ -4148,6 +4506,11 @@ components:
                       name: headers-col
                     - type: body
                       name: body-col
+                    - type: path
+                      name: path-col
+                      path: foo.bar[0]
+                      rawString: true
+                      defaultValue: ""
                     - type: template
                       name: template-col
                       template:
@@ -4185,6 +4548,11 @@ components:
                           name: headers-col
                         - type: body
                           name: body-col
+                        - type: path
+                          name: path-col
+                          path: foo.bar[0]
+                          rawString: true
+                          defaultValue: ""
                         - type: template
                           name: template-col
                           template:
@@ -4224,6 +4592,11 @@ components:
                           name: headers-col
                         - type: body
                           name: body-col
+                        - type: path
+                          name: path-col
+                          path: foo.bar[0]
+                          rawString: true
+                          defaultValue: ""
                         - type: template
                           name: template-col
                           template:
@@ -4496,6 +4869,11 @@ components:
                               name: headers-col
                             - type: body
                               name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
                             - type: template
                               name: template-col
                               template:

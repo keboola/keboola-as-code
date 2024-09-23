@@ -323,6 +323,62 @@ func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRe
 	return d.StatisticsRepository().ResetSinkStats(d.SinkKey()).Do(ctx).Err()
 }
 
+func (s *service) DisableSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.DisableSinkPayload) (res *api.Task, err error) {
+	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+		return nil, err
+	}
+
+	// Disable sink in a task
+	t, err := s.startTask(ctx, taskConfig{
+		Type:      "disable.sink",
+		Timeout:   5 * time.Minute,
+		ProjectID: d.ProjectID(),
+		ObjectKey: d.SinkKey(),
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			if err := s.definition.Sink().Disable(d.SinkKey(), d.Clock().Now(), d.RequestUser(), "API").Do(ctx).Err(); err == nil {
+				result := task.OkResult("Sink has been disabled successfully.")
+				result = s.mapper.WithTaskOutputs(result, d.SinkKey())
+				return result
+			} else {
+				return task.ErrResult(err)
+			}
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewTaskResponse(t)
+}
+
+func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.EnableSinkPayload) (res *api.Task, err error) {
+	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+		return nil, err
+	}
+
+	// Enable sink in a task
+	t, err := s.startTask(ctx, taskConfig{
+		Type:      "enable.sink",
+		Timeout:   5 * time.Minute,
+		ProjectID: d.ProjectID(),
+		ObjectKey: d.SinkKey(),
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			if err := s.definition.Sink().Enable(d.SinkKey(), d.Clock().Now(), d.RequestUser()).Do(ctx).Err(); err == nil {
+				result := task.OkResult("Sink has been enabled successfully.")
+				result = s.mapper.WithTaskOutputs(result, d.SinkKey())
+				return result
+			} else {
+				return task.ErrResult(err)
+			}
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewTaskResponse(t)
+}
+
 func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {
 	return s.definition.Sink().MustNotExists(k).Do(ctx).Err()
 }

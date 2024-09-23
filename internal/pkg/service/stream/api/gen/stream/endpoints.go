@@ -31,6 +31,8 @@ type Endpoints struct {
 	UpdateSourceSettings  goa.Endpoint
 	TestSource            goa.Endpoint
 	SourceStatisticsClear goa.Endpoint
+	DisableSource         goa.Endpoint
+	EnableSource          goa.Endpoint
 	CreateSink            goa.Endpoint
 	GetSink               goa.Endpoint
 	GetSinkSettings       goa.Endpoint
@@ -41,6 +43,8 @@ type Endpoints struct {
 	SinkStatisticsTotal   goa.Endpoint
 	SinkStatisticsFiles   goa.Endpoint
 	SinkStatisticsClear   goa.Endpoint
+	DisableSink           goa.Endpoint
+	EnableSink            goa.Endpoint
 	GetTask               goa.Endpoint
 	AggregationSources    goa.Endpoint
 }
@@ -71,6 +75,8 @@ func NewEndpoints(s Service) *Endpoints {
 		UpdateSourceSettings:  NewUpdateSourceSettingsEndpoint(s, a.APIKeyAuth),
 		TestSource:            NewTestSourceEndpoint(s, a.APIKeyAuth),
 		SourceStatisticsClear: NewSourceStatisticsClearEndpoint(s, a.APIKeyAuth),
+		DisableSource:         NewDisableSourceEndpoint(s, a.APIKeyAuth),
+		EnableSource:          NewEnableSourceEndpoint(s, a.APIKeyAuth),
 		CreateSink:            NewCreateSinkEndpoint(s, a.APIKeyAuth),
 		GetSink:               NewGetSinkEndpoint(s, a.APIKeyAuth),
 		GetSinkSettings:       NewGetSinkSettingsEndpoint(s, a.APIKeyAuth),
@@ -81,6 +87,8 @@ func NewEndpoints(s Service) *Endpoints {
 		SinkStatisticsTotal:   NewSinkStatisticsTotalEndpoint(s, a.APIKeyAuth),
 		SinkStatisticsFiles:   NewSinkStatisticsFilesEndpoint(s, a.APIKeyAuth),
 		SinkStatisticsClear:   NewSinkStatisticsClearEndpoint(s, a.APIKeyAuth),
+		DisableSink:           NewDisableSinkEndpoint(s, a.APIKeyAuth),
+		EnableSink:            NewEnableSinkEndpoint(s, a.APIKeyAuth),
 		GetTask:               NewGetTaskEndpoint(s, a.APIKeyAuth),
 		AggregationSources:    NewAggregationSourcesEndpoint(s, a.APIKeyAuth),
 	}
@@ -100,6 +108,8 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.UpdateSourceSettings = m(e.UpdateSourceSettings)
 	e.TestSource = m(e.TestSource)
 	e.SourceStatisticsClear = m(e.SourceStatisticsClear)
+	e.DisableSource = m(e.DisableSource)
+	e.EnableSource = m(e.EnableSource)
 	e.CreateSink = m(e.CreateSink)
 	e.GetSink = m(e.GetSink)
 	e.GetSinkSettings = m(e.GetSinkSettings)
@@ -110,6 +120,8 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.SinkStatisticsTotal = m(e.SinkStatisticsTotal)
 	e.SinkStatisticsFiles = m(e.SinkStatisticsFiles)
 	e.SinkStatisticsClear = m(e.SinkStatisticsClear)
+	e.DisableSink = m(e.DisableSink)
+	e.EnableSink = m(e.EnableSink)
 	e.GetTask = m(e.GetTask)
 	e.AggregationSources = m(e.AggregationSources)
 }
@@ -321,6 +333,46 @@ func NewSourceStatisticsClearEndpoint(s Service, authAPIKeyFn security.AuthAPIKe
 	}
 }
 
+// NewDisableSourceEndpoint returns an endpoint function that calls the method
+// "DisableSource" of service "stream".
+func NewDisableSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*DisableSourcePayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
+		return s.DisableSource(ctx, deps, p)
+	}
+}
+
+// NewEnableSourceEndpoint returns an endpoint function that calls the method
+// "EnableSource" of service "stream".
+func NewEnableSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*EnableSourcePayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
+		return s.EnableSource(ctx, deps, p)
+	}
+}
+
 // NewCreateSinkEndpoint returns an endpoint function that calls the method
 // "CreateSink" of service "stream".
 func NewCreateSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
@@ -518,6 +570,46 @@ func NewSinkStatisticsClearEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyF
 		}
 		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return nil, s.SinkStatisticsClear(ctx, deps, p)
+	}
+}
+
+// NewDisableSinkEndpoint returns an endpoint function that calls the method
+// "DisableSink" of service "stream".
+func NewDisableSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*DisableSinkPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
+		return s.DisableSink(ctx, deps, p)
+	}
+}
+
+// NewEnableSinkEndpoint returns an endpoint function that calls the method
+// "EnableSink" of service "stream".
+func NewEnableSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*EnableSinkPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
+		return s.EnableSink(ctx, deps, p)
 	}
 }
 

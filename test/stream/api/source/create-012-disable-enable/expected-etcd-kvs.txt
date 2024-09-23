@@ -1,0 +1,89 @@
+<<<<<
+definition/branch/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%
+-----
+%A
+>>>>>
+
+<<<<<
+definition/source/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "version": {
+    "number": 3,
+    "hash": "%s",
+    "description": "Enabled.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "enabled": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "type": "http",
+  "name": "My Source",
+  "http": {
+    "secret": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/0000000001
+-----
+%A
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/0000000002
+-----
+%A
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/0000000003
+-----
+%A
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
+-----
+%A
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.disable.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
+-----
+%A
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.enable.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s
+-----
+%A
+>>>>>

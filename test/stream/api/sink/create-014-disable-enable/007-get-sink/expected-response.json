@@ -1,0 +1,61 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "type": "table",
+  "name": "My Sink",
+  "description": "",
+  "table": {
+    "type": "keboola",
+    "tableId": "in.c-my-bucket.my-table",
+    "mapping": {
+      "columns": [
+        {
+          "primaryKey": true,
+          "type": "uuid",
+          "name": "id"
+        },
+        {
+          "primaryKey": false,
+          "type": "body",
+          "name": "body"
+        }
+      ]
+    }
+  },
+  "version": {
+    "number": 2,
+    "hash": "%s",
+    "description": "Disabled.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "disabled": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    },
+    "reason": "API"
+  }
+}

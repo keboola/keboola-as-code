@@ -828,6 +828,166 @@ func EncodeSourceStatisticsClearError(encoder func(context.Context, http.Respons
 	}
 }
 
+// EncodeDisableSourceResponse returns an encoder for responses returned by the
+// stream DisableSource endpoint.
+func EncodeDisableSourceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*stream.Task)
+		enc := encoder(ctx, w)
+		body := NewDisableSourceResponseBody(res)
+		w.WriteHeader(http.StatusAccepted)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeDisableSourceRequest returns a decoder for requests sent to the stream
+// DisableSource endpoint.
+func DecodeDisableSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			branchID        string
+			sourceID        string
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		branchID = params["branchId"]
+		sourceID = params["sourceId"]
+		if utf8.RuneCountInString(sourceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 1, true))
+		}
+		if utf8.RuneCountInString(sourceID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
+		}
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewDisableSourcePayload(branchID, sourceID, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeDisableSourceError returns an encoder for errors returned by the
+// DisableSource stream endpoint.
+func EncodeDisableSourceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "stream.api.sourceNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewDisableSourceStreamAPISourceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeEnableSourceResponse returns an encoder for responses returned by the
+// stream EnableSource endpoint.
+func EncodeEnableSourceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*stream.Task)
+		enc := encoder(ctx, w)
+		body := NewEnableSourceResponseBody(res)
+		w.WriteHeader(http.StatusAccepted)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeEnableSourceRequest returns a decoder for requests sent to the stream
+// EnableSource endpoint.
+func DecodeEnableSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			branchID        string
+			sourceID        string
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		branchID = params["branchId"]
+		sourceID = params["sourceId"]
+		if utf8.RuneCountInString(sourceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 1, true))
+		}
+		if utf8.RuneCountInString(sourceID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
+		}
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewEnableSourcePayload(branchID, sourceID, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeEnableSourceError returns an encoder for errors returned by the
+// EnableSource stream endpoint.
+func EncodeEnableSourceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "stream.api.sourceNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewEnableSourceStreamAPISourceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeCreateSinkResponse returns an encoder for responses returned by the
 // stream CreateSink endpoint.
 func EncodeCreateSinkResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -1925,6 +2085,210 @@ func EncodeSinkStatisticsClearError(encoder func(context.Context, http.ResponseW
 	}
 }
 
+// EncodeDisableSinkResponse returns an encoder for responses returned by the
+// stream DisableSink endpoint.
+func EncodeDisableSinkResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*stream.Task)
+		enc := encoder(ctx, w)
+		body := NewDisableSinkResponseBody(res)
+		w.WriteHeader(http.StatusAccepted)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeDisableSinkRequest returns a decoder for requests sent to the stream
+// DisableSink endpoint.
+func DecodeDisableSinkRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			branchID        string
+			sourceID        string
+			sinkID          string
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		branchID = params["branchId"]
+		sourceID = params["sourceId"]
+		if utf8.RuneCountInString(sourceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 1, true))
+		}
+		if utf8.RuneCountInString(sourceID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
+		}
+		sinkID = params["sinkId"]
+		if utf8.RuneCountInString(sinkID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sinkId", sinkID, utf8.RuneCountInString(sinkID), 1, true))
+		}
+		if utf8.RuneCountInString(sinkID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sinkId", sinkID, utf8.RuneCountInString(sinkID), 48, false))
+		}
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewDisableSinkPayload(branchID, sourceID, sinkID, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeDisableSinkError returns an encoder for errors returned by the
+// DisableSink stream endpoint.
+func EncodeDisableSinkError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "stream.api.sourceNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewDisableSinkStreamAPISourceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "stream.api.sinkNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewDisableSinkStreamAPISinkNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeEnableSinkResponse returns an encoder for responses returned by the
+// stream EnableSink endpoint.
+func EncodeEnableSinkResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*stream.Task)
+		enc := encoder(ctx, w)
+		body := NewEnableSinkResponseBody(res)
+		w.WriteHeader(http.StatusAccepted)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeEnableSinkRequest returns a decoder for requests sent to the stream
+// EnableSink endpoint.
+func DecodeEnableSinkRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			branchID        string
+			sourceID        string
+			sinkID          string
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		branchID = params["branchId"]
+		sourceID = params["sourceId"]
+		if utf8.RuneCountInString(sourceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 1, true))
+		}
+		if utf8.RuneCountInString(sourceID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
+		}
+		sinkID = params["sinkId"]
+		if utf8.RuneCountInString(sinkID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sinkId", sinkID, utf8.RuneCountInString(sinkID), 1, true))
+		}
+		if utf8.RuneCountInString(sinkID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sinkId", sinkID, utf8.RuneCountInString(sinkID), 48, false))
+		}
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewEnableSinkPayload(branchID, sourceID, sinkID, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeEnableSinkError returns an encoder for errors returned by the
+// EnableSink stream endpoint.
+func EncodeEnableSinkError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "stream.api.sourceNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewEnableSinkStreamAPISourceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "stream.api.sinkNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewEnableSinkStreamAPISinkNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeGetTaskResponse returns an encoder for responses returned by the
 // stream GetTask endpoint.
 func EncodeGetTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -2340,8 +2704,11 @@ func unmarshalTableMappingRequestBodyToStreamTableMapping(v *TableMappingRequest
 // *stream.TableColumn from a value of type *TableColumnRequestBody.
 func unmarshalTableColumnRequestBodyToStreamTableColumn(v *TableColumnRequestBody) *stream.TableColumn {
 	res := &stream.TableColumn{
-		Type: *v.Type,
-		Name: *v.Name,
+		Type:         *v.Type,
+		Name:         *v.Name,
+		Path:         v.Path,
+		DefaultValue: v.DefaultValue,
+		RawString:    v.RawString,
 	}
 	if v.PrimaryKey != nil {
 		res.PrimaryKey = *v.PrimaryKey
@@ -2408,9 +2775,12 @@ func marshalStreamTableMappingToTableMappingResponseBody(v *stream.TableMapping)
 // *TableColumnResponseBody from a value of type *stream.TableColumn.
 func marshalStreamTableColumnToTableColumnResponseBody(v *stream.TableColumn) *TableColumnResponseBody {
 	res := &TableColumnResponseBody{
-		PrimaryKey: v.PrimaryKey,
-		Type:       v.Type,
-		Name:       v.Name,
+		PrimaryKey:   v.PrimaryKey,
+		Type:         v.Type,
+		Name:         v.Name,
+		Path:         v.Path,
+		DefaultValue: v.DefaultValue,
+		RawString:    v.RawString,
 	}
 	{
 		var zero bool

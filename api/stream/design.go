@@ -23,6 +23,7 @@ import (
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
@@ -277,7 +278,7 @@ var _ = Service("stream", func() {
 	})
 
 	Method("TestSource", func() {
-		Meta("openapi:summary", "Test source payload mapping.")
+		Meta("openapi:summary", "Test source payload mapping")
 		Description("Tests configured mapping of the source and its sinks.")
 		Result(TestResult)
 		Payload(TestSourceRequest)
@@ -295,9 +296,35 @@ var _ = Service("stream", func() {
 		Description("Clears all statistics of the source.")
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			POST("/branches/{branchId}/sources/{sourceId}/statistics/clear")
+			DELETE("/branches/{branchId}/sources/{sourceId}/statistics/clear")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
+			SourceNotFoundError()
+		})
+	})
+
+	Method("DisableSource", func() {
+		Meta("openapi:summary", "Disable source")
+		Description("Disables the source.")
+		Result(Task)
+		Payload(GetSourceRequest)
+		HTTP(func() {
+			PUT("/branches/{branchId}/sources/{sourceId}/disable")
+			Meta("openapi:tag:configuration")
+			Response(StatusAccepted)
+			SourceNotFoundError()
+		})
+	})
+
+	Method("EnableSource", func() {
+		Meta("openapi:summary", "Enable source")
+		Description("Enables the source.")
+		Result(Task)
+		Payload(GetSourceRequest)
+		HTTP(func() {
+			PUT("/branches/{branchId}/sources/{sourceId}/enable")
+			Meta("openapi:tag:configuration")
+			Response(StatusAccepted)
 			SourceNotFoundError()
 		})
 	})
@@ -438,9 +465,37 @@ var _ = Service("stream", func() {
 		Description("Clears all statistics of the sink.")
 		Payload(GetSinkRequest)
 		HTTP(func() {
-			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear")
+			DELETE("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
+	Method("DisableSink", func() {
+		Meta("openapi:summary", "Disable sink")
+		Description("Disables the sink.")
+		Result(Task)
+		Payload(GetSinkRequest)
+		HTTP(func() {
+			PUT("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable")
+			Meta("openapi:tag:configuration")
+			Response(StatusAccepted)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
+	Method("EnableSink", func() {
+		Meta("openapi:summary", "Enable sink")
+		Description("Enables the sink.")
+		Result(Task)
+		Payload(GetSinkRequest)
+		HTTP(func() {
+			PUT("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable")
+			Meta("openapi:tag:configuration")
+			Response(StatusAccepted)
 			SourceNotFoundError()
 			SinkNotFoundError()
 		})
@@ -1135,6 +1190,7 @@ var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
 		column.IP{Name: "ip-col"},
 		column.Headers{Name: "headers-col"},
 		column.Body{Name: "body-col"},
+		column.Path{Name: "path-col", Path: `foo.bar[0]`, DefaultValue: ptr.Ptr(""), RawString: true},
 		column.Template{Name: "template-col", Template: column.TemplateConfig{Language: "jsonnet", Content: `body.foo + "-" + body.bar`}},
 	})
 })
@@ -1155,6 +1211,18 @@ var TableColumn = Type("TableColumn", func() {
 	Attribute("name", String, func() {
 		Description("Column name.")
 		Example("id-col")
+	})
+	Attribute("path", String, func() {
+		Description("Path to the value.")
+		Example("foo.bar[0]")
+	})
+	Attribute("defaultValue", String, func() {
+		Description("Fallback value if path doesn't exist.")
+		Example("1")
+	})
+	Attribute("rawString", Boolean, func() {
+		Description("Set to true if path value should use raw string instead of json-encoded value.")
+		Example(true)
 	})
 	Attribute("template", TableColumnTemplate, func() {
 		Description(`Template mapping details. Only for "type" = "template".`)

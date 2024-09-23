@@ -232,6 +232,52 @@ type TestSourceResponseBody struct {
 	Tables []*TestResultTableResponseBody `form:"tables" json:"tables" xml:"tables"`
 }
 
+// DisableSourceResponseBody is the type of the "stream" service
+// "DisableSource" endpoint HTTP response body.
+type DisableSourceResponseBody struct {
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
+// EnableSourceResponseBody is the type of the "stream" service "EnableSource"
+// endpoint HTTP response body.
+type EnableSourceResponseBody struct {
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
 // CreateSinkResponseBody is the type of the "stream" service "CreateSink"
 // endpoint HTTP response body.
 type CreateSinkResponseBody struct {
@@ -370,6 +416,52 @@ type SinkStatisticsTotalResponseBody struct {
 // "SinkStatisticsFiles" endpoint HTTP response body.
 type SinkStatisticsFilesResponseBody struct {
 	Files []*SinkFileResponseBody `form:"files" json:"files" xml:"files"`
+}
+
+// DisableSinkResponseBody is the type of the "stream" service "DisableSink"
+// endpoint HTTP response body.
+type DisableSinkResponseBody struct {
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
+// EnableSinkResponseBody is the type of the "stream" service "EnableSink"
+// endpoint HTTP response body.
+type EnableSinkResponseBody struct {
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // GetTaskResponseBody is the type of the "stream" service "GetTask" endpoint
@@ -516,6 +608,30 @@ type TestSourceStreamAPISourceNotFoundResponseBody struct {
 // "stream" service "SourceStatisticsClear" endpoint HTTP response body for the
 // "stream.api.sourceNotFound" error.
 type SourceStatisticsClearStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DisableSourceStreamAPISourceNotFoundResponseBody is the type of the "stream"
+// service "DisableSource" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type DisableSourceStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EnableSourceStreamAPISourceNotFoundResponseBody is the type of the "stream"
+// service "EnableSource" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type EnableSourceStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -776,6 +892,54 @@ type SinkStatisticsClearStreamAPISinkNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// DisableSinkStreamAPISourceNotFoundResponseBody is the type of the "stream"
+// service "DisableSink" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type DisableSinkStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DisableSinkStreamAPISinkNotFoundResponseBody is the type of the "stream"
+// service "DisableSink" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type DisableSinkStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EnableSinkStreamAPISourceNotFoundResponseBody is the type of the "stream"
+// service "EnableSink" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type EnableSinkStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EnableSinkStreamAPISinkNotFoundResponseBody is the type of the "stream"
+// service "EnableSink" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type EnableSinkStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GetTaskStreamAPITaskNotFoundResponseBody is the type of the "stream" service
 // "GetTask" endpoint HTTP response body for the "stream.api.taskNotFound"
 // error.
@@ -956,6 +1120,13 @@ type TableColumnResponseBody struct {
 	Type column.Type `form:"type" json:"type" xml:"type"`
 	// Column name.
 	Name string `form:"name" json:"name" xml:"name"`
+	// Path to the value.
+	Path *string `form:"path,omitempty" json:"path,omitempty" xml:"path,omitempty"`
+	// Fallback value if path doesn't exist.
+	DefaultValue *string `form:"defaultValue,omitempty" json:"defaultValue,omitempty" xml:"defaultValue,omitempty"`
+	// Set to true if path value should use raw string instead of json-encoded
+	// value.
+	RawString *bool `form:"rawString,omitempty" json:"rawString,omitempty" xml:"rawString,omitempty"`
 	// Template mapping details. Only for "type" = "template".
 	Template *TableColumnTemplateResponseBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
 }
@@ -1103,6 +1274,13 @@ type TableColumnRequestBody struct {
 	Type *column.Type `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Column name.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Path to the value.
+	Path *string `form:"path,omitempty" json:"path,omitempty" xml:"path,omitempty"`
+	// Fallback value if path doesn't exist.
+	DefaultValue *string `form:"defaultValue,omitempty" json:"defaultValue,omitempty" xml:"defaultValue,omitempty"`
+	// Set to true if path value should use raw string instead of json-encoded
+	// value.
+	RawString *bool `form:"rawString,omitempty" json:"rawString,omitempty" xml:"rawString,omitempty"`
 	// Template mapping details. Only for "type" = "template".
 	Template *TableColumnTemplateRequestBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
 }
@@ -1297,6 +1475,48 @@ func NewTestSourceResponseBody(res *stream.TestResult) *TestSourceResponseBody {
 	return body
 }
 
+// NewDisableSourceResponseBody builds the HTTP response body from the result
+// of the "DisableSource" endpoint of the "stream" service.
+func NewDisableSourceResponseBody(res *stream.Task) *DisableSourceResponseBody {
+	body := &DisableSourceResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
+// NewEnableSourceResponseBody builds the HTTP response body from the result of
+// the "EnableSource" endpoint of the "stream" service.
+func NewEnableSourceResponseBody(res *stream.Task) *EnableSourceResponseBody {
+	body := &EnableSourceResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
 // NewCreateSinkResponseBody builds the HTTP response body from the result of
 // the "CreateSink" endpoint of the "stream" service.
 func NewCreateSinkResponseBody(res *stream.Task) *CreateSinkResponseBody {
@@ -1474,6 +1694,48 @@ func NewSinkStatisticsFilesResponseBody(res *stream.SinkStatisticsFilesResult) *
 	return body
 }
 
+// NewDisableSinkResponseBody builds the HTTP response body from the result of
+// the "DisableSink" endpoint of the "stream" service.
+func NewDisableSinkResponseBody(res *stream.Task) *DisableSinkResponseBody {
+	body := &DisableSinkResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
+// NewEnableSinkResponseBody builds the HTTP response body from the result of
+// the "EnableSink" endpoint of the "stream" service.
+func NewEnableSinkResponseBody(res *stream.Task) *EnableSinkResponseBody {
+	body := &EnableSinkResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
 // NewGetTaskResponseBody builds the HTTP response body from the result of the
 // "GetTask" endpoint of the "stream" service.
 func NewGetTaskResponseBody(res *stream.Task) *GetTaskResponseBody {
@@ -1625,6 +1887,28 @@ func NewTestSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) 
 // "stream" service.
 func NewSourceStatisticsClearStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *SourceStatisticsClearStreamAPISourceNotFoundResponseBody {
 	body := &SourceStatisticsClearStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewDisableSourceStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "DisableSource" endpoint of the "stream" service.
+func NewDisableSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *DisableSourceStreamAPISourceNotFoundResponseBody {
+	body := &DisableSourceStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewEnableSourceStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "EnableSource" endpoint of the "stream" service.
+func NewEnableSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *EnableSourceStreamAPISourceNotFoundResponseBody {
+	body := &EnableSourceStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -1875,6 +2159,50 @@ func NewSinkStatisticsClearStreamAPISinkNotFoundResponseBody(res *stream.Generic
 	return body
 }
 
+// NewDisableSinkStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "DisableSink" endpoint of the "stream" service.
+func NewDisableSinkStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *DisableSinkStreamAPISourceNotFoundResponseBody {
+	body := &DisableSinkStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewDisableSinkStreamAPISinkNotFoundResponseBody builds the HTTP response
+// body from the result of the "DisableSink" endpoint of the "stream" service.
+func NewDisableSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *DisableSinkStreamAPISinkNotFoundResponseBody {
+	body := &DisableSinkStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewEnableSinkStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "EnableSink" endpoint of the "stream" service.
+func NewEnableSinkStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *EnableSinkStreamAPISourceNotFoundResponseBody {
+	body := &EnableSinkStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewEnableSinkStreamAPISinkNotFoundResponseBody builds the HTTP response body
+// from the result of the "EnableSink" endpoint of the "stream" service.
+func NewEnableSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *EnableSinkStreamAPISinkNotFoundResponseBody {
+	body := &EnableSinkStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewGetTaskStreamAPITaskNotFoundResponseBody builds the HTTP response body
 // from the result of the "GetTask" endpoint of the "stream" service.
 func NewGetTaskStreamAPITaskNotFoundResponseBody(res *stream.GenericError) *GetTaskStreamAPITaskNotFoundResponseBody {
@@ -1996,6 +2324,27 @@ func NewTestSourcePayload(branchID string, sourceID string, storageAPIToken stri
 // SourceStatisticsClear endpoint payload.
 func NewSourceStatisticsClearPayload(branchID string, sourceID string, storageAPIToken string) *stream.SourceStatisticsClearPayload {
 	v := &stream.SourceStatisticsClearPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewDisableSourcePayload builds a stream service DisableSource endpoint
+// payload.
+func NewDisableSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.DisableSourcePayload {
+	v := &stream.DisableSourcePayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewEnableSourcePayload builds a stream service EnableSource endpoint payload.
+func NewEnableSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.EnableSourcePayload {
+	v := &stream.EnableSourcePayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.StorageAPIToken = storageAPIToken
@@ -2140,6 +2489,28 @@ func NewSinkStatisticsFilesPayload(branchID string, sourceID string, sinkID stri
 // endpoint payload.
 func NewSinkStatisticsClearPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.SinkStatisticsClearPayload {
 	v := &stream.SinkStatisticsClearPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.SinkID = stream.SinkID(sinkID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewDisableSinkPayload builds a stream service DisableSink endpoint payload.
+func NewDisableSinkPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.DisableSinkPayload {
+	v := &stream.DisableSinkPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.SinkID = stream.SinkID(sinkID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewEnableSinkPayload builds a stream service EnableSink endpoint payload.
+func NewEnableSinkPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.EnableSinkPayload {
+	v := &stream.EnableSinkPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.SinkID = stream.SinkID(sinkID)

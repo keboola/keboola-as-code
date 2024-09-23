@@ -1,0 +1,5 @@
+{
+  "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source/sinks/my-sink/disable",
+  "method": "PUT",
+  "headers": {}
+}

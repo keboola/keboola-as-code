@@ -1,0 +1,17 @@
+{
+  "taskId": "api.enable.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "type": "api.enable.source",
+  "url": "https://stream.keboola.local/v1/tasks/api.enable.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "status": "success",
+  "isFinished": true,
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "duration": %d,
+  "result": "Source has been enabled successfully.",
+  "outputs": {
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source",
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "sourceId": "my-source"
+  }
+}

@@ -72,6 +72,16 @@ func SourceStatisticsClearStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/statistics/clear", branchID, sourceID)
 }
 
+// DisableSourceStreamPath returns the URL path to the stream service DisableSource HTTP endpoint.
+func DisableSourceStreamPath(branchID string, sourceID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/disable", branchID, sourceID)
+}
+
+// EnableSourceStreamPath returns the URL path to the stream service EnableSource HTTP endpoint.
+func EnableSourceStreamPath(branchID string, sourceID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/enable", branchID, sourceID)
+}
+
 // CreateSinkStreamPath returns the URL path to the stream service CreateSink HTTP endpoint.
 func CreateSinkStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks", branchID, sourceID)
@@ -120,6 +130,16 @@ func SinkStatisticsFilesStreamPath(branchID string, sourceID string, sinkID stri
 // SinkStatisticsClearStreamPath returns the URL path to the stream service SinkStatisticsClear HTTP endpoint.
 func SinkStatisticsClearStreamPath(branchID string, sourceID string, sinkID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/statistics/clear", branchID, sourceID, sinkID)
+}
+
+// DisableSinkStreamPath returns the URL path to the stream service DisableSink HTTP endpoint.
+func DisableSinkStreamPath(branchID string, sourceID string, sinkID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/disable", branchID, sourceID, sinkID)
+}
+
+// EnableSinkStreamPath returns the URL path to the stream service EnableSink HTTP endpoint.
+func EnableSinkStreamPath(branchID string, sourceID string, sinkID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/enable", branchID, sourceID, sinkID)
 }
 
 // GetTaskStreamPath returns the URL path to the stream service GetTask HTTP endpoint.
