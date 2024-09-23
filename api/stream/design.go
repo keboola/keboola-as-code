@@ -296,7 +296,7 @@ var _ = Service("stream", func() {
 		Description("Clears all statistics of the source.")
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			POST("/branches/{branchId}/sources/{sourceId}/statistics/clear")
+			DELETE("/branches/{branchId}/sources/{sourceId}/statistics/clear")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -309,7 +309,7 @@ var _ = Service("stream", func() {
 		Result(Task)
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			POST("/branches/{branchId}/sources/{sourceId}/disable")
+			PUT("/branches/{branchId}/sources/{sourceId}/disable")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
 			SourceNotFoundError()
@@ -322,7 +322,7 @@ var _ = Service("stream", func() {
 		Result(Task)
 		Payload(GetSourceRequest)
 		HTTP(func() {
-			POST("/branches/{branchId}/sources/{sourceId}/enable")
+			PUT("/branches/{branchId}/sources/{sourceId}/enable")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
 			SourceNotFoundError()
@@ -465,7 +465,7 @@ var _ = Service("stream", func() {
 		Description("Clears all statistics of the sink.")
 		Payload(GetSinkRequest)
 		HTTP(func() {
-			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear")
+			DELETE("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -479,7 +479,7 @@ var _ = Service("stream", func() {
 		Result(Task)
 		Payload(GetSinkRequest)
 		HTTP(func() {
-			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable")
+			PUT("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
 			SourceNotFoundError()
@@ -493,7 +493,7 @@ var _ = Service("stream", func() {
 		Result(Task)
 		Payload(GetSinkRequest)
 		HTTP(func() {
-			POST("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable")
+			PUT("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable")
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
 			SourceNotFoundError()

@@ -1,5 +1,5 @@
 {
   "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source/enable",
-  "method": "POST",
+  "method": "PUT",
   "headers": {}
 }
