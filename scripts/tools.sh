@@ -61,7 +61,7 @@ fi
 # air - code changes watcher
 if ! command -v air &> /dev/null
 then
-  go install github.com/air-verse/air@latest
+  go install github.com/air-verse/air@v1.52.3
 fi
 
 # godoc
