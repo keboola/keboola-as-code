@@ -49,13 +49,13 @@ func newPipelineRef(sink *sinkData, logger log.Logger, wg *sync.WaitGroup, plugi
 }
 
 func (r *pipelineRef) writeRecord(c recordctx.Context) (pipeline.WriteResult, error) {
-	if err := r.ensureOpened(c.Ctx(), c.Timestamp()); err != nil {
+	if err := r.ensureOpened(c); err != nil {
 		return pipeline.WriteResult{Status: pipeline.RecordError}, err
 	}
 	return r.pipeline.WriteRecord(c)
 }
 
-func (r *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) error {
+func (r *pipelineRef) ensureOpened(c recordctx.Context) error {
 	// Fast check
 	r.lock.RLock()
 	opened := r.pipeline != nil
@@ -69,9 +69,9 @@ func (r *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) err
 	defer r.lock.Unlock()
 
 	// Add telemetry attributes
-	ctx = ctxattr.ContextWith(ctx, r.sinkKey.Telemetry()...)
+	ctx := ctxattr.ContextWith(c.Ctx(), r.sinkKey.Telemetry()...)
 
-	if r.pipeline == nil && (r.openError == nil || timestamp.After(r.openRetryAfter)) {
+	if r.pipeline == nil && (r.openError == nil || c.Timestamp().After(r.openRetryAfter)) {
 		var err error
 
 		// Use plugin system to create the pipeline
@@ -84,7 +84,7 @@ func (r *pipelineRef) ensureOpened(ctx context.Context, timestamp time.Time) err
 				r.openBackoff = newOpenPipelineBackoff()
 			}
 			delay := r.openBackoff.NextBackOff()
-			r.openRetryAfter = timestamp.Add(delay)
+			r.openRetryAfter = c.Timestamp().Add(delay)
 			r.openError = errors.Errorf("cannot open sink pipeline: %w, next attempt after %s", err, utctime.From(r.openRetryAfter).String())
 		} else {
 			r.openError = nil
