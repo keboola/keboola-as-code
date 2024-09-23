@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -19,7 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
@@ -485,13 +483,4 @@ func (ts *testState) sendRecords(t *testing.T, ctx context.Context, start, n int
 func (ts *testState) logSection(t *testing.T, section string) {
 	t.Helper()
 	fmt.Printf("\n\n########## %s\n\n", section) // nolint:forbidigo
-}
-
-func formatHTTPSourceURL(t *testing.T, baseURL string, entity definition.Source) string {
-	t.Helper()
-	u, err := url.Parse(baseURL)
-	require.NoError(t, err)
-	return u.
-		JoinPath("stream", entity.ProjectID.String(), entity.SourceID.String(), entity.HTTP.Secret).
-		String()
 }

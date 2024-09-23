@@ -1,6 +1,8 @@
 package definition
 
 import (
+	"net/url"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 )
@@ -21,4 +23,13 @@ type Source struct {
 	// Source type specific fields
 
 	HTTP *HTTPSource `json:"http,omitempty" validate:"required_if=Type http"`
+}
+
+func (s *Source) FormatHTTPSourceURL(httpSourcePublicURL string) (string, error) {
+	u, err := url.Parse(httpSourcePublicURL)
+	if err != nil {
+		return "", err
+	}
+
+	return u.JoinPath("stream", s.ProjectID.String(), s.SourceID.String(), s.HTTP.Secret).String(), nil
 }
