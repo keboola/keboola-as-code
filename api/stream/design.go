@@ -23,6 +23,7 @@ import (
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
@@ -1189,6 +1190,7 @@ var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
 		column.IP{Name: "ip-col"},
 		column.Headers{Name: "headers-col"},
 		column.Body{Name: "body-col"},
+		column.Path{Name: "path-col", Path: `foo.bar[0]`, DefaultValue: ptr.Ptr(""), RawString: true},
 		column.Template{Name: "template-col", Template: column.TemplateConfig{Language: "jsonnet", Content: `body.foo + "-" + body.bar`}},
 	})
 })
@@ -1209,6 +1211,18 @@ var TableColumn = Type("TableColumn", func() {
 	Attribute("name", String, func() {
 		Description("Column name.")
 		Example("id-col")
+	})
+	Attribute("path", String, func() {
+		Description("Path to the value.")
+		Example("foo.bar[0]")
+	})
+	Attribute("defaultValue", String, func() {
+		Description("Fallback value if path doesn't exist.")
+		Example("1")
+	})
+	Attribute("rawString", Boolean, func() {
+		Description("Set to true if path value should use raw string instead of json-encoded value.")
+		Example(true)
 	})
 	Attribute("template", TableColumnTemplate, func() {
 		Description(`Template mapping details. Only for "type" = "template".`)

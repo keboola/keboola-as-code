@@ -2704,8 +2704,11 @@ func unmarshalTableMappingRequestBodyToStreamTableMapping(v *TableMappingRequest
 // *stream.TableColumn from a value of type *TableColumnRequestBody.
 func unmarshalTableColumnRequestBodyToStreamTableColumn(v *TableColumnRequestBody) *stream.TableColumn {
 	res := &stream.TableColumn{
-		Type: *v.Type,
-		Name: *v.Name,
+		Type:         *v.Type,
+		Name:         *v.Name,
+		Path:         v.Path,
+		DefaultValue: v.DefaultValue,
+		RawString:    v.RawString,
 	}
 	if v.PrimaryKey != nil {
 		res.PrimaryKey = *v.PrimaryKey
@@ -2772,9 +2775,12 @@ func marshalStreamTableMappingToTableMappingResponseBody(v *stream.TableMapping)
 // *TableColumnResponseBody from a value of type *stream.TableColumn.
 func marshalStreamTableColumnToTableColumnResponseBody(v *stream.TableColumn) *TableColumnResponseBody {
 	res := &TableColumnResponseBody{
-		PrimaryKey: v.PrimaryKey,
-		Type:       v.Type,
-		Name:       v.Name,
+		PrimaryKey:   v.PrimaryKey,
+		Type:         v.Type,
+		Name:         v.Name,
+		Path:         v.Path,
+		DefaultValue: v.DefaultValue,
+		RawString:    v.RawString,
 	}
 	{
 		var zero bool

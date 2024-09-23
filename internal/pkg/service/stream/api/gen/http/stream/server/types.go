@@ -1120,6 +1120,13 @@ type TableColumnResponseBody struct {
 	Type column.Type `form:"type" json:"type" xml:"type"`
 	// Column name.
 	Name string `form:"name" json:"name" xml:"name"`
+	// Path to the value.
+	Path *string `form:"path,omitempty" json:"path,omitempty" xml:"path,omitempty"`
+	// Fallback value if path doesn't exist.
+	DefaultValue *string `form:"defaultValue,omitempty" json:"defaultValue,omitempty" xml:"defaultValue,omitempty"`
+	// Set to true if path value should use raw string instead of json-encoded
+	// value.
+	RawString *bool `form:"rawString,omitempty" json:"rawString,omitempty" xml:"rawString,omitempty"`
 	// Template mapping details. Only for "type" = "template".
 	Template *TableColumnTemplateResponseBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
 }
@@ -1267,6 +1274,13 @@ type TableColumnRequestBody struct {
 	Type *column.Type `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Column name.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Path to the value.
+	Path *string `form:"path,omitempty" json:"path,omitempty" xml:"path,omitempty"`
+	// Fallback value if path doesn't exist.
+	DefaultValue *string `form:"defaultValue,omitempty" json:"defaultValue,omitempty" xml:"defaultValue,omitempty"`
+	// Set to true if path value should use raw string instead of json-encoded
+	// value.
+	RawString *bool `form:"rawString,omitempty" json:"rawString,omitempty" xml:"rawString,omitempty"`
 	// Template mapping details. Only for "type" = "template".
 	Template *TableColumnTemplateRequestBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
 }
