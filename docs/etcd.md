@@ -385,3 +385,21 @@ The `etcdop` framework provides a high-level API for the etcd Lease API:
 - Start with the [NewSessionBuilder](../internal/pkg/service/common/etcdop/session.go) method.
 - The `NewMutex` method returns a `Mutex`, which combines a distributed and local lock.
   - So you can use it as a replacement for a standard `sync.Mutex`, but it acquires the lock in the entire cluster.
+
+### Test Helpers
+
+The `etcdhelper` package provides various utilities for unit tests:
+- **Dump keys:**
+  - `DumpAllKeys(ctx context.Context, client etcd.KV) (keys []string, err error)`
+- **Assert keys:**
+  - `AssertKeys(t assert.TestingT, client etcd.KV, expectedKeys []string, ops ...AssertOption)`
+- **Dump keys and values:**
+  - `DumpAll(ctx context.Context, client etcd.KV) (out []KV, err error)`
+  - `DumpAllToString(ctx context.Context, client etcd.KV) (string, error)`
+- **Assert keys and values:**
+  - `AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...AssertOption)`
+  - `AssertKVsString(t assert.TestingT, client etcd.KV, expected string, ops ...AssertOption) bool`
+  - `AssertKVsFromFile(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...AssertOption) bool`
+    - This is the preferred way.
+    - The actual state is dumped to the `.out` directory in the test directory.
+    - You can use `wildcards`, see the `wildcards` package.
