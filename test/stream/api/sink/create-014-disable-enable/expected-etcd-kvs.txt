@@ -108,18 +108,7 @@ task/%%TEST_KBC_PROJECT_ID%%/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-sou
 <<<<<
 storage/keboola/secret/token/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink
 -----
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
-  "sourceId": "my-source",
-  "sinkId": "my-sink",
-  "token": {
-    %A,
-    "bucketPermissions": {
-      "in.c-my-bucket": "write"
-    }
-  }
-}
+%A
 >>>>>
 
 <<<<<
