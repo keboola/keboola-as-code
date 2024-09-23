@@ -191,6 +191,20 @@ func (v Key) PutIfNotExists(client etcd.KV, val string, opts ...etcd.OpOption) o
 }
 ```
 
+#### Retries
+
+**`etcd` client retries:**
+  - The `etcd` client performs some [retries](https://github.com/etcd-io/etcd/blob/main/client/v3/retry.go) by default.
+    - By default, only retries on immutable operations are performed.
+    - See [isSafeRetryImmutableRPC](https://github.com/etcd-io/etcd/blob/main/client/v3/retry.go) for more details.
+- **`etcdop` framework retries:**
+  - In addition to the etcd client, the `etcdop` framework also performs retries on some mutable operations.
+    - For example, in our business logic, it is safe to retry a PUT operation.
+    - We don't mind if the operation is performed twice; there will be two historical revisions.
+    -  All operations are internally invoked by `DoWithRetry`.
+    - See [retry.go](../internal/pkg/service/common/etcdop/op/retry.go) for details.
+- **[AtomicOp](#atomicop) includes additional logical retries in the event of a collision.**
+
 ### Processors
 
 Processor provides callback registration for `WithResult[R]` and `TxnOp[R]` types.
