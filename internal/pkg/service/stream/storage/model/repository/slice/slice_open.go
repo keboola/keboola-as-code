@@ -14,7 +14,7 @@ func (r *Repository) openSlicesOnFileOpen() {
 	// This must be called after all OnFileOpen callbacks.
 	r.plugins.Collection().OnFileSave(func(ctx context.Context, now time.Time, original, file *model.File) error {
 		if original == nil {
-			op.AtomicOpFromCtx(ctx).AddFrom(r.openSlicesForFile(*file, now))
+			op.AtomicOpCtxFrom(ctx).AddFrom(r.openSlicesForFile(*file, now))
 		}
 		return nil
 	})

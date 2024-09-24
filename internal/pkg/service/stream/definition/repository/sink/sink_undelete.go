@@ -36,7 +36,7 @@ func (r *Repository) Undelete(k key.SinkKey, now time.Time, by definition.By) *o
 
 func (r *Repository) undeleteSinksOnSourceUndelete() {
 	r.plugins.Collection().OnSourceUndelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Source) error {
-		op.AtomicOpFromCtx(ctx).AddFrom(r.undeleteAllFrom(updated.SourceKey, now, by, false))
+		op.AtomicOpCtxFrom(ctx).AddFrom(r.undeleteAllFrom(updated.SourceKey, now, by, false))
 		return nil
 	})
 }

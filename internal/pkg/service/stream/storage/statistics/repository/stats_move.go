@@ -20,7 +20,7 @@ func (r *Repository) moveStatisticsOnSliceUpdate() {
 		fromLevel := original.State.Level()
 		toLevel := updated.State.Level()
 		if fromLevel != toLevel {
-			op.AtomicOpFromCtx(ctx).AddFrom(r.moveAll(updated.SliceKey, fromLevel, toLevel, func(value *statistics.Value) {
+			op.AtomicOpCtxFrom(ctx).AddFrom(r.moveAll(updated.SliceKey, fromLevel, toLevel, func(value *statistics.Value) {
 				// There is actually no additional compression, when uploading slice to the staging storage
 				if toLevel == model.LevelStaging {
 					value.StagingSize = value.CompressedSize

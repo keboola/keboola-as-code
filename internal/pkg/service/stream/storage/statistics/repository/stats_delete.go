@@ -13,7 +13,7 @@ import (
 
 func (r *Repository) rollupStatisticsOnFileDelete() {
 	r.plugins.Collection().OnFileDelete(func(ctx context.Context, now time.Time, original, updated *model.File) error {
-		op.AtomicOpFromCtx(ctx).AddFrom(r.deleteOrRollup(updated.FileKey))
+		op.AtomicOpCtxFrom(ctx).AddFrom(r.deleteOrRollup(updated.FileKey))
 		return nil
 	})
 }

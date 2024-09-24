@@ -10,7 +10,7 @@ import (
 
 func (r *Repository) closeSliceOnFileClose() {
 	r.plugins.Collection().OnFileClose(func(ctx context.Context, now time.Time, original, file *model.File) error {
-		op.AtomicOpFromCtx(ctx).AddFrom(r.closeSlicesInFile(*file, now))
+		op.AtomicOpCtxFrom(ctx).AddFrom(r.closeSlicesInFile(*file, now))
 		return nil
 	})
 }

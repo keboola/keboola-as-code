@@ -16,8 +16,8 @@ type ctxKey string
 
 type atomicOpCore = AtomicOpCore
 
-// ActualAtomicOp - aux struct, part of the context, to provide actual atomic operation to be extended.
-type ActualAtomicOp struct {
+// AtomicOpCtx - aux struct, part of the context, it provides actual atomic operation to be extended.
+type AtomicOpCtx struct {
 	*atomicOpCore
 	*atomicOpStore
 	closed bool
@@ -27,15 +27,15 @@ type atomicOpStore struct {
 	store map[string]any
 }
 
-// AtomicOpFromCtx gets actual atomic operation from the context.
+// AtomicOpCtxFrom gets actual atomic operation from the context.
 //
 // It can be used to add some additional READ operations based on result from a previous READ operation via *AtomicOpCore methods.
 // See AtomicOp.Do method and TestAtomicFromCtx_Complex for details.
 //
 // In addition, it is possible to set auxiliary key/value pairs that should be available in the atomic operation.
 // See atomicOpStore struct.
-func AtomicOpFromCtx(ctx context.Context) *ActualAtomicOp {
-	actualOp, ok := ctx.Value(actualAtomicOpCtxKey).(*ActualAtomicOp)
+func AtomicOpCtxFrom(ctx context.Context) *AtomicOpCtx {
+	actualOp, ok := ctx.Value(actualAtomicOpCtxKey).(*AtomicOpCtx)
 	if !ok {
 		panic(errors.New("no atomic operation found in the context"))
 	}
@@ -45,8 +45,8 @@ func AtomicOpFromCtx(ctx context.Context) *ActualAtomicOp {
 	return actualOp
 }
 
-func newActualAtomicOp(core *AtomicOpCore, store *atomicOpStore) *ActualAtomicOp {
-	return &ActualAtomicOp{
+func newAtomicOpCtx(core *AtomicOpCore, store *atomicOpStore) *AtomicOpCtx {
+	return &AtomicOpCtx{
 		atomicOpCore:  core,
 		atomicOpStore: store,
 		closed:        false,
@@ -57,7 +57,7 @@ func newAtomicOpStore() *atomicOpStore {
 	return &atomicOpStore{store: make(map[string]any)}
 }
 
-func (a *ActualAtomicOp) Core() *AtomicOpCore {
+func (a *AtomicOpCtx) Core() *AtomicOpCore {
 	return a.atomicOpCore
 }
 
@@ -69,6 +69,6 @@ func (s *atomicOpStore) Value(k fmt.Stringer) any {
 	return s.store[k.String()]
 }
 
-func (a *ActualAtomicOp) close() {
+func (a *AtomicOpCtx) close() {
 	a.closed = true
 }

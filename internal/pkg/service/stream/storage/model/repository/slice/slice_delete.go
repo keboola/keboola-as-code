@@ -10,7 +10,7 @@ import (
 
 func (r *Repository) deleteSlicesOnFileDelete() {
 	r.plugins.Collection().OnFileDelete(func(ctx context.Context, now time.Time, original, file *model.File) error {
-		op.AtomicOpFromCtx(ctx).AddFrom(r.deleteAll(file.FileKey, now))
+		op.AtomicOpCtxFrom(ctx).AddFrom(r.deleteAll(file.FileKey, now))
 		return nil
 	})
 }

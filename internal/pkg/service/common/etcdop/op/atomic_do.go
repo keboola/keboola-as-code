@@ -67,7 +67,7 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 		}
 
 		// Create a new empty container: for operations generated during the processing of the current level
-		nextLevel := newActualAtomicOp(currentLevel.newEmpty(), store)
+		nextLevel := newAtomicOpCtx(currentLevel.newEmpty(), store)
 
 		// Invoke current read level and merge generated partial write txn
 		ctx := context.WithValue(ctx, actualAtomicOpCtxKey, nextLevel)

@@ -13,7 +13,7 @@ import (
 func (r *Repository) closeFileOnSinkDeactivation() {
 	r.plugins.Collection().OnSinkDeactivation(func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
 		if r.plugins.IsSinkWithLocalStorage(sink.Type) {
-			op.AtomicOpFromCtx(ctx).AddFrom(r.closeFilesInSink(sink.SinkKey, now))
+			op.AtomicOpCtxFrom(ctx).AddFrom(r.closeFilesInSink(sink.SinkKey, now))
 		}
 		return nil
 	})

@@ -15,7 +15,7 @@ const (
 
 func (r *Repository) openStatisticsOnSliceOpen() {
 	r.plugins.Collection().OnSliceOpen(func(ctx context.Context, now time.Time, file model.File, slice *model.Slice) error {
-		op.AtomicOpFromCtx(ctx).AddFrom(r.openSlice(slice.SliceKey))
+		op.AtomicOpCtxFrom(ctx).AddFrom(r.openSlice(slice.SliceKey))
 		return nil
 	})
 }

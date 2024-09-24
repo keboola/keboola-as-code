@@ -37,7 +37,7 @@ func (r *Repository) Undelete(k key.SourceKey, now time.Time, by definition.By) 
 
 func (r *Repository) undeleteSourcesOnBranchUndelete() {
 	r.plugins.Collection().OnBranchUndelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) error {
-		op.AtomicOpFromCtx(ctx).AddFrom(r.undeleteAllFrom(updated.BranchKey, now, by, false))
+		op.AtomicOpCtxFrom(ctx).AddFrom(r.undeleteAllFrom(updated.BranchKey, now, by, false))
 		return nil
 	})
 }

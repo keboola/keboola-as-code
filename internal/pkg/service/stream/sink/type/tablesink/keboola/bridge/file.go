@@ -105,7 +105,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedA
 		Columns:           sink.Table.Mapping.Columns.Names(),
 		UploadCredentials: *stagingFile,
 	}
-	op.AtomicOpFromCtx(ctx).Write(func(ctx context.Context) op.Op {
+	op.AtomicOpCtxFrom(ctx).Write(func(ctx context.Context) op.Op {
 		return b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile)
 	})
 
@@ -117,7 +117,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedA
 func (b *Bridge) deleteCredentialsOnFileDelete() {
 	b.plugins.Collection().OnFileDelete(func(ctx context.Context, now time.Time, original, file *model.File) error {
 		if b.isKeboolaStagingFile(file) {
-			op.AtomicOpFromCtx(ctx).Write(func(ctx context.Context) op.Op {
+			op.AtomicOpCtxFrom(ctx).Write(func(ctx context.Context) op.Op {
 				return b.schema.File().ForFile(file.FileKey).Delete(b.client)
 			})
 		}
