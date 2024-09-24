@@ -142,10 +142,10 @@ func (s *NetworkFileServer) Open(ctx context.Context, req *pb.OpenRequest) (*pb.
 	return &pb.OpenResponse{FileId: fileID}, nil
 }
 
-func (s *NetworkFileServer) WaitForServerTermination(req *pb.WaitForServerTerminationRequest, stream pb.NetworkFile_WaitForServerTerminationServer) error {
+func (s *NetworkFileServer) KeepAliveStream(req *pb.KeepAliveStreamRequest, stream pb.NetworkFile_KeepAliveStreamServer) error {
 	select {
 	case <-s.terminating:
-		return stream.Send(&pb.ServerIsTerminatingResponse{})
+		return stream.Send(&pb.KeepAliveStreamResponse{})
 
 	case <-stream.Context().Done():
 		s.lock.Lock()
@@ -219,7 +219,7 @@ func (s *NetworkFileServer) isTerminating() bool {
 
 func (s *NetworkFileServer) terminate(ctx context.Context) {
 	// Prevent opening of a new writer, see Open method.
-	// It also notifies source nodes about server termination, see WaitForServerTermination method.
+	// It also notifies source nodes about server termination, see KeepAliveStream method.
 	close(s.terminating)
 
 	// Notified source nodes should close their pipelines, and finally the network file client, see Close method.

@@ -69,7 +69,7 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string
 			"name": [
 				{
 					"service": "pb.NetworkFile",
-					"method": "WaitForServerTermination"
+					"method": "KeepAliveStream"
 				}
 			],
 			"timeout": null
@@ -106,7 +106,7 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string
 
 	// Listen from termination notifications from the network file server side
 	// In order for the server to contact the client, we must use a stream.
-	termStream, err := f.rpc.WaitForServerTermination(context.WithoutCancel(ctx), &pb.WaitForServerTerminationRequest{FileId: f.fileID})
+	termStream, err := f.rpc.KeepAliveStream(context.WithoutCancel(ctx), &pb.KeepAliveStreamRequest{FileId: f.fileID})
 	if err != nil {
 		_ = clientConn.Close()
 		return nil, err
@@ -196,7 +196,7 @@ func (f *networkFile) Close(ctx context.Context) error {
 		return errors.New("network file client close error: already closed")
 	}
 
-	// Close WaitForServerTermination stream
+	// Close KeepAliveStream stream
 	f.cancel()
 
 	// Close remote network file
