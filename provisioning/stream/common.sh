@@ -68,6 +68,10 @@ export STREAM_STORAGE_COORDINATOR_CPU_SOFT_LIMIT="${STREAM_STORAGE_COORDINATOR_C
 export NAMESPACE="stream"
 ETCD_HELM_CHART_VERSION="10.2.4"
 
+kubectl delete -n $NAMESPACE statefulset/stream-storage-writer-reader
+kubectl delete pvc medium-001-stream-storage-writer-reader-0 -n $NAMESPACE
+kubectl delete pvc medium-001-stream-storage-writer-reader-1 -n $NAMESPACE
+
 # Common part of the deployment. Same for AWS/Azure/Local
 ./kubernetes/build.sh
 
