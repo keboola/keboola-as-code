@@ -142,13 +142,22 @@ func (s *NetworkFileServer) Open(ctx context.Context, req *pb.OpenRequest) (*pb.
 	return &pb.OpenResponse{FileId: fileID}, nil
 }
 
-func (s *NetworkFileServer) WaitForServerTermination(_ *pb.WaitForServerTerminationRequest, stream pb.NetworkFile_WaitForServerTerminationServer) error {
+func (s *NetworkFileServer) WaitForServerTermination(req *pb.WaitForServerTerminationRequest, stream pb.NetworkFile_WaitForServerTerminationServer) error {
 	select {
 	case <-s.terminating:
 		return stream.Send(&pb.ServerIsTerminatingResponse{})
 
 	case <-stream.Context().Done():
-		return nil
+		s.lock.Lock()
+		defer s.lock.Unlock()
+		w, ok := s.writers[req.FileId]
+		if !ok {
+			return nil
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		return w.Close(ctx)
 	}
 }
 

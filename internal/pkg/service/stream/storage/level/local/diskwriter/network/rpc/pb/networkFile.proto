@@ -24,6 +24,7 @@ message OpenResponse{
 }
 
 message WaitForServerTerminationRequest {
+  uint64 file_id = 1;
 }
 
 message ServerIsTerminatingResponse {
