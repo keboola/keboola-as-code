@@ -211,7 +211,7 @@ func (v Key) PutIfNotExists(client etcd.KV, val string, opts ...etcd.OpOption) o
 
 #### Retries
 
-**`etcd` client retries:**
+- **`etcd` client retries:**
   - The `etcd` client performs some [retries](https://github.com/etcd-io/etcd/blob/main/client/v3/retry.go) by default.
     - By default, only retries on immutable operations are performed.
     - See [isSafeRetryImmutableRPC](https://github.com/etcd-io/etcd/blob/main/client/v3/retry.go) for more details.
@@ -271,7 +271,7 @@ etcd provides two isolation levels on read:
 - [Linearizable Isolation](https://etcd.io/docs/v3.5/learning/api_guarantees/) - requires cluster consensus.
   - > Linearizability provides the illusion that each operation applied by concurrent processes takes effect instantaneously at some point between its invocation and its response.
   - > etcd ensures linearizability for all operations by default.
-  - > Linearizability comes with a cost, however, because linearized requests must go through the Raft consensus process.
+  - > Linearizability comes with a cost, however, because linearized requests must go through the [Raft](https://raft.github.io/) consensus process.
 - [Serializable Isolation](https://etcd.io/docs/v3.5/learning/api_guarantees/) - reads only from one node.
   - > To obtain lower latencies and higher throughput for read requests.
   - > It may access stale data with respect to quorum.
@@ -403,6 +403,33 @@ The `etcdop` framework provides a high-level API for the etcd Lease API:
 - Start with the [NewSessionBuilder](../internal/pkg/service/common/etcdop/session.go) method.
 - The `NewMutex` method returns a `Mutex`, which combines a distributed and local lock.
   - So you can use it as a replacement for a standard `sync.Mutex`, but it acquires the lock in the entire cluster.
+
+#### Examples
+
+A session with on session callback:
+```go
+sess, errCh := NewSessionBuilder().
+	WithGrantTimeout(1*time.Second).
+	WithTTLSeconds(15).
+	WithOnSession(func(session *concurrency.Session) error {
+		require.NotNil(t, session)
+		logger.Info(ctx, "----> new session")
+		return nil
+	}).
+	Start(ctx, wg, logger, client)
+require.NotNil(t, sess)
+require.NoError(t, <-errCh)
+```
+
+A session with locks:
+```go
+sess, errCh := NewSessionBuilder().Start(ctx, wg, logger, client)
+require.NotNil(t, sess)
+require.NoError(t, <-errCh)
+
+lock1 := sess.NewMutex("lock")
+lock2 := sess.NewMutex("lock")
+```
 
 ### Test Helpers
 
