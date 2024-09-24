@@ -120,13 +120,25 @@ The schema defines:
 
 Example of defining a typed prefix and key:
 ```go
+// Serde
 s := serde.NewJSON(validator.Validate)
-pfx1 := etcdop.NewTypedPrefix[model.Slice]("storage/slice", s)
-pfx2 := pfx1.Add("level").Add("local")
-key1 := pfx2.Key(slice1.Key())
-key2 := pfx2.Key(slice2.Key())
+
+// Prefixes
+allSlices := etcdop.NewTypedPrefix[model.Slice]("storage/slice", s)
+localSlices := pfx1.Add("level").Add("local")
+
+// Keys
+key1 := localSlices.Key(slice1.Key())
+key2 := localSlices.Key(slice2.Key())
+
+// Put keys
 require.NoError(t, key1.Put(slice1).Do(ctx).Err())
 require.NoError(t, key2.Put(slice2).Do(ctx).Err())
+
+// Get all from the prefix
+slices, err := allSlices.GetAll().Do(ctx).All()
+require.NoErr(t, err)
+require.Len(t, slices, 2)
 ```
 
 The above example is simple; see the `schema.go` files in the [Stream Service](../internal/pkg/service/stream) for more detailed examples.
