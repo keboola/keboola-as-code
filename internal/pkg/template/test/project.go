@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"io"
 	"strconv"
 
@@ -12,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	fixtures "github.com/keboola/keboola-as-code/internal/pkg/fixtures/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -148,7 +148,7 @@ func newTestDependencies(
 // This function creates files in memory for testing templates:
 // .keboola/manifest.json
 // main/description
-// main/meta.json
+// main/meta.json.
 func createEmptyBranch(ctx context.Context, prj *testproject.Project, branchID int) (filesystem.Fs, error) {
 	prjFS := aferofs.NewMemoryFs()
 	err := prjFS.WriteFile(ctx, filesystem.NewRawFile(".keboola/manifest.json", getManifest(prj, branchID)))
@@ -156,7 +156,7 @@ func createEmptyBranch(ctx context.Context, prj *testproject.Project, branchID i
 		return nil, err
 	}
 
-	err = prjFS.WriteFile(ctx, filesystem.NewRawFile("main/meta.json", fmt.Sprintf(`{"name": "Main","isDefault": true}`)))
+	err = prjFS.WriteFile(ctx, filesystem.NewRawFile("main/meta.json", `{"name": "Main","isDefault": true}`))
 	if err != nil {
 		return nil, err
 	}
