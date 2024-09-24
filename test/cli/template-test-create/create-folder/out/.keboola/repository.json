@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "author": {
+    "name": "Example Author",
+    "url": "https://example.com"
+  },
+  "templates": [
+    {
+      "id": "my-template",
+      "name": "My Template",
+      "description": "Full workflow to ...",
+      "path": "my-template",
+      "versions": [
+        {
+          "version": "0.0.1",
+          "description": "notes",
+          "stable": false,
+          "components": [
+            "keboola.ex-facebook"
+          ],
+          "path": "v0"
+        }
+      ]
+    }
+  ]
+}

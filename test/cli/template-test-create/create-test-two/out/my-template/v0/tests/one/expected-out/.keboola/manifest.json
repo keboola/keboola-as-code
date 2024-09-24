@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "project": {
+    "id": __PROJECT_ID__,
+    "apiHost": "__STORAGE_API_HOST__"
+  },
+  "allowTargetEnv": false,
+  "sortBy": "id",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}",
+    "dataAppConfig": "app/{component_id}/{config_name}"
+  },
+  "allowedBranches": [
+    "*"
+  ],
+  "ignoredComponents": [],
+  "templates": {
+    "repositories": [
+      {
+        "type": "dir",
+        "name": "keboola",
+        "url": "../repository",
+        "ref": "main"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": __MAIN_BRANCH_ID__,
+      "path": "main",
+      "metadata": {
+        "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"test\",\"templateId\":\"my-template\",\"repositoryName\":\"keboola\",\"version\":\"0.0.1\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
+      }
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": __MAIN_BRANCH_ID__,
+      "componentId": "ex-generic-v2",
+      "id": "%s",
+      "path": "extractor/ex-generic-v2/empty-instance",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"empty\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"ex-generic-v2-api-base-url\",\"key\":\"parameters.api.baseUrl\"}]",
+        "KBC.KAC.templates.instanceId": "%s",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template"
+      },
+      "rows": []
+    },
+    {
+      "branchId": __MAIN_BRANCH_ID__,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%s",
+      "path": "extractor/keboola.ex-db-mysql/with-rows",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"with-rows\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"ex-db-mysql-db-password\",\"key\":\"parameters.db.#password\"},{\"input\":\"ex-db-mysql-db-host\",\"key\":\"parameters.db.host\"}]",
+        "KBC.KAC.templates.instanceId": "%s",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"%s\",\"idInTemplate\":\"users\"}]",
+        "KBC.KAC.templates.rowsInputs": "[{\"rowId\":\"%s\",\"input\":\"ex-db-mysql-incremental\",\"key\":\"parameters.incremental\"}]",
+        "KBC.KAC.templates.templateId": "my-template"
+      },
+      "rows": [
+        {
+          "id": "%s",
+          "path": "rows/users"
+        }
+      ]
+    }
+  ]
+}
