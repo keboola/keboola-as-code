@@ -8,7 +8,7 @@ import "google/protobuf/timestamp.proto";
 
 service NetworkFile {
   rpc Open(OpenRequest) returns (OpenResponse) {}
-  rpc WaitForServerTermination(WaitForServerTerminationRequest) returns (stream ServerIsTerminatingResponse);
+  rpc KeepAliveStream(KeepAliveStreamRequest) returns (stream KeepAliveStreamResponse);
   rpc Write(WriteRequest) returns (WriteResponse) {}
   rpc Sync(SyncRequest) returns (SyncResponse) {}
   rpc Close(CloseRequest) returns (CloseResponse) {}
@@ -23,10 +23,11 @@ message OpenResponse{
   uint64 file_id = 1;
 }
 
-message WaitForServerTerminationRequest {
+message KeepAliveStreamRequest {
+  uint64 file_id = 1;
 }
 
-message ServerIsTerminatingResponse {
+message KeepAliveStreamResponse {
 }
 
 message WriteRequest {
