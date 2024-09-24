@@ -240,7 +240,7 @@ func (d *useTmplInputsDialog) askInput(ctx context.Context, inputDef *input.Inpu
 					return err
 				}
 
-				strValue := cast.ToString(value)
+				strValue := strings.ToUpper(cast.ToString(value))
 				if !regexpcache.MustCompile(`^[A-Z0-9\_]+$`).MatchString(strValue) {
 					return errors.Errorf(`the variable name "%s" is invalid, it can contain only uppercase letters, numbers and underscores`, strValue)
 				}
@@ -254,7 +254,7 @@ func (d *useTmplInputsDialog) askInput(ctx context.Context, inputDef *input.Inpu
 		}
 
 		value, _ := d.Ask(question)
-		envVar := fmt.Sprintf("KBC_SECRET_%s", value)
+		envVar := strings.ToUpper(fmt.Sprintf("KBC_SECRET_%s", value))
 		// Add the env var to the input as placeholder, that's the reason for the surrounding '##'
 		err := d.addInputValue(ctx, fmt.Sprintf("##%s##", envVar), inputDef, true)
 		if err != nil {
