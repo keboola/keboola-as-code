@@ -35,6 +35,13 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 
 	assert.Equal(t, tc.Slice.SliceKey, r.SliceKey())
 
+	// Wait for file open
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		tc.AssertLogs(`
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","project.id":"123","branch.id":"456","source.id":"my-source","sink.id":"my-sink","file.id":"2000-01-01T19:00:00.000Z","slice.id":"2000-01-01T20:00:00.000Z"}
+`)
+	}, 5*time.Second, 10*time.Millisecond)
+
 	assert.NoError(t, r.Close(context.Background()))
 	assert.Len(t, tc.Volume.Readers(), 0)
 
@@ -45,9 +52,6 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 {"level":"info","message":"opened volume"}
 {"level":"debug","message":"closing chain"}
 {"level":"debug","message":"chain closed"}
-`)
-		tc.AssertLogs(`
-{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","project.id":"123","branch.id":"456","source.id":"my-source","sink.id":"my-sink","file.id":"2000-01-01T19:00:00.000Z","slice.id":"2000-01-01T20:00:00.000Z"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
 }
