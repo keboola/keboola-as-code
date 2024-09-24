@@ -224,8 +224,12 @@ func (t *Template) ProjectsFilePath() string {
 func (t *Template) TestsDir(ctx context.Context) (filesystem.Fs, error) {
 	if t.testsDir == nil {
 		if !t.fs.IsDir(ctx, TestsDirectory) {
-			return nil, errors.Errorf(`directory "%s" not found`, TestsDirectory)
+			err := t.fs.Mkdir(ctx, TestsDirectory)
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		testDir, err := t.fs.SubDirFs(TestsDirectory)
 		if err == nil {
 			t.testsDir = testDir
