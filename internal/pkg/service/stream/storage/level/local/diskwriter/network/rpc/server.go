@@ -148,9 +148,10 @@ func (s *NetworkFileServer) KeepAliveStream(req *pb.KeepAliveStreamRequest, stre
 		return stream.Send(&pb.KeepAliveStreamResponse{})
 
 	case <-stream.Context().Done():
+		// The client is gone, remove reference for the writer, and do graceful close
 		s.lock.Lock()
-		defer s.lock.Unlock()
 		w, ok := s.writers[req.FileId]
+		s.lock.Unlock()
 		if !ok {
 			return nil
 		}
