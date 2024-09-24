@@ -133,6 +133,10 @@ The above example is simple; see the `schema.go` files in the [Stream Service](.
 
 For easier usage and more readable code, we usually define a `Schema` structure with helper methods, although this is not necessary.
 
+#### Repository
+
+Above the `scheme` layer, we use the `repository` layer, so etcd operations are not defined in random places, but in one place.
+
 ### Basic Operations
 
 The `etcdop` framework provides a high-level API for basic etcd operations such as PUT and GET.
