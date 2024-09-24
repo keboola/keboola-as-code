@@ -87,6 +87,8 @@ The `etcdop` package consists of the following sub-packages:
 The `serde` package provides encoding, decoding, and validation operations for any value stored in etcd.
 
 Entities are validated upon save, but also upon load.
+- We use [go-playground/validator](https://github.com/go-playground/validator).
+- There is also `serde.NoValidation` helper for unit tests.
 
 The `serde.Serde` is an argument of the `etcdop.NewTypedKey` and `etcdop.NewTypedPrefix` constructors.
 
