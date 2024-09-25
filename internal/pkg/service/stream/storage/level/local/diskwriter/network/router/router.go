@@ -135,7 +135,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 				})
 
 				// Update all affected pipelines
-				r.onSinksModification(ctx, sinks)
+				r.onSlicesModification(ctx, sinks)
 
 				// All changes up to the revision have been processed,
 				// pipelines have been closed.
@@ -178,8 +178,8 @@ func (r *Router) OpenPipeline(ctx context.Context, sinkKey key.SinkKey, onClose 
 	return p, nil
 }
 
-// onSinksModification updates sink pipelines when a sink slice has been opened/closed.
-func (r *Router) onSinksModification(ctx context.Context, modifiedSinks []key.SinkKey) {
+// onSlicesModification updates sink pipelines when a sink slice has been opened/closed.
+func (r *Router) onSlicesModification(ctx context.Context, modifiedSinks []key.SinkKey) {
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 
