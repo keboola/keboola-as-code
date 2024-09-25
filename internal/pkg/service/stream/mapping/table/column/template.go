@@ -8,6 +8,7 @@ const (
 type Template struct {
 	Name       string         `json:"name" validate:"required"`
 	PrimaryKey bool           `json:"primaryKey,omitempty"`
+	RawString  bool           `json:"rawString,omitempty"`
 	Template   TemplateConfig `json:"template"`
 }
 
@@ -26,4 +27,8 @@ func (v Template) ColumnName() string {
 
 func (v Template) IsPrimaryKey() bool {
 	return v.PrimaryKey
+}
+
+func (v Template) ReturnsRawString() bool {
+	return v.RawString
 }
