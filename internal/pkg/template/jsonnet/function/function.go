@@ -148,13 +148,6 @@ func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.Native
 		Name:   `SnowflakeWriterComponentId`,
 		Params: ast.Identifiers{},
 		Func: func(params []any) (any, error) {
-			// for _, b := range backend {
-			//	if b == project.BackendSnowflake {
-			//		if _, found := components.Get(SnowflakeWriterIDGCPS3); found {
-			//			return SnowflakeWriterIDGCPS3.String(), nil
-			//		}
-			//	}
-			//}
 			if _, found := components.Get(SnowflakeWriterIDAws); found {
 				return SnowflakeWriterIDAws.String(), nil
 			} else if _, found := components.Get(SnowflakeWriterIDAzure); found {
