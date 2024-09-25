@@ -20,6 +20,7 @@ import (
 	encodingCfg "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -27,6 +28,7 @@ import (
 // The SlicePipeline exists in a source node.
 type SlicePipeline struct {
 	logger      log.Logger
+	telemetry   telemetry.Telemetry
 	connections *connection.Manager
 	encoding    *encoding.Manager
 	slice       *SliceData
@@ -50,9 +52,10 @@ type SliceData struct {
 	LocalStorage localModel.Slice
 }
 
-func NewSlicePipeline(ctx context.Context, logger log.Logger, connections *connection.Manager, encoding *encoding.Manager, ready *readyNotifier, slice *SliceData, onClose func(ctx context.Context, cause string)) *SlicePipeline {
+func NewSlicePipeline(ctx context.Context, logger log.Logger, telemetry telemetry.Telemetry, connections *connection.Manager, encoding *encoding.Manager, ready *readyNotifier, slice *SliceData, onClose func(ctx context.Context, cause string)) *SlicePipeline {
 	p := &SlicePipeline{
 		logger:      logger.With(slice.SliceKey.Telemetry()...),
+		telemetry:   telemetry,
 		connections: connections,
 		encoding:    encoding,
 		slice:       slice,
@@ -171,7 +174,7 @@ func (p *SlicePipeline) tryOpen() error {
 
 	// Open remote RPC file
 	// The disk writer node can notify us of its termination. In that case, we have to gracefully close the pipeline, see Close method.
-	remoteFile, err := rpc.OpenNetworkFile(ctx, p.logger, p.connections.NodeID(), conn, p.slice.SliceKey, p.slice.LocalStorage, p.Close)
+	remoteFile, err := rpc.OpenNetworkFile(ctx, p.logger, p.telemetry, p.connections.NodeID(), conn, p.slice.SliceKey, p.slice.LocalStorage, p.Close)
 	if err != nil {
 		return errors.PrefixErrorf(err, "cannot open network file for new slice pipeline")
 	}

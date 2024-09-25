@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -18,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -32,7 +34,7 @@ type networkFile struct {
 	closed <-chan struct{}
 }
 
-func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string, conn *transport.ClientConnection, sliceKey model.SliceKey, slice localModel.Slice, onServerTermination func(ctx context.Context, cause string)) (encoding.NetworkOutput, error) {
+func OpenNetworkFile(ctx context.Context, logger log.Logger, telemetry telemetry.Telemetry, sourceNodeID string, conn *transport.ClientConnection, sliceKey model.SliceKey, slice localModel.Slice, onServerTermination func(ctx context.Context, cause string)) (encoding.NetworkOutput, error) {
 	logger = logger.WithComponent("rpc")
 
 	// Use transport layer with multiplexer for connection
@@ -84,6 +86,12 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, sourceNodeID string
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultServiceConfig(serviceConfig),
+		grpc.WithStatsHandler(
+			otelgrpc.NewClientHandler(
+				otelgrpc.WithMeterProvider(telemetry.MeterProvider()),
+				otelgrpc.WithTracerProvider(telemetry.TracerProvider()),
+			),
+		),
 	)
 	if err != nil {
 		return nil, err

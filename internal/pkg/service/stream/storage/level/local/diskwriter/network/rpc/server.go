@@ -8,6 +8,7 @@ import (
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
@@ -20,12 +21,14 @@ import (
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/registration"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type NetworkFileServer struct {
 	pb.UnimplementedNetworkFileServer
 
+	telemetry  telemetry.Telemetry
 	logger     log.Logger
 	volumes    *diskwriter.Volumes
 	volumesMap map[volume.ID]bool
@@ -39,6 +42,7 @@ type NetworkFileServer struct {
 
 type serverDependencies interface {
 	Logger() log.Logger
+	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
 	Volumes() *diskwriter.Volumes
 	EtcdClient() *etcd.Client
@@ -47,6 +51,7 @@ type serverDependencies interface {
 
 func StartNetworkFileServer(d serverDependencies, nodeID, hostname string, cfg local.Config) error {
 	f := &NetworkFileServer{
+		telemetry:   d.Telemetry(),
 		logger:      d.Logger().WithComponent("storage.node.writer.rpc"),
 		volumes:     d.Volumes(),
 		volumesMap:  make(map[volume.ID]bool),
@@ -105,6 +110,12 @@ func StartNetworkFileServer(d serverDependencies, nodeID, hostname string, cfg l
 func (s *NetworkFileServer) serve(listener net.Listener) error {
 	srv := grpc.NewServer(
 		grpc.SharedWriteBuffer(true),
+		grpc.StatsHandler(
+			otelgrpc.NewClientHandler(
+				otelgrpc.WithMeterProvider(s.telemetry.MeterProvider()),
+				otelgrpc.WithTracerProvider(s.telemetry.TracerProvider()),
+			),
+		),
 	)
 	pb.RegisterNetworkFileServer(srv, s)
 	return srv.Serve(listener)
