@@ -1,0 +1,6 @@
+{
+  "ex-db-mysql-db-host": "host",
+  "ex-db-mysql-db-password": "##KBC_SECRET_PASSWORD##",
+  "ex-db-mysql-incremental": false,
+  "ex-generic-v2-api-base-url": "https://jsonplaceholder.typicode.com"
+}

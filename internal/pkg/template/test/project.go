@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strconv"
 
@@ -10,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	fixtures "github.com/keboola/keboola-as-code/internal/pkg/fixtures/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -82,7 +84,7 @@ func PrepareProject(
 	}
 
 	// Load fixture with minimal project
-	prjFS, err := PrepareProjectFS(ctx, testPrj, branchID)
+	prjFS, err := createEmptyBranch(ctx, testPrj, branchID)
 	if err != nil {
 		unlockFn()
 		return nil, nil, nil, nil, err
@@ -141,4 +143,65 @@ func newTestDependencies(
 		PublicScope:  publicDeps,
 		ProjectScope: projectDeps,
 	}, nil
+}
+
+// This function creates files in memory for testing templates:
+// .keboola/manifest.json
+// main/description
+// main/meta.json.
+func createEmptyBranch(ctx context.Context, prj *testproject.Project, branchID int) (filesystem.Fs, error) {
+	prjFS := aferofs.NewMemoryFs()
+	err := prjFS.WriteFile(ctx, filesystem.NewRawFile(".keboola/manifest.json", getManifest(prj, branchID)))
+	if err != nil {
+		return nil, err
+	}
+
+	err = prjFS.WriteFile(ctx, filesystem.NewRawFile("main/meta.json", `{"name": "Main","isDefault": true}`))
+	if err != nil {
+		return nil, err
+	}
+
+	err = prjFS.WriteFile(ctx, filesystem.NewRawFile("main/description.md", ""))
+	if err != nil {
+		return nil, err
+	}
+	return prjFS, nil
+}
+
+func getManifest(prj *testproject.Project, branchID int) string {
+	return fmt.Sprintf(`{
+  "version": 2,
+  "project": {
+    "id": %d,
+    "apiHost": "%s"
+  },
+  "templates": {
+    "repositories": [
+      {
+        "type": "dir",
+        "name": "keboola",
+        "url": "../repository"
+      }
+    ]
+  },
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}",
+    "dataAppConfig": "app/{component_id}/{config_name}"
+  },
+  "branches": [
+    {
+      "id": %d,
+      "path": "main"
+    }
+  ],
+  "configurations": []
+}
+`, prj.ID(), prj.StorageAPIHost(), branchID)
 }
