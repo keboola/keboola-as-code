@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/httpsource"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/type/httpsource"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/readernode"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode"

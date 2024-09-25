@@ -1,6 +1,8 @@
 package source
 
-import "github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/httpsource"
+import (
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/type/httpsource"
+)
 
 type Config struct {
 	HTTP httpsource.Config `configKey:"http"`
