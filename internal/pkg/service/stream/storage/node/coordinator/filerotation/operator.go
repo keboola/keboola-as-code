@@ -44,6 +44,7 @@ type operator struct {
 	statisticsCache *statsCache.L1
 	distribution    *distribution.GroupNode
 	locks           *distlock.Provider
+	telemetry       telemetry.Telemetry
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
 	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
@@ -99,6 +100,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		storage:         d.StorageRepository(),
 		statisticsCache: d.StatisticsL1Cache(),
 		locks:           d.DistributedLockProvider(),
+		telemetry:       d.Telemetry(),
 		metrics:         node.NewMetrics(d.Telemetry().Meter()),
 	}
 
@@ -270,6 +272,9 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 }
 
 func (o *operator) checkFiles(ctx context.Context, wg *sync.WaitGroup) {
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.filerotation.checkFiles")
+	defer span.End(nil)
+
 	o.logger.Debugf(ctx, "checking files import conditions")
 
 	o.files.ForEach(func(_ model.FileKey, file *fileData) (stop bool) {
@@ -322,6 +327,11 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 
 func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	startTime := o.clock.Now()
+
+	var err error
+
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.filerotation.rotateFile")
+	defer span.End(&err)
 
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration())
 	defer cancel()
@@ -396,11 +406,16 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 }
 
 func (o *operator) closeFile(ctx context.Context, file *fileData) {
+	var err error
+
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.filerotation.closeFile")
+	defer span.End(&err)
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
 	defer cancel()
 
 	// Wait for all slices upload, get statistics
-	stats, opErr := o.waitForFileClosing(ctx, file)
+	stats, err := o.waitForFileClosing(ctx, file)
 
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
@@ -415,18 +430,18 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	defer unlock()
 
 	// Switch file to the importing state, if the waitForFileClosing has been successful
-	if opErr == nil {
+	if err == nil {
 		isEmpty := stats.Total.RecordsCount == 0
-		opErr = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), isEmpty).RequireLock(lock).Do(dbCtx).Err()
-		if opErr != nil {
-			opErr = errors.PrefixError(opErr, "cannot switch file to the importing state")
+		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), isEmpty).RequireLock(lock).Do(dbCtx).Err()
+		if err != nil {
+			err = errors.PrefixError(err, "cannot switch file to the importing state")
 		}
 	}
 
 	// If there is an error, increment retry delay
-	if opErr != nil {
-		o.logger.Error(dbCtx, opErr.Error())
-		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), opErr.Error()).RequireLock(lock).Do(ctx).ResultOrErr()
+	if err != nil {
+		o.logger.Error(dbCtx, err.Error())
+		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).ResultOrErr()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment file close retry: %s", rErr)
 			return
@@ -438,7 +453,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	// It takes a while to watch stream send the updated state back.
 	file.Processed = true
 
-	if opErr == nil {
+	if err == nil {
 		o.logger.Info(ctx, "closed file")
 	}
 }

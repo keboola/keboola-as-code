@@ -45,6 +45,7 @@ type operator struct {
 	distribution *distribution.GroupNode
 	locks        *distlock.Provider
 	plugins      *plugin.Plugins
+	telemetry    telemetry.Telemetry
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
 	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
@@ -96,6 +97,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		statistics: d.StatisticsL1Cache(),
 		locks:      d.DistributedLockProvider(),
 		plugins:    d.Plugins(),
+		telemetry:  d.Telemetry(),
 		metrics:    node.NewMetrics(d.Telemetry().Meter()),
 	}
 
@@ -223,6 +225,9 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 }
 
 func (o *operator) checkFiles(ctx context.Context, wg *sync.WaitGroup) {
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.fileimport.checkFiles")
+	defer span.End(nil)
+
 	o.logger.Debugf(ctx, "checking files in the importing state")
 
 	o.files.ForEach(func(_ model.FileKey, file *fileData) (stop bool) {
@@ -271,6 +276,11 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 
 func (o *operator) importFile(ctx context.Context, file *fileData) {
 	startTime := o.clock.Now()
+
+	var err error
+
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.fileimport.importFile")
+	defer span.End(&err)
 
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
 	defer cancel()
