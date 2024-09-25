@@ -144,6 +144,13 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	tableKey := keboola.TableKey{BranchID: keboolaFile.SinkKey.BranchID, TableID: keboolaFile.TableID}
 	fileKey := keboola.FileKey{BranchID: keboolaFile.SinkKey.BranchID, FileID: keboolaFile.UploadCredentials.FileID}
 
+	// Add context attributes
+	ctx = ctxattr.ContextWith(
+		ctx,
+		attribute.String("stagingFile.Name", keboolaFile.UploadCredentials.Name),
+		attribute.String("stagingFile.ID", fileKey.FileID.String()),
+	)
+
 	// Authorized API
 	api := b.publicAPI.WithToken(token.TokenString())
 
@@ -152,11 +159,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	if file.IsEmpty {
 		b.logger.Info(ctx, "empty file, skipped import, deleting empty staging file")
 		if err := api.DeleteFileRequest(fileKey).SendOrErr(ctx); err != nil {
-			attrs := []attribute.KeyValue{
-				attribute.String("stagingFile.Name", keboolaFile.UploadCredentials.Name),
-				attribute.String("stagingFile.ID", fileKey.FileID.String()),
-			}
-			b.logger.With(attrs...).Warnf(ctx, "cannot delete empty staging file: %s", err.Error())
+			b.logger.Warnf(ctx, "cannot delete empty staging file: %s", err.Error())
 		}
 		return nil
 	}
@@ -175,6 +178,8 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	// Check if job already exists
 	var job *keboola.StorageJob
 	if keboolaFile.StorageJobID != nil {
+		b.logger.With(attribute.String("job.id", keboolaFile.StorageJobID.String())).Infof(ctx, "storage job for file already exists")
+
 		job, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: *keboolaFile.StorageJobID}).Send(ctx)
 		if err != nil {
 			return err
@@ -190,7 +195,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 		opts := []keboola.LoadDataOption{
 			keboola.WithoutHeader(true),                     // the file is sliced, and without CSV header
 			keboola.WithColumnsHeaders(keboolaFile.Columns), // fail, if the table columns differs
-			keboola.WithIncrementalLoad(true),               // Append to file instead of overwritting
+			keboola.WithIncrementalLoad(true),               // Append to file instead of overwriting
 		}
 		job, err = api.LoadDataFromFileRequest(tableKey, fileKey, opts...).Send(ctx)
 		if err != nil {
@@ -199,6 +204,9 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 
 		// Save job ID to etcd
 		keboolaFile.StorageJobID = &job.ID
+
+		b.logger.With(attribute.String("job.id", keboolaFile.StorageJobID.String())).Infof(ctx, "created new storage job for file")
+
 		err = b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile).Do(ctx).Err()
 		if err != nil {
 			return err
