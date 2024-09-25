@@ -93,7 +93,14 @@ func (m *Mapper) newTableMappingResponse(entity table.Mapping) (out api.TableMap
 			PrimaryKey: input.IsPrimaryKey(),
 		}
 
+		if v, ok := input.(column.Path); ok {
+			output.Path = &v.Path
+			output.RawString = &v.RawString
+			output.DefaultValue = v.DefaultValue
+		}
+
 		if v, ok := input.(column.Template); ok {
+			output.RawString = &v.RawString
 			output.Template = &api.TableColumnTemplate{
 				Language: v.Template.Language,
 				Content:  v.Template.Content,

@@ -131,6 +131,18 @@ func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity ta
 			return table.Mapping{}, err
 		}
 
+		// Path column
+		if pathColumn, ok := columnEntity.(column.Path); ok {
+			if columnPayload.Path == nil {
+				return table.Mapping{}, svcerrors.NewBadRequestError(errors.Errorf(`column "%s" is missing path`, columnPayload.Name))
+			}
+
+			pathColumn.Path = *columnPayload.Path
+			pathColumn.RawString = columnPayload.RawString != nil && *columnPayload.RawString
+			pathColumn.DefaultValue = columnPayload.DefaultValue
+			columnEntity = pathColumn
+		}
+
 		// Template column
 		if tmplColumn, ok := columnEntity.(column.Template); ok {
 			if columnPayload.Template == nil {
@@ -143,6 +155,7 @@ func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity ta
 
 			tmplColumn.Template.Language = columnPayload.Template.Language
 			tmplColumn.Template.Content = columnPayload.Template.Content
+			tmplColumn.RawString = columnPayload.RawString != nil && *columnPayload.RawString
 			columnEntity = tmplColumn
 		}
 
