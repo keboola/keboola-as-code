@@ -164,10 +164,10 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	// Error when sending the event is not a fatal error
 	defer func() {
 		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
-		err = b.SendFileImportEvent(ctx, api, time.Since(start), &err, file.FileKey, stats)
+		err := b.SendFileImportEvent(ctx, api, time.Since(start), &err, file.FileKey, stats)
 		cancel()
 		if err != nil {
-			b.logger.Errorf(ctx, "unable to send file import event: %v", err)
+			b.logger.Warnf(ctx, "unable to send file import event: %v", err)
 			return
 		}
 	}()
