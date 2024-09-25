@@ -68,7 +68,15 @@ func (r *Renderer) CSVValue(c Column, ctx recordctx.Context) (any, error) {
 			return res, err
 		}
 
-		return strings.TrimRight(res, "\n"), nil
+		res = strings.TrimRight(res, "\n")
+		if c.RawString && res[0] == '"' {
+			var decoded string
+			if json.DecodeString(res, &decoded) == nil {
+				return decoded, nil
+			}
+		}
+
+		return res, nil
 	}
 
 	return "", errors.Errorf("unknown column type %T", c)

@@ -520,6 +520,26 @@ func TestRenderer_Template_Json_ArrayIndex(t *testing.T) {
 	assert.Equal(t, `"val3"`, val)
 }
 
+func TestRenderer_Template_Json_ArrayIndex_RawString(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Template{
+		Template: column.TemplateConfig{
+			Language: column.TemplateLanguageJsonnet,
+			Content:  "Body('key1[1].key3')",
+		},
+		RawString: true,
+	}
+
+	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.NoError(t, err)
+	assert.Equal(t, "val3", val)
+}
+
 func TestRenderer_Template_Json_Full(t *testing.T) {
 	t.Parallel()
 
