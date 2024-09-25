@@ -2372,7 +2372,7 @@ func TestAppProxyRouter(t *testing.T) {
 			appsAPI.Register(testDataApps(appURL, providers))
 
 			// Create proxy handler
-			handler := createProxyHandler(d)
+			handler := createProxyHandler(ctx, d)
 
 			// Create a test server for the proxy handler
 			proxySrv := httptest.NewUnstartedServer(handler)
@@ -2719,13 +2719,13 @@ func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL strin
 	return proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 }
 
-func createProxyHandler(d proxyDependencies.ServiceScope) http.Handler {
+func createProxyHandler(ctx context.Context, d proxyDependencies.ServiceScope) http.Handler {
 	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
 	logger.SetOutput(loggerWriter)
 	// Cannot separate errors from info because ooidcproxy will override its error writer with either
 	// the info writer or os.Stderr depending on Logging.ErrToInfo value whenever a new proxy instance is created.
 	logger.SetErrOutput(loggerWriter)
-	return proxy.NewHandler(d)
+	return proxy.NewHandler(ctx, d)
 }
 
 func createHTTPClient(t *testing.T, proxyURL *url.URL) *http.Client {

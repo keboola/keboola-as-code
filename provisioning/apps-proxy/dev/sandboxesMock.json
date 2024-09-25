@@ -2,7 +2,7 @@
   {
     "httpRequest": {
       "method": "GET",
-      "path": "/apps/app/proxy-config"
+      "path": "/apps/123/proxy-config"
     },
     "httpResponse": {
       "body": {

@@ -27,7 +27,7 @@ func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) erro
 	svc := service.New(d, cfg)
 
 	// Start HTTP server
-	return httpserver.Start(ctx, d, httpserver.Config{
+	return httpserver.New(ctx, d, httpserver.Config{
 		ListenAddress:     cfg.API.Listen,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIDPrefix,
@@ -64,5 +64,5 @@ func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) erro
 				c.Logger.Debugf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 			}
 		},
-	})
+	}).Start(ctx)
 }

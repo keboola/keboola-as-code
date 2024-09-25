@@ -67,7 +67,7 @@ func TestAppProxyHandler(t *testing.T) {
 	})
 
 	// Create proxy handler
-	handler := proxy.NewHandler(d)
+	handler := proxy.NewHandler(ctx, d)
 
 	// Get robots.txt
 	rec := httptest.NewRecorder()

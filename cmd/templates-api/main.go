@@ -119,7 +119,7 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 
 	// Start HTTP server
 	logger.Infof(ctx, "starting Templates API HTTP server, listen-address=%s", cfg.API.Listen)
-	err = httpserver.Start(ctx, apiScp, httpserver.Config{
+	err = httpserver.New(ctx, apiScp, httpserver.Config{
 		ListenAddress:     cfg.API.Listen,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
@@ -154,7 +154,7 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 				logger.Debugf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 			}
 		},
-	})
+	}).Start(ctx)
 	if err != nil {
 		return err
 	}
