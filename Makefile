@@ -7,6 +7,9 @@ tools:
 generate-model:
 	./scripts/generate-model.sh
 
+generate-appsproxy-api:
+	SERVICE_NAME=appsproxy bash ./scripts/generate-api.sh
+
 generate-templates-api:
 	SERVICE_NAME=templates bash ./scripts/generate-api.sh
 
