@@ -38,10 +38,11 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	// Error when sending the event is not a fatal error
 	defer func() {
 		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
-		err := b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.TokenString()), time.Since(start), &err, slice.SliceKey, stats)
+		// We do not want to return err when send upload slice fails
+		uErr := b.SendSliceUploadEvent(ctx, b.publicAPI.WithToken(token.TokenString()), time.Since(start), &err, slice.SliceKey, stats)
 		cancel()
-		if err != nil {
-			b.logger.Warnf(ctx, "unable to send slice upload event: %v", err)
+		if uErr != nil {
+			b.logger.Warnf(ctx, "unable to send slice upload event: %v", uErr)
 			return
 		}
 	}()
