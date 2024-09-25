@@ -490,7 +490,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "value": true,
     "defaultValue": true,
     "overwritten": false,
-    "protected": true
+    "protected": false
   },
   {
     "key": "storage.level.local.volume.assignment.count",

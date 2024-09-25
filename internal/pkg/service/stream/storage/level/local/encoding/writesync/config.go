@@ -36,7 +36,7 @@ type Config struct {
 	// Mode defines sync mode: more durable ModeDisk or faster ModeCache.
 	Mode Mode `json:"mode" configKey:"mode" validate:"required,oneof=disk cache" configUsage:"Sync mode: \"cache\" or \"disk\"."`
 	// Wait defines whether the operation should wait for sync.
-	Wait bool `json:"wait" configKey:"wait" configUsage:"Wait for sync to disk OS cache or to disk hardware, depending on the mode."`
+	Wait bool `json:"wait" configKey:"wait" configUsage:"Wait for sync to disk OS cache or to disk hardware, depending on the mode." modAllowed:"true"`
 	// CheckInterval defines how often BytesTrigger and IntervalTrigger will be checked.
 	// It is minimal interval between two syncs.
 	CheckInterval duration.Duration `json:"checkInterval,omitempty" configKey:"checkInterval" validate:"required,minDuration=1ms,maxDuration=30s" configUsage:"Minimal interval between syncs to disk."`
