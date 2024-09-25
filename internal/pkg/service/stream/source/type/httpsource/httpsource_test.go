@@ -23,7 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/httpsource"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/type/httpsource"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

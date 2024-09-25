@@ -21,7 +21,7 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/httpsource/dispatcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/dispatcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
