@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	sliceFileFlags = os.O_CREATE | os.O_WRONLY | os.O_APPEND
+	sliceFileFlags = os.O_CREATE | os.O_WRONLY
 	sliceFilePerm  = 0o640
 )
 
@@ -34,7 +34,18 @@ func FileOpenerFn(fn func(filePath string) (File, error)) FileOpener {
 type DefaultFileOpener struct{}
 
 func (DefaultFileOpener) OpenFile(filePath string) (File, error) {
-	return os.OpenFile(filePath, sliceFileFlags, sliceFilePerm)
+	f, err := os.OpenFile(filePath, sliceFileFlags, sliceFilePerm)
+	if err != nil {
+		return nil, err
+	}
+
+	// Windows does not support truncate of file in `os.O_APPEND` file mode
+	_, err = f.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
 }
 
 type fileOpenerFn struct {
