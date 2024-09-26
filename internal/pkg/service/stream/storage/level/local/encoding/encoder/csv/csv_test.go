@@ -96,7 +96,7 @@ func TestCSVWriterAboveLimit(t *testing.T) {
 			column.Body{Name: "body"},
 		},
 	}
-	csvEncoder, err := csv.NewEncoder(0, uint64(40*datasize.B), columns, io.Discard)
+	csvEncoder, err := csv.NewEncoder(0, 40*datasize.B, columns, io.Discard)
 	require.NoError(t, err)
 	record := recordctx.FromHTTP(
 		utctime.MustParse("2000-01-01T03:00:00.000Z").Time(),
@@ -110,7 +110,7 @@ func TestCSVWriterAboveLimit(t *testing.T) {
 		&http.Request{Body: io.NopCloser(strings.NewReader("foobartoomuch"))},
 	)
 	_, err = csvEncoder.WriteRecord(record)
-	assert.Equal(t, "too big csv row to be written", err.Error())
+	assert.Equal(t, "too big CSV row, column: \"body\", row limit: 40 B", err.Error())
 }
 
 func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, parallelWrite bool) *testcase.WriterTestCase {

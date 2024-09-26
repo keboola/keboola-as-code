@@ -16,7 +16,7 @@ type DefaultFactory struct{}
 func (DefaultFactory) NewEncoder(cfg Config, mapping any, out io.Writer) (Encoder, error) {
 	switch cfg.Type {
 	case TypeCSV:
-		return csv.NewEncoder(cfg.Concurrency, uint64(cfg.RowSizeLimit), mapping, out)
+		return csv.NewEncoder(cfg.Concurrency, cfg.RowSizeLimit, mapping, out)
 	default:
 		return nil, errors.Errorf(`unexpected encoder type "%s"`, cfg.Type)
 	}
