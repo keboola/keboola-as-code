@@ -77,23 +77,11 @@ func New(ctx context.Context, d dependencies.APIScope) (Service, error) {
 		d.Logger().Info(ctx, "shutdown done")
 	})
 
-	// Tasks cleanup
-	var init []<-chan error
+	// Start tasks cleanup
 	if s.config.TasksCleanup {
-		init = append(init, s.cleanup(ctx, wg)) // nolint: contextcheck
-	}
-
-	// Check initialization
-	errs := errors.NewMultiError()
-	for _, done := range init {
-		if err := <-done; err != nil {
-			errs.Append(err)
+		if err := task.StartCleaner(d, s.config.TasksCleanupInterval); err != nil {
+			return nil, err
 		}
-	}
-
-	// Stop on initialization error
-	if err := errs.ErrorOrNil(); err != nil {
-		return nil, err
 	}
 
 	return s, nil

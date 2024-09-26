@@ -12,10 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-const (
-	DefaultCleanupInterval = 1 * time.Hour
-)
-
 // Config of the Templates API.
 // See "configmap" package for more information.
 type Config struct {
@@ -51,7 +47,7 @@ func New() Config {
 		StorageAPIHost:       "",
 		Repositories:         DefaultRepositories(),
 		TasksCleanup:         true,
-		TasksCleanupInterval: DefaultCleanupInterval,
+		TasksCleanupInterval: 1 * time.Hour,
 	}
 }
 
