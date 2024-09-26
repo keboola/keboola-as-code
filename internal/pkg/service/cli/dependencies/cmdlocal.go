@@ -98,6 +98,10 @@ func (v *localCommandScope) Components() *model.ComponentsMap {
 }
 
 func (v *localCommandScope) Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error) {
+	return v.TemplateForTests(ctx, reference, "")
+}
+
+func (v *localCommandScope) TemplateForTests(ctx context.Context, reference model.TemplateRef, projectFilesPath string) (*template.Template, error) {
 	// Load repository
 	repo, err := v.templateRepository(ctx, reference.Repository(), loadRepositoryOp.OnlyForTemplate(reference))
 	if err != nil {
@@ -116,16 +120,16 @@ func (v *localCommandScope) Template(ctx context.Context, reference model.Templa
 		}
 	}
 	// Set TestProjectFile
-	var projectsFilePath string
-	if v.GlobalFlags().TestProjectsFile.Value != "" {
-		projectsFilePath = filepath.Join(workDir, v.GlobalFlags().TestProjectsFile.Value) // nolint:forbidigo
-		if !filepath.IsAbs(projectsFilePath) {                                            // nolint:forbidigo
-			return nil, errors.Errorf("invalid path to projects file: %q", projectsFilePath)
+	var path string
+	if projectFilesPath != "" {
+		path = filepath.Join(workDir, projectFilesPath) // nolint:forbidigo
+		if !filepath.IsAbs(path) {                      // nolint:forbidigo
+			return nil, errors.Errorf("invalid path to projects file: %q", path)
 		}
 	}
 
 	// Load template
-	return loadTemplateOp.Run(ctx, v, repo, reference, projectsFilePath)
+	return loadTemplateOp.Run(ctx, v, repo, reference, path)
 }
 
 func (v *localCommandScope) LocalProject(ctx context.Context, ignoreErrors bool) (*projectPkg.Project, bool, error) {
