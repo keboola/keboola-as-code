@@ -42,6 +42,7 @@ type operator struct {
 	statisticsCache *statsCache.L1
 	distribution    *distribution.GroupNode
 	locks           *distlock.Provider
+	telemetry       telemetry.Telemetry
 
 	// closeSyncer signals when no source node is using the slice.
 	closeSyncer *closesync.CoordinatorNode
@@ -90,6 +91,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		storage:         d.StorageRepository(),
 		statisticsCache: d.StatisticsL1Cache(),
 		locks:           d.DistributedLockProvider(),
+		telemetry:       d.Telemetry(),
 		metrics:         node.NewMetrics(d.Telemetry().Meter()),
 	}
 
@@ -204,6 +206,9 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 }
 
 func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.slicerotation.checkSlices")
+	defer span.End(nil)
+
 	o.logger.Debugf(ctx, "checking slices upload conditions")
 
 	o.slices.ForEach(func(_ model.SliceKey, slice *sliceData) (stop bool) {
@@ -252,6 +257,11 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 
 func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	startTime := o.clock.Now()
+
+	var err error
+
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.slicerotation.rotateSlice")
+	defer span.End(&err)
 
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceRotationTimeout.Duration())
 	defer cancel()
@@ -327,29 +337,34 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 }
 
 func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
+	var err error
+
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.slicerotation.closeSlice")
+	defer span.End(&err)
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
 	defer cancel()
 
 	// Wait for all slices upload, get statistics
-	stats, opErr := o.waitForSliceClosing(ctx, slice)
+	stats, err := o.waitForSliceClosing(ctx, slice)
 
 	// Update the entity, the ctx may be cancelled
 	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
 	defer dbCancel()
 
 	// Switch slice to the uploading state
-	if opErr == nil {
+	if err == nil {
 		isEmpty := stats.Total.RecordsCount == 0
-		opErr = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
-		if opErr != nil {
-			opErr = errors.PrefixError(opErr, "cannot switch slice to the uploading state")
+		err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
+		if err != nil {
+			err = errors.PrefixError(err, "cannot switch slice to the uploading state")
 		}
 	}
 
 	// If there is an error, increment retry delay
-	if opErr != nil {
-		o.logger.Error(dbCtx, opErr.Error())
-		sliceEntity, rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), opErr.Error()).Do(ctx).ResultOrErr()
+	if err != nil {
+		o.logger.Error(dbCtx, err.Error())
+		sliceEntity, rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).ResultOrErr()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", rErr)
 			return
@@ -362,7 +377,7 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	// It takes a while to watch stream send the updated state back.
 	slice.Processed = true
 
-	if opErr == nil {
+	if err == nil {
 		o.logger.Info(ctx, "closed slice")
 	}
 }

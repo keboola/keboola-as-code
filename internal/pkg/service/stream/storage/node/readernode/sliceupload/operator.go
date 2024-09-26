@@ -43,6 +43,7 @@ type operator struct {
 	storage    *storageRepo.Repository
 	definition *definitionRepo.Repository
 	plugins    *plugin.Plugins
+	telemetry  telemetry.Telemetry
 
 	slices *etcdop.MirrorMap[model.Slice, model.SliceKey, *sliceData]
 	sinks  *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
@@ -94,6 +95,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		statistics: d.StatisticsRepository(),
 		definition: d.DefinitionRepository(),
 		plugins:    d.Plugins(),
+		telemetry:  d.Telemetry(),
 		metrics:    node.NewMetrics(d.Telemetry().Meter()),
 	}
 
@@ -192,6 +194,9 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 }
 
 func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.sliceupload.checkSlices")
+	defer span.End(nil)
+
 	o.logger.Debugf(ctx, "checking slices in the uploading state")
 
 	o.slices.ForEach(func(_ model.SliceKey, data *sliceData) (stop bool) {
@@ -240,6 +245,11 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 
 func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 	startTime := o.clock.Now()
+
+	var err error
+
+	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.sliceupload.uploadSlice")
+	defer span.End(&err)
 
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
 	defer cancel()
