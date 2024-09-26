@@ -58,6 +58,9 @@ func testConfig(tb testing.TB, d dependencies.Mocked) config.Config {
 		cfg.Storage.Statistics.Cache.L2.Enabled = false
 	}
 
+	// Disable task cleanup in unrelated tests (it disturbs, for example, etcd ops logs)
+	cfg.API.Task.CleanupEnabled = false
+
 	// Validate configuration
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
