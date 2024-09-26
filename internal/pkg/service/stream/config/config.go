@@ -2,10 +2,10 @@ package config
 
 import (
 	"net/url"
-	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
@@ -41,10 +41,9 @@ type Patch struct {
 }
 
 type API struct {
-	Listen               string        `configKey:"listen" configUsage:"Listen address of the configuration HTTP API." validate:"required,hostname_port"`
-	PublicURL            *url.URL      `configKey:"publicUrl" configUsage:"Public URL of the configuration HTTP API for link generation." validate:"required"`
-	TasksCleanup         bool          `configKey:"tasks-cleanup-enabled" configUsage:"Enable periodical tasks cleanup functionality."`
-	TasksCleanupInterval time.Duration `configKey:"tasks-cleanup-interval" configUsage:"How often will old tasks be deleted."`
+	Listen    string          `configKey:"listen" configUsage:"Listen address of the configuration HTTP API." validate:"required,hostname_port"`
+	PublicURL *url.URL        `configKey:"publicUrl" configUsage:"Public URL of the configuration HTTP API for link generation." validate:"required"`
+	Task      task.NodeConfig `configKey:"task" configUsage:"Background tasks configuration." validate:"required"`
 }
 
 func New() Config {
@@ -58,10 +57,9 @@ func New() Config {
 		Etcd:            etcdclient.NewConfig(),
 		Metrics:         prometheus.NewConfig(),
 		API: API{
-			Listen:               "0.0.0.0:8000",
-			PublicURL:            &url.URL{Scheme: "http", Host: "localhost:8000"},
-			TasksCleanup:         true,
-			TasksCleanupInterval: 1 * time.Hour,
+			Listen:    "0.0.0.0:8000",
+			PublicURL: &url.URL{Scheme: "http", Host: "localhost:8000"},
+			Task:      task.NewNodeConfig(),
 		},
 		Distribution: distribution.NewConfig(),
 		Source:       source.NewConfig(),
