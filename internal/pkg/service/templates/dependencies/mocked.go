@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"net/url"
 	"os"
 	"path"
@@ -55,9 +56,10 @@ func NewMockedAPIScope(tb testing.TB, ctx context.Context, cfg config.Config, op
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
 	p := &parentScopes{
-		BaseScope:       mock,
-		PublicScope:     mock,
-		EtcdClientScope: mock,
+		BaseScope:         mock,
+		PublicScope:       mock,
+		EtcdClientScope:   mock,
+		DistributionScope: dependencies.NewDistributionScope(cfg.NodeID, distribution.NewConfig(), mock),
 	}
 
 	p.DistributedLockScope, err = dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), mock)

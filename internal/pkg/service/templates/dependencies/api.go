@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
@@ -28,6 +29,7 @@ type apiScope struct {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
+	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 	dependencies.TaskScope
 	logger            log.Logger
@@ -41,6 +43,7 @@ type parentScopes struct {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
+	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 	dependencies.TaskScope
 }
@@ -104,6 +107,8 @@ func newParentScopes(
 		return nil, err
 	}
 
+	d.DistributionScope = dependencies.NewDistributionScope(cfg.NodeID, distribution.NewConfig(), d)
+
 	d.DistributedLockScope, err = dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), d)
 	if err != nil {
 		return nil, err
@@ -128,6 +133,8 @@ func newAPIScope(ctx context.Context, p *parentScopes, cfg config.Config) (v *ap
 	d.PublicScope = p.PublicScope
 
 	d.EtcdClientScope = p.EtcdClientScope
+
+	d.DistributionScope = p.DistributionScope
 
 	d.DistributedLockScope = p.DistributedLockScope
 

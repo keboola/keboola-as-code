@@ -52,6 +52,7 @@ type APIScope interface {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
+	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 	dependencies.TaskScope
 	APIConfig() config.Config
