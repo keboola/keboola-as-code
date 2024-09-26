@@ -1,7 +1,6 @@
 package csv
 
 import (
-	"fmt"
 	"io"
 	"sync"
 
@@ -70,7 +69,7 @@ func (w *Encoder) WriteRecord(record recordctx.Context) (int, error) {
 		var limitErr fastcsv.LimitError
 		if errors.As(err, &limitErr) {
 			columnName := w.columns[limitErr.ColumnIndex].ColumnName()
-			return n, svcerrors.NewPayloadTooLargeError(fmt.Errorf(`too big CSV row, column: "%s", row limit: %s`, columnName, limitErr.Limit.HumanReadable()))
+			return n, svcerrors.NewPayloadTooLargeError(errors.Errorf(`too big CSV row, column: "%s", row limit: %s`, columnName, limitErr.Limit.HumanReadable()))
 		}
 		return n, err
 	}
