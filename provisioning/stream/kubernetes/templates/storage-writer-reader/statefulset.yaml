@@ -94,7 +94,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: STREAM_HOSTNAME
-              value: "$(STREAM_NODE_ID).stream-storage-writer-reader.stream.svc.cluster.local"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: STREAM_ETCD_PASSWORD
               valueFrom:
                 secretKeyRef:
