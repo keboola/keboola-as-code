@@ -35,19 +35,19 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 		componentsMap[c] = true
 	}
 
-	// Common task scope
-	var taskScp commonDeps.TaskScope
-	if componentsMap[ComponentAPI] {
-		taskScp, err = commonDeps.NewTaskScope(ctx, cfg.NodeID, ExceptionIDPrefix, serviceScp)
-		if err != nil {
-			return err
-		}
-	}
-
 	// Common distribution scope
 	var distScp commonDeps.DistributionScope
 	if componentsMap[ComponentAPI] || componentsMap[ComponentStorageWriter] || componentsMap[ComponentHTTPSource] || componentsMap[ComponentStorageCoordinator] {
 		distScp = commonDeps.NewDistributionScope(cfg.NodeID, cfg.Distribution, serviceScp)
+	}
+
+	// Common task scope
+	var taskScp commonDeps.TaskScope
+	if componentsMap[ComponentAPI] {
+		taskScp, err = commonDeps.NewTaskScope(ctx, cfg.NodeID, ExceptionIDPrefix, serviceScp, serviceScp, distScp, cfg.API.Task)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Common storage scope

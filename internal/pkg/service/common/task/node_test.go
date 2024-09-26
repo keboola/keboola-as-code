@@ -20,6 +20,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -958,22 +959,32 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 
 func createNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
-	d := createDeps(t, ctx, etcdCfg, logs, tel)
-	node, err := task.NewNode(nodeID, "test-service-", d)
+	d := createDeps(t, ctx, nodeID, etcdCfg, logs, tel)
+	node, err := task.NewNode(nodeID, "test-service-", d, task.NewNodeConfig())
 	require.NoError(t, err)
 	d.DebugLogger().Truncate()
 	return node, d
 }
 
-func createDeps(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest) dependencies.Mocked {
+type taskNodeDeps struct {
+	dependencies.Mocked
+	dependencies.DistributionScope
+}
+
+func createDeps(t *testing.T, ctx context.Context, nodeID string, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest) *taskNodeDeps {
 	t.Helper()
 
-	d := dependencies.NewMocked(
+	mock := dependencies.NewMocked(
 		t,
 		ctx,
 		dependencies.WithTelemetry(tel),
 		dependencies.WithEtcdConfig(etcdCfg),
 	)
+
+	d := &taskNodeDeps{
+		Mocked:            mock,
+		DistributionScope: dependencies.NewDistributionScope(nodeID, distribution.NewConfig(), mock),
+	}
 
 	// Connect logs output
 	if logs != nil {

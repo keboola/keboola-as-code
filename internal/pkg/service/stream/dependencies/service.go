@@ -38,7 +38,6 @@ type serviceScope struct {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
-	dependencies.TaskScope
 	dependencies.DistributedLockScope
 	logger                      log.Logger
 	plugins                     *plugin.Plugins
@@ -53,7 +52,6 @@ type parentScopes struct {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
-	dependencies.TaskScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 }
@@ -114,11 +112,6 @@ func newParentScopes(
 	}
 
 	d.EtcdClientScope, err = dependencies.NewEtcdClientScope(ctx, d, cfg.Etcd)
-	if err != nil {
-		return nil, err
-	}
-
-	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, exceptionIDPrefix, d)
 	if err != nil {
 		return nil, err
 	}

@@ -38,7 +38,7 @@ func NewMockedAPIScopeWithConfig(tb testing.TB, ctx context.Context, modifyConfi
 
 	distScp := dependencies.NewDistributionScope(mock.TestConfig().NodeID, mock.TestConfig().Distribution, svcScp)
 
-	tasksScp, err := dependencies.NewTaskScope(ctx, mock.TestConfig().NodeID, exceptionIDPrefix, svcScp)
+	tasksScp, err := dependencies.NewTaskScope(ctx, mock.TestConfig().NodeID, exceptionIDPrefix, svcScp, svcScp, distScp, mock.TestConfig().API.Task)
 	require.NoError(tb, err)
 
 	apiScp := newAPIScope(svcScp, distScp, tasksScp, mock.TestConfig())

@@ -114,7 +114,7 @@ func newParentScopes(
 		return nil, err
 	}
 
-	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, exceptionIDPrefix, d)
+	d.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, exceptionIDPrefix, d.BaseScope, d.EtcdClientScope, d.DistributionScope, cfg.API.Task)
 	if err != nil {
 		return nil, err
 	}
