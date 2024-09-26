@@ -1,6 +1,6 @@
 {"level":"debug","time":"%s","message":"Version:    %s\nGit commit: %s\nBuild date: %s\nGo version: %s\nOs/Arch:    %s\n"}
 {"level":"debug","time":"%s","message":"Running command [%s --log-file ./log-file.txt]"}
 {"level":"debug","time":"%s","message":"Log file: %s"}
-{"level":"debug","time":"%s","message":"Flags: *flag.GlobalFlags {\"help\":false,\"log-file\":\"./log-file.txt\",\"log-format\":\"console\",\"non-interactive\":false,\"working-dir\":\"\",\"verbose\":false,\"verbose-api\":false,\"version-check\":false,\"test-projects-file\":\"\"}"}
+{"level":"debug","time":"%s","message":"Flags: *flag.GlobalFlags {\"help\":false,\"log-file\":\"./log-file.txt\",\"log-format\":\"console\",\"non-interactive\":false,\"working-dir\":\"\",\"verbose\":false,\"verbose-api\":false,\"version-check\":false}"}
 {"level":"debug","time":"%s","message":"Working dir: %s"}
 {"level":"debug","time":"%s","message":"Version check: %s"}

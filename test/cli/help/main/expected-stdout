@@ -101,15 +101,14 @@ Aliases:
   remote table         table
 
 Flags:
-  -h, --help                        print help for command
-  -l, --log-file string             path to a log file for details
-      --log-format string           format of stdout and stderr (default "console")
-      --non-interactive             disable interactive dialogs
-      --test-projects-file string   file containing projects that could be used for templates
-  -v, --verbose                     print details
-      --verbose-api                 log each API request and response
-  -V, --version                     print version
-      --version-check               checks if there is a newer version of the CLI (default true)
-  -d, --working-dir string          use other working directory
+  -h, --help                 print help for command
+  -l, --log-file string      path to a log file for details
+      --log-format string    format of stdout and stderr (default "console")
+      --non-interactive      disable interactive dialogs
+  -v, --verbose              print details
+      --verbose-api          log each API request and response
+  -V, --version              print version
+      --version-check        checks if there is a newer version of the CLI (default true)
+  -d, --working-dir string   use other working directory
 
 Use "kbc [command] --help" for more information about a command.

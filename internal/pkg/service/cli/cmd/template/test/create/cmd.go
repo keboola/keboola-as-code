@@ -12,11 +12,12 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
-	TestName        configmap.Value[string] `configKey:"test-name" configUsage:"name of the test to be created"`
-	InputsFile      configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
-	Verbose         configmap.Value[bool]   `configKey:"verbose" configUsage:"show details about creating test"`
+	StorageAPIHost   configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken  configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	TestName         configmap.Value[string] `configKey:"test-name" configUsage:"name of the test to be created"`
+	InputsFile       configmap.Value[string] `configKey:"inputs-file" configShorthand:"f" configUsage:"JSON file with inputs values"`
+	Verbose          configmap.Value[bool]   `configKey:"verbose" configUsage:"show details about creating test"`
+	TestProjectsFile configmap.Value[string] `configKey:"test-projects-file" configUsage:"file containing projects that could be used for templates"`
 }
 
 func DefaultFlags() Flags {
@@ -56,7 +57,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				versionArg = args[1]
 			}
 
-			tmpl, err := d.Template(cmd.Context(), model.NewTemplateRef(repo.Definition(), templateID, versionArg))
+			tmpl, err := d.TemplateForTests(cmd.Context(), model.NewTemplateRef(repo.Definition(), templateID, versionArg), f.TestProjectsFile.Value)
 			if err != nil {
 				return err
 			}

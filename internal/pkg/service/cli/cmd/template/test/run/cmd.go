@@ -13,11 +13,12 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	TestName       string                  `configKey:"test-name" configUsage:"name of a single test to be run"`
-	LocalOnly      bool                    `configKey:"local-only" configUsage:"run a local test only"`
-	RemoteOnly     bool                    `configKey:"remote-only" configUsage:"run a remote test only"`
-	Verbose        bool                    `configKey:"verbose" configUsage:"show details about running tests"`
+	StorageAPIHost   configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	TestName         string                  `configKey:"test-name" configUsage:"name of a single test to be run"`
+	LocalOnly        bool                    `configKey:"local-only" configUsage:"run a local test only"`
+	RemoteOnly       bool                    `configKey:"remote-only" configUsage:"run a remote test only"`
+	Verbose          bool                    `configKey:"verbose" configUsage:"show details about running tests"`
+	TestProjectsFile configmap.Value[string] `configKey:"test-projects-file" configUsage:"file containing projects that could be used for templates"`
 }
 
 func DefaultFlags() Flags {
@@ -63,7 +64,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				if len(args) > 1 {
 					versionArg = args[1]
 				}
-				tmpl, err := d.Template(cmd.Context(), model.NewTemplateRef(repo.Definition(), args[0], versionArg))
+				tmpl, err := d.TemplateForTests(cmd.Context(), model.NewTemplateRef(repo.Definition(), args[0], versionArg), f.TestProjectsFile.Value)
 				if err != nil {
 					return errors.Errorf(`loading test for template "%s" failed: %w`, args[0], err)
 				}
@@ -74,7 +75,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 					if err != nil {
 						return errors.Errorf(`loading default version for template "%s" failed: %w`, t.ID, err)
 					}
-					tmpl, err := d.Template(cmd.Context(), model.NewTemplateRef(repo.Definition(), t.ID, v.Version.String()))
+					tmpl, err := d.TemplateForTests(cmd.Context(), model.NewTemplateRef(repo.Definition(), t.ID, v.Version.String()), f.TestProjectsFile.Value)
 					if err != nil {
 						return errors.Errorf(`loading test for template "%s" failed: %w`, t.ID, err)
 					}

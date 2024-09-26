@@ -62,6 +62,7 @@ type LocalCommandScope interface {
 	BaseScope
 	dependencies.PublicScope
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
+	TemplateForTests(ctx context.Context, reference model.TemplateRef, projectFilesPath string) (*template.Template, error)
 	ProjectBackends() []string
 	ProjectFeatures() keboola.FeaturesMap
 	LocalProject(ctx context.Context, ignoreErrors bool) (*projectPkg.Project, bool, error)
