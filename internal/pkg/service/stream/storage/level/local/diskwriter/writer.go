@@ -2,6 +2,7 @@ package diskwriter
 
 import (
 	"context"
+	"io"
 	"os"
 	"sync"
 
@@ -25,7 +26,7 @@ type Writer interface {
 	SliceKey() model.SliceKey
 	SourceNodeID() string
 	// Write bytes to the buffer in the disk writer node.
-	Write(ctx context.Context, p []byte) (n int, err error)
+	Write(ctx context.Context, aligned bool, p []byte) (n int, err error)
 	// Sync OS disk cache to the physical disk.
 	Sync(ctx context.Context) error
 	// Events provides listening to the writer lifecycle.
@@ -42,7 +43,9 @@ type writer struct {
 	// closed blocks new writes
 	closed chan struct{}
 	// wg waits for in-progress writes before Close
-	wg *sync.WaitGroup
+	writen  int64
+	aligned int64
+	wg      *sync.WaitGroup
 }
 
 type writerKey struct {
@@ -126,10 +129,20 @@ func (w *writer) SourceNodeID() string {
 	return w.writerKey.SourceNodeID
 }
 
-func (w *writer) Write(ctx context.Context, p []byte) (n int, err error) {
+func (w *writer) Write(ctx context.Context, aligned bool, p []byte) (n int, err error) {
 	w.wg.Add(1)
 	defer w.wg.Done()
-	return w.file.Write(p)
+	n, err = w.file.Write(p)
+	if err != nil {
+		return 0, err
+	}
+
+	w.writen += int64(n)
+	if aligned {
+		w.aligned = w.writen
+	}
+
+	return n, nil
 }
 
 func (w *writer) Sync(ctx context.Context) error {
@@ -155,6 +168,18 @@ func (w *writer) Close(ctx context.Context) error {
 
 	// Wait for running writes
 	w.wg.Wait()
+
+	if w.writen != w.aligned {
+		seeked, err := w.file.Seek(w.aligned-w.writen, io.SeekCurrent)
+		if err == nil {
+			err = w.file.Truncate(seeked)
+			if err != nil {
+				errs.Append(errors.Errorf(`cannot truncate file: %w`, err))
+			}
+		} else {
+			errs.Append(errors.Errorf(`cannot seek within file: %w`, err))
+		}
+	}
 
 	// Sync file
 	if err := w.Sync(ctx); err != nil {

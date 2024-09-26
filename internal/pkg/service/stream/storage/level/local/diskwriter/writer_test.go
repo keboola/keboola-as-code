@@ -33,10 +33,10 @@ func TestWriter_Basic(t *testing.T) {
 	assert.Equal(t, tc.Slice.SliceKey, w.SliceKey())
 
 	// Test write methods
-	n, err := w.Write(ctx, []byte("123,456,789\n"))
+	n, err := w.Write(ctx, true, []byte("123,456,789\n"))
 	assert.Equal(t, 12, n)
 	assert.NoError(t, err)
-	n, err = w.Write(ctx, []byte("abc,def,ghj\n"))
+	n, err = w.Write(ctx, true, []byte("abc,def,ghj\n"))
 	assert.Equal(t, 12, n)
 	assert.NoError(t, err)
 
@@ -53,6 +53,53 @@ func TestWriter_Basic(t *testing.T) {
 	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, tc.SourceNodeID))
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("123,456,789\nabc,def,ghj\n"), content)
+}
+
+func TestWriter_NotAligned(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	tc := newWriterTestCase(t)
+	// Create path to file which already exists to test not aligned append write
+	require.NoError(t, os.MkdirAll(
+		tc.Slice.LocalStorage.DirName(tc.VolumePath),
+		0o750,
+	))
+	require.NoError(t, os.WriteFile(
+		tc.Slice.LocalStorage.FileName(tc.VolumePath, tc.SourceNodeID),
+		[]byte("this was before\n"),
+		0o640,
+	))
+	w, err := tc.OpenWriter()
+	require.NoError(t, err)
+
+	// Test getters
+	assert.Equal(t, tc.Slice.SliceKey, w.SliceKey())
+
+	// Test write methods
+	n, err := w.Write(ctx, false, []byte("abc,def,ghj\n"))
+	assert.Equal(t, 12, n)
+	assert.NoError(t, err)
+	n, err = w.Write(ctx, true, []byte("123,456,789\n"))
+	assert.Equal(t, 12, n)
+	assert.NoError(t, err)
+	n, err = w.Write(ctx, false, []byte("opq,rst,uvw\n"))
+	assert.Equal(t, 12, n)
+	assert.NoError(t, err)
+
+	// Test Close method
+	assert.NoError(t, w.Close(ctx))
+
+	// Try Close again
+	err = w.Close(ctx)
+	if assert.Error(t, err) {
+		assert.Equal(t, "writer is already closed", err.Error())
+	}
+
+	// Check file content
+	content, err := os.ReadFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, tc.SourceNodeID))
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("this was before\nabc,def,ghj\n123,456,789\n"), content)
 }
 
 func TestOpenWriter_ClosedVolume(t *testing.T) {

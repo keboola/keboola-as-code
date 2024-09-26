@@ -13,10 +13,10 @@ type WriterTestFile struct {
 	CloseError error
 }
 
-func NewWriterTestFile(t *testing.T, filePath string) *WriterTestFile {
-	t.Helper()
+func NewWriterTestFile(tb testing.TB, filePath string) *WriterTestFile {
+	tb.Helper()
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o640)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return &WriterTestFile{file: file}
 }
 
@@ -30,6 +30,14 @@ func (f *WriterTestFile) WriteString(s string) (int, error) {
 
 func (f *WriterTestFile) Fd() uintptr {
 	return f.file.Fd()
+}
+
+func (f *WriterTestFile) Seek(offset int64, whence int) (ret int64, err error) {
+	return f.file.Seek(offset, whence)
+}
+
+func (f *WriterTestFile) Truncate(size int64) error {
+	return f.file.Truncate(size)
 }
 
 func (f *WriterTestFile) Stat() (os.FileInfo, error) {

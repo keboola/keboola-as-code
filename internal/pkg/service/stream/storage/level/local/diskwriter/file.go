@@ -15,6 +15,8 @@ const (
 type File interface {
 	io.Writer
 	Fd() uintptr
+	Seek(offset int64, whence int) (ret int64, err error)
+	Truncate(size int64) error
 	Stat() (os.FileInfo, error)
 	Sync() error
 	Close() error

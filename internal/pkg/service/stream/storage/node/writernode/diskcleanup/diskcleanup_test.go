@@ -126,7 +126,7 @@ func TestDiskCleanup(t *testing.T) {
 	{
 		writer, err := vol.OpenWriter("my-source", slice.SliceKey, slice.LocalStorage)
 		require.NoError(t, err)
-		_, err = writer.Write(ctx, []byte("foo\n"))
+		_, err = writer.Write(ctx, true, []byte("foo\n"))
 		require.NoError(t, err)
 		require.NoError(t, writer.Close(ctx))
 		require.DirExists(t, filepath.Join(vol.Path(), slice.LocalStorage.Dir))
