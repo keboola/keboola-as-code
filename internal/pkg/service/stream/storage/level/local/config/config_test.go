@@ -19,6 +19,7 @@ func TestConfig_Validation(t *testing.T) {
 - "volume.assignment.preferredTypes" is a required field
 - "volume.registration.ttlSeconds" is a required field
 - "encoding.encoder.type" is a required field
+- "encoding.encoder.rowSizeLimit" must be 1KB or greater
 - "encoding.maxChunkSize" is a required field
 - "encoding.failedChunksThreshold" is a required field
 - "encoding.compression.type" is a required field

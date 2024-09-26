@@ -4,6 +4,9 @@ import (
 	"io"
 	"sync"
 
+	"github.com/c2h5oh/datasize"
+
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
@@ -22,7 +25,8 @@ var columnRenderer = column.NewRenderer() //nolint:gochecknoglobals // contains 
 // NewEncoder creates CSV writers pool and implements encoder.Encoder
 // The order of the lines is not preserved, because we use the writers pool,
 // but also because there are several source nodes with a load balancer in front of them.
-func NewEncoder(concurrency int, mapping any, out io.Writer) (*Encoder, error) {
+// In case of encoder accepts too big csv row, it returns error.
+func NewEncoder(concurrency int, rowSizeLimit datasize.ByteSize, mapping any, out io.Writer) (*Encoder, error) {
 	tableMapping, ok := mapping.(table.Mapping)
 	if !ok {
 		return nil, errors.Errorf("csv encoder supports only table mapping, given %v", mapping)
@@ -30,7 +34,7 @@ func NewEncoder(concurrency int, mapping any, out io.Writer) (*Encoder, error) {
 
 	return &Encoder{
 		columns:     tableMapping.Columns,
-		writersPool: fastcsv.NewWritersPool(out, concurrency),
+		writersPool: fastcsv.NewWritersPool(out, rowSizeLimit, concurrency),
 		valuesPool: &sync.Pool{
 			New: func() any {
 				v := make([]any, len(tableMapping.Columns))
@@ -61,6 +65,11 @@ func (w *Encoder) WriteRecord(record recordctx.Context) (int, error) {
 		if errors.As(err, &valErr) {
 			columnName := w.columns[valErr.ColumnIndex].ColumnName()
 			return n, errors.Errorf(`cannot convert value of the column "%s" to the string: %w`, columnName, err)
+		}
+		var limitErr fastcsv.LimitError
+		if errors.As(err, &limitErr) {
+			columnName := w.columns[limitErr.ColumnIndex].ColumnName()
+			return n, svcerrors.NewPayloadTooLargeError(errors.Errorf(`too big CSV row, column: "%s", row limit: %s`, columnName, limitErr.Limit.HumanReadable()))
 		}
 		return n, err
 	}

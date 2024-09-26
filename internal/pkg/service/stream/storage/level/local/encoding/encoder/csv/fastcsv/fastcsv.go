@@ -10,6 +10,8 @@ import (
 	"io"
 	"runtime"
 	"sync"
+
+	"github.com/c2h5oh/datasize"
 )
 
 type WritersPool struct {
@@ -19,7 +21,7 @@ type WritersPool struct {
 	pool *sync.Pool
 }
 
-func NewWritersPool(out io.Writer, writers int) *WritersPool {
+func NewWritersPool(out io.Writer, rowSizeLimit datasize.ByteSize, writers int) *WritersPool {
 	if writers <= 0 {
 		writers = runtime.GOMAXPROCS(0)
 	}
@@ -27,7 +29,7 @@ func NewWritersPool(out io.Writer, writers int) *WritersPool {
 	p := &WritersPool{}
 	p.pool = &sync.Pool{
 		New: func() any {
-			return newWriter(out)
+			return newWriter(out, rowSizeLimit)
 		},
 	}
 

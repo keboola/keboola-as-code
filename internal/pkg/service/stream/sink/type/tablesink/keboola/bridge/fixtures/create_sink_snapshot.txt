@@ -45,7 +45,8 @@ storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
   "encoding": {
     "encoder": {
       "type": "csv",
-      "concurrency": 0
+      "concurrency": 0,
+      "rowSizeLimit": "1536KB"
     },
     "inputBuffer": "2MB",
     "maxChunkSize": "512KB",
@@ -152,7 +153,8 @@ storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-
   "encoding": {
     "encoder": {
       "type": "csv",
-      "concurrency": 0
+      "concurrency": 0,
+      "rowSizeLimit": "1536KB"
     },
     "inputBuffer": "2MB",
     "maxChunkSize": "512KB",

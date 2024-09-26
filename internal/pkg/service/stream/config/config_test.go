@@ -180,6 +180,8 @@ storage:
                     type: csv
                     # Concurrency of the format writer for the specified file type. 0 = auto = num of CPU cores. Validation rules: min=0,max=256
                     concurrency: 0
+                    # Set's the limit of single row to be encoded. Limit should be bigger than accepted request on source otherwise received message will never be encoded. Validation rules: minBytes=1kB,maxBytes=2MB
+                    rowSizeLimit: 1536KB
                 # Max size of the buffer before compression, if compression is enabled. 0 = disabled. Validation rules: maxBytes=16MB
                 inputBuffer: 2MB
                 # Max size of a chunk sent over the network to a disk writer node. Validation rules: required,minBytes=64kB,maxBytes=1MB
