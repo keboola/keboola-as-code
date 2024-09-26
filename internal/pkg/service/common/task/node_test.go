@@ -38,6 +38,7 @@ func TestSuccessfulTask(t *testing.T) {
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
 	client := etcdhelper.ClientForTest(t, etcdCfg)
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(runtime/distribution/)")
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -110,7 +111,7 @@ task/123/my-receiver/my-export/some.task/%s
   "lock": "runtime/lock/task/my-lock"
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Wait for task to finish
 	finishTaskAndWait(t, client, taskWork, taskDone)
@@ -137,7 +138,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
@@ -209,7 +210,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Check logs
 	log.AssertJSONMessages(t, `
@@ -335,6 +336,7 @@ func TestFailedTask(t *testing.T) {
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
 	client := etcdhelper.ClientForTest(t, etcdCfg)
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(runtime/distribution/)")
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -406,7 +408,7 @@ task/123/my-receiver/my-export/some.task/%s
   "lock": "runtime/lock/task/my-lock"
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Wait for task to finish
 	finishTaskAndWait(t, client, taskWork, taskDone)
@@ -436,7 +438,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
@@ -507,7 +509,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Check logs
 	log.AssertJSONMessages(t, `
@@ -675,6 +677,7 @@ func TestTaskTimeout(t *testing.T) {
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
 	client := etcdhelper.ClientForTest(t, etcdCfg)
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(runtime/distribution/)")
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -741,7 +744,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Check logs
 	logger.AssertJSONMessages(t, `
