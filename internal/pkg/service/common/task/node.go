@@ -80,7 +80,14 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, cfg NodeCo
 	if nodeID == "" {
 		panic(errors.New("task.Node: node ID cannot be empty"))
 	}
-	
+
+	// Start API background tasks cleaner
+	if cfg.CleanupEnabled {
+		if err := StartCleaner(d, cfg.CleanupInterval); err != nil {
+			return nil, err
+		}
+	}
+
 	proc := d.Process()
 
 	n := &Node{

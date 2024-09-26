@@ -77,13 +77,6 @@ func New(ctx context.Context, d dependencies.APIScope) (Service, error) {
 		d.Logger().Info(ctx, "shutdown done")
 	})
 
-	// Start tasks cleanup
-	if s.config.TasksCleanup {
-		if err := task.StartCleaner(d, s.config.TasksCleanupInterval); err != nil {
-			return nil, err
-		}
-	}
-
 	return s, nil
 }
 
