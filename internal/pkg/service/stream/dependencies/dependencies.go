@@ -89,6 +89,7 @@ type ServiceScope interface {
 
 type APIScope interface {
 	ServiceScope
+	dependencies.DistributionScope
 	dependencies.TaskScope
 	APIPublicURL() *url.URL
 	HTTPSourcePublicURL() *url.URL

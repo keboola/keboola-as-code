@@ -2,38 +2,26 @@ package task
 
 import (
 	"context"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
-	DefaultSessionTTL     = 15 // seconds, see WithTTL
-	DefaultTaskEtcdPrefix = "task"
+	EtcdPrefix = "task"
 )
 
-type NodeOption func(c *nodeConfig)
-
-type nodeConfig struct {
-	taskEtcdPrefix string
-	ttlSeconds     int
+type NodeConfig struct {
+	TTLSeconds      int           `configKey:"ttlSeconds" configUsage:"Defines time after the session is canceled if the client is unavailable." validate:"required"`
+	CleanupEnabled  bool          `configKey:"cleanupEnabled" configUsage:"Enable periodical tasks cleanup functionality."`
+	CleanupInterval time.Duration `configKey:"cleanupInterval" configUsage:"How often will old tasks be deleted." validate:"required"`
 }
 
-func defaultNodeConfig() nodeConfig {
-	return nodeConfig{taskEtcdPrefix: DefaultTaskEtcdPrefix, ttlSeconds: DefaultSessionTTL}
-}
-
-// WithTaskEtcdPrefix defines prefix for tasks records in etcd.
-func WithTaskEtcdPrefix(p string) NodeOption {
-	return func(c *nodeConfig) {
-		c.taskEtcdPrefix = p
-	}
-}
-
-// WithTTL defines time after the session is canceled if the client is unavailable.
-// Client sends periodic keep-alive requests.
-func WithTTL(v int) NodeOption {
-	return func(c *nodeConfig) {
-		c.ttlSeconds = v
+func NewNodeConfig() NodeConfig {
+	return NodeConfig{
+		TTLSeconds:      15,
+		CleanupEnabled:  true,
+		CleanupInterval: 1 * time.Hour,
 	}
 }
 

@@ -6,22 +6,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
+
+type testDependencies struct {
+	dependencies.Mocked
+	dependencies.DistributionScope
+}
 
 func TestCleanup(t *testing.T) {
 	t.Parallel()
@@ -29,17 +30,21 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCfg := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCfg)
-	tel := newTestTelemetryWithFilter(t)
+	clk := clock.NewMock()
+	clk.Set(utctime.MustParse("2020-01-01T01:00:00.000Z").Time())
 
-	logs := ioutil.NewAtomicWriter()
-	node, d := createNode(t, ctx, etcdCfg, logs, tel, "node1")
-	logger := d.DebugLogger()
-	logger.Truncate()
-	tel.Reset()
+	mock := dependencies.NewMocked(t, ctx, dependencies.WithClock(clk), dependencies.WithEnabledEtcdClient())
+	client := mock.TestEtcdClient()
+	d := testDependencies{
+		Mocked:            mock,
+		DistributionScope: dependencies.NewDistributionScope("my-node", distribution.NewConfig(), mock),
+	}
 
-	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.DefaultTaskEtcdPrefix, d.EtcdSerde())
+	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.EtcdPrefix, d.EtcdSerde())
+
+	// Start cleaner
+	cleanupInterval := 15 * time.Second
+	require.NoError(t, task.StartCleaner(d, cleanupInterval))
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
@@ -76,7 +81,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, taskPrefix.Key(taskKey2.String()).Put(client, task2).Do(ctx).Err())
 
 	// Add task with a finishedAt timestamp before a moment - will be ignored
-	time3 := time.Now()
+	time3 := clk.Now()
 	time3Key := utctime.UTCTime(time3)
 	taskKey3 := task.Key{ProjectID: 789, TaskID: task.ID(fmt.Sprintf("%s/%s_%s", "third.task", createdAt.String(), "mnopqr"))}
 	task3 := task.Task{
@@ -93,8 +98,10 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, taskPrefix.Key(taskKey3.String()).Put(client, task3).Do(ctx).Err())
 
 	// Run the cleanup
-	tel.Reset()
-	assert.NoError(t, node.Cleanup(ctx))
+	clk.Add(cleanupInterval)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		d.DebugLogger().AssertJSONMessages(c, `{"level":"info","message":"starting task cleanup","component":"task.cleanup"}`)
+	}, 5*time.Second, 50*time.Millisecond)
 
 	// Shutdown - wait for cleanup
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
@@ -102,20 +109,13 @@ func TestCleanup(t *testing.T) {
 
 	// Check logs
 	d.DebugLogger().AssertJSONMessages(t, `
-{"level":"info","message":"started task","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"debug","message":"deleted task \"123/some.task/2006-01-02T08:04:05.000Z_abcdef\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"debug","message":"deleted task \"456/other.task/2006-01-02T08:04:05.000Z_ghijkl\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"info","message":"deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"info","message":"task succeeded (%s): deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"info","message":"starting task cleanup","component":"task.cleanup"}
+{"level":"debug","message":"deleted task","component":"task.cleanup","task":"123/some.task/2006-01-02T08:04:05.000Z_abcdef"}
+{"level":"debug","message":"deleted task","component":"task.cleanup","task":"456/other.task/2006-01-02T08:04:05.000Z_ghijkl"}
+{"level":"info","message":"deleted \"2\" tasks","component":"task.cleanup","deletedTasks":2}
 {"level":"info","message":"exiting (bye bye)"}
-{"level":"info","message":"received shutdown request","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd session: context canceled","component":"task.etcd.session","node":"node1"}
-{"level":"info","message":"closed etcd session","component":"task.etcd.session","node":"node1"}
-{"level":"info","message":"shutdown done","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd connection","component":"etcd.client"}
-{"level":"info","message":"closed etcd connection","component":"etcd.client"}
+{"level":"info","message":"received shutdown request","component":"task.cleanup"}
+{"level":"info","message":"shutdown done","component":"task.cleanup"}
 {"level":"info","message":"exited"}
 `)
 
@@ -135,97 +135,5 @@ task/789/third.task/2006-01-02T08:04:05.000Z_mnopqr
   "result": "res"
 }
 >>>>>
-
-<<<<<
-task/_system_/tasks.cleanup/%s
------
-{
-  "systemTask": true,
-  "taskId": "tasks.cleanup/%s",
-  "type": "tasks.cleanup",
-  "createdAt": "%s",
-  "finishedAt": "%s",
-  "node": "node1",
-  "lock": "runtime/lock/task/tasks.cleanup",
-  "result": "deleted \"2\" tasks",
-  "duration": %d
-}
->>>>>
 `)
-
-	// Check spans
-	tel.AssertSpans(t,
-		tracetest.SpanStubs{
-			{
-				Name:     "keboola.go.task",
-				SpanKind: trace.SpanKindInternal,
-				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
-					TraceID:    tel.TraceID(1),
-					SpanID:     tel.SpanID(1),
-					TraceFlags: trace.FlagsSampled,
-				}),
-				Status: tracesdk.Status{Code: codes.Ok},
-				Attributes: []attribute.KeyValue{
-					attribute.String("resource.name", "tasks.cleanup"),
-					attribute.String("task_id", "<dynamic>"),
-					attribute.String("task_type", "tasks.cleanup"),
-					attribute.String("lock", "runtime/lock/task/tasks.cleanup"),
-					attribute.String("node", "node1"),
-					attribute.String("created_at", "<dynamic>"),
-					attribute.Int64("task.cleanup.deletedTasksCount", 2),
-					attribute.String("duration_sec", "<dynamic>"),
-					attribute.String("finished_at", "<dynamic>"),
-					attribute.Bool("is_success", true),
-					attribute.String("result", "deleted \"2\" tasks"),
-				},
-			},
-		},
-		telemetry.WithSpanAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
-			switch attr.Key {
-			case "task_id", "created_at", "duration_sec", "finished_at":
-				return attribute.String(string(attr.Key), "<dynamic>")
-			}
-			return attr
-		}),
-	)
-
-	// Check metrics
-	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms
-	tel.AssertMetrics(t,
-		[]metricdata.Metrics{
-			{
-				Name:        "keboola.go.task.running",
-				Description: "Background running tasks count.",
-				Data: metricdata.Sum[int64]{
-					Temporality: 1,
-					DataPoints: []metricdata.DataPoint[int64]{
-						{
-							Value: 0,
-							Attributes: attribute.NewSet(
-								attribute.String("task_type", "tasks.cleanup"),
-							),
-						},
-					},
-				},
-			},
-			{
-				Name:        "keboola.go.task.duration",
-				Description: "Background task duration.",
-				Unit:        "ms",
-				Data: metricdata.Histogram[float64]{
-					Temporality: 1,
-					DataPoints: []metricdata.HistogramDataPoint[float64]{
-						{
-							Count:  1,
-							Bounds: histBounds,
-							Attributes: attribute.NewSet(
-								attribute.String("task_type", "tasks.cleanup"),
-								attribute.Bool("is_success", true),
-							),
-						},
-					},
-				},
-			},
-		},
-	)
 }

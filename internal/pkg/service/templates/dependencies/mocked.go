@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 )
 
@@ -55,15 +56,16 @@ func NewMockedAPIScope(tb testing.TB, ctx context.Context, cfg config.Config, op
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
 	p := &parentScopes{
-		BaseScope:       mock,
-		PublicScope:     mock,
-		EtcdClientScope: mock,
+		BaseScope:         mock,
+		PublicScope:       mock,
+		EtcdClientScope:   mock,
+		DistributionScope: dependencies.NewDistributionScope(cfg.NodeID, distribution.NewConfig(), mock),
 	}
 
 	p.DistributedLockScope, err = dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), mock)
 	require.NoError(tb, err)
 
-	p.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, exceptionIDPrefix, mock)
+	p.TaskScope, err = dependencies.NewTaskScope(ctx, cfg.NodeID, exceptionIDPrefix, mock, mock, p.DistributionScope, cfg.API.Task)
 	require.NoError(tb, err)
 
 	apiScp, err := newAPIScope(ctx, p, cfg)

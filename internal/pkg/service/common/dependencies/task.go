@@ -12,20 +12,23 @@ type taskScope struct {
 	node *taskPkg.Node
 }
 
-type taskScopeDependencies interface {
+type taskNodeDeps struct {
 	BaseScope
 	EtcdClientScope
+	DistributionScope
 }
 
-func NewTaskScope(ctx context.Context, nodeID string, exceptionIDPrefix string, d taskScopeDependencies, opts ...taskPkg.NodeOption) (TaskScope, error) {
-	return newTaskScope(ctx, nodeID, exceptionIDPrefix, d, opts...)
+func NewTaskScope(ctx context.Context, nodeID string, exceptionIDPrefix string, baseScp BaseScope, etcdScp EtcdClientScope, distScp DistributionScope, cfg taskPkg.NodeConfig) (TaskScope, error) {
+	return newTaskScope(ctx, nodeID, exceptionIDPrefix, baseScp, etcdScp, distScp, cfg)
 }
 
-func newTaskScope(ctx context.Context, nodeID string, exceptionIDPrefix string, d taskScopeDependencies, opts ...taskPkg.NodeOption) (v *taskScope, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewTaskScope")
+func newTaskScope(ctx context.Context, nodeID string, exceptionIDPrefix string, baseScp BaseScope, etcdScp EtcdClientScope, distScp DistributionScope, cfg taskPkg.NodeConfig) (v *taskScope, err error) {
+	ctx, span := baseScp.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewTaskScope")
 	defer span.End(&err)
 
-	node, err := taskPkg.NewNode(nodeID, exceptionIDPrefix, d, opts...)
+	d := taskNodeDeps{BaseScope: baseScp, EtcdClientScope: etcdScp, DistributionScope: distScp}
+
+	node, err := taskPkg.NewNode(nodeID, exceptionIDPrefix, d, cfg)
 	if err != nil {
 		return nil, err
 	}

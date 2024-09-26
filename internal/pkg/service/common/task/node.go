@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -54,7 +55,7 @@ type Node struct {
 	session *etcdop.Session
 
 	nodeID     string
-	config     nodeConfig
+	config     NodeConfig
 	tasksCount *atomic.Int64
 
 	taskEtcdPrefix etcdop.PrefixT[Task]
@@ -71,23 +72,24 @@ type dependencies interface {
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
+	DistributionNode() *distribution.Node
 }
 
-func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, cfg NodeConfig) (*Node, error) {
 	// Validate
 	if nodeID == "" {
 		panic(errors.New("task.Node: node ID cannot be empty"))
 	}
 
-	// Apply options
-	c := defaultNodeConfig()
-	for _, o := range opts {
-		o(&c)
+	// Start API background tasks cleaner
+	if cfg.CleanupEnabled {
+		if err := StartCleaner(d, cfg.CleanupInterval); err != nil {
+			return nil, err
+		}
 	}
 
 	proc := d.Process()
 
-	taskPrefix := etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
 		tracer:            d.Telemetry().Tracer(),
 		metrics:           newMetrics(d.Telemetry().Meter()),
@@ -95,9 +97,9 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, opts ...No
 		logger:            d.Logger().WithComponent("task"),
 		client:            d.EtcdClient(),
 		nodeID:            nodeID,
-		config:            c,
+		config:            cfg,
 		tasksCount:        atomic.NewInt64(0),
-		taskEtcdPrefix:    taskPrefix,
+		taskEtcdPrefix:    newTaskPrefix(d.EtcdSerde()),
 		taskLocksMutex:    &sync.Mutex{},
 		taskLocks:         make(map[string]bool),
 		exceptionIDPrefix: exceptionIDPrefix,
@@ -126,7 +128,7 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, opts ...No
 	// Create etcd session
 	session, errCh := etcdop.
 		NewSessionBuilder().
-		WithTTLSeconds(c.ttlSeconds).
+		WithTTLSeconds(cfg.TTLSeconds).
 		Start(sessionCtx, sessionWg, n.logger, n.client)
 	if err := <-errCh; err == nil {
 		n.session = session
@@ -361,7 +363,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 
 	// Create context for task finalization, the original context could have timed out.
 	// If release of the lock takes longer than the ttl, lease is expired anyway.
-	finalizationCtx, finalizationCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
+	finalizationCtx, finalizationCancel := context.WithTimeout(context.Background(), time.Duration(n.config.TTLSeconds)*time.Second)
 	defer finalizationCancel()
 
 	// Update telemetry
@@ -409,4 +411,8 @@ func (n *Node) lockTaskLocally(lock string) (ok bool, unlock func()) {
 		n.tasksCount.Dec()
 		n.tasksWg.Done()
 	}
+}
+
+func newTaskPrefix(s *serde.Serde) etcdop.PrefixT[Task] {
+	return etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(EtcdPrefix), s)
 }

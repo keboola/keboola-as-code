@@ -15,14 +15,15 @@ import (
 // apiSCope implements APIScope interface.
 type apiScope struct {
 	ServiceScope
+	dependencies.DistributionScope
 	dependencies.TaskScope
 	logger              log.Logger
 	apiPublicURL        *url.URL
 	httpSourcePublicURL *url.URL
 }
 
-func NewAPIScope(serviceScp ServiceScope, taskScp dependencies.TaskScope, cfg config.Config) (v APIScope, err error) {
-	return newAPIScope(serviceScp, taskScp, cfg), nil
+func NewAPIScope(serviceScp ServiceScope, distScp dependencies.DistributionScope, taskScp dependencies.TaskScope, cfg config.Config) (v APIScope, err error) {
+	return newAPIScope(serviceScp, distScp, taskScp, cfg), nil
 }
 
 func NewMockedAPIScope(tb testing.TB, ctx context.Context, opts ...dependencies.MockedOption) (APIScope, Mocked) {
@@ -35,19 +36,23 @@ func NewMockedAPIScopeWithConfig(tb testing.TB, ctx context.Context, modifyConfi
 
 	svcScp, mock := NewMockedServiceScopeWithConfig(tb, ctx, modifyConfig, opts...)
 
-	tasksScp, err := dependencies.NewTaskScope(ctx, mock.TestConfig().NodeID, exceptionIDPrefix, svcScp)
+	distScp := dependencies.NewDistributionScope(mock.TestConfig().NodeID, mock.TestConfig().Distribution, svcScp)
+
+	tasksScp, err := dependencies.NewTaskScope(ctx, mock.TestConfig().NodeID, exceptionIDPrefix, svcScp, svcScp, distScp, mock.TestConfig().API.Task)
 	require.NoError(tb, err)
 
-	apiScp := newAPIScope(svcScp, tasksScp, mock.TestConfig())
+	apiScp := newAPIScope(svcScp, distScp, tasksScp, mock.TestConfig())
 
 	mock.DebugLogger().Truncate()
 	return apiScp, mock
 }
 
-func newAPIScope(svcScope ServiceScope, tasksScp dependencies.TaskScope, cfg config.Config) APIScope {
+func newAPIScope(svcScope ServiceScope, distScp dependencies.DistributionScope, tasksScp dependencies.TaskScope, cfg config.Config) APIScope {
 	d := &apiScope{}
 
 	d.ServiceScope = svcScope
+
+	d.DistributionScope = distScp
 
 	d.TaskScope = tasksScp
 

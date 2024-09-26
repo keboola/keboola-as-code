@@ -35,19 +35,19 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 		componentsMap[c] = true
 	}
 
+	// Common distribution scope
+	var distScp commonDeps.DistributionScope
+	if componentsMap[ComponentAPI] || componentsMap[ComponentStorageWriter] || componentsMap[ComponentHTTPSource] || componentsMap[ComponentStorageCoordinator] {
+		distScp = commonDeps.NewDistributionScope(cfg.NodeID, cfg.Distribution, serviceScp)
+	}
+
 	// Common task scope
 	var taskScp commonDeps.TaskScope
 	if componentsMap[ComponentAPI] {
-		taskScp, err = commonDeps.NewTaskScope(ctx, cfg.NodeID, ExceptionIDPrefix, serviceScp)
+		taskScp, err = commonDeps.NewTaskScope(ctx, cfg.NodeID, ExceptionIDPrefix, serviceScp, serviceScp, distScp, cfg.API.Task)
 		if err != nil {
 			return err
 		}
-	}
-
-	// Common distribution scope
-	var distScp commonDeps.DistributionScope
-	if componentsMap[ComponentStorageWriter] || componentsMap[ComponentHTTPSource] || componentsMap[ComponentStorageCoordinator] {
-		distScp = commonDeps.NewDistributionScope(cfg.NodeID, cfg.Distribution, serviceScp)
 	}
 
 	// Common storage scope
@@ -91,7 +91,7 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 	}
 
 	if componentsMap[ComponentAPI] {
-		apiScp, err := dependencies.NewAPIScope(serviceScp, taskScp, cfg) // nolint:forbidigo
+		apiScp, err := dependencies.NewAPIScope(serviceScp, distScp, taskScp, cfg) // nolint:forbidigo
 		if err != nil {
 			return err
 		}

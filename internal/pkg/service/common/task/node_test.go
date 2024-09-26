@@ -20,6 +20,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -37,6 +38,7 @@ func TestSuccessfulTask(t *testing.T) {
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
 	client := etcdhelper.ClientForTest(t, etcdCfg)
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(runtime/distribution/)")
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -109,7 +111,7 @@ task/123/my-receiver/my-export/some.task/%s
   "lock": "runtime/lock/task/my-lock"
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Wait for task to finish
 	finishTaskAndWait(t, client, taskWork, taskDone)
@@ -136,7 +138,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
@@ -208,7 +210,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Check logs
 	log.AssertJSONMessages(t, `
@@ -334,6 +336,7 @@ func TestFailedTask(t *testing.T) {
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
 	client := etcdhelper.ClientForTest(t, etcdCfg)
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(runtime/distribution/)")
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -405,7 +408,7 @@ task/123/my-receiver/my-export/some.task/%s
   "lock": "runtime/lock/task/my-lock"
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Wait for task to finish
 	finishTaskAndWait(t, client, taskWork, taskDone)
@@ -435,7 +438,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
@@ -506,7 +509,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Check logs
 	log.AssertJSONMessages(t, `
@@ -674,6 +677,7 @@ func TestTaskTimeout(t *testing.T) {
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
 	client := etcdhelper.ClientForTest(t, etcdCfg)
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(runtime/distribution/)")
 
 	lock := "my-lock"
 	taskType := "some.task"
@@ -740,7 +744,7 @@ task/123/my-receiver/my-export/some.task/%s
   "duration": %d
 }
 >>>>>
-`)
+`, ignoredEtcdKeys)
 
 	// Check logs
 	logger.AssertJSONMessages(t, `
@@ -958,22 +962,32 @@ func newTestTelemetryWithFilter(t *testing.T) telemetry.ForTest {
 
 func createNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest, nodeID string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
-	d := createDeps(t, ctx, etcdCfg, logs, tel)
-	node, err := task.NewNode(nodeID, "test-service-", d)
+	d := createDeps(t, ctx, nodeID, etcdCfg, logs, tel)
+	node, err := task.NewNode(nodeID, "test-service-", d, task.NewNodeConfig())
 	require.NoError(t, err)
 	d.DebugLogger().Truncate()
 	return node, d
 }
 
-func createDeps(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest) dependencies.Mocked {
+type taskNodeDeps struct {
+	dependencies.Mocked
+	dependencies.DistributionScope
+}
+
+func createDeps(t *testing.T, ctx context.Context, nodeID string, etcdCfg etcdclient.Config, logs io.Writer, tel telemetry.ForTest) *taskNodeDeps {
 	t.Helper()
 
-	d := dependencies.NewMocked(
+	mock := dependencies.NewMocked(
 		t,
 		ctx,
 		dependencies.WithTelemetry(tel),
 		dependencies.WithEtcdConfig(etcdCfg),
 	)
+
+	d := &taskNodeDeps{
+		Mocked:            mock,
+		DistributionScope: dependencies.NewDistributionScope(nodeID, distribution.NewConfig(), mock),
+	}
 
 	// Connect logs output
 	if logs != nil {

@@ -13,7 +13,7 @@ import (
 func TestIsForCleanup(t *testing.T) {
 	t.Parallel()
 
-	node := &Node{clock: clock.New()}
+	node := &Cleaner{clock: clock.New()}
 
 	// Unfinished task, too recent
 	createdAt := utctime.UTCTime(time.Now().Add(-1 * time.Hour))
