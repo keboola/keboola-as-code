@@ -88,6 +88,13 @@ api:
     listen: 0.0.0.0:8000
     # Public URL of the configuration HTTP API for link generation. Validation rules: required
     publicUrl: http://localhost:8000
+    task:
+        # Defines time after the session is canceled if the client is unavailable. Validation rules: required
+        ttlSeconds: 15
+        # Enable periodical tasks cleanup functionality.
+        cleanupEnabled: true
+        # How often will old tasks be deleted. Validation rules: required
+        cleanupInterval: 1h0m0s
 distribution:
     # The maximum time to wait for creating a new session. Validation rules: required,minDuration=1s,maxDuration=1m
     grantTimeout: 5s
