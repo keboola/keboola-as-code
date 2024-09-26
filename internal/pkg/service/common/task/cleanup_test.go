@@ -31,6 +31,8 @@ func TestCleanup(t *testing.T) {
 	defer cancel()
 
 	clk := clock.NewMock()
+	clk.Set(utctime.MustParse("2020-01-01T01:00:00.000Z").Time())
+
 	mock := dependencies.NewMocked(t, ctx, dependencies.WithClock(clk), dependencies.WithEnabledEtcdClient())
 	client := mock.TestEtcdClient()
 	d := testDependencies{
@@ -40,6 +42,7 @@ func TestCleanup(t *testing.T) {
 
 	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.TaskEtcdPrefix, d.EtcdSerde())
 
+	// Start cleaner
 	cleanupInterval := 15 * time.Second
 	require.NoError(t, task.StartCleaner(d, cleanupInterval))
 
@@ -78,7 +81,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, taskPrefix.Key(taskKey2.String()).Put(client, task2).Do(ctx).Err())
 
 	// Add task with a finishedAt timestamp before a moment - will be ignored
-	time3 := time.Now()
+	time3 := clk.Now()
 	time3Key := utctime.UTCTime(time3)
 	taskKey3 := task.Key{ProjectID: 789, TaskID: task.ID(fmt.Sprintf("%s/%s_%s", "third.task", createdAt.String(), "mnopqr"))}
 	task3 := task.Task{
@@ -96,6 +99,9 @@ func TestCleanup(t *testing.T) {
 
 	// Run the cleanup
 	clk.Add(cleanupInterval)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		d.DebugLogger().AssertJSONMessages(c, `{"level":"info","message":"starting task cleanup","component":"task.cleanup"}`)
+	}, 5*time.Second, 50*time.Millisecond)
 
 	// Shutdown - wait for cleanup
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
@@ -103,20 +109,13 @@ func TestCleanup(t *testing.T) {
 
 	// Check logs
 	d.DebugLogger().AssertJSONMessages(t, `
-{"level":"info","message":"started task","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"debug","message":"lock acquired \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"debug","message":"deleted task \"123/some.task/2006-01-02T08:04:05.000Z_abcdef\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"debug","message":"deleted task \"456/other.task/2006-01-02T08:04:05.000Z_ghijkl\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"info","message":"deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"info","message":"task succeeded (%s): deleted \"2\" tasks","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
-{"level":"debug","message":"lock released \"runtime/lock/task/tasks.cleanup\"","component":"task","task":"_system_/tasks.cleanup/%s","node":"node1"}
+{"level":"info","message":"starting task cleanup","component":"task.cleanup"}
+{"level":"debug","message":"deleted task","component":"task.cleanup","task":"123/some.task/2006-01-02T08:04:05.000Z_abcdef"}
+{"level":"debug","message":"deleted task","component":"task.cleanup","task":"456/other.task/2006-01-02T08:04:05.000Z_ghijkl"}
+{"level":"info","message":"deleted \"2\" tasks","component":"task.cleanup","deletedTasks":2}
 {"level":"info","message":"exiting (bye bye)"}
-{"level":"info","message":"received shutdown request","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd session: context canceled","component":"task.etcd.session","node":"node1"}
-{"level":"info","message":"closed etcd session","component":"task.etcd.session","node":"node1"}
-{"level":"info","message":"shutdown done","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd connection","component":"etcd.client"}
-{"level":"info","message":"closed etcd connection","component":"etcd.client"}
+{"level":"info","message":"received shutdown request","component":"task.cleanup"}
+{"level":"info","message":"shutdown done","component":"task.cleanup"}
 {"level":"info","message":"exited"}
 `)
 
@@ -134,22 +133,6 @@ task/789/third.task/2006-01-02T08:04:05.000Z_mnopqr
   "node": "node2",
   "lock": "lock2",
   "result": "res"
-}
->>>>>
-
-<<<<<
-task/_system_/tasks.cleanup/%s
------
-{
-  "systemTask": true,
-  "taskId": "tasks.cleanup/%s",
-  "type": "tasks.cleanup",
-  "createdAt": "%s",
-  "finishedAt": "%s",
-  "node": "node1",
-  "lock": "runtime/lock/task/tasks.cleanup",
-  "result": "deleted \"2\" tasks",
-  "duration": %d
 }
 >>>>>
 `)
