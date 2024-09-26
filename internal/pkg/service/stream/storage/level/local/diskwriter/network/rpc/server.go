@@ -179,7 +179,7 @@ func (s *NetworkFileServer) Write(ctx context.Context, req *pb.WriteRequest) (*p
 		return nil, err
 	}
 
-	n, err := w.Write(ctx, req.Data)
+	n, err := w.Write(ctx, req.Aligned, req.Data)
 	if err != nil {
 		return nil, err
 	}

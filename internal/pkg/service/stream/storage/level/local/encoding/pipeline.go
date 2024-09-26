@@ -66,6 +66,7 @@ type NetworkOutput interface {
 	// IsReady returns true if the underlying network is working.
 	IsReady() bool
 	// Write bytes to a file in disk writer node.
+	// When write is aligned, it commits that already writen bytes are safely stored.
 	// The operation is used on Flush of the encoding pipeline.
 	Write(ctx context.Context, aligned bool, p []byte) (n int, err error)
 	// Sync OS disk cache to the physical disk.
