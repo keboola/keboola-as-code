@@ -8,7 +8,7 @@ import (
 
 const (
 	DefaultSessionTTL = 15 // seconds, see WithTTL
-	TaskEtcdPrefix    = "task"
+	EtcdPrefix = "task"
 )
 
 type NodeOption func(c *nodeConfig)

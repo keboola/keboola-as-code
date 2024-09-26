@@ -411,5 +411,5 @@ func (n *Node) lockTaskLocally(lock string) (ok bool, unlock func()) {
 }
 
 func newTaskPrefix(s *serde.Serde) etcdop.PrefixT[Task] {
-	return etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(TaskEtcdPrefix), s)
+	return etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(EtcdPrefix), s)
 }

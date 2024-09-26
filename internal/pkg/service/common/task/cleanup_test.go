@@ -40,7 +40,7 @@ func TestCleanup(t *testing.T) {
 		DistributionScope: dependencies.NewDistributionScope("my-node", distribution.NewConfig(), mock),
 	}
 
-	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.TaskEtcdPrefix, d.EtcdSerde())
+	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.EtcdPrefix, d.EtcdSerde())
 
 	// Start cleaner
 	cleanupInterval := 15 * time.Second
