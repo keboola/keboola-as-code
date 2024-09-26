@@ -16,8 +16,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testcase"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -82,6 +84,33 @@ func TestCSVWriter(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestCSVWriterAboveLimit(t *testing.T) {
+	t.Parallel()
+
+	// Input rows
+	columns := table.Mapping{
+		Columns: column.Columns{
+			column.Datetime{Name: "datetime"},
+			column.Body{Name: "body"},
+		},
+	}
+	csvEncoder, err := csv.NewEncoder(0, uint64(40*datasize.B), columns, io.Discard)
+	require.NoError(t, err)
+	record := recordctx.FromHTTP(
+		utctime.MustParse("2000-01-01T03:00:00.000Z").Time(),
+		&http.Request{Body: io.NopCloser(strings.NewReader("foobar"))},
+	)
+	_, err = csvEncoder.WriteRecord(record)
+	require.NoError(t, err)
+
+	record = recordctx.FromHTTP(
+		utctime.MustParse("2000-01-01T03:00:00.000Z").Time(),
+		&http.Request{Body: io.NopCloser(strings.NewReader("foobartoomuch"))},
+	)
+	_, err = csvEncoder.WriteRecord(record)
+	assert.Equal(t, "too big csv row to be written", err.Error())
 }
 
 func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, parallelWrite bool) *testcase.WriterTestCase {

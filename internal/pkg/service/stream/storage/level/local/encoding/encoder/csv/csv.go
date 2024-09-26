@@ -22,7 +22,8 @@ var columnRenderer = column.NewRenderer() //nolint:gochecknoglobals // contains 
 // NewEncoder creates CSV writers pool and implements encoder.Encoder
 // The order of the lines is not preserved, because we use the writers pool,
 // but also because there are several source nodes with a load balancer in front of them.
-func NewEncoder(concurrency int, mapping any, out io.Writer) (*Encoder, error) {
+// In case of encoder accepts too big csv row, it returns error.
+func NewEncoder(concurrency int, limit uint64, mapping any, out io.Writer) (*Encoder, error) {
 	tableMapping, ok := mapping.(table.Mapping)
 	if !ok {
 		return nil, errors.Errorf("csv encoder supports only table mapping, given %v", mapping)
@@ -30,7 +31,7 @@ func NewEncoder(concurrency int, mapping any, out io.Writer) (*Encoder, error) {
 
 	return &Encoder{
 		columns:     tableMapping.Columns,
-		writersPool: fastcsv.NewWritersPool(out, concurrency),
+		writersPool: fastcsv.NewWritersPool(out, limit, concurrency),
 		valuesPool: &sync.Pool{
 			New: func() any {
 				v := make([]any, len(tableMapping.Columns))

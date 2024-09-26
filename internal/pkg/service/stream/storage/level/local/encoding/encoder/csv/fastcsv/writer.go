@@ -5,16 +5,18 @@ import (
 	"io"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/csvfmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // writer is simplified and optimized version of CSV writer.
 type writer struct {
-	out io.Writer
-	row bytes.Buffer
+	out   io.Writer
+	row   bytes.Buffer
+	limit uint64
 }
 
-func newWriter(out io.Writer) *writer {
-	return &writer{out: out}
+func newWriter(out io.Writer, limit uint64) *writer {
+	return &writer{out: out, limit: limit}
 }
 
 func (w *writer) WriteRow(cols *[]any) (int, error) {
@@ -81,6 +83,11 @@ func (w *writer) WriteRow(cols *[]any) (int, error) {
 			return 0, err
 		} else {
 			n += b
+		}
+
+		// Check limit of single column
+		if uint64(w.row.Len()) > w.limit {
+			return 0, errors.New("too big csv row to be written")
 		}
 	}
 
