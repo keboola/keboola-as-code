@@ -91,7 +91,7 @@ func TestOpenVolume_Ok(t *testing.T) {
 	assert.NoError(t, lock.Unlock())
 
 	// Check logs
-	tc.AssertLogs(`
+	tc.Logger.AssertJSONMessages(tc.TB, `
 {"level":"info","message":"opening volume","volume.path":"%s"}
 {"level":"info","message":"opened volume","volume.id":"abcdef","volume.path":"%s","volume.type":"hdd","volume.label":"1"}
 {"level":"info","message":"closing volume"}
@@ -153,7 +153,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	assert.NoError(t, lock.Unlock())
 
 	// Check logs
-	tc.AssertLogs(`
+	tc.Logger.AssertJSONMessages(tc.TB, `
 {"level":"info","message":"opening volume"}
 {"level":"info","message":"waiting for volume ID file"}
 {"level":"info","message":"waiting for volume ID file"}
@@ -200,7 +200,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 	}
 
 	// Check logs
-	tc.AssertLogs(`
+	tc.Logger.AssertJSONMessages(tc.TB, `
 {"level":"info","message":"opening volume"}
 {"level":"info","message":"waiting for volume ID file"}
 {"level":"info","message":"waiting for volume ID file"}
@@ -320,8 +320,4 @@ func (tc *volumeTestCase) OpenVolume() (*diskreader.Volume, error) {
 		Label:       tc.VolumeLabel,
 	}
 	return diskreader.OpenVolume(tc.Ctx, tc.Logger, tc.Clock, tc.Config, events.New[diskreader.Reader](), info)
-}
-
-func (tc *volumeTestCase) AssertLogs(expected string) bool {
-	return tc.Logger.AssertJSONMessages(tc.TB, expected)
 }

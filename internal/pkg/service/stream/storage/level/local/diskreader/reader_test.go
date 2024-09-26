@@ -37,7 +37,7 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 
 	// Wait for file open
 	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
-		tc.AssertLogs(`
+		tc.Logger.AssertJSONMessages(collect, `
 {"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%s","project.id":"123","branch.id":"456","source.id":"my-source","sink.id":"my-sink","file.id":"2000-01-01T19:00:00.000Z","slice.id":"2000-01-01T20:00:00.000Z"}
 `)
 	}, 5*time.Second, 10*time.Millisecond)
