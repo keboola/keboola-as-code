@@ -7,26 +7,18 @@ import (
 )
 
 const (
-	DefaultSessionTTL     = 15 // seconds, see WithTTL
-	DefaultTaskEtcdPrefix = "task"
+	DefaultSessionTTL = 15 // seconds, see WithTTL
+	TaskEtcdPrefix    = "task"
 )
 
 type NodeOption func(c *nodeConfig)
 
 type nodeConfig struct {
-	taskEtcdPrefix string
-	ttlSeconds     int
+	ttlSeconds int
 }
 
 func defaultNodeConfig() nodeConfig {
-	return nodeConfig{taskEtcdPrefix: DefaultTaskEtcdPrefix, ttlSeconds: DefaultSessionTTL}
-}
-
-// WithTaskEtcdPrefix defines prefix for tasks records in etcd.
-func WithTaskEtcdPrefix(p string) NodeOption {
-	return func(c *nodeConfig) {
-		c.taskEtcdPrefix = p
-	}
+	return nodeConfig{ttlSeconds: DefaultSessionTTL}
 }
 
 // WithTTL defines time after the session is canceled if the client is unavailable.

@@ -87,7 +87,6 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, opts ...No
 
 	proc := d.Process()
 
-	taskPrefix := etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
 		tracer:            d.Telemetry().Tracer(),
 		metrics:           newMetrics(d.Telemetry().Meter()),
@@ -97,7 +96,7 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, opts ...No
 		nodeID:            nodeID,
 		config:            c,
 		tasksCount:        atomic.NewInt64(0),
-		taskEtcdPrefix:    taskPrefix,
+		taskEtcdPrefix:    newTaskPrefix(d.EtcdSerde()),
 		taskLocksMutex:    &sync.Mutex{},
 		taskLocks:         make(map[string]bool),
 		exceptionIDPrefix: exceptionIDPrefix,
@@ -409,4 +408,8 @@ func (n *Node) lockTaskLocally(lock string) (ok bool, unlock func()) {
 		n.tasksCount.Dec()
 		n.tasksWg.Done()
 	}
+}
+
+func newTaskPrefix(s *serde.Serde) etcdop.PrefixT[Task] {
+	return etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(TaskEtcdPrefix), s)
 }
