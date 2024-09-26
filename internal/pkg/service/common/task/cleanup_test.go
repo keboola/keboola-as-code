@@ -6,22 +6,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
+
+type testDependencies struct {
+	dependencies.Mocked
+	dependencies.DistributionScope
+}
 
 func TestCleanup(t *testing.T) {
 	t.Parallel()
@@ -29,17 +30,18 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdCfg := etcdhelper.TmpNamespace(t)
-	client := etcdhelper.ClientForTest(t, etcdCfg)
-	tel := newTestTelemetryWithFilter(t)
+	clk := clock.NewMock()
+	mock := dependencies.NewMocked(t, ctx, dependencies.WithClock(clk), dependencies.WithEnabledEtcdClient())
+	client := mock.TestEtcdClient()
+	d := testDependencies{
+		Mocked:            mock,
+		DistributionScope: dependencies.NewDistributionScope("my-node", distribution.NewConfig(), mock),
+	}
 
-	logs := ioutil.NewAtomicWriter()
-	node, d := createNode(t, ctx, etcdCfg, logs, tel, "node1")
-	logger := d.DebugLogger()
-	logger.Truncate()
-	tel.Reset()
+	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.TaskEtcdPrefix, d.EtcdSerde())
 
-	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.DefaultTaskEtcdPrefix, d.EtcdSerde())
+	cleanupInterval := 15 * time.Second
+	require.NoError(t, task.StartCleaner(d, cleanupInterval))
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
@@ -93,8 +95,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, taskPrefix.Key(taskKey3.String()).Put(client, task3).Do(ctx).Err())
 
 	// Run the cleanup
-	tel.Reset()
-	assert.NoError(t, node.Cleanup(ctx))
+	clk.Add(cleanupInterval)
 
 	// Shutdown - wait for cleanup
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
