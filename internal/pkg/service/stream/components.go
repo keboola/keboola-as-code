@@ -46,7 +46,7 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 
 	// Common distribution scope
 	var distScp commonDeps.DistributionScope
-	if componentsMap[ComponentStorageWriter] || componentsMap[ComponentHTTPSource] || componentsMap[ComponentStorageCoordinator] {
+	if componentsMap[ComponentAPI] || componentsMap[ComponentStorageWriter] || componentsMap[ComponentHTTPSource] || componentsMap[ComponentStorageCoordinator] {
 		distScp = commonDeps.NewDistributionScope(cfg.NodeID, cfg.Distribution, serviceScp)
 	}
 
@@ -91,7 +91,7 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 	}
 
 	if componentsMap[ComponentAPI] {
-		apiScp, err := dependencies.NewAPIScope(serviceScp, taskScp, cfg) // nolint:forbidigo
+		apiScp, err := dependencies.NewAPIScope(serviceScp, distScp, taskScp, cfg) // nolint:forbidigo
 		if err != nil {
 			return err
 		}

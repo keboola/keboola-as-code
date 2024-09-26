@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	apiServer "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/http/stream/server"
 	streamGen "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/openapi"
@@ -23,6 +24,13 @@ const (
 )
 
 func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) error {
+	// Start API background tasks cleaner
+	if cfg.API.TasksCleanup {
+		if err := task.StartCleaner(d, cfg.API.TasksCleanupInterval); err != nil {
+			return err
+		}
+	}
+
 	// Create service
 	svc := service.New(d, cfg)
 
