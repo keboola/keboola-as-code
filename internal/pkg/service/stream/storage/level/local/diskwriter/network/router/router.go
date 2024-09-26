@@ -27,12 +27,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type Router struct {
 	nodeID       string
 	config       network.Config
 	logger       log.Logger
+	telemetry    telemetry.Telemetry
 	balancer     balancer.Balancer
 	connections  *connection.Manager
 	encoding     *encoding.Manager
@@ -47,6 +49,7 @@ type Router struct {
 
 type dependencies interface {
 	Logger() log.Logger
+	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
@@ -63,6 +66,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 		nodeID:      sourceNodeID,
 		config:      config,
 		logger:      logger,
+		telemetry:   d.Telemetry(),
 		connections: d.ConnectionManager(),
 		encoding:    d.EncodingManager(),
 		pipelines:   pipeline.NewCollection[key.SinkKey, *pipeline.SinkPipeline](logger),
@@ -167,7 +171,7 @@ func (r *Router) OpenPipeline(ctx context.Context, sinkKey key.SinkKey, onClose 
 		onClose(ctx, cause)
 	}
 
-	p := pipeline.NewSinkPipeline(sinkKey, r.logger, r.connections, r.encoding, r.balancer, onClose2)
+	p := pipeline.NewSinkPipeline(sinkKey, r.logger, r.telemetry, r.connections, r.encoding, r.balancer, onClose2)
 
 	r.pipelines.Register(ctx, sinkKey, p)
 

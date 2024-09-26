@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router/balancer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 // SinkPipeline receives records for the sink and routes them to the nested slice pipelines using the balancer.Balancer.
@@ -23,6 +24,7 @@ import (
 type SinkPipeline struct {
 	sinkKey     key.SinkKey
 	logger      log.Logger
+	telemetry   telemetry.Telemetry
 	connections *connection.Manager
 	encoding    *encoding.Manager
 	balancer    balancer.Balancer
@@ -37,10 +39,11 @@ type SinkPipeline struct {
 	closed chan struct{}
 }
 
-func NewSinkPipeline(sinkKey key.SinkKey, logger log.Logger, connections *connection.Manager, encoding *encoding.Manager, b balancer.Balancer, onClose func(ctx context.Context, cause string)) *SinkPipeline {
+func NewSinkPipeline(sinkKey key.SinkKey, logger log.Logger, telemetry telemetry.Telemetry, connections *connection.Manager, encoding *encoding.Manager, b balancer.Balancer, onClose func(ctx context.Context, cause string)) *SinkPipeline {
 	p := &SinkPipeline{
 		sinkKey:     sinkKey,
 		logger:      logger.With(sinkKey.Telemetry()...),
+		telemetry:   telemetry,
 		connections: connections,
 		encoding:    encoding,
 		balancer:    b,
@@ -119,7 +122,7 @@ func (p *SinkPipeline) UpdateSlicePipelines(ctx context.Context, sinkSlices []*S
 			unregister := func(ctx context.Context, _ string) {
 				p.collection.Unregister(ctx, slice.SliceKey)
 			}
-			newPipelines = append(newPipelines, NewSlicePipeline(ctx, p.logger, p.connections, p.encoding, ready, slice, unregister))
+			newPipelines = append(newPipelines, NewSlicePipeline(ctx, p.logger, p.telemetry, p.connections, p.encoding, ready, slice, unregister))
 		}
 	}
 
