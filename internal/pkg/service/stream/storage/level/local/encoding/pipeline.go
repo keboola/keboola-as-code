@@ -271,18 +271,18 @@ func (p *pipeline) WriteRecord(record recordctx.Context) (int, error) {
 		return 0, errors.New(`writer is closed`)
 	}
 
-	p.flushLock.RLock()
-	defer p.flushLock.RUnlock()
 	// Format and write table row
+	p.flushLock.RLock()
 	n, err := p.encoder.WriteRecord(record)
 	p.writeWg.Done()
+	p.flushLock.RUnlock()
 	if err != nil {
 		return n, err
 	}
 
 	notifier := p.syncer.Notifier()
 
-	// Increments number of high-level writes in progress
+	// Increments number of high-level writes in progressd
 	p.acceptedWrites.Add(timestamp, 1)
 
 	// Wait for sync and return sync error, if any
