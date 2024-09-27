@@ -1,12 +1,16 @@
 import { check } from 'k6';
+import {check} from 'k6';
 import http from "k6/http";
-import { Counter } from 'k6/metrics';
+import {Request, Client, checkstatus} from "k6/x/fasthttp"
 import { randomItem } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 import { URL } from 'https://jslib.k6.io/url/1.0.0/index.js';
 import { Api, randomPayloads } from "./api.js";
 
 const SCENARIO = __ENV.K6_SCENARIO || "constant"; // constant or ramping
 const TABLE_MAPPING = __ENV.K6_TABLE_MAPPING || "static"; // static, path or template
+
+// Common
+const USE_FASTHTTP = (__ENV.K6_FASTHTTP || "false") === "true"; // fast http plugin is faster, but don't count send bytes
 
 // Target
 const API_TOKEN = __ENV.K6_API_TOKEN;
@@ -133,6 +137,7 @@ const api = new Api(API_HOST, API_TOKEN)
 const errors_metrics = new Counter("failed_imports");
 
 const payloads = randomPayloads(PAYLOAD_SIZE)
+const fastHttpClient = new Client()
 
 export function setup() {
   // Create source
@@ -152,45 +157,27 @@ export function setup() {
   const sink = api.createKeboolaTableSink(source.id, TABLE_MAPPING, mappings[TABLE_MAPPING])
   console.log("Sink ID: " + sink.id)
 
-  const params = {
-    headers: {
-      "My-Custom-Header": "custom header value",
-      "Content-Type": "application/json"
-    }
+  const headers = {
+    "My-Custom-Header": "custom header value", "Content-Type": "application/json"
   }
 
-  return { sourceId: source.id, sourceUrl: sourceUrl.toString(), params };
+  const expectedStatus = SYNC_WAIT ? 200 : 20
+
+  return {sourceId: source.id, sourceUrl: sourceUrl.toString(), headers, expectedStatus};
 }
 
 export function teardown(data) {
   api.deleteSource(data.sourceId)
 }
 
-export default function(data) {
-  // Single request
-  if (PARALLEL_REQS_PER_USER <= 1) {
-    checkResponse(http.post(data.sourceUrl, randomItem(payloads), data.params))
-    return
-  }
+export default function (data) {
+  const body = payloads[exec.scenario.iterationInTest % payloadsCount]
 
-  // Parallel requests
-  http.batch(Array.from({ length: PARALLEL_REQS_PER_USER }, () => {
-    return {
-      method: 'POST',
-      url: data.sourceUrl,
-      body: randomItem(payloads),
-      params: data.params,
-    }
-  })).forEach((res) => checkResponse(res))
-}
-
-
-function checkResponse(res) {
-  let passed = check(res, {
-    "status is 200/202": (r) => r.status === 200 || r.status === 202,
-  })
-  if (!passed) {
-    console.error(`Request to ${res.request.url} with status ${res.status} failed the checks!`, res);
-    errors_metrics.add(1, { url: res.request.url });
+  if (USE_FASTHTTP) {
+    const response = fastHttpClient.post(new Request(data.sourceUrl, {body: body, headers: data.headers}))
+    checkstatus(data.expectedStatus, response,)
+  } else {
+    const response = http.post(data.sourceUrl, body, {headers: data.headers})
+    check(response, {"status": (r) => r.status === data.expectedStatus})
   }
 }
