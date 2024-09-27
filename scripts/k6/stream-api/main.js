@@ -1,20 +1,22 @@
-import { check } from 'k6';
+import exec from 'k6/execution';
+import {check} from 'k6';
+import {SharedArray} from 'k6/data';
 import http from "k6/http";
-import { Counter } from 'k6/metrics';
-import { randomItem } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
-import { URL } from 'https://jslib.k6.io/url/1.0.0/index.js';
-import { Api, randomPayloads } from "./api.js";
+import {Request, Client, checkstatus} from "k6/x/fasthttp"
+import {URL} from 'https://jslib.k6.io/url/1.0.0/index.js';
+import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import {Api} from "./api.js";
 
 const SCENARIO = __ENV.K6_SCENARIO || "constant"; // constant or ramping
 const TABLE_MAPPING = __ENV.K6_TABLE_MAPPING || "static"; // static, path or template
+
+// Common
+const USE_FASTHTTP = (__ENV.K6_FASTHTTP || "false") === "true"; // fast http plugin is faster, but don't count send bytes
 
 // Target
 const API_TOKEN = __ENV.K6_API_TOKEN;
 const API_HOST = __ENV.K6_API_HOST || "http://localhost:8001";
 const OVERWRITE_SOURCE_HOST = __ENV.K6_OVERWRITE_SOURCE_HOST; // to call directly k8s service
-
-// Common for all scenarios
-const PARALLEL_REQS_PER_USER = __ENV.K6_PARALLEL_REQS_PER_USER || 1;
 
 // Constant VUs / iterations scenario
 const CONST_VIRTUAL_USERS = __ENV.K6_CONST_VIRTUAL_USERS || 1000;
@@ -29,7 +31,7 @@ const RAMPING_DOWN_DURATION = __ENV.K6_RAMPING_DOWN_DURATION || "2m";
 
 // Stream configuration
 const SYNC_MODE = __ENV.STREAM_SYNC_MODE || "disk"; // cache / disk
-const SYNC_WAIT = __ENV.STREAM_SYNC_WAIT || "1"; // 1 = enabled, 0 = disabled
+const SYNC_WAIT = (__ENV.STREAM_SYNC_WAIT || "true") === "true";
 
 // Payload configuration
 const PAYLOAD_SIZE = __ENV.STREAM_PAYLOAD_SIZE || 1 // 1 = 54B, 1024 = ~1KB (1077B), 1048500 = ~1MB (1048576)
@@ -39,7 +41,7 @@ const scenarios = {
   constant: {
     executor: "shared-iterations",
     vus: CONST_VIRTUAL_USERS,
-    iterations: CONST_TOTAL_REQUESTS / PARALLEL_REQS_PER_USER,
+    iterations: CONST_TOTAL_REQUESTS,
     maxDuration: CONST_TIMEOUT,
   },
   ramping: {
@@ -107,13 +109,10 @@ const mappings = {
 export const options = {
   systemTags: ['status', 'group'],
   discardResponseBodies: true, // we are checking only status codes
-  teardownTimeout: '120s',
-  batch: PARALLEL_REQS_PER_USER,
-  batchPerHost: PARALLEL_REQS_PER_USER,
-  scenarios: {
+  teardownTimeout: '120s', scenarios: {
     [SCENARIO]: scenarios[SCENARIO]
   },
-  // Improve results table
+  // Improve results summary
   // Workaround: https://k6.io/docs/using-k6/workaround-to-calculate-iteration_duration/
   thresholds: {
     [`http_req_duration{scenario:${SCENARIO}}`]: [`max>=0`],
@@ -128,11 +127,19 @@ export const options = {
   },
 };
 
+// Partially unique payloads
+const payloadsCount = 100
+const payloads = new SharedArray('payloads', function () {
+  let out = []
+  for (let i = 0; i < payloadsCount; i++) {
+    out.push(JSON.stringify({a: 1, c: {d: "e", f: {g: randomString(10), h: "a".repeat(PAYLOAD_SIZE)}}}))
+  }
+  return out
+})
+
 const api = new Api(API_HOST, API_TOKEN)
 
-const errors_metrics = new Counter("failed_imports");
-
-const payloads = randomPayloads(PAYLOAD_SIZE)
+const fastHttpClient = new Client()
 
 export function setup() {
   // Create source
@@ -152,45 +159,27 @@ export function setup() {
   const sink = api.createKeboolaTableSink(source.id, TABLE_MAPPING, mappings[TABLE_MAPPING])
   console.log("Sink ID: " + sink.id)
 
-  const params = {
-    headers: {
-      "My-Custom-Header": "custom header value",
-      "Content-Type": "application/json"
-    }
+  const headers = {
+    "My-Custom-Header": "custom header value", "Content-Type": "application/json"
   }
 
-  return { sourceId: source.id, sourceUrl: sourceUrl.toString(), params };
+  const expectedStatus = SYNC_WAIT ? 200 : 20
+
+  return {sourceId: source.id, sourceUrl: sourceUrl.toString(), headers, expectedStatus};
 }
 
 export function teardown(data) {
   api.deleteSource(data.sourceId)
 }
 
-export default function(data) {
-  // Single request
-  if (PARALLEL_REQS_PER_USER <= 1) {
-    checkResponse(http.post(data.sourceUrl, randomItem(payloads), data.params))
-    return
-  }
+export default function (data) {
+  const body = payloads[exec.scenario.iterationInTest % payloadsCount]
 
-  // Parallel requests
-  http.batch(Array.from({ length: PARALLEL_REQS_PER_USER }, () => {
-    return {
-      method: 'POST',
-      url: data.sourceUrl,
-      body: randomItem(payloads),
-      params: data.params,
-    }
-  })).forEach((res) => checkResponse(res))
-}
-
-
-function checkResponse(res) {
-  let passed = check(res, {
-    "status is 200/202": (r) => r.status === 200 || r.status === 202,
-  })
-  if (!passed) {
-    console.error(`Request to ${res.request.url} with status ${res.status} failed the checks!`, res);
-    errors_metrics.add(1, { url: res.request.url });
+  if (USE_FASTHTTP) {
+    const response = fastHttpClient.post(new Request(data.sourceUrl, {body: body, headers: data.headers}))
+    checkstatus(data.expectedStatus, response,)
+  } else {
+    const response = http.post(data.sourceUrl, body, {headers: data.headers})
+    check(response, {"status": (r) => r.status === data.expectedStatus})
   }
 }

@@ -1,7 +1,6 @@
 import { sleep } from 'k6';
 import http from "k6/http";
-import { SharedArray } from 'k6/data';
-import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 export class Api {
   constructor(apiHost, apiToken) {
@@ -119,14 +118,4 @@ export class Api {
       sleep(1)
     }
   }
-}
-
-export function randomPayloads(payloadLength) {
-  return new SharedArray('payloads', function() {
-    let payloads = []
-    for (let i = 0; i < 100; i++) {
-      payloads.push(JSON.stringify({ a: 1, c: { d: "e", f: { g: randomString(10), h: "a".repeat(payloadLength) } } }))
-    }
-    return payloads
-  })
 }

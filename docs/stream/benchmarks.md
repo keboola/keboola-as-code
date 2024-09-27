@@ -53,9 +53,9 @@ dev bash -c "go run ./cmd/stream/main.go -- $STREAM_COMPONENTS | jl"
 ```sh
 export K6_API_TOKEN=<token>
 export K6_API_HOST=$STREAM_API_PUBLIC_URL
+export K6_FASTHTTP="false"
 export K6_SCENARIO="ramping"
 export K6_TABLE_MAPPING="static"
-export K6_PARALLEL_REQS_PER_USER="1"
 export K6_CONST_VIRTUAL_USERS="1000"
 export K6_CONST_TOTAL_REQUESTS="1000000"
 export K6_CONST_TIMEOUT="20m"
@@ -63,6 +63,7 @@ export K6_RAMPING_MAX_VIRTUAL_USERS="1000"
 export K6_RAMPING_UP_DURATION="2m"
 export K6_RAMPING_STABLE_DURATION="10m"
 export K6_RAMPING_DOWN_DURATION="2m"
+export STREAM_PAYLOAD_SIZE="1024"
 docker compose run --rm k6 run /scripts/k6/stream-api/main.js
 ```
 
