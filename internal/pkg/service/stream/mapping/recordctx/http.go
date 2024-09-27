@@ -83,6 +83,13 @@ func (c *httpContext) HeadersMap() *orderedmap.OrderedMap {
 	return c.headersMap
 }
 
+func (c *httpContext) ReleaseBuffers() {
+	c.bodyBytes = nil
+	c.bodyLength = 0
+	c.headersMap = nil
+	c.bodyMap = nil
+}
+
 func (c *httpContext) BodyBytes() ([]byte, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
