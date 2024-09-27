@@ -16,6 +16,7 @@ type Context interface {
 	ClientIP() net.IP
 	HeadersString() string
 	HeadersMap() *orderedmap.OrderedMap
+	ReleaseBuffers()
 	BodyBytes() ([]byte, error)
 	BodyLength() int
 	BodyMap() (*orderedmap.OrderedMap, error)
