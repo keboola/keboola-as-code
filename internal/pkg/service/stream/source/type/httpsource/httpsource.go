@@ -145,6 +145,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		DisablePreParseMultipartForm: true,
 		NoDefaultDate:                true,
 		NoDefaultContentType:         true,
+		CloseOnShutdown:              true,
 		Logger:                       log.NewStdErrorLogger(log.NewNopLogger()), // errors are handled by the error handler
 	}
 
