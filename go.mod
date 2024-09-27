@@ -66,7 +66,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	github.com/urfave/negroni v1.0.0
-	github.com/valyala/fasthttp v1.55.0
+	github.com/valyala/fasthttp v1.56.0
 	github.com/valyala/fastjson v1.6.4
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
 	github.com/xtaci/kcp-go/v5 v5.6.8
@@ -88,7 +88,7 @@ require (
 	goa.design/goa/v3 v3.16.2
 	goa.design/plugins/v3 v3.16.2
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
-	golang.org/x/sync v0.7.0
+	golang.org/x/sync v0.8.0
 	google.golang.org/grpc v1.64.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.68.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
@@ -128,12 +128,12 @@ require (
 	github.com/tinylib/msgp v1.1.8 // indirect
 	go.uber.org/atomic v1.11.0
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.24.0
+	golang.org/x/crypto v0.27.0
 	golang.org/x/mod v0.18.0 // indirect
-	golang.org/x/net v0.26.0
+	golang.org/x/net v0.29.0
 	golang.org/x/sys v0.25.0
-	golang.org/x/term v0.21.0
-	golang.org/x/text v0.16.0
+	golang.org/x/term v0.24.0
+	golang.org/x/text v0.18.0
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.22.0
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028
