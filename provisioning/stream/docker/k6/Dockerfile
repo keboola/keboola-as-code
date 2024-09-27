@@ -1,6 +1,8 @@
 FROM grafana/xk6:latest AS build
 
-RUN xk6 build --with github.com/LeonAdato/xk6-output-statsd
+RUN xk6 build \
+    --with github.com/LeonAdato/xk6-output-statsd@latest \
+    --with github.com/domsolutions/xk6-fasthttp@latest
 
 FROM alpine:3.20
 
