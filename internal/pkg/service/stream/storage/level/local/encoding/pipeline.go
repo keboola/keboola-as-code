@@ -78,9 +78,10 @@ type NetworkOutput interface {
 // pipeline implements Pipeline interface, it wraps common logic for all file types.
 // For conversion between record values and bytes, the encoder.Encoder is used.
 type pipeline struct {
-	logger   log.Logger
-	sliceKey model.SliceKey
-	events   *events.Events[Pipeline]
+	logger    log.Logger
+	sliceKey  model.SliceKey
+	events    *events.Events[Pipeline]
+	flushLock sync.RWMutex
 
 	encoder encoder.Encoder
 	chain   *writechain.Chain
@@ -270,6 +271,8 @@ func (p *pipeline) WriteRecord(record recordctx.Context) (int, error) {
 		return 0, errors.New(`writer is closed`)
 	}
 
+	p.flushLock.RLock()
+	defer p.flushLock.RUnlock()
 	// Format and write table row
 	n, err := p.encoder.WriteRecord(record)
 	p.writeWg.Done()
@@ -333,6 +336,9 @@ func (p *pipeline) UncompressedSize() datasize.ByteSize {
 // Flush all internal buffers to the NetworkOutput.
 // The method is called periodically by the writesync.Syncer.
 func (p *pipeline) Flush(ctx context.Context) error {
+	p.flushLock.Lock()
+	defer p.flushLock.Unlock()
+
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
