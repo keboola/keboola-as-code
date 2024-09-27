@@ -34,6 +34,11 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 
 	// Update configuration to make the cluster testable
 	configFn := func(cfg *config.Config) {
+		// Disable unrelated workers
+		cfg.Storage.DiskCleanup.Enabled = false
+		cfg.Storage.MetadataCleanup.Enabled = false
+		cfg.API.Task.CleanupEnabled = false
+
 		// Use deterministic load balancer
 		cfg.Storage.Level.Local.Writer.Network.PipelineBalancer = network.RoundRobinBalancerType
 
