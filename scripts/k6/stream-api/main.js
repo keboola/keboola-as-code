@@ -1,10 +1,11 @@
-import { check } from 'k6';
+import exec from 'k6/execution';
 import {check} from 'k6';
+import {SharedArray} from 'k6/data';
 import http from "k6/http";
 import {Request, Client, checkstatus} from "k6/x/fasthttp"
-import { randomItem } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
-import { URL } from 'https://jslib.k6.io/url/1.0.0/index.js';
-import { Api, randomPayloads } from "./api.js";
+import {URL} from 'https://jslib.k6.io/url/1.0.0/index.js';
+import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import {Api} from "./api.js";
 
 const SCENARIO = __ENV.K6_SCENARIO || "constant"; // constant or ramping
 const TABLE_MAPPING = __ENV.K6_TABLE_MAPPING || "static"; // static, path or template
@@ -132,11 +133,18 @@ export const options = {
   },
 };
 
+// Partially unique payloads
+const payloadsCount = 100
+const payloads = new SharedArray('payloads', function () {
+  let out = []
+  for (let i = 0; i < payloadsCount; i++) {
+    out.push(JSON.stringify({a: 1, c: {d: "e", f: {g: randomString(10), h: "a".repeat(PAYLOAD_SIZE)}}}))
+  }
+  return out
+})
+
 const api = new Api(API_HOST, API_TOKEN)
 
-const errors_metrics = new Counter("failed_imports");
-
-const payloads = randomPayloads(PAYLOAD_SIZE)
 const fastHttpClient = new Client()
 
 export function setup() {
