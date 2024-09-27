@@ -32,8 +32,8 @@ const (
 
 type ForTest interface {
 	Telemetry
-	TraceID(n int) trace.TraceID
-	SpanID(n int) trace.SpanID
+	TraceID(n uint16) trace.TraceID
+	SpanID(n uint16) trace.SpanID
 	Reset()
 	AddSpanFilter(f TestSpanFilter) ForTest
 	AddMetricFilter(f TestMetricFilter) ForTest
@@ -162,12 +162,12 @@ func (v *forTest) AddMetricFilter(f TestMetricFilter) ForTest {
 	return v
 }
 
-func (v *forTest) TraceID(n int) trace.TraceID {
-	return toTraceID(testTraceIDBase + uint16(n))
+func (v *forTest) TraceID(n uint16) trace.TraceID {
+	return toTraceID(testTraceIDBase + n)
 }
 
-func (v *forTest) SpanID(n int) trace.SpanID {
-	return toSpanID(testSpanIDBase + uint16(n))
+func (v *forTest) SpanID(n uint16) trace.SpanID {
+	return toSpanID(testSpanIDBase + n)
 }
 
 func (v *forTest) Reset() {

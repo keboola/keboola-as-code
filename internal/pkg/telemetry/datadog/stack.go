@@ -13,7 +13,7 @@ type stackTracer interface {
 }
 
 // takeStacktrace from dd-trace-go library.
-func takeStacktrace(n int, skip uint) string {
+func takeStacktrace(n int, skip uint32) string {
 	pcs := make([]uintptr, n)
 	numFrames := runtime.Callers(2+int(skip), pcs)
 	if numFrames == 0 {

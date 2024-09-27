@@ -607,7 +607,6 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendR
 
 		// For each row
 		for rowIndex, row := range configWithRows.Rows {
-			rowIndex, row := rowIndex, row
 			rowDesc := fmt.Sprintf("%s/%s", configDesc, row.Name)
 
 			// Generate ID for row
