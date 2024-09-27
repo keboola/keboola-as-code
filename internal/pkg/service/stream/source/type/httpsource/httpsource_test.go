@@ -542,7 +542,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 		//  "statusCode": 413,
 		//  "error": "stream.in.bodyTooLarge",
 		//  "message": "Request body size is over the maximum \"8000B\"."
-		//}`,
+		// }`,
 		//		},
 		{
 			Name: "stream input - POST - disable sink",
