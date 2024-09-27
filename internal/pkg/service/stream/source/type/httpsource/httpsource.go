@@ -137,7 +137,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		IdleTimeout:                  cfg.IdleTimeout,
 		ReadBufferSize:               int(cfg.ReadBufferSize.Bytes()),
 		WriteBufferSize:              int(cfg.WriteBufferSize.Bytes()),
-		ReduceMemoryUsage:            false, // aggressively reduces memory usage at the cost of higher CPU usage
+		ReduceMemoryUsage:            true, // ctx.ResetBody frees the buffer for reuse (slightly higher CPU usage)
 		MaxRequestBodySize:           int(cfg.MaxRequestBodySize.Bytes()),
 		StreamRequestBody:            false, // true is slower
 		TCPKeepalive:                 true,
@@ -145,6 +145,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		DisablePreParseMultipartForm: true,
 		NoDefaultDate:                true,
 		NoDefaultContentType:         true,
+		CloseOnShutdown:              true,
 		Logger:                       log.NewStdErrorLogger(log.NewNopLogger()), // errors are handled by the error handler
 	}
 

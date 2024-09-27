@@ -82,6 +82,13 @@ func (c *fastHTTPContext) HeadersMap() *orderedmap.OrderedMap {
 	return c.headersMap
 }
 
+func (c *fastHTTPContext) ReleaseBuffers() {
+	c.req.ResetBody()
+	c.headersMap = nil
+	c.bodyMap = nil
+	c.jsonValue = nil
+}
+
 func (c *fastHTTPContext) BodyBytes() ([]byte, error) {
 	return c.req.Request.Body(), nil // returned buffer is valid until the request is released
 }

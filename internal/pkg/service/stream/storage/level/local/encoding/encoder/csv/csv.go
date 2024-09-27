@@ -74,6 +74,10 @@ func (w *Encoder) WriteRecord(record recordctx.Context) (int, error) {
 		return n, err
 	}
 
+	// Buffers can be released
+	// Important: values slice contains reference to the body []byte buffer, so it can be released sooner.
+	record.ReleaseBuffers()
+
 	return n, nil
 }
 
