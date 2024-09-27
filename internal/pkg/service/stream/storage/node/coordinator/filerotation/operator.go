@@ -369,13 +369,17 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	err = o.storage.File().Rotate(file.FileKey.SinkKey, o.clock.Now()).RequireLock(lock).Do(ctx).Err()
 	// Handle error
 	if err != nil {
-		rb.InvokeIfErr(ctx, &err)
-		o.logger.Errorf(ctx, "cannot rotate file: %s", err)
+		// Update the entity, the ctx may be cancelled
+		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+		defer dbCancel()
+
+		rb.InvokeIfErr(dbCtx, &err)
+		o.logger.Errorf(dbCtx, "cannot rotate file: %s", err)
 
 		// Increment retry delay
-		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).Err()
 		if rErr != nil {
-			o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", rErr)
+			o.logger.Errorf(dbCtx, "cannot increment file rotation retry attempt: %s", rErr)
 			return
 		}
 	}
@@ -441,7 +445,7 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(dbCtx, err.Error())
-		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).ResultOrErr()
+		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).ResultOrErr()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment file close retry: %s", rErr)
 			return
