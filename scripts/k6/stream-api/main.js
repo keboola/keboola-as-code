@@ -18,9 +18,6 @@ const API_TOKEN = __ENV.K6_API_TOKEN;
 const API_HOST = __ENV.K6_API_HOST || "http://localhost:8001";
 const OVERWRITE_SOURCE_HOST = __ENV.K6_OVERWRITE_SOURCE_HOST; // to call directly k8s service
 
-// Common for all scenarios
-const PARALLEL_REQS_PER_USER = __ENV.K6_PARALLEL_REQS_PER_USER || 1;
-
 // Constant VUs / iterations scenario
 const CONST_VIRTUAL_USERS = __ENV.K6_CONST_VIRTUAL_USERS || 1000;
 const CONST_TOTAL_REQUESTS = __ENV.K6_CONST_TOTAL_REQUESTS || 1000000;
@@ -34,7 +31,7 @@ const RAMPING_DOWN_DURATION = __ENV.K6_RAMPING_DOWN_DURATION || "2m";
 
 // Stream configuration
 const SYNC_MODE = __ENV.STREAM_SYNC_MODE || "disk"; // cache / disk
-const SYNC_WAIT = __ENV.STREAM_SYNC_WAIT || "1"; // 1 = enabled, 0 = disabled
+const SYNC_WAIT = (__ENV.STREAM_SYNC_WAIT || "true") === "true";
 
 // Payload configuration
 const PAYLOAD_SIZE = __ENV.STREAM_PAYLOAD_SIZE || 1 // 1 = 54B, 1024 = ~1KB (1077B), 1048500 = ~1MB (1048576)
@@ -44,7 +41,7 @@ const scenarios = {
   constant: {
     executor: "shared-iterations",
     vus: CONST_VIRTUAL_USERS,
-    iterations: CONST_TOTAL_REQUESTS / PARALLEL_REQS_PER_USER,
+    iterations: CONST_TOTAL_REQUESTS,
     maxDuration: CONST_TIMEOUT,
   },
   ramping: {
@@ -112,13 +109,10 @@ const mappings = {
 export const options = {
   systemTags: ['status', 'group'],
   discardResponseBodies: true, // we are checking only status codes
-  teardownTimeout: '120s',
-  batch: PARALLEL_REQS_PER_USER,
-  batchPerHost: PARALLEL_REQS_PER_USER,
-  scenarios: {
+  teardownTimeout: '120s', scenarios: {
     [SCENARIO]: scenarios[SCENARIO]
   },
-  // Improve results table
+  // Improve results summary
   // Workaround: https://k6.io/docs/using-k6/workaround-to-calculate-iteration_duration/
   thresholds: {
     [`http_req_duration{scenario:${SCENARIO}}`]: [`max>=0`],
