@@ -297,15 +297,18 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	// Handle error
 	if err != nil {
 		var stateErr sliceRepo.UnexpectedFileSliceStatesError
+		// Update the entity, the ctx may be cancelled
+		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+		defer dbCancel()
 		if errors.As(err, &stateErr) && stateErr.FileState != model.FileWriting {
-			o.logger.Info(ctx, "skipped slice rotation, file is already closed")
+			o.logger.Info(dbCtx, "skipped slice rotation, file is already closed")
 		} else {
-			o.logger.Errorf(ctx, "cannot rotate slice: %s", err)
+			o.logger.Errorf(dbCtx, "cannot rotate slice: %s", err)
 
 			// Increment retry delay
-			rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(ctx).Err()
+			rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).Err()
 			if rErr != nil {
-				o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", err)
+				o.logger.Errorf(dbCtx, "cannot increment file rotation retry attempt: %s", err)
 				return
 			}
 		}
@@ -364,7 +367,7 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	// If there is an error, increment retry delay
 	if err != nil {
 		o.logger.Error(dbCtx, err.Error())
-		sliceEntity, rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(ctx).ResultOrErr()
+		sliceEntity, rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(dbCtx).ResultOrErr()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment slice retry: %s", rErr)
 			return
@@ -393,7 +396,7 @@ func (o *operator) waitForSliceClosing(ctx context.Context, slice *sliceData) (s
 
 	// Make sure the statistics cache is up-to-date
 	if err := o.statisticsCache.WaitForRevision(ctx, slice.ModRevision); err != nil {
-		return statistics.Aggregated{}, errors.PrefixError(err, "error when waiting for statistics cache revision")
+		return statistics.Aggregated{}, errors.PrefixErrorf(err, "error when waiting for statistics cache revision, actual: %v, expected: %v", o.statisticsCache.Revision(), slice.ModRevision)
 	}
 
 	// Get slice statistics

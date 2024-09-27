@@ -170,6 +170,7 @@ func (w *writer) Close(ctx context.Context) error {
 	w.wg.Wait()
 
 	if w.writen != w.aligned {
+		w.logger.Warnf(ctx, `file is not aligned, truncating`)
 		seeked, err := w.file.Seek(w.aligned-w.writen, io.SeekCurrent)
 		if err == nil {
 			err = w.file.Truncate(seeked)
