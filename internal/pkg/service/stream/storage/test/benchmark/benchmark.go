@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/ccoveille/go-safecast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
@@ -184,8 +185,12 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 
 	// Check statistics
 	if assert.NoError(b, statsErr) {
-		assert.Equal(b, int(sliceStats.Total.RecordsCount), b.N, "records count doesn't match")
-		assert.Equal(b, int64(sliceStats.Total.CompressedSize.Bytes()), fileStat.Size(), "compressed file size doesn't match")
+		count, err := safecast.ToUint64(b.N)
+		assert.NoError(b, err)
+		assert.Equal(b, sliceStats.Total.RecordsCount, count, "records count doesn't match")
+		size, err := safecast.ToUint64(fileStat.Size())
+		assert.NoError(b, err)
+		assert.Equal(b, sliceStats.Total.CompressedSize.Bytes(), size, "compressed file size doesn't match")
 	}
 
 	// Report extra metrics

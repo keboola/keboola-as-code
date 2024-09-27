@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ccoveille/go-safecast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
@@ -307,13 +308,21 @@ func (g *testIDGenerator) Reset() {
 
 func (g *testIDGenerator) NewIDs(ctx context.Context) (trace.TraceID, trace.SpanID) {
 	v := g.traceID.Add(1)
-	traceID := toTraceID(testTraceIDBase + uint16(v))
+	i, err := safecast.ToUint16(v)
+	if err != nil {
+		panic(err)
+	}
+	traceID := toTraceID(testTraceIDBase + i)
 	return traceID, g.NewSpanID(ctx, traceID)
 }
 
 func (g *testIDGenerator) NewSpanID(_ context.Context, _ trace.TraceID) trace.SpanID {
 	v := g.spanID.Add(1)
-	return toSpanID(testSpanIDBase + uint16(v))
+	i, err := safecast.ToUint16(v)
+	if err != nil {
+		panic(err)
+	}
+	return toSpanID(testSpanIDBase + i)
 }
 
 func toTraceID(in uint16) trace.TraceID { //nolint: unparam
