@@ -29,7 +29,8 @@ RUN mkdir -p ~ && \
     echo 'PS1="\w > "' > ~/.bashrc
 
 # Fix permissions
-RUN mkdir -p $GOCACHE && chmod -R 1777 $GOCACHE && \
+RUN chmod -R 1777 $GOPATH && \
+    mkdir -p $GOCACHE && chmod -R 1777 $GOCACHE && \
     mkdir -p $GOMODCACHE && chmod -R 1777 $GOMODCACHE && \
     mkdir -p $GOLANGCI_LINT_CACHE && chmod -R 1777 $GOLANGCI_LINT_CACHE && \
     mkdir -p $HOME && chmod -R 1777 $HOME
