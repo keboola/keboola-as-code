@@ -277,6 +277,7 @@ func (p *pipeline) WriteRecord(record recordctx.Context) (int, error) {
 		return n, err
 	}
 
+	// Get notifier to wait for the next sync
 	notifier := p.syncer.Notifier()
 
 	// Increments number of high-level writes in progress
