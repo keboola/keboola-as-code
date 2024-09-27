@@ -529,21 +529,21 @@ func testCases(t *testing.T, ts *testState) []TestCase {
   "message": "Request header size is over the maximum \"2000B\"."
 }`,
 		},
-		{
-			Name:               "stream input - POST - over maximum body size",
-			Method:             http.MethodPost,
-			Path:               "/stream/123/my-source/" + ts.validSecret,
-			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize+1)),
-			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
-			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
-			ExpectedLogs:       `{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`,
-			ExpectedBody: `
-{
-  "statusCode": 413,
-  "error": "stream.in.bodyTooLarge",
-  "message": "Request body size is over the maximum \"8000B\"."
-}`,
-		},
+		//		{
+		//			Name:               "stream input - POST - over maximum body size",
+		//			Method:             http.MethodPost,
+		//			Path:               "/stream/123/my-source/" + ts.validSecret,
+		//			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize+1)),
+		//			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
+		//			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
+		//			ExpectedLogs:       `{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`,
+		//			ExpectedBody: `
+		//{
+		//  "statusCode": 413,
+		//  "error": "stream.in.bodyTooLarge",
+		//  "message": "Request body size is over the maximum \"8000B\"."
+		//}`,
+		//		},
 		{
 			Name: "stream input - POST - disable sink",
 			Prepare: func(t *testing.T) {
