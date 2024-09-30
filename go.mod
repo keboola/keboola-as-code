@@ -23,6 +23,7 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/ccoveille/go-safecast v1.1.0
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/coder/websocket v1.8.12
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/fatih/color v1.17.0
 	github.com/go-playground/locales v0.14.1
@@ -93,7 +94,6 @@ require (
 	google.golang.org/grpc v1.67.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.68.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
-	nhooyr.io/websocket v1.8.17
 	v.io/x/lib v0.1.20
 )
 
