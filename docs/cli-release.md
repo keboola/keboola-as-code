@@ -26,7 +26,7 @@ The release process is handled by [.github/workflows](../.github/workflows).
 - [Initial PR](https://github.com/microsoft/winget-pkgs/pull/47486)
 - Our release workflow sends a new PR to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs/pulls?q=is%3Apr+sort%3Aupdated-desc+Keboola)
 - We need to wait for one of the maintainers to merge the PR, this can take a few days
-- To install Keboola CLI with [winGet](https://winstall.app/apps/Keboola.KeboolaCLI).
+- To install Keboola CLI with winget, use `winget install --id=Keboola.KeboolaCLI  -e`
 
 ## macOS
 
