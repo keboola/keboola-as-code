@@ -91,11 +91,11 @@ func StripHTMLComments(str string) string {
 		})
 }
 
-func Truncate(str string, max int, suffix string) string {
-	if len(str) <= max {
+func Truncate(str string, maximum int, suffix string) string {
+	if len(str) <= maximum {
 		return str
 	}
-	return str[0:max] + suffix
+	return str[0:maximum] + suffix
 }
 
 // NormalizeName converts any string into kebab-case.

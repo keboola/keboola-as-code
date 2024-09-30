@@ -418,7 +418,7 @@ func TestAtomicUpdate(t *testing.T) {
 	var logger strings.Builder
 
 	// Create atomic update operation
-	var beforeUpdate func() (clear bool)
+	var beforeUpdate func() (clearCallback bool)
 	var valueFromGetPhase string
 	var result string
 	atomicOp := op.Atomic(client, &result)
@@ -496,7 +496,7 @@ func TestAtomicUpdate(t *testing.T) {
 	assert.Equal(t, "<<value>>", string(r.Value))
 
 	// 3. Modification during update, DoWithoutRetry, fail
-	beforeUpdate = func() (clear bool) {
+	beforeUpdate = func() (clearCallback bool) {
 		require.NoError(t, key1.Put(client, "newValue1").Do(ctx).Err())
 		return true
 	}
@@ -508,7 +508,7 @@ func TestAtomicUpdate(t *testing.T) {
 	assert.Equal(t, "newValue1", string(r.Value))
 
 	// 4. Modification during update, Do, fail
-	beforeUpdate = func() (clear bool) {
+	beforeUpdate = func() (clearCallback bool) {
 		require.NoError(t, key1.Put(client, "newValue3").Do(ctx).Err())
 		return false
 	}
@@ -521,7 +521,7 @@ func TestAtomicUpdate(t *testing.T) {
 	assert.Equal(t, "newValue3", string(r.Value))
 
 	// 5. Modification during update, Do, success
-	beforeUpdate = func() (clear bool) {
+	beforeUpdate = func() (clearCallback bool) {
 		require.NoError(t, key1.Put(client, "newValue2").Do(ctx).Err())
 		return true
 	}

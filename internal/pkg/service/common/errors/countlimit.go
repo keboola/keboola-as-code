@@ -13,8 +13,8 @@ type CountLimitReachedError struct {
 	in   string
 }
 
-func NewCountLimitReachedError(what string, max int, in string) CountLimitReachedError {
-	return CountLimitReachedError{what: what, max: max, in: in}
+func NewCountLimitReachedError(what string, maximum int, in string) CountLimitReachedError {
+	return CountLimitReachedError{what: what, max: maximum, in: in}
 }
 
 func (e CountLimitReachedError) ErrorName() string {
