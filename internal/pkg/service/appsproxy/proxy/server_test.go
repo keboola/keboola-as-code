@@ -166,6 +166,38 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "net.host.name",
               "Value": {
                 "Type": "STRING",
+                "Value": "hub.keboola.local"
+              }
+            }
+          ],
+        },
+        {
+          "Attributes": [
+            {
+              "Key": "http.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            },
+            {
+              "Key": "http.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 200
+              }
+            },
+            {
+              "Key": "net.host.name",
+              "Value": {
+                "Type": "STRING",
                 "Value": "public-123.hub.keboola.local"
               }
             },
@@ -301,6 +333,38 @@ func TestAppProxyHandler(t *testing.T) {
               "Key": "net.host.name",
               "Value": {
                 "Type": "STRING",
+                "Value": "hub.keboola.local"
+              }
+            }
+          ],
+        },
+        {
+          "Attributes": [
+            {
+              "Key": "http.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            },
+            {
+              "Key": "http.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 200
+              }
+            },
+            {
+              "Key": "net.host.name",
+              "Value": {
+                "Type": "STRING",
                 "Value": "public-123.hub.keboola.local"
               }
             },
@@ -409,6 +473,39 @@ func TestAppProxyHandler(t *testing.T) {
     "Unit": "ms",
     "Data": {
       "DataPoints": [
+        {
+          "Attributes": [
+            {
+              "Key": "http.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            },
+            {
+              "Key": "http.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 200
+              }
+            },
+            {
+              "Key": "net.host.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "hub.keboola.local"
+              }
+            }
+          ],
+          "Count": 2,
+        },
         {
           "Attributes": [
             {
