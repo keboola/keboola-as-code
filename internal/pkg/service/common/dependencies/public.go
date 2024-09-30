@@ -76,7 +76,7 @@ func newPublicScope(ctx context.Context, baseScp BaseScope, storageAPIHost strin
 	var indexWithComponents *keboola.IndexComponents
 	if cfg.preloadComponents {
 		logger.Info(ctx, "loading Storage API index with components")
-		indexWithComponents, err = keboola.APIIndexWithComponents(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient), keboola.WithOnSuccessTimeout(1*time.Minute))
+		indexWithComponents, err = keboola.APIIndexWithComponents(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient), keboola.WithOnSuccessTimeout(30*time.Second))
 		if err != nil {
 			return nil, err
 		}
