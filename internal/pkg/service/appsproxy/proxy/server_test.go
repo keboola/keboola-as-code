@@ -71,20 +71,20 @@ func TestAppProxyHandler(t *testing.T) {
 
 	// Get robots.txt
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "https://hub.keboola.local/robots.txt", nil)
+	req := httptest.NewRequest(http.MethodGet, "https://hub.keboola.local/robots.txt", nil)
 	handler.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "Disallow: /")
 
 	// Get missing asset
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "https://hub.keboola.local/_proxy/assets/foo.bar", nil)
+	req = httptest.NewRequest(http.MethodGet, "https://hub.keboola.local/_proxy/assets/foo.bar", nil)
 	handler.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusNotFound, rec.Code)
 
 	// Invalid host
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "https://public-123.foo.bar.local/path", nil)
+	req = httptest.NewRequest(http.MethodGet, "https://public-123.foo.bar.local/path", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusBadRequest, rec.Code)
@@ -92,7 +92,7 @@ func TestAppProxyHandler(t *testing.T) {
 
 	// Send logged request
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "https://public-123.hub.keboola.local/path", nil)
+	req = httptest.NewRequest(http.MethodGet, "https://public-123.hub.keboola.local/path", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
@@ -100,7 +100,7 @@ func TestAppProxyHandler(t *testing.T) {
 
 	// Send ignored request
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "https://hub.keboola.local/health-check", nil)
+	req = httptest.NewRequest(http.MethodGet, "https://hub.keboola.local/health-check", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
