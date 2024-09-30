@@ -10,7 +10,7 @@ replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.
 
 require (
 	ariga.io/atlas v0.27.0
-	entgo.io/ent v0.13.1
+	entgo.io/ent v0.14.1
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Masterminds/semver v1.5.0
