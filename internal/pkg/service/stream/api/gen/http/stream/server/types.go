@@ -1113,8 +1113,6 @@ type TableMappingResponseBody struct {
 
 // TableColumnResponseBody is used to define fields on response body types.
 type TableColumnResponseBody struct {
-	// Sets this column as a part of the primary key of the destination table.
-	PrimaryKey bool `form:"primaryKey" json:"primaryKey" xml:"primaryKey"`
 	// Column mapping type. This represents a static mapping (e.g. `body` or
 	// `headers`), or a custom mapping using a template language (`template`).
 	Type column.Type `form:"type" json:"type" xml:"type"`
@@ -1267,8 +1265,6 @@ type TableMappingRequestBody struct {
 
 // TableColumnRequestBody is used to define fields on request body types.
 type TableColumnRequestBody struct {
-	// Sets this column as a part of the primary key of the destination table.
-	PrimaryKey *bool `form:"primaryKey,omitempty" json:"primaryKey,omitempty" xml:"primaryKey,omitempty"`
 	// Column mapping type. This represents a static mapping (e.g. `body` or
 	// `headers`), or a custom mapping using a template language (`template`).
 	Type *column.Type `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
