@@ -108,6 +108,8 @@ data:
         readBufferSize: 16KB
         # Write buffer size. Validation rules: required
         writeBufferSize: 4KB
+        # Size of the body loaded to memory before handler. Validation rules: required
+        prefetchBodySize: 64KB
         # Max size of the HTTP request body. Validation rules: required
         maxRequestBodySize: 1MB
     sink:

@@ -138,8 +138,8 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		ReadBufferSize:               int(cfg.ReadBufferSize.Bytes()),
 		WriteBufferSize:              int(cfg.WriteBufferSize.Bytes()),
 		ReduceMemoryUsage:            true, // ctx.ResetBody frees the buffer for reuse (slightly higher CPU usage)
-		MaxRequestBodySize:           int(cfg.MaxRequestBodySize.Bytes()),
-		StreamRequestBody:            false, // true is slower
+		MaxRequestBodySize:           int(cfg.PrefetchBodySize.Bytes()),
+		StreamRequestBody:            true, // don't prefetch the full body
 		TCPKeepalive:                 true,
 		NoDefaultServerHeader:        true,
 		DisablePreParseMultipartForm: true,

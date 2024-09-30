@@ -94,6 +94,8 @@ func (c *fastHTTPContext) BodyBytes() ([]byte, error) {
 }
 
 func (c *fastHTTPContext) BodyLength() int {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	return len(c.req.Request.Body())
 }
 

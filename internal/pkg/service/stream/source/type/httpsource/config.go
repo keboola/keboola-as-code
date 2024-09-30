@@ -15,6 +15,7 @@ type Config struct {
 	MaxConnections     int               `configKey:"maxConnections" configUsage:"The maximum number of concurrent connections the server may serve." validate:"required"`
 	ReadBufferSize     datasize.ByteSize `configKey:"readBufferSize" configUsage:"Read buffer size, all HTTP headers must fit in" validate:"required"`
 	WriteBufferSize    datasize.ByteSize `configKey:"writeBufferSize" configUsage:"Write buffer size." validate:"required"`
+	PrefetchBodySize   datasize.ByteSize `configKey:"prefetchBodySize" configUsage:"Size of the body loaded to memory before handler." validate:"required"`
 	MaxRequestBodySize datasize.ByteSize `configKey:"maxRequestBodySize" configUsage:"Max size of the HTTP request body." validate:"required"`
 }
 
@@ -27,6 +28,7 @@ func NewConfig() Config {
 		MaxConnections:     200000,
 		ReadBufferSize:     16 * datasize.KB,
 		WriteBufferSize:    4 * datasize.KB,
+		PrefetchBodySize:   64 * datasize.KB,
 		MaxRequestBodySize: 1 * datasize.MB,
 	}
 }
