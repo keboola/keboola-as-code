@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ccoveille/go-safecast"
 	"github.com/hashicorp/yamux"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -19,12 +20,17 @@ func streamKey(stream *ServerStream) string {
 }
 
 func multiplexerConfig(_ log.Logger, config network.Config) *yamux.Config {
+	maxWindowSize, err := safecast.ToUint32(config.StreamMaxWindow.Bytes())
+	if err != nil {
+		panic(err)
+	}
+
 	return &yamux.Config{
 		AcceptBacklog:          config.MaxWaitingStreams,
 		EnableKeepAlive:        true,
 		KeepAliveInterval:      config.KeepAliveInterval,
 		ConnectionWriteTimeout: config.StreamWriteTimeout,
-		MaxStreamWindowSize:    uint32(config.StreamMaxWindow.Bytes()),
+		MaxStreamWindowSize:    maxWindowSize,
 		StreamOpenTimeout:      config.StreamOpenTimeout,
 		StreamCloseTimeout:     config.StreamCloseTimeout,
 		// Disable logs, prevent duplicate error logs.

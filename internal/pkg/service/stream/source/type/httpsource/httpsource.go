@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/ccoveille/go-safecast"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/keboola/go-client/pkg/keboola"
 	routing "github.com/qiangxue/fasthttp-routing"
@@ -130,15 +131,28 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	})
 
 	// Prepare HTTP server
+	readBufferSize, err := safecast.ToInt(cfg.ReadBufferSize.Bytes())
+	if err != nil {
+		return err
+	}
+	writeBufferSize, err := safecast.ToInt(cfg.WriteBufferSize.Bytes())
+	if err != nil {
+		return err
+	}
+	maxRequestBodySize, err := safecast.ToInt(cfg.MaxRequestBodySize.Bytes())
+	if err != nil {
+		return err
+	}
+
 	srv := &fasthttp.Server{
 		Handler:                      fasthttp.TimeoutHandler(router.HandleRequest, cfg.RequestTimeout, "request timeout"),
 		ErrorHandler:                 errorHandler,
 		Concurrency:                  cfg.MaxConnections,
 		IdleTimeout:                  cfg.IdleTimeout,
-		ReadBufferSize:               int(cfg.ReadBufferSize.Bytes()),
-		WriteBufferSize:              int(cfg.WriteBufferSize.Bytes()),
+		ReadBufferSize:               readBufferSize,
+		WriteBufferSize:              writeBufferSize,
 		ReduceMemoryUsage:            true, // ctx.ResetBody frees the buffer for reuse (slightly higher CPU usage)
-		MaxRequestBodySize:           int(cfg.MaxRequestBodySize.Bytes()),
+		MaxRequestBodySize:           maxRequestBodySize,
 		StreamRequestBody:            false, // true is slower
 		TCPKeepalive:                 true,
 		NoDefaultServerHeader:        true,

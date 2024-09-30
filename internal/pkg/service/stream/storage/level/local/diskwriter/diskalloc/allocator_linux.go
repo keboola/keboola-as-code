@@ -7,12 +7,18 @@ import (
 	"syscall"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/ccoveille/go-safecast"
 	"golang.org/x/sys/unix"
 )
 
 func (a DefaultAllocator) Allocate(f File, size datasize.ByteSize) (bool, error) {
+	bytes, err := safecast.ToInt64(size.Bytes())
+	if err != nil {
+		return false, err
+	}
+
 	// Allocate space using the "fallocate" sys call, Linux only.
-	err := unix.Fallocate(int(f.Fd()), unix.FALLOC_FL_KEEP_SIZE, 0, int64(size.Bytes()))
+	err = unix.Fallocate(int(f.Fd()), unix.FALLOC_FL_KEEP_SIZE, 0, bytes)
 	if err != nil {
 		return false, err
 	}
@@ -33,5 +39,10 @@ func Allocated(path string) (datasize.ByteSize, error) {
 	// Notes:
 	// 1. "/ 8": Blksize is in bits not bytes
 	// 2. The type of fields can vary depending on the architecture (int32/int64), so retyping it to int64 is necessary.
-	return datasize.ByteSize((int64(sysStat.Blksize / 8)) * int64(sysStat.Blocks)), nil // nolint:unconvert
+	size, err := safecast.ToUint64((int64(sysStat.Blksize / 8)) * int64(sysStat.Blocks)) // nolint:unconvert
+	if err != nil {
+		return 0, err
+	}
+
+	return datasize.ByteSize(size), nil
 }

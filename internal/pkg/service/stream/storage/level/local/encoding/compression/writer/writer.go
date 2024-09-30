@@ -6,6 +6,7 @@ import (
 	"io"
 	"runtime"
 
+	"github.com/ccoveille/go-safecast"
 	fastGzip "github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
@@ -57,7 +58,12 @@ func newParallelGZIPWriter(w io.Writer, cfg compression.Config) (io.WriteCloser,
 		return nil, errors.Errorf(`cannot create parallel gzip writer: %w`, err)
 	}
 
-	err = out.SetConcurrency(int(cfg.GZIP.BlockSize.Bytes()), concurrency)
+	bytes, err := safecast.ToInt(cfg.GZIP.BlockSize.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	err = out.SetConcurrency(bytes, concurrency)
 	if err != nil {
 		return nil, errors.Errorf(`cannot set parallel gzip concurrency, size=%s, count=%d: %w`, cfg.GZIP.BlockSize, concurrency, err)
 	}
@@ -72,11 +78,16 @@ func newZstdWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) 
 		concurrency = runtime.GOMAXPROCS(0)
 	}
 
+	bytes, err := safecast.ToInt(cfg.ZSTD.WindowSize.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
 	return zstd.NewWriter(
 		w,
 		zstd.WithEncoderLevel(cfg.ZSTD.Level),
 		zstd.WithEncoderConcurrency(concurrency),
-		zstd.WithWindowSize(nextPowOf2(int(cfg.ZSTD.WindowSize.Bytes()))),
+		zstd.WithWindowSize(nextPowOf2(bytes)),
 		zstd.WithLowerEncoderMem(false),
 	)
 }

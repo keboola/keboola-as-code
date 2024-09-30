@@ -2,7 +2,10 @@
 
 package diskwriter
 
-import "golang.org/x/sys/unix"
+import (
+	"github.com/ccoveille/go-safecast"
+	"golang.org/x/sys/unix"
+)
 
 func (v *Volume) UsedSpace() (uint64, error) {
 	var stat unix.Statfs_t
@@ -11,7 +14,12 @@ func (v *Volume) UsedSpace() (uint64, error) {
 		return 0, err
 	}
 
-	return (stat.Blocks - stat.Bavail) * uint64(stat.Bsize), nil
+	blockSize, err := safecast.ToUint64(stat.Bsize)
+	if err != nil {
+		return 0, err
+	}
+
+	return (stat.Blocks - stat.Bavail) * blockSize, nil
 }
 
 func (v *Volume) TotalSpace() (uint64, error) {
@@ -21,5 +29,10 @@ func (v *Volume) TotalSpace() (uint64, error) {
 		return 0, err
 	}
 
-	return stat.Blocks * uint64(stat.Bsize), nil
+	blockSize, err := safecast.ToUint64(stat.Bsize)
+	if err != nil {
+		return 0, err
+	}
+
+	return stat.Blocks * blockSize, nil
 }
