@@ -82,6 +82,11 @@ func EnableSourceStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/enable", branchID, sourceID)
 }
 
+// ListSourceVersionsStreamPath returns the URL path to the stream service ListSourceVersions HTTP endpoint.
+func ListSourceVersionsStreamPath(branchID string, sourceID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/versions", branchID, sourceID)
+}
+
 // CreateSinkStreamPath returns the URL path to the stream service CreateSink HTTP endpoint.
 func CreateSinkStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks", branchID, sourceID)

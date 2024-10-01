@@ -278,6 +278,12 @@ type EnableSourceResponseBody struct {
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
+// ListSourceVersionsResponseBody is the type of the "stream" service
+// "ListSourceVersions" endpoint HTTP response body.
+type ListSourceVersionsResponseBody struct {
+	Versions []*VersionResponseBody `form:"versions,omitempty" json:"versions,omitempty" xml:"versions,omitempty"`
+}
+
 // CreateSinkResponseBody is the type of the "stream" service "CreateSink"
 // endpoint HTTP response body.
 type CreateSinkResponseBody struct {
@@ -632,6 +638,18 @@ type DisableSourceStreamAPISourceNotFoundResponseBody struct {
 // service "EnableSource" endpoint HTTP response body for the
 // "stream.api.sourceNotFound" error.
 type EnableSourceStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ListSourceVersionsStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "ListSourceVersions" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type ListSourceVersionsStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -1513,6 +1531,19 @@ func NewEnableSourceResponseBody(res *stream.Task) *EnableSourceResponseBody {
 	return body
 }
 
+// NewListSourceVersionsResponseBody builds the HTTP response body from the
+// result of the "ListSourceVersions" endpoint of the "stream" service.
+func NewListSourceVersionsResponseBody(res *stream.EntityVersions) *ListSourceVersionsResponseBody {
+	body := &ListSourceVersionsResponseBody{}
+	if res.Versions != nil {
+		body.Versions = make([]*VersionResponseBody, len(res.Versions))
+		for i, val := range res.Versions {
+			body.Versions[i] = marshalStreamVersionToVersionResponseBody(val)
+		}
+	}
+	return body
+}
+
 // NewCreateSinkResponseBody builds the HTTP response body from the result of
 // the "CreateSink" endpoint of the "stream" service.
 func NewCreateSinkResponseBody(res *stream.Task) *CreateSinkResponseBody {
@@ -1905,6 +1936,18 @@ func NewDisableSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericErro
 // body from the result of the "EnableSource" endpoint of the "stream" service.
 func NewEnableSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *EnableSourceStreamAPISourceNotFoundResponseBody {
 	body := &EnableSourceStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewListSourceVersionsStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "ListSourceVersions" endpoint of the
+// "stream" service.
+func NewListSourceVersionsStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *ListSourceVersionsStreamAPISourceNotFoundResponseBody {
+	body := &ListSourceVersionsStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -2343,6 +2386,19 @@ func NewEnableSourcePayload(branchID string, sourceID string, storageAPIToken st
 	v := &stream.EnableSourcePayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewListSourceVersionsPayload builds a stream service ListSourceVersions
+// endpoint payload.
+func NewListSourceVersionsPayload(branchID string, sourceID string, afterID string, limit int, storageAPIToken string) *stream.ListSourceVersionsPayload {
+	v := &stream.ListSourceVersionsPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.AfterID = afterID
+	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
 	return v

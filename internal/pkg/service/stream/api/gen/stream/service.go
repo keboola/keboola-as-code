@@ -52,6 +52,8 @@ type Service interface {
 	DisableSource(context.Context, dependencies.SourceRequestScope, *DisableSourcePayload) (res *Task, err error)
 	// Enables the source.
 	EnableSource(context.Context, dependencies.SourceRequestScope, *EnableSourcePayload) (res *Task, err error)
+	// List all source versions.
+	ListSourceVersions(context.Context, dependencies.SourceRequestScope, *ListSourceVersionsPayload) (res *EntityVersions, err error)
 	// Create a new sink in the source.
 	CreateSink(context.Context, dependencies.SourceRequestScope, *CreateSinkPayload) (res *Task, err error)
 	// Get the sink definition.
@@ -102,7 +104,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [28]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "GetTask", "AggregationSources"}
+var MethodNames = [29]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "ListSourceVersions", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "GetTask", "AggregationSources"}
 
 // A mapping from imported data to a destination table.
 type AggregatedSink struct {
@@ -302,6 +304,12 @@ type EnableSourcePayload struct {
 	SourceID        SourceID
 }
 
+// EntityVersions is the result type of the stream service ListSourceVersions
+// method.
+type EntityVersions struct {
+	Versions []*Version
+}
+
 type FileState = model.FileState
 
 // Generic error.
@@ -378,6 +386,18 @@ type Levels struct {
 
 // ListSinksPayload is the payload type of the stream service ListSinks method.
 type ListSinksPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	// Request records after the ID.
+	AfterID string
+	// Maximum number of returned records.
+	Limit int
+}
+
+// ListSourceVersionsPayload is the payload type of the stream service
+// ListSourceVersions method.
+type ListSourceVersionsPayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID

@@ -33,6 +33,7 @@ type Endpoints struct {
 	SourceStatisticsClear goa.Endpoint
 	DisableSource         goa.Endpoint
 	EnableSource          goa.Endpoint
+	ListSourceVersions    goa.Endpoint
 	CreateSink            goa.Endpoint
 	GetSink               goa.Endpoint
 	GetSinkSettings       goa.Endpoint
@@ -77,6 +78,7 @@ func NewEndpoints(s Service) *Endpoints {
 		SourceStatisticsClear: NewSourceStatisticsClearEndpoint(s, a.APIKeyAuth),
 		DisableSource:         NewDisableSourceEndpoint(s, a.APIKeyAuth),
 		EnableSource:          NewEnableSourceEndpoint(s, a.APIKeyAuth),
+		ListSourceVersions:    NewListSourceVersionsEndpoint(s, a.APIKeyAuth),
 		CreateSink:            NewCreateSinkEndpoint(s, a.APIKeyAuth),
 		GetSink:               NewGetSinkEndpoint(s, a.APIKeyAuth),
 		GetSinkSettings:       NewGetSinkSettingsEndpoint(s, a.APIKeyAuth),
@@ -110,6 +112,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.SourceStatisticsClear = m(e.SourceStatisticsClear)
 	e.DisableSource = m(e.DisableSource)
 	e.EnableSource = m(e.EnableSource)
+	e.ListSourceVersions = m(e.ListSourceVersions)
 	e.CreateSink = m(e.CreateSink)
 	e.GetSink = m(e.GetSink)
 	e.GetSinkSettings = m(e.GetSinkSettings)
@@ -370,6 +373,26 @@ func NewEnableSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 		}
 		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.EnableSource(ctx, deps, p)
+	}
+}
+
+// NewListSourceVersionsEndpoint returns an endpoint function that calls the
+// method "ListSourceVersions" of service "stream".
+func NewListSourceVersionsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ListSourceVersionsPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
+		return s.ListSourceVersions(ctx, deps, p)
 	}
 }
 
