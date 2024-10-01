@@ -11,7 +11,7 @@ type Config struct {
 	// Relative size of new slice.
 	// The size of the slice will be % from the average slice size.
 	// Use 0 to disable relative allocation.
-	Relative int `json:"relative" configKey:"relative" validate:"min=100,max=500" configUsage:"Allocate disk space as % from the previous slice size."`
+	Relative uint `json:"relative" configKey:"relative" validate:"min=100,max=500" configUsage:"Allocate disk space as % from the previous slice size."`
 	// OverrideAllocator overrides the DefaultAllocator.
 	// A custom implementation can be useful for tests.
 	OverrideAllocator Allocator `json:"-"`
@@ -22,7 +22,7 @@ type Config struct {
 type ConfigPatch struct {
 	Enabled  *bool              `json:"enabled,omitempty"`
 	Static   *datasize.ByteSize `json:"static,omitempty"`
-	Relative *int               `json:"relative,omitempty"`
+	Relative *uint              `json:"relative,omitempty"`
 }
 
 // NewConfig provides default configuration.

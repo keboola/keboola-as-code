@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/ccoveille/go-safecast"
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
@@ -301,8 +302,19 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
 	if err == nil {
-		o.metrics.Compressed.Add(finalizationCtx, int64(stats.CompressedSize), metric.WithAttributes(attrs...))
-		o.metrics.Uncompressed.Add(finalizationCtx, int64(stats.UncompressedSize), metric.WithAttributes(attrs...))
+		compressedSize, err := safecast.ToInt64(stats.CompressedSize)
+		if err != nil {
+			o.logger.Warnf(ctx, `Compressed size too high for metric: %s`, err)
+		} else {
+			o.metrics.Compressed.Add(finalizationCtx, compressedSize, metric.WithAttributes(attrs...))
+		}
+
+		uncompressedSize, err := safecast.ToInt64(stats.UncompressedSize)
+		if err != nil {
+			o.logger.Warnf(ctx, `Uncompressed size too high for metric: %s`, err)
+		} else {
+			o.metrics.Uncompressed.Add(finalizationCtx, uncompressedSize, metric.WithAttributes(attrs...))
+		}
 	}
 }
 

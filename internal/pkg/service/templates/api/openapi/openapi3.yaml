@@ -200,7 +200,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GenericError'
+                                $ref: '#/components/schemas/ProjectLockedError4'
                             example:
                                 statusCode: 503
                                 error: templates.projectLocked
@@ -388,7 +388,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GenericError'
+                                $ref: '#/components/schemas/ProjectLockedError3'
                             example:
                                 statusCode: 503
                                 error: templates.projectLocked
@@ -433,7 +433,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/ValidateInputsRequestBody'
+                            $ref: '#/components/schemas/InputsPayload'
                         example:
                             steps:
                                 - id: g01-s01
@@ -524,7 +524,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GenericError'
+                                $ref: '#/components/schemas/ProjectLockedError5'
                             example:
                                 statusCode: 503
                                 error: templates.projectLocked
@@ -834,7 +834,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/ValidateInputsRequestBody'
+                            $ref: '#/components/schemas/InputsPayload'
                         example:
                             steps:
                                 - id: g01-s01
@@ -1623,7 +1623,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GenericError'
+                                $ref: '#/components/schemas/ProjectLockedError2'
                             example:
                                 statusCode: 503
                                 error: templates.projectLocked
@@ -1673,7 +1673,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/ValidateInputsRequestBody'
+                            $ref: '#/components/schemas/InputsPayload'
                         example:
                             steps:
                                 - id: g01-s01
@@ -1801,6 +1801,17 @@ components:
             required:
                 - name
                 - url
+        BranchRequest:
+            type: object
+            properties:
+                branch:
+                    type: string
+                    description: ID of the branch. Use "default" for default branch.
+                    example: default
+            example:
+                branch: default
+            required:
+                - branch
         ChangeInfo:
             type: object
             properties:
@@ -1860,15 +1871,26 @@ components:
                     description: HTTP status code.
                     example: 500
                     format: int64
-            description: Repository not found error.
+            description: Generic error
             example:
-                statusCode: 404
-                error: templates.repositoryNotFound
-                message: Repository "name" not found.
+                error: templates.internalError
+                message: Internal Error
+                statusCode: 500
             required:
                 - statusCode
                 - error
                 - message
+        GetTaskRequest:
+            type: object
+            properties:
+                taskId:
+                    type: string
+                    description: Unique ID of the task.
+                    example: task_1234
+            example:
+                taskId: task_1234
+            required:
+                - taskId
         Input:
             type: object
             properties:
@@ -2216,6 +2238,7 @@ components:
                                   default: example.com
                                   options: null
                     minItems: 1
+            description: List of the inputs divided to step groups and steps.
             example:
                 initialState:
                     valid: false
@@ -2433,6 +2456,31 @@ components:
             required:
                 - stepGroups
                 - initialState
+        InputsPayload:
+            type: object
+            properties:
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/StepPayload'
+                    description: Steps with input values filled in by user.
+                    example:
+                        - id: g01-s01
+                          inputs:
+                            - id: user
+                              value: user@example.com
+                            - id: api-token
+                              value: "123456"
+            example:
+                steps:
+                    - id: g01-s01
+                      inputs:
+                        - id: user
+                          value: user@example.com
+                        - id: api-token
+                          value: "123456"
+            required:
+                - steps
         Instance:
             type: object
             properties:
@@ -2453,7 +2501,8 @@ components:
                     $ref: '#/components/schemas/ChangeInfo'
                 instanceId:
                     type: string
-                    example: abc123
+                    description: ID of the template instance.
+                    example: V1StGXR8IZ5jdHi6BAmyT
                 mainConfig:
                     $ref: '#/components/schemas/MainConfig'
                 name:
@@ -2466,7 +2515,8 @@ components:
                     example: keboola
                 templateId:
                     type: string
-                    example: aa
+                    description: ID of the template.
+                    example: my-template
                     minLength: 1
                     maxLength: 40
                 updated:
@@ -2485,13 +2535,13 @@ components:
                 created:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
-                instanceId: abc123
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
                 mainConfig:
                     componentId: keboola.orchestrator
                     configId: "7954825835"
                 name: My Instance
                 repositoryName: keboola
-                templateId: aa
+                templateId: my-template
                 updated:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
@@ -2506,6 +2556,47 @@ components:
                 - created
                 - updated
                 - configurations
+        InstanceBase:
+            type: object
+            properties:
+                branch:
+                    type: string
+                    description: ID of the branch.
+                    example: "5876"
+                created:
+                    $ref: '#/components/schemas/ChangeInfo'
+                instanceId:
+                    type: string
+                    description: ID of the template instance.
+                    example: V1StGXR8IZ5jdHi6BAmyT
+                mainConfig:
+                    $ref: '#/components/schemas/MainConfig'
+                name:
+                    type: string
+                    description: Name of the instance.
+                    example: My Instance
+                updated:
+                    $ref: '#/components/schemas/ChangeInfo'
+            description: Instance base information.
+            example:
+                branch: "5876"
+                created:
+                    date: "2022-04-28T14:20:04+00:00"
+                    tokenId: "245941"
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
+                mainConfig:
+                    componentId: keboola.orchestrator
+                    configId: "7954825835"
+                name: My Instance
+                updated:
+                    date: "2022-04-28T14:20:04+00:00"
+                    tokenId: "245941"
+            required:
+                - instanceId
+                - branch
+                - name
+                - created
+                - updated
         InstanceDetail:
             type: object
             properties:
@@ -2526,7 +2617,8 @@ components:
                     $ref: '#/components/schemas/ChangeInfo'
                 instanceId:
                     type: string
-                    example: abc123
+                    description: ID of the template instance.
+                    example: V1StGXR8IZ5jdHi6BAmyT
                 mainConfig:
                     $ref: '#/components/schemas/MainConfig'
                 name:
@@ -2557,7 +2649,7 @@ components:
                 created:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
-                instanceId: abc123
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
                 mainConfig:
                     componentId: keboola.orchestrator
                     configId: "7954825835"
@@ -2570,7 +2662,7 @@ components:
                     defaultVersion: v1.2.3
                     deprecated: false
                     description: Full workflow to load all user accounts from the Service.
-                    id: aa
+                    id: my-template
                     name: My Template
                 templateId: abc123
                 updated:
@@ -2599,6 +2691,46 @@ components:
                 - templateDetail
                 - versionDetail
                 - configurations
+        InstanceInputsRequest:
+            type: object
+            properties:
+                branch:
+                    type: string
+                    description: ID of the branch. Use "default" for default branch.
+                    example: default
+                instanceId:
+                    type: string
+                    description: ID of the template instance.
+                    example: V1StGXR8IZ5jdHi6BAmyT
+                version:
+                    type: string
+                    description: Semantic version of the template. Use "default" for default version.
+                    example: v1.2.3
+            example:
+                branch: default
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
+                version: v1.2.3
+            required:
+                - version
+                - instanceId
+                - branch
+        InstanceRequest:
+            type: object
+            properties:
+                branch:
+                    type: string
+                    description: ID of the branch. Use "default" for default branch.
+                    example: default
+                instanceId:
+                    type: string
+                    description: ID of the template instance.
+                    example: V1StGXR8IZ5jdHi6BAmyT
+            example:
+                branch: default
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
+            required:
+                - instanceId
+                - branch
         Instances:
             type: object
             properties:
@@ -2616,17 +2748,18 @@ components:
                           created:
                             date: "2022-04-28T14:20:04+00:00"
                             tokenId: "245941"
-                          instanceId: abc123
+                          instanceId: V1StGXR8IZ5jdHi6BAmyT
                           mainConfig:
                             componentId: keboola.orchestrator
                             configId: "7954825835"
                           name: My Instance
                           repositoryName: keboola
-                          templateId: aa
+                          templateId: my-template
                           updated:
                             date: "2022-04-28T14:20:04+00:00"
                             tokenId: "245941"
                           version: v1.1.0
+            description: List of the instances.
             example:
                 instances:
                     - branch: "5876"
@@ -2637,13 +2770,13 @@ components:
                       created:
                         date: "2022-04-28T14:20:04+00:00"
                         tokenId: "245941"
-                      instanceId: abc123
+                      instanceId: V1StGXR8IZ5jdHi6BAmyT
                       mainConfig:
                         componentId: keboola.orchestrator
                         configId: "7954825835"
                       name: My Instance
                       repositoryName: keboola
-                      templateId: aa
+                      templateId: my-template
                       updated:
                         date: "2022-04-28T14:20:04+00:00"
                         tokenId: "245941"
@@ -2668,6 +2801,137 @@ components:
             required:
                 - componentId
                 - configId
+        ProjectLockedError:
+            type: object
+            properties:
+                error:
+                    type: string
+                    description: Name of error.
+                    example: templates.internalError
+                message:
+                    type: string
+                    description: Error message.
+                    example: The project is locked, another operation is in progress, please try again later.
+                retryAfter:
+                    type: string
+                    description: Indicates how long the user agent should wait before making a follow-up request.
+                    example: <http-date>/<delay-seconds>
+                statusCode:
+                    type: integer
+                    description: HTTP status code.
+                    example: 503
+                    format: int64
+            description: Project locked error
+            example:
+                error: templates.internalError
+                message: The project is locked, another operation is in progress, please try again later.
+                retryAfter: <http-date>/<delay-seconds>
+                statusCode: 503
+            required:
+                - statusCode
+                - error
+                - message
+                - retryAfter
+        ProjectLockedError2:
+            type: object
+            properties:
+                error:
+                    type: string
+                    description: Name of error.
+                    example: templates.internalError
+                message:
+                    type: string
+                    description: Error message.
+                    example: The project is locked, another operation is in progress, please try again later.
+                statusCode:
+                    type: integer
+                    description: HTTP status code.
+                    example: 503
+                    format: int64
+            description: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.
+            example:
+                statusCode: 503
+                error: templates.projectLocked
+                message: The project is locked, another operation is in progress, please try again later.
+            required:
+                - statusCode
+                - error
+                - message
+        ProjectLockedError3:
+            type: object
+            properties:
+                error:
+                    type: string
+                    description: Name of error.
+                    example: templates.internalError
+                message:
+                    type: string
+                    description: Error message.
+                    example: The project is locked, another operation is in progress, please try again later.
+                statusCode:
+                    type: integer
+                    description: HTTP status code.
+                    example: 503
+                    format: int64
+            description: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.
+            example:
+                statusCode: 503
+                error: templates.projectLocked
+                message: The project is locked, another operation is in progress, please try again later.
+            required:
+                - statusCode
+                - error
+                - message
+        ProjectLockedError4:
+            type: object
+            properties:
+                error:
+                    type: string
+                    description: Name of error.
+                    example: templates.internalError
+                message:
+                    type: string
+                    description: Error message.
+                    example: The project is locked, another operation is in progress, please try again later.
+                statusCode:
+                    type: integer
+                    description: HTTP status code.
+                    example: 503
+                    format: int64
+            description: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.
+            example:
+                statusCode: 503
+                error: templates.projectLocked
+                message: The project is locked, another operation is in progress, please try again later.
+            required:
+                - statusCode
+                - error
+                - message
+        ProjectLockedError5:
+            type: object
+            properties:
+                error:
+                    type: string
+                    description: Name of error.
+                    example: templates.internalError
+                message:
+                    type: string
+                    description: Error message.
+                    example: The project is locked, another operation is in progress, please try again later.
+                statusCode:
+                    type: integer
+                    description: HTTP status code.
+                    example: 503
+                    format: int64
+            description: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.
+            example:
+                statusCode: 503
+                error: templates.projectLocked
+                message: The project is locked, another operation is in progress, please try again later.
+            required:
+                - statusCode
+                - error
+                - message
         Repositories:
             type: object
             properties:
@@ -2683,6 +2947,7 @@ components:
                           author:
                             name: Keboola
                             url: https://www.keboola.com
+            description: List of the repositories.
             example:
                 repositories:
                     - name: keboola
@@ -2727,6 +2992,17 @@ components:
                 - url
                 - ref
                 - author
+        RepositoryRequest:
+            type: object
+            properties:
+                repository:
+                    type: string
+                    description: Name of the template repository. Use "keboola" for default Keboola repository.
+                    example: keboola
+            example:
+                repository: keboola
+            required:
+                - repository
         ServiceDetail:
             type: object
             properties:
@@ -2738,6 +3014,7 @@ components:
                     type: string
                     description: URL of the API documentation.
                     example: https://templates.keboola.com/v1/documentation
+            description: Information about the service
             example:
                 api: templates
                 documentation: https://templates.keboola.com/v1/documentation
@@ -3276,7 +3553,8 @@ components:
                     format: date-time
                 id:
                     type: string
-                    example: abc123
+                    description: Unique ID of the task.
+                    example: task_1234
                 isFinished:
                     type: boolean
                     description: Shortcut for status != "processing".
@@ -3302,6 +3580,7 @@ components:
                     type: string
                     description: URL of the task.
                     example: abc123
+            description: An asynchronous task.
             example:
                 id: task-1
                 url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
@@ -3325,11 +3604,11 @@ components:
             properties:
                 instanceId:
                     type: string
-                    description: ID of the created/updated template instance.
-                    example: abc123
+                    description: ID of the template instance.
+                    example: V1StGXR8IZ5jdHi6BAmyT
             description: Outputs generated by the task.
             example:
-                instanceId: abc123
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
         Template:
             type: object
             properties:
@@ -3372,7 +3651,8 @@ components:
                     maxLength: 200
                 id:
                     type: string
-                    example: aa
+                    description: ID of the template.
+                    example: my-template
                     minLength: 1
                     maxLength: 40
                 name:
@@ -3414,7 +3694,7 @@ components:
                 defaultVersion: v1.2.3
                 deprecated: false
                 description: Full workflow to load all user accounts from the Service.
-                id: aa
+                id: my-template
                 name: My Template
                 versions:
                     - version: v0.1.1
@@ -3462,7 +3742,8 @@ components:
                     maxLength: 200
                 id:
                     type: string
-                    example: aa
+                    description: ID of the template.
+                    example: my-template
                     minLength: 1
                     maxLength: 40
                 name:
@@ -3479,7 +3760,7 @@ components:
                 defaultVersion: v1.2.3
                 deprecated: false
                 description: Full workflow to load all user accounts from the Service.
-                id: aa
+                id: my-template
                 name: My Template
             required:
                 - id
@@ -3530,7 +3811,8 @@ components:
                     maxLength: 200
                 id:
                     type: string
-                    example: aa
+                    description: ID of the template.
+                    example: my-template
                     minLength: 1
                     maxLength: 40
                 name:
@@ -3607,6 +3889,50 @@ components:
                 - categories
                 - components
                 - versions
+        TemplateRequest:
+            type: object
+            properties:
+                repository:
+                    type: string
+                    description: Name of the template repository. Use "keboola" for default Keboola repository.
+                    example: keboola
+                template:
+                    type: string
+                    description: ID of the template.
+                    example: my-template
+                    minLength: 1
+                    maxLength: 40
+            example:
+                repository: keboola
+                template: my-template
+            required:
+                - template
+                - repository
+        TemplateVersionRequest:
+            type: object
+            properties:
+                repository:
+                    type: string
+                    description: Name of the template repository. Use "keboola" for default Keboola repository.
+                    example: keboola
+                template:
+                    type: string
+                    description: ID of the template.
+                    example: my-template
+                    minLength: 1
+                    maxLength: 40
+                version:
+                    type: string
+                    description: Semantic version of the template. Use "default" for default version.
+                    example: v1.2.3
+            example:
+                repository: keboola
+                template: my-template
+                version: v1.2.3
+            required:
+                - version
+                - template
+                - repository
         Templates:
             type: object
             properties:
@@ -3631,7 +3957,7 @@ components:
                           defaultVersion: v1.2.3
                           deprecated: false
                           description: Full workflow to load all user accounts from the Service.
-                          id: aa
+                          id: my-template
                           name: My Template
                           versions:
                             - version: v0.1.1
@@ -3646,6 +3972,7 @@ components:
                             - version: v2.0.0
                               stable: false
                               description: Experimental support for new API.
+            description: List of the templates.
             example:
                 repository:
                     name: keboola
@@ -3705,6 +4032,29 @@ components:
             required:
                 - repository
                 - templates
+        UpdateInstanceRequest:
+            type: object
+            properties:
+                branch:
+                    type: string
+                    description: ID of the branch. Use "default" for default branch.
+                    example: default
+                instanceId:
+                    type: string
+                    description: ID of the template instance.
+                    example: V1StGXR8IZ5jdHi6BAmyT
+                name:
+                    type: string
+                    description: New name of the instance.
+                    example: My Great Instance
+            example:
+                branch: default
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
+                name: My Great Instance
+            required:
+                - name
+                - instanceId
+                - branch
         UpdateInstanceRequestBody:
             type: object
             properties:
@@ -3716,6 +4066,106 @@ components:
                 name: My Great Instance
             required:
                 - name
+        UpgradeInstanceRequest:
+            type: object
+            properties:
+                branch:
+                    type: string
+                    description: ID of the branch. Use "default" for default branch.
+                    example: default
+                instanceId:
+                    type: string
+                    description: ID of the template instance.
+                    example: V1StGXR8IZ5jdHi6BAmyT
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/StepPayload'
+                    description: Steps with input values filled in by user.
+                    example:
+                        - id: g01-s01
+                          inputs:
+                            - id: user
+                              value: user@example.com
+                            - id: api-token
+                              value: "123456"
+                version:
+                    type: string
+                    description: Semantic version of the template. Use "default" for default version.
+                    example: v1.2.3
+            example:
+                branch: default
+                instanceId: V1StGXR8IZ5jdHi6BAmyT
+                steps:
+                    - id: g01-s01
+                      inputs:
+                        - id: user
+                          value: user@example.com
+                        - id: api-token
+                          value: "123456"
+                version: v1.2.3
+            required:
+                - version
+                - instanceId
+                - branch
+                - steps
+        UseTemplateRequest:
+            type: object
+            properties:
+                branch:
+                    type: string
+                    description: ID of the branch. Use "default" for default branch.
+                    example: default
+                name:
+                    type: string
+                    description: Name of the new template instance.
+                    example: My Instance
+                repository:
+                    type: string
+                    description: Name of the template repository. Use "keboola" for default Keboola repository.
+                    example: keboola
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/StepPayload'
+                    description: Steps with input values filled in by user.
+                    example:
+                        - id: g01-s01
+                          inputs:
+                            - id: user
+                              value: user@example.com
+                            - id: api-token
+                              value: "123456"
+                template:
+                    type: string
+                    description: ID of the template.
+                    example: my-template
+                    minLength: 1
+                    maxLength: 40
+                version:
+                    type: string
+                    description: Semantic version of the template. Use "default" for default version.
+                    example: v1.2.3
+            example:
+                branch: default
+                name: My Instance
+                repository: keboola
+                steps:
+                    - id: g01-s01
+                      inputs:
+                        - id: user
+                          value: user@example.com
+                        - id: api-token
+                          value: "123456"
+                template: my-template
+                version: v1.2.3
+            required:
+                - name
+                - branch
+                - version
+                - template
+                - repository
+                - steps
         UseTemplateVersionRequestBody:
             type: object
             properties:
@@ -3753,9 +4203,13 @@ components:
                 - name
                 - branch
                 - steps
-        ValidateInputsRequestBody:
+        ValidateInputsRequest:
             type: object
             properties:
+                repository:
+                    type: string
+                    description: Name of the template repository. Use "keboola" for default Keboola repository.
+                    example: keboola
                 steps:
                     type: array
                     items:
@@ -3768,7 +4222,18 @@ components:
                               value: user@example.com
                             - id: api-token
                               value: "123456"
+                template:
+                    type: string
+                    description: ID of the template.
+                    example: my-template
+                    minLength: 1
+                    maxLength: 40
+                version:
+                    type: string
+                    description: Semantic version of the template. Use "default" for default version.
+                    example: v1.2.3
             example:
+                repository: keboola
                 steps:
                     - id: g01-s01
                       inputs:
@@ -3776,7 +4241,12 @@ components:
                           value: user@example.com
                         - id: api-token
                           value: "123456"
+                template: my-template
+                version: v1.2.3
             required:
+                - version
+                - template
+                - repository
                 - steps
         ValidationError:
             type: object
@@ -3791,7 +4261,6 @@ components:
                     type: string
                     description: Error message.
                     example: Inputs are not valid.
-            description: Inputs are not valid.
             example:
                 ValidationResult:
                     valid: false

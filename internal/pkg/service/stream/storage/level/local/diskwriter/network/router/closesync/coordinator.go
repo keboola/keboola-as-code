@@ -134,6 +134,6 @@ func (n *CoordinatorNode) invokeListeners() {
 	}
 }
 
-func greaterOrEqual(actual, min int64) bool {
-	return actual == NoSourceNode || actual >= min
+func greaterOrEqual(actual, minimum int64) bool {
+	return actual == NoSourceNode || actual >= minimum
 }

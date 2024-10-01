@@ -3,6 +3,7 @@ package kcp
 import (
 	"net"
 
+	"github.com/ccoveille/go-safecast"
 	"github.com/xtaci/kcp-go/v5"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
@@ -28,10 +29,19 @@ func (t *Protocol) Listen() (net.Listener, error) {
 	}
 
 	// Setup buffer sizes (reversed as on the client side)
-	if err := listener.SetReadBuffer(int(t.config.KCPInputBuffer.Bytes())); err != nil {
+	inputBufferBytes, err := safecast.ToInt(t.config.KCPInputBuffer.Bytes())
+	if err != nil {
+		return nil, errors.PrefixError(err, "read buffer size too large")
+	}
+	if err := listener.SetReadBuffer(inputBufferBytes); err != nil {
 		return nil, errors.PrefixError(err, "cannot set read buffer size")
 	}
-	if err := listener.SetWriteBuffer(int(t.config.KCPResponseBuffer.Bytes())); err != nil {
+
+	responseBufferBytes, err := safecast.ToInt(t.config.KCPResponseBuffer.Bytes())
+	if err != nil {
+		return nil, errors.PrefixError(err, "write buffer size too large")
+	}
+	if err := listener.SetWriteBuffer(responseBufferBytes); err != nil {
 		return nil, errors.PrefixError(err, "cannot set write buffer size")
 	}
 
@@ -55,10 +65,19 @@ func (t *Protocol) Dial(addr string) (net.Conn, error) {
 	}
 
 	// Setup buffer sizes (reversed as on the server side)
-	if err := conn.SetReadBuffer(int(t.config.KCPResponseBuffer.Bytes())); err != nil {
+	responseBufferBytes, err := safecast.ToInt(t.config.KCPResponseBuffer.Bytes())
+	if err != nil {
+		return nil, errors.PrefixError(err, "read buffer size too large")
+	}
+	if err := conn.SetReadBuffer(responseBufferBytes); err != nil {
 		return nil, errors.PrefixError(err, "cannot set read buffer size")
 	}
-	if err := conn.SetWriteBuffer(int(t.config.KCPInputBuffer.Bytes())); err != nil {
+
+	inputBufferBytes, err := safecast.ToInt(t.config.KCPInputBuffer.Bytes())
+	if err != nil {
+		return nil, errors.PrefixError(err, "write buffer size too large")
+	}
+	if err := conn.SetWriteBuffer(inputBufferBytes); err != nil {
 		return nil, errors.PrefixError(err, "cannot set write buffer size")
 	}
 

@@ -98,17 +98,17 @@ data:
         #listen: 0.0.0.0:7000
         # Public URL of the HTTP source for link generation.
         publicUrl: "https://stream-in.$HOSTNAME_SUFFIX"
-        # HTTP request timeout. Validation rules: required
+        # HTTP request timeout. Validation rules: required,minDuration=1s,maxDuration=60s
         requestTimeout: 30s
-        # TCP connection idle timeout. Validation rules: required
+        # TCP connection idle timeout. Validation rules: required,minDuration=1s,maxDuration=60s
         idleTimeout: 30s
-        # The maximum number of concurrent connections the server may serve. Validation rules: required
+        # The maximum number of concurrent connections the server may serve. Validation rules: required,min=100,max=1000000
         maxConnections: 200000
-        # Read buffer size, all HTTP headers must fit in. Validation rules: required
+        # Read buffer size, all HTTP headers must fit in. Validation rules: required,minBytes=1kB,maxBytes=1MB
         readBufferSize: 16KB
-        # Write buffer size. Validation rules: required
+        # Write buffer size. Validation rules: required,minBytes=1kB,maxBytes=1MB
         writeBufferSize: 4KB
-        # Max size of the HTTP request body. Validation rules: required
+        # Max size of the HTTP request body. Validation rules: required,minBytes=100B,maxBytes=4MB
         maxRequestBodySize: 1MB
     sink:
       table:

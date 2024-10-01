@@ -3,6 +3,7 @@ package configmap
 import (
 	"reflect"
 
+	"github.com/ccoveille/go-safecast"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -178,23 +179,51 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 	case reflect.Int:
 		return onLeaf(reflect.ValueOf(int(value.Int())))
 	case reflect.Int8:
-		return onLeaf(reflect.ValueOf(int8(value.Int())))
+		i, err := safecast.ToInt8(value.Int())
+		if err != nil {
+			return err
+		}
+		return onLeaf(reflect.ValueOf(i))
 	case reflect.Int16:
-		return onLeaf(reflect.ValueOf(int16(value.Int())))
+		i, err := safecast.ToInt16(value.Int())
+		if err != nil {
+			return err
+		}
+		return onLeaf(reflect.ValueOf(i))
 	case reflect.Int32:
-		return onLeaf(reflect.ValueOf(int32(value.Int())))
+		i, err := safecast.ToInt32(value.Int())
+		if err != nil {
+			return err
+		}
+		return onLeaf(reflect.ValueOf(i))
 	case reflect.Int64:
 		return onLeaf(reflect.ValueOf(value.Int()))
 	case reflect.Uint:
 		return onLeaf(reflect.ValueOf(uint(value.Uint())))
 	case reflect.Uint8:
-		return onLeaf(reflect.ValueOf(uint8(value.Uint())))
+		i, err := safecast.ToUint8(value.Uint())
+		if err != nil {
+			return err
+		}
+		return onLeaf(reflect.ValueOf(i))
 	case reflect.Uint16:
-		return onLeaf(reflect.ValueOf(uint16(value.Uint())))
+		i, err := safecast.ToUint16(value.Uint())
+		if err != nil {
+			return err
+		}
+		return onLeaf(reflect.ValueOf(i))
 	case reflect.Uint32:
-		return onLeaf(reflect.ValueOf(uint32(value.Uint())))
+		i, err := safecast.ToUint32(value.Uint())
+		if err != nil {
+			return err
+		}
+		return onLeaf(reflect.ValueOf(i))
 	case reflect.Uint64:
-		return onLeaf(reflect.ValueOf(value.Uint()))
+		i, err := safecast.ToUint64(value.Uint())
+		if err != nil {
+			return err
+		}
+		return onLeaf(reflect.ValueOf(i))
 	case reflect.Float32:
 		return onLeaf(reflect.ValueOf(float32(value.Float())))
 	case reflect.Float64:

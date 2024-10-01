@@ -117,6 +117,7 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	schema, err := compileSchema(schemaStr, false)
 	if err != nil {
 		msg := strings.TrimPrefix(err.Error(), "jsonschema: invalid json "+pseudoSchemaFile+": ")
+		// nolint: govet
 		return &SchemaError{error: errors.Wrapf(err, msg)}
 	}
 	return schema.Validate(document.ToMap())

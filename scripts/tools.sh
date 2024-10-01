@@ -43,7 +43,7 @@ then
   # Disabled due to issues with windows curl command not working
   # Related to https://github.com/keboola/keboola-as-code/pull/1818/commits/df23a4e2855557a01460593f7d6ba59b5dc8825c
   # curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$GOBIN" v1.58.0
-  go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.2
+  go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
 fi
 
 # gci
@@ -61,7 +61,7 @@ fi
 # air - code changes watcher
 if ! command -v air &> /dev/null
 then
-  go install github.com/air-verse/air@v1.52.3
+  go install github.com/air-verse/air@v1.60.0
 fi
 
 # godoc
@@ -85,7 +85,7 @@ fi
 # goa - api by design library
 if ! command -v goa &> /dev/null
 then
-  go install goa.design/goa/v3/cmd/goa@v3.16.0
+  go install goa.design/goa/v3/cmd/goa@v3.19.1
 fi
 
 if ! command -v protoc-gen-go &> /dev/null

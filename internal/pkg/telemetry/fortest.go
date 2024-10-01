@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ccoveille/go-safecast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
@@ -32,8 +33,8 @@ const (
 
 type ForTest interface {
 	Telemetry
-	TraceID(n int) trace.TraceID
-	SpanID(n int) trace.SpanID
+	TraceID(n uint16) trace.TraceID
+	SpanID(n uint16) trace.SpanID
 	Reset()
 	AddSpanFilter(f TestSpanFilter) ForTest
 	AddMetricFilter(f TestMetricFilter) ForTest
@@ -162,12 +163,12 @@ func (v *forTest) AddMetricFilter(f TestMetricFilter) ForTest {
 	return v
 }
 
-func (v *forTest) TraceID(n int) trace.TraceID {
-	return toTraceID(testTraceIDBase + uint16(n))
+func (v *forTest) TraceID(n uint16) trace.TraceID {
+	return toTraceID(testTraceIDBase + n)
 }
 
-func (v *forTest) SpanID(n int) trace.SpanID {
-	return toSpanID(testSpanIDBase + uint16(n))
+func (v *forTest) SpanID(n uint16) trace.SpanID {
+	return toSpanID(testSpanIDBase + n)
 }
 
 func (v *forTest) Reset() {
@@ -307,13 +308,22 @@ func (g *testIDGenerator) Reset() {
 
 func (g *testIDGenerator) NewIDs(ctx context.Context) (trace.TraceID, trace.SpanID) {
 	v := g.traceID.Add(1)
-	traceID := toTraceID(testTraceIDBase + uint16(v))
+	i, err := safecast.ToUint16(v)
+	if err != nil {
+		panic(err)
+	}
+
+	traceID := toTraceID(testTraceIDBase + i)
 	return traceID, g.NewSpanID(ctx, traceID)
 }
 
 func (g *testIDGenerator) NewSpanID(_ context.Context, _ trace.TraceID) trace.SpanID {
 	v := g.spanID.Add(1)
-	return toSpanID(testSpanIDBase + uint16(v))
+	i, err := safecast.ToUint16(v)
+	if err != nil {
+		panic(err)
+	}
+	return toSpanID(testSpanIDBase + i)
 }
 
 func toTraceID(in uint16) trace.TraceID { //nolint: unparam
@@ -349,8 +359,10 @@ func cleanAndSortSpans(spans tracetest.SpanStubs, opts ...TestSpanOption) {
 		s.StartTime = time.Time{}
 		s.EndTime = time.Time{}
 		s.Resource = nil
-		s.InstrumentationLibrary.Name = ""
-		s.InstrumentationLibrary.Version = ""
+		s.InstrumentationScope.Name = ""
+		s.InstrumentationScope.Version = ""
+		s.InstrumentationLibrary.Name = ""    // nolint: staticcheck
+		s.InstrumentationLibrary.Version = "" // nolint: staticcheck
 		for j := range s.Events {
 			event := &s.Events[j]
 			event.Time = time.Time{}

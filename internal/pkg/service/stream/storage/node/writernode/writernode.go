@@ -5,6 +5,7 @@ package writernode
 import (
 	"context"
 
+	"github.com/ccoveille/go-safecast"
 	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
@@ -35,7 +36,13 @@ func Start(ctx context.Context, d dependencies.StorageWriterScope, cfg config.Co
 					continue
 				}
 
-				observer.Observe(int64(space), metric.WithAttributes(volume.Telemetry()...))
+				i, err := safecast.ToInt64(space)
+				if err != nil {
+					errs.Append(err)
+					continue
+				}
+
+				observer.Observe(i, metric.WithAttributes(volume.Telemetry()...))
 			}
 
 			return errs.ErrorOrNil()
@@ -56,7 +63,13 @@ func Start(ctx context.Context, d dependencies.StorageWriterScope, cfg config.Co
 					continue
 				}
 
-				observer.Observe(int64(space), metric.WithAttributes(volume.Telemetry()...))
+				i, err := safecast.ToInt64(space)
+				if err != nil {
+					errs.Append(err)
+					continue
+				}
+
+				observer.Observe(i, metric.WithAttributes(volume.Telemetry()...))
 			}
 
 			return errs.ErrorOrNil()
@@ -70,7 +83,10 @@ func Start(ctx context.Context, d dependencies.StorageWriterScope, cfg config.Co
 		func(ctx context.Context, observer metric.Int64Observer) error {
 			used, err := telemetry.UsedFileDescriptors()
 			if err == nil {
-				observer.Observe(int64(used))
+				i, err := safecast.ToInt64(used)
+				if err == nil {
+					observer.Observe(i)
+				}
 			}
 			return err
 		},
@@ -83,7 +99,10 @@ func Start(ctx context.Context, d dependencies.StorageWriterScope, cfg config.Co
 		func(ctx context.Context, observer metric.Int64Observer) error {
 			limit, err := telemetry.TotalFileDescriptors()
 			if err == nil {
-				observer.Observe(int64(limit))
+				i, err := safecast.ToInt64(limit)
+				if err == nil {
+					observer.Observe(i)
+				}
 			}
 			return err
 		},

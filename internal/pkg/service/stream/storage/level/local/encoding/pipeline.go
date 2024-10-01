@@ -8,6 +8,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/ccoveille/go-safecast"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -155,7 +156,11 @@ func newPipeline(
 
 	// Setup chunks sending to the network file
 	{
-		p.chunks = chunk.NewWriter(p.logger, int(encodingCfg.MaxChunkSize.Bytes()))
+		bytes, err := safecast.ToInt(encodingCfg.MaxChunkSize.Bytes())
+		if err != nil {
+			return nil, err
+		}
+		p.chunks = chunk.NewWriter(p.logger, bytes)
 
 		// Process each completed chunk.
 		// Block the close until all chunks are written to the network output.
@@ -193,9 +198,16 @@ func newPipeline(
 
 			// Add a buffer before compression writer, if it is not included in the writer itself
 			if encodingCfg.InputBuffer > 0 && !encodingCfg.Compression.HasWriterInputBuffer() {
-				p.chain.PrependWriter(func(w io.Writer) io.Writer {
-					return limitbuffer.New(w, int(encodingCfg.InputBuffer.Bytes()))
+				_, err = p.chain.PrependWriterOrErr(func(w io.Writer) (io.Writer, error) {
+					bytes, err := safecast.ToInt(encodingCfg.InputBuffer.Bytes())
+					if err != nil {
+						return nil, err
+					}
+					return limitbuffer.New(w, bytes), nil
 				})
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			// Measure size of uncompressed CSV data
@@ -425,7 +437,11 @@ func (p *pipeline) processChunks(ctx context.Context, clk clock.Clock, encodingC
 
 		// Write all chunks to the network output
 		err := p.chunks.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
-			l := datasize.ByteSize(chunk.Len())
+			length, err := safecast.ToUint64(chunk.Len())
+			if err != nil {
+				return err
+			}
+			l := datasize.ByteSize(length)
 			if _, err := p.network.Write(ctx, chunk.Aligned(), chunk.Bytes()); err != nil {
 				p.logger.Debugf(ctx, "chunk write failed, size %q: %s", l.String(), err)
 				return err

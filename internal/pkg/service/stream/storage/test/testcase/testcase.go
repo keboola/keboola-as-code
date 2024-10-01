@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/ccoveille/go-safecast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -107,9 +108,9 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Write all rows batches
-	rowsCount := 0
+	var rowsCount uint64 = 0
 	for i, batch := range tc.Data {
-		rowsCount += len(batch.Records)
+		rowsCount += uint64(len(batch.Records))
 
 		done := make(chan struct{})
 
@@ -189,9 +190,11 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 	// Check stats
 	if assert.NoError(t, statsErr) {
-		assert.Equal(t, int(sliceStats.Total.RecordsCount), rowsCount, "records count doesn't match")
-		assert.Equal(t, int64(sliceStats.Total.CompressedSize.Bytes()), fileStat.Size(), "compressed file size doesn't match")
-		assert.Equal(t, int(sliceStats.Total.UncompressedSize.Bytes()), len(content), "uncompressed file size doesn't match")
+		assert.Equal(t, sliceStats.Total.RecordsCount, rowsCount, "records count doesn't match")
+		size, err := safecast.ToUint64(fileStat.Size())
+		assert.NoError(t, err)
+		assert.Equal(t, sliceStats.Total.CompressedSize.Bytes(), size, "compressed file size doesn't match")
+		assert.Equal(t, sliceStats.Total.UncompressedSize.Bytes(), uint64(len(content)), "uncompressed file size doesn't match")
 	}
 
 	// Check written data

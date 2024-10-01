@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/ccoveille/go-safecast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/csvfmt"
 )
@@ -87,7 +88,11 @@ func (w *writer) WriteRow(cols *[]any) (int, error) {
 		}
 
 		// Check limit of single column
-		if uint64(w.row.Len()) > uint64(w.rowSizeLimit) {
+		length, err := safecast.ToUint64(w.row.Len())
+		if err != nil {
+			return 0, err
+		}
+		if length > uint64(w.rowSizeLimit) {
 			return 0, LimitError{
 				ColumnIndex: index,
 				Limit:       w.rowSizeLimit,

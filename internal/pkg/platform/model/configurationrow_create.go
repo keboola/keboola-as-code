@@ -193,7 +193,7 @@ func (crc *ConfigurationRowCreate) check() error {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.id": %w`, err)}
 		}
 	}
-	if _, ok := crc.mutation.ParentID(); !ok {
+	if len(crc.mutation.ParentIDs()) == 0 {
 		return &ValidationError{Name: "parent", err: errors.New(`model: missing required edge "ConfigurationRow.parent"`)}
 	}
 	return nil
