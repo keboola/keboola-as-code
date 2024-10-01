@@ -86,10 +86,20 @@ func (g Generator) ConfigPath(parentPath string, component *keboola.Component, c
 		switch {
 		case component.IsSharedCode():
 			// Shared code
-			if config.SharedCode == nil {
-				panic(errors.Errorf(`invalid shared code %s, value is not set`, config.Desc()))
-			}
 			template = string(g.template.SharedCodeConfig)
+			if config.SharedCode == nil {
+				p := AbsPath{}
+				p.SetParentPath(parentPath)
+				p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]any{
+					"target_component_id": targetComponentID, // for shared code
+					"component_type":      component.Type,
+					"component_id":        component.ID,
+					"config_id":           jsonnet.StripIDPlaceholder(config.ID.String()),
+					"config_name":         strhelper.NormalizeName(config.Name),
+				}))
+				return g.registry.ensureUniquePath(config.Key(), p)
+			}
+
 			targetComponentID = config.SharedCode.Target.String()
 		case component.ComponentKey.ID == keboola.DataAppsComponentID:
 			// DataApp
