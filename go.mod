@@ -1,6 +1,6 @@
 module github.com/keboola/keboola-as-code
 
-go 1.22.5
+go 1.23.1
 
 replace github.com/google/go-jsonnet v0.20.0 => github.com/keboola/go-jsonnet v0.20.1-0.20240430105602-71646d8d4fa9
 
@@ -10,7 +10,7 @@ replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.
 
 require (
 	ariga.io/atlas v0.27.0
-	entgo.io/ent v0.13.1
+	entgo.io/ent v0.14.1
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Masterminds/semver v1.5.0

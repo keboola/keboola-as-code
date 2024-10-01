@@ -115,7 +115,7 @@ func (cru *ConfigurationRowUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.name": %w`, err)}
 		}
 	}
-	if _, ok := cru.mutation.ParentID(); cru.mutation.ParentCleared() && !ok {
+	if cru.mutation.ParentCleared() && len(cru.mutation.ParentIDs()) > 0 {
 		return errors.New(`model: clearing a required unique edge "ConfigurationRow.parent"`)
 	}
 	return nil
@@ -265,7 +265,7 @@ func (cruo *ConfigurationRowUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.name": %w`, err)}
 		}
 	}
-	if _, ok := cruo.mutation.ParentID(); cruo.mutation.ParentCleared() && !ok {
+	if cruo.mutation.ParentCleared() && len(cruo.mutation.ParentIDs()) > 0 {
 		return errors.New(`model: clearing a required unique edge "ConfigurationRow.parent"`)
 	}
 	return nil

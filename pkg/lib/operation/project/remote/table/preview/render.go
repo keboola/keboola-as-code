@@ -82,11 +82,11 @@ func renderPretty(table *keboola.TablePreview, adaptWidth bool) string {
 
 	var b strings.Builder
 
-	truncate := func(s string, max int) string {
-		if !adaptWidth || len(s) <= max {
+	truncate := func(s string, maximum int) string {
+		if !adaptWidth || len(s) <= maximum {
 			return s
 		}
-		return fmt.Sprintf("%s...", s[:max-3])
+		return fmt.Sprintf("%s...", s[:maximum-3])
 	}
 	// draws a "border" line, e.g. `┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓`
 	border := func(left, middle, right string, lf bool) {
