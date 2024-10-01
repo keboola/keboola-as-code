@@ -2,7 +2,7 @@ package telemetry
 
 import (
 	"context"
-	"encoding/binary"
+	"fmt"
 	"math"
 	"sort"
 	"sync/atomic"
@@ -33,8 +33,8 @@ const (
 
 type ForTest interface {
 	Telemetry
-	TraceID(n uint16) trace.TraceID
-	SpanID(n uint16) trace.SpanID
+	TraceID(n int) trace.TraceID
+	SpanID(n int) trace.SpanID
 	Reset()
 	AddSpanFilter(f TestSpanFilter) ForTest
 	AddMetricFilter(f TestMetricFilter) ForTest
@@ -163,12 +163,12 @@ func (v *forTest) AddMetricFilter(f TestMetricFilter) ForTest {
 	return v
 }
 
-func (v *forTest) TraceID(n uint16) trace.TraceID {
-	return toTraceID(testTraceIDBase + n)
+func (v *forTest) TraceID(n int) trace.TraceID {
+	return toTraceID(fmt.Sprintf("%016x", testTraceIDBase+n))
 }
 
-func (v *forTest) SpanID(n uint16) trace.SpanID {
-	return toSpanID(testSpanIDBase + n)
+func (v *forTest) SpanID(n int) trace.SpanID {
+	return toSpanID(fmt.Sprintf("%08x", testSpanIDBase+n))
 }
 
 func (v *forTest) Reset() {
@@ -312,7 +312,7 @@ func (g *testIDGenerator) NewIDs(ctx context.Context) (trace.TraceID, trace.Span
 	if err != nil {
 		panic(err)
 	}
-	traceID := toTraceID(testTraceIDBase + i)
+	traceID := toTraceID(fmt.Sprintf("%016x", testTraceIDBase+i))
 	return traceID, g.NewSpanID(ctx, traceID)
 }
 
@@ -322,19 +322,23 @@ func (g *testIDGenerator) NewSpanID(_ context.Context, _ trace.TraceID) trace.Sp
 	if err != nil {
 		panic(err)
 	}
-	return toSpanID(testSpanIDBase + i)
+	return toSpanID(fmt.Sprintf("%08x", testSpanIDBase+i))
 }
 
-func toTraceID(in uint16) trace.TraceID { //nolint: unparam
-	tmp := make([]byte, 16)
+func toTraceID(in string) trace.TraceID { //nolint: unparam
+	id, _ := trace.TraceIDFromHex(in)
+	return id
+	/*tmp := make([]byte, 16)
 	binary.BigEndian.PutUint16(tmp, in)
-	return *(*[16]byte)(tmp)
+	return *(*[16]byte)(tmp)*/
 }
 
-func toSpanID(in uint16) trace.SpanID {
-	tmp := make([]byte, 8)
+func toSpanID(in string) trace.SpanID {
+	id, _ := trace.SpanIDFromHex(in)
+	return id
+	/*tmp := make([]byte, 8)
 	binary.BigEndian.PutUint16(tmp, in)
-	return *(*[8]byte)(tmp)
+	return *(*[8]byte)(tmp)*/
 }
 
 func getActualSpans(t *testing.T, exporter *tracetest.InMemoryExporter, opts ...TestSpanOption) tracetest.SpanStubs {
