@@ -362,8 +362,10 @@ func cleanAndSortSpans(spans tracetest.SpanStubs, opts ...TestSpanOption) {
 		s.StartTime = time.Time{}
 		s.EndTime = time.Time{}
 		s.Resource = nil
-		s.InstrumentationLibrary.Name = ""
-		s.InstrumentationLibrary.Version = ""
+		s.InstrumentationScope.Name = ""
+		s.InstrumentationScope.Version = ""
+		s.InstrumentationLibrary.Name = ""    // nolint: staticcheck
+		s.InstrumentationLibrary.Version = "" // nolint: staticcheck
 		for j := range s.Events {
 			event := &s.Events[j]
 			event.Time = time.Time{}

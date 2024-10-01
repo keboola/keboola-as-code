@@ -2197,12 +2197,13 @@ components:
             properties:
                 branchId:
                     type: integer
+                    description: ID of the branch.
                     example: 345
                     format: int64
                 created:
                     $ref: '#/components/schemas/CreatedEntity'
                 deleted:
-                    $ref: '#/components/schemas/CreatedEntity'
+                    $ref: '#/components/schemas/DeletedEntity'
                 description:
                     type: string
                     description: Description of the source.
@@ -2218,22 +2219,25 @@ components:
                     maxLength: 40
                 projectId:
                     type: integer
+                    description: ID of the project.
                     example: 123
                     format: int64
                 sinkId:
                     type: string
+                    description: Unique ID of the sink.
                     example: github-pr-table-sink
                     minLength: 1
                     maxLength: 48
                 sourceId:
                     type: string
+                    description: Unique ID of the source.
                     example: github-webhook-source
                     minLength: 1
                     maxLength: 48
                 statistics:
                     $ref: '#/components/schemas/AggregatedStatistics'
                 table:
-                    $ref: '#/components/schemas/TableSinkCreate'
+                    $ref: '#/components/schemas/TableSink'
                 type:
                     type: string
                     example: table
@@ -2383,110 +2387,115 @@ components:
                 - description
                 - version
                 - created
-        AggregatedSource:
-            type: object
-            properties:
-                branchId:
-                    type: integer
-                    example: 345
-                    format: int64
-                created:
-                    $ref: '#/components/schemas/CreatedEntity'
-                deleted:
-                    $ref: '#/components/schemas/CreatedEntity'
-                description:
-                    type: string
-                    description: Description of the source.
-                    example: The source receives events from Github.
-                    maxLength: 4096
-                disabled:
-                    $ref: '#/components/schemas/DisabledEntity'
-                http:
-                    $ref: '#/components/schemas/HTTPSource'
-                name:
-                    type: string
-                    description: Human readable name of the source.
-                    example: Github Webhook Source
-                    minLength: 1
-                    maxLength: 40
-                projectId:
-                    type: integer
-                    example: 123
-                    format: int64
-                sinks:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/AggregatedSink'
-                    example:
-                        - projectId: 123
-                          branchId: 345
-                          sourceId: github-webhook-source
-                          sinkId: github-pr-table-sink
-                          type: table
-                          name: Raw Data Sink
-                          description: The sink stores records to a table.
-                          table:
-                            type: keboola
-                            tableId: in.c-bucket.table
-                            mapping:
-                                columns:
-                                    - type: uuid
-                                      name: id-col
-                                      primaryKey: true
-                                    - type: datetime
-                                      name: datetime-col
-                                    - type: ip
-                                      name: ip-col
-                                    - type: headers
-                                      name: headers-col
-                                    - type: body
-                                      name: body-col
-                                    - type: path
-                                      name: path-col
-                                      path: foo.bar[0]
-                                      rawString: true
-                                      defaultValue: ""
-                                    - type: template
-                                      name: template-col
-                                      template:
-                                        language: jsonnet
-                                        content: body.foo + "-" + body.bar
-                          version:
-                            number: 3
-                            hash: f43e93acd97eceb3
-                            description: The reason for the last change was...
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          created:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          deleted:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          disabled:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                            reason: Disabled for recurring problems.
+        AggregatedSinks:
+            type: array
+            items:
+                $ref: '#/components/schemas/AggregatedSink'
+            example:
+                - projectId: 123
+                  branchId: 345
+                  sourceId: github-webhook-source
+                  sinkId: github-pr-table-sink
+                  type: table
+                  name: Raw Data Sink
+                  description: The sink stores records to a table.
+                  table:
+                    type: keboola
+                    tableId: in.c-bucket.table
+                    mapping:
+                        columns:
+                            - type: uuid
+                              name: id-col
+                              primaryKey: true
+                            - type: datetime
+                              name: datetime-col
+                            - type: ip
+                              name: ip-col
+                            - type: headers
+                              name: headers-col
+                            - type: body
+                              name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
+                            - type: template
+                              name: template-col
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
+                  version:
+                    number: 3
+                    hash: f43e93acd97eceb3
+                    description: The reason for the last change was...
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  created:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  deleted:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  disabled:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                    reason: Disabled for recurring problems.
+                  statistics:
+                    total:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        compressedSize: 1
+                        uncompressedSize: 1
+                    levels:
+                        local:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            compressedSize: 1
+                            uncompressedSize: 1
+                        staging:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            compressedSize: 1
+                            uncompressedSize: 1
+                        target:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            compressedSize: 1
+                            uncompressedSize: 1
+                    files:
+                        - state: writing
+                          openedAt: "2022-04-28T14:20:04.000Z"
+                          closingAt: "2022-04-28T14:20:04.000Z"
+                          importingAt: "2022-04-28T14:20:04.000Z"
+                          importedAt: "2022-04-28T14:20:04.000Z"
+                          retryAttempt: 3
+                          retryReason: network problem
+                          retryAfter: "2022-04-28T14:20:04.000Z"
                           statistics:
                             total:
                                 firstRecordAt: "2022-04-28T14:20:04.000Z"
@@ -2513,43 +2522,43 @@ components:
                                     recordsCount: 1
                                     compressedSize: 1
                                     uncompressedSize: 1
-                            files:
-                                - state: writing
-                                  openedAt: "2022-04-28T14:20:04.000Z"
-                                  closingAt: "2022-04-28T14:20:04.000Z"
-                                  importingAt: "2022-04-28T14:20:04.000Z"
-                                  importedAt: "2022-04-28T14:20:04.000Z"
-                                  retryAttempt: 3
-                                  retryReason: network problem
-                                  retryAfter: "2022-04-28T14:20:04.000Z"
-                                  statistics:
-                                    total:
-                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                        recordsCount: 1
-                                        compressedSize: 1
-                                        uncompressedSize: 1
-                                    levels:
-                                        local:
-                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                            recordsCount: 1
-                                            compressedSize: 1
-                                            uncompressedSize: 1
-                                        staging:
-                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                            recordsCount: 1
-                                            compressedSize: 1
-                                            uncompressedSize: 1
-                                        target:
-                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                            recordsCount: 1
-                                            compressedSize: 1
-                                            uncompressedSize: 1
+        AggregatedSource:
+            type: object
+            properties:
+                branchId:
+                    type: integer
+                    description: ID of the branch.
+                    example: 345
+                    format: int64
+                created:
+                    $ref: '#/components/schemas/CreatedEntity'
+                deleted:
+                    $ref: '#/components/schemas/DeletedEntity'
+                description:
+                    type: string
+                    description: Description of the source.
+                    example: The source receives events from Github.
+                    maxLength: 4096
+                disabled:
+                    $ref: '#/components/schemas/DisabledEntity'
+                http:
+                    $ref: '#/components/schemas/HTTPSource'
+                name:
+                    type: string
+                    description: Human readable name of the source.
+                    example: Github Webhook Source
+                    minLength: 1
+                    maxLength: 40
+                projectId:
+                    type: integer
+                    description: ID of the project.
+                    example: 123
+                    format: int64
+                sinks:
+                    $ref: '#/components/schemas/AggregatedSinks'
                 sourceId:
                     type: string
+                    description: Unique ID of the source.
                     example: github-webhook-source
                     minLength: 1
                     maxLength: 48
@@ -2747,138 +2756,160 @@ components:
                 - version
                 - created
                 - sinks
-        AggregatedSourcesResult:
-            type: object
-            properties:
-                branchId:
-                    type: integer
-                    example: 345
-                    format: int64
-                page:
-                    $ref: '#/components/schemas/PaginatedResponse'
-                projectId:
-                    type: integer
-                    example: 123
-                    format: int64
-                sources:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/AggregatedSource'
-                    example:
-                        - projectId: 123
-                          branchId: 345
-                          sourceId: github-webhook-source
-                          type: http
-                          name: Github Webhook Source
-                          description: The source receives events from Github.
-                          http:
-                            url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                          version:
-                            number: 3
-                            hash: f43e93acd97eceb3
-                            description: The reason for the last change was...
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          created:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          deleted:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          disabled:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                            reason: Disabled for recurring problems.
-                          sinks:
-                            - projectId: 123
-                              branchId: 345
-                              sourceId: github-webhook-source
-                              sinkId: github-pr-table-sink
-                              type: table
-                              name: Raw Data Sink
-                              description: The sink stores records to a table.
-                              table:
-                                type: keboola
-                                tableId: in.c-bucket.table
-                                mapping:
-                                    columns:
-                                        - type: uuid
-                                          name: id-col
-                                          primaryKey: true
-                                        - type: datetime
-                                          name: datetime-col
-                                        - type: ip
-                                          name: ip-col
-                                        - type: headers
-                                          name: headers-col
-                                        - type: body
-                                          name: body-col
-                                        - type: path
-                                          name: path-col
-                                          path: foo.bar[0]
-                                          rawString: true
-                                          defaultValue: ""
-                                        - type: template
-                                          name: template-col
-                                          template:
-                                            language: jsonnet
-                                            content: body.foo + "-" + body.bar
-                              version:
-                                number: 3
-                                hash: f43e93acd97eceb3
-                                description: The reason for the last change was...
-                                at: "2022-04-28T14:20:04.000Z"
-                                by:
-                                    type: user
-                                    tokenId: "896455"
-                                    tokenDesc: john.green@company.com
-                                    userId: "578621"
-                                    userName: John Green
-                              created:
-                                at: "2022-04-28T14:20:04.000Z"
-                                by:
-                                    type: user
-                                    tokenId: "896455"
-                                    tokenDesc: john.green@company.com
-                                    userId: "578621"
-                                    userName: John Green
-                              deleted:
-                                at: "2022-04-28T14:20:04.000Z"
-                                by:
-                                    type: user
-                                    tokenId: "896455"
-                                    tokenDesc: john.green@company.com
-                                    userId: "578621"
-                                    userName: John Green
-                              disabled:
-                                at: "2022-04-28T14:20:04.000Z"
-                                by:
-                                    type: user
-                                    tokenId: "896455"
-                                    tokenDesc: john.green@company.com
-                                    userId: "578621"
-                                    userName: John Green
-                                reason: Disabled for recurring problems.
+        AggregatedSources:
+            type: array
+            items:
+                $ref: '#/components/schemas/AggregatedSource'
+            example:
+                - projectId: 123
+                  branchId: 345
+                  sourceId: github-webhook-source
+                  type: http
+                  name: Github Webhook Source
+                  description: The source receives events from Github.
+                  http:
+                    url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                  version:
+                    number: 3
+                    hash: f43e93acd97eceb3
+                    description: The reason for the last change was...
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  created:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  deleted:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  disabled:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                    reason: Disabled for recurring problems.
+                  sinks:
+                    - projectId: 123
+                      branchId: 345
+                      sourceId: github-webhook-source
+                      sinkId: github-pr-table-sink
+                      type: table
+                      name: Raw Data Sink
+                      description: The sink stores records to a table.
+                      table:
+                        type: keboola
+                        tableId: in.c-bucket.table
+                        mapping:
+                            columns:
+                                - type: uuid
+                                  name: id-col
+                                  primaryKey: true
+                                - type: datetime
+                                  name: datetime-col
+                                - type: ip
+                                  name: ip-col
+                                - type: headers
+                                  name: headers-col
+                                - type: body
+                                  name: body-col
+                                - type: path
+                                  name: path-col
+                                  path: foo.bar[0]
+                                  rawString: true
+                                  defaultValue: ""
+                                - type: template
+                                  name: template-col
+                                  template:
+                                    language: jsonnet
+                                    content: body.foo + "-" + body.bar
+                      version:
+                        number: 3
+                        hash: f43e93acd97eceb3
+                        description: The reason for the last change was...
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      created:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      deleted:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                      disabled:
+                        at: "2022-04-28T14:20:04.000Z"
+                        by:
+                            type: user
+                            tokenId: "896455"
+                            tokenDesc: john.green@company.com
+                            userId: "578621"
+                            userName: John Green
+                        reason: Disabled for recurring problems.
+                      statistics:
+                        total:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            compressedSize: 1
+                            uncompressedSize: 1
+                        levels:
+                            local:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                compressedSize: 1
+                                uncompressedSize: 1
+                            staging:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                compressedSize: 1
+                                uncompressedSize: 1
+                            target:
+                                firstRecordAt: "2022-04-28T14:20:04.000Z"
+                                lastRecordAt: "2022-04-28T14:20:04.000Z"
+                                recordsCount: 1
+                                compressedSize: 1
+                                uncompressedSize: 1
+                        files:
+                            - state: writing
+                              openedAt: "2022-04-28T14:20:04.000Z"
+                              closingAt: "2022-04-28T14:20:04.000Z"
+                              importingAt: "2022-04-28T14:20:04.000Z"
+                              importedAt: "2022-04-28T14:20:04.000Z"
+                              retryAttempt: 3
+                              retryReason: network problem
+                              retryAfter: "2022-04-28T14:20:04.000Z"
                               statistics:
                                 total:
                                     firstRecordAt: "2022-04-28T14:20:04.000Z"
@@ -2905,41 +2936,50 @@ components:
                                         recordsCount: 1
                                         compressedSize: 1
                                         uncompressedSize: 1
-                                files:
-                                    - state: writing
-                                      openedAt: "2022-04-28T14:20:04.000Z"
-                                      closingAt: "2022-04-28T14:20:04.000Z"
-                                      importingAt: "2022-04-28T14:20:04.000Z"
-                                      importedAt: "2022-04-28T14:20:04.000Z"
-                                      retryAttempt: 3
-                                      retryReason: network problem
-                                      retryAfter: "2022-04-28T14:20:04.000Z"
-                                      statistics:
-                                        total:
-                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                            recordsCount: 1
-                                            compressedSize: 1
-                                            uncompressedSize: 1
-                                        levels:
-                                            local:
-                                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                                recordsCount: 1
-                                                compressedSize: 1
-                                                uncompressedSize: 1
-                                            staging:
-                                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                                recordsCount: 1
-                                                compressedSize: 1
-                                                uncompressedSize: 1
-                                            target:
-                                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                                recordsCount: 1
-                                                compressedSize: 1
-                                                uncompressedSize: 1
+        AggregatedSourcesRequest:
+            type: object
+            properties:
+                afterId:
+                    type: string
+                    description: Request records after the ID.
+                    default: ""
+                    example: my-object-123
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                limit:
+                    type: integer
+                    description: Maximum number of returned records.
+                    default: 100
+                    example: 100
+                    format: int64
+                    minimum: 1
+                    maximum: 100
+            example:
+                branchId: default
+                afterId: my-object-123
+                limit: 100
+            required:
+                - branchId
+        AggregatedSourcesResult:
+            type: object
+            properties:
+                branchId:
+                    type: integer
+                    description: ID of the branch.
+                    example: 345
+                    format: int64
+                page:
+                    $ref: '#/components/schemas/PaginatedResponse'
+                projectId:
+                    type: integer
+                    description: ID of the project.
+                    example: 123
+                    format: int64
+                sources:
+                    $ref: '#/components/schemas/AggregatedSources'
+            description: List of sources, max 100 sources per a branch.
             example:
                 projectId: 123
                 branchId: 345
@@ -3133,44 +3173,7 @@ components:
             type: object
             properties:
                 files:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SinkFile'
-                    example:
-                        - state: writing
-                          openedAt: "2022-04-28T14:20:04.000Z"
-                          closingAt: "2022-04-28T14:20:04.000Z"
-                          importingAt: "2022-04-28T14:20:04.000Z"
-                          importedAt: "2022-04-28T14:20:04.000Z"
-                          retryAttempt: 3
-                          retryReason: network problem
-                          retryAfter: "2022-04-28T14:20:04.000Z"
-                          statistics:
-                            total:
-                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                recordsCount: 1
-                                compressedSize: 1
-                                uncompressedSize: 1
-                            levels:
-                                local:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                                staging:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                                target:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
+                    $ref: '#/components/schemas/SinkFiles'
                 levels:
                     $ref: '#/components/schemas/Levels'
                 total:
@@ -3275,6 +3278,81 @@ components:
                 userName: John Green
             required:
                 - type
+        CreateSinkRequest:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                description:
+                    type: string
+                    description: Description of the source.
+                    example: The sink stores records to a table.
+                    maxLength: 4096
+                name:
+                    type: string
+                    description: Human readable name of the sink.
+                    example: Raw Data Sink
+                    minLength: 1
+                    maxLength: 40
+                sinkId:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                table:
+                    $ref: '#/components/schemas/TableSinkCreate'
+                type:
+                    type: string
+                    example: table
+                    enum:
+                        - table
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+                type: table
+                name: Raw Data Sink
+                description: The sink stores records to a table.
+                table:
+                    type: keboola
+                    tableId: in.c-bucket.table
+                    mapping:
+                        columns:
+                            - type: uuid
+                              name: id-col
+                              primaryKey: true
+                            - type: datetime
+                              name: datetime-col
+                            - type: ip
+                              name: ip-col
+                            - type: headers
+                              name: headers-col
+                            - type: body
+                              name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
+                            - type: template
+                              name: template-col
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
+            required:
+                - branchId
+                - sourceId
+                - type
+                - name
         CreateSinkRequestBody:
             type: object
             properties:
@@ -3336,6 +3414,45 @@ components:
             required:
                 - type
                 - name
+        CreateSourceRequest:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                description:
+                    type: string
+                    description: Description of the source.
+                    example: The source receives events from Github.
+                    maxLength: 4096
+                name:
+                    type: string
+                    description: Human readable name of the source.
+                    example: Github Webhook Source
+                    minLength: 1
+                    maxLength: 40
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                type:
+                    type: string
+                    example: http
+                    enum:
+                        - http
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                type: http
+                name: Github Webhook Source
+                description: The source receives events from Github.
+            required:
+                - branchId
+                - type
+                - name
         CreateSourceRequestBody:
             type: object
             properties:
@@ -3391,6 +3508,28 @@ components:
             required:
                 - at
                 - by
+        DeletedEntity:
+            type: object
+            properties:
+                at:
+                    type: string
+                    description: Date and time of deletion.
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+                by:
+                    $ref: '#/components/schemas/By'
+            description: Information about the deleted entity.
+            example:
+                at: "2022-04-28T14:20:04.000Z"
+                by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
+            required:
+                - at
+                - by
         DisabledEntity:
             type: object
             properties:
@@ -3435,15 +3574,72 @@ components:
                     description: HTTP status code.
                     example: 500
                     format: int64
-            description: Source already exists in the branch.
+            description: Generic error.
             example:
-                statusCode: 409
-                error: stream.api.sourceAlreadyExists
-                message: Source already exists in the branch.
+                statusCode: 500
+                error: stream.internalError
+                message: Internal Error
             required:
                 - statusCode
                 - error
                 - message
+        GetSinkRequest:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                sinkId:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+            required:
+                - branchId
+                - sourceId
+                - sinkId
+        GetSourceRequest:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+            required:
+                - branchId
+                - sourceId
+        GetTaskRequest:
+            type: object
+            properties:
+                taskId:
+                    type: string
+                    description: Unique ID of the task.
+                    example: task_1234
+            example:
+                taskId: task_1234
+            required:
+                - taskId
         HTTPSource:
             type: object
             properties:
@@ -3521,6 +3717,66 @@ components:
                     recordsCount: 1
                     compressedSize: 1
                     uncompressedSize: 1
+        ListSinksRequest:
+            type: object
+            properties:
+                afterId:
+                    type: string
+                    description: Request records after the ID.
+                    default: ""
+                    example: my-object-123
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                limit:
+                    type: integer
+                    description: Maximum number of returned records.
+                    default: 100
+                    example: 100
+                    format: int64
+                    minimum: 1
+                    maximum: 100
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                afterId: my-object-123
+                limit: 100
+            required:
+                - branchId
+                - sourceId
+        ListSourcesRequest:
+            type: object
+            properties:
+                afterId:
+                    type: string
+                    description: Request records after the ID.
+                    default: ""
+                    example: my-object-123
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                limit:
+                    type: integer
+                    description: Maximum number of returned records.
+                    default: 100
+                    example: 100
+                    format: int64
+                    minimum: 1
+                    maximum: 100
+            example:
+                branchId: default
+                afterId: my-object-123
+                limit: 100
+            required:
+                - branchId
         PaginatedResponse:
             type: object
             properties:
@@ -3563,6 +3819,7 @@ components:
                     type: string
                     description: URL of the API documentation.
                     example: https://stream.keboola.com/v1/documentation
+            description: Information about the service.
             example:
                 api: stream
                 documentation: https://stream.keboola.com/v1/documentation
@@ -3645,6 +3902,13 @@ components:
                 - defaultValue
                 - overwritten
                 - protected
+        SettingsPatch:
+            type: array
+            items:
+                $ref: '#/components/schemas/SettingPatch'
+            example:
+                - key: some.service.limit
+                  value: 1m20s
         SettingsResult:
             type: object
             properties:
@@ -3676,12 +3940,13 @@ components:
             properties:
                 branchId:
                     type: integer
+                    description: ID of the branch.
                     example: 345
                     format: int64
                 created:
                     $ref: '#/components/schemas/CreatedEntity'
                 deleted:
-                    $ref: '#/components/schemas/CreatedEntity'
+                    $ref: '#/components/schemas/DeletedEntity'
                 description:
                     type: string
                     description: Description of the source.
@@ -3697,20 +3962,23 @@ components:
                     maxLength: 40
                 projectId:
                     type: integer
+                    description: ID of the project.
                     example: 123
                     format: int64
                 sinkId:
                     type: string
+                    description: Unique ID of the sink.
                     example: github-pr-table-sink
                     minLength: 1
                     maxLength: 48
                 sourceId:
                     type: string
+                    description: Unique ID of the source.
                     example: github-webhook-source
                     minLength: 1
                     maxLength: 48
                 table:
-                    $ref: '#/components/schemas/TableSinkCreate'
+                    $ref: '#/components/schemas/TableSink'
                 type:
                     type: string
                     example: table
@@ -3718,6 +3986,7 @@ components:
                         - table
                 version:
                     $ref: '#/components/schemas/Version'
+            description: A mapping from imported data to a destination table.
             example:
                 projectId: 123
                 branchId: 345
@@ -3840,7 +4109,7 @@ components:
                         - importing
                         - imported
                 statistics:
-                    $ref: '#/components/schemas/SinkStatisticsTotalResult'
+                    $ref: '#/components/schemas/SinkFileStatistics'
             example:
                 state: writing
                 openedAt: "2022-04-28T14:20:04.000Z"
@@ -3879,48 +4148,124 @@ components:
             required:
                 - state
                 - openedAt
+        SinkFileStatistics:
+            type: object
+            properties:
+                levels:
+                    $ref: '#/components/schemas/Levels'
+                total:
+                    $ref: '#/components/schemas/Level'
+            example:
+                total:
+                    firstRecordAt: "2022-04-28T14:20:04.000Z"
+                    lastRecordAt: "2022-04-28T14:20:04.000Z"
+                    recordsCount: 1
+                    compressedSize: 1
+                    uncompressedSize: 1
+                levels:
+                    local:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        compressedSize: 1
+                        uncompressedSize: 1
+                    staging:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        compressedSize: 1
+                        uncompressedSize: 1
+                    target:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        compressedSize: 1
+                        uncompressedSize: 1
+            required:
+                - total
+                - levels
+        SinkFiles:
+            type: array
+            items:
+                $ref: '#/components/schemas/SinkFile'
+            description: List of recent sink files.
+            example:
+                - state: writing
+                  openedAt: "2022-04-28T14:20:04.000Z"
+                  closingAt: "2022-04-28T14:20:04.000Z"
+                  importingAt: "2022-04-28T14:20:04.000Z"
+                  importedAt: "2022-04-28T14:20:04.000Z"
+                  retryAttempt: 3
+                  retryReason: network problem
+                  retryAfter: "2022-04-28T14:20:04.000Z"
+                  statistics:
+                    total:
+                        firstRecordAt: "2022-04-28T14:20:04.000Z"
+                        lastRecordAt: "2022-04-28T14:20:04.000Z"
+                        recordsCount: 1
+                        compressedSize: 1
+                        uncompressedSize: 1
+                    levels:
+                        local:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            compressedSize: 1
+                            uncompressedSize: 1
+                        staging:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            compressedSize: 1
+                            uncompressedSize: 1
+                        target:
+                            firstRecordAt: "2022-04-28T14:20:04.000Z"
+                            lastRecordAt: "2022-04-28T14:20:04.000Z"
+                            recordsCount: 1
+                            compressedSize: 1
+                            uncompressedSize: 1
+        SinkSettingsPatch:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                changeDescription:
+                    type: string
+                    description: Description of the modification, description of the version.
+                    example: Updated settings.
+                settings:
+                    $ref: '#/components/schemas/SettingsPatch'
+                sinkId:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+                changeDescription: Updated settings.
+                settings:
+                    - key: some.service.limit
+                      value: 1m20s
+            required:
+                - branchId
+                - sourceId
+                - sinkId
         SinkStatisticsFilesResult:
             type: object
             properties:
                 files:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SinkFile'
-                    example:
-                        - state: writing
-                          openedAt: "2022-04-28T14:20:04.000Z"
-                          closingAt: "2022-04-28T14:20:04.000Z"
-                          importingAt: "2022-04-28T14:20:04.000Z"
-                          importedAt: "2022-04-28T14:20:04.000Z"
-                          retryAttempt: 3
-                          retryReason: network problem
-                          retryAfter: "2022-04-28T14:20:04.000Z"
-                          statistics:
-                            total:
-                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                recordsCount: 1
-                                compressedSize: 1
-                                uncompressedSize: 1
-                            levels:
-                                local:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                                staging:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                                target:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
+                    $ref: '#/components/schemas/SinkFiles'
             example:
                 files:
                     - state: writing
@@ -3995,98 +4340,105 @@ components:
             required:
                 - levels
                 - total
+        Sinks:
+            type: array
+            items:
+                $ref: '#/components/schemas/Sink'
+            description: List of sinks, max 100 sinks per a source.
+            example:
+                - projectId: 123
+                  branchId: 345
+                  sourceId: github-webhook-source
+                  sinkId: github-pr-table-sink
+                  type: table
+                  name: Raw Data Sink
+                  description: The sink stores records to a table.
+                  table:
+                    type: keboola
+                    tableId: in.c-bucket.table
+                    mapping:
+                        columns:
+                            - type: uuid
+                              name: id-col
+                              primaryKey: true
+                            - type: datetime
+                              name: datetime-col
+                            - type: ip
+                              name: ip-col
+                            - type: headers
+                              name: headers-col
+                            - type: body
+                              name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
+                            - type: template
+                              name: template-col
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
+                  version:
+                    number: 3
+                    hash: f43e93acd97eceb3
+                    description: The reason for the last change was...
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  created:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  deleted:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  disabled:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                    reason: Disabled for recurring problems.
         SinksList:
             type: object
             properties:
                 branchId:
                     type: integer
+                    description: ID of the branch.
                     example: 345
                     format: int64
                 page:
                     $ref: '#/components/schemas/PaginatedResponse'
                 projectId:
                     type: integer
+                    description: ID of the project.
                     example: 123
                     format: int64
                 sinks:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Sink'
-                    example:
-                        - projectId: 123
-                          branchId: 345
-                          sourceId: github-webhook-source
-                          sinkId: github-pr-table-sink
-                          type: table
-                          name: Raw Data Sink
-                          description: The sink stores records to a table.
-                          table:
-                            type: keboola
-                            tableId: in.c-bucket.table
-                            mapping:
-                                columns:
-                                    - type: uuid
-                                      name: id-col
-                                      primaryKey: true
-                                    - type: datetime
-                                      name: datetime-col
-                                    - type: ip
-                                      name: ip-col
-                                    - type: headers
-                                      name: headers-col
-                                    - type: body
-                                      name: body-col
-                                    - type: path
-                                      name: path-col
-                                      path: foo.bar[0]
-                                      rawString: true
-                                      defaultValue: ""
-                                    - type: template
-                                      name: template-col
-                                      template:
-                                        language: jsonnet
-                                        content: body.foo + "-" + body.bar
-                          version:
-                            number: 3
-                            hash: f43e93acd97eceb3
-                            description: The reason for the last change was...
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          created:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          deleted:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          disabled:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                            reason: Disabled for recurring problems.
+                    $ref: '#/components/schemas/Sinks'
                 sourceId:
                     type: string
+                    description: Unique ID of the source.
                     example: github-webhook-source
                     minLength: 1
                     maxLength: 48
+            description: List of sources, max 100 sinks per a source.
             example:
                 projectId: 123
                 branchId: 345
@@ -4177,12 +4529,13 @@ components:
             properties:
                 branchId:
                     type: integer
+                    description: ID of the branch.
                     example: 345
                     format: int64
                 created:
                     $ref: '#/components/schemas/CreatedEntity'
                 deleted:
-                    $ref: '#/components/schemas/CreatedEntity'
+                    $ref: '#/components/schemas/DeletedEntity'
                 description:
                     type: string
                     description: Description of the source.
@@ -4200,10 +4553,12 @@ components:
                     maxLength: 40
                 projectId:
                     type: integer
+                    description: ID of the project.
                     example: 123
                     format: int64
                 sourceId:
                     type: string
+                    description: Unique ID of the source.
                     example: github-webhook-source
                     minLength: 1
                     maxLength: 48
@@ -4269,68 +4624,103 @@ components:
                 - description
                 - version
                 - created
+        SourceSettingsPatch:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                changeDescription:
+                    type: string
+                    description: Description of the modification, description of the version.
+                    example: Updated settings.
+                settings:
+                    $ref: '#/components/schemas/SettingsPatch'
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                changeDescription: Updated settings.
+                settings:
+                    - key: some.service.limit
+                      value: 1m20s
+            required:
+                - branchId
+                - sourceId
+        Sources:
+            type: array
+            items:
+                $ref: '#/components/schemas/Source'
+            description: List of sources, max 100 sources per a branch.
+            example:
+                - projectId: 123
+                  branchId: 345
+                  sourceId: github-webhook-source
+                  type: http
+                  name: Github Webhook Source
+                  description: The source receives events from Github.
+                  http:
+                    url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                  version:
+                    number: 3
+                    hash: f43e93acd97eceb3
+                    description: The reason for the last change was...
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  created:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  deleted:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                  disabled:
+                    at: "2022-04-28T14:20:04.000Z"
+                    by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+                    reason: Disabled for recurring problems.
         SourcesList:
             type: object
             properties:
                 branchId:
                     type: integer
+                    description: ID of the branch.
                     example: 345
                     format: int64
                 page:
                     $ref: '#/components/schemas/PaginatedResponse'
                 projectId:
                     type: integer
+                    description: ID of the project.
                     example: 123
                     format: int64
                 sources:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Source'
-                    example:
-                        - projectId: 123
-                          branchId: 345
-                          sourceId: github-webhook-source
-                          type: http
-                          name: Github Webhook Source
-                          description: The source receives events from Github.
-                          http:
-                            url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                          version:
-                            number: 3
-                            hash: f43e93acd97eceb3
-                            description: The reason for the last change was...
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          created:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          deleted:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          disabled:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                            reason: Disabled for recurring problems.
+                    $ref: '#/components/schemas/Sources'
+            description: List of sources, max 100 sources per a branch.
             example:
                 projectId: 123
                 branchId: 345
@@ -4461,37 +4851,40 @@ components:
             required:
                 - language
                 - content
+        TableColumns:
+            type: array
+            items:
+                $ref: '#/components/schemas/TableColumn'
+            description: List of export column mappings. An export may have a maximum of 100 columns.
+            example:
+                - type: uuid
+                  name: id-col
+                  primaryKey: true
+                - type: datetime
+                  name: datetime-col
+                - type: ip
+                  name: ip-col
+                - type: headers
+                  name: headers-col
+                - type: body
+                  name: body-col
+                - type: path
+                  name: path-col
+                  path: foo.bar[0]
+                  rawString: true
+                  defaultValue: ""
+                - type: template
+                  name: template-col
+                  template:
+                    language: jsonnet
+                    content: body.foo + "-" + body.bar
+            minItems: 1
+            maxItems: 100
         TableMapping:
             type: object
             properties:
                 columns:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/TableColumn'
-                    example:
-                        - type: uuid
-                          name: id-col
-                          primaryKey: true
-                        - type: datetime
-                          name: datetime-col
-                        - type: ip
-                          name: ip-col
-                        - type: headers
-                          name: headers-col
-                        - type: body
-                          name: body-col
-                        - type: path
-                          name: path-col
-                          path: foo.bar[0]
-                          rawString: true
-                          defaultValue: ""
-                        - type: template
-                          name: template-col
-                          template:
-                            language: jsonnet
-                            content: body.foo + "-" + body.bar
-                    minItems: 1
-                    maxItems: 100
+                    $ref: '#/components/schemas/TableColumns'
             description: Table mapping definition.
             example:
                 columns:
@@ -4518,6 +4911,50 @@ components:
                         content: body.foo + "-" + body.bar
             required:
                 - columns
+        TableSink:
+            type: object
+            properties:
+                mapping:
+                    $ref: '#/components/schemas/TableMapping'
+                tableId:
+                    type: string
+                    example: in.c-bucket.table
+                type:
+                    type: string
+                    example: keboola
+                    enum:
+                        - keboola
+            description: Table sink configuration for "type" = "table".
+            example:
+                type: keboola
+                tableId: in.c-bucket.table
+                mapping:
+                    columns:
+                        - type: uuid
+                          name: id-col
+                          primaryKey: true
+                        - type: datetime
+                          name: datetime-col
+                        - type: ip
+                          name: ip-col
+                        - type: headers
+                          name: headers-col
+                        - type: body
+                          name: body-col
+                        - type: path
+                          name: path-col
+                          path: foo.bar[0]
+                          rawString: true
+                          defaultValue: ""
+                        - type: template
+                          name: template-col
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
+            required:
+                - type
+                - tableId
+                - mapping
         TableSinkCreate:
             type: object
             properties:
@@ -4642,6 +5079,7 @@ components:
                         - error
                 taskId:
                     type: string
+                    description: Unique ID of the task.
                     example: task_1234
                 type:
                     type: string
@@ -4651,6 +5089,7 @@ components:
                     type: string
                     description: URL of the task.
                     example: abc123
+            description: An asynchronous task.
             example:
                 taskId: task_1234
                 type: abc123
@@ -4680,23 +5119,23 @@ components:
             properties:
                 branchId:
                     type: integer
-                    description: ID of the parent branch.
+                    description: ID of the branch.
                     example: 345
                     format: int64
                 projectId:
                     type: integer
-                    description: ID of the parent project.
+                    description: ID of the project.
                     example: 123
                     format: int64
                 sinkId:
                     type: string
-                    description: ID of the created/updated sink.
+                    description: Unique ID of the sink.
                     example: github-pr-table-sink
                     minLength: 1
                     maxLength: 48
                 sourceId:
                     type: string
-                    description: ID of the created/updated source.
+                    description: Unique ID of the source.
                     example: github-webhook-source
                     minLength: 1
                     maxLength: 48
@@ -4716,14 +5155,17 @@ components:
             properties:
                 branchId:
                     type: integer
+                    description: ID of the branch.
                     example: 345
                     format: int64
                 projectId:
                     type: integer
+                    description: ID of the project.
                     example: 123
                     format: int64
                 sourceId:
                     type: string
+                    description: Unique ID of the source.
                     example: github-webhook-source
                     minLength: 1
                     maxLength: 48
@@ -4739,6 +5181,7 @@ components:
                             - columns:
                                 - name: id
                                   value: "12345"
+            description: Result of the test endpoint.
             example:
                 projectId: 123
                 branchId: 345
@@ -4805,6 +5248,7 @@ components:
                               value: "12345"
                 sinkId:
                     type: string
+                    description: Unique ID of the sink.
                     example: github-pr-table-sink
                     minLength: 1
                     maxLength: 48
@@ -4823,6 +5267,104 @@ components:
                 - sinkId
                 - tableId
                 - rows
+        TestSourceRequest:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+            required:
+                - branchId
+                - sourceId
+        UpdateSinkRequest:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                changeDescription:
+                    type: string
+                    description: Description of the modification, description of the version.
+                    example: Renamed.
+                description:
+                    type: string
+                    description: Description of the source.
+                    example: The sink stores records to a table.
+                    maxLength: 4096
+                name:
+                    type: string
+                    description: Human readable name of the sink.
+                    example: Raw Data Sink
+                    minLength: 1
+                    maxLength: 40
+                sinkId:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                table:
+                    $ref: '#/components/schemas/TableSinkUpdate'
+                type:
+                    type: string
+                    example: table
+                    enum:
+                        - table
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+                changeDescription: Renamed.
+                type: table
+                name: Raw Data Sink
+                description: The sink stores records to a table.
+                table:
+                    type: keboola
+                    tableId: in.c-bucket.table
+                    mapping:
+                        columns:
+                            - type: uuid
+                              name: id-col
+                              primaryKey: true
+                            - type: datetime
+                              name: datetime-col
+                            - type: ip
+                              name: ip-col
+                            - type: headers
+                              name: headers-col
+                            - type: body
+                              name: body-col
+                            - type: path
+                              name: path-col
+                              path: foo.bar[0]
+                              rawString: true
+                              defaultValue: ""
+                            - type: template
+                              name: template-col
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
+            required:
+                - branchId
+                - sourceId
+                - sinkId
         UpdateSinkRequestBody:
             type: object
             properties:
@@ -4879,6 +5421,49 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
+        UpdateSourceRequest:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                changeDescription:
+                    type: string
+                    description: Description of the modification, description of the version.
+                    example: Renamed.
+                description:
+                    type: string
+                    description: Description of the source.
+                    example: The source receives events from Github.
+                    maxLength: 4096
+                name:
+                    type: string
+                    description: Human readable name of the source.
+                    example: Github Webhook Source
+                    minLength: 1
+                    maxLength: 40
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                type:
+                    type: string
+                    example: http
+                    enum:
+                        - http
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                changeDescription: Renamed.
+                type: http
+                name: Github Webhook Source
+                description: The source receives events from Github.
+            required:
+                - branchId
+                - sourceId
         UpdateSourceRequestBody:
             type: object
             properties:
