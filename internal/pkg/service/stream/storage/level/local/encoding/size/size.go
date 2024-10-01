@@ -102,17 +102,15 @@ func NewMeterWithBackup(ctx context.Context, clk clock.Clock, logger log.Logger,
 func (m *Meter) Write(p []byte) (int, error) {
 	n, err := m.w.Write(p)
 	m.lock.Lock()
-	if n > 0 {
-		m.size += datasize.ByteSize(n)
-	}
-	m.lock.Unlock()
+	defer m.lock.Unlock()
+	m.size += datasize.ByteSize(n) //nolint:gosec // write returns always non negative numbers
 	return n, err
 }
 
 func (m *Meter) Size() datasize.ByteSize {
 	m.lock.Lock()
+	defer m.lock.Unlock()
 	size := m.size
-	m.lock.Unlock()
 	return size
 }
 
