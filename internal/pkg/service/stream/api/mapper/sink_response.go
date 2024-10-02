@@ -84,6 +84,28 @@ func (m *Mapper) newTableSinkResponse(entity *definition.TableSink) (out api.Tab
 	return out, nil
 }
 
+func (m *Mapper) NewSinkVersions(
+	ctx context.Context,
+	afterId string,
+	limit int,
+	list func(...iterator.Option) iterator.DefinitionT[definition.Sink],
+) (*api.EntityVersions, error) {
+	sources, page, err := loadPage(ctx, afterId, limit, etcd.SortAscend, list, m.NewSinkResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	versions := make([]*api.Version, 0)
+	for _, source := range sources {
+		versions = append(versions, source.Version)
+	}
+
+	return &api.EntityVersions{
+		Versions: versions,
+		Page:     page,
+	}, nil
+}
+
 func (m *Mapper) newTableMappingResponse(entity table.Mapping) (out api.TableMapping) {
 	out.Columns = make(api.TableColumns, 0, len(entity.Columns))
 	for _, input := range entity.Columns {

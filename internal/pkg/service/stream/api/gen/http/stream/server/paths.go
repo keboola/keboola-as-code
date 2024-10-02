@@ -147,6 +147,11 @@ func EnableSinkStreamPath(branchID string, sourceID string, sinkID string) strin
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/enable", branchID, sourceID, sinkID)
 }
 
+// ListSinkVersionsStreamPath returns the URL path to the stream service ListSinkVersions HTTP endpoint.
+func ListSinkVersionsStreamPath(branchID string, sourceID string, sinkID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/versions", branchID, sourceID, sinkID)
+}
+
 // GetTaskStreamPath returns the URL path to the stream service GetTask HTTP endpoint.
 func GetTaskStreamPath(taskID string) string {
 	return fmt.Sprintf("/v1/tasks/%v", taskID)
