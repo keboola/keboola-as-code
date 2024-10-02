@@ -65,7 +65,7 @@ func (h *SharedCodeHelper) IsTransformation(key model.Key) (bool, error) {
 
 func (h *SharedCodeHelper) CheckTargetComponent(sharedCodeConfig *model.Config, transformation model.ConfigKey) error {
 	if sharedCodeConfig.SharedCode == nil {
-		panic(errors.New(`shared code value is not set`))
+		return errors.New("shared code value is not set")
 	}
 	if sharedCodeConfig.SharedCode.Target != transformation.ComponentID {
 		return errors.NewNestedError(
