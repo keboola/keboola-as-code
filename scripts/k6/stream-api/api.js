@@ -1,6 +1,6 @@
 import { sleep } from 'k6';
 import http from "k6/http";
-import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 export class Api {
   constructor(apiHost, apiToken) {
@@ -59,11 +59,11 @@ export class Api {
   createKeboolaTableSink(sourceId, mapping_type, mapping) {
     const body = {
       sinkId: "test-sink",
-      name: "test-sink" + mapping_type,
+      name: "test-sink" + mapping_type + "-" + sourceId,
       type: "table",
       table: {
         type: "keboola",
-        tableId: "in.c-bucket.test-sink" + mapping_type,
+        tableId: "in.c-bucket.test-sink-" + mapping_type + "-" + sourceId,
         mapping: mapping,
       },
     }
