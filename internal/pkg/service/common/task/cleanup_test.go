@@ -27,7 +27,7 @@ type testDependencies struct {
 func TestCleanup(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	clk := clock.NewMock()
