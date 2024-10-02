@@ -14,8 +14,7 @@
         "columns": [
           {
             "type": "uuid",
-            "name": "id",
-            "primaryKey": true
+            "name": "id"
           },
           {
             "type": "template",

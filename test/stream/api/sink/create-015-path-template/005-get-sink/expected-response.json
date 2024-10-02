@@ -12,12 +12,10 @@
     "mapping": {
       "columns": [
         {
-          "primaryKey": true,
           "type": "uuid",
           "name": "id"
         },
         {
-          "primaryKey": false,
           "type": "path",
           "name": "path",
           "path": "key",
@@ -25,7 +23,6 @@
           "rawString": true
         },
         {
-          "primaryKey": false,
           "type": "template",
           "name": "jsonnet",
           "rawString": true,
