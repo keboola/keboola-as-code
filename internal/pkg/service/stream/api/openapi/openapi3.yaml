@@ -3861,6 +3861,40 @@ components:
             required:
                 - branchId
                 - sourceId
+        ListSourceVersionsRequest:
+            type: object
+            properties:
+                afterId:
+                    type: string
+                    description: Request records after the ID.
+                    default: ""
+                    example: my-object-123
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                limit:
+                    type: integer
+                    description: Maximum number of returned records.
+                    default: 100
+                    example: 100
+                    format: int64
+                    minimum: 1
+                    maximum: 100
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                afterId: my-object-123
+                limit: 100
+            required:
+                - branchId
+                - sourceId
         ListSourcesRequest:
             type: object
             properties:

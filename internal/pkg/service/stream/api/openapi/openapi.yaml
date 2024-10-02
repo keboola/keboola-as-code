@@ -1152,11 +1152,11 @@ paths:
                 "200":
                     description: OK response.
                     schema:
-                        $ref: '#/definitions/StreamListSourceVersionsResponseBody'
+                        $ref: '#/definitions/EntityVersions'
                 "404":
                     description: Not Found response.
                     schema:
-                        $ref: '#/definitions/StreamListSourceVersionsStreamAPISourceNotFoundResponseBody'
+                        $ref: '#/definitions/GenericError'
                         required:
                             - statusCode
                             - error
@@ -2422,6 +2422,37 @@ definitions:
             - at
             - by
             - reason
+    EntityVersions:
+        title: EntityVersions
+        type: object
+        properties:
+            versions:
+                type: array
+                items:
+                    $ref: '#/definitions/Version'
+                example:
+                    - number: 3
+                      hash: f43e93acd97eceb3
+                      description: The reason for the last change was...
+                      at: "2022-04-28T14:20:04.000Z"
+                      by:
+                        type: user
+                        tokenId: "896455"
+                        tokenDesc: john.green@company.com
+                        userId: "578621"
+                        userName: John Green
+        example:
+            versions:
+                - number: 3
+                  hash: f43e93acd97eceb3
+                  description: The reason for the last change was...
+                  at: "2022-04-28T14:20:04.000Z"
+                  by:
+                    type: user
+                    tokenId: "896455"
+                    tokenDesc: john.green@company.com
+                    userId: "578621"
+                    userName: John Green
     GenericError:
         title: GenericError
         type: object
