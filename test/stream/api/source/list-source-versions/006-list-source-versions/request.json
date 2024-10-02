@@ -1,0 +1,7 @@
+{
+  "path": "/v1/branches/default/sources/my-source/versions",
+  "method": "GET",
+  "headers": {
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  }
+}
