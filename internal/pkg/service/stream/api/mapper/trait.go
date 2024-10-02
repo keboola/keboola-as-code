@@ -39,6 +39,21 @@ func (m *Mapper) NewVersionResponse(entity definition.Version) *api.Version {
 	}
 }
 
+func (m *Mapper) NewVersionsResponse(versions []definition.Version) []*api.Version {
+	var out []*api.Version
+	for _, version := range versions {
+		v := api.Version{}
+		v.Number = version.Number
+		v.Hash = version.Hash
+		v.Description = version.Description
+		v.At = version.At.String()
+		v.By = m.NewByResponse(version.By)
+
+		out = append(out, &v)
+	}
+	return out
+}
+
 func (m *Mapper) NewCreatedResponse(created definition.Created) *api.CreatedEntity {
 	return &api.CreatedEntity{
 		At: created.Created.At.String(),
