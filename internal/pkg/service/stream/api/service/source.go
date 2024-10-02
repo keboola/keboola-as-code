@@ -234,7 +234,7 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 		return err
 	}
 
-	var sinkKeys []key.SinkKey
+	sinkKeys := make([]key.SinkKey, 0, len(sinks))
 	for _, sink := range sinks {
 		sinkKeys = append(sinkKeys, sink.SinkKey)
 	}
@@ -309,11 +309,9 @@ func (s *service) ListSourceVersions(ctx context.Context, scope dependencies.Sou
 		return nil
 	}).Do(ctx)
 
-	out := &api.EntityVersions{
+	return &api.EntityVersions{
 		Versions: s.mapper.NewVersionsResponse(versions),
-	}
-
-	return out, nil
+	}, nil
 }
 
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {
