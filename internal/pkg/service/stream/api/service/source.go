@@ -303,15 +303,15 @@ func (s *service) ListSourceVersions(ctx context.Context, scope dependencies.Sou
 		return nil, err
 	}
 
-	var versions []definition.Version
-	s.definition.Source().ListVersions(scope.SourceKey()).ForEach(func(value definition.Source, header *iterator.Header) error {
-		versions = append(versions, value.Version)
-		return nil
-	}).Do(ctx)
+	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
+		opts = append(opts,
+			iterator.WithLimit(payload.Limit),
+			iterator.WithStartOffset(payload.AfterID, false),
+		)
+		return s.definition.Source().ListVersions(scope.SourceKey(), opts...)
+	}
 
-	return &api.EntityVersions{
-		Versions: s.mapper.NewVersionsResponse(versions),
-	}, nil
+	return s.mapper.NewSourceVersions(ctx, payload.AfterID, payload.Limit, list)
 }
 
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {

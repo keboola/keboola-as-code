@@ -308,6 +308,7 @@ type EnableSourcePayload struct {
 // method.
 type EntityVersions struct {
 	Versions []*Version
+	Page     *PaginatedResponse
 }
 
 type FileState = model.FileState

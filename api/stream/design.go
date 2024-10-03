@@ -691,6 +691,8 @@ var EntityVersions = Type("EntityVersions", func() {
 	Attribute("versions", ArrayOf(EntityVersion, func() {
 		Description("List of the entity versions")
 	}))
+	Attribute("page", PaginatedResponse)
+	Required("versions", "page")
 })
 
 var EntityVersion = Type("Version", func() {

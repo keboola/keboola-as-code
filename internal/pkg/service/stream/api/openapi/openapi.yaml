@@ -1153,6 +1153,9 @@ paths:
                     description: OK response.
                     schema:
                         $ref: '#/definitions/EntityVersions'
+                        required:
+                            - versions
+                            - page
                 "404":
                     description: Not Found response.
                     schema:
@@ -2426,6 +2429,8 @@ definitions:
         title: EntityVersions
         type: object
         properties:
+            page:
+                $ref: '#/definitions/PaginatedResponse'
             versions:
                 type: array
                 items:
@@ -2453,6 +2458,14 @@ definitions:
                     tokenDesc: john.green@company.com
                     userId: "578621"
                     userName: John Green
+            page:
+                limit: 100
+                totalCount: 1000
+                afterId: my-object-123
+                lastId: my-object-456
+        required:
+            - versions
+            - page
     GenericError:
         title: GenericError
         type: object

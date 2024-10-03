@@ -1,0 +1,23 @@
+{
+  "versions": [
+    {
+      "number": 3,
+      "hash": "%s",
+      "description": "Updated settings.",
+      "at": "%s",
+      "by": {
+        "type": "%s",
+        "tokenId": "%s",
+        "tokenDesc": "%s",
+        "userId": "%s",
+        "userName": "%s"
+      }
+    }
+  ],
+  "page": {
+    "limit": 100,
+    "totalCount": 1,
+    "afterId": "%d",
+    "lastId": "%d"
+  }
+}

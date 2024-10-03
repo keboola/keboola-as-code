@@ -26,5 +26,11 @@
         "userName": "%s"
       }
     }
-  ]
+  ],
+  "page": {
+    "limit": 2,
+    "totalCount": 3,
+    "afterId": "",
+    "lastId": "%d"
+  }
 }

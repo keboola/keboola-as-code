@@ -281,7 +281,8 @@ type EnableSourceResponseBody struct {
 // ListSourceVersionsResponseBody is the type of the "stream" service
 // "ListSourceVersions" endpoint HTTP response body.
 type ListSourceVersionsResponseBody struct {
-	Versions []*VersionResponseBody `form:"versions,omitempty" json:"versions,omitempty" xml:"versions,omitempty"`
+	Versions []*VersionResponseBody         `form:"versions" json:"versions" xml:"versions"`
+	Page     *PaginatedResponseResponseBody `form:"page" json:"page" xml:"page"`
 }
 
 // CreateSinkResponseBody is the type of the "stream" service "CreateSink"
@@ -1540,6 +1541,11 @@ func NewListSourceVersionsResponseBody(res *stream.EntityVersions) *ListSourceVe
 		for i, val := range res.Versions {
 			body.Versions[i] = marshalStreamVersionToVersionResponseBody(val)
 		}
+	} else {
+		body.Versions = []*VersionResponseBody{}
+	}
+	if res.Page != nil {
+		body.Page = marshalStreamPaginatedResponseToPaginatedResponseResponseBody(res.Page)
 	}
 	return body
 }

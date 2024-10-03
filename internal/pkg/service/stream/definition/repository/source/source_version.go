@@ -17,8 +17,8 @@ import (
 
 // ListVersions fetches all versions records for the object.
 // The method can be used also for deleted objects.
-func (r *Repository) ListVersions(k key.SourceKey) iterator.DefinitionT[definition.Source] {
-	return r.schema.Versions().Of(k).GetAll(r.client)
+func (r *Repository) ListVersions(k key.SourceKey, opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
+	return r.schema.Versions().Of(k).GetAll(r.client, opts...)
 }
 
 // Version fetch entity version.

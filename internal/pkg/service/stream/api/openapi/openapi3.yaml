@@ -2170,6 +2170,11 @@ paths:
                                         tokenDesc: john.green@company.com
                                         userId: "578621"
                                         userName: John Green
+                                page:
+                                    limit: 100
+                                    totalCount: 1000
+                                    afterId: my-object-123
+                                    lastId: my-object-456
                 "404":
                     description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
@@ -3641,6 +3646,8 @@ components:
         EntityVersions:
             type: object
             properties:
+                page:
+                    $ref: '#/components/schemas/PaginatedResponse'
                 versions:
                     type: array
                     items:
@@ -3668,6 +3675,14 @@ components:
                         tokenDesc: john.green@company.com
                         userId: "578621"
                         userName: John Green
+                page:
+                    limit: 100
+                    totalCount: 1000
+                    afterId: my-object-123
+                    lastId: my-object-456
+            required:
+                - versions
+                - page
         GenericError:
             type: object
             properties:
