@@ -85,7 +85,7 @@ var _ = Service("apps-proxy", func() {
 		Description("Redirect to /_proxy.")
 		NoSecurity()
 		HTTP(func() {
-			// Redirect / -> /_proxy
+			// Redirect /_proxy/api -> /_proxy/api/v1
 			GET("//_proxy/api/")
 			Meta("openapi:tag:appsproxy")
 			Redirect("/_proxy/api/v1/", StatusMovedPermanently)
@@ -110,7 +110,7 @@ var _ = Service("apps-proxy", func() {
 			Example("OK")
 		})
 		HTTP(func() {
-			GET("//health-check")
+			GET("/health-check")
 			Meta("openapi:generate", "false")
 			Response(StatusOK, func() {
 				ContentType("text/plain")

@@ -24,7 +24,7 @@ func New(ctx context.Context, d dependencies.ServiceScope) (Service, error) {
 }
 
 func (s *service) APIRootIndex(context.Context, dependencies.PublicRequestScope) (err error) {
-	// Redirect / -> /v1
+	// Redirect /_proxy/api -> /_proxy/api/v1
 	return nil
 }
 

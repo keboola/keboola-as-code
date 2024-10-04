@@ -20,7 +20,7 @@ func APIVersionIndexAppsProxyPath() string {
 
 // HealthCheckAppsProxyPath returns the URL path to the apps-proxy service HealthCheck HTTP endpoint.
 func HealthCheckAppsProxyPath() string {
-	return "/health-check"
+	return "/_proxy/api/v1/health-check"
 }
 
 // ValidateAppsProxyPath returns the URL path to the apps-proxy service Validate HTTP endpoint.

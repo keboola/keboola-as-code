@@ -82,11 +82,11 @@ func New(
 		Mounts: []*MountPoint{
 			{"APIRootIndex", "GET", "/_proxy/api/"},
 			{"APIVersionIndex", "GET", "/_proxy/api/v1"},
-			{"HealthCheck", "GET", "/health-check"},
+			{"HealthCheck", "GET", "/_proxy/api/v1/health-check"},
 			{"Validate", "GET", "/_proxy/api/v1/validate"},
 			{"CORS", "OPTIONS", "/_proxy/api/"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1"},
-			{"CORS", "OPTIONS", "/health-check"},
+			{"CORS", "OPTIONS", "/_proxy/api/v1/health-check"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1/validate"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1/documentation/openapi.yaml"},
@@ -229,7 +229,7 @@ func MountHealthCheckHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/health-check", f)
+	mux.Handle("GET", "/_proxy/api/v1/health-check", f)
 }
 
 // NewHealthCheckHandler creates a HTTP handler which loads the HTTP request
@@ -352,7 +352,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	h = HandleAppsProxyOrigin(h)
 	mux.Handle("OPTIONS", "/_proxy/api/", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/_proxy/api/v1", h.ServeHTTP)
-	mux.Handle("OPTIONS", "/health-check", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/_proxy/api/v1/health-check", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/_proxy/api/v1/validate", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/_proxy/api/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/_proxy/api/v1/documentation/openapi.yaml", h.ServeHTTP)
