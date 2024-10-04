@@ -90,14 +90,14 @@ func (m *Mapper) NewSinkVersions(
 	limit int,
 	list func(...iterator.Option) iterator.DefinitionT[definition.Sink],
 ) (*api.EntityVersions, error) {
-	sources, page, err := loadPage(ctx, afterId, limit, etcd.SortAscend, list, m.NewSinkResponse)
+	sinks, page, err := loadPage(ctx, afterId, limit, etcd.SortAscend, list, m.NewSinkResponse)
 	if err != nil {
 		return nil, err
 	}
 
 	versions := make([]*api.Version, 0)
-	for _, source := range sources {
-		versions = append(versions, source.Version)
+	for _, sink := range sinks {
+		versions = append(versions, sink.Version)
 	}
 
 	return &api.EntityVersions{
