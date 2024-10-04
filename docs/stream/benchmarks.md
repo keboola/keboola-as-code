@@ -52,7 +52,7 @@ dev bash -c "go run ./cmd/stream/main.go -- $STREAM_COMPONENTS | jl"
 
 ```sh
 export K6_API_TOKEN=<token>
-export K6_API_HOST=$STREAM_API_PUBLIC_URL
+export K6_API_HOST=http://localhost:10000
 export K6_FASTHTTP="false"
 export K6_SCENARIO="ramping"
 export K6_TABLE_MAPPING="static"

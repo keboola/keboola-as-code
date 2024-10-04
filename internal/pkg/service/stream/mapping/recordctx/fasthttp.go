@@ -19,7 +19,7 @@ import (
 type fastHTTPContext struct {
 	ctx           context.Context
 	timestamp     time.Time
-	req           *fasthttp.RequestCtx
+	reqCtx        *fasthttp.RequestCtx
 	lock          sync.Mutex
 	clientIP      net.IP
 	headersMap    *orderedmap.OrderedMap
@@ -30,11 +30,11 @@ type fastHTTPContext struct {
 	jsonValueErr  error
 }
 
-func FromFastHTTP(ctx context.Context, timestamp time.Time, req *fasthttp.RequestCtx) Context {
+func FromFastHTTP(ctx context.Context, timestamp time.Time, reqCtx *fasthttp.RequestCtx) Context {
 	return &fastHTTPContext{
 		ctx:       ctx,
 		timestamp: timestamp,
-		req:       req,
+		reqCtx:    reqCtx,
 	}
 }
 
@@ -51,7 +51,7 @@ func (c *fastHTTPContext) ClientIP() net.IP {
 	defer c.lock.Unlock()
 
 	if c.clientIP == nil {
-		c.clientIP = c.req.RemoteIP()
+		c.clientIP = c.reqCtx.RemoteIP()
 	}
 	return c.clientIP
 }
@@ -62,9 +62,9 @@ func (c *fastHTTPContext) HeadersString() string {
 
 	if c.headersString == nil {
 		var lines []string
-		for _, k := range c.req.Request.Header.PeekKeys() {
+		for _, k := range c.reqCtx.Request.Header.PeekKeys() {
 			k := string(k)
-			lines = append(lines, http.CanonicalHeaderKey(k)+": "+string(c.req.Request.Header.Peek(k))+"\n")
+			lines = append(lines, http.CanonicalHeaderKey(k)+": "+string(c.reqCtx.Request.Header.Peek(k))+"\n")
 		}
 		sort.Strings(lines)
 		return strings.Join(lines, "")
@@ -83,18 +83,18 @@ func (c *fastHTTPContext) HeadersMap() *orderedmap.OrderedMap {
 }
 
 func (c *fastHTTPContext) ReleaseBuffers() {
-	c.req.ResetBody()
+	c.reqCtx.ResetBody()
 	c.headersMap = nil
 	c.bodyMap = nil
 	c.jsonValue = nil
 }
 
 func (c *fastHTTPContext) BodyBytes() ([]byte, error) {
-	return c.req.Request.Body(), nil // returned buffer is valid until the request is released
+	return c.reqCtx.Request.Body(), nil // returned buffer is valid until the request is released
 }
 
 func (c *fastHTTPContext) BodyLength() int {
-	return len(c.req.Request.Body())
+	return len(c.reqCtx.Request.Body())
 }
 
 func (c *fastHTTPContext) BodyMap() (*orderedmap.OrderedMap, error) {
@@ -104,7 +104,7 @@ func (c *fastHTTPContext) BodyMap() (*orderedmap.OrderedMap, error) {
 	if c.bodyMap == nil && c.bodyMapErr == nil {
 		if bodyBytes, err := c.BodyBytes(); err != nil {
 			c.bodyMapErr = err
-		} else if bodyMap, err := parseBody(string(c.req.Request.Header.ContentType()), bodyBytes); err != nil {
+		} else if bodyMap, err := parseBody(string(c.reqCtx.Request.Header.ContentType()), bodyBytes); err != nil {
 			c.bodyMapErr = errors.PrefixError(err, "cannot parse request body")
 		} else {
 			c.bodyMap = bodyMap
@@ -138,9 +138,9 @@ func (c *fastHTTPContext) JSONValue(parserPool *fastjson.ParserPool) (*fastjson.
 
 func (c *fastHTTPContext) headersToMap() *orderedmap.OrderedMap {
 	out := orderedmap.New()
-	for _, k := range c.req.Request.Header.PeekKeys() {
+	for _, k := range c.reqCtx.Request.Header.PeekKeys() {
 		k := string(k)
-		out.Set(http.CanonicalHeaderKey(k), string(c.req.Request.Header.Peek(k)))
+		out.Set(http.CanonicalHeaderKey(k), string(c.reqCtx.Request.Header.Peek(k)))
 	}
 	out.SortKeys(func(keys []string) {
 		sort.Strings(keys)

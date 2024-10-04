@@ -84,6 +84,7 @@ func (c *httpContext) HeadersMap() *orderedmap.OrderedMap {
 }
 
 func (c *httpContext) ReleaseBuffers() {
+	_ = c.req.Body.Close()
 	c.bodyBytes = nil
 	c.bodyLength = 0
 	c.headersMap = nil
