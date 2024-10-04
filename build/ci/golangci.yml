@@ -1,6 +1,9 @@
 run:
   timeout: 15m
   concurrency: 8
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  max-same-issues: 0
   tests: true # check test files
   modules-download-mode: mod
 
