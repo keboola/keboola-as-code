@@ -253,7 +253,7 @@ Wildcards can be used in `/expected-stdout`, `/expected-stderr` and `/out/*.*` f
 - `%c`: A single character of any sort.
 - `%%`: A literal percent character: %.
 
-Inspired by [PhpUnit](https://docs.phpunit.de/en/11.3/assertions.html#assertstringmatchesformat).
+Inspired by [PhpUnit](https://docs.phpunit.de/en/11.4/assertions.html#assertstringmatchesformat).
 
 ## Environment Placeholders
 
