@@ -26,8 +26,10 @@ import (
 )
 
 const (
-	ServiceName = "apps-proxy"
-	ENVPrefix   = "APPS_PROXY_"
+	ServiceName       = "apps-proxy"
+	ENVPrefix         = "APPS_PROXY_"
+	ErrorNamePrefix   = "apps-proxy."
+	ExceptionIDPrefix = "keboola-apps-proxy-"
 )
 
 func main() {
@@ -48,9 +50,6 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 
 	// Create process abstraction
 	proc := servicectx.New(servicectx.WithLogger(logger))
-	if err != nil {
-		return err
-	}
 
 	// PProf profiler
 	if cfg.PProf.Enabled {
@@ -104,8 +103,6 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 	if err != nil {
 		return err
 	}
-
-	logger.Infof(ctx, "starting Apps Proxy server, listen-address=%s", cfg.API.Listen)
 
 	err = proxy.StartServer(ctx, d)
 	if err != nil {
