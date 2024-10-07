@@ -384,15 +384,20 @@ func (s *service) ListSinkVersions(ctx context.Context, scope dependencies.SinkR
 		return nil, err
 	}
 
+	afterID, err := formatAfterID(payload.AfterID)
+	if err != nil {
+		return nil, err
+	}
+
 	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Sink] {
 		opts = append(opts,
 			iterator.WithLimit(payload.Limit),
-			iterator.WithStartOffset(payload.AfterID, false),
+			iterator.WithStartOffset(afterID, false),
 		)
 		return s.definition.Sink().ListVersions(scope.SinkKey(), opts...)
 	}
 
-	return s.mapper.NewSinkVersions(ctx, payload.AfterID, payload.Limit, list)
+	return s.mapper.NewSinkVersions(ctx, afterID, payload.Limit, list)
 }
 
 func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {
