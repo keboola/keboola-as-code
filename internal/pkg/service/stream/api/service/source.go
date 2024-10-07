@@ -106,7 +106,7 @@ func (s *service) ListSources(ctx context.Context, d dependencies.BranchRequestS
 }
 
 func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourcePayload) (*api.Source, error) {
-	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}
 
@@ -120,7 +120,7 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 
 func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (*api.Task, error) {
 	// Quick check before the task
-	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}
 
@@ -157,7 +157,7 @@ func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRe
 
 func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourceSettingsPayload) (*api.Task, error) {
 	// Quick check before the task
-	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}
 
@@ -206,7 +206,7 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 }
 
 func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.TestSourcePayload, _ io.ReadCloser) (res *api.TestResult, err error) {
-	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}
 
@@ -225,7 +225,7 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 }
 
 func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.SourceRequestScope, payload *api.SourceStatisticsClearPayload) (err error) {
-	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return err
 	}
 
@@ -243,7 +243,7 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 }
 
 func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (res *api.Task, err error) {
-	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}
 
@@ -271,7 +271,7 @@ func (s *service) DisableSource(ctx context.Context, d dependencies.SourceReques
 }
 
 func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.EnableSourcePayload) (res *api.Task, err error) {
-	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}
 
@@ -299,7 +299,7 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 }
 
 func (s *service) ListSourceVersions(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.ListSourceVersionsPayload) (res *api.EntityVersions, err error) {
-	if err := s.sourceMustExists(ctx, scope.SourceKey()); err != nil {
+	if err := s.sourceMustExist(ctx, scope.SourceKey()); err != nil {
 		return nil, err
 	}
 
@@ -315,9 +315,9 @@ func (s *service) ListSourceVersions(ctx context.Context, scope dependencies.Sou
 }
 
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {
-	return s.definition.Source().MustNotExists(k).Do(ctx).Err()
+	return s.definition.Source().MustNotExist(k).Do(ctx).Err()
 }
 
-func (s *service) sourceMustExists(ctx context.Context, k key.SourceKey) error {
+func (s *service) sourceMustExist(ctx context.Context, k key.SourceKey) error {
 	return s.definition.Source().ExistsOrErr(k).Do(ctx).Err()
 }
