@@ -471,6 +471,13 @@ type EnableSinkResponseBody struct {
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
+// ListSinkVersionsResponseBody is the type of the "stream" service
+// "ListSinkVersions" endpoint HTTP response body.
+type ListSinkVersionsResponseBody struct {
+	Versions []*VersionResponseBody         `form:"versions" json:"versions" xml:"versions"`
+	Page     *PaginatedResponseResponseBody `form:"page" json:"page" xml:"page"`
+}
+
 // GetTaskResponseBody is the type of the "stream" service "GetTask" endpoint
 // HTTP response body.
 type GetTaskResponseBody struct {
@@ -951,6 +958,30 @@ type EnableSinkStreamAPISourceNotFoundResponseBody struct {
 // service "EnableSink" endpoint HTTP response body for the
 // "stream.api.sinkNotFound" error.
 type EnableSinkStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ListSinkVersionsStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "ListSinkVersions" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type ListSinkVersionsStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ListSinkVersionsStreamAPISinkNotFoundResponseBody is the type of the
+// "stream" service "ListSinkVersions" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type ListSinkVersionsStreamAPISinkNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -1769,6 +1800,24 @@ func NewEnableSinkResponseBody(res *stream.Task) *EnableSinkResponseBody {
 	return body
 }
 
+// NewListSinkVersionsResponseBody builds the HTTP response body from the
+// result of the "ListSinkVersions" endpoint of the "stream" service.
+func NewListSinkVersionsResponseBody(res *stream.EntityVersions) *ListSinkVersionsResponseBody {
+	body := &ListSinkVersionsResponseBody{}
+	if res.Versions != nil {
+		body.Versions = make([]*VersionResponseBody, len(res.Versions))
+		for i, val := range res.Versions {
+			body.Versions[i] = marshalStreamVersionToVersionResponseBody(val)
+		}
+	} else {
+		body.Versions = []*VersionResponseBody{}
+	}
+	if res.Page != nil {
+		body.Page = marshalStreamPaginatedResponseToPaginatedResponseResponseBody(res.Page)
+	}
+	return body
+}
+
 // NewGetTaskResponseBody builds the HTTP response body from the result of the
 // "GetTask" endpoint of the "stream" service.
 func NewGetTaskResponseBody(res *stream.Task) *GetTaskResponseBody {
@@ -2248,6 +2297,30 @@ func NewEnableSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *E
 	return body
 }
 
+// NewListSinkVersionsStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "ListSinkVersions" endpoint of the
+// "stream" service.
+func NewListSinkVersionsStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *ListSinkVersionsStreamAPISourceNotFoundResponseBody {
+	body := &ListSinkVersionsStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewListSinkVersionsStreamAPISinkNotFoundResponseBody builds the HTTP
+// response body from the result of the "ListSinkVersions" endpoint of the
+// "stream" service.
+func NewListSinkVersionsStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *ListSinkVersionsStreamAPISinkNotFoundResponseBody {
+	body := &ListSinkVersionsStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewGetTaskStreamAPITaskNotFoundResponseBody builds the HTTP response body
 // from the result of the "GetTask" endpoint of the "stream" service.
 func NewGetTaskStreamAPITaskNotFoundResponseBody(res *stream.GenericError) *GetTaskStreamAPITaskNotFoundResponseBody {
@@ -2572,6 +2645,20 @@ func NewEnableSinkPayload(branchID string, sourceID string, sinkID string, stora
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.SinkID = stream.SinkID(sinkID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewListSinkVersionsPayload builds a stream service ListSinkVersions endpoint
+// payload.
+func NewListSinkVersionsPayload(branchID string, sourceID string, sinkID string, afterID string, limit int, storageAPIToken string) *stream.ListSinkVersionsPayload {
+	v := &stream.ListSinkVersionsPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.SinkID = stream.SinkID(sinkID)
+	v.AfterID = afterID
+	v.Limit = limit
 	v.StorageAPIToken = storageAPIToken
 
 	return v

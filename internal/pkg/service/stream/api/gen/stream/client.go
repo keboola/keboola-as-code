@@ -44,12 +44,13 @@ type Client struct {
 	SinkStatisticsClearEndpoint   goa.Endpoint
 	DisableSinkEndpoint           goa.Endpoint
 	EnableSinkEndpoint            goa.Endpoint
+	ListSinkVersionsEndpoint      goa.Endpoint
 	GetTaskEndpoint               goa.Endpoint
 	AggregationSourcesEndpoint    goa.Endpoint
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, listSourceVersions, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, getTask, aggregationSources goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, listSourceVersions, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, getTask, aggregationSources goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:          aPIRootIndex,
 		APIVersionIndexEndpoint:       aPIVersionIndex,
@@ -78,6 +79,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		SinkStatisticsClearEndpoint:   sinkStatisticsClear,
 		DisableSinkEndpoint:           disableSink,
 		EnableSinkEndpoint:            enableSink,
+		ListSinkVersionsEndpoint:      listSinkVersions,
 		GetTaskEndpoint:               getTask,
 		AggregationSourcesEndpoint:    aggregationSources,
 	}
@@ -431,6 +433,21 @@ func (c *Client) EnableSink(ctx context.Context, p *EnableSinkPayload) (res *Tas
 		return
 	}
 	return ires.(*Task), nil
+}
+
+// ListSinkVersions calls the "ListSinkVersions" endpoint of the "stream"
+// service.
+// ListSinkVersions may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
+//   - error: internal error
+func (c *Client) ListSinkVersions(ctx context.Context, p *ListSinkVersionsPayload) (res *EntityVersions, err error) {
+	var ires any
+	ires, err = c.ListSinkVersionsEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*EntityVersions), nil
 }
 
 // GetTask calls the "GetTask" endpoint of the "stream" service.

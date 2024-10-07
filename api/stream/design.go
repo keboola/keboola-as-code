@@ -516,6 +516,22 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("ListSinkVersions", func() {
+		Meta("openapi:summary", "List sink versions")
+		Description("List all sink versions.")
+		Result(EntityVersions)
+		Payload(ListSinkVersionsRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions")
+			Meta("openapi:tag:configuration")
+			Param("afterId")
+			Param("limit")
+			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
 	// Task endpoints --------------------------------------------------------------------------------------------------
 
 	Method("GetTask", func() {
@@ -1009,6 +1025,11 @@ var ListSinksRequest = Type("ListSinksRequest", func() {
 
 var ListSourceVersionsRequest = Type("ListSourceVersionsRequest", func() {
 	SourceKeyRequest()
+	PaginatedRequest()
+})
+
+var ListSinkVersionsRequest = Type("ListSinkVersionsRequest", func() {
+	SinkKeyRequest()
 	PaginatedRequest()
 })
 
