@@ -380,7 +380,7 @@ func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScop
 }
 
 func (s *service) ListSinkVersions(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.ListSinkVersionsPayload) (res *api.EntityVersions, err error) {
-	if err := s.sourceMustExists(ctx, scope.SourceKey()); err != nil {
+	if err := s.sinkMustExists(ctx, scope.SinkKey()); err != nil {
 		return nil, err
 	}
 
