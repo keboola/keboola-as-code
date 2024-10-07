@@ -234,7 +234,7 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 		return err
 	}
 
-	sinkKeys := []key.SinkKey{}
+	sinkKeys := make([]key.SinkKey, 0, len(sinks))
 	for _, sink := range sinks {
 		sinkKeys = append(sinkKeys, sink.SinkKey)
 	}
@@ -296,6 +296,22 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 	}
 
 	return s.mapper.NewTaskResponse(t)
+}
+
+func (s *service) ListSourceVersions(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.ListSourceVersionsPayload) (res *api.EntityVersions, err error) {
+	if err := s.sourceMustExists(ctx, scope.SourceKey()); err != nil {
+		return nil, err
+	}
+
+	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
+		opts = append(opts,
+			iterator.WithLimit(payload.Limit),
+			iterator.WithStartOffset(payload.AfterID, false),
+		)
+		return s.definition.Source().ListVersions(scope.SourceKey(), opts...)
+	}
+
+	return s.mapper.NewSourceVersions(ctx, payload.AfterID, payload.Limit, list)
 }
 
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {

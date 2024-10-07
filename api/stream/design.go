@@ -329,6 +329,21 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("ListSourceVersions", func() {
+		Meta("openapi:summary", "List source versions")
+		Description("List all source versions.")
+		Result(EntityVersions)
+		Payload(ListSourceVersionsRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/{sourceId}/versions")
+			Meta("openapi:tag:configuration")
+			Param("afterId")
+			Param("limit")
+			Response(StatusOK)
+			SourceNotFoundError()
+		})
+	})
+
 	// Sink endpoints --------------------------------------------------------------------------------------------------
 
 	Method("CreateSink", func() {
@@ -672,6 +687,14 @@ var ServiceDetail = Type("ServiceDetail", func() {
 
 // Versioned trait ----------------------------------------------------------------------------------------------------
 
+var EntityVersions = Type("EntityVersions", func() {
+	Attribute("versions", ArrayOf(EntityVersion, func() {
+		Description("List of the entity versions")
+	}))
+	Attribute("page", PaginatedResponse)
+	Required("versions", "page")
+})
+
 var EntityVersion = Type("Version", func() {
 	Description("Version of the entity.")
 	Attribute("number", Int, func() {
@@ -980,6 +1003,11 @@ var GetSinkRequest = Type("GetSinkRequest", func() {
 })
 
 var ListSinksRequest = Type("ListSinksRequest", func() {
+	SourceKeyRequest()
+	PaginatedRequest()
+})
+
+var ListSourceVersionsRequest = Type("ListSourceVersionsRequest", func() {
 	SourceKeyRequest()
 	PaginatedRequest()
 })

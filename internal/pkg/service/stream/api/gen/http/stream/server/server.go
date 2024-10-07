@@ -36,6 +36,7 @@ type Server struct {
 	SourceStatisticsClear http.Handler
 	DisableSource         http.Handler
 	EnableSource          http.Handler
+	ListSourceVersions    http.Handler
 	CreateSink            http.Handler
 	GetSink               http.Handler
 	GetSinkSettings       http.Handler
@@ -120,6 +121,7 @@ func New(
 			{"SourceStatisticsClear", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
 			{"DisableSource", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/disable"},
 			{"EnableSource", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/enable"},
+			{"ListSourceVersions", "GET", "/v1/branches/{branchId}/sources/{sourceId}/versions"},
 			{"CreateSink", "POST", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"GetSink", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"GetSinkSettings", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
@@ -144,6 +146,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/disable"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/enable"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/versions"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
@@ -179,6 +182,7 @@ func New(
 		SourceStatisticsClear: NewSourceStatisticsClearHandler(e.SourceStatisticsClear, mux, decoder, encoder, errhandler, formatter),
 		DisableSource:         NewDisableSourceHandler(e.DisableSource, mux, decoder, encoder, errhandler, formatter),
 		EnableSource:          NewEnableSourceHandler(e.EnableSource, mux, decoder, encoder, errhandler, formatter),
+		ListSourceVersions:    NewListSourceVersionsHandler(e.ListSourceVersions, mux, decoder, encoder, errhandler, formatter),
 		CreateSink:            NewCreateSinkHandler(e.CreateSink, mux, decoder, encoder, errhandler, formatter),
 		GetSink:               NewGetSinkHandler(e.GetSink, mux, decoder, encoder, errhandler, formatter),
 		GetSinkSettings:       NewGetSinkSettingsHandler(e.GetSinkSettings, mux, decoder, encoder, errhandler, formatter),
@@ -221,6 +225,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.SourceStatisticsClear = m(s.SourceStatisticsClear)
 	s.DisableSource = m(s.DisableSource)
 	s.EnableSource = m(s.EnableSource)
+	s.ListSourceVersions = m(s.ListSourceVersions)
 	s.CreateSink = m(s.CreateSink)
 	s.GetSink = m(s.GetSink)
 	s.GetSinkSettings = m(s.GetSinkSettings)
@@ -257,6 +262,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountSourceStatisticsClearHandler(mux, h.SourceStatisticsClear)
 	MountDisableSourceHandler(mux, h.DisableSource)
 	MountEnableSourceHandler(mux, h.EnableSource)
+	MountListSourceVersionsHandler(mux, h.ListSourceVersions)
 	MountCreateSinkHandler(mux, h.CreateSink)
 	MountGetSinkHandler(mux, h.GetSink)
 	MountGetSinkSettingsHandler(mux, h.GetSinkSettings)
@@ -943,6 +949,57 @@ func NewEnableSourceHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "EnableSource")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountListSourceVersionsHandler configures the mux to serve the "stream"
+// service "ListSourceVersions" endpoint.
+func MountListSourceVersionsHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/branches/{branchId}/sources/{sourceId}/versions", f)
+}
+
+// NewListSourceVersionsHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "ListSourceVersions" endpoint.
+func NewListSourceVersionsHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeListSourceVersionsRequest(mux, decoder)
+		encodeResponse = EncodeListSourceVersionsResponse(encoder)
+		encodeError    = EncodeListSourceVersionsError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "ListSourceVersions")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -1744,6 +1801,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/disable", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/enable", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/versions", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings", h.ServeHTTP)

@@ -68,6 +68,28 @@ func (m *Mapper) NewSourcesResponse(
 	}, nil
 }
 
+func (m *Mapper) NewSourceVersions(
+	ctx context.Context,
+	afterId string,
+	limit int,
+	list func(...iterator.Option) iterator.DefinitionT[definition.Source],
+) (*api.EntityVersions, error) {
+	sources, page, err := loadPage(ctx, afterId, limit, etcd.SortAscend, list, m.NewSourceResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	versions := make([]*api.Version, 0)
+	for _, source := range sources {
+		versions = append(versions, source.Version)
+	}
+
+	return &api.EntityVersions{
+		Versions: versions,
+		Page:     page,
+	}, nil
+}
+
 func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definition.Sink, recordCtx recordctx.Context) (*api.TestResult, error) {
 	result := &api.TestResult{
 		ProjectID: sourceKey.ProjectID,
