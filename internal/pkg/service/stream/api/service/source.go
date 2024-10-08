@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strconv"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -305,20 +304,15 @@ func (s *service) ListSourceVersions(ctx context.Context, scope dependencies.Sou
 		return nil, err
 	}
 
-	afterID, err := formatAfterID(payload.AfterID)
-	if err != nil {
-		return nil, err
-	}
-
 	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
 		opts = append(opts,
 			iterator.WithLimit(payload.Limit),
-			iterator.WithStartOffset(afterID, false),
+			iterator.WithStartOffset(formatAfterID(payload.AfterID), false),
 		)
 		return s.definition.Source().ListVersions(scope.SourceKey(), opts...)
 	}
 
-	return s.mapper.NewSourceVersions(ctx, afterID, payload.Limit, list)
+	return s.mapper.NewSourceVersions(ctx, payload.AfterID, payload.Limit, list)
 }
 
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {
@@ -329,16 +323,11 @@ func (s *service) sourceMustExists(ctx context.Context, k key.SourceKey) error {
 	return s.definition.Source().ExistsOrErr(k).Do(ctx).Err()
 }
 
-// FormatAfterID parses the AfterID from the payload, converts it to an unsigned integer,
-// and formats it as a zero-padded, 10-digit string.
-func formatAfterID(id string) (string, error) {
-	var afterIDStr string
-	if id != "" {
-		afterID, err := strconv.ParseUint(id, 10, 64)
-		if err != nil {
-			return "", err
-		}
-		afterIDStr = fmt.Sprintf("%010d", afterID)
+// FormatAfterID pads the given id string with leading zeros to ensure it is 10 characters long.
+// If the input id is an empty string, it returns the empty string without any modification.
+func formatAfterID(id string) string {
+	if id == "" {
+		return id
 	}
-	return afterIDStr, nil
+	return fmt.Sprintf("%010s", id)
 }
