@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -306,7 +307,7 @@ func (s *service) ListSourceVersions(ctx context.Context, scope dependencies.Sou
 	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
 		opts = append(opts,
 			iterator.WithLimit(payload.Limit),
-			iterator.WithStartOffset(payload.AfterID, false),
+			iterator.WithStartOffset(formatAfterID(payload.AfterID), false),
 		)
 		return s.definition.Source().ListVersions(scope.SourceKey(), opts...)
 	}
@@ -320,4 +321,13 @@ func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error
 
 func (s *service) sourceMustExists(ctx context.Context, k key.SourceKey) error {
 	return s.definition.Source().ExistsOrErr(k).Do(ctx).Err()
+}
+
+// FormatAfterID pads the given id string with leading zeros to ensure it is 10 characters long.
+// If the input id is an empty string, it returns the empty string without any modification.
+func formatAfterID(id string) string {
+	if id == "" {
+		return id
+	}
+	return fmt.Sprintf("%010s", id)
 }
