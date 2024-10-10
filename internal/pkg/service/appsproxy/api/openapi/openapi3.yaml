@@ -129,6 +129,40 @@ components:
                 - id
                 - clientID
                 - clientSecret
+        GenericError:
+            type: object
+            properties:
+                error:
+                    type: string
+                    description: Name of error.
+                    example: templates.internalError
+                message:
+                    type: string
+                    description: Error message.
+                    example: Internal Error
+                statusCode:
+                    type: integer
+                    description: HTTP status code.
+                    example: 500
+                    format: int64
+            description: Generic error
+            example:
+                error: templates.internalError
+                message: Internal Error
+                statusCode: 500
+            required:
+                - statusCode
+                - error
+                - message
+        ProxyRequest:
+            type: object
+            properties:
+                path:
+                    type: string
+                    description: '"Path that proxies to data application".'
+                    example: ""
+            example:
+                path: ""
         ServiceDetail:
             type: object
             properties:
@@ -140,6 +174,7 @@ components:
                     type: string
                     description: URL of the API documentation.
                     example: https://appsproxy.keboola.com/v1/documentation
+            description: Information about the service
             example:
                 api: appsproxy
                 documentation: https://appsproxy.keboola.com/v1/documentation
@@ -161,6 +196,7 @@ components:
                             message: unable to validate due to missing entry
                           id: test
                           name: My Template
+            description: List of configurations of OIDC providers.
             example:
                 configuration:
                     - exampleerrordata:

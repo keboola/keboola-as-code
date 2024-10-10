@@ -71,7 +71,7 @@ func TestSourceRepository_ExistsOrErr(t *testing.T) {
 	}
 }
 
-func TestSourceRepository_MustNotExists(t *testing.T) {
+func TestSourceRepository_MustNotExist(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -87,10 +87,10 @@ func TestSourceRepository_MustNotExists(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 
-	// MustNotExists - branch not found
+	// MustNotExist - branch not found
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := sourceRepo.MustNotExists(sourceKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := sourceRepo.MustNotExist(sourceKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `branch "567" not found in the project`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
@@ -103,10 +103,10 @@ func TestSourceRepository_MustNotExists(t *testing.T) {
 		require.NoError(t, branchRepo.Create(&branch, now, by).Do(ctx).Err())
 	}
 
-	// MustNotExists - source not found - ok
+	// MustNotExist - source not found - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, sourceRepo.MustNotExists(sourceKey).Do(ctx).Err())
+		require.NoError(t, sourceRepo.MustNotExist(sourceKey).Do(ctx).Err())
 	}
 
 	// Create source
@@ -116,10 +116,10 @@ func TestSourceRepository_MustNotExists(t *testing.T) {
 		require.NoError(t, sourceRepo.Create(&source, now, by, "Create source").Do(ctx).Err())
 	}
 
-	// MustNotExists - source found - error
+	// MustNotExist - source found - error
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := sourceRepo.MustNotExists(sourceKey).Do(ctx).Err(); assert.Error(t, err) {
+		if err := sourceRepo.MustNotExist(sourceKey).Do(ctx).Err(); assert.Error(t, err) {
 			assert.Equal(t, `source "my-source" already exists in the branch`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
 		}

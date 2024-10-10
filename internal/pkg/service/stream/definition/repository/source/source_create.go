@@ -22,7 +22,7 @@ func (r *Repository) Create(input *definition.Source, now time.Time, by definiti
 	return op.Atomic(r.client, &created).
 		// Entity must not exist
 		Read(func(ctx context.Context) op.Op {
-			return r.MustNotExists(k)
+			return r.MustNotExist(k)
 		}).
 		// Check prerequisites
 		Read(func(ctx context.Context) op.Op {

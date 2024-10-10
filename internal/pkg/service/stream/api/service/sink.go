@@ -77,7 +77,7 @@ func (s *service) CreateSink(ctx context.Context, d dependencies.SourceRequestSc
 }
 
 func (s *service) GetSink(ctx context.Context, d dependencies.SinkRequestScope, _ *api.GetSinkPayload) (*api.Sink, error) {
-	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
 		return nil, err
 	}
 
@@ -90,7 +90,7 @@ func (s *service) GetSink(ctx context.Context, d dependencies.SinkRequestScope, 
 }
 
 func (s *service) ListSinks(ctx context.Context, d dependencies.SourceRequestScope, payload *api.ListSinksPayload) (*api.SinksList, error) {
-	if err := s.sourceMustExists(ctx, d.SourceKey()); err != nil {
+	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}
 
@@ -161,7 +161,7 @@ func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScop
 
 func (s *service) DeleteSink(ctx context.Context, d dependencies.SinkRequestScope, _ *api.DeleteSinkPayload) (*api.Task, error) {
 	// Quick check before the task
-	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
 		return nil, err
 	}
 
@@ -198,7 +198,7 @@ func (s *service) GetSinkSettings(ctx context.Context, d dependencies.SinkReques
 
 func (s *service) UpdateSinkSettings(ctx context.Context, d dependencies.SinkRequestScope, payload *api.UpdateSinkSettingsPayload) (*api.Task, error) {
 	// Quick check before the task
-	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
 		return nil, err
 	}
 
@@ -247,7 +247,7 @@ func (s *service) UpdateSinkSettings(ctx context.Context, d dependencies.SinkReq
 }
 
 func (s *service) SinkStatisticsTotal(ctx context.Context, d dependencies.SinkRequestScope, _ *api.SinkStatisticsTotalPayload) (*api.SinkStatisticsTotalResult, error) {
-	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
 		return nil, err
 	}
 
@@ -316,7 +316,7 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 }
 
 func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRequestScope, payload *api.SinkStatisticsClearPayload) (err error) {
-	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
 		return err
 	}
 
@@ -324,7 +324,7 @@ func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRe
 }
 
 func (s *service) DisableSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.DisableSinkPayload) (res *api.Task, err error) {
-	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
 		return nil, err
 	}
 
@@ -352,7 +352,7 @@ func (s *service) DisableSink(ctx context.Context, d dependencies.SinkRequestSco
 }
 
 func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.EnableSinkPayload) (res *api.Task, err error) {
-	if err := s.sinkMustExists(ctx, d.SinkKey()); err != nil {
+	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
 		return nil, err
 	}
 
@@ -380,7 +380,7 @@ func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScop
 }
 
 func (s *service) ListSinkVersions(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.ListSinkVersionsPayload) (res *api.EntityVersions, err error) {
-	if err := s.sinkMustExists(ctx, scope.SinkKey()); err != nil {
+	if err := s.sinkMustExist(ctx, scope.SinkKey()); err != nil {
 		return nil, err
 	}
 
@@ -396,9 +396,9 @@ func (s *service) ListSinkVersions(ctx context.Context, scope dependencies.SinkR
 }
 
 func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {
-	return s.definition.Sink().MustNotExists(k).Do(ctx).Err()
+	return s.definition.Sink().MustNotExist(k).Do(ctx).Err()
 }
 
-func (s *service) sinkMustExists(ctx context.Context, k key.SinkKey) error {
+func (s *service) sinkMustExist(ctx context.Context, k key.SinkKey) error {
 	return s.definition.Sink().ExistsOrErr(k).Do(ctx).Err()
 }

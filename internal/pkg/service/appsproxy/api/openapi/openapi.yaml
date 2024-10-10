@@ -32,7 +32,7 @@ paths:
                 "200":
                     description: OK response.
                     schema:
-                        $ref: '#/definitions/AppsProxyAPIVersionIndexResponseBody'
+                        $ref: '#/definitions/ServiceDetail'
                         required:
                             - api
                             - documentation
@@ -105,56 +105,14 @@ paths:
                 "200":
                     description: OK response.
                     schema:
-                        $ref: '#/definitions/AppsProxyValidateResponseBody'
+                        $ref: '#/definitions/Validations'
             schemes:
                 - https
             security:
                 - storage-api-token: []
 definitions:
-    AppsProxyAPIVersionIndexResponseBody:
-        title: AppsProxyAPIVersionIndexResponseBody
-        type: object
-        properties:
-            api:
-                type: string
-                description: Name of the API
-                example: appsproxy
-            documentation:
-                type: string
-                description: URL of the API documentation.
-                example: https://appsproxy.keboola.com/v1/documentation
-        example:
-            api: appsproxy
-            documentation: https://appsproxy.keboola.com/v1/documentation
-        required:
-            - api
-            - documentation
-    AppsProxyValidateResponseBody:
-        title: AppsProxyValidateResponseBody
-        type: object
-        properties:
-            configuration:
-                type: array
-                items:
-                    $ref: '#/definitions/ConfigurationResponseBody'
-                description: All authorization providers.
-                example:
-                    - exampleerrordata:
-                        statusCode: 404
-                        error: validations incorrect
-                        message: unable to validate due to missing entry
-                      id: test
-                      name: My Template
-        example:
-            configuration:
-                - exampleerrordata:
-                    statusCode: 404
-                    error: validations incorrect
-                    message: unable to validate due to missing entry
-                  id: test
-                  name: My Template
-    ConfigurationResponseBody:
-        title: ConfigurationResponseBody
+    Configuration:
+        title: Configuration
         type: object
         properties:
             clientID:
@@ -178,6 +136,48 @@ definitions:
             - id
             - clientID
             - clientSecret
+    ServiceDetail:
+        title: ServiceDetail
+        type: object
+        properties:
+            api:
+                type: string
+                description: Name of the API
+                example: appsproxy
+            documentation:
+                type: string
+                description: URL of the API documentation.
+                example: https://appsproxy.keboola.com/v1/documentation
+        example:
+            api: appsproxy
+            documentation: https://appsproxy.keboola.com/v1/documentation
+        required:
+            - api
+            - documentation
+    Validations:
+        title: Validations
+        type: object
+        properties:
+            configuration:
+                type: array
+                items:
+                    $ref: '#/definitions/Configuration'
+                description: All authorization providers.
+                example:
+                    - exampleerrordata:
+                        statusCode: 404
+                        error: validations incorrect
+                        message: unable to validate due to missing entry
+                      id: test
+                      name: My Template
+        example:
+            configuration:
+                - exampleerrordata:
+                    statusCode: 404
+                    error: validations incorrect
+                    message: unable to validate due to missing entry
+                  id: test
+                  name: My Template
 securityDefinitions:
     storage-api-token:
         type: apiKey
