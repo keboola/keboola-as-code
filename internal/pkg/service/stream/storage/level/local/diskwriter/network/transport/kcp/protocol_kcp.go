@@ -89,7 +89,6 @@ func (t *Protocol) setupConnection(conn net.Conn) {
 	c := conn.(*kcp.UDPSession)
 	c.SetWindowSize(512, 512)
 	c.SetWriteDelay(false)
-	c.SetStreamMode(false)
 	c.SetACKNoDelay(true) // send data immediately, needed for bigger payloads
 	c.SetNoDelay(1, 10, 2, 1)
 }
