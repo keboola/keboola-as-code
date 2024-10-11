@@ -1,0 +1,21 @@
+{
+  "path": "/v1/branches/default/sources/my-source/settings",
+  "method": "PATCH",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "settings": [
+      {
+        "key": "storage.level.staging.upload.trigger.interval",
+        "value": "45s"
+      },
+      {
+        "key": "storage.level.staging.upload.trigger.size",
+        "value": "12MB"
+      }
+    ]
+  }
+}
+
