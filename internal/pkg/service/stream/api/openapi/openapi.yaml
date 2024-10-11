@@ -1169,6 +1169,14 @@ paths:
                             - statusCode
                             - error
                             - message
+                "422":
+                    description: Unprocessable Entity response.
+                    schema:
+                        $ref: '#/definitions/GenericError'
+                        required:
+                            - statusCode
+                            - error
+                            - message
             schemes:
                 - https
             security:
