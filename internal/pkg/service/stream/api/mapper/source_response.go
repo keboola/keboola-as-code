@@ -2,6 +2,7 @@ package mapper
 
 import (
 	"context"
+	"fmt"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -104,7 +105,7 @@ func (m *Mapper) NewTestResultResponse(sourceKey key.SourceKey, sinks []definiti
 		for _, c := range sink.Table.Mapping.Columns {
 			csvValue, err := renderer.CSVValue(c, recordCtx)
 			if err != nil {
-				return nil, err
+				return nil, svcerrors.NewUnprocessableContentError(err).WithUserMessage(fmt.Sprintf(`Invalid value for column "%s": %s`, c.ColumnName(), err.Error()))
 			}
 
 			csvValueBytes, err := csvfmt.Format(csvValue)
