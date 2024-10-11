@@ -1,0 +1,14 @@
+{
+  "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source/test",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "my": {
+      "value": 42
+    },
+    "key": "value"
+  }
+}

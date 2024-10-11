@@ -1,33 +1,5 @@
 {
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
-  "sourceId": "my-source",
-  "tables": [
-    {
-      "sinkId": "my-sink",
-      "tableId": "in.c-my-bucket.my-table",
-      "rows": [
-        {
-          "columns": [
-            {
-              "name": "datetime",
-              "value": "%s"
-            },
-            {
-              "name": "headers",
-              "value": "{\"Accept\":\"application/json\",\"Accept-Encoding\":\"gzip\",\"Content-Length\":\"%x\",\"Content-Type\":\"application/json\",\"User-Agent\":\"go-resty/%x.%x.%x (https://github.com/go-resty/resty)\"}"
-            },
-            {
-              "name": "body",
-              "value": "{\"my\":{\"value\":42}}"
-            },
-            {
-              "name": "jsonnet",
-              "value": "42"
-            }
-          ]
-        }
-      ]
-    }
-  ]
+  "statusCode": 422,
+  "error": "stream.api.unprocessableContent",
+  "message": "Invalid value for column \"path\": path \"key\" not found in the body."
 }
