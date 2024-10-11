@@ -17,7 +17,7 @@ func (r *Repository) ExistsOrErr(k key.SourceKey) *op.TxnOp[op.NoResult] {
 		FirstErrorOnly()
 }
 
-func (r *Repository) MustNotExists(k key.SourceKey) *op.TxnOp[op.NoResult] {
+func (r *Repository) MustNotExist(k key.SourceKey) *op.TxnOp[op.NoResult] {
 	return op.Txn(r.client).
 		Merge(r.branches.ExistsOrErr(k.BranchKey)).
 		Merge(r.schema.Active().ByKey(k).Exists(r.client).
