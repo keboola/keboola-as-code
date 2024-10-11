@@ -345,6 +345,20 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("SourceVersionDetail", func() {
+		Meta("openapi:summary", "Source version detail")
+		Description("Source version detail.")
+		Result(EntityVersion)
+		Payload(SourceVersionDetailRequest)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/{sourceId}/versions/{versionNumber}")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+			VersionNotFoundError()
+		})
+	})
+
 	// Sink endpoints --------------------------------------------------------------------------------------------------
 
 	Method("CreateSink", func() {
@@ -739,6 +753,16 @@ var EntityVersion = Type("Version", func() {
 	Required("number", "hash", "at", "by", "description")
 })
 
+var EntityRequest = func() {
+	Attribute("versionNumber", Int, func() {
+		Meta("struct:field:type", "definition.VersionNumber", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
+		Description("Version number counted from 1.")
+		Minimum(1)
+		Example(3)
+	})
+	Required("versionNumber")
+}
+
 // DeletedEntity trait -------------------------------------------------------------------------------------------------
 
 var By = Type("By", func() {
@@ -1032,6 +1056,11 @@ var ListSourceVersionsRequest = Type("ListSourceVersionsRequest", func() {
 var ListSinkVersionsRequest = Type("ListSinkVersionsRequest", func() {
 	SinkKeyRequest()
 	PaginatedRequest()
+})
+
+var SourceVersionDetailRequest = Type("SourceVersionDetailRequest", func() {
+	SourceKeyRequest()
+	EntityRequest()
 })
 
 var UpdateSinkRequest = Type("UpdateSinkRequest", func() {
@@ -1513,6 +1542,10 @@ func ResourceCountLimitReachedError() {
 
 func TaskNotFoundError() {
 	GenericError(StatusNotFound, "taskNotFound", "Task not found error.", `Task "001" not found.`)
+}
+
+func VersionNotFoundError() {
+	GenericError(StatusNotFound, "versionNotFound", "Version not found error.", `Version "001" not found.`)
 }
 
 func ForbiddenProtectedSettingError() {
