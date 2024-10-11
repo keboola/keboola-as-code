@@ -16,14 +16,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.keboola-buffer.json
-const componentID = keboola.ComponentID("keboola.keboola-buffer")
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.keboola-stream..json
+const componentID = keboola.ComponentID("keboola.keboola-stream")
 
 type Params struct {
-	ProjectID keboola.ProjectID
-	SourceID  key.SourceID
-	SinkID    key.SinkID
-	Stats     statistics.Value
+	ProjectID  keboola.ProjectID
+	SourceID   key.SourceID
+	SourceName string
+	SinkID     key.SinkID
+	Stats      statistics.Value
 }
 
 func (b *Bridge) SendSliceUploadEvent(
@@ -126,16 +127,12 @@ func (b *Bridge) sendEvent(
 		Duration:    client.DurationSeconds(duration),
 		Params: map[string]any{
 			"eventName": eventName,
-			// legacy fields for compatibility with buffer events
-			"task": eventName,
 		},
 		Results: map[string]any{
-			"projectId": params.ProjectID,
-			"sourceId":  params.SourceID,
-			"sinkId":    params.SinkID,
-			// legacy fields for compatibility with buffer events
-			"receiverId": params.SourceID,
-			"exportId":   params.SinkID,
+			"projectId":  params.ProjectID,
+			"sourceId":   params.SourceID,
+			"sourceName": params.SourceName,
+			"sinkId":     params.SinkID,
 		},
 	}
 	if err != nil {
@@ -150,11 +147,6 @@ func (b *Bridge) sendEvent(
 			"uncompressedSize": params.Stats.UncompressedSize.Bytes(),
 			"compressedSize":   params.Stats.CompressedSize.Bytes(),
 			"stagingSize":      params.Stats.StagingSize.Bytes(),
-			// legacy fields for compatibility with buffer events
-			"recordsSize":  params.Stats.CompressedSize.Bytes(),
-			"bodySize":     params.Stats.UncompressedSize.Bytes(),
-			"fileSize":     params.Stats.UncompressedSize.Bytes(),
-			"fileGZipSize": params.Stats.CompressedSize.Bytes(),
 		}
 	}
 
