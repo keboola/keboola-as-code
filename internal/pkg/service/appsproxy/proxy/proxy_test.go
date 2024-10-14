@@ -1275,6 +1275,37 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedWakeUps: map[string]int{},
 		},
 		{
+			name: "websocket connection check",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+				defer cancel()
+
+				c, _, err := websocket.Dial(ctx, "wss://public-111.hub.keboola.local/ws2", &websocket.DialOptions{HTTPClient: client})
+				require.NoError(t, err)
+
+				originalConfig := service.Apps["111"]
+				originalConfig.AppSlug = ptr.Ptr("p")
+				service.Apps["111"] = originalConfig
+
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://p-111.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				assert.Eventually(t, func() bool {
+					if err = c.Write(ctx, websocket.MessageText, []byte("Hello websocket")); err == nil {
+						return false
+					}
+					return true
+				}, 10*time.Second, time.Millisecond*100)
+			},
+			expectedNotifications: map[string]int{
+				"111": 1,
+			},
+			expectedWakeUps: map[string]int{},
+		},
+		{
 			name: "multi-app-websocket",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
@@ -1650,13 +1681,18 @@ func TestAppProxyRouter(t *testing.T) {
 				originalConfig := service.Apps["123"]
 				newConfig := service.Apps["oidc"]
 				newConfig.ID = "public-123"
+
 				service.Apps["123"] = newConfig
 
 				// Request to the same app which is now private
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				response, err = client.Do(request)
-				require.NoError(t, err)
+
+				assert.Eventually(t, func() bool {
+					response, err = client.Do(request)
+					return err == nil
+				}, time.Second*5, time.Millisecond*100)
+
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
 				// Revert configuration
@@ -1665,8 +1701,12 @@ func TestAppProxyRouter(t *testing.T) {
 				// Request to public app
 				request, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
-				response, err = client.Do(request)
-				require.NoError(t, err)
+
+				assert.Eventually(t, func() bool {
+					response, err = client.Do(request)
+					return err == nil
+				}, time.Second*5, time.Millisecond*100)
+
 				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
 			expectedNotifications: map[string]int{
@@ -2440,6 +2480,20 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 			ID:             "123",
 			ProjectID:      "123",
 			Name:           "my-app",
+			AppSlug:        ptr.Ptr("public"),
+			UpstreamAppURL: upstream.String(),
+			AuthRules: []api.Rule{
+				{
+					Type:         api.RulePathPrefix,
+					Value:        "/",
+					AuthRequired: ptr.Ptr(false),
+				},
+			},
+		},
+		{
+			ID:             "111",
+			ProjectID:      "12345",
+			Name:           "my-app-ws",
 			AppSlug:        ptr.Ptr("public"),
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
