@@ -33,6 +33,7 @@ type Client struct {
 	EnableSourceEndpoint          goa.Endpoint
 	ListSourceVersionsEndpoint    goa.Endpoint
 	SourceVersionDetailEndpoint   goa.Endpoint
+	RollbackSourceVersionEndpoint goa.Endpoint
 	CreateSinkEndpoint            goa.Endpoint
 	GetSinkEndpoint               goa.Endpoint
 	GetSinkSettingsEndpoint       goa.Endpoint
@@ -52,7 +53,7 @@ type Client struct {
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, listSourceVersions, sourceVersionDetail, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, sinkVersionDetail, getTask, aggregationSources goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, listSourceVersions, sourceVersionDetail, rollbackSourceVersion, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, sinkVersionDetail, getTask, aggregationSources goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:          aPIRootIndex,
 		APIVersionIndexEndpoint:       aPIVersionIndex,
@@ -70,6 +71,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		EnableSourceEndpoint:          enableSource,
 		ListSourceVersionsEndpoint:    listSourceVersions,
 		SourceVersionDetailEndpoint:   sourceVersionDetail,
+		RollbackSourceVersionEndpoint: rollbackSourceVersion,
 		CreateSinkEndpoint:            createSink,
 		GetSinkEndpoint:               getSink,
 		GetSinkSettingsEndpoint:       getSinkSettings,
@@ -284,6 +286,21 @@ func (c *Client) SourceVersionDetail(ctx context.Context, p *SourceVersionDetail
 		return
 	}
 	return ires.(*Version), nil
+}
+
+// RollbackSourceVersion calls the "RollbackSourceVersion" endpoint of the
+// "stream" service.
+// RollbackSourceVersion may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.versionNotFound" (type *GenericError): Version not found error.
+//   - error: internal error
+func (c *Client) RollbackSourceVersion(ctx context.Context, p *RollbackSourceVersionPayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.RollbackSourceVersionEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
 }
 
 // CreateSink calls the "CreateSink" endpoint of the "stream" service.

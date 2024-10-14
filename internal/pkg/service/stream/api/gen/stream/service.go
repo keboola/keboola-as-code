@@ -56,6 +56,8 @@ type Service interface {
 	ListSourceVersions(context.Context, dependencies.SourceRequestScope, *ListSourceVersionsPayload) (res *EntityVersions, err error)
 	// Source version detail.
 	SourceVersionDetail(context.Context, dependencies.SourceRequestScope, *SourceVersionDetailPayload) (res *Version, err error)
+	// Rollback source version.
+	RollbackSourceVersion(context.Context, dependencies.SourceRequestScope, *RollbackSourceVersionPayload) (res *Task, err error)
 	// Create a new sink in the source.
 	CreateSink(context.Context, dependencies.SourceRequestScope, *CreateSinkPayload) (res *Task, err error)
 	// Get the sink definition.
@@ -110,7 +112,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [32]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "ListSourceVersions", "SourceVersionDetail", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "ListSinkVersions", "SinkVersionDetail", "GetTask", "AggregationSources"}
+var MethodNames = [33]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "ListSourceVersions", "SourceVersionDetail", "RollbackSourceVersion", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "ListSinkVersions", "SinkVersionDetail", "GetTask", "AggregationSources"}
 
 // A mapping from imported data to a destination table.
 type AggregatedSink struct {
@@ -451,6 +453,16 @@ type PaginatedResponse struct {
 
 // ID of the project.
 type ProjectID = keboola.ProjectID
+
+// RollbackSourceVersionPayload is the payload type of the stream service
+// RollbackSourceVersion method.
+type RollbackSourceVersionPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	// Version number counted from 1.
+	VersionNumber definition.VersionNumber
+}
 
 // ServiceDetail is the result type of the stream service ApiVersionIndex
 // method.

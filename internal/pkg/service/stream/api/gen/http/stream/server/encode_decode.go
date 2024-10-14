@@ -1214,6 +1214,112 @@ func EncodeSourceVersionDetailError(encoder func(context.Context, http.ResponseW
 	}
 }
 
+// EncodeRollbackSourceVersionResponse returns an encoder for responses
+// returned by the stream RollbackSourceVersion endpoint.
+func EncodeRollbackSourceVersionResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*stream.Task)
+		enc := encoder(ctx, w)
+		body := NewRollbackSourceVersionResponseBody(res)
+		w.WriteHeader(http.StatusAccepted)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeRollbackSourceVersionRequest returns a decoder for requests sent to
+// the stream RollbackSourceVersion endpoint.
+func DecodeRollbackSourceVersionRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			branchID        string
+			sourceID        string
+			versionNumber   definition.VersionNumber
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		branchID = params["branchId"]
+		sourceID = params["sourceId"]
+		if utf8.RuneCountInString(sourceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 1, true))
+		}
+		if utf8.RuneCountInString(sourceID) > 48 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
+		}
+		{
+			versionNumberRaw := params["versionNumber"]
+			v, err2 := strconv.ParseInt(versionNumberRaw, 10, strconv.IntSize)
+			if err2 != nil {
+				err = goa.MergeErrors(err, goa.InvalidFieldTypeError("versionNumber", versionNumberRaw, "integer"))
+			}
+			versionNumber = definition.VersionNumber(v)
+		}
+		if versionNumber < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("versionNumber", versionNumber, 1, true))
+		}
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewRollbackSourceVersionPayload(branchID, sourceID, versionNumber, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeRollbackSourceVersionError returns an encoder for errors returned by
+// the RollbackSourceVersion stream endpoint.
+func EncodeRollbackSourceVersionError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "stream.api.sourceNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRollbackSourceVersionStreamAPISourceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "stream.api.versionNotFound":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRollbackSourceVersionStreamAPIVersionNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeCreateSinkResponse returns an encoder for responses returned by the
 // stream CreateSink endpoint.
 func EncodeCreateSinkResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
