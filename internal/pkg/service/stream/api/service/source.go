@@ -328,6 +328,30 @@ func (s *service) SourceVersionDetail(ctx context.Context, scope dependencies.So
 	return s.mapper.NewVersionResponse(source.Version), nil
 }
 
+func (s *service) RollbackSourceVersion(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.RollbackSourceVersionPayload) (res *api.Task, err error) {
+	if err := s.sourceMustExist(ctx, scope.SourceKey()); err != nil {
+		return nil, err
+	}
+
+	t, err := s.startTask(ctx, taskConfig{
+		Type:      "rollback.sourceVersion",
+		Timeout:   5 * time.Minute,
+		ProjectID: scope.ProjectID(),
+		ObjectKey: scope.SourceKey(),
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			if err = s.definition.Source().RollbackVersion(scope.SourceKey(), s.clock.Now(), scope.RequestUser(), payload.VersionNumber).Do(ctx).Err(); err != nil {
+				return task.ErrResult(err)
+			}
+			return task.OkResult("Source version has been rollback successfully.")
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewTaskResponse(t)
+}
+
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {
 	return s.definition.Source().MustNotExist(k).Do(ctx).Err()
 }
