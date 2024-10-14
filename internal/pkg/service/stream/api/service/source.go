@@ -315,6 +315,19 @@ func (s *service) ListSourceVersions(ctx context.Context, scope dependencies.Sou
 	return s.mapper.NewSourceVersions(ctx, payload.AfterID, payload.Limit, list)
 }
 
+func (s *service) SourceVersionDetail(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.SourceVersionDetailPayload) (res *api.Version, err error) {
+	if err := s.sourceMustExist(ctx, scope.SourceKey()); err != nil {
+		return nil, err
+	}
+
+	source, err := s.definition.Source().Version(scope.SourceKey(), payload.VersionNumber).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewVersionResponse(source.Version), nil
+}
+
 func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error {
 	return s.definition.Source().MustNotExist(k).Do(ctx).Err()
 }

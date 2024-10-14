@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "stream.api.invalidFieldType",
+  "message": "Invalid value \"2dsad5\" for \"versionNumber\", must be a integer; versionNumber must be greater or equal than 1 but got value 0."
+}
