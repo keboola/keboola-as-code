@@ -10,6 +10,8 @@ package server
 
 import (
 	"fmt"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 )
 
 // APIRootIndexStreamPath returns the URL path to the stream service ApiRootIndex HTTP endpoint.
@@ -85,6 +87,11 @@ func EnableSourceStreamPath(branchID string, sourceID string) string {
 // ListSourceVersionsStreamPath returns the URL path to the stream service ListSourceVersions HTTP endpoint.
 func ListSourceVersionsStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/versions", branchID, sourceID)
+}
+
+// SourceVersionDetailStreamPath returns the URL path to the stream service SourceVersionDetail HTTP endpoint.
+func SourceVersionDetailStreamPath(branchID string, sourceID string, versionNumber definition.VersionNumber) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/versions/%v", branchID, sourceID, versionNumber)
 }
 
 // CreateSinkStreamPath returns the URL path to the stream service CreateSink HTTP endpoint.

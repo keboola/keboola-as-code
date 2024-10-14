@@ -54,6 +54,8 @@ type Service interface {
 	EnableSource(context.Context, dependencies.SourceRequestScope, *EnableSourcePayload) (res *Task, err error)
 	// List all source versions.
 	ListSourceVersions(context.Context, dependencies.SourceRequestScope, *ListSourceVersionsPayload) (res *EntityVersions, err error)
+	// Source version detail.
+	SourceVersionDetail(context.Context, dependencies.SourceRequestScope, *SourceVersionDetailPayload) (res *Version, err error)
 	// Create a new sink in the source.
 	CreateSink(context.Context, dependencies.SourceRequestScope, *CreateSinkPayload) (res *Task, err error)
 	// Get the sink definition.
@@ -106,7 +108,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [30]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "ListSourceVersions", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "ListSinkVersions", "GetTask", "AggregationSources"}
+var MethodNames = [31]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "ListSourceVersions", "SourceVersionDetail", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "ListSinkVersions", "GetTask", "AggregationSources"}
 
 // A mapping from imported data to a destination table.
 type AggregatedSink struct {
@@ -622,6 +624,16 @@ type SourceStatisticsClearPayload struct {
 
 type SourceType = definition.SourceType
 
+// SourceVersionDetailPayload is the payload type of the stream service
+// SourceVersionDetail method.
+type SourceVersionDetailPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	// Version number counted from 1.
+	VersionNumber definition.VersionNumber
+}
+
 // List of sources, max 100 sources per a branch.
 type Sources []*Source
 
@@ -823,7 +835,7 @@ type UpdateSourceSettingsPayload struct {
 	Settings          SettingsPatch
 }
 
-// Version of the entity.
+// Version is the result type of the stream service SourceVersionDetail method.
 type Version struct {
 	// Version number counted from 1.
 	Number definition.VersionNumber

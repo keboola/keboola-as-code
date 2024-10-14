@@ -285,6 +285,21 @@ type ListSourceVersionsResponseBody struct {
 	Page     *PaginatedResponseResponseBody `form:"page" json:"page" xml:"page"`
 }
 
+// SourceVersionDetailResponseBody is the type of the "stream" service
+// "SourceVersionDetail" endpoint HTTP response body.
+type SourceVersionDetailResponseBody struct {
+	// Version number counted from 1.
+	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
+	// Hash of the entity state.
+	Hash string `form:"hash" json:"hash" xml:"hash"`
+	// Description of the change.
+	Description string `form:"description" json:"description" xml:"description"`
+	// Date and time of the modification.
+	At string `form:"at" json:"at" xml:"at"`
+	// Who modified the entity.
+	By *ByResponseBody `form:"by" json:"by" xml:"by"`
+}
+
 // CreateSinkResponseBody is the type of the "stream" service "CreateSink"
 // endpoint HTTP response body.
 type CreateSinkResponseBody struct {
@@ -670,6 +685,30 @@ type EnableSourceStreamAPISourceNotFoundResponseBody struct {
 // "stream" service "ListSourceVersions" endpoint HTTP response body for the
 // "stream.api.sourceNotFound" error.
 type ListSourceVersionsStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SourceVersionDetailStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "SourceVersionDetail" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type SourceVersionDetailStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SourceVersionDetailStreamAPIVersionNotFoundResponseBody is the type of the
+// "stream" service "SourceVersionDetail" endpoint HTTP response body for the
+// "stream.api.versionNotFound" error.
+type SourceVersionDetailStreamAPIVersionNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -1593,6 +1632,21 @@ func NewListSourceVersionsResponseBody(res *stream.EntityVersions) *ListSourceVe
 	return body
 }
 
+// NewSourceVersionDetailResponseBody builds the HTTP response body from the
+// result of the "SourceVersionDetail" endpoint of the "stream" service.
+func NewSourceVersionDetailResponseBody(res *stream.Version) *SourceVersionDetailResponseBody {
+	body := &SourceVersionDetailResponseBody{
+		Number:      res.Number,
+		Hash:        res.Hash,
+		Description: res.Description,
+		At:          res.At,
+	}
+	if res.By != nil {
+		body.By = marshalStreamByToByResponseBody(res.By)
+	}
+	return body
+}
+
 // NewCreateSinkResponseBody builds the HTTP response body from the result of
 // the "CreateSink" endpoint of the "stream" service.
 func NewCreateSinkResponseBody(res *stream.Task) *CreateSinkResponseBody {
@@ -2027,6 +2081,30 @@ func NewEnableSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError
 // "stream" service.
 func NewListSourceVersionsStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *ListSourceVersionsStreamAPISourceNotFoundResponseBody {
 	body := &ListSourceVersionsStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewSourceVersionDetailStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "SourceVersionDetail" endpoint of the
+// "stream" service.
+func NewSourceVersionDetailStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *SourceVersionDetailStreamAPISourceNotFoundResponseBody {
+	body := &SourceVersionDetailStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewSourceVersionDetailStreamAPIVersionNotFoundResponseBody builds the HTTP
+// response body from the result of the "SourceVersionDetail" endpoint of the
+// "stream" service.
+func NewSourceVersionDetailStreamAPIVersionNotFoundResponseBody(res *stream.GenericError) *SourceVersionDetailStreamAPIVersionNotFoundResponseBody {
+	body := &SourceVersionDetailStreamAPIVersionNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -2502,6 +2580,18 @@ func NewListSourceVersionsPayload(branchID string, sourceID string, afterID stri
 	v.SourceID = stream.SourceID(sourceID)
 	v.AfterID = afterID
 	v.Limit = limit
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewSourceVersionDetailPayload builds a stream service SourceVersionDetail
+// endpoint payload.
+func NewSourceVersionDetailPayload(branchID string, sourceID string, versionNumber definition.VersionNumber, storageAPIToken string) *stream.SourceVersionDetailPayload {
+	v := &stream.SourceVersionDetailPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.VersionNumber = versionNumber
 	v.StorageAPIToken = storageAPIToken
 
 	return v
