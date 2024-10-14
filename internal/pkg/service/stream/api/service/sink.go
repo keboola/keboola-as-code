@@ -395,6 +395,19 @@ func (s *service) ListSinkVersions(ctx context.Context, scope dependencies.SinkR
 	return s.mapper.NewSinkVersions(ctx, formatAfterID(payload.AfterID), payload.Limit, list)
 }
 
+func (s *service) SinkVersionDetail(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.SinkVersionDetailPayload) (res *api.Version, err error) {
+	if err := s.sinkMustExist(ctx, scope.SinkKey()); err != nil {
+		return nil, err
+	}
+
+	sink, err := s.definition.Sink().Version(scope.SinkKey(), payload.VersionNumber).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewVersionResponse(sink.Version), nil
+}
+
 func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {
 	return s.definition.Sink().MustNotExist(k).Do(ctx).Err()
 }

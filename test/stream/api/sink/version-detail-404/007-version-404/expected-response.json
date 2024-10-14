@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "stream.api.sinkVersionNotFound",
+  "message": "Sink version \"my-sink/0000000123\" not found in the source."
+}

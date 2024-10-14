@@ -51,6 +51,7 @@ type Server struct {
 	DisableSink           http.Handler
 	EnableSink            http.Handler
 	ListSinkVersions      http.Handler
+	SinkVersionDetail     http.Handler
 	GetTask               http.Handler
 	AggregationSources    http.Handler
 	CORS                  http.Handler
@@ -138,6 +139,7 @@ func New(
 			{"DisableSink", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable"},
 			{"EnableSink", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable"},
 			{"ListSinkVersions", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions"},
+			{"SinkVersionDetail", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}"},
 			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
 			{"AggregationSources", "GET", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/"},
@@ -161,6 +163,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}"},
 			{"CORS", "OPTIONS", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/aggregation/sources"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
@@ -203,6 +206,7 @@ func New(
 		DisableSink:           NewDisableSinkHandler(e.DisableSink, mux, decoder, encoder, errhandler, formatter),
 		EnableSink:            NewEnableSinkHandler(e.EnableSink, mux, decoder, encoder, errhandler, formatter),
 		ListSinkVersions:      NewListSinkVersionsHandler(e.ListSinkVersions, mux, decoder, encoder, errhandler, formatter),
+		SinkVersionDetail:     NewSinkVersionDetailHandler(e.SinkVersionDetail, mux, decoder, encoder, errhandler, formatter),
 		GetTask:               NewGetTaskHandler(e.GetTask, mux, decoder, encoder, errhandler, formatter),
 		AggregationSources:    NewAggregationSourcesHandler(e.AggregationSources, mux, decoder, encoder, errhandler, formatter),
 		CORS:                  NewCORSHandler(),
@@ -248,6 +252,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.DisableSink = m(s.DisableSink)
 	s.EnableSink = m(s.EnableSink)
 	s.ListSinkVersions = m(s.ListSinkVersions)
+	s.SinkVersionDetail = m(s.SinkVersionDetail)
 	s.GetTask = m(s.GetTask)
 	s.AggregationSources = m(s.AggregationSources)
 	s.CORS = m(s.CORS)
@@ -287,6 +292,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountDisableSinkHandler(mux, h.DisableSink)
 	MountEnableSinkHandler(mux, h.EnableSink)
 	MountListSinkVersionsHandler(mux, h.ListSinkVersions)
+	MountSinkVersionDetailHandler(mux, h.SinkVersionDetail)
 	MountGetTaskHandler(mux, h.GetTask)
 	MountAggregationSourcesHandler(mux, h.AggregationSources)
 	MountCORSHandler(mux, h.CORS)
@@ -1747,6 +1753,57 @@ func NewListSinkVersionsHandler(
 	})
 }
 
+// MountSinkVersionDetailHandler configures the mux to serve the "stream"
+// service "SinkVersionDetail" endpoint.
+func MountSinkVersionDetailHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}", f)
+}
+
+// NewSinkVersionDetailHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "SinkVersionDetail" endpoint.
+func NewSinkVersionDetailHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeSinkVersionDetailRequest(mux, decoder)
+		encodeResponse = EncodeSinkVersionDetailResponse(encoder)
+		encodeError    = EncodeSinkVersionDetailError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "SinkVersionDetail")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountGetTaskHandler configures the mux to serve the "stream" service
 // "GetTask" endpoint.
 func MountGetTaskHandler(mux goahttp.Muxer, h http.Handler) {
@@ -1926,6 +1983,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/tasks/{*taskId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/aggregation/sources", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)

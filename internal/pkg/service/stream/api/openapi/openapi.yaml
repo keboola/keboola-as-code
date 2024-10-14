@@ -1100,6 +1100,58 @@ paths:
                 - https
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}:
+        get:
+            tags:
+                - configuration
+            summary: Sink version detail
+            description: Sink version detail.
+            operationId: SinkVersionDetail
+            parameters:
+                - name: branchId
+                  in: path
+                  description: ID of the branch or "default".
+                  required: true
+                  type: string
+                - name: sourceId
+                  in: path
+                  description: Unique ID of the source.
+                  required: true
+                  type: string
+                - name: sinkId
+                  in: path
+                  description: Unique ID of the sink.
+                  required: true
+                  type: string
+                - name: versionNumber
+                  in: path
+                  description: Version number counted from 1.
+                  required: true
+                  type: integer
+                  minimum: 1
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/Version'
+                        required:
+                            - number
+                            - hash
+                            - at
+                            - by
+                            - description
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/GenericError'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/statistics/clear:
         delete:
             tags:
