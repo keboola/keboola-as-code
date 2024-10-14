@@ -2195,6 +2195,16 @@ paths:
                                 statusCode: 404
                                 error: stream.api.sourceNotFound
                                 message: Source "github-pull-requests" not found.
+                "422":
+                    description: 'stream.api.invalidColumnValue: Invalid data for sink.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 422
+                                error: stream.api.invalidColumnValue
+                                message: 'Invalid value for column "name": path "name" not found in the body'
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/versions:

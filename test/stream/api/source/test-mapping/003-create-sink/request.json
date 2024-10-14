@@ -25,6 +25,12 @@
             "type": "body",
             "name": "body"
           },
+
+          {
+            "type": "path",
+            "name": "path",
+            "path": "key"
+          },
           {
             "type": "template",
             "name": "jsonnet",

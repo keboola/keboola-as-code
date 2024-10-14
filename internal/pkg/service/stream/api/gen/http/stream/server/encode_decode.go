@@ -745,6 +745,20 @@ func EncodeTestSourceError(encoder func(context.Context, http.ResponseWriter) go
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
+		case "stream.api.invalidColumnValue":
+			var res *stream.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusUnprocessableEntity
+			enc := encoder(ctx, w)
+			var body any
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewTestSourceStreamAPIInvalidColumnValueResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
 		}

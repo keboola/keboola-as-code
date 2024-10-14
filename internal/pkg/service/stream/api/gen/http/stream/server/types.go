@@ -618,6 +618,18 @@ type TestSourceStreamAPISourceNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// TestSourceStreamAPIInvalidColumnValueResponseBody is the type of the
+// "stream" service "TestSource" endpoint HTTP response body for the
+// "stream.api.invalidColumnValue" error.
+type TestSourceStreamAPIInvalidColumnValueResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // SourceStatisticsClearStreamAPISourceNotFoundResponseBody is the type of the
 // "stream" service "SourceStatisticsClear" endpoint HTTP response body for the
 // "stream.api.sourceNotFound" error.
@@ -1957,6 +1969,18 @@ func NewUpdateSourceSettingsStreamAPIForbiddenResponseBody(res *stream.GenericEr
 // body from the result of the "TestSource" endpoint of the "stream" service.
 func NewTestSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *TestSourceStreamAPISourceNotFoundResponseBody {
 	body := &TestSourceStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewTestSourceStreamAPIInvalidColumnValueResponseBody builds the HTTP
+// response body from the result of the "TestSource" endpoint of the "stream"
+// service.
+func NewTestSourceStreamAPIInvalidColumnValueResponseBody(res *stream.GenericError) *TestSourceStreamAPIInvalidColumnValueResponseBody {
+	body := &TestSourceStreamAPIInvalidColumnValueResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,

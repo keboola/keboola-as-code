@@ -206,6 +206,7 @@ func (c *Client) UpdateSourceSettings(ctx context.Context, p *UpdateSourceSettin
 // TestSource calls the "TestSource" endpoint of the "stream" service.
 // TestSource may return the following errors:
 //   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.invalidColumnValue" (type *GenericError): Invalid data for sink.
 //   - error: internal error
 func (c *Client) TestSource(ctx context.Context, p *TestSourcePayload, req io.ReadCloser) (res *TestResult, err error) {
 	var ires any

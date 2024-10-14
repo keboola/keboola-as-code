@@ -287,6 +287,7 @@ var _ = Service("stream", func() {
 			Meta("openapi:tag:test")
 			Response(StatusOK)
 			SourceNotFoundError()
+			InvalidColumnValueError()
 			SkipRequestBodyEncodeDecode()
 		})
 	})
@@ -1516,6 +1517,10 @@ func TaskNotFoundError() {
 
 func ForbiddenProtectedSettingError() {
 	GenericError(StatusNotFound, "forbidden", "Modification of protected settings is forbidden.", `Cannot modify protected keys: "storage.level.local.encoding.compression.gzip.blockSize".`)
+}
+
+func InvalidColumnValueError() {
+	GenericError(StatusUnprocessableEntity, "invalidColumnValue", "Invalid data for sink.", `Invalid value for column "name": path "name" not found in the body`)
 }
 
 func fieldValidationRule(targetStruct any, fieldName string, ruleName string) string {
