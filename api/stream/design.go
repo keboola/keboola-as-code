@@ -349,11 +349,25 @@ var _ = Service("stream", func() {
 		Meta("openapi:summary", "Source version detail")
 		Description("Source version detail.")
 		Result(EntityVersion)
-		Payload(SourceVersionDetailRequest)
+		Payload(SourceVersionRequest)
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/versions/{versionNumber}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
+			SourceNotFoundError()
+			VersionNotFoundError()
+		})
+	})
+
+	Method("RollbackSourceVersion", func() {
+		Meta("openapi:summary", "Rollback source version")
+		Description("Rollback source version.")
+		Result(Task)
+		Payload(SourceVersionRequest)
+		HTTP(func() {
+			PUT("/branches/{branchId}/sources/{sourceId}/versions/{versionNumber}/rollback")
+			Meta("openapi:tag:configuration")
+			Response(StatusAccepted)
 			SourceNotFoundError()
 			VersionNotFoundError()
 		})
@@ -1073,7 +1087,7 @@ var ListSinkVersionsRequest = Type("ListSinkVersionsRequest", func() {
 	PaginatedRequest()
 })
 
-var SourceVersionDetailRequest = Type("SourceVersionDetailRequest", func() {
+var SourceVersionRequest = Type("SourceVersionRequest", func() {
 	SourceKeyRequest()
 	EntityRequest()
 })
