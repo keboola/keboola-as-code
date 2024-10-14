@@ -42,7 +42,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-client v1.27.0
 	github.com/keboola/go-utils v1.1.0
-	github.com/klauspost/compress v1.17.10
+	github.com/klauspost/compress v1.17.11
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
