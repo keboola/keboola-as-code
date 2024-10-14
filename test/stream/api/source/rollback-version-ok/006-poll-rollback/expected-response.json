@@ -1,0 +1,11 @@
+{
+  "taskId": "api.rollback.sourceVersion/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "type": "api.rollback.sourceVersion",
+  "url": "https://stream.keboola.local/v1/tasks/api.rollback.sourceVersion/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "status": "success",
+  "isFinished": true,
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "duration": %d,
+  "result": "Source version has been rollback successfully."
+}
