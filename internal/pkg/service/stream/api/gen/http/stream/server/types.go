@@ -493,6 +493,21 @@ type ListSinkVersionsResponseBody struct {
 	Page     *PaginatedResponseResponseBody `form:"page" json:"page" xml:"page"`
 }
 
+// SinkVersionDetailResponseBody is the type of the "stream" service
+// "SinkVersionDetail" endpoint HTTP response body.
+type SinkVersionDetailResponseBody struct {
+	// Version number counted from 1.
+	Number definition.VersionNumber `form:"number" json:"number" xml:"number"`
+	// Hash of the entity state.
+	Hash string `form:"hash" json:"hash" xml:"hash"`
+	// Description of the change.
+	Description string `form:"description" json:"description" xml:"description"`
+	// Date and time of the modification.
+	At string `form:"at" json:"at" xml:"at"`
+	// Who modified the entity.
+	By *ByResponseBody `form:"by" json:"by" xml:"by"`
+}
+
 // GetTaskResponseBody is the type of the "stream" service "GetTask" endpoint
 // HTTP response body.
 type GetTaskResponseBody struct {
@@ -1033,6 +1048,42 @@ type ListSinkVersionsStreamAPISourceNotFoundResponseBody struct {
 // "stream" service "ListSinkVersions" endpoint HTTP response body for the
 // "stream.api.sinkNotFound" error.
 type ListSinkVersionsStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SinkVersionDetailStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "SinkVersionDetail" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type SinkVersionDetailStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SinkVersionDetailStreamAPISinkNotFoundResponseBody is the type of the
+// "stream" service "SinkVersionDetail" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type SinkVersionDetailStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SinkVersionDetailStreamAPIVersionNotFoundResponseBody is the type of the
+// "stream" service "SinkVersionDetail" endpoint HTTP response body for the
+// "stream.api.versionNotFound" error.
+type SinkVersionDetailStreamAPIVersionNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -1884,6 +1935,21 @@ func NewListSinkVersionsResponseBody(res *stream.EntityVersions) *ListSinkVersio
 	return body
 }
 
+// NewSinkVersionDetailResponseBody builds the HTTP response body from the
+// result of the "SinkVersionDetail" endpoint of the "stream" service.
+func NewSinkVersionDetailResponseBody(res *stream.Version) *SinkVersionDetailResponseBody {
+	body := &SinkVersionDetailResponseBody{
+		Number:      res.Number,
+		Hash:        res.Hash,
+		Description: res.Description,
+		At:          res.At,
+	}
+	if res.By != nil {
+		body.By = marshalStreamByToByResponseBody(res.By)
+	}
+	return body
+}
+
 // NewGetTaskResponseBody builds the HTTP response body from the result of the
 // "GetTask" endpoint of the "stream" service.
 func NewGetTaskResponseBody(res *stream.Task) *GetTaskResponseBody {
@@ -2423,6 +2489,42 @@ func NewListSinkVersionsStreamAPISinkNotFoundResponseBody(res *stream.GenericErr
 	return body
 }
 
+// NewSinkVersionDetailStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkVersionDetail" endpoint of the
+// "stream" service.
+func NewSinkVersionDetailStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *SinkVersionDetailStreamAPISourceNotFoundResponseBody {
+	body := &SinkVersionDetailStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewSinkVersionDetailStreamAPISinkNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkVersionDetail" endpoint of the
+// "stream" service.
+func NewSinkVersionDetailStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *SinkVersionDetailStreamAPISinkNotFoundResponseBody {
+	body := &SinkVersionDetailStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewSinkVersionDetailStreamAPIVersionNotFoundResponseBody builds the HTTP
+// response body from the result of the "SinkVersionDetail" endpoint of the
+// "stream" service.
+func NewSinkVersionDetailStreamAPIVersionNotFoundResponseBody(res *stream.GenericError) *SinkVersionDetailStreamAPIVersionNotFoundResponseBody {
+	body := &SinkVersionDetailStreamAPIVersionNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewGetTaskStreamAPITaskNotFoundResponseBody builds the HTTP response body
 // from the result of the "GetTask" endpoint of the "stream" service.
 func NewGetTaskStreamAPITaskNotFoundResponseBody(res *stream.GenericError) *GetTaskStreamAPITaskNotFoundResponseBody {
@@ -2773,6 +2875,19 @@ func NewListSinkVersionsPayload(branchID string, sourceID string, sinkID string,
 	v.SinkID = stream.SinkID(sinkID)
 	v.AfterID = afterID
 	v.Limit = limit
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewSinkVersionDetailPayload builds a stream service SinkVersionDetail
+// endpoint payload.
+func NewSinkVersionDetailPayload(branchID string, sourceID string, sinkID string, versionNumber definition.VersionNumber, storageAPIToken string) *stream.SinkVersionDetailPayload {
+	v := &stream.SinkVersionDetailPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.SinkID = stream.SinkID(sinkID)
+	v.VersionNumber = versionNumber
 	v.StorageAPIToken = storageAPIToken
 
 	return v

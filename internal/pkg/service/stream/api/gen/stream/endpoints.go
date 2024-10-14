@@ -48,6 +48,7 @@ type Endpoints struct {
 	DisableSink           goa.Endpoint
 	EnableSink            goa.Endpoint
 	ListSinkVersions      goa.Endpoint
+	SinkVersionDetail     goa.Endpoint
 	GetTask               goa.Endpoint
 	AggregationSources    goa.Endpoint
 }
@@ -95,6 +96,7 @@ func NewEndpoints(s Service) *Endpoints {
 		DisableSink:           NewDisableSinkEndpoint(s, a.APIKeyAuth),
 		EnableSink:            NewEnableSinkEndpoint(s, a.APIKeyAuth),
 		ListSinkVersions:      NewListSinkVersionsEndpoint(s, a.APIKeyAuth),
+		SinkVersionDetail:     NewSinkVersionDetailEndpoint(s, a.APIKeyAuth),
 		GetTask:               NewGetTaskEndpoint(s, a.APIKeyAuth),
 		AggregationSources:    NewAggregationSourcesEndpoint(s, a.APIKeyAuth),
 	}
@@ -131,6 +133,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.DisableSink = m(e.DisableSink)
 	e.EnableSink = m(e.EnableSink)
 	e.ListSinkVersions = m(e.ListSinkVersions)
+	e.SinkVersionDetail = m(e.SinkVersionDetail)
 	e.GetTask = m(e.GetTask)
 	e.AggregationSources = m(e.AggregationSources)
 }
@@ -679,6 +682,26 @@ func NewListSinkVersionsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc
 		}
 		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return s.ListSinkVersions(ctx, deps, p)
+	}
+}
+
+// NewSinkVersionDetailEndpoint returns an endpoint function that calls the
+// method "SinkVersionDetail" of service "stream".
+func NewSinkVersionDetailEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*SinkVersionDetailPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
+		return s.SinkVersionDetail(ctx, deps, p)
 	}
 }
 
