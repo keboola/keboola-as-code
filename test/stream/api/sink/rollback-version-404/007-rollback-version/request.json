@@ -1,0 +1,7 @@
+{
+  "path": "/v1/branches/default/sources/my-source/sinks/my-sink/versions/12345/rollback",
+  "method": "PUT",
+  "headers": {
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  }
+}

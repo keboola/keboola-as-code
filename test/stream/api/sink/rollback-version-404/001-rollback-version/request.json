@@ -1,0 +1,8 @@
+{
+  "path": "/v1/branches/default/sources/my-source/sinks/my-sink/versions/1/rollback",
+  "method": "PUT",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  }
+}
