@@ -290,6 +290,22 @@ func TestRenderer_Path_Json_UndefinedKey_DefaultValue_RawString(t *testing.T) {
 	assert.Equal(t, "123", val)
 }
 
+func TestRenderer_Path_Json_Invalid(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Path{
+		Path:      "key1",
+		RawString: true,
+	}
+
+	body := `invalid json`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.ErrorContains(t, err, `cannot parse request json`)
+}
+
 func TestRenderer_Path_FormData_Full(t *testing.T) {
 	t.Parallel()
 
@@ -589,6 +605,22 @@ func TestRenderer_Template_Json_UndefinedKey_DefaultValue(t *testing.T) {
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	assert.NoError(t, err)
 	assert.Equal(t, "123", val)
+}
+
+func TestRenderer_Template_Json_Invalid(t *testing.T) {
+	t.Parallel()
+
+	renderer := column.NewRenderer()
+	c := column.Template{Template: column.TemplateConfig{
+		Language: column.TemplateLanguageJsonnet,
+		Content:  `key1`,
+	}}
+
+	body := `invalid json`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	_, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
+	assert.ErrorContains(t, err, `Unknown variable: key1`)
 }
 
 func TestRenderer_Template_FormData_Full(t *testing.T) {
