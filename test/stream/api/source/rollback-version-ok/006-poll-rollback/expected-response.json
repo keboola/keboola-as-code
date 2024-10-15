@@ -7,5 +7,11 @@
   "createdAt": "%s",
   "finishedAt": "%s",
   "duration": %d,
-  "result": "Source version has been rollback successfully."
+  "result": "Source version was rolled back successfully.",
+  "outputs": {
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source",
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "sourceId": "my-source"
+  }
 }

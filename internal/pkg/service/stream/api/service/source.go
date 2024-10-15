@@ -333,6 +333,10 @@ func (s *service) RollbackSourceVersion(ctx context.Context, scope dependencies.
 		return nil, err
 	}
 
+	if err := s.versionMustExist(ctx, scope.SourceKey(), payload.VersionNumber); err != nil {
+		return nil, err
+	}
+
 	t, err := s.startTask(ctx, taskConfig{
 		Type:      "rollback.sourceVersion",
 		Timeout:   5 * time.Minute,
@@ -342,7 +346,10 @@ func (s *service) RollbackSourceVersion(ctx context.Context, scope dependencies.
 			if err = s.definition.Source().RollbackVersion(scope.SourceKey(), s.clock.Now(), scope.RequestUser(), payload.VersionNumber).Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
 			}
-			return task.OkResult("Source version has been rollback successfully.")
+
+			result := task.OkResult("Source version was rolled back successfully.")
+			result = s.mapper.WithTaskOutputs(result, scope.SourceKey())
+			return result
 		},
 	})
 	if err != nil {

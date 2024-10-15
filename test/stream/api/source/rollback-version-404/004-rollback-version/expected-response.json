@@ -1,8 +1,5 @@
 {
-  "taskId": "api.rollback.sourceVersion/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
-  "type": "api.rollback.sourceVersion",
-  "url": "https://stream.keboola.local/v1/tasks/api.rollback.sourceVersion/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
-  "status": "processing",
-  "isFinished": false,
-  "createdAt": "%s"
+  "statusCode": 404,
+  "error": "stream.api.sourceVersionNotFound",
+  "message": "Source version \"my-source/0000012345\" not found in the branch."
 }
