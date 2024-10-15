@@ -565,11 +565,26 @@ var _ = Service("stream", func() {
 		Meta("openapi:summary", "Sink version detail")
 		Description("Sink version detail.")
 		Result(EntityVersion)
-		Payload(SinkVersionDetailRequest)
+		Payload(SinkVersionRequest)
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
+			SourceNotFoundError()
+			SinkNotFoundError()
+			VersionNotFoundError()
+		})
+	})
+
+	Method("RollbackSinkVersion", func() {
+		Meta("openapi:summary", "Rollback sink version")
+		Description("Rollback sink version.")
+		Result(Task)
+		Payload(SinkVersionRequest)
+		HTTP(func() {
+			PUT("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}/rollback")
+			Meta("openapi:tag:configuration")
+			Response(StatusAccepted)
 			SourceNotFoundError()
 			SinkNotFoundError()
 			VersionNotFoundError()
@@ -1092,7 +1107,7 @@ var SourceVersionRequest = Type("SourceVersionRequest", func() {
 	EntityRequest()
 })
 
-var SinkVersionDetailRequest = Type("SinkVersionDetailRequest", func() {
+var SinkVersionRequest = Type("SinkVersionDetailRequest", func() {
 	SinkKeyRequest()
 	EntityRequest()
 })
