@@ -35,6 +35,7 @@ type Endpoints struct {
 	EnableSource          goa.Endpoint
 	ListSourceVersions    goa.Endpoint
 	SourceVersionDetail   goa.Endpoint
+	RollbackSourceVersion goa.Endpoint
 	CreateSink            goa.Endpoint
 	GetSink               goa.Endpoint
 	GetSinkSettings       goa.Endpoint
@@ -83,6 +84,7 @@ func NewEndpoints(s Service) *Endpoints {
 		EnableSource:          NewEnableSourceEndpoint(s, a.APIKeyAuth),
 		ListSourceVersions:    NewListSourceVersionsEndpoint(s, a.APIKeyAuth),
 		SourceVersionDetail:   NewSourceVersionDetailEndpoint(s, a.APIKeyAuth),
+		RollbackSourceVersion: NewRollbackSourceVersionEndpoint(s, a.APIKeyAuth),
 		CreateSink:            NewCreateSinkEndpoint(s, a.APIKeyAuth),
 		GetSink:               NewGetSinkEndpoint(s, a.APIKeyAuth),
 		GetSinkSettings:       NewGetSinkSettingsEndpoint(s, a.APIKeyAuth),
@@ -120,6 +122,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.EnableSource = m(e.EnableSource)
 	e.ListSourceVersions = m(e.ListSourceVersions)
 	e.SourceVersionDetail = m(e.SourceVersionDetail)
+	e.RollbackSourceVersion = m(e.RollbackSourceVersion)
 	e.CreateSink = m(e.CreateSink)
 	e.GetSink = m(e.GetSink)
 	e.GetSinkSettings = m(e.GetSinkSettings)
@@ -422,6 +425,26 @@ func NewSourceVersionDetailEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyF
 		}
 		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.SourceVersionDetail(ctx, deps, p)
+	}
+}
+
+// NewRollbackSourceVersionEndpoint returns an endpoint function that calls the
+// method "RollbackSourceVersion" of service "stream".
+func NewRollbackSourceVersionEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*RollbackSourceVersionPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
+		return s.RollbackSourceVersion(ctx, deps, p)
 	}
 }
 

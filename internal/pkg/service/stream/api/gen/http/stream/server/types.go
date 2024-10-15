@@ -300,6 +300,29 @@ type SourceVersionDetailResponseBody struct {
 	By *ByResponseBody `form:"by" json:"by" xml:"by"`
 }
 
+// RollbackSourceVersionResponseBody is the type of the "stream" service
+// "RollbackSourceVersion" endpoint HTTP response body.
+type RollbackSourceVersionResponseBody struct {
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
 // CreateSinkResponseBody is the type of the "stream" service "CreateSink"
 // endpoint HTTP response body.
 type CreateSinkResponseBody struct {
@@ -724,6 +747,30 @@ type SourceVersionDetailStreamAPISourceNotFoundResponseBody struct {
 // "stream" service "SourceVersionDetail" endpoint HTTP response body for the
 // "stream.api.versionNotFound" error.
 type SourceVersionDetailStreamAPIVersionNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// RollbackSourceVersionStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "RollbackSourceVersion" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type RollbackSourceVersionStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// RollbackSourceVersionStreamAPIVersionNotFoundResponseBody is the type of the
+// "stream" service "RollbackSourceVersion" endpoint HTTP response body for the
+// "stream.api.versionNotFound" error.
+type RollbackSourceVersionStreamAPIVersionNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -1698,6 +1745,27 @@ func NewSourceVersionDetailResponseBody(res *stream.Version) *SourceVersionDetai
 	return body
 }
 
+// NewRollbackSourceVersionResponseBody builds the HTTP response body from the
+// result of the "RollbackSourceVersion" endpoint of the "stream" service.
+func NewRollbackSourceVersionResponseBody(res *stream.Task) *RollbackSourceVersionResponseBody {
+	body := &RollbackSourceVersionResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
 // NewCreateSinkResponseBody builds the HTTP response body from the result of
 // the "CreateSink" endpoint of the "stream" service.
 func NewCreateSinkResponseBody(res *stream.Task) *CreateSinkResponseBody {
@@ -2171,6 +2239,30 @@ func NewSourceVersionDetailStreamAPISourceNotFoundResponseBody(res *stream.Gener
 // "stream" service.
 func NewSourceVersionDetailStreamAPIVersionNotFoundResponseBody(res *stream.GenericError) *SourceVersionDetailStreamAPIVersionNotFoundResponseBody {
 	body := &SourceVersionDetailStreamAPIVersionNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewRollbackSourceVersionStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "RollbackSourceVersion" endpoint of the
+// "stream" service.
+func NewRollbackSourceVersionStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *RollbackSourceVersionStreamAPISourceNotFoundResponseBody {
+	body := &RollbackSourceVersionStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewRollbackSourceVersionStreamAPIVersionNotFoundResponseBody builds the HTTP
+// response body from the result of the "RollbackSourceVersion" endpoint of the
+// "stream" service.
+func NewRollbackSourceVersionStreamAPIVersionNotFoundResponseBody(res *stream.GenericError) *RollbackSourceVersionStreamAPIVersionNotFoundResponseBody {
+	body := &RollbackSourceVersionStreamAPIVersionNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -2691,6 +2783,18 @@ func NewListSourceVersionsPayload(branchID string, sourceID string, afterID stri
 // endpoint payload.
 func NewSourceVersionDetailPayload(branchID string, sourceID string, versionNumber definition.VersionNumber, storageAPIToken string) *stream.SourceVersionDetailPayload {
 	v := &stream.SourceVersionDetailPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.VersionNumber = versionNumber
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewRollbackSourceVersionPayload builds a stream service
+// RollbackSourceVersion endpoint payload.
+func NewRollbackSourceVersionPayload(branchID string, sourceID string, versionNumber definition.VersionNumber, storageAPIToken string) *stream.RollbackSourceVersionPayload {
+	v := &stream.RollbackSourceVersionPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.VersionNumber = versionNumber

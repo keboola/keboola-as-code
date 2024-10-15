@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "stream.api.sourceVersionNotFound",
+  "message": "Source version \"my-source/0000012345\" not found in the branch."
+}

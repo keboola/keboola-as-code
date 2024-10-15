@@ -94,6 +94,11 @@ func SourceVersionDetailStreamPath(branchID string, sourceID string, versionNumb
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/versions/%v", branchID, sourceID, versionNumber)
 }
 
+// RollbackSourceVersionStreamPath returns the URL path to the stream service RollbackSourceVersion HTTP endpoint.
+func RollbackSourceVersionStreamPath(branchID string, sourceID string, versionNumber definition.VersionNumber) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/versions/%v/rollback", branchID, sourceID, versionNumber)
+}
+
 // CreateSinkStreamPath returns the URL path to the stream service CreateSink HTTP endpoint.
 func CreateSinkStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks", branchID, sourceID)
