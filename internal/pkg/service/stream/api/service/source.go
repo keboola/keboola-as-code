@@ -306,6 +306,32 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 	return s.mapper.NewTaskResponse(t)
 }
 
+func (s *service) UndeleteSource(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.UndeleteSourcePayload) (res *api.Task, err error) {
+	if err := s.sourceMustBeDeleted(ctx, scope.SourceKey()); err != nil {
+		return nil, err
+	}
+
+	t, err := s.startTask(ctx, taskConfig{
+		Type:      "undelete.source",
+		Timeout:   5 * time.Minute,
+		ProjectID: scope.ProjectID(),
+		ObjectKey: scope.SourceKey(),
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			if err := s.definition.Source().Undelete(scope.SourceKey(), scope.Clock().Now(), scope.RequestUser()).Do(ctx).Err(); err != nil {
+				return task.ErrResult(err)
+			}
+			result := task.OkResult("Source has been undeleted successfully.")
+			result = s.mapper.WithTaskOutputs(result, scope.SourceKey())
+			return result
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewTaskResponse(t)
+}
+
 func (s *service) ListSourceVersions(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.ListSourceVersionsPayload) (res *api.EntityVersions, err error) {
 	if err := s.sourceMustExist(ctx, scope.SourceKey()); err != nil {
 		return nil, err
@@ -375,6 +401,10 @@ func (s *service) sourceVersionMustExist(ctx context.Context, k key.SourceKey, n
 		return err
 	}
 	return s.definition.Source().Version(k, number).Do(ctx).Err()
+}
+
+func (s *service) sourceMustBeDeleted(ctx context.Context, k key.SourceKey) error {
+	return s.definition.Source().GetDeleted(k).Do(ctx).Err()
 }
 
 // FormatAfterID pads the given id string with leading zeros to ensure it is 10 characters long.
