@@ -1,0 +1,17 @@
+{
+  "taskId": "api.delete.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source-2/%s",
+  "type": "api.delete.source",
+  "url": "https://stream.keboola.local/v1/tasks/api.delete.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source-2/%s",
+  "status": "success",
+  "isFinished": true,
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "duration": %d,
+  "result": "Source has been deleted successfully.",
+  "outputs": {
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source-2",
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "sourceId": "my-source-2"
+  }
+}

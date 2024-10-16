@@ -1,0 +1,8 @@
+{
+  "taskId": "api.delete.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source-1/%s",
+  "type": "api.delete.source",
+  "url": "https://stream.keboola.local/v1/tasks/api.delete.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source-1/%s",
+  "status": "processing",
+  "isFinished": false,
+  "createdAt": "%s"
+}

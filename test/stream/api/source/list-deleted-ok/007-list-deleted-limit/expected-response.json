@@ -1,0 +1,56 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "page": {
+    "limit": 1,
+    "totalCount": 2,
+    "afterId": "my-source-1",
+    "lastId": "my-source-2"
+  },
+  "sources": [
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source-2",
+      "type": "http",
+      "name": "My Source 2",
+      "description": "",
+      "http": {
+        "url": "https://stream-in.keboola.local/stream/%%TEST_KBC_PROJECT_ID%%/my-source-2/%s"
+      },
+      "version": {
+        "number": 1,
+        "hash": "%s",
+        "description": "New source.",
+        "at": "%s",
+        "by": {
+          "type": "user",
+          "tokenId": "%s",
+          "tokenDesc": "%s",
+          "userId": "%s",
+          "userName": "%s"
+        }
+      },
+      "created": {
+        "at": "%s",
+        "by": {
+          "type": "user",
+          "tokenId": "%s",
+          "tokenDesc": "%s",
+          "userId": "%s",
+          "userName": "%s"
+        }
+      },
+      "deleted": {
+        "at": "%s",
+        "by": {
+          "type": "user",
+          "tokenId": "%s",
+          "tokenDesc": "%s",
+          "userId": "%s",
+          "userName": "%s"
+        }
+      }
+    }
+  ]
+}
