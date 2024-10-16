@@ -1,0 +1,8 @@
+{
+  "taskId": "api.delete.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-1/%s",
+  "type": "api.delete.sink",
+  "url": "https://stream.keboola.local/v1/tasks/api.delete.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-1/%s",
+  "status": "processing",
+  "isFinished": false,
+  "createdAt": "%s"
+}
