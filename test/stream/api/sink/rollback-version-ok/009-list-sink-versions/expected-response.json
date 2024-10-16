@@ -16,6 +16,19 @@
     {
       "number": 2,
       "hash": "%s",
+      "description": "Updated settings.",
+      "at": "%s",
+      "by": {
+        "type": "%s",
+        "tokenId": "%s",
+        "tokenDesc": "%s",
+        "userId": "%s",
+        "userName": "%s"
+      }
+    },
+    {
+      "number": 3,
+      "hash": "%s",
       "description": "Rollback to version \"1\".",
       "at": "%s",
       "by": {
@@ -29,7 +42,7 @@
   ],
   "page": {
     "limit": 100,
-    "totalCount": 2,
+    "totalCount": 3,
     "afterId": "",
     "lastId": "%s"
   }
