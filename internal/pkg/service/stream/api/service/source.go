@@ -106,6 +106,13 @@ func (s *service) ListSources(ctx context.Context, d dependencies.BranchRequestS
 	return s.mapper.NewSourcesResponse(ctx, d.BranchKey(), payload.AfterID, payload.Limit, list)
 }
 
+func (s *service) ListDeletedSources(ctx context.Context, scope dependencies.BranchRequestScope, payload *api.ListDeletedSourcesPayload) (res *api.SourcesList, err error) {
+	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Source] {
+		return s.definition.Source().ListDeleted(scope.BranchKey(), opts...)
+	}
+	return s.mapper.NewSourcesResponse(ctx, scope.BranchKey(), payload.AfterID, payload.Limit, list)
+}
+
 func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourcePayload) (*api.Source, error) {
 	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
