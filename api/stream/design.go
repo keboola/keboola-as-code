@@ -1107,7 +1107,7 @@ var SourceVersionRequest = Type("SourceVersionRequest", func() {
 	EntityRequest()
 })
 
-var SinkVersionRequest = Type("SinkVersionDetailRequest", func() {
+var SinkVersionRequest = Type("SinkVersionRequest", func() {
 	SinkKeyRequest()
 	EntityRequest()
 })
