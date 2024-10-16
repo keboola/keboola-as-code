@@ -329,11 +329,7 @@ func (s *service) SourceVersionDetail(ctx context.Context, scope dependencies.So
 }
 
 func (s *service) RollbackSourceVersion(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.RollbackSourceVersionPayload) (res *api.Task, err error) {
-	if err := s.sourceMustExist(ctx, scope.SourceKey()); err != nil {
-		return nil, err
-	}
-
-	if err := s.versionMustExist(ctx, scope.SourceKey(), payload.VersionNumber); err != nil {
+	if err := s.sourceVersionMustExist(ctx, scope.SourceKey(), payload.VersionNumber); err != nil {
 		return nil, err
 	}
 
@@ -365,6 +361,13 @@ func (s *service) sourceMustNotExist(ctx context.Context, k key.SourceKey) error
 
 func (s *service) sourceMustExist(ctx context.Context, k key.SourceKey) error {
 	return s.definition.Source().ExistsOrErr(k).Do(ctx).Err()
+}
+
+func (s *service) sourceVersionMustExist(ctx context.Context, k key.SourceKey, number definition.VersionNumber) error {
+	if err := s.sourceMustExist(ctx, k); err != nil {
+		return err
+	}
+	return s.definition.Source().Version(k, number).Do(ctx).Err()
 }
 
 // FormatAfterID pads the given id string with leading zeros to ensure it is 10 characters long.

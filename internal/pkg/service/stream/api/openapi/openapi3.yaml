@@ -2177,6 +2177,89 @@ paths:
                                 message: Version "001" not found.
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}/rollback:
+        put:
+            tags:
+                - configuration
+            summary: Rollback sink version
+            description: Rollback sink version.
+            operationId: RollbackSinkVersion
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+                - name: sinkId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                  example: github-pr-table-sink
+                - name: versionNumber
+                  in: path
+                  description: Version number counted from 1.
+                  required: true
+                  schema:
+                    type: integer
+                    description: Version number counted from 1.
+                    example: 3
+                    format: int64
+                    minimum: 1
+                  example: 3
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                taskId: task_1234
+                                type: abc123
+                                url: abc123
+                                status: success
+                                isFinished: false
+                                createdAt: "2022-04-28T14:20:04.000Z"
+                                finishedAt: "2022-04-28T14:20:04.000Z"
+                                duration: 123456789
+                                result: abc123
+                                error: abc123
+                                outputs:
+                                    url: abc123
+                                    projectId: 123
+                                    branchId: 345
+                                    sourceId: github-webhook-source
+                                    sinkId: github-pr-table-sink
+                "404":
+                    description: 'stream.api.versionNotFound: Version not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.versionNotFound
+                                message: Version "001" not found.
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/statistics/clear:
         delete:
             tags:
@@ -4863,7 +4946,7 @@ components:
             required:
                 - levels
                 - total
-        SinkVersionDetailRequest:
+        SinkVersionRequest:
             type: object
             properties:
                 branchId:

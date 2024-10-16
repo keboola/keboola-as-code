@@ -408,10 +408,42 @@ func (s *service) SinkVersionDetail(ctx context.Context, scope dependencies.Sink
 	return s.mapper.NewVersionResponse(sink.Version), nil
 }
 
+func (s *service) RollbackSinkVersion(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.RollbackSinkVersionPayload) (res *api.Task, err error) {
+	if err := s.sinkVersionMustExist(ctx, scope.SinkKey(), payload.VersionNumber); err != nil {
+		return nil, err
+	}
+
+	t, err := s.startTask(ctx, taskConfig{
+		Type:      "rollback.sinkVersion",
+		Timeout:   5 * time.Minute,
+		ProjectID: scope.ProjectID(),
+		ObjectKey: scope.SinkKey(),
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			if err = s.definition.Sink().RollbackVersion(scope.SinkKey(), s.clock.Now(), scope.RequestUser(), payload.VersionNumber).Do(ctx).Err(); err != nil {
+				return task.ErrResult(err)
+			}
+
+			result := task.OkResult("Sink version was rolled back successfully.")
+			result = s.mapper.WithTaskOutputs(result, scope.SinkKey())
+			return result
+		},
+	})
+
+	return s.mapper.NewTaskResponse(t)
+}
+
 func (s *service) sinkMustNotExist(ctx context.Context, k key.SinkKey) error {
 	return s.definition.Sink().MustNotExist(k).Do(ctx).Err()
 }
 
 func (s *service) sinkMustExist(ctx context.Context, k key.SinkKey) error {
 	return s.definition.Sink().ExistsOrErr(k).Do(ctx).Err()
+}
+
+func (s *service) sinkVersionMustExist(ctx context.Context, k key.SinkKey, number definition.VersionNumber) error {
+	if err := s.sinkMustExist(ctx, k); err != nil {
+		return err
+	}
+
+	return s.definition.Sink().Version(k, number).Do(ctx).Err()
 }

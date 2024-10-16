@@ -50,6 +50,7 @@ type Endpoints struct {
 	EnableSink            goa.Endpoint
 	ListSinkVersions      goa.Endpoint
 	SinkVersionDetail     goa.Endpoint
+	RollbackSinkVersion   goa.Endpoint
 	GetTask               goa.Endpoint
 	AggregationSources    goa.Endpoint
 }
@@ -99,6 +100,7 @@ func NewEndpoints(s Service) *Endpoints {
 		EnableSink:            NewEnableSinkEndpoint(s, a.APIKeyAuth),
 		ListSinkVersions:      NewListSinkVersionsEndpoint(s, a.APIKeyAuth),
 		SinkVersionDetail:     NewSinkVersionDetailEndpoint(s, a.APIKeyAuth),
+		RollbackSinkVersion:   NewRollbackSinkVersionEndpoint(s, a.APIKeyAuth),
 		GetTask:               NewGetTaskEndpoint(s, a.APIKeyAuth),
 		AggregationSources:    NewAggregationSourcesEndpoint(s, a.APIKeyAuth),
 	}
@@ -137,6 +139,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.EnableSink = m(e.EnableSink)
 	e.ListSinkVersions = m(e.ListSinkVersions)
 	e.SinkVersionDetail = m(e.SinkVersionDetail)
+	e.RollbackSinkVersion = m(e.RollbackSinkVersion)
 	e.GetTask = m(e.GetTask)
 	e.AggregationSources = m(e.AggregationSources)
 }
@@ -725,6 +728,26 @@ func NewSinkVersionDetailEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFun
 		}
 		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return s.SinkVersionDetail(ctx, deps, p)
+	}
+}
+
+// NewRollbackSinkVersionEndpoint returns an endpoint function that calls the
+// method "RollbackSinkVersion" of service "stream".
+func NewRollbackSinkVersionEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*RollbackSinkVersionPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
+		return s.RollbackSinkVersion(ctx, deps, p)
 	}
 }
 
