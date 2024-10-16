@@ -4946,7 +4946,7 @@ components:
             required:
                 - levels
                 - total
-        SinkVersionDetailRequest:
+        SinkVersionRequest:
             type: object
             properties:
                 branchId:
