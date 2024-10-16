@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "stream.api.deletedSinkNotFound",
+  "message": "Deleted sink \"my-sink\" not found in the source."
+}
