@@ -413,6 +413,16 @@ type ListSinksResponseBody struct {
 	Sinks     []*SinkResponseBody            `form:"sinks" json:"sinks" xml:"sinks"`
 }
 
+// ListDeletedSinksResponseBody is the type of the "stream" service
+// "ListDeletedSinks" endpoint HTTP response body.
+type ListDeletedSinksResponseBody struct {
+	ProjectID int                            `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int                            `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string                         `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	Page      *PaginatedResponseResponseBody `form:"page" json:"page" xml:"page"`
+	Sinks     []*SinkResponseBody            `form:"sinks" json:"sinks" xml:"sinks"`
+}
+
 // UpdateSinkResponseBody is the type of the "stream" service "UpdateSink"
 // endpoint HTTP response body.
 type UpdateSinkResponseBody struct {
@@ -935,6 +945,18 @@ type UpdateSinkSettingsStreamAPIForbiddenResponseBody struct {
 // service "ListSinks" endpoint HTTP response body for the
 // "stream.api.sourceNotFound" error.
 type ListSinksStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ListDeletedSinksStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "ListDeletedSinks" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type ListDeletedSinksStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -1962,6 +1984,28 @@ func NewListSinksResponseBody(res *stream.SinksList) *ListSinksResponseBody {
 	return body
 }
 
+// NewListDeletedSinksResponseBody builds the HTTP response body from the
+// result of the "ListDeletedSinks" endpoint of the "stream" service.
+func NewListDeletedSinksResponseBody(res *stream.SinksList) *ListDeletedSinksResponseBody {
+	body := &ListDeletedSinksResponseBody{
+		ProjectID: int(res.ProjectID),
+		BranchID:  int(res.BranchID),
+		SourceID:  string(res.SourceID),
+	}
+	if res.Page != nil {
+		body.Page = marshalStreamPaginatedResponseToPaginatedResponseResponseBody(res.Page)
+	}
+	if res.Sinks != nil {
+		body.Sinks = make([]*SinkResponseBody, len(res.Sinks))
+		for i, val := range res.Sinks {
+			body.Sinks[i] = marshalStreamSinkToSinkResponseBody(val)
+		}
+	} else {
+		body.Sinks = []*SinkResponseBody{}
+	}
+	return body
+}
+
 // NewUpdateSinkResponseBody builds the HTTP response body from the result of
 // the "UpdateSink" endpoint of the "stream" service.
 func NewUpdateSinkResponseBody(res *stream.Task) *UpdateSinkResponseBody {
@@ -2507,6 +2551,18 @@ func NewListSinksStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *
 	return body
 }
 
+// NewListDeletedSinksStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "ListDeletedSinks" endpoint of the
+// "stream" service.
+func NewListDeletedSinksStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *ListDeletedSinksStreamAPISourceNotFoundResponseBody {
+	body := &ListDeletedSinksStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewUpdateSinkStreamAPISourceNotFoundResponseBody builds the HTTP response
 // body from the result of the "UpdateSink" endpoint of the "stream" service.
 func NewUpdateSinkStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *UpdateSinkStreamAPISourceNotFoundResponseBody {
@@ -3028,6 +3084,19 @@ func NewUpdateSinkSettingsPayload(body *UpdateSinkSettingsRequestBody, branchID 
 // NewListSinksPayload builds a stream service ListSinks endpoint payload.
 func NewListSinksPayload(branchID string, sourceID string, afterID string, limit int, storageAPIToken string) *stream.ListSinksPayload {
 	v := &stream.ListSinksPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.AfterID = afterID
+	v.Limit = limit
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewListDeletedSinksPayload builds a stream service ListDeletedSinks endpoint
+// payload.
+func NewListDeletedSinksPayload(branchID string, sourceID string, afterID string, limit int, storageAPIToken string) *stream.ListDeletedSinksPayload {
+	v := &stream.ListDeletedSinksPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.AfterID = afterID

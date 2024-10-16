@@ -129,6 +129,11 @@ func ListSinksStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks", branchID, sourceID)
 }
 
+// ListDeletedSinksStreamPath returns the URL path to the stream service ListDeletedSinks HTTP endpoint.
+func ListDeletedSinksStreamPath(branchID string, sourceID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/deleted", branchID, sourceID)
+}
+
 // UpdateSinkStreamPath returns the URL path to the stream service UpdateSink HTTP endpoint.
 func UpdateSinkStreamPath(branchID string, sourceID string, sinkID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v", branchID, sourceID, sinkID)

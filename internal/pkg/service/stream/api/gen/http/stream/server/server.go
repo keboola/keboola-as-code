@@ -45,6 +45,7 @@ type Server struct {
 	GetSinkSettings       http.Handler
 	UpdateSinkSettings    http.Handler
 	ListSinks             http.Handler
+	ListDeletedSinks      http.Handler
 	UpdateSink            http.Handler
 	DeleteSink            http.Handler
 	SinkStatisticsTotal   http.Handler
@@ -136,6 +137,7 @@ func New(
 			{"GetSinkSettings", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
 			{"UpdateSinkSettings", "PATCH", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
 			{"ListSinks", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
+			{"ListDeletedSinks", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/deleted"},
 			{"UpdateSink", "PATCH", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"DeleteSink", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"SinkStatisticsTotal", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
@@ -165,6 +167,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/deleted"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
@@ -209,6 +212,7 @@ func New(
 		GetSinkSettings:       NewGetSinkSettingsHandler(e.GetSinkSettings, mux, decoder, encoder, errhandler, formatter),
 		UpdateSinkSettings:    NewUpdateSinkSettingsHandler(e.UpdateSinkSettings, mux, decoder, encoder, errhandler, formatter),
 		ListSinks:             NewListSinksHandler(e.ListSinks, mux, decoder, encoder, errhandler, formatter),
+		ListDeletedSinks:      NewListDeletedSinksHandler(e.ListDeletedSinks, mux, decoder, encoder, errhandler, formatter),
 		UpdateSink:            NewUpdateSinkHandler(e.UpdateSink, mux, decoder, encoder, errhandler, formatter),
 		DeleteSink:            NewDeleteSinkHandler(e.DeleteSink, mux, decoder, encoder, errhandler, formatter),
 		SinkStatisticsTotal:   NewSinkStatisticsTotalHandler(e.SinkStatisticsTotal, mux, decoder, encoder, errhandler, formatter),
@@ -258,6 +262,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.GetSinkSettings = m(s.GetSinkSettings)
 	s.UpdateSinkSettings = m(s.UpdateSinkSettings)
 	s.ListSinks = m(s.ListSinks)
+	s.ListDeletedSinks = m(s.ListDeletedSinks)
 	s.UpdateSink = m(s.UpdateSink)
 	s.DeleteSink = m(s.DeleteSink)
 	s.SinkStatisticsTotal = m(s.SinkStatisticsTotal)
@@ -301,6 +306,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountGetSinkSettingsHandler(mux, h.GetSinkSettings)
 	MountUpdateSinkSettingsHandler(mux, h.UpdateSinkSettings)
 	MountListSinksHandler(mux, h.ListSinks)
+	MountListDeletedSinksHandler(mux, h.ListDeletedSinks)
 	MountUpdateSinkHandler(mux, h.UpdateSink)
 	MountDeleteSinkHandler(mux, h.DeleteSink)
 	MountSinkStatisticsTotalHandler(mux, h.SinkStatisticsTotal)
@@ -1465,6 +1471,57 @@ func NewListSinksHandler(
 	})
 }
 
+// MountListDeletedSinksHandler configures the mux to serve the "stream"
+// service "ListDeletedSinks" endpoint.
+func MountListDeletedSinksHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/deleted", f)
+}
+
+// NewListDeletedSinksHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "ListDeletedSinks" endpoint.
+func NewListDeletedSinksHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeListDeletedSinksRequest(mux, decoder)
+		encodeResponse = EncodeListDeletedSinksResponse(encoder)
+		encodeError    = EncodeListDeletedSinksError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "ListDeletedSinks")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountUpdateSinkHandler configures the mux to serve the "stream" service
 // "UpdateSink" endpoint.
 func MountUpdateSinkHandler(mux goahttp.Muxer, h http.Handler) {
@@ -2150,6 +2207,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/settings", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/deleted", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/total", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear", h.ServeHTTP)

@@ -42,6 +42,7 @@ type Endpoints struct {
 	GetSinkSettings       goa.Endpoint
 	UpdateSinkSettings    goa.Endpoint
 	ListSinks             goa.Endpoint
+	ListDeletedSinks      goa.Endpoint
 	UpdateSink            goa.Endpoint
 	DeleteSink            goa.Endpoint
 	SinkStatisticsTotal   goa.Endpoint
@@ -93,6 +94,7 @@ func NewEndpoints(s Service) *Endpoints {
 		GetSinkSettings:       NewGetSinkSettingsEndpoint(s, a.APIKeyAuth),
 		UpdateSinkSettings:    NewUpdateSinkSettingsEndpoint(s, a.APIKeyAuth),
 		ListSinks:             NewListSinksEndpoint(s, a.APIKeyAuth),
+		ListDeletedSinks:      NewListDeletedSinksEndpoint(s, a.APIKeyAuth),
 		UpdateSink:            NewUpdateSinkEndpoint(s, a.APIKeyAuth),
 		DeleteSink:            NewDeleteSinkEndpoint(s, a.APIKeyAuth),
 		SinkStatisticsTotal:   NewSinkStatisticsTotalEndpoint(s, a.APIKeyAuth),
@@ -133,6 +135,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetSinkSettings = m(e.GetSinkSettings)
 	e.UpdateSinkSettings = m(e.UpdateSinkSettings)
 	e.ListSinks = m(e.ListSinks)
+	e.ListDeletedSinks = m(e.ListDeletedSinks)
 	e.UpdateSink = m(e.UpdateSink)
 	e.DeleteSink = m(e.DeleteSink)
 	e.SinkStatisticsTotal = m(e.SinkStatisticsTotal)
@@ -571,6 +574,26 @@ func NewListSinksEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.E
 		}
 		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.ListSinks(ctx, deps, p)
+	}
+}
+
+// NewListDeletedSinksEndpoint returns an endpoint function that calls the
+// method "ListDeletedSinks" of service "stream".
+func NewListDeletedSinksEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ListDeletedSinksPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
+		return s.ListDeletedSinks(ctx, deps, p)
 	}
 }
 
