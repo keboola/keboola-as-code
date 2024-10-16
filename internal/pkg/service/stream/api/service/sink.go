@@ -409,10 +409,6 @@ func (s *service) SinkVersionDetail(ctx context.Context, scope dependencies.Sink
 }
 
 func (s *service) RollbackSinkVersion(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.RollbackSinkVersionPayload) (res *api.Task, err error) {
-	if err := s.sinkMustExist(ctx, scope.SinkKey()); err != nil {
-		return nil, err
-	}
-
 	if err := s.sinkVersionMustExist(ctx, scope.SinkKey(), payload.VersionNumber); err != nil {
 		return nil, err
 	}
@@ -421,7 +417,7 @@ func (s *service) RollbackSinkVersion(ctx context.Context, scope dependencies.Si
 		Type:      "rollback.sinkVersion",
 		Timeout:   5 * time.Minute,
 		ProjectID: scope.ProjectID(),
-		ObjectKey: scope.SourceKey(),
+		ObjectKey: scope.SinkKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			if err = s.definition.Sink().RollbackVersion(scope.SinkKey(), s.clock.Now(), scope.RequestUser(), payload.VersionNumber).Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
@@ -445,5 +441,9 @@ func (s *service) sinkMustExist(ctx context.Context, k key.SinkKey) error {
 }
 
 func (s *service) sinkVersionMustExist(ctx context.Context, k key.SinkKey, number definition.VersionNumber) error {
+	if err := s.sinkMustExist(ctx, k); err != nil {
+		return err
+	}
+
 	return s.definition.Sink().Version(k, number).Do(ctx).Err()
 }
