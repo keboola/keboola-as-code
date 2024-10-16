@@ -240,7 +240,7 @@ func newPipeline(
 		}
 
 		// Create encoder
-		p.encoder, err = encoderFactory.NewEncoder(encodingCfg.Encoder, mappingCfg, p.chain)
+		p.encoder, err = encoderFactory.NewEncoder(encodingCfg.Encoder, mappingCfg, p.chain, p.syncer.Notifier)
 		if err != nil {
 			return nil, err
 		}
@@ -285,27 +285,24 @@ func (p *pipeline) WriteRecord(record recordctx.Context) (int, error) {
 
 	// Format and write table row
 	p.flushLock.RLock()
-	n, err := p.encoder.WriteRecord(record)
+	writeRecordResult, err := p.encoder.WriteRecord(record)
 	p.writeWg.Done()
 	p.flushLock.RUnlock()
 	if err != nil {
-		return n, err
+		return writeRecordResult.N, err
 	}
-
-	// Get notifier to wait for the next sync
-	notifier := p.syncer.Notifier()
 
 	// Increments number of high-level writes in progressd
 	p.acceptedWrites.Add(timestamp, 1)
 
 	// Wait for sync and return sync error, if any
-	if err := notifier.Wait(record.Ctx()); err != nil {
-		return n, errors.PrefixError(err, "error when waiting for sync")
+	if err := writeRecordResult.Notifier.Wait(record.Ctx()); err != nil {
+		return writeRecordResult.N, errors.PrefixError(err, "error when waiting for sync")
 	}
 
 	// Increase the count of successful writes
 	p.completedWrites.Add(timestamp, 1)
-	return n, nil
+	return writeRecordResult.N, nil
 }
 
 func (p *pipeline) SliceKey() model.SliceKey {
