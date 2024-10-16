@@ -28,6 +28,7 @@ type Server struct {
 	CreateSource          http.Handler
 	UpdateSource          http.Handler
 	ListSources           http.Handler
+	ListDeletedSources    http.Handler
 	GetSource             http.Handler
 	DeleteSource          http.Handler
 	GetSourceSettings     http.Handler
@@ -118,6 +119,7 @@ func New(
 			{"CreateSource", "POST", "/v1/branches/{branchId}/sources"},
 			{"UpdateSource", "PATCH", "/v1/branches/{branchId}/sources/{sourceId}"},
 			{"ListSources", "GET", "/v1/branches/{branchId}/sources"},
+			{"ListDeletedSources", "GET", "/v1/branches/{branchId}/sources/deleted"},
 			{"GetSource", "GET", "/v1/branches/{branchId}/sources/{sourceId}"},
 			{"DeleteSource", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}"},
 			{"GetSourceSettings", "GET", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
@@ -151,6 +153,7 @@ func New(
 			{"CORS", "OPTIONS", "/health-check"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/deleted"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/settings"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/test"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
@@ -189,6 +192,7 @@ func New(
 		CreateSource:          NewCreateSourceHandler(e.CreateSource, mux, decoder, encoder, errhandler, formatter),
 		UpdateSource:          NewUpdateSourceHandler(e.UpdateSource, mux, decoder, encoder, errhandler, formatter),
 		ListSources:           NewListSourcesHandler(e.ListSources, mux, decoder, encoder, errhandler, formatter),
+		ListDeletedSources:    NewListDeletedSourcesHandler(e.ListDeletedSources, mux, decoder, encoder, errhandler, formatter),
 		GetSource:             NewGetSourceHandler(e.GetSource, mux, decoder, encoder, errhandler, formatter),
 		DeleteSource:          NewDeleteSourceHandler(e.DeleteSource, mux, decoder, encoder, errhandler, formatter),
 		GetSourceSettings:     NewGetSourceSettingsHandler(e.GetSourceSettings, mux, decoder, encoder, errhandler, formatter),
@@ -237,6 +241,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.CreateSource = m(s.CreateSource)
 	s.UpdateSource = m(s.UpdateSource)
 	s.ListSources = m(s.ListSources)
+	s.ListDeletedSources = m(s.ListDeletedSources)
 	s.GetSource = m(s.GetSource)
 	s.DeleteSource = m(s.DeleteSource)
 	s.GetSourceSettings = m(s.GetSourceSettings)
@@ -279,6 +284,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountCreateSourceHandler(mux, h.CreateSource)
 	MountUpdateSourceHandler(mux, h.UpdateSource)
 	MountListSourcesHandler(mux, h.ListSources)
+	MountListDeletedSourcesHandler(mux, h.ListDeletedSources)
 	MountGetSourceHandler(mux, h.GetSource)
 	MountDeleteSourceHandler(mux, h.DeleteSource)
 	MountGetSourceSettingsHandler(mux, h.GetSourceSettings)
@@ -570,6 +576,57 @@ func NewListSourcesHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "ListSources")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountListDeletedSourcesHandler configures the mux to serve the "stream"
+// service "ListDeletedSources" endpoint.
+func MountListDeletedSourcesHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/branches/{branchId}/sources/deleted", f)
+}
+
+// NewListDeletedSourcesHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "ListDeletedSources" endpoint.
+func NewListDeletedSourcesHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeListDeletedSourcesRequest(mux, decoder)
+		encodeResponse = EncodeListDeletedSourcesResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "ListDeletedSources")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -2081,6 +2138,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/health-check", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/deleted", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/settings", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/test", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear", h.ServeHTTP)

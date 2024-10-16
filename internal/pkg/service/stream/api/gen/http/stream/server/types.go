@@ -151,6 +151,15 @@ type ListSourcesResponseBody struct {
 	Sources   []*SourceResponseBody          `form:"sources" json:"sources" xml:"sources"`
 }
 
+// ListDeletedSourcesResponseBody is the type of the "stream" service
+// "ListDeletedSources" endpoint HTTP response body.
+type ListDeletedSourcesResponseBody struct {
+	ProjectID int                            `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int                            `form:"branchId" json:"branchId" xml:"branchId"`
+	Page      *PaginatedResponseResponseBody `form:"page" json:"page" xml:"page"`
+	Sources   []*SourceResponseBody          `form:"sources" json:"sources" xml:"sources"`
+}
+
 // GetSourceResponseBody is the type of the "stream" service "GetSource"
 // endpoint HTTP response body.
 type GetSourceResponseBody struct {
@@ -1626,6 +1635,27 @@ func NewListSourcesResponseBody(res *stream.SourcesList) *ListSourcesResponseBod
 	return body
 }
 
+// NewListDeletedSourcesResponseBody builds the HTTP response body from the
+// result of the "ListDeletedSources" endpoint of the "stream" service.
+func NewListDeletedSourcesResponseBody(res *stream.SourcesList) *ListDeletedSourcesResponseBody {
+	body := &ListDeletedSourcesResponseBody{
+		ProjectID: int(res.ProjectID),
+		BranchID:  int(res.BranchID),
+	}
+	if res.Page != nil {
+		body.Page = marshalStreamPaginatedResponseToPaginatedResponseResponseBody(res.Page)
+	}
+	if res.Sources != nil {
+		body.Sources = make([]*SourceResponseBody, len(res.Sources))
+		for i, val := range res.Sources {
+			body.Sources[i] = marshalStreamSourceToSourceResponseBody(val)
+		}
+	} else {
+		body.Sources = []*SourceResponseBody{}
+	}
+	return body
+}
+
 // NewGetSourceResponseBody builds the HTTP response body from the result of
 // the "GetSource" endpoint of the "stream" service.
 func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
@@ -2782,6 +2812,18 @@ func NewUpdateSourcePayload(body *UpdateSourceRequestBody, branchID string, sour
 // NewListSourcesPayload builds a stream service ListSources endpoint payload.
 func NewListSourcesPayload(branchID string, afterID string, limit int, storageAPIToken string) *stream.ListSourcesPayload {
 	v := &stream.ListSourcesPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.AfterID = afterID
+	v.Limit = limit
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewListDeletedSourcesPayload builds a stream service ListDeletedSources
+// endpoint payload.
+func NewListDeletedSourcesPayload(branchID string, afterID string, limit int, storageAPIToken string) *stream.ListDeletedSourcesPayload {
+	v := &stream.ListDeletedSourcesPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.AfterID = afterID
 	v.Limit = limit

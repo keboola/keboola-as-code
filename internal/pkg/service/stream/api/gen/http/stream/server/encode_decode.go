@@ -319,6 +319,73 @@ func DecodeListSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 	}
 }
 
+// EncodeListDeletedSourcesResponse returns an encoder for responses returned
+// by the stream ListDeletedSources endpoint.
+func EncodeListDeletedSourcesResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*stream.SourcesList)
+		enc := encoder(ctx, w)
+		body := NewListDeletedSourcesResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeListDeletedSourcesRequest returns a decoder for requests sent to the
+// stream ListDeletedSources endpoint.
+func DecodeListDeletedSourcesRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			branchID        string
+			afterID         string
+			limit           int
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		branchID = params["branchId"]
+		qp := r.URL.Query()
+		afterIDRaw := qp.Get("afterId")
+		if afterIDRaw != "" {
+			afterID = afterIDRaw
+		}
+		{
+			limitRaw := qp.Get("limit")
+			if limitRaw == "" {
+				limit = 100
+			} else {
+				v, err2 := strconv.ParseInt(limitRaw, 10, strconv.IntSize)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				limit = int(v)
+			}
+		}
+		if limit < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 1, true))
+		}
+		if limit > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 100, false))
+		}
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewListDeletedSourcesPayload(branchID, afterID, limit, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
 // EncodeGetSourceResponse returns an encoder for responses returned by the
 // stream GetSource endpoint.
 func EncodeGetSourceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {

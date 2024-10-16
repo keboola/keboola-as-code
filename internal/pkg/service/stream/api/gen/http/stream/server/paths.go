@@ -44,6 +44,11 @@ func ListSourcesStreamPath(branchID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources", branchID)
 }
 
+// ListDeletedSourcesStreamPath returns the URL path to the stream service ListDeletedSources HTTP endpoint.
+func ListDeletedSourcesStreamPath(branchID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/deleted", branchID)
+}
+
 // GetSourceStreamPath returns the URL path to the stream service GetSource HTTP endpoint.
 func GetSourceStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v", branchID, sourceID)

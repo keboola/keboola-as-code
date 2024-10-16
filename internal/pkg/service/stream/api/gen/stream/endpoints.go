@@ -25,6 +25,7 @@ type Endpoints struct {
 	CreateSource          goa.Endpoint
 	UpdateSource          goa.Endpoint
 	ListSources           goa.Endpoint
+	ListDeletedSources    goa.Endpoint
 	GetSource             goa.Endpoint
 	DeleteSource          goa.Endpoint
 	GetSourceSettings     goa.Endpoint
@@ -75,6 +76,7 @@ func NewEndpoints(s Service) *Endpoints {
 		CreateSource:          NewCreateSourceEndpoint(s, a.APIKeyAuth),
 		UpdateSource:          NewUpdateSourceEndpoint(s, a.APIKeyAuth),
 		ListSources:           NewListSourcesEndpoint(s, a.APIKeyAuth),
+		ListDeletedSources:    NewListDeletedSourcesEndpoint(s, a.APIKeyAuth),
 		GetSource:             NewGetSourceEndpoint(s, a.APIKeyAuth),
 		DeleteSource:          NewDeleteSourceEndpoint(s, a.APIKeyAuth),
 		GetSourceSettings:     NewGetSourceSettingsEndpoint(s, a.APIKeyAuth),
@@ -114,6 +116,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.CreateSource = m(e.CreateSource)
 	e.UpdateSource = m(e.UpdateSource)
 	e.ListSources = m(e.ListSources)
+	e.ListDeletedSources = m(e.ListDeletedSources)
 	e.GetSource = m(e.GetSource)
 	e.DeleteSource = m(e.DeleteSource)
 	e.GetSourceSettings = m(e.GetSourceSettings)
@@ -228,6 +231,26 @@ func NewListSourcesEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa
 		}
 		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
 		return s.ListSources(ctx, deps, p)
+	}
+}
+
+// NewListDeletedSourcesEndpoint returns an endpoint function that calls the
+// method "ListDeletedSources" of service "stream".
+func NewListDeletedSourcesEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ListDeletedSourcesPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.BranchRequestScopeCtxKey).(dependencies.BranchRequestScope)
+		return s.ListDeletedSources(ctx, deps, p)
 	}
 }
 
