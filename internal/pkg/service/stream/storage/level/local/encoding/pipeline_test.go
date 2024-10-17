@@ -177,8 +177,8 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
-	// Pri triger sync sa vytvori novy notifier, stary sa uzavrie a odblokuje 2 writy.
-	// Novy notifier sa musi predat do encoderu aby sa zablokoval dalsi zapis
+	// When trigger sync is executed, it creates new notifier, old notifier is close and unblocks 2 writes above.
+	// New notifier is handovered into encoder, so the next write is blocked on new notifier until new trigger sync is executed
 	tc.TriggerSync(t)
 	wg.Wait()
 
