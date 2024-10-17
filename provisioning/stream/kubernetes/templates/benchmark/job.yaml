@@ -14,7 +14,7 @@ spec:
       labels:
         app: load-test
         stream-etcd-client: "true"
-        tags.datadoghq.com/env: "$KEBOOLA_STACK"
+        tags.datadoghq.com/env: "$STACK_NAME"
         tags.datadoghq.com/service: "load-test"
         tags.datadoghq.com/version: "stream-benchmark"
       annotations:

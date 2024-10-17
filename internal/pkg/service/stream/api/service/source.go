@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 )
 
 //nolint:dupl // CreateSink method is similar
@@ -36,13 +37,42 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 		ProjectID: d.ProjectID(),
 		ObjectKey: source.SourceKey,
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Source().Create(&source, s.clock.Now(), d.RequestUser(), "New source.").Do(ctx).Err(); err == nil {
+			start := time.Now()
+			err := s.definition.Source().Create(&source, s.clock.Now(), d.RequestUser(), "New source.").Do(ctx).Err()
+			formatMsg := func(err error) string {
+				if err != nil {
+					return "File import failed."
+				}
+
+				return "File import done."
+			}
+
+			defer func() {
+				sErr := bridge.SendEvent(
+					ctx,
+					logger,
+					d.KeboolaProjectAPI(),
+					bridge.ComponentSourceCreateID,
+					time.Since(start),
+					err,
+					formatMsg,
+					bridge.Params{
+						ProjectID:  d.ProjectID(),
+						SourceID:   source.SourceID,
+						SourceName: source.Name,
+					},
+				)
+				if sErr != nil {
+					logger.Warnf(ctx, "%v", sErr)
+				}
+			}()
+			if err == nil {
 				result := task.OkResult("Source has been created successfully.")
 				result = s.mapper.WithTaskOutputs(result, source.SourceKey)
 				return result
-			} else {
-				return task.ErrResult(err)
 			}
+
+			return task.ErrResult(err)
 		},
 	})
 	if err != nil {
