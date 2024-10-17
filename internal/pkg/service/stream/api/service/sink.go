@@ -391,6 +391,36 @@ func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScop
 	return s.mapper.NewTaskResponse(t)
 }
 
+func (s *service) UndeleteSink(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.UndeleteSinkPayload) (res *api.Task, err error) {
+	if err := s.sourceMustExist(ctx, scope.SourceKey()); err != nil {
+		return nil, err
+	}
+
+	if err := s.sinkMustBeDeleted(ctx, scope.SinkKey()); err != nil {
+		return nil, err
+	}
+
+	t, err := s.startTask(ctx, taskConfig{
+		Type:      "undelete.sink",
+		Timeout:   5 * time.Minute,
+		ProjectID: scope.ProjectID(),
+		ObjectKey: scope.SinkKey(),
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			if err := s.definition.Sink().Undelete(scope.SinkKey(), scope.Clock().Now(), scope.RequestUser()).Do(ctx).Err(); err != nil {
+				return task.ErrResult(err)
+			}
+			result := task.OkResult("Sink has been undeleted successfully.")
+			result = s.mapper.WithTaskOutputs(result, scope.SinkKey())
+			return result
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewTaskResponse(t)
+}
+
 func (s *service) ListSinkVersions(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.ListSinkVersionsPayload) (res *api.EntityVersions, err error) {
 	if err := s.sinkMustExist(ctx, scope.SinkKey()); err != nil {
 		return nil, err
@@ -458,4 +488,8 @@ func (s *service) sinkVersionMustExist(ctx context.Context, k key.SinkKey, numbe
 	}
 
 	return s.definition.Sink().Version(k, number).Do(ctx).Err()
+}
+
+func (s *service) sinkMustBeDeleted(ctx context.Context, k key.SinkKey) error {
+	return s.definition.Sink().GetDeleted(k).Do(ctx).Err()
 }

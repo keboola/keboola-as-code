@@ -587,6 +587,20 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("UndeleteSink", func() {
+		Meta("openapi:summary", "Undelete sink")
+		Description("Undelete the sink.")
+		Result(Task)
+		Payload(GetSinkRequest)
+		HTTP(func() {
+			PUT("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/undelete")
+			Meta("openapi:tag:configuration")
+			Response(StatusAccepted)
+			SourceNotFoundError()
+			SinkNotFoundError()
+		})
+	})
+
 	Method("ListSinkVersions", func() {
 		Meta("openapi:summary", "List sink versions")
 		Description("List all sink versions.")

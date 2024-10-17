@@ -88,6 +88,8 @@ type Service interface {
 	DisableSink(context.Context, dependencies.SinkRequestScope, *DisableSinkPayload) (res *Task, err error)
 	// Enables the sink.
 	EnableSink(context.Context, dependencies.SinkRequestScope, *EnableSinkPayload) (res *Task, err error)
+	// Undelete the sink.
+	UndeleteSink(context.Context, dependencies.SinkRequestScope, *UndeleteSinkPayload) (res *Task, err error)
 	// List all sink versions.
 	ListSinkVersions(context.Context, dependencies.SinkRequestScope, *ListSinkVersionsPayload) (res *EntityVersions, err error)
 	// Sink version detail.
@@ -120,7 +122,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [37]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "ListDeletedSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "UndeleteSource", "ListSourceVersions", "SourceVersionDetail", "RollbackSourceVersion", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "ListDeletedSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "ListSinkVersions", "SinkVersionDetail", "RollbackSinkVersion", "GetTask", "AggregationSources"}
+var MethodNames = [38]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "ListDeletedSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "UndeleteSource", "ListSourceVersions", "SourceVersionDetail", "RollbackSourceVersion", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "ListDeletedSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "UndeleteSink", "ListSinkVersions", "SinkVersionDetail", "RollbackSinkVersion", "GetTask", "AggregationSources"}
 
 // A mapping from imported data to a destination table.
 type AggregatedSink struct {
@@ -845,6 +847,15 @@ type TestSourcePayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
+}
+
+// UndeleteSinkPayload is the payload type of the stream service UndeleteSink
+// method.
+type UndeleteSinkPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
+	SinkID          SinkID
 }
 
 // UndeleteSourcePayload is the payload type of the stream service

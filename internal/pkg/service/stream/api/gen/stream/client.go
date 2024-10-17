@@ -49,6 +49,7 @@ type Client struct {
 	SinkStatisticsClearEndpoint   goa.Endpoint
 	DisableSinkEndpoint           goa.Endpoint
 	EnableSinkEndpoint            goa.Endpoint
+	UndeleteSinkEndpoint          goa.Endpoint
 	ListSinkVersionsEndpoint      goa.Endpoint
 	SinkVersionDetailEndpoint     goa.Endpoint
 	RollbackSinkVersionEndpoint   goa.Endpoint
@@ -57,7 +58,7 @@ type Client struct {
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, listDeletedSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, undeleteSource, listSourceVersions, sourceVersionDetail, rollbackSourceVersion, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, listDeletedSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, sinkVersionDetail, rollbackSinkVersion, getTask, aggregationSources goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, listDeletedSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, undeleteSource, listSourceVersions, sourceVersionDetail, rollbackSourceVersion, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, listDeletedSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, undeleteSink, listSinkVersions, sinkVersionDetail, rollbackSinkVersion, getTask, aggregationSources goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:          aPIRootIndex,
 		APIVersionIndexEndpoint:       aPIVersionIndex,
@@ -91,6 +92,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		SinkStatisticsClearEndpoint:   sinkStatisticsClear,
 		DisableSinkEndpoint:           disableSink,
 		EnableSinkEndpoint:            enableSink,
+		UndeleteSinkEndpoint:          undeleteSink,
 		ListSinkVersionsEndpoint:      listSinkVersions,
 		SinkVersionDetailEndpoint:     sinkVersionDetail,
 		RollbackSinkVersionEndpoint:   rollbackSinkVersion,
@@ -512,6 +514,20 @@ func (c *Client) DisableSink(ctx context.Context, p *DisableSinkPayload) (res *T
 func (c *Client) EnableSink(ctx context.Context, p *EnableSinkPayload) (res *Task, err error) {
 	var ires any
 	ires, err = c.EnableSinkEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
+}
+
+// UndeleteSink calls the "UndeleteSink" endpoint of the "stream" service.
+// UndeleteSink may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - "stream.api.sinkNotFound" (type *GenericError): Sink not found error.
+//   - error: internal error
+func (c *Client) UndeleteSink(ctx context.Context, p *UndeleteSinkPayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.UndeleteSinkEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

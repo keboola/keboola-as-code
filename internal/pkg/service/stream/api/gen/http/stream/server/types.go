@@ -551,6 +551,29 @@ type EnableSinkResponseBody struct {
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
+// UndeleteSinkResponseBody is the type of the "stream" service "UndeleteSink"
+// endpoint HTTP response body.
+type UndeleteSinkResponseBody struct {
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
 // ListSinkVersionsResponseBody is the type of the "stream" service
 // "ListSinkVersions" endpoint HTTP response body.
 type ListSinkVersionsResponseBody struct {
@@ -1160,6 +1183,30 @@ type EnableSinkStreamAPISourceNotFoundResponseBody struct {
 // service "EnableSink" endpoint HTTP response body for the
 // "stream.api.sinkNotFound" error.
 type EnableSinkStreamAPISinkNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UndeleteSinkStreamAPISourceNotFoundResponseBody is the type of the "stream"
+// service "UndeleteSink" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type UndeleteSinkStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UndeleteSinkStreamAPISinkNotFoundResponseBody is the type of the "stream"
+// service "UndeleteSink" endpoint HTTP response body for the
+// "stream.api.sinkNotFound" error.
+type UndeleteSinkStreamAPISinkNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -2174,6 +2221,27 @@ func NewEnableSinkResponseBody(res *stream.Task) *EnableSinkResponseBody {
 	return body
 }
 
+// NewUndeleteSinkResponseBody builds the HTTP response body from the result of
+// the "UndeleteSink" endpoint of the "stream" service.
+func NewUndeleteSinkResponseBody(res *stream.Task) *UndeleteSinkResponseBody {
+	body := &UndeleteSinkResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
 // NewListSinkVersionsResponseBody builds the HTTP response body from the
 // result of the "ListSinkVersions" endpoint of the "stream" service.
 func NewListSinkVersionsResponseBody(res *stream.EntityVersions) *ListSinkVersionsResponseBody {
@@ -2791,6 +2859,28 @@ func NewEnableSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *E
 	return body
 }
 
+// NewUndeleteSinkStreamAPISourceNotFoundResponseBody builds the HTTP response
+// body from the result of the "UndeleteSink" endpoint of the "stream" service.
+func NewUndeleteSinkStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *UndeleteSinkStreamAPISourceNotFoundResponseBody {
+	body := &UndeleteSinkStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewUndeleteSinkStreamAPISinkNotFoundResponseBody builds the HTTP response
+// body from the result of the "UndeleteSink" endpoint of the "stream" service.
+func NewUndeleteSinkStreamAPISinkNotFoundResponseBody(res *stream.GenericError) *UndeleteSinkStreamAPISinkNotFoundResponseBody {
+	body := &UndeleteSinkStreamAPISinkNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewListSinkVersionsStreamAPISourceNotFoundResponseBody builds the HTTP
 // response body from the result of the "ListSinkVersions" endpoint of the
 // "stream" service.
@@ -3268,6 +3358,17 @@ func NewDisableSinkPayload(branchID string, sourceID string, sinkID string, stor
 // NewEnableSinkPayload builds a stream service EnableSink endpoint payload.
 func NewEnableSinkPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.EnableSinkPayload {
 	v := &stream.EnableSinkPayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.SinkID = stream.SinkID(sinkID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewUndeleteSinkPayload builds a stream service UndeleteSink endpoint payload.
+func NewUndeleteSinkPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.UndeleteSinkPayload {
+	v := &stream.UndeleteSinkPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.SinkID = stream.SinkID(sinkID)

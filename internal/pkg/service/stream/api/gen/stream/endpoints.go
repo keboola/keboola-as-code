@@ -51,6 +51,7 @@ type Endpoints struct {
 	SinkStatisticsClear   goa.Endpoint
 	DisableSink           goa.Endpoint
 	EnableSink            goa.Endpoint
+	UndeleteSink          goa.Endpoint
 	ListSinkVersions      goa.Endpoint
 	SinkVersionDetail     goa.Endpoint
 	RollbackSinkVersion   goa.Endpoint
@@ -104,6 +105,7 @@ func NewEndpoints(s Service) *Endpoints {
 		SinkStatisticsClear:   NewSinkStatisticsClearEndpoint(s, a.APIKeyAuth),
 		DisableSink:           NewDisableSinkEndpoint(s, a.APIKeyAuth),
 		EnableSink:            NewEnableSinkEndpoint(s, a.APIKeyAuth),
+		UndeleteSink:          NewUndeleteSinkEndpoint(s, a.APIKeyAuth),
 		ListSinkVersions:      NewListSinkVersionsEndpoint(s, a.APIKeyAuth),
 		SinkVersionDetail:     NewSinkVersionDetailEndpoint(s, a.APIKeyAuth),
 		RollbackSinkVersion:   NewRollbackSinkVersionEndpoint(s, a.APIKeyAuth),
@@ -146,6 +148,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.SinkStatisticsClear = m(e.SinkStatisticsClear)
 	e.DisableSink = m(e.DisableSink)
 	e.EnableSink = m(e.EnableSink)
+	e.UndeleteSink = m(e.UndeleteSink)
 	e.ListSinkVersions = m(e.ListSinkVersions)
 	e.SinkVersionDetail = m(e.SinkVersionDetail)
 	e.RollbackSinkVersion = m(e.RollbackSinkVersion)
@@ -757,6 +760,26 @@ func NewEnableSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.
 		}
 		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
 		return s.EnableSink(ctx, deps, p)
+	}
+}
+
+// NewUndeleteSinkEndpoint returns an endpoint function that calls the method
+// "UndeleteSink" of service "stream".
+func NewUndeleteSinkEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*UndeleteSinkPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SinkRequestScopeCtxKey).(dependencies.SinkRequestScope)
+		return s.UndeleteSink(ctx, deps, p)
 	}
 }
 

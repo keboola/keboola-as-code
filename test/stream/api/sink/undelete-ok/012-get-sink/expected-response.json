@@ -1,0 +1,48 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "type": "table",
+  "name": "My Sink",
+  "description": "",
+  "table": {
+    "type": "keboola",
+    "tableId": "%s",
+    "mapping": {
+      "columns": [
+        {
+          "type": "uuid",
+          "name": "id"
+        },
+        {
+          "type": "body",
+          "name": "body"
+        }
+      ]
+    }
+  },
+  "version": {
+    "number": 2,
+    "hash": "%s",
+    "description": "Undeleted to version \"1\".",
+    "at": "%s",
+    "by": {
+      "type": "%s",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "%s",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  }
+}

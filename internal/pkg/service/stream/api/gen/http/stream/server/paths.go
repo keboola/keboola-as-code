@@ -174,6 +174,11 @@ func EnableSinkStreamPath(branchID string, sourceID string, sinkID string) strin
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/enable", branchID, sourceID, sinkID)
 }
 
+// UndeleteSinkStreamPath returns the URL path to the stream service UndeleteSink HTTP endpoint.
+func UndeleteSinkStreamPath(branchID string, sourceID string, sinkID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/undelete", branchID, sourceID, sinkID)
+}
+
 // ListSinkVersionsStreamPath returns the URL path to the stream service ListSinkVersions HTTP endpoint.
 func ListSinkVersionsStreamPath(branchID string, sourceID string, sinkID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/sinks/%v/versions", branchID, sourceID, sinkID)
