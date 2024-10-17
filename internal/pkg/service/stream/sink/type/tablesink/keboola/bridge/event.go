@@ -23,9 +23,9 @@ import (
 // Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sliceUpload.json
 // Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.fileImport.json
 const (
-	componentSourceCreateID = keboola.ComponentID("keboola.stream.sourceCreate")
-	componentSourceDeleteID = keboola.ComponentID("keboola.stream.sourceDelete")
-	componentSourcePurgeID  = keboola.ComponentID("keboola.stream.sourcePurge")
+	ComponentSourceCreateID = keboola.ComponentID("keboola.stream.sourceCreate")
+	ComponentSourceDeleteID = keboola.ComponentID("keboola.stream.sourceDelete")
+	ComponentSourcePurgeID  = keboola.ComponentID("keboola.stream.sourcePurge")
 	componentSliceUploadID  = keboola.ComponentID("keboola.stream.sliceUpload")
 	componentFileImportID   = keboola.ComponentID("keboola.stream.fileImport")
 )
