@@ -224,6 +224,20 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("ListDeletedSources", func() {
+		Meta("openapi:summary", "List all deleted sources")
+		Description("List all deleted sources in the branch.")
+		Payload(ListSourcesRequest)
+		Result(SourcesList)
+		HTTP(func() {
+			GET("/branches/{branchId}/sources/deleted")
+			Meta("openapi:tag:configuration")
+			Param("afterId")
+			Param("limit")
+			Response(StatusOK)
+		})
+	})
+
 	Method("GetSource", func() {
 		Meta("openapi:summary", "Get source")
 		Description("Get the source definition.")

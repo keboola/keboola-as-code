@@ -23,6 +23,7 @@ type Client struct {
 	CreateSourceEndpoint          goa.Endpoint
 	UpdateSourceEndpoint          goa.Endpoint
 	ListSourcesEndpoint           goa.Endpoint
+	ListDeletedSourcesEndpoint    goa.Endpoint
 	GetSourceEndpoint             goa.Endpoint
 	DeleteSourceEndpoint          goa.Endpoint
 	GetSourceSettingsEndpoint     goa.Endpoint
@@ -54,7 +55,7 @@ type Client struct {
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, listSourceVersions, sourceVersionDetail, rollbackSourceVersion, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, sinkVersionDetail, rollbackSinkVersion, getTask, aggregationSources goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, listDeletedSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, listSourceVersions, sourceVersionDetail, rollbackSourceVersion, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, sinkVersionDetail, rollbackSinkVersion, getTask, aggregationSources goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:          aPIRootIndex,
 		APIVersionIndexEndpoint:       aPIVersionIndex,
@@ -62,6 +63,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		CreateSourceEndpoint:          createSource,
 		UpdateSourceEndpoint:          updateSource,
 		ListSourcesEndpoint:           listSources,
+		ListDeletedSourcesEndpoint:    listDeletedSources,
 		GetSourceEndpoint:             getSource,
 		DeleteSourceEndpoint:          deleteSource,
 		GetSourceSettingsEndpoint:     getSourceSettings,
@@ -150,6 +152,17 @@ func (c *Client) UpdateSource(ctx context.Context, p *UpdateSourcePayload) (res 
 func (c *Client) ListSources(ctx context.Context, p *ListSourcesPayload) (res *SourcesList, err error) {
 	var ires any
 	ires, err = c.ListSourcesEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*SourcesList), nil
+}
+
+// ListDeletedSources calls the "ListDeletedSources" endpoint of the "stream"
+// service.
+func (c *Client) ListDeletedSources(ctx context.Context, p *ListDeletedSourcesPayload) (res *SourcesList, err error) {
+	var ires any
+	ires, err = c.ListDeletedSourcesEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
