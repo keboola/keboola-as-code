@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "stream.api.deletedSourceNotFound",
+  "message": "Deleted source \"my-source\" not found in the branch."
+}

@@ -1,0 +1,7 @@
+{
+  "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/deleted",
+  "method": "GET",
+  "headers": {
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "taskId": "api.undelete.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "type": "api.undelete.source",
+  "url": "https://stream.keboola.local/v1/tasks/api.undelete.source/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "status": "processing",
+  "isFinished": false,
+  "createdAt": "%s"
+}

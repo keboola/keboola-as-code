@@ -344,6 +344,19 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("UndeleteSource", func() {
+		Meta("openapi:summary", "Undelete source")
+		Description("Undelete the source.")
+		Result(Task)
+		Payload(GetSourceRequest)
+		HTTP(func() {
+			PUT("/branches/{branchId}/sources/{sourceId}/undelete")
+			Meta("openapi:tag:configuration")
+			Response(StatusAccepted)
+			SourceNotFoundError()
+		})
+	})
+
 	Method("ListSourceVersions", func() {
 		Meta("openapi:summary", "List source versions")
 		Description("List all source versions.")
