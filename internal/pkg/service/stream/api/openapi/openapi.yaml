@@ -1341,6 +1341,48 @@ paths:
                 - https
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/undelete:
+        put:
+            tags:
+                - configuration
+            summary: Undelete source
+            description: Undelete the source.
+            operationId: UndeleteSource
+            parameters:
+                - name: branchId
+                  in: path
+                  description: ID of the branch or "default".
+                  required: true
+                  type: string
+                - name: sourceId
+                  in: path
+                  description: Unique ID of the source.
+                  required: true
+                  type: string
+            responses:
+                "202":
+                    description: Accepted response.
+                    schema:
+                        $ref: '#/definitions/Task'
+                        required:
+                            - taskId
+                            - type
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/GenericError'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/versions:
         get:
             tags:

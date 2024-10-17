@@ -287,6 +287,29 @@ type EnableSourceResponseBody struct {
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
+// UndeleteSourceResponseBody is the type of the "stream" service
+// "UndeleteSource" endpoint HTTP response body.
+type UndeleteSourceResponseBody struct {
+	TaskID string `form:"taskId" json:"taskId" xml:"taskId"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
 // ListSourceVersionsResponseBody is the type of the "stream" service
 // "ListSourceVersions" endpoint HTTP response body.
 type ListSourceVersionsResponseBody struct {
@@ -753,6 +776,18 @@ type DisableSourceStreamAPISourceNotFoundResponseBody struct {
 // service "EnableSource" endpoint HTTP response body for the
 // "stream.api.sourceNotFound" error.
 type EnableSourceStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UndeleteSourceStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "UndeleteSource" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type UndeleteSourceStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -1823,6 +1858,27 @@ func NewEnableSourceResponseBody(res *stream.Task) *EnableSourceResponseBody {
 	return body
 }
 
+// NewUndeleteSourceResponseBody builds the HTTP response body from the result
+// of the "UndeleteSource" endpoint of the "stream" service.
+func NewUndeleteSourceResponseBody(res *stream.Task) *UndeleteSourceResponseBody {
+	body := &UndeleteSourceResponseBody{
+		TaskID:     string(res.TaskID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalStreamTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
 // NewListSourceVersionsResponseBody builds the HTTP response body from the
 // result of the "ListSourceVersions" endpoint of the "stream" service.
 func NewListSourceVersionsResponseBody(res *stream.EntityVersions) *ListSourceVersionsResponseBody {
@@ -2357,6 +2413,18 @@ func NewDisableSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericErro
 // body from the result of the "EnableSource" endpoint of the "stream" service.
 func NewEnableSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *EnableSourceStreamAPISourceNotFoundResponseBody {
 	body := &EnableSourceStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewUndeleteSourceStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "UndeleteSource" endpoint of the
+// "stream" service.
+func NewUndeleteSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *UndeleteSourceStreamAPISourceNotFoundResponseBody {
+	body := &UndeleteSourceStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -2973,6 +3041,17 @@ func NewDisableSourcePayload(branchID string, sourceID string, storageAPIToken s
 // NewEnableSourcePayload builds a stream service EnableSource endpoint payload.
 func NewEnableSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.EnableSourcePayload {
 	v := &stream.EnableSourcePayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewUndeleteSourcePayload builds a stream service UndeleteSource endpoint
+// payload.
+func NewUndeleteSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.UndeleteSourcePayload {
+	v := &stream.UndeleteSourcePayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.StorageAPIToken = storageAPIToken

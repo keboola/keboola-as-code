@@ -32,6 +32,7 @@ type Client struct {
 	SourceStatisticsClearEndpoint goa.Endpoint
 	DisableSourceEndpoint         goa.Endpoint
 	EnableSourceEndpoint          goa.Endpoint
+	UndeleteSourceEndpoint        goa.Endpoint
 	ListSourceVersionsEndpoint    goa.Endpoint
 	SourceVersionDetailEndpoint   goa.Endpoint
 	RollbackSourceVersionEndpoint goa.Endpoint
@@ -56,7 +57,7 @@ type Client struct {
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, listDeletedSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, listSourceVersions, sourceVersionDetail, rollbackSourceVersion, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, listDeletedSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, sinkVersionDetail, rollbackSinkVersion, getTask, aggregationSources goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, listDeletedSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, undeleteSource, listSourceVersions, sourceVersionDetail, rollbackSourceVersion, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, listDeletedSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, sinkVersionDetail, rollbackSinkVersion, getTask, aggregationSources goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:          aPIRootIndex,
 		APIVersionIndexEndpoint:       aPIVersionIndex,
@@ -73,6 +74,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		SourceStatisticsClearEndpoint: sourceStatisticsClear,
 		DisableSourceEndpoint:         disableSource,
 		EnableSourceEndpoint:          enableSource,
+		UndeleteSourceEndpoint:        undeleteSource,
 		ListSourceVersionsEndpoint:    listSourceVersions,
 		SourceVersionDetailEndpoint:   sourceVersionDetail,
 		RollbackSourceVersionEndpoint: rollbackSourceVersion,
@@ -270,6 +272,19 @@ func (c *Client) DisableSource(ctx context.Context, p *DisableSourcePayload) (re
 func (c *Client) EnableSource(ctx context.Context, p *EnableSourcePayload) (res *Task, err error) {
 	var ires any
 	ires, err = c.EnableSourceEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
+}
+
+// UndeleteSource calls the "UndeleteSource" endpoint of the "stream" service.
+// UndeleteSource may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - error: internal error
+func (c *Client) UndeleteSource(ctx context.Context, p *UndeleteSourcePayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.UndeleteSourceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
