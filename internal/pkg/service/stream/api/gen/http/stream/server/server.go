@@ -54,6 +54,7 @@ type Server struct {
 	SinkStatisticsClear   http.Handler
 	DisableSink           http.Handler
 	EnableSink            http.Handler
+	UndeleteSink          http.Handler
 	ListSinkVersions      http.Handler
 	SinkVersionDetail     http.Handler
 	RollbackSinkVersion   http.Handler
@@ -147,6 +148,7 @@ func New(
 			{"SinkStatisticsClear", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
 			{"DisableSink", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable"},
 			{"EnableSink", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable"},
+			{"UndeleteSink", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/undelete"},
 			{"ListSinkVersions", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions"},
 			{"SinkVersionDetail", "GET", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}"},
 			{"RollbackSinkVersion", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}/rollback"},
@@ -176,6 +178,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/undelete"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}/rollback"},
@@ -224,6 +227,7 @@ func New(
 		SinkStatisticsClear:   NewSinkStatisticsClearHandler(e.SinkStatisticsClear, mux, decoder, encoder, errhandler, formatter),
 		DisableSink:           NewDisableSinkHandler(e.DisableSink, mux, decoder, encoder, errhandler, formatter),
 		EnableSink:            NewEnableSinkHandler(e.EnableSink, mux, decoder, encoder, errhandler, formatter),
+		UndeleteSink:          NewUndeleteSinkHandler(e.UndeleteSink, mux, decoder, encoder, errhandler, formatter),
 		ListSinkVersions:      NewListSinkVersionsHandler(e.ListSinkVersions, mux, decoder, encoder, errhandler, formatter),
 		SinkVersionDetail:     NewSinkVersionDetailHandler(e.SinkVersionDetail, mux, decoder, encoder, errhandler, formatter),
 		RollbackSinkVersion:   NewRollbackSinkVersionHandler(e.RollbackSinkVersion, mux, decoder, encoder, errhandler, formatter),
@@ -275,6 +279,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.SinkStatisticsClear = m(s.SinkStatisticsClear)
 	s.DisableSink = m(s.DisableSink)
 	s.EnableSink = m(s.EnableSink)
+	s.UndeleteSink = m(s.UndeleteSink)
 	s.ListSinkVersions = m(s.ListSinkVersions)
 	s.SinkVersionDetail = m(s.SinkVersionDetail)
 	s.RollbackSinkVersion = m(s.RollbackSinkVersion)
@@ -320,6 +325,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountSinkStatisticsClearHandler(mux, h.SinkStatisticsClear)
 	MountDisableSinkHandler(mux, h.DisableSink)
 	MountEnableSinkHandler(mux, h.EnableSink)
+	MountUndeleteSinkHandler(mux, h.UndeleteSink)
 	MountListSinkVersionsHandler(mux, h.ListSinkVersions)
 	MountSinkVersionDetailHandler(mux, h.SinkVersionDetail)
 	MountRollbackSinkVersionHandler(mux, h.RollbackSinkVersion)
@@ -1936,6 +1942,57 @@ func NewEnableSinkHandler(
 	})
 }
 
+// MountUndeleteSinkHandler configures the mux to serve the "stream" service
+// "UndeleteSink" endpoint.
+func MountUndeleteSinkHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/undelete", f)
+}
+
+// NewUndeleteSinkHandler creates a HTTP handler which loads the HTTP request
+// and calls the "stream" service "UndeleteSink" endpoint.
+func NewUndeleteSinkHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeUndeleteSinkRequest(mux, decoder)
+		encodeResponse = EncodeUndeleteSinkResponse(encoder)
+		encodeError    = EncodeUndeleteSinkError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "UndeleteSink")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountListSinkVersionsHandler configures the mux to serve the "stream"
 // service "ListSinkVersions" endpoint.
 func MountListSinkVersionsHandler(mux goahttp.Muxer, h http.Handler) {
@@ -2271,6 +2328,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/clear", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/disable", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/enable", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/undelete", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/versions/{versionNumber}/rollback", h.ServeHTTP)
