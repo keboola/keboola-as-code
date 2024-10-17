@@ -20,7 +20,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder/result"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -73,8 +75,8 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
-	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
-		w := newDummyEncoder(out, nil)
+	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer, notifier func() *notify.Notifier) (encoder.Encoder, error) {
+		w := newDummyEncoder(out, nil, notifier)
 		w.FlushError = errors.New("some error")
 		return w, nil
 	})
@@ -96,8 +98,8 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
-	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
-		w := newDummyEncoder(out, nil)
+	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer, notifier func() *notify.Notifier) (encoder.Encoder, error) {
+		w := newDummyEncoder(out, nil, notifier)
 		w.CloseError = errors.New("some error")
 		return w, nil
 	})
@@ -175,6 +177,8 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 2)
+	// When trigger sync is executed, it creates new notifier, old notifier is close and unblocks 2 writes above.
+	// New notifier is handovered into encoder, so the next write is blocked on new notifier until new trigger sync is executed
 	tc.TriggerSync(t)
 	wg.Wait()
 
@@ -571,8 +575,8 @@ func (tc *encodingTestCase) AssertLogs(expected string) bool {
 	return tc.Logger.AssertJSONMessages(tc.T, expected)
 }
 
-func (h *writerSyncHelper) NewEncoder(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
-	return newDummyEncoder(out, h.writeDone), nil
+func (h *writerSyncHelper) NewEncoder(cfg encoder.Config, mapping any, out io.Writer, notifier func() *notify.Notifier) (encoder.Encoder, error) {
+	return newDummyEncoder(out, h.writeDone, notifier), nil
 }
 
 // NewSyncer implements writesync.SyncerFactory.
@@ -608,7 +612,8 @@ func (h *writerSyncHelper) TriggerSync(tb testing.TB) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(tb, s.TriggerSync(true).Wait(context.Background()))
+			notifier := s.TriggerSync(true)
+			assert.NoError(tb, notifier.Wait(context.Background()))
 		}()
 	}
 	wg.Wait()
@@ -621,22 +626,25 @@ func (h *writerSyncHelper) TriggerSync(tb testing.TB) {
 type dummyEncoder struct {
 	out        io.Writer
 	writeDone  chan struct{}
+	notifier   func() *notify.Notifier
 	FlushError error
 	CloseError error
 }
 
-func dummyEncoderFactory(cfg encoder.Config, mapping any, out io.Writer) (encoder.Encoder, error) {
-	return newDummyEncoder(out, nil), nil
+func dummyEncoderFactory(cfg encoder.Config, mapping any, out io.Writer, notifier func() *notify.Notifier) (encoder.Encoder, error) {
+	return newDummyEncoder(out, nil, notifier), nil
 }
 
-func newDummyEncoder(out io.Writer, writeDone chan struct{}) *dummyEncoder {
-	return &dummyEncoder{out: out, writeDone: writeDone}
+func newDummyEncoder(out io.Writer, writeDone chan struct{}, notifier func() *notify.Notifier) *dummyEncoder {
+	return &dummyEncoder{out: out, writeDone: writeDone, notifier: notifier}
 }
 
-func (w *dummyEncoder) WriteRecord(record recordctx.Context) (int, error) {
+func (w *dummyEncoder) WriteRecord(record recordctx.Context) (result.WriteRecordResult, error) {
+	wrr := result.NewNotifierWriteRecordResult(w.notifier())
+
 	body, err := record.BodyBytes()
 	if err != nil {
-		return 0, err
+		return wrr, err
 	}
 
 	body = append(body, '\n')
@@ -645,7 +653,9 @@ func (w *dummyEncoder) WriteRecord(record recordctx.Context) (int, error) {
 	if err == nil && w.writeDone != nil {
 		w.writeDone <- struct{}{}
 	}
-	return n, err
+
+	wrr.N = n
+	return wrr, err
 }
 
 func (w *dummyEncoder) Flush() error {

@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder/csv"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/testcase"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -96,7 +97,7 @@ func TestCSVWriterAboveLimit(t *testing.T) {
 			column.Body{Name: "body"},
 		},
 	}
-	csvEncoder, err := csv.NewEncoder(0, 40*datasize.B, columns, io.Discard)
+	csvEncoder, err := csv.NewEncoder(0, 40*datasize.B, columns, io.Discard, notify.New)
 	require.NoError(t, err)
 	record := recordctx.FromHTTP(
 		utctime.MustParse("2000-01-01T03:00:00.000Z").Time(),
