@@ -1,0 +1,28 @@
+{
+  "path": "/v1/branches/default/sources/my-source/sinks",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "name": "My Sink 3",
+    "type": "table",
+    "table": {
+      "type": "keboola",
+      "tableId": "in.c-my-bucket.my-table-3",
+      "mapping": {
+        "columns": [
+          {
+            "type": "uuid",
+            "name": "id"
+          },
+          {
+            "type": "body",
+            "name": "body"
+          }
+        ]
+      }
+    }
+  }
+}

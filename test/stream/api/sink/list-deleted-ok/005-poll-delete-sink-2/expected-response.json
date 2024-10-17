@@ -1,0 +1,18 @@
+{
+  "taskId": "api.delete.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-2/%s",
+  "type": "api.delete.sink",
+  "url": "https://stream.keboola.local/v1/tasks/api.delete.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink-2/%s",
+  "status": "success",
+  "isFinished": true,
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "duration": %d,
+  "result": "Sink has been deleted successfully.",
+  "outputs": {
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source/sinks/my-sink-2",
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "sourceId": "my-source",
+    "sinkId": "my-sink-2"
+  }
+}

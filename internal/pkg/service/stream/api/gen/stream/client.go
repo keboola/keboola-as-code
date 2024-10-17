@@ -40,6 +40,7 @@ type Client struct {
 	GetSinkSettingsEndpoint       goa.Endpoint
 	UpdateSinkSettingsEndpoint    goa.Endpoint
 	ListSinksEndpoint             goa.Endpoint
+	ListDeletedSinksEndpoint      goa.Endpoint
 	UpdateSinkEndpoint            goa.Endpoint
 	DeleteSinkEndpoint            goa.Endpoint
 	SinkStatisticsTotalEndpoint   goa.Endpoint
@@ -55,7 +56,7 @@ type Client struct {
 }
 
 // NewClient initializes a "stream" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, listDeletedSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, listSourceVersions, sourceVersionDetail, rollbackSourceVersion, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, sinkVersionDetail, rollbackSinkVersion, getTask, aggregationSources goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateSource, listSources, listDeletedSources, getSource, deleteSource, getSourceSettings, updateSourceSettings, testSource, sourceStatisticsClear, disableSource, enableSource, listSourceVersions, sourceVersionDetail, rollbackSourceVersion, createSink, getSink, getSinkSettings, updateSinkSettings, listSinks, listDeletedSinks, updateSink, deleteSink, sinkStatisticsTotal, sinkStatisticsFiles, sinkStatisticsClear, disableSink, enableSink, listSinkVersions, sinkVersionDetail, rollbackSinkVersion, getTask, aggregationSources goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:          aPIRootIndex,
 		APIVersionIndexEndpoint:       aPIVersionIndex,
@@ -80,6 +81,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, createSource, updateS
 		GetSinkSettingsEndpoint:       getSinkSettings,
 		UpdateSinkSettingsEndpoint:    updateSinkSettings,
 		ListSinksEndpoint:             listSinks,
+		ListDeletedSinksEndpoint:      listDeletedSinks,
 		UpdateSinkEndpoint:            updateSink,
 		DeleteSinkEndpoint:            deleteSink,
 		SinkStatisticsTotalEndpoint:   sinkStatisticsTotal,
@@ -384,6 +386,20 @@ func (c *Client) UpdateSinkSettings(ctx context.Context, p *UpdateSinkSettingsPa
 func (c *Client) ListSinks(ctx context.Context, p *ListSinksPayload) (res *SinksList, err error) {
 	var ires any
 	ires, err = c.ListSinksEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*SinksList), nil
+}
+
+// ListDeletedSinks calls the "ListDeletedSinks" endpoint of the "stream"
+// service.
+// ListDeletedSinks may return the following errors:
+//   - "stream.api.sourceNotFound" (type *GenericError): Source not found error.
+//   - error: internal error
+func (c *Client) ListDeletedSinks(ctx context.Context, p *ListDeletedSinksPayload) (res *SinksList, err error) {
+	var ires any
+	ires, err = c.ListDeletedSinksEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

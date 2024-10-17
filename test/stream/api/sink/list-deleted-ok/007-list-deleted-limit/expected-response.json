@@ -1,0 +1,20 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "page": {
+    "limit": 1,
+    "totalCount": 2,
+    "afterId": "my-sink-1",
+    "lastId": "my-sink-2"
+  },
+  "sinks": [
+    {
+      "projectId": %%TEST_KBC_PROJECT_ID%%,
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+      "sourceId": "my-source",
+      "sinkId": "my-sink-2",
+      %A
+    }
+  ]
+}

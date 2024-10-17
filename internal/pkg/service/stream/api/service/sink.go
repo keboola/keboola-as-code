@@ -101,6 +101,18 @@ func (s *service) ListSinks(ctx context.Context, d dependencies.SourceRequestSco
 	return s.mapper.NewSinksResponse(ctx, d.SourceKey(), payload.AfterID, payload.Limit, list)
 }
 
+func (s *service) ListDeletedSinks(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.ListDeletedSinksPayload) (res *api.SinksList, err error) {
+	if err := s.sourceMustExist(ctx, scope.SourceKey()); err != nil {
+		return nil, err
+	}
+
+	list := func(opts ...iterator.Option) iterator.DefinitionT[definition.Sink] {
+		return s.definition.Sink().ListDeleted(scope.SourceKey(), opts...)
+	}
+
+	return s.mapper.NewSinksResponse(ctx, scope.SourceKey(), payload.AfterID, payload.Limit, list)
+}
+
 func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.UpdateSinkPayload) (*api.Task, error) {
 	// Get the change description
 	var changeDesc string
