@@ -135,7 +135,9 @@ func (s *Syncer) Notifier() *notify.Notifier {
 		return nil
 	}
 
+	ctx := context.Background()
 	s.notifierLock.RLock()
+	s.logger.Debug(ctx, "notifier obtained")
 	notifier := s.notifier
 	s.notifierLock.RUnlock()
 	return notifier
