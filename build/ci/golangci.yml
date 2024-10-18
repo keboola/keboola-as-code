@@ -147,6 +147,7 @@ linters:
     - staticcheck
     - stylecheck
     - tagliatelle
+    - testableexamples
     - thelper
     - tparallel
     - paralleltest
