@@ -8,8 +8,9 @@ type WriteRecordResult struct {
 	Notifier *notify.Notifier
 }
 
-func NewNotifierWriteRecordResult(notifier *notify.Notifier) WriteRecordResult {
+func NewNotifierWriteRecordResult(n int, notifier *notify.Notifier) WriteRecordResult {
 	return WriteRecordResult{
+		N:        n,
 		Notifier: notifier,
 	}
 }

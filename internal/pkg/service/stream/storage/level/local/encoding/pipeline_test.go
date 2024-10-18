@@ -227,21 +227,22 @@ foo3
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"chunk completed, aligned = true, size = \"10B\""}
-{"level":"debug","message":"writers flushed"}                 
-{"level":"debug","message":"sync to disk done"}             
-{"level":"info","message":"TEST: write unblocked"}          
-{"level":"info","message":"TEST: write unblocked"}          
-{"level":"debug","message":"starting sync to disk"}          
-{"level":"debug","message":"flushing writers"}              
-{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}        
 {"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"sync to disk done"}             
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: write unblocked"}
+{"level":"info","message":"TEST: write unblocked"}
+{"level":"debug","message":"notifier obtained"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to disk done"}
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"closing encoding pipeline"}
 {"level":"debug","message":"stopping syncer"}
-{"level":"debug","message":"starting sync to disk"}          
-{"level":"debug","message":"flushing writers"}              
-{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}        
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to disk done"}
 {"level":"debug","message":"syncer stopped"}
@@ -340,8 +341,8 @@ foo3
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"closing encoding pipeline"}
 {"level":"debug","message":"stopping syncer"}
-{"level":"debug","message":"starting sync to cache"}          
-{"level":"debug","message":"flushing writers"}              
+{"level":"debug","message":"starting sync to cache"}
+{"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
@@ -640,21 +641,19 @@ func newDummyEncoder(out io.Writer, writeDone chan struct{}, notifier func() *no
 }
 
 func (w *dummyEncoder) WriteRecord(record recordctx.Context) (result.WriteRecordResult, error) {
-	wrr := result.NewNotifierWriteRecordResult(w.notifier())
-
 	body, err := record.BodyBytes()
 	if err != nil {
-		return wrr, err
+		return result.WriteRecordResult{}, err
 	}
 
 	body = append(body, '\n')
 
 	n, err := w.out.Write(body)
+	wrr := result.NewNotifierWriteRecordResult(n, w.notifier())
 	if err == nil && w.writeDone != nil {
 		w.writeDone <- struct{}{}
 	}
 
-	wrr.N = n
 	return wrr, err
 }
 
