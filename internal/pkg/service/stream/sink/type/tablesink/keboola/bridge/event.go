@@ -10,20 +10,32 @@ import (
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.keboola-buffer.json
-const componentID = keboola.ComponentID("keboola.keboola-buffer")
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sourceCreate.json
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sourceDelete.json
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sourcePurge.json
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sliceUpload.json
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.fileImport.json
+const (
+	ComponentSourceCreateID = keboola.ComponentID("keboola.stream.sourceCreate")
+	ComponentSourceDeleteID = keboola.ComponentID("keboola.stream.sourceDelete")
+	ComponentSourcePurgeID  = keboola.ComponentID("keboola.stream.sourcePurge")
+	componentSliceUploadID  = keboola.ComponentID("keboola.stream.sliceUpload")
+	componentFileImportID   = keboola.ComponentID("keboola.stream.fileImport")
+)
 
 type Params struct {
-	ProjectID keboola.ProjectID
-	SourceID  key.SourceID
-	SinkID    key.SinkID
-	Stats     statistics.Value
+	ProjectID  keboola.ProjectID
+	SourceID   key.SourceID
+	SourceName string
+	SinkID     key.SinkID
+	Stats      statistics.Value
 }
 
 func (b *Bridge) SendSliceUploadEvent(
@@ -53,12 +65,21 @@ func (b *Bridge) SendSliceUploadEvent(
 		}
 	}
 
-	err = b.sendEvent(ctx, api, duration, "slice-upload", err, formatMsg, Params{
-		ProjectID: sliceKey.ProjectID,
-		SourceID:  sliceKey.SourceID,
-		SinkID:    sliceKey.SinkID,
-		Stats:     stats,
-	})
+	err = SendEvent(
+		ctx,
+		b.logger,
+		api,
+		componentSliceUploadID,
+		duration,
+		err,
+		formatMsg,
+		Params{
+			ProjectID: sliceKey.ProjectID,
+			SourceID:  sliceKey.SourceID,
+			SinkID:    sliceKey.SinkID,
+			Stats:     stats,
+		},
+	)
 
 	// Throw panic
 	if panicErr != nil {
@@ -95,12 +116,21 @@ func (b *Bridge) SendFileImportEvent(
 		}
 	}
 
-	err = b.sendEvent(ctx, api, duration, "file-import", err, formatMsg, Params{
-		ProjectID: fileKey.ProjectID,
-		SourceID:  fileKey.SourceID,
-		SinkID:    fileKey.SinkID,
-		Stats:     stats,
-	})
+	err = SendEvent(
+		ctx,
+		b.logger,
+		api,
+		componentFileImportID,
+		duration,
+		err,
+		formatMsg,
+		Params{
+			ProjectID: fileKey.ProjectID,
+			SourceID:  fileKey.SourceID,
+			SinkID:    fileKey.SinkID,
+			Stats:     stats,
+		},
+	)
 
 	// Throw panic
 	if panicErr != nil {
@@ -110,11 +140,12 @@ func (b *Bridge) SendFileImportEvent(
 	return err
 }
 
-func (b *Bridge) sendEvent(
+func SendEvent(
 	ctx context.Context,
+	logger log.Logger,
 	api *keboola.AuthorizedAPI,
+	componentID keboola.ComponentID,
 	duration time.Duration,
-	eventName string,
 	err error,
 	msg func(error) string,
 	params Params,
@@ -124,24 +155,31 @@ func (b *Bridge) sendEvent(
 		Message:     msg(err),
 		Type:        "info",
 		Duration:    client.DurationSeconds(duration),
-		Params: map[string]any{
-			"eventName": eventName,
-			// legacy fields for compatibility with buffer events
-			"task": eventName,
-		},
 		Results: map[string]any{
 			"projectId": params.ProjectID,
 			"sourceId":  params.SourceID,
 			"sinkId":    params.SinkID,
-			// legacy fields for compatibility with buffer events
-			"receiverId": params.SourceID,
-			"exportId":   params.SinkID,
 		},
 	}
+	if params.SourceName != "" {
+		event.Results["sourceName"] = params.SourceName
+	}
+
+	var sErr error
+	defer func() {
+		event, sErr = api.CreateEventRequest(event).Send(ctx)
+		if sErr == nil {
+			logger.Debugf(ctx, "Sent eventID: %v", event.ID)
+		}
+	}()
+
 	if err != nil {
 		event.Type = "error"
 		event.Results["error"] = fmt.Sprintf("%s", err)
-	} else {
+		return sErr
+	}
+
+	if params.Stats.RecordsCount > 0 {
 		event.Results["statistics"] = map[string]any{
 			"firstRecordAt":    params.Stats.FirstRecordAt.String(),
 			"lastRecordAt":     params.Stats.LastRecordAt.String(),
@@ -150,18 +188,8 @@ func (b *Bridge) sendEvent(
 			"uncompressedSize": params.Stats.UncompressedSize.Bytes(),
 			"compressedSize":   params.Stats.CompressedSize.Bytes(),
 			"stagingSize":      params.Stats.StagingSize.Bytes(),
-			// legacy fields for compatibility with buffer events
-			"recordsSize":  params.Stats.CompressedSize.Bytes(),
-			"bodySize":     params.Stats.UncompressedSize.Bytes(),
-			"fileSize":     params.Stats.UncompressedSize.Bytes(),
-			"fileGZipSize": params.Stats.CompressedSize.Bytes(),
 		}
 	}
 
-	event, err = api.CreateEventRequest(event).Send(ctx)
-	if err == nil {
-		b.logger.Debugf(ctx, "Sent eventID: %v", event.ID)
-	}
-
-	return err
+	return sErr
 }
