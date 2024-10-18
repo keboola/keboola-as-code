@@ -640,21 +640,19 @@ func newDummyEncoder(out io.Writer, writeDone chan struct{}, notifier func() *no
 }
 
 func (w *dummyEncoder) WriteRecord(record recordctx.Context) (result.WriteRecordResult, error) {
-	wrr := result.NewNotifierWriteRecordResult(w.notifier())
-
 	body, err := record.BodyBytes()
 	if err != nil {
-		return wrr, err
+		return result.WriteRecordResult{}, err
 	}
 
 	body = append(body, '\n')
 
 	n, err := w.out.Write(body)
+	wrr := result.NewNotifierWriteRecordResult(n, w.notifier())
 	if err == nil && w.writeDone != nil {
 		w.writeDone <- struct{}{}
 	}
 
-	wrr.N = n
 	return wrr, err
 }
 
