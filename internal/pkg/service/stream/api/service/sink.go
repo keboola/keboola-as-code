@@ -470,6 +470,9 @@ func (s *service) RollbackSinkVersion(ctx context.Context, scope dependencies.Si
 			return result
 		},
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return s.mapper.NewTaskResponse(t)
 }
