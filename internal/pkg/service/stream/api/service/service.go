@@ -16,6 +16,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 )
 
+const (
+	adminRole = "admin"
+)
+
 type service struct {
 	logger     log.Logger
 	clock      clock.Clock

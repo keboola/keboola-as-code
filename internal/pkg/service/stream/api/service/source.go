@@ -23,7 +23,7 @@ import (
 func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequestScope, payload *api.CreateSourcePayload) (*api.Task, error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
-	if token.Admin == nil {
+	if token.Admin == nil || token.Admin.Role != adminRole {
 		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
 	}
 
@@ -93,7 +93,7 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourcePayload) (*api.Task, error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
-	if token.Admin == nil {
+	if token.Admin == nil || token.Admin.Role != adminRole {
 		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
 	}
 
@@ -173,7 +173,7 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (*api.Task, error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
-	if token.Admin == nil {
+	if token.Admin == nil || token.Admin.Role != adminRole {
 		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
 	}
 
@@ -246,7 +246,7 @@ func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRe
 func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourceSettingsPayload) (*api.Task, error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
-	if token.Admin == nil {
+	if token.Admin == nil || token.Admin.Role != adminRole {
 		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
 	}
 
@@ -339,7 +339,7 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (res *api.Task, err error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
-	if token.Admin == nil {
+	if token.Admin == nil || token.Admin.Role != adminRole {
 		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
 	}
 
@@ -373,7 +373,7 @@ func (s *service) DisableSource(ctx context.Context, d dependencies.SourceReques
 func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.EnableSourcePayload) (res *api.Task, err error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
-	if token.Admin == nil {
+	if token.Admin == nil || token.Admin.Role != adminRole {
 		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
 	}
 
