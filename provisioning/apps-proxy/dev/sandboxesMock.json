@@ -2,11 +2,11 @@
   {
     "httpRequest": {
       "method": "GET",
-      "path": "/apps/123/proxy-config"
+      "path": "/apps/1234/proxy-config"
     },
     "httpResponse": {
       "body": {
-        "appId": "123",
+        "appId": "1234",
         "appName": "app",
         "projectId": "11",
         "upstreamAppUrl": "http://localhost:1235",
@@ -15,6 +15,14 @@
             "type": "password",
             "id": "simpleAuth",
             "password": "a"
+          },
+          {
+            "id": "oidc-1",
+            "type": "oidc",
+            "oidcProviderType": "github",
+            "clientId": "",
+            "clientSecret": "",
+            "issuerUrl": "https://github.com/login/oauth/authorize"
           }
         ],
         "authRules": [
@@ -22,6 +30,7 @@
             "type": "pathPrefix",
             "value": "/",
             "auth": [
+              "oidc-1",
               "simpleAuth"
             ]
           }

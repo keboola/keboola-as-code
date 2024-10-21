@@ -66,7 +66,12 @@ func (c AppConfig) Domain() string {
 
 // CookieDomain without port for cookies.
 func (c AppConfig) CookieDomain(publicURL *url.URL) string {
-	return c.Domain() + "." + publicURL.Hostname()
+	port := publicURL.Port()
+	if port == "80" || port == "443" {
+		return c.Domain() + "." + publicURL.Hostname()
+	}
+
+	return c.Domain() + "." + publicURL.Hostname() + ":" + port
 }
 
 // BaseURL of the app.
