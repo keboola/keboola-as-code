@@ -1,6 +1,7 @@
 package csv
 
 import (
+	"context"
 	"io"
 	"sync"
 
@@ -20,7 +21,7 @@ type Encoder struct {
 	columns     column.Columns
 	writersPool *fastcsv.WritersPool
 	valuesPool  *sync.Pool
-	notifier    func() *notify.Notifier
+	notifier    func(ctx context.Context) *notify.Notifier
 }
 
 var columnRenderer = column.NewRenderer() //nolint:gochecknoglobals // contains Jsonnet VMs sync.Pool
@@ -34,7 +35,7 @@ func NewEncoder(
 	rowSizeLimit datasize.ByteSize,
 	mapping any,
 	out io.Writer,
-	notifier func() *notify.Notifier,
+	notifier func(ctx context.Context) *notify.Notifier,
 ) (*Encoder, error) {
 	tableMapping, ok := mapping.(table.Mapping)
 	if !ok {
@@ -86,7 +87,7 @@ func (w *Encoder) WriteRecord(record recordctx.Context) (result.WriteRecordResul
 	}
 
 	// Get notifier after succcessful written record
-	writeRecordResult := result.NewNotifierWriteRecordResult(n, w.notifier())
+	writeRecordResult := result.NewNotifierWriteRecordResult(n, w.notifier(record.Ctx()))
 	// Buffers can be released
 	// Important: values slice contains reference to the body []byte buffer, so it can be released sooner.
 	record.ReleaseBuffers()

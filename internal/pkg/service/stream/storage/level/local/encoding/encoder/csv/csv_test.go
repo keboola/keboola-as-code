@@ -58,7 +58,7 @@ func (v unknown) IsPrimaryKey() bool {
 	return true
 }
 
-func (s *staticNotifier) createStaticNotifier() *notify.Notifier {
+func (s *staticNotifier) createStaticNotifier(_ context.Context) *notify.Notifier {
 	if s.notifier == nil {
 		notifier := notify.New()
 		s.notifier = notifier
@@ -132,7 +132,10 @@ func TestCSVWriterAboveLimit(t *testing.T) {
 			column.Body{Name: "body"},
 		},
 	}
-	csvEncoder, err := csv.NewEncoder(0, 40*datasize.B, columns, io.Discard, notify.New)
+	newNotifier := func(ctx context.Context) *notify.Notifier {
+		return notify.New()
+	}
+	csvEncoder, err := csv.NewEncoder(0, 40*datasize.B, columns, io.Discard, newNotifier)
 	require.NoError(t, err)
 	record := recordctx.FromHTTP(
 		utctime.MustParse("2000-01-01T03:00:00.000Z").Time(),
@@ -171,7 +174,7 @@ func TestCSVWriterDoNotGetNotifierBeforeWrite(t *testing.T) {
 		utctime.MustParse("2000-01-01T03:00:00.000Z").Time(),
 		&http.Request{Body: io.NopCloser(strings.NewReader("foobar"))},
 	)
-	notifier := staticNotifier.createStaticNotifier()
+	notifier := staticNotifier.createStaticNotifier(ctx)
 	notifier.Done(nil)
 	r, err := csvEncoder.WriteRecord(record)
 	require.Error(t, err)
