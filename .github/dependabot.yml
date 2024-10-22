@@ -11,4 +11,5 @@ updates:
       interval: "weekly"
     groups:
       all:
-        dependency-type: "all"
+        patterns:
+          - "*"
