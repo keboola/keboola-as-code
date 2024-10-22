@@ -60,6 +60,7 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 						ProjectID:  d.ProjectID(),
 						BranchID:   d.Branch().BranchID,
 						SourceID:   source.SourceID,
+						SourceKey:  source.SourceKey,
 						SourceName: source.Name,
 					},
 				)
@@ -193,6 +194,7 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 						ProjectID:  d.ProjectID(),
 						BranchID:   d.Branch().BranchID,
 						SourceID:   source.SourceID,
+						SourceKey:  source.SourceKey,
 						SourceName: source.Name,
 					},
 				)
