@@ -106,6 +106,7 @@ func (ts *testState) setupProject(t *testing.T, options ...utilsproject.Option) 
 	ts.project = testproject.GetTestProjectForTest(t, "", options...)
 
 	ts.logSection(t, "clearing testing project")
+	fmt.Println("here")
 	require.NoError(t, ts.project.SetState("empty.json"))
 	ts.projectID = keboola.ProjectID(ts.project.ID())
 	defaultBranch, err := ts.project.DefaultBranch()
