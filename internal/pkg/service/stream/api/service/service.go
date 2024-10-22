@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -28,6 +29,7 @@ type service struct {
 	locks      *distlock.Provider
 	definition *definitionRepo.Repository
 	mapper     *mapper.Mapper
+	adminError error
 }
 
 func New(d dependencies.APIScope, cfg config.Config) api.Service {
@@ -39,6 +41,7 @@ func New(d dependencies.APIScope, cfg config.Config) api.Service {
 		locks:      d.DistributedLockProvider(),
 		definition: d.DefinitionRepository(),
 		mapper:     mapper.New(d, cfg),
+		adminError: errors.New("only admin token can do write operations on streams"),
 	}
 }
 

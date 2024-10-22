@@ -27,7 +27,7 @@ func (s *service) CreateSink(ctx context.Context, d dependencies.SourceRequestSc
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	// Create entity
@@ -123,7 +123,7 @@ func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScop
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	// Get the change description
@@ -187,7 +187,7 @@ func (s *service) DeleteSink(ctx context.Context, d dependencies.SinkRequestScop
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	// Quick check before the task
@@ -230,7 +230,7 @@ func (s *service) UpdateSinkSettings(ctx context.Context, d dependencies.SinkReq
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	// Quick check before the task
@@ -355,7 +355,7 @@ func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRe
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
@@ -369,7 +369,7 @@ func (s *service) DisableSink(ctx context.Context, d dependencies.SinkRequestSco
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
@@ -403,7 +403,7 @@ func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScop
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {

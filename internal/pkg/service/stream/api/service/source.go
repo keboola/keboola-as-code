@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 //nolint:dupl // CreateSink method is similar
@@ -24,7 +23,7 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	// Create entity
@@ -94,7 +93,7 @@ func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequest
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	// Get the change description
@@ -174,7 +173,7 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	// Quick check before the task
@@ -247,7 +246,7 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	// Quick check before the task
@@ -340,7 +339,7 @@ func (s *service) DisableSource(ctx context.Context, d dependencies.SourceReques
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
@@ -374,7 +373,7 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
-		return nil, svcerrors.NewForbiddenError(errors.New("only admin token can do write operations on streams"))
+		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
 	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
