@@ -432,6 +432,8 @@ github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240418143152-9d00aaa29562 h1:Ei
 github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20240418143152-9d00aaa29562/go.mod h1:uPrZkzwsuFyIPP04hIt6TG2KvWujglvkOnUUnQJyIdw=
 github.com/keboola/go-utils v1.1.1-0.20241017114551-17d86ac3b1a4 h1:0kbF5WbDU5aYdEBPgjyLdrHY6F9q7rouXbKrdJPoMGw=
 github.com/keboola/go-utils v1.1.1-0.20241017114551-17d86ac3b1a4/go.mod h1:4YVC2/V0QwgHqxtch8JAVDNVI1aINF2arJ7sh6TO1GY=
+github.com/keboola/go-utils v1.1.1-0.20241022085311-95c2a7afd3b8 h1:2RqFyuwdWWF7K0P96KdMFOBxyih8MwOkRw+nvokIxmw=
+github.com/keboola/go-utils v1.1.1-0.20241022085311-95c2a7afd3b8/go.mod h1:4YVC2/V0QwgHqxtch8JAVDNVI1aINF2arJ7sh6TO1GY=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.17.10 h1:oXAz+Vh0PMUvJczoi+flxpnBEPxoER1IaAnU/NMPtT0=
