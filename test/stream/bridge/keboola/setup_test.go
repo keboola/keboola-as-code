@@ -106,8 +106,6 @@ func (ts *testState) setupProject(t *testing.T, options ...utilsproject.Option) 
 	ts.project = testproject.GetTestProjectForTest(t, "", options...)
 
 	ts.logSection(t, "clearing testing project")
-	fmt.Println("here")
-	require.NoError(t, ts.project.SetState("empty.json"))
 	ts.projectID = keboola.ProjectID(ts.project.ID())
 	defaultBranch, err := ts.project.DefaultBranch()
 	require.NoError(t, err)
@@ -324,7 +322,9 @@ func (ts *testState) setupSourceThroughAPI(t *testing.T, ctx context.Context, ex
 		return
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", ts.apiScp.APIPublicURL().String()+"/v1/branches/"+ts.branchID.String()+"/sources", bytes.NewBuffer(out))
+	url := ts.apiScp.APIPublicURL()
+	url.Path = fmt.Sprintf("/v1/branches/%s/sources", ts.branchID.String())
+	req, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewBuffer(out))
 	require.NoError(t, err)
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	req.Header.Add("Content-Type", "application/json")
@@ -349,8 +349,8 @@ func (ts *testState) setupSourceThroughAPI(t *testing.T, ctx context.Context, ex
 	err = json.Unmarshal(out, &task)
 	require.NoError(t, err)
 
-	url := task["url"].(string)
-	req, err = http.NewRequestWithContext(ctx, "GET", url, nil)
+	urlString := task["url"].(string)
+	req, err = http.NewRequestWithContext(ctx, "GET", urlString, nil)
 	require.NoError(t, err)
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	resp, err = http.DefaultClient.Do(req)
@@ -375,7 +375,9 @@ func (ts *testState) setupSinkThroughAPI(t *testing.T, ctx context.Context, expe
 		return
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", ts.apiScp.APIPublicURL().String()+"/v1/branches/"+ts.branchID.String()+"/sources/"+sourceKey.SourceID.String()+"/sinks", bytes.NewBuffer(out))
+	url := ts.apiScp.APIPublicURL()
+	url.Path = fmt.Sprintf("/v1/branches/%s/sources/%s/sinks", ts.branchID.String(), sourceKey.SourceID.String())
+	req, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewBuffer(out))
 	require.NoError(t, err)
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	req.Header.Add("Content-Type", "application/json")
@@ -400,8 +402,8 @@ func (ts *testState) setupSinkThroughAPI(t *testing.T, ctx context.Context, expe
 	err = json.Unmarshal(out, &task)
 	require.NoError(t, err)
 
-	url := task["url"].(string)
-	req, err = http.NewRequestWithContext(ctx, "GET", url, nil)
+	urlString := task["url"].(string)
+	req, err = http.NewRequestWithContext(ctx, "GET", urlString, nil)
 	require.NoError(t, err)
 	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
 	resp, err = http.DefaultClient.Do(req)

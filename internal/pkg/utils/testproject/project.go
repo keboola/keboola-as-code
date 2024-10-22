@@ -52,7 +52,6 @@ func GetTestProjectForTest(t *testing.T, path string, options ...testproject.Opt
 
 	p, unlockFn, err := GetTestProject(path, env.Empty(), options...)
 	if err != nil {
-		fmt.Println("here")
 		t.Fatal(err)
 	}
 
