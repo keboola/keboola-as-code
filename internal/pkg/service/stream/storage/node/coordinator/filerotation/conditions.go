@@ -21,6 +21,7 @@ const (
 	recordCountThreshold
 	sizeThreshold
 	timeThreshold
+	sinkConditionUnsatisfied
 )
 
 func newConditionResult(result int, message string) fileRotationConditionResult {
@@ -31,7 +32,7 @@ func newConditionResult(result int, message string) fileRotationConditionResult 
 }
 
 func (c fileRotationConditionResult) ShouldImport() bool {
-	return c.result != noConditionMet
+	return c.result != noConditionMet && c.result != sinkConditionUnsatisfied
 }
 
 func (c fileRotationConditionResult) Cause() string {
@@ -52,12 +53,14 @@ func (c fileRotationConditionResult) String() string {
 		return "size"
 	case timeThreshold:
 		return "time"
+	case sinkConditionUnsatisfied:
+		return "sinkConditionUnsatisfied"
 	default:
 		return "unknown"
 	}
 }
 
-func shouldImport(cfg targetConfig.ImportConfig, now, openedAt, expiration time.Time, stats statistics.Value) fileRotationConditionResult {
+func shouldImport(cfg targetConfig.ImportConfig, now, openedAt, expiration time.Time, stats statistics.Value, sinkLimit int) fileRotationConditionResult {
 	sinceOpened := now.Sub(openedAt).Truncate(time.Second)
 	if threshold := cfg.MinInterval.Duration(); sinceOpened < threshold {
 		// Min interval settings take precedence over other settings.
@@ -87,6 +90,10 @@ func shouldImport(cfg targetConfig.ImportConfig, now, openedAt, expiration time.
 
 	if threshold := cfg.Trigger.Interval.Duration(); sinceOpened >= threshold {
 		return newConditionResult(timeThreshold, fmt.Sprintf("time threshold met, opened at: %s, passed: %s threshold: %s", openedAt.Format(utctime.TimeFormat), sinceOpened.String(), threshold.String()))
+	}
+
+	if threshold := cfg.SinkLimit; threshold > 0 && sinkLimit >= threshold {
+		return newConditionResult(sinkConditionUnsatisfied, "sink conditions were not satisfied")
 	}
 
 	return newConditionResult(noConditionMet, "no condition met")

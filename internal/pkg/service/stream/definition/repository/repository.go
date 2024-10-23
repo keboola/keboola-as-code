@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	branch "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/branch"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/job"
 	sink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
 	source "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
@@ -20,6 +21,7 @@ type Repository struct {
 	branch *branch.Repository
 	source *source.Repository
 	sink   *sink.Repository
+	job    *job.Repository
 }
 
 func New(d dependencies) *Repository {
@@ -27,6 +29,7 @@ func New(d dependencies) *Repository {
 	r.branch = branch.NewRepository(d)
 	r.source = source.NewRepository(d, r.branch)
 	r.sink = sink.NewRepository(d, r.source)
+	r.job = job.NewRepository(d, r.sink)
 	return r
 }
 
@@ -40,4 +43,8 @@ func (r *Repository) Source() *source.Repository {
 
 func (r *Repository) Sink() *sink.Repository {
 	return r.sink
+}
+
+func (r *Repository) Job() *job.Repository {
+	return r.job
 }
