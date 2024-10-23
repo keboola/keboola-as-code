@@ -32,7 +32,9 @@ const (
 
 type Params struct {
 	ProjectID  keboola.ProjectID
+	BranchID   keboola.BranchID
 	SourceID   key.SourceID
+	SourceKey  key.SourceKey
 	SourceName string
 	SinkID     key.SinkID
 	Stats      statistics.Value
@@ -75,7 +77,9 @@ func (b *Bridge) SendSliceUploadEvent(
 		formatMsg,
 		Params{
 			ProjectID: sliceKey.ProjectID,
+			BranchID:  sliceKey.BranchID,
 			SourceID:  sliceKey.SourceID,
+			SourceKey: sliceKey.SourceKey,
 			SinkID:    sliceKey.SinkID,
 			Stats:     stats,
 		},
@@ -126,7 +130,9 @@ func (b *Bridge) SendFileImportEvent(
 		formatMsg,
 		Params{
 			ProjectID: fileKey.ProjectID,
+			BranchID:  fileKey.BranchID,
 			SourceID:  fileKey.SourceID,
+			SourceKey: fileKey.SourceKey,
 			SinkID:    fileKey.SinkID,
 			Stats:     stats,
 		},
@@ -157,7 +163,9 @@ func SendEvent(
 		Duration:    client.DurationSeconds(duration),
 		Results: map[string]any{
 			"projectId": params.ProjectID,
+			"branchId":  params.BranchID,
 			"sourceId":  params.SourceID,
+			"streamId":  params.SourceKey.String(),
 			"sinkId":    params.SinkID,
 		},
 	}
