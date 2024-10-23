@@ -96,6 +96,6 @@ jobs:
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
 
       - name: Validate OpenAPI3 definition
-        uses: char0n/swagger-editor-validate@b642f037ac53c392f9c8d781c369ce129684e93e
+        uses: char0n/swagger-editor-validate@3c2f7d1b95a42ebe4e692e2be7c564845e63d303
         with:
           definition-file: internal/pkg/service/templates/api/openapi/openapi3.yaml
