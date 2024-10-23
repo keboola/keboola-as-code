@@ -103,7 +103,7 @@ jobs:
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Import Code-Signing Certificates
-        uses: Apple-Actions/import-codesign-certs@v1
+        uses: Apple-Actions/import-codesign-certs@v3
         with:
           # The certificates in a PKCS12 file encoded as a base64 string
           p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -386,7 +386,7 @@ jobs:
 
       - name: Prepare PATH
         id: setup_msbuild
-        uses: microsoft/setup-msbuild@v1.0.3
+        uses: microsoft/setup-msbuild@v2.0.0
 
       - name: Obtain signing cert
         id: obtain_cert
