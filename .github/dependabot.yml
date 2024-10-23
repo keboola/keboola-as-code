@@ -10,7 +10,7 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      all:
+      go:
         patterns:
           - "*"
 
@@ -19,6 +19,6 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      all:
+      actions:
         patterns:
           - "*"
