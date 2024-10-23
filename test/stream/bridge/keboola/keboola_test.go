@@ -66,6 +66,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 	}
 
 	ts := setup(t, ctx, configFn)
+	ts.setupSink(t, ctx)
 	defer ts.teardown(t, ctx)
 
 	// Check initial state

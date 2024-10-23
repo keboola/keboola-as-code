@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
@@ -19,6 +20,12 @@ import (
 
 //nolint:dupl // CreateSink method is similar
 func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequestScope, payload *api.CreateSourcePayload) (*api.Task, error) {
+	// If user is not admin deny access for write
+	token := d.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	// Create entity
 	source, err := s.mapper.NewSourceEntity(d.BranchKey(), payload)
 	if err != nil {
@@ -83,6 +90,12 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 }
 
 func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourcePayload) (*api.Task, error) {
+	// If user is not admin deny access for write
+	token := d.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	// Get the change description
 	var changeDesc string
 	if payload.ChangeDescription == nil {
@@ -157,6 +170,12 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 }
 
 func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (*api.Task, error) {
+	// If user is not admin deny access for write
+	token := d.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	// Quick check before the task
 	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
@@ -224,6 +243,12 @@ func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRe
 }
 
 func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourceSettingsPayload) (*api.Task, error) {
+	// If user is not admin deny access for write
+	token := d.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	// Quick check before the task
 	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
@@ -311,6 +336,12 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 }
 
 func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (res *api.Task, err error) {
+	// If user is not admin deny access for write
+	token := d.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}
@@ -339,6 +370,12 @@ func (s *service) DisableSource(ctx context.Context, d dependencies.SourceReques
 }
 
 func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.EnableSourcePayload) (res *api.Task, err error) {
+	// If user is not admin deny access for write
+	token := d.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return nil, err
 	}

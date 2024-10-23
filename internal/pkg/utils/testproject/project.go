@@ -121,7 +121,7 @@ func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (
 	p.logf(`■ ️Initialization done.`)
 
 	// Remove all objects
-	if err := p.Clean(); err != nil {
+	if err := p.Clean(); !p.IsGuest() && err != nil {
 		cleanupFn()
 		return nil, nil, err
 	}
@@ -217,9 +217,11 @@ func (p *Project) SetState(stateFilePath string) error {
 	}
 
 	// Create branches
-	err = p.createBranches(stateFile.Branches)
-	if err != nil {
-		return err
+	if !p.IsGuest() {
+		err = p.createBranches(stateFile.Branches)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Create configs in branches
@@ -240,10 +242,12 @@ func (p *Project) SetState(stateFilePath string) error {
 		return err
 	}
 
-	// Create sandboxes in default branch
-	err = p.createSandboxes(p.defaultBranch.ID, stateFile.Sandboxes)
-	if err != nil {
-		return err
+	if !p.IsGuest() {
+		// Create sandboxes in default branch
+		err = p.createSandboxes(p.defaultBranch.ID, stateFile.Sandboxes)
+		if err != nil {
+			return err
+		}
 	}
 
 	p.logf("■ Project state set.")

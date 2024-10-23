@@ -1,8 +1,11 @@
 package keboola_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,6 +13,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	utilsproject "github.com/keboola/go-utils/pkg/testproject"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -18,7 +22,10 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api"
+	genApi "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/type/httpsource"
@@ -73,7 +80,7 @@ type testState struct {
 	tableID keboola.TableID
 }
 
-func setup(t *testing.T, ctx context.Context, modifyConfig func(cfg *config.Config)) testState {
+func setup(t *testing.T, ctx context.Context, modifyConfig func(cfg *config.Config), options ...utilsproject.Option) testState {
 	t.Helper()
 
 	ts := testState{}
@@ -83,24 +90,22 @@ func setup(t *testing.T, ctx context.Context, modifyConfig func(cfg *config.Conf
 
 	ts.logSection(t, "setup")
 
-	ts.setupProject(t)
+	ts.setupProject(t, options...)
 	ts.setupEtcd(t)
 	ts.startNodes(t, ctx, modifyConfig)
-	ts.setupSink(t, ctx)
 
 	ts.logSection(t, "setup done")
 
 	return ts
 }
 
-func (ts *testState) setupProject(t *testing.T) {
+func (ts *testState) setupProject(t *testing.T, options ...utilsproject.Option) {
 	t.Helper()
 
 	ts.logSection(t, "obtaining testing project")
-	ts.project = testproject.GetTestProjectForTest(t, "")
+	ts.project = testproject.GetTestProjectForTest(t, "", options...)
 
 	ts.logSection(t, "clearing testing project")
-	require.NoError(t, ts.project.SetState("empty.json"))
 	ts.projectID = keboola.ProjectID(ts.project.ID())
 	defaultBranch, err := ts.project.DefaultBranch()
 	require.NoError(t, err)
@@ -251,6 +256,7 @@ func (ts *testState) startNodes(t *testing.T, ctx context.Context, modifyConfig 
 
 	// Start nodes
 	ts.logSection(t, "starting nodes")
+	require.NoError(t, api.Start(ctx, ts.apiScp, ts.apiMock.TestConfig()))
 	require.NoError(t, httpsource.Start(ctx, ts.sourceScp1, ts.sourceMock1.TestConfig().Source.HTTP))
 	require.NoError(t, httpsource.Start(ctx, ts.sourceScp2, ts.sourceMock2.TestConfig().Source.HTTP))
 	require.NoError(t, writernode.Start(ctx, ts.writerScp1, ts.writerMock1.TestConfig()))
@@ -299,4 +305,108 @@ func (ts *testState) setupSink(t *testing.T, ctx context.Context) {
 	ts.logSection(t, "created sink")
 	ts.sinkKey = sink.SinkKey
 	ts.tableID = sink.Table.Keboola.TableID
+}
+
+func (ts *testState) setupSourceThroughAPI(t *testing.T, ctx context.Context, expectedStatusCode int) {
+	t.Helper()
+
+	sourceKey := key.SourceKey{SourceID: "my-source"}
+	payload := &genApi.CreateSourcePayload{
+		SourceID: &sourceKey.SourceID,
+		Type:     "http",
+		Name:     "testSource",
+	}
+	out, err := json.Marshal(payload)
+	if !assert.NoError(t, err) {
+		ts.logger.Errorf(ctx, "unable to marshal source create payload: %v", err)
+		return
+	}
+
+	url := ts.apiScp.APIPublicURL()
+	url.Path = fmt.Sprintf("/v1/branches/%s/sources", ts.branchID.String())
+	req, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewBuffer(out))
+	require.NoError(t, err)
+	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if !assert.NoError(t, err) {
+		ts.logger.Errorf(ctx, "to create source: %v", err)
+		return
+	}
+
+	// When we expect success, the API returns accepted instead of status OK
+	if expectedStatusCode < 400 {
+		expectedStatusCode = http.StatusAccepted
+	}
+
+	if assert.Equal(t, expectedStatusCode, resp.StatusCode) {
+		return
+	}
+
+	out, err = io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	task := make(map[string]any)
+	err = json.Unmarshal(out, &task)
+	require.NoError(t, err)
+
+	urlString := task["url"].(string)
+	req, err = http.NewRequestWithContext(ctx, "GET", urlString, nil)
+	require.NoError(t, err)
+	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	assert.Equal(t, expectedStatusCode, resp.StatusCode)
+}
+
+func (ts *testState) setupSinkThroughAPI(t *testing.T, ctx context.Context, expectedStatusCode int) {
+	t.Helper()
+
+	sourceKey := key.SourceKey{SourceID: "my-source"}
+	sinkKey := key.SinkKey{SinkID: "my-sink"}
+	payload := &genApi.CreateSinkPayload{
+		SourceID: sourceKey.SourceID,
+		SinkID:   &sinkKey.SinkID,
+		Type:     definition.SinkTypeTable,
+		Name:     "testSink",
+	}
+	out, err := json.Marshal(payload)
+	if !assert.NoError(t, err) {
+		ts.logger.Errorf(ctx, "unable to marshal sink create payload: %v", err)
+		return
+	}
+
+	url := ts.apiScp.APIPublicURL()
+	url.Path = fmt.Sprintf("/v1/branches/%s/sources/%s/sinks", ts.branchID.String(), sourceKey.SourceID.String())
+	req, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewBuffer(out))
+	require.NoError(t, err)
+	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if !assert.NoError(t, err) {
+		ts.logger.Errorf(ctx, "to create sink: %v", err)
+		return
+	}
+
+	// When we expect success, the API returns accepted instead of status OK
+	if expectedStatusCode < 400 {
+		expectedStatusCode = http.StatusAccepted
+	}
+
+	if assert.Equal(t, expectedStatusCode, resp.StatusCode) {
+		return
+	}
+
+	out, err = io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	task := make(map[string]any)
+	err = json.Unmarshal(out, &task)
+	require.NoError(t, err)
+
+	urlString := task["url"].(string)
+	req, err = http.NewRequestWithContext(ctx, "GET", urlString, nil)
+	require.NoError(t, err)
+	req.Header.Add("X-StorageAPI-Token", ts.project.StorageAPIToken().Token)
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	assert.Equal(t, expectedStatusCode, resp.StatusCode)
 }

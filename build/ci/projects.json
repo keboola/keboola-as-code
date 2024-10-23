@@ -430,5 +430,21 @@
     "backend": "snowflake",
     "token": "$TEST_KBC_PROJECT_20474_TOKEN",
     "legacyTransformation": true
+  },
+  {
+    "host": "connection.keboola.com",
+    "project": 10166,
+    "stagingStorage": "s3",
+    "backend": "snowflake",
+    "token": "$TEST_KBC_PROJECT_10166_TOKEN",
+    "isGuest": true
+  },
+  {
+    "host": "connection.keboola.com",
+    "project": 10169,
+    "stagingStorage": "s3",
+    "backend": "snowflake",
+    "token": "$TEST_KBC_PROJECT_10169_TOKEN",
+    "isGuest": true
   }
 ]
