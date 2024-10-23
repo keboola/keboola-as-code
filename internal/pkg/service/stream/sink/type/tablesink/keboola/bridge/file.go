@@ -61,8 +61,9 @@ func (b *Bridge) setupOnFileOpen() {
 
 			// Update file entity
 			file.Mapping = sink.Table.Mapping
-			file.StagingStorage.Provider = stagingFileProvider // staging file is provided by the Keboola
-			file.TargetStorage.Provider = targetProvider       // destination is a Keboola table
+			file.StagingStorage.Provider = stagingFileProvider      // staging file is provided by the Keboola
+			file.TargetStorage.Provider = targetProvider            // destination is a Keboola table
+			file.TargetStorage.Import.SinkLimit = b.config.JobLimit // specific sink condition for keboola provider
 			file.StagingStorage.Expiration = utctime.From(keboolaFile.UploadCredentials.CredentialsExpiration())
 		}
 
@@ -203,15 +204,18 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 			return err
 		}
 
-		// Save job ID to etcd
-		keboolaFile.StorageJobID = &job.ID
-
-		b.logger.With(attribute.String("job.id", keboolaFile.StorageJobID.String())).Infof(ctx, "created new storage job for file")
-
 		err = b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile).Do(ctx).Err()
 		if err != nil {
 			return err
 		}
+
+		// Save job ID to etcd
+		err = b.createJob(ctx, start, file, job)
+		if err != nil {
+			return err
+		}
+
+		b.logger.Info(ctx, "created staging file")
 	}
 
 	// Wait for job to complete

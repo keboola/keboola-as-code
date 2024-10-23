@@ -3,6 +3,7 @@ package filerotation
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
@@ -49,6 +51,7 @@ type operator struct {
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
 	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
+	jobs  *etcdop.MirrorMap[definition.Job, key.JobKey, *jobData]
 
 	lock                 sync.RWMutex
 	openedSlicesNotifier chan struct{}
@@ -78,6 +81,10 @@ type fileData struct {
 type sinkData struct {
 	SinkKey key.SinkKey
 	Enabled bool
+}
+
+type jobData struct {
+	StorageJobID keboola.StorageJobID
 }
 
 type dependencies interface {
@@ -208,6 +215,22 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		if err = <-slices.StartConsumer(ctx, wg, o.logger); err != nil {
 			return err
 		}
+	}
+
+	// Mirror jobs
+	o.jobs = etcdop.SetupMirrorMap[definition.Job, key.JobKey, *jobData](
+		d.DefinitionRepository().Job().GetAllAndWatch(ctx, etcd.WithPrevKV()),
+		func(_ string, job definition.Job) key.JobKey {
+			return job.JobKey
+		},
+		func(_ string, job definition.Job, rawValue *op.KeyValue, oldValue **jobData) *jobData {
+			return &jobData{
+				job.StorageJobID,
+			}
+		},
+	).BuildMirror()
+	if err = <-o.jobs.StartMirroring(ctx, wg, o.logger); err != nil {
+		return err
 	}
 
 	// Mirror sinks
@@ -344,8 +367,9 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		return
 	}
 
+	fmt.Println("currently running jobs", o.jobs.Len())
 	// Check conditions
-	result := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
+	result := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total, o.jobs.Len())
 	if !result.ShouldImport() {
 		o.logger.Debugf(ctx, "skipping file rotation: %s", result.Cause())
 		return
