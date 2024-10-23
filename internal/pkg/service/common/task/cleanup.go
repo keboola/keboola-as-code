@@ -97,6 +97,7 @@ func StartCleaner(d cleanerDeps, interval time.Duration) error {
 
 // clean deletes old tasks to free space in etcd.
 func (c *Cleaner) clean(ctx context.Context) (err error) {
+	ctx = context.WithoutCancel(ctx)
 	ctx, cancel := context.WithTimeout(ctx, CleanupTimeout)
 	defer cancel()
 
