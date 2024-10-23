@@ -75,7 +75,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
-	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer, notifier func() *notify.Notifier) (encoder.Encoder, error) {
+	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer, notifier func(ctx context.Context) *notify.Notifier) (encoder.Encoder, error) {
 		w := newDummyEncoder(out, nil, notifier)
 		w.FlushError = errors.New("some error")
 		return w, nil
@@ -98,7 +98,7 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
-	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer, notifier func() *notify.Notifier) (encoder.Encoder, error) {
+	slice.Encoding.Encoder.OverrideEncoderFactory = encoder.FactoryFn(func(cfg encoder.Config, mapping any, out io.Writer, notifier func(ctx context.Context) *notify.Notifier) (encoder.Encoder, error) {
 		w := newDummyEncoder(out, nil, notifier)
 		w.CloseError = errors.New("some error")
 		return w, nil
@@ -227,21 +227,22 @@ foo3
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"chunk completed, aligned = true, size = \"10B\""}
-{"level":"debug","message":"writers flushed"}                 
-{"level":"debug","message":"sync to disk done"}             
-{"level":"info","message":"TEST: write unblocked"}          
-{"level":"info","message":"TEST: write unblocked"}          
-{"level":"debug","message":"starting sync to disk"}          
-{"level":"debug","message":"flushing writers"}              
-{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}        
 {"level":"debug","message":"writers flushed"}
-{"level":"debug","message":"sync to disk done"}             
+{"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: write unblocked"}
+{"level":"info","message":"TEST: write unblocked"}
+{"level":"debug","message":"notifier obtained"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"sync to disk done"}
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"closing encoding pipeline"}
 {"level":"debug","message":"stopping syncer"}
-{"level":"debug","message":"starting sync to disk"}          
-{"level":"debug","message":"flushing writers"}              
-{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}        
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to disk done"}
 {"level":"debug","message":"syncer stopped"}
@@ -340,8 +341,8 @@ foo3
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"closing encoding pipeline"}
 {"level":"debug","message":"stopping syncer"}
-{"level":"debug","message":"starting sync to cache"}          
-{"level":"debug","message":"flushing writers"}              
+{"level":"debug","message":"starting sync to cache"}
+{"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"debug","message":"sync to cache done"}
@@ -575,7 +576,7 @@ func (tc *encodingTestCase) AssertLogs(expected string) bool {
 	return tc.Logger.AssertJSONMessages(tc.T, expected)
 }
 
-func (h *writerSyncHelper) NewEncoder(cfg encoder.Config, mapping any, out io.Writer, notifier func() *notify.Notifier) (encoder.Encoder, error) {
+func (h *writerSyncHelper) NewEncoder(cfg encoder.Config, mapping any, out io.Writer, notifier func(ctx context.Context) *notify.Notifier) (encoder.Encoder, error) {
 	return newDummyEncoder(out, h.writeDone, notifier), nil
 }
 
@@ -626,35 +627,33 @@ func (h *writerSyncHelper) TriggerSync(tb testing.TB) {
 type dummyEncoder struct {
 	out        io.Writer
 	writeDone  chan struct{}
-	notifier   func() *notify.Notifier
+	notifier   func(ctx context.Context) *notify.Notifier
 	FlushError error
 	CloseError error
 }
 
-func dummyEncoderFactory(cfg encoder.Config, mapping any, out io.Writer, notifier func() *notify.Notifier) (encoder.Encoder, error) {
+func dummyEncoderFactory(cfg encoder.Config, mapping any, out io.Writer, notifier func(ctx context.Context) *notify.Notifier) (encoder.Encoder, error) {
 	return newDummyEncoder(out, nil, notifier), nil
 }
 
-func newDummyEncoder(out io.Writer, writeDone chan struct{}, notifier func() *notify.Notifier) *dummyEncoder {
+func newDummyEncoder(out io.Writer, writeDone chan struct{}, notifier func(ctx context.Context) *notify.Notifier) *dummyEncoder {
 	return &dummyEncoder{out: out, writeDone: writeDone, notifier: notifier}
 }
 
 func (w *dummyEncoder) WriteRecord(record recordctx.Context) (result.WriteRecordResult, error) {
-	wrr := result.NewNotifierWriteRecordResult(w.notifier())
-
 	body, err := record.BodyBytes()
 	if err != nil {
-		return wrr, err
+		return result.WriteRecordResult{}, err
 	}
 
 	body = append(body, '\n')
 
 	n, err := w.out.Write(body)
+	wrr := result.NewNotifierWriteRecordResult(n, w.notifier(record.Ctx()))
 	if err == nil && w.writeDone != nil {
 		w.writeDone <- struct{}{}
 	}
 
-	wrr.N = n
 	return wrr, err
 }
 

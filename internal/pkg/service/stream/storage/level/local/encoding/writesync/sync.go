@@ -129,13 +129,14 @@ func NewSyncer(
 }
 
 // Notifier to wait for the next sync.
-func (s *Syncer) Notifier() *notify.Notifier {
+func (s *Syncer) Notifier(ctx context.Context) *notify.Notifier {
 	// Wait is disabled, return nil notifier, *notify.Notifier(nil).Wait() is valid NOP call.
 	if !s.config.Wait {
 		return nil
 	}
 
 	s.notifierLock.RLock()
+	s.logger.Debug(ctx, "notifier obtained")
 	notifier := s.notifier
 	s.notifierLock.RUnlock()
 	return notifier

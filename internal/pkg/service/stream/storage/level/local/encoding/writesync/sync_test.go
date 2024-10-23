@@ -70,7 +70,7 @@ func TestSyncWriter_Write_Wait(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 	}
-	notifier := syncerWriter.Notifier()
+	notifier := syncerWriter.Notifier(ctx)
 
 	// Wait for the notifier
 	wg := &sync.WaitGroup{}
@@ -126,7 +126,7 @@ func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 	}
-	notifier := syncerWriter.Notifier()
+	notifier := syncerWriter.Notifier(ctx)
 
 	// Wait is disabled
 	require.Nil(t, notifier)
@@ -211,7 +211,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -230,7 +230,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	for i := 4; i <= 6; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -301,7 +301,7 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -366,7 +366,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.Nil(t, notifier)
 		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
@@ -417,7 +417,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.Nil(t, notifier)
 		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
@@ -473,7 +473,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -492,7 +492,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	for i := 4; i <= 6; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -563,7 +563,7 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -628,7 +628,7 @@ func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.Nil(t, notifier)
 		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
@@ -679,7 +679,7 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.Nil(t, notifier)
 		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
@@ -734,7 +734,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -814,7 +814,7 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -879,7 +879,7 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -937,7 +937,7 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		syncerWriter.MustWriteTestData(t, i)
 
-		notifier := syncerWriter.Notifier()
+		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
 		wg.Add(1)
@@ -995,7 +995,7 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	n1, err1 := syncerWriter.Write([]byte(data1))
 	assert.Equal(t, 10, n1)
 
-	notifier1 := syncerWriter.Notifier()
+	notifier1 := syncerWriter.Notifier(ctx)
 	assert.NotNil(t, notifier1)
 	assert.NoError(t, err1)
 
@@ -1011,7 +1011,7 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	data2 := strings.Repeat("-", data2Len)
 	n2, err2 := syncerWriter.Write([]byte(data2))
 	assert.Equal(t, data2Len, n2)
-	notifier2 := syncerWriter.Notifier()
+	notifier2 := syncerWriter.Notifier(ctx)
 	assert.NotNil(t, notifier2)
 	assert.NoError(t, err2)
 

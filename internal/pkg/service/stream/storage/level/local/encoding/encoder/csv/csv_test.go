@@ -2,6 +2,7 @@ package csv_test
 
 import (
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,6 +32,40 @@ type fileCompression struct {
 	Config            compression.Config
 	FileDecoder       func(t *testing.T, r io.Reader) io.Reader
 	DisableValidation bool
+}
+
+type unknown struct {
+	Name string `json:"name" validate:"required"`
+}
+
+type staticNotifier struct {
+	notifier *notify.Notifier
+}
+
+func newStaticNotifier() *staticNotifier {
+	return &staticNotifier{}
+}
+
+func (v unknown) ColumnType() column.Type {
+	return column.Type("unknown")
+}
+
+func (v unknown) ColumnName() string {
+	return v.Name
+}
+
+func (v unknown) IsPrimaryKey() bool {
+	return true
+}
+
+func (s *staticNotifier) createStaticNotifier(_ context.Context) *notify.Notifier {
+	if s.notifier == nil {
+		notifier := notify.New()
+		s.notifier = notifier
+		return notifier
+	}
+
+	return s.notifier
 }
 
 // nolint:tparallel // false positive
@@ -97,7 +132,10 @@ func TestCSVWriterAboveLimit(t *testing.T) {
 			column.Body{Name: "body"},
 		},
 	}
-	csvEncoder, err := csv.NewEncoder(0, 40*datasize.B, columns, io.Discard, notify.New)
+	newNotifier := func(ctx context.Context) *notify.Notifier {
+		return notify.New()
+	}
+	csvEncoder, err := csv.NewEncoder(0, 40*datasize.B, columns, io.Discard, newNotifier)
 	require.NoError(t, err)
 	record := recordctx.FromHTTP(
 		utctime.MustParse("2000-01-01T03:00:00.000Z").Time(),
@@ -112,6 +150,41 @@ func TestCSVWriterAboveLimit(t *testing.T) {
 	)
 	_, err = csvEncoder.WriteRecord(record)
 	assert.Equal(t, "too big CSV row, column: \"body\", row limit: 40 B", err.Error())
+}
+
+// TestCSVWriterDoNotGetNotifierBeforeWrite guarantees that notifier is always obtained after successful writeRow
+// not before writeRow, during mapping CSV columns.
+func TestCSVWriterDoNotGetNotifierBeforeWrite(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// Input rows
+	columns := table.Mapping{
+		Columns: column.Columns{
+			column.Datetime{Name: "datetime"},
+			column.Body{Name: "body"},
+			unknown{Name: "path"},
+		},
+	}
+	staticNotifier := newStaticNotifier()
+	csvEncoder, err := csv.NewEncoder(0, 40*datasize.B, columns, io.Discard, staticNotifier.createStaticNotifier)
+	require.NoError(t, err)
+	record := recordctx.FromHTTP(
+		utctime.MustParse("2000-01-01T03:00:00.000Z").Time(),
+		&http.Request{Body: io.NopCloser(strings.NewReader("foobar"))},
+	)
+	notifier := staticNotifier.createStaticNotifier(ctx)
+	notifier.Done(nil)
+	r, err := csvEncoder.WriteRecord(record)
+	require.Error(t, err)
+
+	// It is expected that no notifier is returned before writing actual record, but after writing record
+	if !assert.Nil(t, r.Notifier) {
+		err = r.Notifier.Wait(ctx)
+		require.NoError(t, err)
+		return
+	}
 }
 
 func newTestCase(comp fileCompression, syncMode writesync.Mode, syncWait bool, parallelWrite bool) *testcase.WriterTestCase {
