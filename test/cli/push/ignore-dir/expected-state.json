@@ -1,0 +1,40 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "keboola.ex-db-mysql",
+          "name": "with-rows",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "parameters": {
+              "db": {
+                "host": "mysql.example.com"
+              }
+            }
+          },
+          "rows": [
+            {
+              "name": "users",
+              "description": "test fixture",
+              "changeDescription": "Updated from #KeboolaCLI",
+              "isDisabled": false,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            }
+          ],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}

@@ -24,6 +24,8 @@ func DefaultFlags() Flags {
 	return Flags{}
 }
 
+const KBCIgnore = ".keboola/.kbc_ignore" // File containing components that we don't want to push
+
 func Command(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `push ["change description"]`,
@@ -57,6 +59,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 			projectState, err := prj.LoadState(loadState.PushOptions(), d)
 			if err != nil {
 				return err
+			}
+
+			// Ignore the components, that we want to push
+			if !f.Force.Value && projectState.Fs().IsFile(cmd.Context(), KBCIgnore) {
+				err := projectState.IgnorePaths(cmd.Context(), KBCIgnore)
+				if err != nil {
+					return err
+				}
 			}
 
 			// Change description - optional arg

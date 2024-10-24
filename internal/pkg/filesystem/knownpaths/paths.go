@@ -330,3 +330,40 @@ func (p *PathsReadOnly) IsDir(path string) bool {
 func (p *PathsReadOnly) LogUntrackedPaths(ctx context.Context, logger log.Logger) {
 	p.paths.LogUntrackedPaths(ctx, logger)
 }
+
+// IgnorePaths reads an ignore file (.kbc_ignore) from the specified path, parses it for ignore patterns,
+// and removes any tracked paths that match these patterns from the filesystem.
+func (p *PathsReadOnly) IgnorePaths(ctx context.Context, path string) error {
+	ignoreFilePath := filesystem.Join(p.paths.fs.WorkingDir(), path)
+
+	content, err := p.paths.fs.ReadFile(ctx, filesystem.NewFileDef(ignoreFilePath))
+	if err != nil {
+		return err
+	}
+
+	for _, v := range parseIgnorePaths(content.Content) {
+		for _, val := range p.TrackedPaths() {
+			if strings.Contains(val, v) {
+				err := p.paths.fs.Remove(ctx, val)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func parseIgnorePaths(content string) []string {
+	var ignorePatterns []string
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		// Skip empty lines and comments
+		if trimmedLine != "" && !strings.HasPrefix(trimmedLine, "#") {
+			ignorePatterns = append(ignorePatterns, trimmedLine)
+		}
+	}
+	return ignorePatterns
+}
