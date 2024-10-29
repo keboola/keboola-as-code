@@ -113,6 +113,9 @@ func TestCleanup(t *testing.T) {
 {"level":"debug","message":"deleted task","component":"task.cleanup","task":"123/some.task/2006-01-02T08:04:05.000Z_abcdef"}
 {"level":"debug","message":"deleted task","component":"task.cleanup","task":"456/other.task/2006-01-02T08:04:05.000Z_ghijkl"}
 {"level":"info","message":"deleted \"2\" tasks","component":"task.cleanup","deletedTasks":2}
+`)
+
+	d.DebugLogger().AssertJSONMessages(t, `
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"received shutdown request","component":"task.cleanup"}
 {"level":"info","message":"shutdown done","component":"task.cleanup"}
