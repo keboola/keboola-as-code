@@ -442,6 +442,7 @@ func cleanAndSortMetrics(metrics *[]metricdata.Metrics, opts ...TestMeterOption)
 				point.StartTime = time.Time{}
 				point.Time = time.Time{}
 				point.Attributes = mapAttributes(point.Attributes)
+				point.Exemplars = nil
 			}
 		case metricdata.Sum[float64]:
 			sort.SliceStable(record.DataPoints, func(i, j int) bool {
@@ -452,6 +453,7 @@ func cleanAndSortMetrics(metrics *[]metricdata.Metrics, opts ...TestMeterOption)
 				point.StartTime = time.Time{}
 				point.Time = time.Time{}
 				point.Attributes = mapAttributes(point.Attributes)
+				point.Exemplars = nil
 			}
 		case metricdata.Histogram[int64]:
 			sort.SliceStable(record.DataPoints, func(i, j int) bool {
@@ -468,6 +470,7 @@ func cleanAndSortMetrics(metrics *[]metricdata.Metrics, opts ...TestMeterOption)
 					point.Sum = 0
 				}
 				point.Attributes = mapAttributes(point.Attributes)
+				point.Exemplars = nil
 			}
 		case metricdata.Histogram[float64]:
 			sort.SliceStable(record.DataPoints, func(i, j int) bool {
@@ -484,6 +487,7 @@ func cleanAndSortMetrics(metrics *[]metricdata.Metrics, opts ...TestMeterOption)
 					point.Sum = 0
 				}
 				point.Attributes = mapAttributes(point.Attributes)
+				point.Exemplars = nil
 			}
 		}
 	}
