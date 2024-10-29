@@ -166,7 +166,7 @@ func TestCompareJsonMessages(t *testing.T) {
 			expected: `
 {"level":"info","message":"Opened file", "file":"file2"}
 {"level":"info","message":"Opened file", "file":"file4"}
-{"level":"info","message":"Opened file", "file":"file6"}
+{"level":"info","message":"Opened file", "file":"file3"}
 `,
 			actual: `
 {"level":"info","message":"Opened file", "file":"file1"}
@@ -176,8 +176,10 @@ func TestCompareJsonMessages(t *testing.T) {
 {"level":"info","message":"Opened file", "file":"file5"}
 `,
 			err: errors.Errorf(
-				"Expected:\n-----\n%s\n-----\nActual:\n-----\n%s",
-				`{"level":"info","message":"Opened file", "file":"file6"}`,
+				"Expected:\n-----\n%s\n-----\nNote: %s\n%s\nActual:\n-----\n%s",
+				`{"level":"info","message":"Opened file", "file":"file3"}`,
+				"The expected message exists in the log but above the point where it is expected.",
+				"If the order doesn't matter you might want to split the assertion to two groups.",
 				`{"level":"info","message":"Opened file", "file":"file5"}`,
 			),
 		},

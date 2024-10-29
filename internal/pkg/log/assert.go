@@ -64,11 +64,21 @@ func CompareJSONMessages(expected string, actual string) error {
 		}
 
 		if !messageFound {
-			return errors.Errorf(
-				"Expected:\n-----\n%s\n-----\nActual:\n-----\n%s",
-				expectedMessage,
-				strings.TrimRight(actualMessages, "\n"),
-			)
+			if expected != expectedMessage && CompareJSONMessages(expectedMessage, actual) == nil {
+				return errors.Errorf(
+					"Expected:\n-----\n%s\n-----\nNote: %s\n%s\nActual:\n-----\n%s",
+					expectedMessage,
+					"The expected message exists in the log but above the point where it is expected.",
+					"If the order doesn't matter you might want to split the assertion to two groups.",
+					strings.TrimRight(actualMessages, "\n"),
+				)
+			} else {
+				return errors.Errorf(
+					"Expected:\n-----\n%s\n-----\nActual:\n-----\n%s",
+					expectedMessage,
+					strings.TrimRight(actualMessages, "\n"),
+				)
+			}
 		}
 	}
 
