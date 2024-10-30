@@ -407,23 +407,57 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) UndeleteSource(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.UndeleteSourcePayload) (res *api.Task, err error) {
+func (s *service) UndeleteSource(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.UndeleteSourcePayload) (*api.Task, error) {
 	if err := s.sourceMustBeDeleted(ctx, scope.SourceKey()); err != nil {
 		return nil, err
 	}
 
+	// Undelete source in a task
 	t, err := s.startTask(ctx, taskConfig{
 		Type:      "undelete.source",
 		Timeout:   5 * time.Minute,
 		ProjectID: scope.ProjectID(),
 		ObjectKey: scope.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Source().Undelete(scope.SourceKey(), scope.Clock().Now(), scope.RequestUser()).Do(ctx).Err(); err != nil {
-				return task.ErrResult(err)
+			start := time.Now()
+			source, err := s.definition.Source().Undelete(scope.SourceKey(), scope.Clock().Now(), scope.RequestUser()).Do(ctx).ResultOrErr()
+			formatMsg := func(err error) string {
+				if err != nil {
+					return "Source undelete failed."
+				}
+
+				return "Source undelete done."
 			}
-			result := task.OkResult("Source has been undeleted successfully.")
-			result = s.mapper.WithTaskOutputs(result, scope.SourceKey())
-			return result
+
+			defer func() {
+				sErr := bridge.SendEvent(
+					ctx,
+					logger,
+					scope.KeboolaProjectAPI(),
+					bridge.ComponentSourceUndeleteID,
+					time.Since(start),
+					err,
+					formatMsg,
+					bridge.Params{
+						ProjectID:  scope.ProjectID(),
+						BranchID:   scope.Branch().BranchID,
+						SourceID:   source.SourceID,
+						SourceKey:  source.SourceKey,
+						SourceName: source.Name,
+					},
+				)
+				if sErr != nil {
+					logger.Warnf(ctx, "%v", sErr)
+				}
+			}()
+
+			if err == nil {
+				result := task.OkResult("Source has been undeleted successfully.")
+				result = s.mapper.WithTaskOutputs(result, scope.SourceKey())
+				return result
+			}
+
+			return task.ErrResult(err)
 		},
 	})
 	if err != nil {
