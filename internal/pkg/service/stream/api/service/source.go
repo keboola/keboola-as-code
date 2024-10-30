@@ -322,6 +322,12 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 }
 
 func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.SourceRequestScope, payload *api.SourceStatisticsClearPayload) (err error) {
+	// If user is not admin deny access for write
+	token := d.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return err
 	}
@@ -408,6 +414,13 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 }
 
 func (s *service) UndeleteSource(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.UndeleteSourcePayload) (*api.Task, error) {
+	// If user is not admin deny access for write
+	token := scope.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
+	// Quick check before the task
 	if err := s.sourceMustBeDeleted(ctx, scope.SourceKey()); err != nil {
 		return nil, err
 	}
@@ -497,6 +510,12 @@ func (s *service) SourceVersionDetail(ctx context.Context, scope dependencies.So
 }
 
 func (s *service) RollbackSourceVersion(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.RollbackSourceVersionPayload) (res *api.Task, err error) {
+	// If user is not admin deny access for write
+	token := scope.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	if err := s.sourceVersionMustExist(ctx, scope.SourceKey(), payload.VersionNumber); err != nil {
 		return nil, err
 	}

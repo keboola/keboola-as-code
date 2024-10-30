@@ -434,6 +434,12 @@ func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScop
 }
 
 func (s *service) UndeleteSink(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.UndeleteSinkPayload) (res *api.Task, err error) {
+	// If user is not admin deny access for write
+	token := scope.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	if err := s.sourceMustExist(ctx, scope.SourceKey()); err != nil {
 		return nil, err
 	}
@@ -493,6 +499,12 @@ func (s *service) SinkVersionDetail(ctx context.Context, scope dependencies.Sink
 }
 
 func (s *service) RollbackSinkVersion(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.RollbackSinkVersionPayload) (res *api.Task, err error) {
+	// If user is not admin deny access for write
+	token := scope.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	if err := s.sinkVersionMustExist(ctx, scope.SinkKey(), payload.VersionNumber); err != nil {
 		return nil, err
 	}
