@@ -1,0 +1,8 @@
+{
+  "taskId": "api.rollback.sourceVersion/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "type": "api.rollback.sourceVersion",
+  "url": "https://stream.keboola.local/v1/tasks/api.rollback.sourceVersion/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "status": "processing",
+  "isFinished": false,
+  "createdAt": "%s"
+}
