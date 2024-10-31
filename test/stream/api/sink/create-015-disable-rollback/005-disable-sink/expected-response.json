@@ -1,0 +1,8 @@
+{
+  "taskId": "api.disable.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s",
+  "type": "api.disable.sink",
+  "url": "https://stream.keboola.local/v1/tasks/api.disable.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/%s",
+  "status": "processing",
+  "isFinished": false,
+  "createdAt": "%s"
+}
