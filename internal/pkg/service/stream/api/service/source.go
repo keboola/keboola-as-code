@@ -75,13 +75,14 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 					logger.Warnf(ctx, "%v", sErr)
 				}
 			}()
-			if err == nil {
-				result := task.OkResult("Source has been created successfully.")
-				result = s.mapper.WithTaskOutputs(result, source.SourceKey)
-				return result
+
+			if err != nil {
+				return task.ErrResult(err)
 			}
 
-			return task.ErrResult(err)
+			result := task.OkResult("Source has been created successfully.")
+			result = s.mapper.WithTaskOutputs(result, source.SourceKey)
+			return result
 		},
 	})
 	if err != nil {
@@ -128,13 +129,13 @@ func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequest
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Update the source, with retries on a collision
-			if err := s.definition.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Source has been updated successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
-			} else {
+			if err := s.definition.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Source has been updated successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -222,13 +223,13 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 				}
 			}()
 
-			if err == nil {
-				result := task.OkResult("Source has been deleted successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
+			if err != nil {
+				return task.ErrResult(err)
 			}
 
-			return task.ErrResult(err)
+			result := task.OkResult("Source has been deleted successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -286,13 +287,13 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Update the source, with retries on a collision
-			if err := s.definition.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Source settings have been updated successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
-			} else {
+			if err := s.definition.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Source settings have been updated successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -528,13 +529,13 @@ func (s *service) UndeleteSource(ctx context.Context, scope dependencies.SourceR
 				}
 			}()
 
-			if err == nil {
-				result := task.OkResult("Source has been undeleted successfully.")
-				result = s.mapper.WithTaskOutputs(result, scope.SourceKey())
-				return result
+			if err != nil {
+				return task.ErrResult(err)
 			}
 
-			return task.ErrResult(err)
+			result := task.OkResult("Source has been undeleted successfully.")
+			result = s.mapper.WithTaskOutputs(result, scope.SourceKey())
+			return result
 		},
 	})
 	if err != nil {

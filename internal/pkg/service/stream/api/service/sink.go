@@ -62,13 +62,13 @@ func (s *service) CreateSink(ctx context.Context, d dependencies.SourceRequestSc
 			// Create sink
 			op := s.definition.Sink().Create(&sink, s.clock.Now(), d.RequestUser(), "New sink.")
 			op = op.RequireLock(lock)
-			if err := op.Do(ctx).Err(); err == nil {
-				result := task.OkResult("Sink has been created successfully.")
-				result = s.mapper.WithTaskOutputs(result, sink.SinkKey)
-				return result
-			} else {
+			if err := op.Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Sink has been created successfully.")
+			result = s.mapper.WithTaskOutputs(result, sink.SinkKey)
+			return result
 		},
 	})
 	if err != nil {
@@ -167,13 +167,13 @@ func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScop
 			}()
 
 			// Update the sink, with retries on a collision
-			if err := s.definition.Sink().Update(d.SinkKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Sink has been updated successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SinkKey())
-				return result
-			} else {
+			if err := s.definition.Sink().Update(d.SinkKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Sink has been updated successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SinkKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -202,13 +202,14 @@ func (s *service) DeleteSink(ctx context.Context, d dependencies.SinkRequestScop
 		ProjectID: d.ProjectID(),
 		ObjectKey: d.SinkKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Sink().SoftDelete(d.SinkKey(), s.clock.Now(), d.RequestUser()).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Sink has been deleted successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SinkKey())
-				return result
-			} else {
+			err := s.definition.Sink().SoftDelete(d.SinkKey(), s.clock.Now(), d.RequestUser()).Do(ctx).Err()
+			if err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Sink has been deleted successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SinkKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -266,13 +267,14 @@ func (s *service) UpdateSinkSettings(ctx context.Context, d dependencies.SinkReq
 		ObjectKey: d.SinkKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Update the sink, with retries on a collision
-			if err := s.definition.Sink().Update(d.SinkKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Sink settings have been updated successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SinkKey())
-				return result
-			} else {
+			err := s.definition.Sink().Update(d.SinkKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err()
+			if err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Sink settings have been updated successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SinkKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -383,13 +385,13 @@ func (s *service) DisableSink(ctx context.Context, d dependencies.SinkRequestSco
 		ProjectID: d.ProjectID(),
 		ObjectKey: d.SinkKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Sink().Disable(d.SinkKey(), d.Clock().Now(), d.RequestUser(), "API").Do(ctx).Err(); err == nil {
-				result := task.OkResult("Sink has been disabled successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SinkKey())
-				return result
-			} else {
+			if err := s.definition.Sink().Disable(d.SinkKey(), d.Clock().Now(), d.RequestUser(), "API").Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Sink has been disabled successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SinkKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -417,13 +419,13 @@ func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScop
 		ProjectID: d.ProjectID(),
 		ObjectKey: d.SinkKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Sink().Enable(d.SinkKey(), d.Clock().Now(), d.RequestUser()).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Sink has been enabled successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SinkKey())
-				return result
-			} else {
+			if err := s.definition.Sink().Enable(d.SinkKey(), d.Clock().Now(), d.RequestUser()).Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Sink has been enabled successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SinkKey())
+			return result
 		},
 	})
 	if err != nil {
