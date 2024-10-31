@@ -20,6 +20,8 @@ import (
 // Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sourceCreate.json
 // Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sourceDelete.json
 // Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sourceUndelete.json
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sourceDisable.json
+// Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sourceEnable.json
 // Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sourcePurge.json
 // Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.sliceUpload.json
 // Schema: https://github.com/keboola/event-schema/blob/main/schema/ext.keboola.stream.fileImport.json
@@ -27,6 +29,8 @@ const (
 	ComponentSourceCreateID   = keboola.ComponentID("keboola.stream.sourceCreate")
 	ComponentSourceDeleteID   = keboola.ComponentID("keboola.stream.sourceDelete")
 	ComponentSourceUndeleteID = keboola.ComponentID("keboola.stream.sourceUndelete")
+	ComponentSourceDisableID  = keboola.ComponentID("keboola.stream.sourceDisable")
+	ComponentSourceEnableID   = keboola.ComponentID("keboola.stream.sourceEnable")
 	ComponentSourcePurgeID    = keboola.ComponentID("keboola.stream.sourcePurge")
 	componentSliceUploadID    = keboola.ComponentID("keboola.stream.sliceUpload")
 	componentFileImportID     = keboola.ComponentID("keboola.stream.fileImport")

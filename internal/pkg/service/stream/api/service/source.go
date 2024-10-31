@@ -345,7 +345,7 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 	return d.StatisticsRepository().ResetAllSinksStats(ctx, sinkKeys)
 }
 
-func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (res *api.Task, err error) {
+func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (*api.Task, error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
@@ -363,13 +363,45 @@ func (s *service) DisableSource(ctx context.Context, d dependencies.SourceReques
 		ProjectID: d.ProjectID(),
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Source().Disable(d.SourceKey(), d.Clock().Now(), d.RequestUser(), "API").Do(ctx).Err(); err == nil {
-				result := task.OkResult("Source has been disabled successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
-			} else {
+			start := time.Now()
+			source, err := s.definition.Source().Disable(d.SourceKey(), d.Clock().Now(), d.RequestUser(), "API").Do(ctx).ResultOrErr()
+			formatMsg := func(err error) string {
+				if err != nil {
+					return "Source disable failed."
+				}
+
+				return "Source disable done."
+			}
+
+			defer func() {
+				sErr := bridge.SendEvent(
+					ctx,
+					logger,
+					d.KeboolaProjectAPI(),
+					bridge.ComponentSourceDisableID,
+					time.Since(start),
+					err,
+					formatMsg,
+					bridge.Params{
+						ProjectID:  d.ProjectID(),
+						BranchID:   d.Branch().BranchID,
+						SourceID:   source.SourceID,
+						SourceKey:  source.SourceKey,
+						SourceName: source.Name,
+					},
+				)
+				if sErr != nil {
+					logger.Warnf(ctx, "%v", sErr)
+				}
+			}()
+
+			if err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Source has been disabled successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -379,7 +411,7 @@ func (s *service) DisableSource(ctx context.Context, d dependencies.SourceReques
 	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.EnableSourcePayload) (res *api.Task, err error) {
+func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.EnableSourcePayload) (*api.Task, error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
@@ -397,13 +429,45 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 		ProjectID: d.ProjectID(),
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Source().Enable(d.SourceKey(), d.Clock().Now(), d.RequestUser()).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Source has been enabled successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
-			} else {
+			start := time.Now()
+			source, err := s.definition.Source().Enable(d.SourceKey(), d.Clock().Now(), d.RequestUser()).Do(ctx).ResultOrErr()
+			formatMsg := func(err error) string {
+				if err != nil {
+					return "Source enable failed."
+				}
+
+				return "Source enable done."
+			}
+
+			defer func() {
+				sErr := bridge.SendEvent(
+					ctx,
+					logger,
+					d.KeboolaProjectAPI(),
+					bridge.ComponentSourceEnableID,
+					time.Since(start),
+					err,
+					formatMsg,
+					bridge.Params{
+						ProjectID:  d.ProjectID(),
+						BranchID:   d.Branch().BranchID,
+						SourceID:   source.SourceID,
+						SourceKey:  source.SourceKey,
+						SourceName: source.Name,
+					},
+				)
+				if sErr != nil {
+					logger.Warnf(ctx, "%v", sErr)
+				}
+			}()
+
+			if err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Source has been enabled successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
