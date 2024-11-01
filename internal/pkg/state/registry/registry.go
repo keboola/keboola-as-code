@@ -150,6 +150,27 @@ func (s *Registry) Configs() (configs []*ConfigState) {
 	return configs
 }
 
+func (s *Registry) IgnoreConfig(ignoreID string) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigState); ok {
+			if v.ID.String() == ignoreID {
+				v.Ignore = true
+			}
+		}
+	}
+}
+
+func (s *Registry) IgnoredConfigs() (configs []*ConfigState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigState); ok {
+			if v.Ignore {
+				configs = append(configs, v)
+			}
+		}
+	}
+	return configs
+}
+
 func (s *Registry) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigState); ok {

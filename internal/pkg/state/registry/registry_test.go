@@ -57,6 +57,15 @@ func TestStateConfigsFrom(t *testing.T) {
 	assert.Len(t, s.ConfigsFrom(BranchKey{ID: 111}), 0)
 }
 
+func TestIgnoreConfigs(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t, knownpaths.NewNop(context.Background()))
+	assert.Len(t, s.IgnoredConfigs(), 0)
+	s.IgnoreConfig("345")
+	assert.Len(t, s.IgnoredConfigs(), 1)
+	assert.Equal(t, s.IgnoredConfigs()[0].ID.String(), "345")
+}
+
 func TestStateConfigRowsFrom(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t, knownpaths.NewNop(context.Background()))
