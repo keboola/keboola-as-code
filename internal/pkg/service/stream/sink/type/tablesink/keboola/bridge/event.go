@@ -167,7 +167,7 @@ func SendEvent(
 		Message:     msg(err),
 		Type:        "info",
 		Duration:    client.DurationSeconds(duration),
-		Results: map[string]any{
+		Params: map[string]any{
 			"projectId": params.ProjectID,
 			"branchId":  params.BranchID,
 			"sourceId":  params.SourceID,
@@ -176,11 +176,13 @@ func SendEvent(
 		},
 	}
 	if params.SourceName != "" {
-		event.Results["sourceName"] = params.SourceName
+		event.Params["sourceName"] = params.SourceName
 	}
 
 	var sErr error
 	defer func() {
+		// BC compatibility, should be removed later.
+		event.Results = event.Params
 		event, sErr = api.CreateEventRequest(event).Send(ctx)
 		if sErr == nil {
 			logger.Debugf(ctx, "Sent eventID: %v", event.ID)
@@ -189,12 +191,12 @@ func SendEvent(
 
 	if err != nil {
 		event.Type = "error"
-		event.Results["error"] = fmt.Sprintf("%s", err)
+		event.Params["error"] = fmt.Sprintf("%s", err)
 		return sErr
 	}
 
 	if params.Stats.RecordsCount > 0 {
-		event.Results["statistics"] = map[string]any{
+		event.Params["statistics"] = map[string]any{
 			"firstRecordAt":    params.Stats.FirstRecordAt.String(),
 			"lastRecordAt":     params.Stats.LastRecordAt.String(),
 			"recordsCount":     params.Stats.RecordsCount,
