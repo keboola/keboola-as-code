@@ -75,13 +75,14 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 					logger.Warnf(ctx, "%v", sErr)
 				}
 			}()
-			if err == nil {
-				result := task.OkResult("Source has been created successfully.")
-				result = s.mapper.WithTaskOutputs(result, source.SourceKey)
-				return result
+
+			if err != nil {
+				return task.ErrResult(err)
 			}
 
-			return task.ErrResult(err)
+			result := task.OkResult("Source has been created successfully.")
+			result = s.mapper.WithTaskOutputs(result, source.SourceKey)
+			return result
 		},
 	})
 	if err != nil {
@@ -128,13 +129,13 @@ func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequest
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Update the source, with retries on a collision
-			if err := s.definition.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Source has been updated successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
-			} else {
+			if err := s.definition.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Source has been updated successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -222,13 +223,13 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 				}
 			}()
 
-			if err == nil {
-				result := task.OkResult("Source has been deleted successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
+			if err != nil {
+				return task.ErrResult(err)
 			}
 
-			return task.ErrResult(err)
+			result := task.OkResult("Source has been deleted successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -286,13 +287,13 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Update the source, with retries on a collision
-			if err := s.definition.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Source settings have been updated successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
-			} else {
+			if err := s.definition.Source().Update(d.SourceKey(), s.clock.Now(), d.RequestUser(), changeDesc, update).Do(ctx).Err(); err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Source settings have been updated successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -322,6 +323,12 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 }
 
 func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.SourceRequestScope, payload *api.SourceStatisticsClearPayload) (err error) {
+	// If user is not admin deny access for write
+	token := d.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
 		return err
 	}
@@ -339,7 +346,7 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 	return d.StatisticsRepository().ResetAllSinksStats(ctx, sinkKeys)
 }
 
-func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (res *api.Task, err error) {
+func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (*api.Task, error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
@@ -357,13 +364,45 @@ func (s *service) DisableSource(ctx context.Context, d dependencies.SourceReques
 		ProjectID: d.ProjectID(),
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Source().Disable(d.SourceKey(), d.Clock().Now(), d.RequestUser(), "API").Do(ctx).Err(); err == nil {
-				result := task.OkResult("Source has been disabled successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
-			} else {
+			start := time.Now()
+			source, err := s.definition.Source().Disable(d.SourceKey(), d.Clock().Now(), d.RequestUser(), "API").Do(ctx).ResultOrErr()
+			formatMsg := func(err error) string {
+				if err != nil {
+					return "Source disable failed."
+				}
+
+				return "Source disable done."
+			}
+
+			defer func() {
+				sErr := bridge.SendEvent(
+					ctx,
+					logger,
+					d.KeboolaProjectAPI(),
+					bridge.ComponentSourceDisableID,
+					time.Since(start),
+					err,
+					formatMsg,
+					bridge.Params{
+						ProjectID:  d.ProjectID(),
+						BranchID:   d.Branch().BranchID,
+						SourceID:   source.SourceID,
+						SourceKey:  source.SourceKey,
+						SourceName: source.Name,
+					},
+				)
+				if sErr != nil {
+					logger.Warnf(ctx, "%v", sErr)
+				}
+			}()
+
+			if err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Source has been disabled successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -373,7 +412,7 @@ func (s *service) DisableSource(ctx context.Context, d dependencies.SourceReques
 	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.EnableSourcePayload) (res *api.Task, err error) {
+func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.EnableSourcePayload) (*api.Task, error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
@@ -391,13 +430,45 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 		ProjectID: d.ProjectID(),
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Source().Enable(d.SourceKey(), d.Clock().Now(), d.RequestUser()).Do(ctx).Err(); err == nil {
-				result := task.OkResult("Source has been enabled successfully.")
-				result = s.mapper.WithTaskOutputs(result, d.SourceKey())
-				return result
-			} else {
+			start := time.Now()
+			source, err := s.definition.Source().Enable(d.SourceKey(), d.Clock().Now(), d.RequestUser()).Do(ctx).ResultOrErr()
+			formatMsg := func(err error) string {
+				if err != nil {
+					return "Source enable failed."
+				}
+
+				return "Source enable done."
+			}
+
+			defer func() {
+				sErr := bridge.SendEvent(
+					ctx,
+					logger,
+					d.KeboolaProjectAPI(),
+					bridge.ComponentSourceEnableID,
+					time.Since(start),
+					err,
+					formatMsg,
+					bridge.Params{
+						ProjectID:  d.ProjectID(),
+						BranchID:   d.Branch().BranchID,
+						SourceID:   source.SourceID,
+						SourceKey:  source.SourceKey,
+						SourceName: source.Name,
+					},
+				)
+				if sErr != nil {
+					logger.Warnf(ctx, "%v", sErr)
+				}
+			}()
+
+			if err != nil {
 				return task.ErrResult(err)
 			}
+
+			result := task.OkResult("Source has been enabled successfully.")
+			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			return result
 		},
 	})
 	if err != nil {
@@ -407,20 +478,61 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) UndeleteSource(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.UndeleteSourcePayload) (res *api.Task, err error) {
+func (s *service) UndeleteSource(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.UndeleteSourcePayload) (*api.Task, error) {
+	// If user is not admin deny access for write
+	token := scope.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
+	// Quick check before the task
 	if err := s.sourceMustBeDeleted(ctx, scope.SourceKey()); err != nil {
 		return nil, err
 	}
 
+	// Undelete source in a task
 	t, err := s.startTask(ctx, taskConfig{
 		Type:      "undelete.source",
 		Timeout:   5 * time.Minute,
 		ProjectID: scope.ProjectID(),
 		ObjectKey: scope.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			if err := s.definition.Source().Undelete(scope.SourceKey(), scope.Clock().Now(), scope.RequestUser()).Do(ctx).Err(); err != nil {
+			start := time.Now()
+			source, err := s.definition.Source().Undelete(scope.SourceKey(), scope.Clock().Now(), scope.RequestUser()).Do(ctx).ResultOrErr()
+			formatMsg := func(err error) string {
+				if err != nil {
+					return "Source undelete failed."
+				}
+
+				return "Source undelete done."
+			}
+
+			defer func() {
+				sErr := bridge.SendEvent(
+					ctx,
+					logger,
+					scope.KeboolaProjectAPI(),
+					bridge.ComponentSourceUndeleteID,
+					time.Since(start),
+					err,
+					formatMsg,
+					bridge.Params{
+						ProjectID:  scope.ProjectID(),
+						BranchID:   scope.Branch().BranchID,
+						SourceID:   source.SourceID,
+						SourceKey:  source.SourceKey,
+						SourceName: source.Name,
+					},
+				)
+				if sErr != nil {
+					logger.Warnf(ctx, "%v", sErr)
+				}
+			}()
+
+			if err != nil {
 				return task.ErrResult(err)
 			}
+
 			result := task.OkResult("Source has been undeleted successfully.")
 			result = s.mapper.WithTaskOutputs(result, scope.SourceKey())
 			return result
@@ -463,6 +575,12 @@ func (s *service) SourceVersionDetail(ctx context.Context, scope dependencies.So
 }
 
 func (s *service) RollbackSourceVersion(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.RollbackSourceVersionPayload) (res *api.Task, err error) {
+	// If user is not admin deny access for write
+	token := scope.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
 	if err := s.sourceVersionMustExist(ctx, scope.SourceKey(), payload.VersionNumber); err != nil {
 		return nil, err
 	}

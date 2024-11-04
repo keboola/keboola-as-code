@@ -51,7 +51,7 @@ func TestBridge_SendSliceUploadEvent_OkEvent(t *testing.T) {
   "component": "keboola.stream.sliceUpload",
   "duration": 3,
   "message": "Slice upload done.",
-  "params": "null",
+  "params": "{\"branchId\":456,\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"statistics\":{\"compressedSize\":52428800,\"firstRecordAt\":\"2000-01-01T20:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"slicesCount\":1,\"stagingSize\":26214400,\"uncompressedSize\":104857600},\"streamId\":\"123/456/my-source\"}",
   "results": "{\"branchId\":456,\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"statistics\":{\"compressedSize\":52428800,\"firstRecordAt\":\"2000-01-01T20:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"slicesCount\":1,\"stagingSize\":26214400,\"uncompressedSize\":104857600},\"streamId\":\"123/456/my-source\"}",
   "type": "info"
 }`, body)
@@ -83,7 +83,7 @@ func TestBridge_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
   "component": "keboola.stream.sliceUpload",
   "duration": 3,
   "message": "Slice upload failed.",
-  "params": "null",
+  "params": "{\"branchId\":456,\"error\":\"some error\",\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"streamId\":\"123/456/my-source\"}",
   "results": "{\"branchId\":456,\"error\":\"some error\",\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"streamId\":\"123/456/my-source\"}",
   "type": "error"
 }`, body)
@@ -138,7 +138,7 @@ func TestBridge_SendFileImportEvent_OkEvent(t *testing.T) {
   "component": "keboola.stream.fileImport",
   "duration": 3,
   "message": "File import done.",
-  "params": "null",
+  "params": "{\"branchId\":456,\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"statistics\":{\"compressedSize\":52428800,\"firstRecordAt\":\"2000-01-01T01:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"slicesCount\":1,\"stagingSize\":26214400,\"uncompressedSize\":104857600},\"streamId\":\"123/456/my-source\"}",
   "results": "{\"branchId\":456,\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"statistics\":{\"compressedSize\":52428800,\"firstRecordAt\":\"2000-01-01T01:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"slicesCount\":1,\"stagingSize\":26214400,\"uncompressedSize\":104857600},\"streamId\":\"123/456/my-source\"}",
   "type": "info"
 }`, body)
@@ -170,7 +170,7 @@ func TestBridge_SendFileImportEvent_ErrorEvent(t *testing.T) {
   "component": "keboola.stream.fileImport",
   "duration": 3,
   "message": "File import failed.",
-  "params": "null",
+  "params": "{\"branchId\":456,\"error\":\"some error\",\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"streamId\":\"123/456/my-source\"}",
   "results": "{\"branchId\":456,\"error\":\"some error\",\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"streamId\":\"123/456/my-source\"}",
   "type": "error"
 }`, body)
