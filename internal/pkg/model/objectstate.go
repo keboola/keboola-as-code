@@ -50,6 +50,7 @@ type ConfigRowState struct {
 	*ConfigRowManifest
 	Remote *ConfigRow
 	Local  *ConfigRow
+	Ignore bool
 }
 
 // ToAPIObjectKey ...

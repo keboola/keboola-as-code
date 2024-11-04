@@ -204,6 +204,27 @@ func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 	return rows
 }
 
+func (s *Registry) IgnoreConfigRow(ignoreID string) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigRowState); ok {
+			if v.ID.String() == ignoreID {
+				v.Ignore = true
+			}
+		}
+	}
+}
+
+func (s *Registry) IgnoredConfigRows() (rows []*ConfigRowState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigRowState); ok {
+			if v.Ignore {
+				rows = append(rows, v)
+			}
+		}
+	}
+	return rows
+}
+
 func (s *Registry) GetPath(key Key) (AbsPath, bool) {
 	objectState, found := s.Get(key)
 	if !found {
