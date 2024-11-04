@@ -106,7 +106,7 @@ func TestSinkRepository_Enable(t *testing.T) {
 		now = now.Add(time.Hour)
 		sink, err := repo.RollbackVersion(sinkKey, now, by, 2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink.IsDisabled())
+		assert.False(t, sink.IsDisabled()) // Rollback intentionally doesn't change disabled/enabled state
 		assert.Equal(t, definition.VersionNumber(4), sink.VersionNumber())
 	}
 
@@ -293,6 +293,13 @@ func TestSinkRepository_EnableSinksOnSourceEnable(t *testing.T) {
 		source, err := d.DefinitionRepository().Source().RollbackVersion(sourceKey, now, by, 2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(4), source.Version.Number)
+		assert.False(t, source.IsDisabled()) // Rollback intentionally doesn't change disabled/enabled state
+	}
+	{
+		// Disable the Source
+		now = now.Add(time.Hour)
+		source, err := d.DefinitionRepository().Source().Disable(sourceKey, now, by, "test").Do(ctx).ResultOrErr()
+		require.NoError(t, err)
 		assert.True(t, source.IsDisabled())
 	}
 	{

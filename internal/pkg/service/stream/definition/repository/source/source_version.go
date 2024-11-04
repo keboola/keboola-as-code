@@ -54,6 +54,15 @@ func (r *Repository) RollbackVersion(k key.SourceKey, now time.Time, by definiti
 			// Prepare the new value
 			versionDescription := fmt.Sprintf(`Rollback to version "%d".`, targetVersion.Version.Number)
 			updated = deepcopy.Copy(*targetVersion).(definition.Source)
+
+			// Preserve Disabled and Deleted states from the latest version.
+			// Without this it would be possible to bypass the Enable/Undelete event and avoid billing.
+			updated.Disabled = deepcopy.Copy(latestVersion.Disabled).(*definition.Disabled)
+			updated.Enabled = deepcopy.Copy(latestVersion.Enabled).(*definition.Enabled)
+			updated.Deleted = deepcopy.Copy(latestVersion.Deleted).(*definition.Deleted)
+			updated.Undeleted = deepcopy.Copy(latestVersion.Undeleted).(*definition.Undeleted)
+
+			// Increase version
 			updated.Version = latestVersion.Version
 			updated.IncrementVersion(updated, now, by, versionDescription)
 			return r.save(ctx, now, by, latestVersion, &updated)

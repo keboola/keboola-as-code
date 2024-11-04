@@ -1,5 +1,5 @@
 {
-  "path": "/v1/branches/default/sources",
+  "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources",
   "method": "POST",
   "headers": {
     "Content-Type": "application/json",

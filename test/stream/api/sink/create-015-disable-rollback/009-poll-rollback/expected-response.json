@@ -1,0 +1,18 @@
+{
+  "taskId": "api.rollback.sinkVersion/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "type": "api.rollback.sinkVersion",
+  "url": "https://stream.keboola.local/v1/tasks/api.rollback.sinkVersion/%%TEST_DEFAULT_BRANCH_ID%%/my-source/%s",
+  "status": "success",
+  "isFinished": true,
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "duration": %d,
+  "result": "Sink version was rolled back successfully.",
+  "outputs": {
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source/sinks/my-sink",
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "sourceId": "my-source",
+    "sinkId": "my-sink"
+  }
+}
