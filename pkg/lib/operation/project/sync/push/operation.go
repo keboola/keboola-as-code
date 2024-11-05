@@ -3,12 +3,10 @@ package push
 import (
 	"context"
 	"io"
-	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/push"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -114,53 +112,5 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 		logger.Info(ctx, "Push done.")
 	}
-	return nil
-}
-
-func parseIgnorePatterns(content string) []string {
-	var ignorePatterns []string
-	lines := strings.Split(content, "\n")
-	for _, line := range lines {
-		trimmedLine := strings.TrimSpace(line)
-		// Skip empty lines and comments
-		if trimmedLine != "" && !strings.HasPrefix(trimmedLine, "#") {
-			ignorePatterns = append(ignorePatterns, trimmedLine)
-		}
-	}
-
-	return ignorePatterns
-}
-
-func ignoreConfigsAndRows(projectState *project.State) {
-	if len(projectState.IgnoredConfigs()) > 0 {
-		for _, v := range projectState.IgnoredConfigs() {
-			v.SetLocalState(nil)
-		}
-	}
-
-	if len(projectState.IgnoredConfigRows()) > 0 {
-		for _, v := range projectState.IgnoredConfigRows() {
-			v.SetLocalState(nil)
-		}
-	}
-}
-
-func setIgnoredConfigsOrRows(ctx context.Context, projectState *project.State) error {
-	content, err := projectState.Fs().ReadFile(ctx, filesystem.NewFileDef(KBCIgnoreFilePath))
-	if err != nil {
-		return err
-	}
-	for _, val := range parseIgnorePatterns(content.Content) {
-		ignoredConfigOrRows := strings.Split(val, "/")
-
-		switch len(ignoredConfigOrRows) {
-		case 3:
-			projectState.IgnoreConfigRow(ignoredConfigOrRows[2])
-		case 2:
-			projectState.IgnoreConfig(ignoredConfigOrRows[1])
-		}
-	}
-
-	ignoreConfigsAndRows(projectState)
 	return nil
 }
