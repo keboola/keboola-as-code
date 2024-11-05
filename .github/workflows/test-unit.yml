@@ -92,7 +92,7 @@ jobs:
         run: |
           # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229#issuecomment-1988965927)
           if [ "$RUNNER_OS" == "macOS" ]; then
-            export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
+            export GOFLAGS="-ldflags=-linkmode=internal"
           fi
 
           # Prevent testing unnecessary code for particular release
