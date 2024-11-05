@@ -1,0 +1,9 @@
+Plan for "push" operation:
+  * B bar | changed: description
+  * C bar/extractor/ex-generic-v2/empty | changed: isDisabled, name
+  × R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled - SKIPPED
+  * B main | changed: metadata
+  × C main/app/keboola.data-apps/data-app - SKIPPED
+  × C main/extractor/ex-generic-v2/empty - SKIPPED
+Skipped remote objects deletion, use "--force" to delete them.
+Push done.

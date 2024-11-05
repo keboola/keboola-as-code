@@ -1,0 +1,39 @@
+{
+  "backend": {
+    "type": "snowflake"
+  },
+  "allBranchesConfigs": [
+    "empty"
+  ],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "data-app"
+      ]
+    },
+    {
+      "branch": {
+        "name": "foo",
+        "isDefault": false
+      },
+      "configs": [
+        "without-rows"
+      ]
+    },
+    {
+      "branch": {
+        "name": "bar",
+        "isDefault": false
+      },
+      "configs": [
+        "with-rows",
+        "python-transformation",
+        "snowflake-transformation"
+      ]
+    }
+  ]
+}

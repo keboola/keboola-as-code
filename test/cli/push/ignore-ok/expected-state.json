@@ -1,0 +1,216 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true,
+        "metadata": {
+          "KBC.projectDescription": "Serves for non legacy support of project interaction. When some of the functionality will be deprecated or legacy, it should be moved into `push/ok-legacy`."
+        }
+      },
+      "configs": [
+        {
+          "componentId": "keboola.data-apps",
+          "name": "Data App",
+          "description": "test fixture",
+          "configuration": {
+            "foo": "bar"
+          },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "test fixture",
+          "configuration": {},
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    },
+    {
+      "branch": {
+        "name": "bar",
+        "description": "new description",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "new name",
+          "description": "test fixture",
+          "changeDescription": "my change description",
+          "configuration": {},
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "keboola.python-transformation-v2",
+          "name": "python-transformation",
+          "description": "test fixture",
+          "configuration": {
+            "parameters": {
+              "blocks": [
+                {
+                  "codes": [
+                    {
+                      "name": "Code X",
+                      "script": [
+                        "print(100)\n"
+                      ]
+                    },
+                    {
+                      "name": "Code Y",
+                      "script": [
+                        "print(200)\n\t"
+                      ]
+                    }
+                  ],
+                  "name": "Block 1"
+                },
+                {
+                  "codes": [
+                    {
+                      "name": "Code Z",
+                      "script": [
+                        "# Sum of natural numbers up to num\n\nnum = 16\n\nif num \u003c 0:\n    print(\"Enter a positive number\")\nelse:\n    sum = 0\n    # use while loop to iterate until zero\n    while (num \u003e 0):\n        sum += num\n        num -= 1\n    print(\"The sum is\", sum)"
+                      ]
+                    }
+                  ],
+                  "name": "Block 2"
+                }
+              ],
+              "packages": [
+                "xgboost"
+              ]
+            }
+          },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "keboola.snowflake-transformation",
+          "name": "snowflake-transformation",
+          "description": "test fixture",
+          "configuration": {
+            "parameters": {
+              "blocks": [
+                {
+                  "codes": [
+                    {
+                      "name": "Code X",
+                      "script": [
+                        "CREATE OR REPLACE TABLE \"test\" (\n  \"id\" number default null,\n  \"orderstatus\" varchar(100) default null,\n  \"price\" float\n);",
+                        "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(123, 'ok', 12.34);",
+                        "INSERT INTO \"test\" (\"id\", \"orderstatus\", \"price\") VALUES(456, 'ko', 45.67);",
+                        "DROP TABLE IF EXISTS \"test\";"
+                      ]
+                    },
+                    {
+                      "name": "Code Y",
+                      "script": [
+                        "CREATE TABLE \"test2\" AS SELECT $1, $2\nFROM VALUES( 1, 'two' ), ( 3, 'four' ), ( 5, 'six' );"
+                      ]
+                    }
+                  ],
+                  "name": "Block 1"
+                },
+                {
+                  "codes": [
+                    {
+                      "name": "Code Z",
+                      "script": [
+                        "CREATE TABLE \"test3\" AS SELECT $1, $2\nFROM VALUES( 123, 'x' ), ( 345, 'y' );"
+                      ]
+                    }
+                  ],
+                  "name": "Block 2 - my name"
+                }
+              ]
+            }
+          },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "keboola.ex-db-mysql",
+          "name": "with-rows",
+          "description": "test fixture",
+          "configuration": {
+            "parameters": {
+              "db": {
+                "host": "mysql.example.com"
+              }
+            }
+          },
+          "rows": [
+            {
+              "name": "disabled",
+              "description": "test fixture",
+              "isDisabled": true,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            },
+            {
+              "name": "test_view",
+              "description": "test fixture",
+              "isDisabled": false,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            },
+            {
+              "name": "users",
+              "description": "test fixture",
+              "isDisabled": false,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            }
+          ],
+          "isDisabled": false
+        }
+      ]
+    },
+    {
+      "branch": {
+        "name": "foo",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "test fixture",
+          "configuration": {},
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "without-rows",
+          "description": "test fixture",
+          "configuration": {
+            "parameters": {
+              "api": {
+                "baseUrl": "https://jsonplaceholder.typicode.com"
+              }
+            }
+          },
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}
