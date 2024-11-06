@@ -9,11 +9,12 @@ import (
 )
 
 type Options struct {
-	File        *keboola.FileDownloadCredentials
-	Output      string
-	AllowSliced bool
-	Columns     []string
-	Header      configmap.Value[bool]
+	File              *keboola.FileDownloadCredentials
+	Output            string
+	AllowSliced       bool
+	Columns           []string
+	Header            configmap.Value[bool]
+	WithOutDecompress configmap.Value[bool]
 }
 
 func (o *Options) ToStdout() bool {

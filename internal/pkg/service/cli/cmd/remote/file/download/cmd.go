@@ -15,10 +15,11 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
-	Output          configmap.Value[string] `configKey:"output" configShorthand:"o" configUsage:"path to the destination file or directory"`
-	AllowSliced     configmap.Value[bool]   `configKey:"allow-sliced" configUsage:"output sliced files as a directory containing slices as individual files"`
+	StorageAPIHost    configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken   configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Output            configmap.Value[string] `configKey:"output" configShorthand:"o" configUsage:"path to the destination file or directory"`
+	AllowSliced       configmap.Value[bool]   `configKey:"allow-sliced" configUsage:"output sliced files as a directory containing slices as individual files"`
+	WithOutDecompress configmap.Value[bool]   `configKey:"without-decompress" configUsage:"treat the sliced files as individual files, without decompressing them."`
 }
 
 func DefaultFlags() Flags {
@@ -83,9 +84,10 @@ func Command(p dependencies.Provider) *cobra.Command {
 			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-file-download")
 
 			opts := download.Options{
-				File:        file,
-				Output:      output,
-				AllowSliced: f.AllowSliced.Value,
+				File:              file,
+				Output:            output,
+				AllowSliced:       f.AllowSliced.Value,
+				WithOutDecompress: f.WithOutDecompress,
 			}
 
 			return download.Run(cmd.Context(), opts, d)
