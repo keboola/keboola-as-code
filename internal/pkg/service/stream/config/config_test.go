@@ -129,6 +129,8 @@ sink:
         keboola:
             # Timeout to perform upload send event of slice or import event of file
             eventSendTimeout: 30s
+            # Number of import jobs running in keboola for single sink
+            jobLimit: 2
 storage:
     # Mounted volumes path, each volume is in "{type}/{label}" subdir. Validation rules: required
     volumesPath: ""
@@ -285,6 +287,8 @@ storage:
                 # Timeout of the file import operation. Validation rules: required,minDuration=30s,maxDuration=60m
                 fileImportTimeout: 15m0s
             import:
+                # Specifies limit of sink that is representable by number
+                sinkLimit: 2
                 # Min duration from the last import to trigger the next, takes precedence over other settings. Validation rules: required,minDuration=30s,maxDuration=24h
                 minInterval: 1m0s
                 trigger:

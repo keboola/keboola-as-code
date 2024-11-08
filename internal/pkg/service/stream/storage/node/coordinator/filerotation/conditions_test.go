@@ -25,6 +25,7 @@ func TestShouldImport(t *testing.T) {
 
 	// Defaults
 	cfg := targetConfig.ImportConfig{
+		SinkLimit:   2,
 		MinInterval: duration.From(60 * time.Second),
 		Trigger: targetConfig.ImportTrigger{
 			Count:       10000,
