@@ -7,10 +7,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	sink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	file "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/file"
+	job "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/job"
 	slice "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/slice"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/volume"
 )
@@ -29,6 +31,8 @@ type Repository struct {
 	volume *volume.Repository
 	file   *file.Repository
 	slice  *slice.Repository
+	sink   *sink.Repository
+	job    *job.Repository
 }
 
 func New(cfg level.Config, d dependencies, backoff model.RetryBackoff) (*Repository, error) {
@@ -44,6 +48,8 @@ func New(cfg level.Config, d dependencies, backoff model.RetryBackoff) (*Reposit
 
 	r.slice = slice.NewRepository(d, backoff, r.file)
 
+	r.job = job.NewRepository(d)
+
 	return r, nil
 }
 
@@ -57,4 +63,8 @@ func (r *Repository) File() *file.Repository {
 
 func (r *Repository) Slice() *slice.Repository {
 	return r.slice
+}
+
+func (r *Repository) Job() *job.Repository {
+	return r.job
 }
