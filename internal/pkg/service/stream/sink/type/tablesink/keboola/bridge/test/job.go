@@ -30,7 +30,6 @@ func MockImportAsyncAPICalls(tb testing.TB, transport *httpmock.MockTransport) {
 			})
 		},
 	)
-
 }
 
 func MockProcessingJobStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) {
