@@ -2,10 +2,12 @@ package registry
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -13,6 +15,8 @@ import (
 )
 
 type pathsRO = knownpaths.PathsReadOnly
+
+const KBCIgnoreFilePath = ".keboola/kbc_ignore"
 
 type Registry struct {
 	*pathsRO
@@ -150,11 +154,19 @@ func (s *Registry) Configs() (configs []*ConfigState) {
 	return configs
 }
 
-func (s *Registry) IgnoreConfig(ignoreID string) {
+func (s *Registry) IgnoreConfig(ignoreID string, componentID string) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigState); ok {
-			if v.ID.String() == ignoreID {
+			if v.ID.String() == ignoreID && v.ComponentID.String() == componentID {
+				// ignore configuration
 				v.Ignore = true
+
+				// ignore rows of the configuration
+				if len(s.ConfigRowsFrom(v.ConfigKey)) > 0 {
+					for _, configRowState := range s.ConfigRowsFrom(v.ConfigKey) {
+						configRowState.Ignore = true
+					}
+				}
 			}
 		}
 	}
@@ -192,10 +204,10 @@ func (s *Registry) ConfigRows() (rows []*ConfigRowState) {
 	return rows
 }
 
-func (s *Registry) IgnoreConfigRow(ignoreID string) {
+func (s *Registry) IgnoreConfigRow(configID, rowID string) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigRowState); ok {
-			if v.ID.String() == ignoreID {
+			if v.ConfigID.String() == configID && v.ID.String() == rowID {
 				v.Ignore = true
 			}
 		}
@@ -223,6 +235,19 @@ func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 		}
 	}
 	return rows
+}
+
+func (s *Registry) SetIgnoredConfigsOrRows(ctx context.Context, fs filesystem.Fs, path string) error {
+	content, err := fs.ReadFile(ctx, filesystem.NewFileDef(path))
+	if err != nil {
+		return err
+	}
+
+	if content.Content == "" {
+		return nil
+	}
+
+	return s.applyIgnoredPatterns(content.Content)
 }
 
 func (s *Registry) GetPath(key Key) (AbsPath, bool) {
@@ -302,4 +327,48 @@ func (s *Registry) GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error)
 	}
 
 	return s.CreateFrom(manifest)
+}
+
+// applyIgnorePattern applies a single ignore pattern, marking the appropriate config or row as ignored.
+func (s *Registry) applyIgnorePattern(pattern string) error {
+	parts := strings.Split(pattern, "/")
+
+	switch len(parts) {
+	case 2:
+		// Ignore config by ID and name.
+		configID, componentID := parts[1], parts[0]
+		s.IgnoreConfig(configID, componentID)
+	case 3:
+		// Ignore specific config row.
+		configID, rowID := parts[1], parts[2]
+		s.IgnoreConfigRow(configID, rowID)
+	default:
+		return errors.Errorf("invalid ignore pattern format: %s", pattern)
+	}
+
+	return nil
+}
+
+// applyIgnoredPatterns parses the content for ignore patterns and applies them to configurations or rows.
+func (s *Registry) applyIgnoredPatterns(content string) error {
+	for _, pattern := range parseIgnoredPatterns(content) {
+		if err := s.applyIgnorePattern(pattern); err != nil {
+			continue
+		}
+	}
+	return nil
+}
+
+func parseIgnoredPatterns(content string) []string {
+	var ignorePatterns []string
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		// Skip empty lines and comments
+		if trimmedLine != "" && !strings.HasPrefix(trimmedLine, "#") {
+			ignorePatterns = append(ignorePatterns, trimmedLine)
+		}
+	}
+
+	return ignorePatterns
 }

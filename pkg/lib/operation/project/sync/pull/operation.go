@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/cachefile"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
@@ -48,6 +49,13 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	defer span.End(&err)
 
 	logger := d.Logger()
+
+	if projectState.Fs().Exists(ctx, registry.KBCIgnoreFilePath) {
+		if err := projectState.SetIgnoredConfigsOrRows(ctx, projectState.Fs(), registry.KBCIgnoreFilePath); err != nil {
+			return err
+		}
+		ignoreConfigsAndRows(projectState)
+	}
 
 	// Diff
 	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d, diff.WithIgnoreBranchName(projectState.ProjectManifest().AllowTargetENV()))
@@ -117,4 +125,18 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	return nil
+}
+
+func ignoreConfigsAndRows(projectState *project.State) {
+	if len(projectState.IgnoredConfigRows()) > 0 {
+		for _, v := range projectState.IgnoredConfigRows() {
+			v.SetRemoteState(nil)
+		}
+	}
+
+	if len(projectState.IgnoredConfigs()) > 0 {
+		for _, v := range projectState.IgnoredConfigs() {
+			v.SetRemoteState(nil)
+		}
+	}
 }
