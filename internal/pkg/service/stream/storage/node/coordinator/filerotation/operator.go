@@ -48,6 +48,7 @@ type operator struct {
 	telemetry       telemetry.Telemetry
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
+	jobs  *etcdop.MirrorMap[model.Job, key.JobKey, *jobData]
 	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
 
 	lock                 sync.RWMutex
@@ -78,6 +79,10 @@ type fileData struct {
 type sinkData struct {
 	SinkKey key.SinkKey
 	Enabled bool
+}
+
+type jobData struct {
+	key.JobKey
 }
 
 type dependencies interface {
@@ -208,6 +213,22 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		if err = <-slices.StartConsumer(ctx, wg, o.logger); err != nil {
 			return err
 		}
+	}
+
+	// Mirror jobs
+	o.jobs = etcdop.SetupMirrorMap[model.Job, key.JobKey, *jobData](
+		d.StorageRepository().Job().GetAllAndWatch(ctx, etcd.WithPrevKV()),
+		func(_ string, job model.Job) key.JobKey {
+			return job.JobKey
+		},
+		func(_ string, job model.Job, rawValue *op.KeyValue, oldValue **jobData) *jobData {
+			return &jobData{
+				job.JobKey,
+			}
+		},
+	).BuildMirror()
+	if err = <-o.jobs.StartMirroring(ctx, wg, o.logger); err != nil {
+		return err
 	}
 
 	// Mirror sinks
@@ -344,8 +365,23 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		return
 	}
 
+	// Count running jobs only for given sink accessed by file.SinkKey
+	var runningJobs int
+	o.jobs.ForEach(func(jobKey key.JobKey, _ *jobData) (stop bool) {
+		if jobKey.SinkKey == file.FileKey.SinkKey {
+			runningJobs++
+		}
+
+		return false
+	})
+
 	// Check conditions
-	result := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
+	result := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total, runningJobs)
+	if result.IsSinkThrottled() {
+		o.logger.Warnf(ctx, "skipping file rotation: %s", result.Cause())
+		return
+	}
+
 	if !result.ShouldImport() {
 		o.logger.Debugf(ctx, "skipping file rotation: %s", result.Cause())
 		return

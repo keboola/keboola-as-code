@@ -21,6 +21,7 @@ const (
 	recordCountThreshold
 	sizeThreshold
 	timeThreshold
+	sinkThrottled
 )
 
 func newConditionResult(result int, message string) fileRotationConditionResult {
@@ -30,8 +31,12 @@ func newConditionResult(result int, message string) fileRotationConditionResult 
 	}
 }
 
+func (c fileRotationConditionResult) IsSinkThrottled() bool {
+	return c.result == sinkThrottled
+}
+
 func (c fileRotationConditionResult) ShouldImport() bool {
-	return c.result != noConditionMet
+	return c.result != noConditionMet && c.result != sinkThrottled
 }
 
 func (c fileRotationConditionResult) Cause() string {
@@ -52,16 +57,23 @@ func (c fileRotationConditionResult) String() string {
 		return "size"
 	case timeThreshold:
 		return "time"
+	case sinkThrottled:
+		return "sinkThrottled"
 	default:
 		return "unknown"
 	}
 }
 
-func shouldImport(cfg targetConfig.ImportConfig, now, openedAt, expiration time.Time, stats statistics.Value) fileRotationConditionResult {
+func shouldImport(cfg targetConfig.ImportConfig, now, openedAt, expiration time.Time, stats statistics.Value, sinkLimit int) fileRotationConditionResult {
 	sinceOpened := now.Sub(openedAt).Truncate(time.Second)
 	if threshold := cfg.MinInterval.Duration(); sinceOpened < threshold {
 		// Min interval settings take precedence over other settings.
 		return newConditionResult(noConditionMet, "min interval between imports is not met")
+	}
+
+	if threshold := cfg.SinkLimit; sinkLimit >= threshold {
+		// When sink is throttled take precedence over other settings.
+		return newConditionResult(sinkThrottled, "sink is throttled, waiting for next import check")
 	}
 
 	untilExpiration := expiration.Sub(now).Truncate(time.Second)
