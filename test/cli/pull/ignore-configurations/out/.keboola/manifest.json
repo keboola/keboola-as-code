@@ -1,0 +1,180 @@
+{
+  "version": 2,
+  "project": {
+    "id": %%TEST_KBC_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "allowTargetEnv": false,
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}",
+    "dataAppConfig": "app/{component_id}/{config_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "templates": {
+    "repositories": [
+      {
+        "type": "git",
+        "name": "keboola",
+        "url": "https://github.com/keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_BAR_ID%%,
+      "path": "bar"
+    },
+    {
+      "id": %%TEST_BRANCH_FOO_ID%%,
+      "path": "foo"
+    },
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.shared-code",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ID%%",
+      "path": "_shared/keboola.python-transformation-v2",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ROW_CODE_WITH_VARIABLES_ID%%",
+          "path": "codes/code-with-variables"
+        },
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ROW_MY_CODE_1_ID%%",
+          "path": "codes/my-code-1"
+        },
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ROW_MY_CODE_2_ID%%",
+          "path": "codes/my-code-2"
+        }
+      ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.variables",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODE_VARIABLES_ID%%",
+      "path": "variables",
+      "relations": [
+        {
+          "configId": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ID%%",
+          "rowId": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_ROW_CODE_WITH_VARIABLES_ID%%",
+          "type": "sharedCodeVariablesFor"
+        }
+      ],
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_DISABLED_ID%%",
+      "path": "extractor/ex-generic-v2/disabled",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
+      "path": "extractor/ex-generic-v2/empty",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ID%%",
+      "path": "extractor/keboola.ex-db-mysql/with-rows",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ROW_DISABLED_ID%%",
+          "path": "rows/disabled"
+        },
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID%%",
+          "path": "rows/test-view"
+        }
+      ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_ID%%",
+      "path": "transformation/keboola.python-transformation-v2/python-transformation",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_ID%%",
+      "path": "transformation/keboola.python-transformation-v2/transformation-with-shared-code",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.variables",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ID%%",
+      "path": "variables",
+      "relations": [
+        {
+          "componentId": "keboola.python-transformation-v2",
+          "configId": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_ID%%",
+          "type": "variablesFor"
+        }
+      ],
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_TRANSFORMATION_WITH_SHARED_CODE_VARIABLES_ROW_DEFAULT_VALUES_ID%%",
+          "path": "values/default",
+          "relations": [
+            {
+              "type": "variablesValuesFor"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.snowflake-transformation",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_SNOWFLAKE_TRANSFORMATION_ID%%",
+      "path": "transformation/keboola.snowflake-transformation/snowflake-transformation",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
+      "path": "extractor/ex-generic-v2/empty",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_FOO_CONFIG_WITHOUT_ROWS_ID%%",
+      "path": "extractor/ex-generic-v2/without-rows",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
+      "path": "extractor/ex-generic-v2/empty",
+      "rows": []
+    }
+  ]
+}

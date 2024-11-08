@@ -3,10 +3,10 @@ package registry
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -190,7 +190,6 @@ func TestRegistry_SetIgnoredConfigsOrRows(t *testing.T) {
 	assert.Len(t, registry.IgnoredConfigs(), 1)
 	assert.Equal(t, registry.IgnoredConfigRows()[0].ID.String(), "34")
 	assert.Equal(t, registry.IgnoredConfigs()[0].ID.String(), "345")
-
 }
 
 func TestRegistry_GetPath(t *testing.T) {
