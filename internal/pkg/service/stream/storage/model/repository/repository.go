@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	sink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -31,7 +30,6 @@ type Repository struct {
 	volume *volume.Repository
 	file   *file.Repository
 	slice  *slice.Repository
-	sink   *sink.Repository
 	job    *job.Repository
 }
 
