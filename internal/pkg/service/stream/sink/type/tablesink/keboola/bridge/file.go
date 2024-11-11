@@ -204,6 +204,8 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 			return err
 		}
 
+		// Save job ID to etcd
+		keboolaFile.StorageJobID = &job.ID
 		err = b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile).Do(ctx).Err()
 		if err != nil {
 			return err
