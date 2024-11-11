@@ -287,7 +287,7 @@ storage:
                 # Timeout of the file import operation. Validation rules: required,minDuration=30s,maxDuration=60m
                 fileImportTimeout: 15m0s
             import:
-                # Specifies limit of sink that is representable by number
+                # Specifies limit of sink as number of jobs that it cannot exceed. In case it is reached, the sink is throttled and import cannot be performed unless Trigger conditions were met
                 jobLimit: 2
                 # Min duration from the last import to trigger the next, takes precedence over other settings. Validation rules: required,minDuration=30s,maxDuration=24h
                 minInterval: 1m0s

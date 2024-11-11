@@ -80,6 +80,15 @@ func TestJobRepository_List(t *testing.T) {
 		assert.Len(t, result, 2)
 		assert.Equal(t, []model.Job{job1, job2}, result)
 	}
+
+	// List all - ok
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		result, err := repo.ListAll().Do(ctx).All()
+		assert.NoError(t, err)
+		assert.Len(t, result, 2)
+		assert.Equal(t, []model.Job{job1, job2}, result)
+	}
 }
 
 func TestJobRepository_ListDeleted(t *testing.T) {
