@@ -9,7 +9,7 @@ import (
 func (r *Repository) ExistsOrErr(k key.JobKey) *op.TxnOp[op.NoResult] {
 	return op.Txn(r.client).
 		Merge(r.sinks.ExistsOrErr(k.SinkKey)).
-		Merge(r.schema.Active().ByKey(k).Exists(r.client).
+		Merge(r.schema.ByKey(k).Exists(r.client).
 			WithEmptyResultAsError(func() error {
 				return serviceError.NewResourceNotFoundError("job", k.JobID.String(), "sink")
 			}),
@@ -20,7 +20,7 @@ func (r *Repository) ExistsOrErr(k key.JobKey) *op.TxnOp[op.NoResult] {
 func (r *Repository) MustNotExist(k key.JobKey) *op.TxnOp[op.NoResult] {
 	return op.Txn(r.client).
 		Merge(r.sinks.ExistsOrErr(k.SinkKey)).
-		Merge(r.schema.Active().ByKey(k).Exists(r.client).
+		Merge(r.schema.ByKey(k).Exists(r.client).
 			WithNotEmptyResultAsError(func() error {
 				return serviceError.NewResourceAlreadyExistsError("job", k.JobID.String(), "sink")
 			}),

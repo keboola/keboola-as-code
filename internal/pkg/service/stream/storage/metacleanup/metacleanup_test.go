@@ -340,7 +340,7 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 			t,
 			client,
 			[]string{
-				"storage/job/active/123/456/my-source/my-sink/321",
+				"storage/job/123/456/my-source/my-sink/321",
 				"storage/keboola/job/123/456/my-source/my-sink/321",
 			},
 			ignoredEtcdKeys)

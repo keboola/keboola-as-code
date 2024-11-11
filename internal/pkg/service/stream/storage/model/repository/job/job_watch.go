@@ -10,5 +10,5 @@ import (
 )
 
 func (r *Repository) GetAllAndWatch(ctx context.Context, opts ...etcd.OpOption) *etcdop.RestartableWatchStreamT[model.Job] {
-	return r.schema.Active().GetAllAndWatch(ctx, r.client, opts...)
+	return r.schema.GetAllAndWatch(ctx, r.client, opts...)
 }

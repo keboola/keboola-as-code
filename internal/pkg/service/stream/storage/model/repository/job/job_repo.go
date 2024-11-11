@@ -46,12 +46,12 @@ func (r *Repository) save(updated *model.Job) *op.TxnOp[model.Job] {
 	if updated.Deleted {
 		// Delete entity from the active prefix
 		saveTxn.Then(
-			r.schema.Active().ByKey(updated.JobKey).Delete(r.client),
+			r.schema.ByKey(updated.JobKey).Delete(r.client),
 		)
 	} else {
 		// Save record to the "active" prefix
 		saveTxn.Then(
-			r.schema.Active().ByKey(updated.JobKey).Put(r.client, *updated),
+			r.schema.ByKey(updated.JobKey).Put(r.client, *updated),
 		)
 	}
 

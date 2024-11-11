@@ -38,40 +38,40 @@ func TestJobSchema(t *testing.T) {
 			"storage/job/",
 		},
 		{
-			s.Active().Prefix(),
-			"storage/job/active/",
+			s.Prefix(),
+			"storage/job/",
 		},
 		{
-			s.Active().In(jobKey.ProjectID).Prefix(),
-			"storage/job/active/123/",
+			s.In(jobKey.ProjectID).Prefix(),
+			"storage/job/123/",
 		},
 		{
-			s.Active().In(jobKey.BranchKey).Prefix(),
-			"storage/job/active/123/456/",
+			s.In(jobKey.BranchKey).Prefix(),
+			"storage/job/123/456/",
 		},
 		{
-			s.Active().In(jobKey.SourceKey).Prefix(),
-			"storage/job/active/123/456/my-source/",
+			s.In(jobKey.SourceKey).Prefix(),
+			"storage/job/123/456/my-source/",
 		},
 		{
-			s.Active().InProject(jobKey.ProjectID).Prefix(),
-			"storage/job/active/123/",
+			s.InProject(jobKey.ProjectID).Prefix(),
+			"storage/job/123/",
 		},
 		{
-			s.Active().InBranch(jobKey.BranchKey).Prefix(),
-			"storage/job/active/123/456/",
+			s.InBranch(jobKey.BranchKey).Prefix(),
+			"storage/job/123/456/",
 		},
 		{
-			s.Active().InSource(jobKey.SourceKey).Prefix(),
-			"storage/job/active/123/456/my-source/",
+			s.InSource(jobKey.SourceKey).Prefix(),
+			"storage/job/123/456/my-source/",
 		},
 		{
-			s.Active().InSink(jobKey.SinkKey).Prefix(),
-			"storage/job/active/123/456/my-source/my-sink/",
+			s.InSink(jobKey.SinkKey).Prefix(),
+			"storage/job/123/456/my-source/my-sink/",
 		},
 		{
-			s.Active().ByKey(jobKey).Key(),
-			"storage/job/active/123/456/my-source/my-sink/321",
+			s.ByKey(jobKey).Key(),
+			"storage/job/123/456/my-source/my-sink/321",
 		},
 	}
 
@@ -84,6 +84,6 @@ func TestSinkSchemaInState_In(t *testing.T) {
 	t.Parallel()
 	s := New(serde.NewJSON(serde.NoValidation))
 	assert.Panics(t, func() {
-		s.Active().In("unexpected type")
+		s.In("unexpected type")
 	})
 }

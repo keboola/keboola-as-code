@@ -15,24 +15,17 @@ type (
 	Job struct {
 		etcdop.PrefixT[model.Job]
 	}
-	JobInLevel Job
-	JobInState Job
 )
 
 func New(s *serde.Serde) Job {
 	return Job{PrefixT: etcdop.NewTypedPrefix[model.Job]("storage/job", s)}
 }
 
-// Active prefix contains all not deleted objects.
-func (j Job) Active() JobInState {
-	return JobInState{PrefixT: j.PrefixT.Add("active")}
-}
-
 func (j Job) ForSink(k key.JobKey) etcdop.KeyT[model.Job] {
 	return j.PrefixT.Key(k.String())
 }
 
-func (j JobInState) In(objectKey any) etcdop.PrefixT[model.Job] {
+func (j Job) In(objectKey any) etcdop.PrefixT[model.Job] {
 	switch k := objectKey.(type) {
 	case keboola.ProjectID:
 		return j.InProject(k)
@@ -47,22 +40,22 @@ func (j JobInState) In(objectKey any) etcdop.PrefixT[model.Job] {
 	}
 }
 
-func (j JobInState) InProject(k keboola.ProjectID) etcdop.PrefixT[model.Job] {
+func (j Job) InProject(k keboola.ProjectID) etcdop.PrefixT[model.Job] {
 	return j.PrefixT.Add(k.String())
 }
 
-func (j JobInState) InBranch(k key.BranchKey) etcdop.PrefixT[model.Job] {
+func (j Job) InBranch(k key.BranchKey) etcdop.PrefixT[model.Job] {
 	return j.PrefixT.Add(k.String())
 }
 
-func (j JobInState) InSource(k key.SourceKey) etcdop.PrefixT[model.Job] {
+func (j Job) InSource(k key.SourceKey) etcdop.PrefixT[model.Job] {
 	return j.PrefixT.Add(k.String())
 }
 
-func (j JobInState) InSink(k key.SinkKey) etcdop.PrefixT[model.Job] {
+func (j Job) InSink(k key.SinkKey) etcdop.PrefixT[model.Job] {
 	return j.PrefixT.Add(k.String())
 }
 
-func (j JobInState) ByKey(k key.JobKey) etcdop.KeyT[model.Job] {
+func (j Job) ByKey(k key.JobKey) etcdop.KeyT[model.Job] {
 	return j.PrefixT.Key(k.String())
 }

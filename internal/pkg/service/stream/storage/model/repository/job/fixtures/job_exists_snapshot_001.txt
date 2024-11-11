@@ -1,5 +1,5 @@
 <<<<<
-storage/job/active/123/567/my-source/my-sink/321
+storage/job/123/567/my-source/my-sink/321
 -----
 {
   "projectId": 123,
