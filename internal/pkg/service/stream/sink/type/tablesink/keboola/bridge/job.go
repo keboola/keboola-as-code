@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
@@ -37,14 +39,16 @@ func (b *Bridge) createJob(ctx context.Context, token string, file plugin.File, 
 			JobID:   key.JobID(storageJob.ID.String()),
 		},
 	}
-	b.logger.Debugf(ctx, "creating job: %v", modelJob)
+	// Add context attributes
+	ctx = ctxattr.ContextWith(ctx, attribute.String("job.id", modelJob.String()))
+	b.logger.Debugf(ctx, "creating job")
 
 	keboolaJob := keboolasink.Job{
 		JobKey:        modelJob.JobKey,
 		StorageJobKey: storageJob.StorageJobKey,
 		Token:         token,
 	}
-	b.logger.Infof(ctx, "creating storage job: %v", keboolaJob)
+	b.logger.Infof(ctx, "creating storage job")
 
 	lock := b.locks.NewMutex(fmt.Sprintf("api.source.sink.jobs.%s", file.SinkKey))
 	if err := lock.Lock(ctx); err != nil {
@@ -60,13 +64,13 @@ func (b *Bridge) createJob(ctx context.Context, token string, file plugin.File, 
 	if err := operation.Do(ctx).Err(); err != nil {
 		return err
 	}
-	b.logger.Debugf(ctx, "job created: %v", modelJob)
+	b.logger.Debugf(ctx, "job created")
 
 	resultOp := b.schema.Job().ForJob(keboolaJob.JobKey).Put(b.client, keboolaJob)
 	if err := resultOp.Do(ctx).Err(); err != nil {
 		return err
 	}
 
-	b.logger.Infof(ctx, "storage job created: %v", keboolaJob)
+	b.logger.Infof(ctx, "storage job created")
 	return nil
 }
