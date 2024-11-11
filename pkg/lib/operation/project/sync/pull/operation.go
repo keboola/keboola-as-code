@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/cachefile"
-	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/ignore"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
@@ -50,10 +50,17 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	logger := d.Logger()
 
-	if projectState.Fs().Exists(ctx, registry.KBCIgnoreFilePath) {
-		if err := projectState.SetIgnoredConfigsOrRows(ctx, projectState.Fs(), registry.KBCIgnoreFilePath); err != nil {
+	if projectState.Fs().Exists(ctx, ignore.KBCIgnoreFilePath) {
+		// Load ignore file
+		file, err := ignore.LoadFile(ctx, projectState.Fs(), projectState.Registry, ignore.KBCIgnoreFilePath)
+		if err != nil {
 			return err
 		}
+
+		if err = file.IgnoreConfigsOrRows(); err != nil {
+			return err
+		}
+
 		ignoreConfigsAndRows(projectState)
 	}
 
