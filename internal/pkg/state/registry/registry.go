@@ -2,12 +2,10 @@ package registry
 
 import (
 	"context"
-	"strings"
 	"sync"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -237,18 +235,19 @@ func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 	return rows
 }
 
-func (s *Registry) SetIgnoredConfigsOrRows(ctx context.Context, fs filesystem.Fs, path string) error {
-	content, err := fs.ReadFile(ctx, filesystem.NewFileDef(path))
-	if err != nil {
-		return err
-	}
-
-	if content.Content == "" {
-		return nil
-	}
-
-	return s.applyIgnoredPatterns(content.Content)
-}
+// func (s *Registry) SetIgnoredConfigsOrRows(ctx context.Context, fs filesystem.Fs, path string) error {
+//	//strukturu pattre.field
+//	content, err := fs.ReadFile(ctx, filesystem.NewFileDef(path))
+//	if err != nil {
+//		return err
+//	}
+//
+//	if content.Content == "" {
+//		return nil
+//	}
+//
+//	return s.applyIgnoredPatterns(content.Content)
+//}
 
 func (s *Registry) GetPath(key Key) (AbsPath, bool) {
 	objectState, found := s.Get(key)
@@ -327,48 +326,4 @@ func (s *Registry) GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error)
 	}
 
 	return s.CreateFrom(manifest)
-}
-
-// applyIgnorePattern applies a single ignore pattern, marking the appropriate config or row as ignored.
-func (s *Registry) applyIgnorePattern(pattern string) error {
-	parts := strings.Split(pattern, "/")
-
-	switch len(parts) {
-	case 2:
-		// Ignore config by ID and name.
-		configID, componentID := parts[1], parts[0]
-		s.IgnoreConfig(configID, componentID)
-	case 3:
-		// Ignore specific config row.
-		configID, rowID := parts[1], parts[2]
-		s.IgnoreConfigRow(configID, rowID)
-	default:
-		return errors.Errorf("invalid ignore pattern format: %s", pattern)
-	}
-
-	return nil
-}
-
-// applyIgnoredPatterns parses the content for ignore patterns and applies them to configurations or rows.
-func (s *Registry) applyIgnoredPatterns(content string) error {
-	for _, pattern := range parseIgnoredPatterns(content) {
-		if err := s.applyIgnorePattern(pattern); err != nil {
-			continue
-		}
-	}
-	return nil
-}
-
-func parseIgnoredPatterns(content string) []string {
-	var ignorePatterns []string
-	lines := strings.Split(content, "\n")
-	for _, line := range lines {
-		trimmedLine := strings.TrimSpace(line)
-		// Skip empty lines and comments
-		if trimmedLine != "" && !strings.HasPrefix(trimmedLine, "#") {
-			ignorePatterns = append(ignorePatterns, trimmedLine)
-		}
-	}
-
-	return ignorePatterns
 }
