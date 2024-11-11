@@ -92,6 +92,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['tags.datadoghq.com/version']
+            - name: OTEL_METRICS_EXEMPLAR_FILTER
+              value: always_off
           startupProbe:
             httpGet:
               path: /health-check
