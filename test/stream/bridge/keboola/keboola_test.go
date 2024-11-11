@@ -53,7 +53,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 			},
 		}
 
-		// In the test, we trigger the file import only when sink limit is not reached. We do import to Keboola
+		// In the test, we trigger the file import only when sink limit is not reached.
 		cfg.Sink.Table.Keboola.JobLimit = 1
 
 		// In the test, we trigger the file import via the records count, the other values are intentionally high.

@@ -25,7 +25,7 @@ func TestShouldImport(t *testing.T) {
 
 	// Defaults
 	cfg := targetConfig.ImportConfig{
-		SinkLimit:   2,
+		JobLimit:    2,
 		MinInterval: duration.From(60 * time.Second),
 		Trigger: targetConfig.ImportTrigger{
 			Count:       10000,
@@ -67,7 +67,7 @@ func TestShouldImport(t *testing.T) {
 	assert.Equal(t, "no condition met", result.Cause())
 
 	// Sink limit reached, but no limit configured
-	cfg.SinkLimit = 1
+	cfg.JobLimit = 1
 	result = shouldImport(cfg, now, openedBefore01Min, expirationIn60min, statistics.Value{
 		RecordsCount:   100,
 		CompressedSize: 1 * datasize.KB,

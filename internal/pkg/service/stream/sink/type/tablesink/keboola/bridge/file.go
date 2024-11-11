@@ -61,9 +61,9 @@ func (b *Bridge) setupOnFileOpen() {
 
 			// Update file entity
 			file.Mapping = sink.Table.Mapping
-			file.StagingStorage.Provider = stagingFileProvider      // staging file is provided by the Keboola
-			file.TargetStorage.Provider = targetProvider            // destination is a Keboola table
-			file.TargetStorage.Import.SinkLimit = b.config.JobLimit // specific sink condition for keboola provider
+			file.StagingStorage.Provider = stagingFileProvider     // staging file is provided by the Keboola
+			file.TargetStorage.Provider = targetProvider           // destination is a Keboola table
+			file.TargetStorage.Import.JobLimit = b.config.JobLimit // specific job condition for keboola provider
 			file.StagingStorage.Expiration = utctime.From(keboolaFile.UploadCredentials.CredentialsExpiration())
 		}
 

@@ -288,7 +288,7 @@ storage:
                 fileImportTimeout: 15m0s
             import:
                 # Specifies limit of sink that is representable by number
-                sinkLimit: 2
+                jobLimit: 2
                 # Min duration from the last import to trigger the next, takes precedence over other settings. Validation rules: required,minDuration=30s,maxDuration=24h
                 minInterval: 1m0s
                 trigger:

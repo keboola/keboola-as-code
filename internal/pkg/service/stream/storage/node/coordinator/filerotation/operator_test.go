@@ -274,7 +274,7 @@ func setup(t *testing.T, ctx context.Context, sinkLimit int) *testState {
 	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
-			SinkLimit:   sinkLimit,
+			JobLimit:    sinkLimit,
 			MinInterval: duration.From(minImportInterval),
 			Trigger:     importTrigger,
 		}

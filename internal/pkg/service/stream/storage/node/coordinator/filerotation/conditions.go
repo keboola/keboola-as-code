@@ -64,14 +64,14 @@ func (c fileRotationConditionResult) String() string {
 	}
 }
 
-func shouldImport(cfg targetConfig.ImportConfig, now, openedAt, expiration time.Time, stats statistics.Value, sinkLimit int) fileRotationConditionResult {
+func shouldImport(cfg targetConfig.ImportConfig, now, openedAt, expiration time.Time, stats statistics.Value, jobLimit int) fileRotationConditionResult {
 	sinceOpened := now.Sub(openedAt).Truncate(time.Second)
 	if threshold := cfg.MinInterval.Duration(); sinceOpened < threshold {
 		// Min interval settings take precedence over other settings.
 		return newConditionResult(noConditionMet, "min interval between imports is not met")
 	}
 
-	if threshold := cfg.SinkLimit; sinkLimit >= threshold {
+	if threshold := cfg.JobLimit; jobLimit >= threshold {
 		// When sink is throttled take precedence over other settings.
 		return newConditionResult(sinkThrottled, "sink is throttled, waiting for next import check")
 	}

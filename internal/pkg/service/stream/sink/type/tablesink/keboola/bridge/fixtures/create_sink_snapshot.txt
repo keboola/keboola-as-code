@@ -113,7 +113,7 @@ storage/file/level/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
   "target": {
     "provider": "keboola",
     "import": {
-      "sinkLimit": 2,
+      "jobLimit": 2,
       "minInterval": "1m0s",
       "trigger": {
         "count": 50000,
