@@ -8,6 +8,9 @@ services:
       - etcd
       - redis
       - sandboxesMock
+      - prometheus
+    networks:
+      - localprom
     volumes:
       - ./:/code:z
       - cache:/tmp/cache
@@ -141,5 +144,18 @@ services:
       volumes:
         - ./provisioning/apps-proxy/dev/sandboxesMock.json:/config/sandboxesMock.json:Z
 
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - "./provisioning/dev/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+    networks:
+      - localprom
+    ports:
+      - 9090:9090
+
 volumes:
   cache:
+
+networks:
+  localprom:
+    driver: bridge
