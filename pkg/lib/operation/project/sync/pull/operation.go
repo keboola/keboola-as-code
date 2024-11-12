@@ -135,15 +135,11 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 }
 
 func ignoreConfigsAndRows(projectState *project.State) {
-	if len(projectState.IgnoredConfigRows()) > 0 {
-		for _, v := range projectState.IgnoredConfigRows() {
-			v.SetRemoteState(nil)
-		}
+	for _, v := range projectState.IgnoredConfigRows() {
+		v.SetRemoteState(nil)
 	}
 
-	if len(projectState.IgnoredConfigs()) > 0 {
-		for _, v := range projectState.IgnoredConfigs() {
-			v.SetRemoteState(nil)
-		}
+	for _, v := range projectState.IgnoredConfigs() {
+		v.SetRemoteState(nil)
 	}
 }

@@ -158,10 +158,8 @@ func (s *Registry) IgnoreConfig(ignoreID string, componentID string) {
 				v.Ignore = true
 
 				// ignore rows of the configuration
-				if len(s.ConfigRowsFrom(v.ConfigKey)) > 0 {
-					for _, configRowState := range s.ConfigRowsFrom(v.ConfigKey) {
-						configRowState.Ignore = true
-					}
+				for _, configRowState := range s.ConfigRowsFrom(v.ConfigKey) {
+					configRowState.Ignore = true
 				}
 			}
 		}
