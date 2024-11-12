@@ -3,7 +3,7 @@ tmp_dir = "target/.watcher"
 
 [build]
   bin = "./target/apps-proxy/proxy"
-  args_bin = ["--sandboxes-api-url",  "http://localhost:1080", "--sandboxes-api-token", "my-token", "--api-public-url", "http://localhost:8000", "--cookie-secret-salt", "cookie", "--csrf-token-salt", "bcc3add3bf72e628149fbfbc11932329de7f375db3d8503ef0e32b336adf46c4"]
+  args_bin = ["--sandboxes-api-url",  "http://localhost:1080", "--sandboxes-api-token", "my-token", "--metrics-listen", "0.0.0.0:9002", "--api-public-url", "http://localhost:8000", "--cookie-secret-salt", "cookie", "--csrf-token-salt", "bcc3add3bf72e628149fbfbc11932329de7f375db3d8503ef0e32b336adf46c4"]
   cmd = "make build-apps-proxy"
   delay = 2000
   exclude_dir = []
