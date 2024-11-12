@@ -14,8 +14,6 @@ import (
 
 type pathsRO = knownpaths.PathsReadOnly
 
-const KBCIgnoreFilePath = ".keboola/kbc_ignore"
-
 type Registry struct {
 	*pathsRO
 	paths          *knownpaths.Paths
@@ -234,20 +232,6 @@ func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 	}
 	return rows
 }
-
-// func (s *Registry) SetIgnoredConfigsOrRows(ctx context.Context, fs filesystem.Fs, path string) error {
-//	//strukturu pattre.field
-//	content, err := fs.ReadFile(ctx, filesystem.NewFileDef(path))
-//	if err != nil {
-//		return err
-//	}
-//
-//	if content.Content == "" {
-//		return nil
-//	}
-//
-//	return s.applyIgnoredPatterns(content.Content)
-//}
 
 func (s *Registry) GetPath(key Key) (AbsPath, bool) {
 	objectState, found := s.Get(key)

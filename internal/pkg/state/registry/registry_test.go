@@ -175,21 +175,6 @@ func TestStateTrackRecordInvalid(t *testing.T) {
 	assert.Empty(t, s.UntrackedPaths())
 }
 
-// func TestRegistry_SetIgnoredConfigsOrRows(t *testing.T) {
-//	t.Parallel()
-//	ctx := context.Background()
-//	registry := newTestState(t, knownpaths.NewNop(ctx))
-//	fs := aferofs.NewMemoryFs()
-//	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, "keboola.bar/678/34\nkeboola.foo/345")))
-//
-//	require.NoError(t, registry.SetIgnoredConfigsOrRows(ctx, fs, "foo/bar1"))
-//
-//	assert.Len(t, registry.IgnoredConfigRows(), 1)
-//	assert.Len(t, registry.IgnoredConfigs(), 1)
-//	assert.Equal(t, registry.IgnoredConfigRows()[0].ID.String(), "34")
-//	assert.Equal(t, registry.IgnoredConfigs()[0].ID.String(), "345")
-//}
-
 func TestRegistry_GetPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

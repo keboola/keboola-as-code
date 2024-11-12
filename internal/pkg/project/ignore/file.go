@@ -32,10 +32,5 @@ func LoadFile(ctx context.Context, fs filesystem.Fs, state *state.Registry, path
 		return nil, err
 	}
 
-	f := &File{
-		state:            state,
-		rawStringPattern: content.Content,
-	}
-
-	return f, nil
+	return newFile(content.Content, state), nil
 }

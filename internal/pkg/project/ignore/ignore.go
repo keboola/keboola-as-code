@@ -10,6 +10,16 @@ func (f *File) IgnoreConfigsOrRows() error {
 	return f.applyIgnoredPatterns()
 }
 
+// applyIgnoredPatterns parses the content for ignore patterns and applies them to configurations or rows.
+func (f *File) applyIgnoredPatterns() error {
+	for _, pattern := range f.parseIgnoredPatterns() {
+		if err := f.applyIgnorePattern(pattern); err != nil {
+			continue
+		}
+	}
+	return nil
+}
+
 func (f *File) parseIgnoredPatterns() []string {
 	var ignorePatterns []string
 	lines := strings.Split(f.rawStringPattern, "\n")
@@ -41,15 +51,5 @@ func (f *File) applyIgnorePattern(ignoreConfig string) error {
 		return errors.Errorf("invalid ignore ignoreConfig format: %s", ignoreConfig)
 	}
 
-	return nil
-}
-
-// applyIgnoredPatterns parses the content for ignore patterns and applies them to configurations or rows.
-func (f *File) applyIgnoredPatterns() error {
-	for _, pattern := range f.parseIgnoredPatterns() {
-		if err := f.applyIgnorePattern(pattern); err != nil {
-			continue
-		}
-	}
 	return nil
 }
