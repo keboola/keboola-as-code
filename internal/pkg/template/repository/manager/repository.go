@@ -108,7 +108,7 @@ func (r *CachedRepository) Template(ctx context.Context, reference model.Templat
 
 		// Load template
 		r.d.Logger().Infof(ctx, r.repo.Fs().BasePath())
-		tmpl, err := loadTemplateOp.Run(ctx, r.d, r.repo, reference, "")
+		tmpl, err := loadTemplateOp.Run(ctx, r.d, r.repo, reference, template.Option{})
 		if err != nil {
 			return nil, errors.Errorf(`cannot load template "%s": %w`, reference.FullName(), err)
 		}

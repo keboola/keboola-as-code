@@ -38,7 +38,7 @@ func (e DeprecatedTemplateError) StatusCode() int {
 	return http.StatusBadRequest
 }
 
-func Run(ctx context.Context, d dependencies, repository *repository.Repository, reference model.TemplateRef, projectsFilePath string) (tmpl *template.Template, err error) {
+func Run(ctx context.Context, d dependencies, repository *repository.Repository, reference model.TemplateRef, o template.Option) (tmpl *template.Template, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.load")
 	defer span.End(&err)
 
@@ -75,5 +75,5 @@ func Run(ctx context.Context, d dependencies, repository *repository.Repository,
 	reference = model.NewTemplateRef(reference.Repository(), reference.TemplateID(), versionRecord.Version.String())
 
 	// Load template
-	return template.New(ctx, reference, templateRecord, versionRecord, templateDir, repository.CommonDir(), projectsFilePath, d.Components())
+	return template.New(ctx, reference, templateRecord, versionRecord, templateDir, repository.CommonDir(), d.Components(), o)
 }

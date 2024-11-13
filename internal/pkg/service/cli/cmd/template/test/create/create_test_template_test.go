@@ -56,7 +56,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		Versions:    []repository.VersionRecord{versionRec},
 	}
 
-	tmpl, err := template.New(context.Background(), tmplRef, tmplRec, versionRec, fs, fs, "", testapi.MockedComponentsMap())
+	tmpl, err := template.New(context.Background(), tmplRef, tmplRec, versionRec, fs, fs, testapi.MockedComponentsMap(), template.Option{})
 	require.NoError(t, err)
 
 	// Interaction

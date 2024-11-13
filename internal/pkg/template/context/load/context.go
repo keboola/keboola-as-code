@@ -14,17 +14,19 @@ import (
 // Context represents the process of template loading from the filesystem.
 type Context struct {
 	_context
-	components *model.ComponentsMap
-	jsonnetCtx *jsonnet.Context
+	components      *model.ComponentsMap
+	jsonnetCtx      *jsonnet.Context
+	projectBackends []string
 }
 
 type _context context.Context
 
-func NewContext(ctx context.Context, objectsRoot filesystem.Fs, components *model.ComponentsMap) *Context {
+func NewContext(ctx context.Context, objectsRoot filesystem.Fs, components *model.ComponentsMap, projectBackends []string) *Context {
 	c := &Context{
-		_context:   ctx,
-		components: components,
-		jsonnetCtx: jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
+		_context:        ctx,
+		components:      components,
+		jsonnetCtx:      jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
+		projectBackends: projectBackends,
 	}
 
 	// Register Jsonnet functions
@@ -40,4 +42,5 @@ func (c *Context) JsonnetContext() *jsonnet.Context {
 func (c *Context) registerJsonnetFunctions() {
 	c.jsonnetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
 	c.jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.HasProjectBackend(c.projectBackends))
 }
