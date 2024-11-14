@@ -1,0 +1,5 @@
+Plan for "push" operation:
+  × R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view - IGNORED
+  × R main/extractor/keboola.ex-db-mysql/with-rows/rows/users - SKIPPED
+Skipped remote objects deletion, use "--force" to delete them.
+Push done.
