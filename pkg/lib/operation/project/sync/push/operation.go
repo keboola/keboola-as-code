@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/push"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/project/ignore"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
@@ -61,6 +62,18 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			ValidateJSONSchema: true,
 		}
 		if err := validate.Run(ctx, projectState, validateOptions, d); err != nil {
+			return err
+		}
+	}
+
+	if projectState.Fs().Exists(ctx, ignore.KBCIgnoreFilePath) {
+		// Load ignore file
+		file, err := ignore.LoadFile(ctx, projectState.Fs(), projectState.Registry, ignore.KBCIgnoreFilePath)
+		if err != nil {
+			return err
+		}
+
+		if err = file.IgnoreConfigsOrRows(); err != nil {
 			return err
 		}
 	}

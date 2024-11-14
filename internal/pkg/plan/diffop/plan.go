@@ -55,9 +55,14 @@ func (p *Plan) Log(w io.Writer) {
 		skippedDeleteCount := 0
 		for _, action := range actions {
 			msg := action.String()
-			if !p.allowedRemoteDelete &&
-				(action.action == ActionDeleteRemote) {
-				msg += " - SKIPPED"
+			if !p.allowedRemoteDelete && action.action == ActionDeleteRemote {
+				// determine if it is ignored or skipped
+				if action.IsIgnored() {
+					msg += " - IGNORED"
+				} else {
+					msg += " - SKIPPED"
+				}
+
 				skippedDeleteCount++
 			}
 			fmt.Fprintln(w, "  "+msg)
