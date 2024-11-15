@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/go-client/pkg/keboola"
+	"slices"
 	"sort"
 	"time"
 
@@ -119,7 +121,7 @@ func RepositoryResponse(ctx context.Context, d dependencies.ProjectRequestScope,
 	}
 }
 
-func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, repo *repository.Repository, templates []repository.TemplateRecord) (out *Templates, err error) {
+func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, repo *repository.Repository, templates []repository.TemplateRecord, dataAppsOnly *bool) (out *Templates, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.TemplatesResponse")
 	defer span.End(&err)
 
@@ -128,6 +130,12 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 		// Exclude deprecated templates from the list
 		if tmpl.Deprecated {
 			continue
+		}
+
+		if dataAppsOnly != nil && *dataAppsOnly {
+			if t, found := tmpl.DefaultVersion(); found && !slices.Contains(t.Components, keboola.DataAppsComponentID.String()) {
+				continue
+			}
 		}
 
 		if !hasRequirements(tmpl, d) {
