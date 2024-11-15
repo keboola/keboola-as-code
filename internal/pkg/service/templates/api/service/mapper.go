@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/go-client/pkg/keboola"
 	"slices"
 	"sort"
 	"time"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cast"
 
 	templatesDesign "github.com/keboola/keboola-as-code/api/templates"
