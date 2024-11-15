@@ -1,0 +1,9 @@
+{
+  "path": "/v1/repositories/keboola/templates?dataAppsOnly=true",
+  "method": "GET",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {}
+}
