@@ -30,7 +30,7 @@ import (
 
 const (
 	notifyRequestTimeout = 5 * time.Second
-	wakeupRequestTimeout = 15 * time.Second
+	wakeupRequestTimeout = 60 * time.Second
 	attrWakeupReason     = "proxy.wakeup.reason"
 	attrWebsocket        = "proxy.websocket"
 )
