@@ -13,7 +13,7 @@ scrape_configs:
    static_configs:
     - targets:
        - 'dev:9001'
- - job_name: AppsProxy
+ - job_name: appsProxy
    static_configs:
     - targets:
        - 'dev:9002'

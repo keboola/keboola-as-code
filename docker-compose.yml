@@ -4,6 +4,12 @@ services:
     build:
       context: .
       dockerfile: ./provisioning/dev/docker/Dockerfile
+    # Uncomment when you would like to inspect metrics of your service using prometheus container.
+    # Change the <your-service> placeholder with desired service to be inspected.
+    # See ./docs/development.md for more information how to startup the compose etc.
+    #command: >
+    #       sh -c "git config --global --add safe.directory /code
+    #       make run-<your-service>"
     links:
       - etcd
       - redis
