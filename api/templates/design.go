@@ -181,10 +181,11 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "List templates in the repository")
 		Description("List all templates  defined in the repository.")
 		Result(Templates)
-		Payload(RepositoryRequest)
+		Payload(TemplatesRequest)
 		HTTP(func() {
 			GET("/repositories/{repository}/templates")
 			Meta("openapi:tag:template")
+			Param("filterBy")
 			Response(StatusOK)
 			RepositoryNotFoundError()
 		})
@@ -565,6 +566,11 @@ var TemplateRequest = Type("TemplateRequest", func() {
 	Extend(RepositoryRequest)
 	Attribute("template", TemplateID)
 	Required("template")
+})
+
+var TemplatesRequest = Type("TemplatesRequest", func() {
+	Extend(RepositoryRequest)
+	Attribute("filterBy", String)
 })
 
 var TemplateVersionRequest = Type("TemplateVersionRequest", func() {
