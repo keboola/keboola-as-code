@@ -31,12 +31,14 @@ type ObjectState interface {
 	RemoteState() Object
 	LocalOrRemoteState() Object
 	RemoteOrLocalState() Object
+	IsIgnored() bool
 }
 
 type BranchState struct {
 	*BranchManifest
 	Remote *Branch
 	Local  *Branch
+	Ignore bool
 }
 
 type ConfigState struct {
@@ -192,6 +194,18 @@ func (c *ConfigState) HasRemoteState() bool {
 
 func (r *ConfigRowState) HasRemoteState() bool {
 	return r.Remote != nil
+}
+
+func (b *BranchState) IsIgnored() bool {
+	return b.Ignore
+}
+
+func (c *ConfigState) IsIgnored() bool {
+	return c.Ignore
+}
+
+func (r *ConfigRowState) IsIgnored() bool {
+	return r.Ignore
 }
 
 func (b *BranchState) SetRemoteState(object Object) {

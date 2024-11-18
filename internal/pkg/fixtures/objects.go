@@ -35,6 +35,7 @@ type MockedObjectState struct {
 	*MockedManifest
 	Local  *MockedObject
 	Remote *MockedObject
+	Ignore bool
 }
 
 type MockedManifestSideRelation struct {
@@ -194,6 +195,10 @@ func (o *MockedObjectState) ObjectName() string {
 
 func (o *MockedObjectState) HasManifest() bool {
 	return o.MockedManifest != nil
+}
+
+func (o *MockedObjectState) IsIgnored() bool {
+	return o.Ignore
 }
 
 func (o *MockedObjectState) SetManifest(manifest model.ObjectManifest) {
