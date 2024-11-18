@@ -13,13 +13,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestJobRepository_Exists(t *testing.T) {
+func TestJobRepository_Get(t *testing.T) {
 	t.Parallel()
 
 	by := test.ByUser()
@@ -28,7 +28,7 @@ func TestJobRepository_Exists(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
-	repo := d.StorageRepository().Job()
+	repo := d.KeboolaBridgeRepository().Job()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)|(definition/source)|(definition/sink)")
 
 	// Fixtures
@@ -38,18 +38,18 @@ func TestJobRepository_Exists(t *testing.T) {
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 	jobKey := key.JobKey{SinkKey: sinkKey, JobID: "321"}
 
-	// Exists and MustNotExists - the job does not exists, MustNotExists returns error
+	// Get - job does not exist
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		if err := repo.ExistsOrErr(jobKey).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `branch "567" not found in the project`, err.Error())
+		result, err := repo.Get(jobKey).Do(ctx).ResultOrErr()
+		if assert.Error(t, err) {
+			assert.Equal(t, `job "123/567/my-source/my-sink/321" not found in the sink`, err.Error())
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
-
-		require.Error(t, repo.MustNotExist(jobKey).Do(ctx).Err())
+		assert.Equal(t, model.Job{}, result)
 	}
 
-	// Create - ok
+	// Create prerequisites and job
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
@@ -61,41 +61,19 @@ func TestJobRepository_Exists(t *testing.T) {
 		sink := dummy.NewSink(sinkKey)
 		require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, now, by, "Create sink").Do(ctx).Err())
 
-		job := model.Job{JobKey: jobKey}
+		job := model.Job{JobKey: jobKey, Token: "secret"}
 		result, err := repo.Create(&job).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job, result)
-		assert.Equal(t, now, sink.VersionModifiedAt().Time())
 
-		etcdhelper.AssertKVsFromFile(t, client, "fixtures/job_exists_snapshot_001.txt", ignoredEtcdKeys)
+		etcdhelper.AssertKVsFromFile(t, client, "fixtures/job_get_snapshot_001.txt", ignoredEtcdKeys)
 	}
 
-	// ExistsOrErr - ok
+	// Get - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		require.NoError(t, repo.ExistsOrErr(jobKey).Do(ctx).Err())
-	}
-
-	// Create - already exists
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		job := model.Job{JobKey: jobKey}
-		if err := repo.Create(&job).Do(ctx).Err(); assert.Error(t, err) {
-			assert.Equal(t, `job "321" already exists in the sink`, err.Error())
-			serviceErrors.AssertErrorStatusCode(t, http.StatusConflict, err)
-		}
-	}
-
-	// Purge - ok
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		job := model.Job{JobKey: jobKey}
-		assert.NoError(t, repo.Purge(&job).Do(ctx).Err())
-	}
-
-	// MustNotExists - not ok
-	// -----------------------------------------------------------------------------------------------------------------
-	{
-		require.NoError(t, repo.MustNotExist(jobKey).Do(ctx).Err())
+		result, err := repo.Get(jobKey).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.Equal(t, model.Job{JobKey: jobKey, Token: "secret"}, result)
 	}
 }

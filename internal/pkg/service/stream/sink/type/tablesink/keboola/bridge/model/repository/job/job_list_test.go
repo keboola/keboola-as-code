@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -27,7 +27,7 @@ func TestJobRepository_List(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
-	repo := d.StorageRepository().Job()
+	repo := d.KeboolaBridgeRepository().Job()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)|(definition/source)|(definition/sink)")
 
 	// Fixtures
@@ -59,12 +59,12 @@ func TestJobRepository_List(t *testing.T) {
 		sink := dummy.NewSink(sinkKey)
 		require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, now, by, "Create sink").Do(ctx).Err())
 
-		job1 = model.Job{JobKey: jobKey1}
+		job1 = model.Job{JobKey: jobKey1, Token: "secret1"}
 		result, err := repo.Create(&job1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job1, result)
 
-		job2 = model.Job{JobKey: jobKey2}
+		job2 = model.Job{JobKey: jobKey2, Token: "secret2"}
 		result, err = repo.Create(&job2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job2, result)
@@ -100,7 +100,7 @@ func TestJobRepository_ListDeleted(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
-	repo := d.StorageRepository().Job()
+	repo := d.KeboolaBridgeRepository().Job()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)|(definition/source)|(definition/sink)")
 
 	// Fixtures
@@ -133,12 +133,12 @@ func TestJobRepository_ListDeleted(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var job1, job2 model.Job
 	{
-		job1 = model.Job{JobKey: jobKey1}
+		job1 = model.Job{JobKey: jobKey1, Token: "secret1"}
 		result, err := repo.Create(&job1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job1, result)
 
-		job2 = model.Job{JobKey: jobKey2}
+		job2 = model.Job{JobKey: jobKey2, Token: "secret2"}
 		result, err = repo.Create(&job2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job2, result)

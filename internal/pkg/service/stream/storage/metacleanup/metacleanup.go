@@ -5,6 +5,7 @@ package metacleanup
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -21,8 +22,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	keboolaSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
+	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
+	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -40,30 +42,33 @@ type dependencies interface {
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
 	StorageRepository() *storageRepo.Repository
+	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 }
 
 type Node struct {
-	config            Config
-	clock             clock.Clock
-	logger            log.Logger
-	telemetry         telemetry.Telemetry
-	bridge            *keboolaSinkBridge.Bridge
-	dist              *distribution.GroupNode
-	publicAPI         *keboola.PublicAPI
-	locks             *distlock.Provider
-	storageRepository *storageRepo.Repository
+	config                  Config
+	clock                   clock.Clock
+	logger                  log.Logger
+	telemetry               telemetry.Telemetry
+	bridge                  *keboolaSinkBridge.Bridge
+	dist                    *distribution.GroupNode
+	publicAPI               *keboola.PublicAPI
+	locks                   *distlock.Provider
+	storageRepository       *storageRepo.Repository
+	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 }
 
 func Start(d dependencies, cfg Config) error {
 	n := &Node{
-		config:            cfg,
-		clock:             d.Clock(),
-		logger:            d.Logger().WithComponent("storage.metadata.cleanup"),
-		telemetry:         d.Telemetry(),
-		locks:             d.DistributedLockProvider(),
-		bridge:            d.KeboolaSinkBridge(),
-		publicAPI:         d.KeboolaPublicAPI(),
-		storageRepository: d.StorageRepository(),
+		config:                  cfg,
+		clock:                   d.Clock(),
+		logger:                  d.Logger().WithComponent("storage.metadata.cleanup"),
+		telemetry:               d.Telemetry(),
+		locks:                   d.DistributedLockProvider(),
+		bridge:                  d.KeboolaSinkBridge(),
+		publicAPI:               d.KeboolaPublicAPI(),
+		storageRepository:       d.StorageRepository(),
+		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 	}
 
 	if dist, err := d.DistributionNode().Group("storage.metadata.cleanup"); err == nil {
@@ -165,10 +170,10 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 
 	n.logger.Info(ctx, `deleting metadata of success jobs`)
 	// Iterate all storage jobs
-	err = n.storageRepository.
+	err = n.keboolaBridgeRepository.
 		Job().
 		ListAll().
-		ForEach(func(job model.Job, _ *iterator.Header) error {
+		ForEach(func(job keboolaBridgeModel.Job, _ *iterator.Header) error {
 			grp.Go(func() error {
 				err, deleted := n.cleanJob(ctx, job)
 				if deleted {
@@ -246,7 +251,7 @@ func (n *Node) isFileExpired(file model.File, age time.Duration) bool {
 	return age >= n.config.ActiveFileExpiration
 }
 
-func (n *Node) cleanJob(ctx context.Context, job model.Job) (err error, deleted bool) {
+func (n *Node) cleanJob(ctx context.Context, job keboolaBridgeModel.Job) (err error, deleted bool) {
 	// There can be several cleanup nodes, each node processes an own part.
 	if !n.dist.MustCheckIsOwner(job.ProjectID.String()) {
 		return nil, false
@@ -260,9 +265,17 @@ func (n *Node) cleanJob(ctx context.Context, job model.Job) (err error, deleted 
 	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
 	defer span.End(&err)
 
-	var keboolaJob keboolaSink.Job
-	// Retrieve job on bridge level, the mutex is not needed, we will check state of job through API
-	if keboolaJob, err = n.bridge.Job(job.JobKey).Do(ctx).ResultOrErr(); err != nil {
+	var keboolaJob keboolaBridgeModel.Job
+	// Retrieve job on bridge level
+	if keboolaJob, err = n.keboolaBridgeRepository.Job().Get(job.JobKey).Do(ctx).ResultOrErr(); err != nil {
+		err = errors.PrefixErrorf(err, `cannot get keboola storage job "%s"`, job.JobKey)
+		n.logger.Error(ctx, err.Error())
+		return err, false
+	}
+
+	// Parse storage job ID from string
+	id, err := strconv.ParseInt(string(keboolaJob.JobKey.JobID), 10, 64)
+	if err != nil {
 		err = errors.PrefixErrorf(err, `cannot get keboola storage job "%s"`, job.JobKey)
 		n.logger.Error(ctx, err.Error())
 		return err, false
@@ -271,14 +284,14 @@ func (n *Node) cleanJob(ctx context.Context, job model.Job) (err error, deleted 
 	// Get job details from storage API
 	api := n.publicAPI.NewAuthorizedAPI(keboolaJob.Token, 1*time.Minute)
 	var jobStatus *keboola.StorageJob
-	if jobStatus, err = api.GetStorageJobRequest(keboolaJob.StorageJobKey).Send(ctx); err != nil {
+	if jobStatus, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: keboola.StorageJobID(id)}).Send(ctx); err != nil {
 		n.logger.Warnf(ctx, "cannot get information about storage job, probably already deleted: %s", err.Error())
 		return nil, false
 	}
 
 	attrs = append(attrs, attribute.String("job.state", jobStatus.Status))
 	ctx = ctxattr.ContextWith(ctx, attrs...)
-	// Check status of storage Job
+	// Check status of storage job
 	if jobStatus.Status == keboola.StorageJobStatusProcessing || jobStatus.Status == keboola.StorageJobStatusWaiting {
 		n.logger.Debugf(ctx, "cannot remove storage job, job status: %s", jobStatus.Status)
 		return nil, false
@@ -295,16 +308,9 @@ func (n *Node) cleanJob(ctx context.Context, job model.Job) (err error, deleted 
 		}
 	}()
 
-	// Delete job on bridge level
-	if _, err = n.bridge.DeleteJob(job.JobKey).RequireLock(mutex).Do(ctx).ResultOrErr(); err != nil {
+	// Purge job in bridge repository
+	if _, err = n.keboolaBridgeRepository.Job().Purge(&job).RequireLock(mutex).Do(ctx).ResultOrErr(); err != nil {
 		err = errors.PrefixErrorf(err, `cannot delete finished storage job "%s"`, job.JobKey)
-		n.logger.Error(ctx, err.Error())
-		return err, false
-	}
-
-	// Purge the job
-	if err = n.storageRepository.Job().Purge(&job).RequireLock(mutex).Do(ctx).Err(); err != nil {
-		err = errors.PrefixErrorf(err, `cannot delete finished job "%s"`, job.JobKey)
 		n.logger.Error(ctx, err.Error())
 		return err, false
 	}

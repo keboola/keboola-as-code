@@ -124,9 +124,7 @@ func TestBridge_CreateJob(t *testing.T) {
 		logger.AssertJSONMessages(c, `
 {"level":"info","message":"importing file","component":"storage.node.operator.file.import"}
 {"level":"debug","message":"creating job","job.id":"123/456/my-source/my-sink/321","component":"keboola.bridge"}
-{"level":"info","message":"creating storage job","job.id":"123/456/my-source/my-sink/321","component":"keboola.bridge"}
 {"level":"debug","message":"job created","job.id":"123/456/my-source/my-sink/321","component":"keboola.bridge"}
-{"level":"info","message":"storage job created","job.id":"123/456/my-source/my-sink/321","component":"keboola.bridge"}
 {"level":"info","message":"imported file","component":"storage.node.operator.file.import"}
 `)
 	}, 15*time.Second, 50*time.Millisecond)

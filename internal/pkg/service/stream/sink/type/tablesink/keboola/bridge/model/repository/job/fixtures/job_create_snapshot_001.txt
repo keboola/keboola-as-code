@@ -6,6 +6,7 @@ storage/job/123/567/my-source/my-sink/321
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink",
-  "jobId": "321"
+  "jobId": "321",
+  "token": "secret"
 }
 >>>>>

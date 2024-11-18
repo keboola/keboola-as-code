@@ -24,7 +24,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
+	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
@@ -46,9 +48,9 @@ type operator struct {
 	distribution    *distribution.GroupNode
 	locks           *distlock.Provider
 	telemetry       telemetry.Telemetry
+	plugins         *plugin.Plugins
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
-	jobs  *etcdop.MirrorMap[model.Job, key.JobKey, *jobData]
 	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
 
 	lock                 sync.RWMutex
@@ -63,6 +65,7 @@ type fileData struct {
 	FileKey      model.FileKey
 	State        model.FileState
 	Expiration   utctime.UTCTime
+	Provider     targetModel.Provider
 	ImportConfig targetConfig.ImportConfig
 	Retry        model.Retryable
 	ModRevision  int64
@@ -81,10 +84,6 @@ type sinkData struct {
 	Enabled bool
 }
 
-type jobData struct {
-	key.JobKey
-}
-
 type dependencies interface {
 	Logger() log.Logger
 	Clock() clock.Clock
@@ -94,6 +93,7 @@ type dependencies interface {
 	StatisticsL1Cache() *statsCache.L1
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
+	Plugins() *plugin.Plugins
 	Telemetry() telemetry.Telemetry
 }
 
@@ -107,6 +107,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		statisticsCache: d.StatisticsL1Cache(),
 		locks:           d.DistributedLockProvider(),
 		telemetry:       d.Telemetry(),
+		plugins:         d.Plugins(),
 		metrics:         node.NewMetrics(d.Telemetry().Meter()),
 	}
 
@@ -143,6 +144,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 					FileKey:      file.FileKey,
 					State:        file.State,
 					Expiration:   file.StagingStorage.Expiration,
+					Provider:     file.TargetStorage.Provider,
 					ImportConfig: file.TargetStorage.Import,
 					Retry:        file.Retryable,
 					ModRevision:  rawValue.ModRevision,
@@ -213,22 +215,6 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		if err = <-slices.StartConsumer(ctx, wg, o.logger); err != nil {
 			return err
 		}
-	}
-
-	// Mirror jobs
-	o.jobs = etcdop.SetupMirrorMap[model.Job, key.JobKey, *jobData](
-		d.StorageRepository().Job().GetAllAndWatch(ctx, etcd.WithPrevKV()),
-		func(_ string, job model.Job) key.JobKey {
-			return job.JobKey
-		},
-		func(_ string, job model.Job, rawValue *op.KeyValue, oldValue **jobData) *jobData {
-			return &jobData{
-				job.JobKey,
-			}
-		},
-	).BuildMirror()
-	if err = <-o.jobs.StartMirroring(ctx, wg, o.logger); err != nil {
-		return err
 	}
 
 	// Mirror sinks
@@ -365,23 +351,14 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		return
 	}
 
-	// Count running jobs only for given sink accessed by file.SinkKey
-	var runningJobs int
-	o.jobs.ForEach(func(jobKey key.JobKey, _ *jobData) (stop bool) {
-		if jobKey.SinkKey == file.FileKey.SinkKey {
-			runningJobs++
-		}
-
-		return false
-	})
-
-	// Check conditions
-	result := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total, runningJobs)
-	if result.IsSinkThrottled() {
-		o.logger.Warnf(ctx, "skipping file rotation: %s", result.Cause())
+	// Skip filerotation if target provider is throttled
+	if o.plugins.IsThrottled(ctx, file.Provider, file.FileKey.SinkKey) {
+		o.logger.Warnf(ctx, "skipping file rotation: sink is throttled")
 		return
 	}
 
+	// Check conditions
+	result := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
 	if !result.ShouldImport() {
 		o.logger.Debugf(ctx, "skipping file rotation: %s", result.Cause())
 		return

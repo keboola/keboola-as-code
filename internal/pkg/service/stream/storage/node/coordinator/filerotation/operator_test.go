@@ -39,7 +39,7 @@ func TestFileRotation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	ts := setup(t, ctx, 1)
+	ts := setup(t, ctx)
 	defer ts.teardown(t)
 	ts.prepareFixtures(t, ctx)
 
@@ -182,65 +182,6 @@ func TestFileRotation(t *testing.T) {
 	ts.logger.AssertNoErrorMessage(t)
 }
 
-func TestSinkThrottled(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// Do not throttle yet
-	ts := setup(t, ctx, 0)
-	defer ts.teardown(t)
-	ts.prepareFixtures(t, ctx)
-
-	// Check state
-	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	require.Len(t, files, 1)
-	require.Equal(t, model.FileWriting, files[0].State)
-	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
-	require.NoError(t, err)
-	require.Len(t, slices, 2)
-	// files[0]
-	require.Equal(t, model.SliceWriting, slices[0].State)
-	require.Equal(t, model.SliceWriting, slices[1].State)
-
-	// Simulate some records count over the threshold
-	require.NoError(t, ts.dependencies.StatisticsRepository().Put(ctx, "source-node-1", []statistics.PerSlice{
-		{
-			SliceKey:         slices[0].SliceKey,
-			FirstRecordAt:    slices[0].OpenedAt(),
-			LastRecordAt:     slices[0].OpenedAt().Add(time.Second),
-			RecordsCount:     ts.importTrigger.Count/2 + 1,
-			UncompressedSize: 100 * datasize.B,
-			CompressedSize:   10 * datasize.B,
-		},
-	}))
-	require.NoError(t, ts.dependencies.StatisticsRepository().Put(ctx, "source-node-2", []statistics.PerSlice{
-		{
-			SliceKey:         slices[1].SliceKey,
-			FirstRecordAt:    slices[1].OpenedAt(),
-			LastRecordAt:     slices[1].OpenedAt().Add(time.Second),
-			RecordsCount:     ts.importTrigger.Count/2 + 1,
-			UncompressedSize: 100 * datasize.B,
-			CompressedSize:   10 * datasize.B,
-		},
-	}))
-	ts.waitForStatsSync(t)
-
-	// Trigger check - records count trigger
-	ts.triggerCheck(t, false, `
-{"level":"warn","message":"skipping file rotation: sink is throttled, waiting for next import check","file.id":"%s","component":"storage.node.operator.file.rotation"}
-`)
-
-	// Shutdown
-	ts.dependencies.Process().Shutdown(ctx, errors.New("bye bye"))
-	ts.dependencies.Process().WaitForShutdown()
-
-	// No error is logged
-	ts.logger.AssertNoErrorMessage(t)
-}
-
 type testState struct {
 	interval      time.Duration
 	importTrigger targetConfig.ImportTrigger
@@ -253,7 +194,7 @@ type testState struct {
 	sink          definition.Sink
 }
 
-func setup(t *testing.T, ctx context.Context, sinkLimit int) *testState {
+func setup(t *testing.T, ctx context.Context) *testState {
 	t.Helper()
 
 	importTrigger := targetConfig.ImportTrigger{
@@ -274,7 +215,6 @@ func setup(t *testing.T, ctx context.Context, sinkLimit int) *testState {
 	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
-			JobLimit:    sinkLimit,
 			MinInterval: duration.From(minImportInterval),
 			Trigger:     importTrigger,
 		}

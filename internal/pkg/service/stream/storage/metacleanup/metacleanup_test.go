@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	bridgeSchema "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/schema"
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -211,13 +210,8 @@ func TestMetadataCleanup(t *testing.T) {
 
 	// Create job in global level and bridge level
 	{
-		job := test.NewJob(jobKey)
-		require.NoError(t, storageRepo.Job().Create(&job).Do(ctx).Err())
-
-		bridgeJob := bridgeEntity.NewJob(jobKey, "secret")
-		s := bridgeSchema.New(d.EtcdSerde())
-		resultOp := s.Job().ForJob(jobKey).Put(client, bridgeJob)
-		require.NoError(t, resultOp.Do(ctx).Err())
+		job := bridgeEntity.NewJob(jobKey, "secret")
+		require.NoError(t, d.KeboolaBridgeRepository().Job().Create(&job).Do(ctx).Err())
 	}
 
 	// Delete success job as it has finished
@@ -309,13 +303,8 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 
 	// Create job in global level and bridge level
 	{
-		job := test.NewJob(jobKey)
-		require.NoError(t, storageRepo.Job().Create(&job).Do(ctx).Err())
-
-		bridgeJob := bridgeEntity.NewJob(jobKey, "secret")
-		s := bridgeSchema.New(d.EtcdSerde())
-		resultOp := s.Job().ForJob(jobKey).Put(client, bridgeJob)
-		require.NoError(t, resultOp.Do(ctx).Err())
+		job := bridgeEntity.NewJob(jobKey, "secret")
+		require.NoError(t, d.KeboolaBridgeRepository().Job().Create(&job).Do(ctx).Err())
 	}
 
 	// Delete processing job as it has finished
@@ -341,7 +330,6 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 			client,
 			[]string{
 				"storage/job/123/456/my-source/my-sink/321",
-				"storage/keboola/job/123/456/my-source/my-sink/321",
 			},
 			ignoredEtcdKeys)
 	}

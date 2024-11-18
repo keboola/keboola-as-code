@@ -30,7 +30,6 @@ func NewConfig() Config {
 			FileImportTimeout:         duration.From(15 * time.Minute),
 		},
 		Import: ImportConfig{
-			JobLimit:    2,
 			MinInterval: duration.From(60 * time.Second),
 			Trigger: ImportTrigger{
 				Count:       50000,
@@ -53,7 +52,6 @@ type OperatorConfig struct {
 
 // ImportConfig configures the file import.
 type ImportConfig struct {
-	JobLimit    int               `json:"jobLimit" configKey:"jobLimit" configUsage:"Specifies limit of sink as number of jobs that it cannot exceed. In case it is reached, the sink is throttled and import cannot be performed unless Trigger conditions were met"`
 	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Min duration from the last import to trigger the next, takes precedence over other settings." validate:"required,minDuration=30s,maxDuration=24h"`
 	Trigger     ImportTrigger     `json:"trigger" configKey:"trigger"`
 }

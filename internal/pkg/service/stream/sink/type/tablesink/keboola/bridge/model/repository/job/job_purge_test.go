@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -30,7 +30,7 @@ func TestJobRepository_Purge(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
-	repo := d.StorageRepository().Job()
+	repo := d.KeboolaBridgeRepository().Job()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/branch)|(definition/source)|(definition/sink)")
 
 	// Fixtures
@@ -62,7 +62,7 @@ func TestJobRepository_Purge(t *testing.T) {
 		sink := dummy.NewSink(sinkKey)
 		require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, now, by, "Create sink").Do(ctx).Err())
 
-		job := model.Job{JobKey: jobKey}
+		job := model.Job{JobKey: jobKey, Token: "secret"}
 		require.NoError(t, repo.Create(&job).Do(ctx).Err())
 	}
 
@@ -98,7 +98,7 @@ func TestJobRepository_PurgeJobsOnSinkDelete(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
-	repo := d.StorageRepository().Job()
+	repo := d.KeboolaBridgeRepository().Job()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/source/version)|(definition/sink/version)")
 
 	// Fixtures
@@ -127,13 +127,13 @@ func TestJobRepository_PurgeJobsOnSinkDelete(t *testing.T) {
 	// Create three Jobs
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		job := model.Job{JobKey: jobKey1}
+		job := model.Job{JobKey: jobKey1, Token: "secret1"}
 		require.NoError(t, repo.Create(&job).Do(ctx).Err())
 
-		job = model.Job{JobKey: jobKey2}
+		job = model.Job{JobKey: jobKey2, Token: "secret2"}
 		require.NoError(t, repo.Create(&job).Do(ctx).Err())
 
-		job = model.Job{JobKey: jobKey3}
+		job = model.Job{JobKey: jobKey3, Token: "secret3"}
 		require.NoError(t, repo.Create(&job).Do(ctx).Err())
 	}
 
@@ -164,7 +164,7 @@ func TestJobRepository_PurgeJobsOnSourceDelete_DeleteSource(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
-	repo := d.StorageRepository().Job()
+	repo := d.KeboolaBridgeRepository().Job()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/source/version)|(definition/sink/version)")
 
 	// Fixtures
@@ -223,13 +223,13 @@ func TestJobRepository_PurgeJobsOnSourceDelete_DeleteSource(t *testing.T) {
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 
-		job1 = model.Job{JobKey: jobKey1}
+		job1 = model.Job{JobKey: jobKey1, Token: "secret1"}
 		require.NoError(t, repo.Create(&job1).Do(ctx).Err())
 
-		job2 = model.Job{JobKey: jobKey2}
+		job2 = model.Job{JobKey: jobKey2, Token: "secret2"}
 		require.NoError(t, repo.Create(&job2).Do(ctx).Err())
 
-		job3 = model.Job{JobKey: jobKey3}
+		job3 = model.Job{JobKey: jobKey3, Token: "secret3"}
 		require.NoError(t, repo.Create(&job3).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/job_purge_snapshot_003.txt", ignoredEtcdKeys)
 	}
@@ -266,7 +266,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 
 	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
 	client := mocked.TestEtcdClient()
-	repo := d.StorageRepository().Job()
+	repo := d.KeboolaBridgeRepository().Job()
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/source/version)|(definition/sink/version)")
 
 	// Fixtures
@@ -325,13 +325,13 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 
-		job1 = model.Job{JobKey: jobKey1}
+		job1 = model.Job{JobKey: jobKey1, Token: "secret1"}
 		require.NoError(t, repo.Create(&job1).Do(ctx).Err())
 
-		job2 = model.Job{JobKey: jobKey2}
+		job2 = model.Job{JobKey: jobKey2, Token: "secret2"}
 		require.NoError(t, repo.Create(&job2).Do(ctx).Err())
 
-		job3 = model.Job{JobKey: jobKey3}
+		job3 = model.Job{JobKey: jobKey3, Token: "secret3"}
 		require.NoError(t, repo.Create(&job3).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/job_purge_snapshot_005.txt", ignoredEtcdKeys)
 	}

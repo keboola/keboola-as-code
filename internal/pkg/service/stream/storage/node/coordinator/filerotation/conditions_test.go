@@ -25,7 +25,6 @@ func TestShouldImport(t *testing.T) {
 
 	// Defaults
 	cfg := targetConfig.ImportConfig{
-		JobLimit:    2,
 		MinInterval: duration.From(60 * time.Second),
 		Trigger: targetConfig.ImportTrigger{
 			Count:       10000,
@@ -37,13 +36,13 @@ func TestShouldImport(t *testing.T) {
 	}
 
 	// Min interval
-	result := shouldImport(cfg, now, openedBefore30Sec, expirationIn60min, statistics.Value{}, 0)
+	result := shouldImport(cfg, now, openedBefore30Sec, expirationIn60min, statistics.Value{})
 	assert.Equal(t, noConditionMet, result.result)
 	assert.False(t, result.ShouldImport())
 	assert.Equal(t, "min interval between imports is not met", result.Cause())
 
 	// No record
-	result = shouldImport(cfg, now, openedBefore01Min, expirationIn60min, statistics.Value{}, 0)
+	result = shouldImport(cfg, now, openedBefore01Min, expirationIn60min, statistics.Value{})
 	assert.Equal(t, noConditionMet, result.result)
 	assert.False(t, result.ShouldImport())
 	assert.Equal(t, "no record", result.Cause())
@@ -52,35 +51,16 @@ func TestShouldImport(t *testing.T) {
 	result = shouldImport(cfg, now, openedBefore01Min, expirationIn60min, statistics.Value{
 		RecordsCount:   50,
 		CompressedSize: 1 * datasize.KB,
-	}, 0)
+	})
 	assert.Equal(t, noConditionMet, result.result)
 	assert.False(t, result.ShouldImport())
 	assert.Equal(t, "no condition met", result.Cause())
-
-	// Sink limit reached, but no limit configured
-	result = shouldImport(cfg, now, openedBefore01Min, expirationIn60min, statistics.Value{
-		RecordsCount:   100,
-		CompressedSize: 1 * datasize.KB,
-	}, 1)
-	assert.Equal(t, noConditionMet, result.result)
-	assert.False(t, result.ShouldImport())
-	assert.Equal(t, "no condition met", result.Cause())
-
-	// Sink limit reached, but no limit configured
-	cfg.JobLimit = 1
-	result = shouldImport(cfg, now, openedBefore01Min, expirationIn60min, statistics.Value{
-		RecordsCount:   100,
-		CompressedSize: 1 * datasize.KB,
-	}, 1)
-	assert.Equal(t, sinkThrottled, result.result)
-	assert.False(t, result.ShouldImport())
-	assert.Equal(t, "sink is throttled, waiting for next import check", result.Cause())
 
 	// Remaining expiration time meet
 	result = shouldImport(cfg, now, openedBefore01Min, expirationIn05min, statistics.Value{
 		RecordsCount:   50,
 		CompressedSize: 1 * datasize.KB,
-	}, 0)
+	})
 	assert.Equal(t, expirationThreshold, result.result)
 	assert.True(t, result.ShouldImport())
 	assert.Equal(t, "expiration threshold met, expiration: 2000-01-01T01:05:00.000Z, remains: 5m0s, threshold: 15m0s", result.Cause())
@@ -89,7 +69,7 @@ func TestShouldImport(t *testing.T) {
 	result = shouldImport(cfg, now, openedBefore01Min, expirationIn60min, statistics.Value{
 		RecordsCount: 1000,
 		SlicesCount:  20,
-	}, 0)
+	})
 	assert.Equal(t, sliceCountThreshold, result.result)
 	assert.True(t, result.ShouldImport())
 	assert.Equal(t, "slices count threshold met, slices count: 20, threshold: 10", result.Cause())
@@ -98,7 +78,7 @@ func TestShouldImport(t *testing.T) {
 	result = shouldImport(cfg, now, openedBefore01Min, expirationIn60min, statistics.Value{
 		RecordsCount:   20000,
 		CompressedSize: 1 * datasize.MB,
-	}, 0)
+	})
 	assert.Equal(t, recordCountThreshold, result.result)
 	assert.True(t, result.ShouldImport())
 	assert.Equal(t, "count threshold met, records count: 20000, threshold: 10000", result.Cause())
@@ -107,7 +87,7 @@ func TestShouldImport(t *testing.T) {
 	result = shouldImport(cfg, now, openedBefore01Min, expirationIn60min, statistics.Value{
 		RecordsCount:   100,
 		CompressedSize: 10 * datasize.MB,
-	}, 0)
+	})
 	assert.Equal(t, sizeThreshold, result.result)
 	assert.True(t, result.ShouldImport())
 	assert.Equal(t, "size threshold met, compressed size: 10.0 MB, threshold: 5.0 MB", result.Cause())
@@ -116,7 +96,7 @@ func TestShouldImport(t *testing.T) {
 	result = shouldImport(cfg, now, openedBefore20Min, expirationIn60min, statistics.Value{
 		RecordsCount:   100,
 		CompressedSize: 1 * datasize.KB,
-	}, 0)
+	})
 	assert.Equal(t, timeThreshold, result.result)
 	assert.True(t, result.ShouldImport())
 	assert.Equal(t, "time threshold met, opened at: 2000-01-01T00:40:00.000Z, passed: 20m0s threshold: 5m0s", result.Cause())

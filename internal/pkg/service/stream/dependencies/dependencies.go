@@ -52,6 +52,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
+	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
@@ -85,6 +86,7 @@ type ServiceScope interface {
 	StatisticsRepository() *statsRepo.Repository
 	AggregationRepository() *aggregationRepo.Repository
 	KeboolaSinkBridge() *keboolaSinkBridge.Bridge
+	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 }
 
 type APIScope interface {

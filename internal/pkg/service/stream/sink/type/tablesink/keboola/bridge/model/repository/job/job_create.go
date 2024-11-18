@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/go-utils/pkg/deepcopy"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 )
 
 // Create a new stream Job.
