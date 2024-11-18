@@ -1,5 +1,5 @@
 {
-  "path": "/v1/repositories/keboola/templates?filterBy=keboola.components",
+  "path": "/v1/repositories/keboola/templates?filter=keboola.components",
   "method": "GET",
   "headers": {
     "Content-Type": "application/json",
