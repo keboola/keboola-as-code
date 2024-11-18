@@ -1,7 +1,7 @@
 {
   "repository": {
     "name": "keboola",
-    "url": "%s/test/templates/api/repositories/template-list-data-apps-filter/repository",
+    "url": "%s/test/templates/api/repositories/template-list-filter/repository",
     "ref": "",
     "author": {
       "name": "Example Author",
@@ -12,6 +12,32 @@
     {
       "id": "my-template-id-5",
       "name": "My Template-snowflake-5",
+      "deprecated": false,
+      "author": {
+        "name": "Example Author",
+        "url": "https://example.com"
+      },
+      "description": "Full workflow to ...",
+      "defaultVersion": "1.2.3",
+      "categories": [
+        "Other"
+      ],
+      "components": [
+        "keboola.wr-%s",
+        "foo.bar",
+        "keboola.data-apps"
+      ],
+      "versions": [
+        {
+          "version": "1.2.3",
+          "stable": false,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "my-template-id-7",
+      "name": "My Template-snowflake-7",
       "deprecated": false,
       "author": {
         "name": "Example Author",

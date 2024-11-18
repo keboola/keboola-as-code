@@ -35,32 +35,6 @@
       ]
     },
     {
-      "id": "my-template-id-5",
-      "name": "My Template-snowflake-5",
-      "deprecated": false,
-      "author": {
-        "name": "Example Author",
-        "url": "https://example.com"
-      },
-      "description": "Full workflow to ...",
-      "defaultVersion": "1.2.3",
-      "categories": [
-        "Other"
-      ],
-      "components": [
-        "keboola.wr-%s",
-        "foo.bar",
-        "keboola.data-apps"
-      ],
-      "versions": [
-        {
-          "version": "1.2.3",
-          "stable": false,
-          "description": ""
-        }
-      ]
-    },
-    {
       "id": "my-template-id-6",
       "name": "My Template-snowflake-6",
       "deprecated": false,
@@ -76,32 +50,6 @@
       "components": [
         "keboola.wr-%s",
         "foo.bar"
-      ],
-      "versions": [
-        {
-          "version": "1.2.3",
-          "stable": false,
-          "description": ""
-        }
-      ]
-    },
-    {
-      "id": "my-template-id-7",
-      "name": "My Template-snowflake-7",
-      "deprecated": false,
-      "author": {
-        "name": "Example Author",
-        "url": "https://example.com"
-      },
-      "description": "Full workflow to ...",
-      "defaultVersion": "1.2.3",
-      "categories": [
-        "Other"
-      ],
-      "components": [
-        "keboola.wr-%s",
-        "foo.bar",
-        "keboola.data-apps"
       ],
       "versions": [
         {
