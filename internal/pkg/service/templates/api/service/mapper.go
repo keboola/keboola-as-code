@@ -27,6 +27,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const KeboolaComponents = "keboola.components"
+
 type Mapper struct {
 	apiHost string
 }
@@ -121,7 +123,7 @@ func RepositoryResponse(ctx context.Context, d dependencies.ProjectRequestScope,
 	}
 }
 
-func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, repo *repository.Repository, templates []repository.TemplateRecord, dataAppsOnly *bool) (out *Templates, err error) {
+func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, repo *repository.Repository, templates []repository.TemplateRecord, filterBy *string) (out *Templates, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.TemplatesResponse")
 	defer span.End(&err)
 
@@ -132,9 +134,22 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 			continue
 		}
 
-		if dataAppsOnly != nil && *dataAppsOnly {
-			if t, found := tmpl.DefaultVersion(); found && !slices.Contains(t.Components, keboola.DataAppsComponentID.String()) {
+		if filterBy != nil && *filterBy != "" {
+			filterString := *filterBy
+
+			t, found := tmpl.DefaultVersion()
+			if !found {
 				continue
+			}
+			switch filterString {
+			case keboola.DataAppsComponentID.String():
+				if !slices.Contains(t.Components, filterString) {
+					continue
+				}
+			case KeboolaComponents:
+				if slices.Contains(t.Components, keboola.DataAppsComponentID.String()) {
+					continue
+				}
 			}
 		}
 

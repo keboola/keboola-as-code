@@ -116,7 +116,7 @@ func (s *service) TemplatesIndex(ctx context.Context, d dependencies.ProjectRequ
 	if err != nil {
 		return nil, err
 	}
-	return TemplatesResponse(ctx, d, repo, repo.Templates(), payload.DataAppsOnly)
+	return TemplatesResponse(ctx, d, repo, repo.Templates(), payload.FilterBy)
 }
 
 func (s *service) TemplateIndex(ctx context.Context, d dependencies.ProjectRequestScope, payload *TemplateIndexPayload) (res *TemplateDetail, err error) {
