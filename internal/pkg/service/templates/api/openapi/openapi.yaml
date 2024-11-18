@@ -511,7 +511,7 @@ paths:
             description: List all templates  defined in the repository.
             operationId: TemplatesIndex
             parameters:
-                - name: filterBy
+                - name: filter
                   in: query
                   required: false
                   type: string

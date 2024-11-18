@@ -969,7 +969,7 @@ paths:
             description: List all templates  defined in the repository.
             operationId: TemplatesIndex
             parameters:
-                - name: filterBy
+                - name: filter
                   in: query
                   allowEmptyValue: true
                   schema:
@@ -4042,7 +4042,7 @@ components:
         TemplatesRequest:
             type: object
             properties:
-                filterBy:
+                filter:
                     type: string
                     example: abc123
                 repository:
@@ -4050,7 +4050,7 @@ components:
                     description: Name of the template repository. Use "keboola" for default Keboola repository.
                     example: keboola
             example:
-                filterBy: abc123
+                filter: abc123
                 repository: keboola
             required:
                 - repository
