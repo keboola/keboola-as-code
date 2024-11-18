@@ -5,6 +5,7 @@ package metacleanup
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -274,14 +275,21 @@ func (n *Node) cleanJob(ctx context.Context, job keboolaBridgeModel.Job) (err er
 	}
 
 	// Parse storage job ID from string
-	id, err := strconv.ParseInt(string(keboolaJob.JobKey.JobID), 10, 64)
+	id64, err := strconv.ParseInt(string(keboolaJob.JobKey.JobID), 10, 64)
 	if err != nil {
 		err = errors.PrefixErrorf(err, `cannot get keboola storage job "%s"`, job.JobKey)
 		n.logger.Error(ctx, err.Error())
 		return err, false
 	}
 
+	if id64 < math.MinInt || id64 > math.MaxInt {
+		err = fmt.Errorf("parsed job ID %d is out of int range", id64)
+		n.logger.Error(ctx, err.Error())
+		return err, false
+	}
+
 	// Get job details from storage API
+	id := int(id64)
 	api := n.publicAPI.NewAuthorizedAPI(keboolaJob.Token, 1*time.Minute)
 	var jobStatus *keboola.StorageJob
 	if jobStatus, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: keboola.StorageJobID(id)}).Send(ctx); err != nil {

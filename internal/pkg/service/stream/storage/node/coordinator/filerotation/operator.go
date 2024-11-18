@@ -351,16 +351,16 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		return
 	}
 
-	// Skip filerotation if target provider is throttled
-	if o.plugins.IsThrottled(ctx, file.Provider, file.FileKey.SinkKey) {
-		o.logger.Warnf(ctx, "skipping file rotation: sink is throttled")
-		return
-	}
-
 	// Check conditions
 	result := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
 	if !result.ShouldImport() {
 		o.logger.Debugf(ctx, "skipping file rotation: %s", result.Cause())
+		return
+	}
+
+	// Skip filerotation if target provider is throttled
+	if o.plugins.IsThrottled(ctx, file.Provider, file.FileKey.SinkKey) {
+		o.logger.Warnf(ctx, "skipping file rotation: sink is throttled")
 		return
 	}
 

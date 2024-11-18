@@ -94,7 +94,18 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 	b.plugins.RegisterFileImporter(targetProvider, b.importFile)
 	b.plugins.RegisterSliceUploader(stagingFileProvider, b.uploadSlice)
 	b.plugins.RegisterThrottle(targetProvider, b.isThrottled)
+	return b
+}
 
+func (b *Bridge) isKeboolaTableSink(sink *definition.Sink) bool {
+	return sink.Type == definition.SinkTypeTable && sink.Table.Type == definition.TableTypeKeboola
+}
+
+func (b *Bridge) isKeboolaStagingFile(file *model.File) bool {
+	return file.StagingStorage.Provider == stagingFileProvider
+}
+
+func (b *Bridge) MirrorJobs(d dependencies) error {
 	// Mirror jobs
 	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -120,16 +131,8 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 	).BuildMirror()
 	if err := <-b.jobs.StartMirroring(ctx, wg, b.logger); err != nil {
 		b.logger.Errorf(ctx, "cannot start mirroring jobs: %s", err)
-		return nil
+		return err
 	}
 
-	return b
-}
-
-func (b *Bridge) isKeboolaTableSink(sink *definition.Sink) bool {
-	return sink.Type == definition.SinkTypeTable && sink.Table.Type == definition.TableTypeKeboola
-}
-
-func (b *Bridge) isKeboolaStagingFile(file *model.File) bool {
-	return file.StagingStorage.Provider == stagingFileProvider
+	return nil
 }
