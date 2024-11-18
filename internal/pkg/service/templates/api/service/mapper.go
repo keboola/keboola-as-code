@@ -7,7 +7,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cast"
 
 	templatesDesign "github.com/keboola/keboola-as-code/api/templates"
@@ -27,7 +26,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const KeboolaComponents = "keboola.components"
+const (
+	KeboolaDataApps   = "keboola.data-apps"
+	KeboolaComponents = "keboola.components"
+)
 
 type Mapper struct {
 	apiHost string
@@ -135,21 +137,23 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 		}
 
 		if filterBy != nil && *filterBy != "" {
-			filterString := *filterBy
-
 			t, found := tmpl.DefaultVersion()
 			if !found {
 				continue
 			}
+
+			filterString := *filterBy
 			switch filterString {
-			case keboola.DataAppsComponentID.String():
+			case KeboolaDataApps:
 				if !slices.Contains(t.Components, filterString) {
 					continue
 				}
 			case KeboolaComponents:
-				if slices.Contains(t.Components, keboola.DataAppsComponentID.String()) {
+				if slices.Contains(t.Components, KeboolaDataApps) {
 					continue
 				}
+			default:
+				continue
 			}
 		}
 
