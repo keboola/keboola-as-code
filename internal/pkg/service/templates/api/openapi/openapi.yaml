@@ -511,6 +511,10 @@ paths:
             description: List all templates  defined in the repository.
             operationId: TemplatesIndex
             parameters:
+                - name: filterBy
+                  in: query
+                  required: false
+                  type: string
                 - name: repository
                   in: path
                   description: Name of the template repository. Use "keboola" for default Keboola repository.

@@ -174,12 +174,17 @@ func DecodeTemplatesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 	return func(r *http.Request) (any, error) {
 		var (
 			repository      string
+			filterBy        *string
 			storageAPIToken string
 			err             error
 
 			params = mux.Vars(r)
 		)
 		repository = params["repository"]
+		filterByRaw := r.URL.Query().Get("filterBy")
+		if filterByRaw != "" {
+			filterBy = &filterByRaw
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -187,7 +192,7 @@ func DecodeTemplatesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		if err != nil {
 			return nil, err
 		}
-		payload := NewTemplatesIndexPayload(repository, storageAPIToken)
+		payload := NewTemplatesIndexPayload(repository, filterBy, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
