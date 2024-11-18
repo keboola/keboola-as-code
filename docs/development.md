@@ -37,6 +37,26 @@ Start an interactive console in a container, run:
 docker compose run --rm -u "$UID:$GID" --service-ports dev bash
 ```
 
+### Start Dev Container inspecting metrics
+
+When we would like to inspect metrics of our services, there have to be made adjustement under `dev` service.
+Use following command there, so the prometheus and dev service is connected
+```
+command: >
+sh -c "git config --global --add safe.directory /code
+       make run-<your-service>"
+```
+
+This ensures that the `/code` is safe directory to run. Make sure that under `<your-service>` you replace with desired service. E.g `make run-apps-proxy`.
+Then run this docker compose command
+```
+docker compose up -d
+```
+
+### Inspecting prometheus
+
+On `localhost:9090` the prometheus is running the UI where your service should be scraped. You can simply check them as graph visually.
+
 ### Troubleshooting
 
 Strange issues are usually caused by incorrect permissions or file owner somewhere. Here are some tips:
