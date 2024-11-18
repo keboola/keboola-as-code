@@ -185,7 +185,7 @@ var _ = Service("templates", func() {
 		HTTP(func() {
 			GET("/repositories/{repository}/templates")
 			Meta("openapi:tag:template")
-			Param("filterBy")
+			Param("filter")
 			Response(StatusOK)
 			RepositoryNotFoundError()
 		})
@@ -570,7 +570,7 @@ var TemplateRequest = Type("TemplateRequest", func() {
 
 var TemplatesRequest = Type("TemplatesRequest", func() {
 	Extend(RepositoryRequest)
-	Attribute("filterBy", String)
+	Attribute("filter", String)
 })
 
 var TemplateVersionRequest = Type("TemplateVersionRequest", func() {
