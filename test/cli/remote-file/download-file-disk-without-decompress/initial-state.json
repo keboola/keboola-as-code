@@ -1,0 +1,18 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "files": [
+    {
+      "name": "test1",
+      "content": "H4sIAAAAAAAAA0vOzzHUSc7PMeIqSwSygASYZQximQAAVQ0b1R0AAAA="
+    }
+  ]
+}

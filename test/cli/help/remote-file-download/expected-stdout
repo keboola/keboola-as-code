@@ -1,0 +1,16 @@
+Command "remote file download"
+
+Download a file from Keboola staging storage and save it to a local file or output to stdout.
+
+Usage:
+  kbc remote file download [file] [flags]
+
+Flags:
+      --allow-sliced               output sliced files as a directory containing slices as individual files
+  -o, --output string              path to the destination file or directory
+  -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
+  -t, --storage-api-token string   storage API token from your project
+      --without-decompress         do not decompress the downloaded files or sliced files.
+
+Global Flags:
+%A

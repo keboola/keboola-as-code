@@ -168,16 +168,18 @@ func (d *downloader) readSliceTo(ctx context.Context, slice string, writer io.Wr
 	}
 
 	// Add decompression reader
-	if strings.HasSuffix(slice, GZIPFileExt) || (slice == "" && strings.HasSuffix(d.options.File.Name, GZIPFileExt)) {
-		if gzipReader, err := pgzip.NewReader(reader); err == nil {
-			defer func() {
-				if closeErr := gzipReader.Close(); returnErr == nil && closeErr != nil {
-					returnErr = closeErr
-				}
-			}()
-			reader = gzipReader
-		} else {
-			return errors.Errorf(`cannot create gzip reader: %w`, err)
+	if !d.options.WithOutDecompress.IsSet() {
+		if strings.HasSuffix(slice, GZIPFileExt) || (slice == "" && strings.HasSuffix(d.options.File.Name, GZIPFileExt)) {
+			if gzipReader, err := pgzip.NewReader(reader); err == nil {
+				defer func() {
+					if closeErr := gzipReader.Close(); returnErr == nil && closeErr != nil {
+						returnErr = closeErr
+					}
+				}()
+				reader = gzipReader
+			} else {
+				return errors.Errorf(`cannot create gzip reader: %w`, err)
+			}
 		}
 	}
 
