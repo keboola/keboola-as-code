@@ -33,7 +33,7 @@ jobs:
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Check links in Markdown files
-        uses: lycheeverse/lychee-action@v2.0.2
+        uses: lycheeverse/lychee-action@v2.1.0
         with:
           fail: true
           args: |
