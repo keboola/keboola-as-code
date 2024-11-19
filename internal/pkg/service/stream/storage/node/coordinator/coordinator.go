@@ -18,7 +18,7 @@ func Start(ctx context.Context, d dependencies.CoordinatorScope, cfg config.Conf
 	logger := d.Logger().WithComponent("storage.node.coordinator")
 	logger.Info(ctx, `starting storage coordinator node`)
 	// Change default bridge behaviour to use Mirror as it is required for sink throttling
-	err := d.KeboolaSinkBridge().MirrorJobs(d)
+	err := d.KeboolaSinkBridge().MirrorJobs(ctx, d)
 	if err != nil {
 		return err
 	}

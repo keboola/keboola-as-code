@@ -105,10 +105,10 @@ func (b *Bridge) isKeboolaStagingFile(file *model.File) bool {
 	return file.StagingStorage.Provider == stagingFileProvider
 }
 
-func (b *Bridge) MirrorJobs(d dependencies) error {
+func (b *Bridge) MirrorJobs(ctx context.Context, d dependencies) error {
 	// Mirror jobs
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	d.Process().OnShutdown(func(_ context.Context) {
 		b.logger.Info(ctx, "closing bridge job mirror")
 
