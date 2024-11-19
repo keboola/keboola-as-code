@@ -44,5 +44,5 @@ func (p *Plugins) CanAcceptNewFile(ctx context.Context, provider targetModel.Pro
 		return fn(ctx, sinkKey)
 	}
 
-	return false
+	return true
 }
