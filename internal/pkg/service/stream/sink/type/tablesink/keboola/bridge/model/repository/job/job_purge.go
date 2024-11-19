@@ -62,7 +62,7 @@ func (r *Repository) Purge(input *model.Job) *op.AtomicOp[model.Job] {
 			deleted.Deleted = true
 			return r.save(&deleted)
 		}).
-		// Update the input entity, it the operation is successful
+		// Update the input entity, if the operation is successful
 		OnResult(func(result model.Job) {
 			*input = result
 		})

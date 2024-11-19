@@ -26,7 +26,7 @@ func (r *Repository) Create(input *model.Job) *op.AtomicOp[model.Job] {
 			created = deepcopy.Copy(*input).(model.Job)
 			return r.save(&created)
 		}).
-		// Update the input entity, it the operation is successful
+		// Update the input entity, if the operation is successful
 		OnResult(func(result model.Job) {
 			*input = result
 		})
