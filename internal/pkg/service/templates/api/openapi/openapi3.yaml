@@ -971,11 +971,16 @@ paths:
             parameters:
                 - name: filter
                   in: query
+                  description: The 'filter' attribute specifies the category of templates to retrieve from the repository.
                   allowEmptyValue: true
                   schema:
                     type: string
-                    example: abc123
-                  example: abc123
+                    description: The 'filter' attribute specifies the category of templates to retrieve from the repository.
+                    example: keboola.data-apps
+                    enum:
+                        - keboola.components
+                        - keboola.data-apps
+                  example: keboola.data-apps
                 - name: repository
                   in: path
                   description: Name of the template repository. Use "keboola" for default Keboola repository.
@@ -4044,13 +4049,17 @@ components:
             properties:
                 filter:
                     type: string
-                    example: abc123
+                    description: The 'filter' attribute specifies the category of templates to retrieve from the repository.
+                    example: keboola.data-apps
+                    enum:
+                        - keboola.components
+                        - keboola.data-apps
                 repository:
                     type: string
                     description: Name of the template repository. Use "keboola" for default Keboola repository.
                     example: keboola
             example:
-                filter: abc123
+                filter: keboola.data-apps
                 repository: keboola
             required:
                 - repository

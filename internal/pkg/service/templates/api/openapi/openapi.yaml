@@ -513,8 +513,12 @@ paths:
             parameters:
                 - name: filter
                   in: query
+                  description: The 'filter' attribute specifies the category of templates to retrieve from the repository.
                   required: false
                   type: string
+                  enum:
+                    - keboola.components
+                    - keboola.data-apps
                 - name: repository
                   in: path
                   description: Name of the template repository. Use "keboola" for default Keboola repository.

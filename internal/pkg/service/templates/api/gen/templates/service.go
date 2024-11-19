@@ -517,7 +517,9 @@ type Templates struct {
 // TemplatesIndex method.
 type TemplatesIndexPayload struct {
 	StorageAPIToken string
-	Filter          *string
+	// The 'filter' attribute specifies the category of templates to retrieve from
+	// the repository.
+	Filter *string
 	// Name of the template repository. Use "keboola" for default Keboola
 	// repository.
 	Repository string

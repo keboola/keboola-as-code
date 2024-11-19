@@ -185,6 +185,11 @@ func DecodeTemplatesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		if filterRaw != "" {
 			filter = &filterRaw
 		}
+		if filter != nil {
+			if !(*filter == "keboola.components" || *filter == "keboola.data-apps") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("filter", *filter, []any{"keboola.components", "keboola.data-apps"}))
+			}
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
