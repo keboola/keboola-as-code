@@ -570,7 +570,9 @@ var TemplateRequest = Type("TemplateRequest", func() {
 
 var TemplatesRequest = Type("TemplatesRequest", func() {
 	Extend(RepositoryRequest)
-	Attribute("filter", String)
+	Attribute("filter", String, "The 'filter' attribute specifies the category of templates to retrieve from the repository.", func() {
+		Enum("keboola.components", "keboola.data-apps")
+	})
 })
 
 var TemplateVersionRequest = Type("TemplateVersionRequest", func() {
