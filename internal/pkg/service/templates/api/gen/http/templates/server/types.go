@@ -2006,9 +2006,10 @@ func NewRepositoryIndexPayload(repository string, storageAPIToken string) *templ
 
 // NewTemplatesIndexPayload builds a templates service TemplatesIndex endpoint
 // payload.
-func NewTemplatesIndexPayload(repository string, storageAPIToken string) *templates.TemplatesIndexPayload {
+func NewTemplatesIndexPayload(repository string, filter *string, storageAPIToken string) *templates.TemplatesIndexPayload {
 	v := &templates.TemplatesIndexPayload{}
 	v.Repository = repository
+	v.Filter = filter
 	v.StorageAPIToken = storageAPIToken
 
 	return v

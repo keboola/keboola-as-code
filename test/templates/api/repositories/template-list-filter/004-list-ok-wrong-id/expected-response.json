@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "templates.invalidEnumValue",
+  "message": "Value of filter must be one of \"keboola.components\", \"keboola.data-apps\" but got value \"312312\"."
+}

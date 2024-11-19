@@ -174,12 +174,22 @@ func DecodeTemplatesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 	return func(r *http.Request) (any, error) {
 		var (
 			repository      string
+			filter          *string
 			storageAPIToken string
 			err             error
 
 			params = mux.Vars(r)
 		)
 		repository = params["repository"]
+		filterRaw := r.URL.Query().Get("filter")
+		if filterRaw != "" {
+			filter = &filterRaw
+		}
+		if filter != nil {
+			if !(*filter == "keboola.components" || *filter == "keboola.data-apps") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("filter", *filter, []any{"keboola.components", "keboola.data-apps"}))
+			}
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -187,7 +197,7 @@ func DecodeTemplatesIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		if err != nil {
 			return nil, err
 		}
-		payload := NewTemplatesIndexPayload(repository, storageAPIToken)
+		payload := NewTemplatesIndexPayload(repository, filter, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]

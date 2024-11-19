@@ -181,10 +181,11 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "List templates in the repository")
 		Description("List all templates  defined in the repository.")
 		Result(Templates)
-		Payload(RepositoryRequest)
+		Payload(TemplatesRequest)
 		HTTP(func() {
 			GET("/repositories/{repository}/templates")
 			Meta("openapi:tag:template")
+			Param("filter")
 			Response(StatusOK)
 			RepositoryNotFoundError()
 		})
@@ -565,6 +566,13 @@ var TemplateRequest = Type("TemplateRequest", func() {
 	Extend(RepositoryRequest)
 	Attribute("template", TemplateID)
 	Required("template")
+})
+
+var TemplatesRequest = Type("TemplatesRequest", func() {
+	Extend(RepositoryRequest)
+	Attribute("filter", String, "The 'filter' attribute specifies the category of templates to retrieve from the repository.", func() {
+		Enum("keboola.components", "keboola.data-apps")
+	})
 })
 
 var TemplateVersionRequest = Type("TemplateVersionRequest", func() {

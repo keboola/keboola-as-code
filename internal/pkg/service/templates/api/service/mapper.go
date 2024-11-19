@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"time"
 
@@ -23,6 +24,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+)
+
+const (
+	KeboolaDataApps   = "keboola.data-apps"
+	KeboolaComponents = "keboola.components"
 )
 
 type Mapper struct {
@@ -119,7 +125,7 @@ func RepositoryResponse(ctx context.Context, d dependencies.ProjectRequestScope,
 	}
 }
 
-func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, repo *repository.Repository, templates []repository.TemplateRecord) (out *Templates, err error) {
+func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, repo *repository.Repository, templates []repository.TemplateRecord, filterBy *string) (out *Templates, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.TemplatesResponse")
 	defer span.End(&err)
 
@@ -128,6 +134,25 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 		// Exclude deprecated templates from the list
 		if tmpl.Deprecated {
 			continue
+		}
+
+		if filterBy != nil && *filterBy != "" {
+			t, found := tmpl.DefaultVersion()
+			if !found {
+				continue
+			}
+
+			filterString := *filterBy
+			switch filterString {
+			case KeboolaDataApps:
+				if !slices.Contains(t.Components, filterString) {
+					continue
+				}
+			case KeboolaComponents:
+				if slices.Contains(t.Components, KeboolaDataApps) {
+					continue
+				}
+			}
 		}
 
 		if !hasRequirements(tmpl, d) {

@@ -969,6 +969,18 @@ paths:
             description: List all templates  defined in the repository.
             operationId: TemplatesIndex
             parameters:
+                - name: filter
+                  in: query
+                  description: The 'filter' attribute specifies the category of templates to retrieve from the repository.
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: The 'filter' attribute specifies the category of templates to retrieve from the repository.
+                    example: keboola.data-apps
+                    enum:
+                        - keboola.components
+                        - keboola.data-apps
+                  example: keboola.data-apps
                 - name: repository
                   in: path
                   description: Name of the template repository. Use "keboola" for default Keboola repository.
@@ -4032,6 +4044,25 @@ components:
             required:
                 - repository
                 - templates
+        TemplatesRequest:
+            type: object
+            properties:
+                filter:
+                    type: string
+                    description: The 'filter' attribute specifies the category of templates to retrieve from the repository.
+                    example: keboola.data-apps
+                    enum:
+                        - keboola.components
+                        - keboola.data-apps
+                repository:
+                    type: string
+                    description: Name of the template repository. Use "keboola" for default Keboola repository.
+                    example: keboola
+            example:
+                filter: keboola.data-apps
+                repository: keboola
+            required:
+                - repository
         UpdateInstanceRequest:
             type: object
             properties:
