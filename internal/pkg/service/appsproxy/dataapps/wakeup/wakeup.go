@@ -71,7 +71,11 @@ func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
 	item.nextRequestAfter = now.Add(Interval)
 
 	// Send the notification
-	if _, err := l.api.WakeupApp(appID).Send(ctx); err != nil && err.Error() != wakeupErrorToBeSkipped {
+	_, err := l.api.WakeupApp(appID).Send(ctx)
+	// If it does not succeed but app is currently stopping do not log it as error, log only other errors
+	// Instead of implementing state machine as in sandboxes service, we want to skip valid state that the
+	// pod is dealocating and we want to wait till pod is `stopped` and we can `start` the pod again.
+	if err != nil && err.Error() != wakeupErrorToBeSkipped {
 		l.logger.Errorf(ctx, `failed sending wakeup request to Sandboxes Service about for app "%s": %s`, appID, err.Error())
 		return err
 	}
