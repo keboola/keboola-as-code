@@ -1,0 +1,7 @@
+Overriding the project ID by the environment variable KBC_PROJECT_ID=%s
+Overriding the branch ID by the environment variable KBC_BRANCH_ID=%s
+Plan for "pull" operation:
+  + C main/app/keboola.data-apps/data-app
+  + C main/extractor/keboola.ex-db-mysql/with-rows
+  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+Pull done.

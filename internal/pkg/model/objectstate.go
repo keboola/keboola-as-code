@@ -43,12 +43,14 @@ type ConfigState struct {
 	*ConfigManifest
 	Remote *Config
 	Local  *Config
+	Ignore bool
 }
 
 type ConfigRowState struct {
 	*ConfigRowManifest
 	Remote *ConfigRow
 	Local  *ConfigRow
+	Ignore bool
 }
 
 // ToAPIObjectKey ...

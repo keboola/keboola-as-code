@@ -72,7 +72,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Get plan
-	plan, err := push.NewPlan(results, projectState.ProjectManifest().AllowTargetENV())
+	plan, err := push.NewPlan(results)
 	if err != nil {
 		return err
 	}

@@ -150,6 +150,33 @@ func (s *Registry) Configs() (configs []*ConfigState) {
 	return configs
 }
 
+func (s *Registry) IgnoreConfig(ignoreID string, componentID string) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigState); ok {
+			if v.ID.String() == ignoreID && v.ComponentID.String() == componentID {
+				// ignore configuration
+				v.Ignore = true
+
+				// ignore rows of the configuration
+				for _, configRowState := range s.ConfigRowsFrom(v.ConfigKey) {
+					configRowState.Ignore = true
+				}
+			}
+		}
+	}
+}
+
+func (s *Registry) IgnoredConfigs() (configs []*ConfigState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigState); ok {
+			if v.Ignore {
+				configs = append(configs, v)
+			}
+		}
+	}
+	return configs
+}
+
 func (s *Registry) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigState); ok {
@@ -166,6 +193,27 @@ func (s *Registry) ConfigRows() (rows []*ConfigRowState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigRowState); ok {
 			rows = append(rows, v)
+		}
+	}
+	return rows
+}
+
+func (s *Registry) IgnoreConfigRow(configID, rowID string) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigRowState); ok {
+			if v.ConfigID.String() == configID && v.ID.String() == rowID {
+				v.Ignore = true
+			}
+		}
+	}
+}
+
+func (s *Registry) IgnoredConfigRows() (rows []*ConfigRowState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*ConfigRowState); ok {
+			if v.Ignore {
+				rows = append(rows, v)
+			}
 		}
 	}
 	return rows

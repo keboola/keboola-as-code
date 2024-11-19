@@ -1,0 +1,31 @@
+%A
+DEBUG	Project state has been successfully loaded.
+%A
+Plan for "pull" operation:
+  + B bar
+  + C bar/_shared/keboola.python-transformation-v2
+  + R bar/_shared/keboola.python-transformation-v2/codes/code-with-variables
+  + C bar/_shared/keboola.python-transformation-v2/codes/code-with-variables/variables
+  + R bar/_shared/keboola.python-transformation-v2/codes/my-code-1
+  + R bar/_shared/keboola.python-transformation-v2/codes/my-code-2
+  + C bar/extractor/ex-generic-v2/disabled
+  + C bar/extractor/ex-generic-v2/empty
+  + C bar/extractor/keboola.ex-db-mysql/with-rows
+  + R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
+  + R bar/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+  + C bar/transformation/keboola.python-transformation-v2/python-transformation
+  + C bar/transformation/keboola.python-transformation-v2/transformation-with-shared-code
+  + C bar/transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables
+  + R bar/transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables/values/default
+  + C bar/transformation/keboola.snowflake-transformation/snowflake-transformation
+  + B foo
+  + C foo/extractor/ex-generic-v2/empty
+  + C foo/extractor/ex-generic-v2/without-rows
+  + B main
+  + C main/extractor/ex-generic-v2/empty
+%A
+DEBUG	Saved ".keboola/manifest.json"
+%A
+INFO	Pull done.
+%A
+DEBUG	Sent "sync-pull" successful event id: "%s"

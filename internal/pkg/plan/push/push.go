@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func NewPlan(diffResults *diff.Results, allowTargetEnv bool) (*diffop.Plan, error) {
+func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
 	plan := diffop.NewPlan(`push`)
 	for _, result := range diffResults.Results {
 		switch result.State {

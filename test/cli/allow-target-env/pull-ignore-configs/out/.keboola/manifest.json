@@ -1,0 +1,61 @@
+{
+  "version": 2,
+  "project": {
+    "id": 1,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "allowTargetEnv": true,
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}",
+    "dataAppConfig": "app/{component_id}/{config_name}"
+  },
+  "allowedBranches": [
+    "2"
+  ],
+  "ignoredComponents": [],
+  "templates": {
+    "repositories": [
+      {
+        "type": "git",
+        "name": "keboola",
+        "url": "https://github.com/keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": 2,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 2,
+      "componentId": "keboola.data-apps",
+      "id": "%%TEST_BRANCH_MAIN_CONFIG_DATA_APP_ID%%",
+      "path": "app/keboola.data-apps/data-app",
+      "rows": []
+    },
+    {
+      "branchId": 2,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%%TEST_BRANCH_MAIN_CONFIG_WITH_ROWS_ID%%",
+      "path": "extractor/keboola.ex-db-mysql/with-rows",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_MAIN_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID%%",
+          "path": "rows/test-view"
+        }
+      ]
+    }
+  ]
+}
