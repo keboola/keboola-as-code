@@ -41,7 +41,7 @@ func (b *Bridge) createJob(ctx context.Context, token string, file plugin.File, 
 	return nil
 }
 
-func (b *Bridge) isThrottled(ctx context.Context, sinkKey key.SinkKey) bool {
+func (b *Bridge) canAcceptNewFile(ctx context.Context, sinkKey key.SinkKey) bool {
 	// Count running jobs only for given sink accessed by file.SinkKey
 	var runningJobs int
 	b.jobs.ForEach(func(jobKey key.JobKey, _ *jobData) (stop bool) {
@@ -52,5 +52,5 @@ func (b *Bridge) isThrottled(ctx context.Context, sinkKey key.SinkKey) bool {
 		return false
 	})
 
-	return runningJobs >= b.config.JobLimit
+	return runningJobs < b.config.JobLimit
 }

@@ -17,7 +17,7 @@ type Plugins struct {
 	sinkPipelineOpeners []pipeline.Opener
 	sliceUploader       map[stagingModel.FileProvider]uploadSliceFn
 	fileImport          map[targetModel.Provider]importFileFn
-	throttle            map[targetModel.Provider]throttleFn
+	canAcceptNewFile    map[targetModel.Provider]canAcceptNewFileFn
 }
 
 type fnList[T any] []T
@@ -26,11 +26,11 @@ func New(logger log.Logger) *Plugins {
 	c := &Collection{}
 	e := &Executor{logger: logger.WithComponent("plugin"), collection: c}
 	return &Plugins{
-		collection:    c,
-		executor:      e,
-		sliceUploader: make(map[stagingModel.FileProvider]uploadSliceFn),
-		fileImport:    make(map[targetModel.Provider]importFileFn),
-		throttle:      make(map[targetModel.Provider]throttleFn),
+		collection:       c,
+		executor:         e,
+		sliceUploader:    make(map[stagingModel.FileProvider]uploadSliceFn),
+		fileImport:       make(map[targetModel.Provider]importFileFn),
+		canAcceptNewFile: make(map[targetModel.Provider]canAcceptNewFileFn),
 	}
 }
 

@@ -93,7 +93,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 	b.deleteTokenOnSinkDeactivation()
 	b.plugins.RegisterFileImporter(targetProvider, b.importFile)
 	b.plugins.RegisterSliceUploader(stagingFileProvider, b.uploadSlice)
-	b.plugins.RegisterThrottle(targetProvider, b.isThrottled)
+	b.plugins.RegisterCanAcceptNewFile(targetProvider, b.canAcceptNewFile)
 	return b
 }
 

@@ -359,7 +359,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	}
 
 	// Skip filerotation if target provider is throttled
-	if o.plugins.IsThrottled(ctx, file.Provider, file.FileKey.SinkKey) {
+	if !o.plugins.CanAcceptNewFile(ctx, file.Provider, file.FileKey.SinkKey) {
 		o.logger.Warnf(ctx, "skipping file rotation: sink is throttled")
 		return
 	}
