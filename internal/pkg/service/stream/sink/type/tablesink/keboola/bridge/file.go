@@ -211,7 +211,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 		}
 
 		// Save job ID to etcd
-		err = b.createJob(ctx, token.TokenString(), file, job)
+		err = b.createJob(ctx, file, job)
 		if err != nil {
 			return err
 		}

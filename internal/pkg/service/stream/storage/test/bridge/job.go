@@ -13,16 +13,14 @@ func NewJobKey() key.JobKey {
 	}
 }
 
-func NewTestJob(token string) keboolaSink.Job {
+func NewTestJob() keboolaSink.Job {
 	return keboolaSink.Job{
 		JobKey: NewJobKey(),
-		Token:  token,
 	}
 }
 
-func NewJob(k key.JobKey, token string) keboolaSink.Job {
+func NewJob(k key.JobKey) keboolaSink.Job {
 	return keboolaSink.Job{
 		JobKey: k,
-		Token:  token,
 	}
 }

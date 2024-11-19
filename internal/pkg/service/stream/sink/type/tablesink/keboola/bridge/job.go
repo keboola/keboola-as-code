@@ -10,13 +10,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
+	keboolasink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 )
 
-func (b *Bridge) createJob(ctx context.Context, token string, file plugin.File, storageJob *keboola.StorageJob) error {
+func (b *Bridge) SinkToken(ctx context.Context, sinkKey key.SinkKey) (keboolasink.Token, error) {
+	return b.schema.Token().ForSink(sinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
+}
+
+func (b *Bridge) createJob(ctx context.Context, file plugin.File, storageJob *keboola.StorageJob) error {
 	keboolaJob := model.Job{
 		JobKey: key.JobKey{SinkKey: file.SinkKey, JobID: key.JobID(storageJob.ID.String())},
-		Token:  token,
 	}
 	// Add context attributes
 	ctx = ctxattr.ContextWith(ctx, attribute.String("job.id", keboolaJob.String()))

@@ -59,12 +59,12 @@ func TestJobRepository_List(t *testing.T) {
 		sink := dummy.NewSink(sinkKey)
 		require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, now, by, "Create sink").Do(ctx).Err())
 
-		job1 = model.Job{JobKey: jobKey1, Token: "secret1"}
+		job1 = model.Job{JobKey: jobKey1}
 		result, err := repo.Create(&job1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job1, result)
 
-		job2 = model.Job{JobKey: jobKey2, Token: "secret2"}
+		job2 = model.Job{JobKey: jobKey2}
 		result, err = repo.Create(&job2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job2, result)
@@ -133,12 +133,12 @@ func TestJobRepository_ListDeleted(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var job1, job2 model.Job
 	{
-		job1 = model.Job{JobKey: jobKey1, Token: "secret1"}
+		job1 = model.Job{JobKey: jobKey1}
 		result, err := repo.Create(&job1).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job1, result)
 
-		job2 = model.Job{JobKey: jobKey2, Token: "secret2"}
+		job2 = model.Job{JobKey: jobKey2}
 		result, err = repo.Create(&job2).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job2, result)

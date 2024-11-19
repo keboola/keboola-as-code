@@ -12,9 +12,12 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	keboolaSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -23,6 +26,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
+
+type (
+	// token is an etcd prefix that stores all Keboola Storage API token entities.
+	testToken struct {
+		etcdop.PrefixT[keboolaSink.Token]
+	}
+)
+
+func forToken(s *serde.Serde) testToken {
+	return testToken{PrefixT: etcdop.NewTypedPrefix[keboolaSink.Token]("storage/keboola/secret/token", s)}
+}
+
+func (v testToken) ForSink(k key.SinkKey) etcdop.KeyT[keboolaSink.Token] {
+	return v.PrefixT.Key(k.String())
+}
 
 func TestMetadataCleanup(t *testing.T) {
 	t.Parallel()
@@ -39,7 +57,7 @@ func TestMetadataCleanup(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 	jobKey := key.JobKey{SinkKey: sinkKey, JobID: "321"}
-	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/slice/all/|storage/stats/|runtime/`)
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/slice/all/|storage/stats/|runtime/|storage/keboola/secret/token/`)
 
 	// Get services
 	d, mocked := dependencies.NewMockedCoordinatorScope(t, ctx, commonDeps.WithClock(clk))
@@ -95,7 +113,7 @@ func TestMetadataCleanup(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source, sink, file
+	// Create parent branch, source, sink, token
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
@@ -104,6 +122,8 @@ func TestMetadataCleanup(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
 		sink := dummy.NewSinkWithLocalStorage(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+		token := keboolaSink.Token{SinkKey: sinkKey, Token: keboola.Token{ID: "secret"}}
+		require.NoError(t, forToken(d.EtcdSerde()).ForSink(sinkKey).Put(client, token).Do(ctx).Err())
 	}
 
 	// Create the second file
@@ -210,7 +230,7 @@ func TestMetadataCleanup(t *testing.T) {
 
 	// Create job in global level and bridge level
 	{
-		job := bridgeEntity.NewJob(jobKey, "secret")
+		job := bridgeEntity.NewJob(jobKey)
 		require.NoError(t, d.KeboolaBridgeRepository().Job().Create(&job).Do(ctx).Err())
 	}
 
@@ -251,7 +271,7 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 	jobKey := key.JobKey{SinkKey: sinkKey, JobID: "321"}
-	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/file/level/local/|storage/slice/all/|storage/slice/level/local/|storage/stats/|runtime/`)
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/file/level/local/|storage/slice/all/|storage/slice/level/local/|storage/stats/|runtime/|storage/keboola/secret/token/`)
 
 	// Get services
 	d, mocked := dependencies.NewMockedCoordinatorScope(t, ctx, commonDeps.WithClock(clk))
@@ -290,7 +310,7 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source, sink, file
+	// Create parent branch, source, sink, token
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
@@ -299,11 +319,13 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
 		sink := dummy.NewSinkWithLocalStorage(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+		token := keboolaSink.Token{SinkKey: sinkKey, Token: keboola.Token{ID: "secret"}}
+		require.NoError(t, forToken(d.EtcdSerde()).ForSink(sinkKey).Put(client, token).Do(ctx).Err())
 	}
 
 	// Create job in global level and bridge level
 	{
-		job := bridgeEntity.NewJob(jobKey, "secret")
+		job := bridgeEntity.NewJob(jobKey)
 		require.NoError(t, d.KeboolaBridgeRepository().Job().Create(&job).Do(ctx).Err())
 	}
 

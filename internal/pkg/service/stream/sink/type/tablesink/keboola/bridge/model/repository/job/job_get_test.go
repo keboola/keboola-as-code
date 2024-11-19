@@ -61,7 +61,7 @@ func TestJobRepository_Get(t *testing.T) {
 		sink := dummy.NewSink(sinkKey)
 		require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, now, by, "Create sink").Do(ctx).Err())
 
-		job := model.Job{JobKey: jobKey, Token: "secret"}
+		job := model.Job{JobKey: jobKey}
 		result, err := repo.Create(&job).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, job, result)
@@ -74,6 +74,6 @@ func TestJobRepository_Get(t *testing.T) {
 	{
 		result, err := repo.Get(jobKey).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.Equal(t, model.Job{JobKey: jobKey, Token: "secret"}, result)
+		assert.Equal(t, model.Job{JobKey: jobKey}, result)
 	}
 }

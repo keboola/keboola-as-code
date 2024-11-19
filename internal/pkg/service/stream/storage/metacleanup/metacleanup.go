@@ -266,16 +266,8 @@ func (n *Node) cleanJob(ctx context.Context, job keboolaBridgeModel.Job) (err er
 	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
 	defer span.End(&err)
 
-	var keboolaJob keboolaBridgeModel.Job
-	// Retrieve job on bridge level
-	if keboolaJob, err = n.keboolaBridgeRepository.Job().Get(job.JobKey).Do(ctx).ResultOrErr(); err != nil {
-		err = errors.PrefixErrorf(err, `cannot get keboola storage job "%s"`, job.JobKey)
-		n.logger.Error(ctx, err.Error())
-		return err, false
-	}
-
 	// Parse storage job ID from string
-	id64, err := strconv.ParseInt(string(keboolaJob.JobKey.JobID), 10, 64)
+	id64, err := strconv.ParseInt(string(job.JobKey.JobID), 10, 64)
 	if err != nil {
 		err = errors.PrefixErrorf(err, `cannot get keboola storage job "%s"`, job.JobKey)
 		n.logger.Error(ctx, err.Error())
@@ -288,9 +280,15 @@ func (n *Node) cleanJob(ctx context.Context, job keboolaBridgeModel.Job) (err er
 		return err, false
 	}
 
+	token, err := n.bridge.SinkToken(ctx, job.SinkKey)
+	if err != nil {
+		n.logger.Warnf(ctx, "cannot get token for sink, already deleted: %s", err.Error())
+		return nil, false
+	}
+
 	// Get job details from storage API
 	id := int(id64)
-	api := n.publicAPI.NewAuthorizedAPI(keboolaJob.Token, 1*time.Minute)
+	api := n.publicAPI.NewAuthorizedAPI(token.TokenString(), 1*time.Minute)
 	var jobStatus *keboola.StorageJob
 	if jobStatus, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: keboola.StorageJobID(id)}).Send(ctx); err != nil {
 		n.logger.Warnf(ctx, "cannot get information about storage job, probably already deleted: %s", err.Error())

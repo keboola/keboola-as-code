@@ -62,7 +62,7 @@ func TestJobRepository_Purge(t *testing.T) {
 		sink := dummy.NewSink(sinkKey)
 		require.NoError(t, d.DefinitionRepository().Sink().Create(&sink, now, by, "Create sink").Do(ctx).Err())
 
-		job := model.Job{JobKey: jobKey, Token: "secret"}
+		job := model.Job{JobKey: jobKey}
 		require.NoError(t, repo.Create(&job).Do(ctx).Err())
 	}
 
@@ -127,13 +127,13 @@ func TestJobRepository_PurgeJobsOnSinkDelete(t *testing.T) {
 	// Create three Jobs
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		job := model.Job{JobKey: jobKey1, Token: "secret1"}
+		job := model.Job{JobKey: jobKey1}
 		require.NoError(t, repo.Create(&job).Do(ctx).Err())
 
-		job = model.Job{JobKey: jobKey2, Token: "secret2"}
+		job = model.Job{JobKey: jobKey2}
 		require.NoError(t, repo.Create(&job).Do(ctx).Err())
 
-		job = model.Job{JobKey: jobKey3, Token: "secret3"}
+		job = model.Job{JobKey: jobKey3}
 		require.NoError(t, repo.Create(&job).Do(ctx).Err())
 	}
 
@@ -223,13 +223,13 @@ func TestJobRepository_PurgeJobsOnSourceDelete_DeleteSource(t *testing.T) {
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 
-		job1 = model.Job{JobKey: jobKey1, Token: "secret1"}
+		job1 = model.Job{JobKey: jobKey1}
 		require.NoError(t, repo.Create(&job1).Do(ctx).Err())
 
-		job2 = model.Job{JobKey: jobKey2, Token: "secret2"}
+		job2 = model.Job{JobKey: jobKey2}
 		require.NoError(t, repo.Create(&job2).Do(ctx).Err())
 
-		job3 = model.Job{JobKey: jobKey3, Token: "secret3"}
+		job3 = model.Job{JobKey: jobKey3}
 		require.NoError(t, repo.Create(&job3).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/job_purge_snapshot_003.txt", ignoredEtcdKeys)
 	}
@@ -325,13 +325,13 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 			serviceErrors.AssertErrorStatusCode(t, http.StatusNotFound, err)
 		}
 
-		job1 = model.Job{JobKey: jobKey1, Token: "secret1"}
+		job1 = model.Job{JobKey: jobKey1}
 		require.NoError(t, repo.Create(&job1).Do(ctx).Err())
 
-		job2 = model.Job{JobKey: jobKey2, Token: "secret2"}
+		job2 = model.Job{JobKey: jobKey2}
 		require.NoError(t, repo.Create(&job2).Do(ctx).Err())
 
-		job3 = model.Job{JobKey: jobKey3, Token: "secret3"}
+		job3 = model.Job{JobKey: jobKey3}
 		require.NoError(t, repo.Create(&job3).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/job_purge_snapshot_005.txt", ignoredEtcdKeys)
 	}

@@ -184,8 +184,7 @@ storage/job/123/567/my-source/my-sink-2/321
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink-2",
-  "jobId": "321",
-  "token": "secret1"
+  "jobId": "321"
 }
 >>>>>
 
@@ -197,8 +196,7 @@ storage/job/123/567/my-source/my-sink-2/322
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink-2",
-  "jobId": "322",
-  "token": "secret2"
+  "jobId": "322"
 }
 >>>>>
 
@@ -210,7 +208,6 @@ storage/job/123/567/my-source/my-sink-3/323
   "branchId": 567,
   "sourceId": "my-source",
   "sinkId": "my-sink-3",
-  "jobId": "323",
-  "token": "secret3"
+  "jobId": "323"
 }
 >>>>>

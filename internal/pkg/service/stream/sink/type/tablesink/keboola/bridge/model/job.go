@@ -8,6 +8,5 @@ import (
 // At the end throttle the sink, so it does not overloads the service.
 type Job struct {
 	key.JobKey
-	Deleted bool   `json:"-"` // internal field to mark the entity for deletion, there is no soft delete
-	Token   string `json:"token"`
+	Deleted bool `json:"-"` // internal field to mark the entity for deletion, there is no soft delete
 }
