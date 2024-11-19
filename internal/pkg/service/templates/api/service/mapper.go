@@ -152,8 +152,6 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 				if slices.Contains(t.Components, KeboolaDataApps) {
 					continue
 				}
-			default:
-				continue
 			}
 		}
 
