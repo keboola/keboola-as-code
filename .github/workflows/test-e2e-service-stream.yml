@@ -40,7 +40,7 @@ jobs:
         with:
           build-type: e2e-tests-stream
           without-cache: ${{ inputs.without-cache }}
-          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+          cache-gcs-bucket: ${{ vars.CACHE_GCS_BUCKET }}
 
       - name: Set TEST_KBC_PROJECTS_FILE entries
         uses: ./.github/actions/export-kbc-projects

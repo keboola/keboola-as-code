@@ -76,7 +76,7 @@ jobs:
         with:
           build-type: unit-tests
           without-cache: ${{ inputs.without-cache }}
-          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+          cache-gcs-bucket: ${{ vars.CACHE_GCS_BUCKET }}
 
       - name: Check how much space is left after go setup
         if: matrix.name == 'linux'

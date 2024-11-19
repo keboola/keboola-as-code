@@ -21,7 +21,7 @@ jobs:
         uses: ./.github/actions/go-setup
         with:
           build-type: check-licenses
-          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+          cache-gcs-bucket: ${{ vars.CACHE_GCS_BUCKET }}
 
       # License Types
       # Forbidden (Non Commercial)

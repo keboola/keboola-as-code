@@ -10,8 +10,8 @@ inputs:
     description: Cache workflow version
     required: false
     default: "004"
-  cache-s3-bucket:
-    description: S3 bucket for various caches.
+  cache-gcs-bucket:
+    description: GCS bucket for various caches.
     required: true
   build-type:
     description: Build type, for example "default", "linter", ...
@@ -19,12 +19,15 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Assume AWS S3 caching role
-      uses: aws-actions/configure-aws-credentials@v4
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2.1.7
       with:
-        role-to-assume: arn:aws:iam::831559560923:role/S3-gh-actions-caching
-        role-session-name: ghactionscaching
-        aws-region: us-east-1
+        workload_identity_provider: projects/183593139398/locations/global/workloadIdentityPools/kac-ci-github-pool/providers/kac-repo
+        project_id: "go-team-dev"
+
+    - name: Install Zstd
+      shell: bash
+      run: zstd --version
 
     - name: Extract GO_VERSION from go.mod file
       shell: bash
@@ -87,51 +90,61 @@ runs:
     - name: Load Go tools cache
       id: go-cache-tools
       if: inputs.without-cache != 'true'
-      uses: actions/cache@v4
+      uses: mansagroup/gcs-cache-action@v1.0.3 # replacement for runs-on/cache@v4
       with:
+        bucket: ${{ inputs.cache-gcs-bucket }}
         path: |
           ${{ env.GODIRS }}/bin
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/install-golangci-lint.sh') }}
+        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/tools.sh') }}
+
+    # Install missing tools
+    - name: Install tools
+      shell: bash
+      run: |
+        echo "Installing tools ..."
+        ./scripts/tools.sh
+        
+        echo "Installed tools:"
+        ls -alh "$GODIRS/bin"
+        
+        go clean -cache -modcache
 
     # Load dependencies - Go modules to skip download
     - name: Load Go modules cache
       id: go-cache-mod
       if: inputs.without-cache != 'true'
-      uses: actions/cache@v4
+      uses: mansagroup/gcs-cache-action@v1.0.3 # replacement for runs-on/cache@v4
       with:
+        bucket: ${{ inputs.cache-gcs-bucket }}
         path: |
           ${{ env.GODIRS }}/modcache
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
-      # restore-keys: |
-      #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
-      env:
-        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
 
     - name: Load Go build and test cache
       id: go-cache-build
       if: inputs.without-cache != 'true'
-      uses: actions/cache@v4
+      uses: mansagroup/gcs-cache-action@v1.0.3 # replacement for runs-on/cache@v4
       with:
+        bucket: ${{ inputs.cache-gcs-bucket }}
         path: |
           ${{ env.GODIRS }}/cache
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
-      # restore-keys: |
-      #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
-      env:
-        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
 
     - name: Load Linter cache
       id: go-cache-linter
       if: inputs.build-type == 'lint' && inputs.without-cache != 'true'
-      uses: actions/cache@v4
+      uses: mansagroup/gcs-cache-action@v1.0.3 # replacement for runs-on/cache@v4
       with:
+        bucket: ${{ inputs.cache-gcs-bucket }}
         path: |
           ${{ env.GODIRS }}/lintcache
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-${{ hashFiles('**/go.mod') }}
-      # restore-keys: |
-      #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
-      env:
-        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
 
     - name: Install Task
       shell: bash
