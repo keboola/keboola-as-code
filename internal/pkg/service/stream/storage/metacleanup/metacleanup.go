@@ -4,9 +4,6 @@ package metacleanup
 
 import (
 	"context"
-	"fmt"
-	"math"
-	"strconv"
 	"sync"
 	"time"
 
@@ -176,10 +173,24 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 		ListAll().
 		ForEach(func(job keboolaBridgeModel.Job, _ *iterator.Header) error {
 			grp.Go(func() error {
-				err, deleted := n.cleanJob(ctx, job)
+				// There can be several cleanup nodes, each node processes an own part.
+				if !n.dist.MustCheckIsOwner(job.ProjectID.String()) {
+					return nil
+				}
+
+				// Log/trace job details
+				attrs := job.Telemetry()
+				ctx = ctxattr.ContextWith(ctx, attrs...)
+
+				// Trace each job
+				ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
+				defer span.End(&err)
+
+				err, deleted := n.bridge.CleanJob(ctx, job)
 				if deleted {
 					jobCounter.Add(1)
 				}
+
 				return err
 			})
 
@@ -250,79 +261,4 @@ func (n *Node) isFileExpired(file model.File, age time.Duration) bool {
 
 	// Other files have a longer expiration so there is time for retries.
 	return age >= n.config.ActiveFileExpiration
-}
-
-func (n *Node) cleanJob(ctx context.Context, job keboolaBridgeModel.Job) (err error, deleted bool) {
-	// There can be several cleanup nodes, each node processes an own part.
-	if !n.dist.MustCheckIsOwner(job.ProjectID.String()) {
-		return nil, false
-	}
-
-	// Log/trace file details
-	attrs := job.Telemetry()
-	ctx = ctxattr.ContextWith(ctx, attrs...)
-
-	// Trace each job
-	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
-	defer span.End(&err)
-
-	// Parse storage job ID from string
-	id64, err := strconv.ParseInt(string(job.JobKey.JobID), 10, 64)
-	if err != nil {
-		err = errors.PrefixErrorf(err, `cannot get keboola storage job "%s"`, job.JobKey)
-		n.logger.Error(ctx, err.Error())
-		return err, false
-	}
-
-	if id64 < math.MinInt || id64 > math.MaxInt {
-		err = errors.Errorf("parsed job ID %d is out of int range", id64)
-		n.logger.Error(ctx, err.Error())
-		return err, false
-	}
-
-	token, err := n.bridge.SinkToken(ctx, job.SinkKey)
-	if err != nil {
-		n.logger.Warnf(ctx, "cannot get token for sink, already deleted: %s", err.Error())
-		return nil, false
-	}
-
-	// Get job details from storage API
-	id := int(id64)
-	api := n.publicAPI.NewAuthorizedAPI(token.TokenString(), 1*time.Minute)
-	var jobStatus *keboola.StorageJob
-	if jobStatus, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: keboola.StorageJobID(id)}).Send(ctx); err != nil {
-		n.logger.Warnf(ctx, "cannot get information about storage job, probably already deleted: %s", err.Error())
-		return nil, false
-	}
-
-	attrs = append(attrs, attribute.String("job.state", jobStatus.Status))
-	ctx = ctxattr.ContextWith(ctx, attrs...)
-	// Check status of storage job
-	if jobStatus.Status == keboola.StorageJobStatusProcessing || jobStatus.Status == keboola.StorageJobStatusWaiting {
-		n.logger.Debugf(ctx, "cannot remove storage job, job status: %s", jobStatus.Status)
-		return nil, false
-	}
-
-	// Acquire lock
-	mutex := n.locks.NewMutex(fmt.Sprintf("api.source.sink.jobs.%s", job.SinkKey))
-	if err = mutex.TryLock(ctx); err != nil {
-		return err, false
-	}
-	defer func() {
-		if err := mutex.Unlock(ctx); err != nil {
-			n.logger.Errorf(ctx, "cannot unlock the lock: %s", err)
-		}
-	}()
-
-	// Purge job in bridge repository
-	if _, err = n.keboolaBridgeRepository.Job().Purge(&job).RequireLock(mutex).Do(ctx).ResultOrErr(); err != nil {
-		err = errors.PrefixErrorf(err, `cannot delete finished storage job "%s"`, job.JobKey)
-		n.logger.Error(ctx, err.Error())
-		return err, false
-	}
-
-	// Log file details
-	n.logger.Infof(ctx, `deleted finished storage job`)
-
-	return nil, true
 }
