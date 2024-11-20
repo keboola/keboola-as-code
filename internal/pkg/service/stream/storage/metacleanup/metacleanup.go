@@ -184,13 +184,13 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 
 				// Trace each job
 				ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
-				defer span.End(&err)
 
 				err, deleted := n.bridge.CleanJob(ctx, job)
 				if deleted {
 					jobCounter.Add(1)
 				}
 
+				span.End(&err)
 				return err
 			})
 
