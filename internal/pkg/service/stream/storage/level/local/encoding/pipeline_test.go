@@ -592,7 +592,7 @@ func (h *writerSyncHelper) NewSyncer(ctx context.Context, logger log.Logger, clo
 func (h *writerSyncHelper) ExpectWritesCount(tb testing.TB, n int) {
 	tb.Helper()
 	tb.Logf(`waiting for %d writes`, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		select {
 		case <-h.writeDone:
 			tb.Logf(`write %d done`, i+1)

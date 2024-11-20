@@ -34,7 +34,7 @@ func NewWritersPool(out io.Writer, rowSizeLimit datasize.ByteSize, writers int) 
 	}
 
 	p.sem = make(chan struct{}, writers)
-	for i := 0; i < writers; i++ {
+	for range writers {
 		p.sem <- struct{}{}
 	}
 
