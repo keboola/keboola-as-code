@@ -227,8 +227,7 @@ func newBenchmark(configure func(wb *benchmark.WriterBenchmark)) *benchmark.Writ
 			// Send the pre-generated records to the channel over and over
 			go func() {
 				defer close(ch)
-				row := 0
-				for range n {
+				for i := range n {
 					if ctx.Err() != nil {
 						break
 					}
