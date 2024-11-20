@@ -2,13 +2,12 @@ package ignore
 
 import (
 	"context"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const KBCIgnoreFilePath = ".keboola/kbc_ignore"
+const KBCIgnoreFilePath = ".keboola/.kbcignore"
 
 type File struct {
 	rawStringPattern string
