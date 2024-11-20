@@ -17,11 +17,12 @@ import (
 
 const (
 	// maxCacheExpiration is the maximum duration for which an old AppConfig of a data app is cached.
-	maxCacheExpiration = time.Hour
-	attrProjectID      = "proxy.app.projectId"
-	attrAppID          = "proxy.app.id"
-	attrAppName        = "proxy.app.name"
-	attrAppUpstream    = "proxy.app.upstream"
+	maxCacheExpiration             = time.Hour
+	attrSandboxesServiceStatusCode = "proxy.sandboxesService.statusCode"
+	attrProjectID                  = "proxy.app.projectId"
+	attrAppID                      = "proxy.app.id"
+	attrAppName                    = "proxy.app.name"
+	attrAppUpstream                = "proxy.app.upstream"
 )
 
 type AppID string
