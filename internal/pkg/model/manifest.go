@@ -25,7 +25,7 @@ type RecordPaths interface {
 	// GetParentPath - for example path of the parent object.
 	GetParentPath() string
 	// SetParentPath - for example path of the parent object.
-	SetParentPath(p string)
+	SetParentPath(path string)
 	// IsParentPathSet returns true if the parent path is set/resolved.
 	IsParentPathSet() bool
 }

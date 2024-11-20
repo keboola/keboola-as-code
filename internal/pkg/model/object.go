@@ -45,7 +45,7 @@ type Object interface {
 	Key
 	Key() Key
 	ObjectName() string
-	SetObjectID(obj any)
+	SetObjectID(objectID any)
 }
 
 type ToAPIObject interface {

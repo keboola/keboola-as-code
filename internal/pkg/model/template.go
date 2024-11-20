@@ -43,7 +43,7 @@ func (r TemplateRepository) Hash() string {
 
 type TemplateRef interface {
 	Repository() TemplateRepository
-	WithRepository(r TemplateRepository) TemplateRef
+	WithRepository(repository TemplateRepository) TemplateRef
 	TemplateID() string
 	Version() string
 	Name() string
