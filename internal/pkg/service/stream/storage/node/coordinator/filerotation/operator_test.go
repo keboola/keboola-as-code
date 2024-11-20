@@ -45,7 +45,7 @@ func TestFileRotation(t *testing.T) {
 
 	// Trigger check - no import trigger
 	ts.triggerCheck(t, false, `
-{"level":"debug","message":"checking files import conditions","component":"storage.node.operator.file.rotation"}                                            
+{"level":"debug","message":"checking files import conditions","component":"storage.node.operator.file.rotation"}
 {"level":"debug","message":"skipping file rotation: no record","component":"storage.node.operator.file.rotation"}
 `)
 

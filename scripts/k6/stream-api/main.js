@@ -108,8 +108,9 @@ const mappings = {
 // K6 options
 export const options = {
   systemTags: ['status', 'group'],
+  setupTimeout: '240s',
   discardResponseBodies: true, // we are checking only status codes
-  teardownTimeout: '120s', scenarios: {
+  teardownTimeout: '180s', scenarios: {
     [SCENARIO]: scenarios[SCENARIO]
   },
   // Improve results summary

@@ -83,6 +83,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 		bridgeTest.MockTokenStorageAPICalls(t, transport)
 		bridgeTest.MockBucketStorageAPICalls(t, transport)
 		bridgeTest.MockTableStorageAPICalls(t, transport)
+		bridgeTest.MockSuccessJobStorageAPICalls(t, transport)
 		bridgeTest.MockFileStorageAPICalls(t, clk, transport)
 	}
 

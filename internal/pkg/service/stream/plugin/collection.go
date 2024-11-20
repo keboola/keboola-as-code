@@ -207,6 +207,15 @@ func (c *Collection) OnSinkModification(fn onSinkSaveFn) {
 	})
 }
 
+func (c *Collection) OnSinkDelete(fn onSinkSaveFn) {
+	c.onSinkSave = append(c.onSinkSave, func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
+		if isDeletedNow(original, sink) {
+			return fn(ctx, now, by, original, sink)
+		}
+		return nil
+	})
+}
+
 func (c *Collection) OnFileOpen(fn onFileOpenFn) {
 	c.onFileOpen = append(c.onFileOpen, fn)
 }

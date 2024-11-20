@@ -24,7 +24,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
+	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
@@ -46,6 +48,7 @@ type operator struct {
 	distribution    *distribution.GroupNode
 	locks           *distlock.Provider
 	telemetry       telemetry.Telemetry
+	plugins         *plugin.Plugins
 
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
 	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
@@ -62,6 +65,7 @@ type fileData struct {
 	FileKey      model.FileKey
 	State        model.FileState
 	Expiration   utctime.UTCTime
+	Provider     targetModel.Provider
 	ImportConfig targetConfig.ImportConfig
 	Retry        model.Retryable
 	ModRevision  int64
@@ -89,6 +93,7 @@ type dependencies interface {
 	StatisticsL1Cache() *statsCache.L1
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
+	Plugins() *plugin.Plugins
 	Telemetry() telemetry.Telemetry
 }
 
@@ -102,6 +107,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		statisticsCache: d.StatisticsL1Cache(),
 		locks:           d.DistributedLockProvider(),
 		telemetry:       d.Telemetry(),
+		plugins:         d.Plugins(),
 		metrics:         node.NewMetrics(d.Telemetry().Meter()),
 	}
 
@@ -138,6 +144,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 					FileKey:      file.FileKey,
 					State:        file.State,
 					Expiration:   file.StagingStorage.Expiration,
+					Provider:     file.TargetStorage.Provider,
 					ImportConfig: file.TargetStorage.Import,
 					Retry:        file.Retryable,
 					ModRevision:  rawValue.ModRevision,
@@ -348,6 +355,12 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	result := shouldImport(file.ImportConfig, o.clock.Now(), file.FileKey.OpenedAt().Time(), file.Expiration.Time(), stats.Total)
 	if !result.ShouldImport() {
 		o.logger.Debugf(ctx, "skipping file rotation: %s", result.Cause())
+		return
+	}
+
+	// Skip filerotation if target provider is throttled
+	if !o.plugins.CanAcceptNewFile(ctx, file.Provider, file.FileKey.SinkKey) {
+		o.logger.Warnf(ctx, "skipping file rotation: sink is throttled")
 		return
 	}
 

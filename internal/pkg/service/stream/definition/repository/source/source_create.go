@@ -48,7 +48,7 @@ func (r *Repository) Create(input *definition.Source, now time.Time, by definiti
 			created.IncrementVersion(created, now, by, versionDescription)
 			return r.save(ctx, now, by, nil, &created)
 		}).
-		// Update the input entity, it the operation is successful
+		// Update the input entity, if the operation is successful
 		OnResult(func(result definition.Source) {
 			*input = result
 		})

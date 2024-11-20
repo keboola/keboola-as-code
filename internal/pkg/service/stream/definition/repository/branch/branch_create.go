@@ -48,7 +48,7 @@ func (r *Repository) Create(input *definition.Branch, now time.Time, by definiti
 			created.SetCreation(now, by)
 			return r.save(ctx, now, by, nil, &created)
 		}).
-		// Update the input entity, it the operation is successful
+		// Update the input entity, if the operation is successful
 		OnResult(func(entity definition.Branch) {
 			*input = entity
 		})

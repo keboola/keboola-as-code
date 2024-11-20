@@ -25,7 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func TestBridge_ImportFile_EmptyFile(t *testing.T) {
+func TestBridge_CreateJob(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -55,7 +55,8 @@ func TestBridge_ImportFile_EmptyFile(t *testing.T) {
 		bridgeTest.MockTokenStorageAPICalls(t, transport)
 		bridgeTest.MockBucketStorageAPICalls(t, transport)
 		bridgeTest.MockTableStorageAPICalls(t, transport)
-		bridgeTest.MockProcessingJobStorageAPICalls(t, transport)
+		bridgeTest.MockSuccessJobStorageAPICalls(t, transport)
+		bridgeTest.MockImportAsyncAPICalls(t, transport)
 		bridgeTest.MockFileStorageAPICalls(t, clk, transport)
 	}
 
@@ -101,14 +102,14 @@ func TestBridge_ImportFile_EmptyFile(t *testing.T) {
 		file := files[0]
 		slice := slices[0]
 
-		// Simulate upload of an empty slice
+		// Upload of non empty slice
 		clk.Add(time.Second)
-		require.NoError(t, storageRepo.Slice().SwitchToUploading(slice.SliceKey, clk.Now(), true).Do(ctx).Err())
+		require.NoError(t, storageRepo.Slice().SwitchToUploading(slice.SliceKey, clk.Now(), false).Do(ctx).Err())
 		require.NoError(t, storageRepo.Slice().SwitchToUploaded(slice.SliceKey, clk.Now()).Do(ctx).Err())
 
-		// Switch empty file to the FileImporting state
+		// Switch file to the FileImporting state
 		clk.Add(time.Second)
-		require.NoError(t, storageRepo.File().SwitchToImporting(file.FileKey, clk.Now(), true).Do(ctx).Err())
+		require.NoError(t, storageRepo.File().SwitchToImporting(file.FileKey, clk.Now(), false).Do(ctx).Err())
 	}
 
 	// Start file import operator
@@ -118,20 +119,22 @@ func TestBridge_ImportFile_EmptyFile(t *testing.T) {
 	// Wait import of the empty file
 	// -----------------------------------------------------------------------------------------------------------------
 	logger.Truncate()
-	transport.ZeroCallCounters()
 	clk.Add(checkInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
 {"level":"info","message":"importing file","component":"storage.node.operator.file.import"}
-{"level":"info","message":"empty file, skipped import, deleting empty staging file","component":"keboola.bridge"}
+{"level":"debug","message":"creating job","job.id":"123/456/my-source/my-sink/321","component":"keboola.bridge"}
+{"level":"debug","message":"job created","job.id":"123/456/my-source/my-sink/321","component":"keboola.bridge"}
 {"level":"info","message":"imported file","component":"storage.node.operator.file.import"}
 `)
 	}, 15*time.Second, 50*time.Millisecond)
 
 	// Empty file in the Storage API has been deleted
 	// -----------------------------------------------------------------------------------------------------------------
-	expectedStorageAPICall := "DELETE https://connection.keboola.local/v2/storage/branch/456/files/1001"
-	assert.Equal(t, 1, transport.GetCallCountInfo()[expectedStorageAPICall])
+	expectedImportAsyncAPICall := "POST https://connection.keboola.local/v2/storage/branch/456/tables/in.c-bucket.my-table/import-async"
+	expectedStorageJobsCall := "GET https://connection.keboola.local/v2/storage/jobs/321"
+	assert.Equal(t, 1, transport.GetCallCountInfo()[expectedImportAsyncAPICall])
+	assert.Equal(t, 1, transport.GetCallCountInfo()[expectedStorageJobsCall])
 
 	// Shutdown
 	// -----------------------------------------------------------------------------------------------------------------

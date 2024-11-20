@@ -21,6 +21,7 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
+	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -46,6 +47,7 @@ type serviceScope struct {
 	storageStatisticsRepository *statsRepo.Repository
 	aggregationRepository       *aggregationRepo.Repository
 	keboolaBridge               *keboolaSinkBridge.Bridge
+	keboolaBridgeRepository     *keboolaBridgeRepo.Repository
 }
 
 type parentScopes struct {
@@ -200,6 +202,11 @@ func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.Publ
 		return api
 	}
 
+	d.keboolaBridgeRepository, err = keboolaBridgeRepo.New(cfg.Storage.Level, d)
+	if err != nil {
+		return nil, err
+	}
+
 	d.keboolaBridge = keboolaSinkBridge.New(d, apiCtxProvider, cfg.Sink.Table.Keboola)
 
 	d.storageStatisticsRepository = statsRepo.New(d)
@@ -223,6 +230,10 @@ func (v *serviceScope) DefinitionRepository() *definitionRepo.Repository {
 
 func (v *serviceScope) KeboolaSinkBridge() *keboolaSinkBridge.Bridge {
 	return v.keboolaBridge
+}
+
+func (v *serviceScope) KeboolaBridgeRepository() *keboolaBridgeRepo.Repository {
+	return v.keboolaBridgeRepository
 }
 
 func (v *serviceScope) StorageRepository() *storageRepo.Repository {

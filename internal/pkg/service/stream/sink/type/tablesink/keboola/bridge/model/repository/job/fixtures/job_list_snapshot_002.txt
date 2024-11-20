@@ -1,0 +1,23 @@
+<<<<<
+storage/job/123/567/my-source/my-sink-1/321
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-1",
+  "jobId": "321"
+}
+>>>>>
+
+<<<<<
+storage/job/123/567/my-source/my-sink-2/322
+-----
+{
+  "projectId": 123,
+  "branchId": 567,
+  "sourceId": "my-source",
+  "sinkId": "my-sink-2",
+  "jobId": "322"
+}
+>>>>>

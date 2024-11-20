@@ -34,9 +34,10 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 
 	// Update configuration to make the cluster testable
 	configFn := func(cfg *config.Config) {
+		// Enable metadata cleanup for removing storage jobs
+		cfg.Storage.MetadataCleanup.Enabled = true
 		// Disable unrelated workers
 		cfg.Storage.DiskCleanup.Enabled = false
-		cfg.Storage.MetadataCleanup.Enabled = false
 		cfg.API.Task.CleanupEnabled = false
 
 		// Use deterministic load balancer
@@ -52,6 +53,9 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 			},
 		}
 
+		// In the test, we trigger the file import only when sink limit is not reached.
+		cfg.Sink.Table.Keboola.JobLimit = 1
+
 		// In the test, we trigger the file import via the records count, the other values are intentionally high.
 		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
 			MinInterval: duration.From(30 * time.Second), // minimum
@@ -63,6 +67,9 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 				Expiration:  duration.From(30 * time.Minute),
 			},
 		}
+
+		// Cleanup should be perfomed more frequently to remove already finished storage jobs
+		cfg.Storage.MetadataCleanup.Interval = 10 * time.Second
 	}
 
 	ts := setup(t, ctx, configFn)
@@ -437,6 +444,11 @@ func (ts *testState) testFileImport(t *testing.T, ctx context.Context, expectati
 		`)
 	}, 60*time.Second, 100*time.Millisecond)
 
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `
+{"level":"info","message":"deleted \"1\" jobs","deletedJobsCount":1,"component":"storage.metadata.cleanup"}
+		`)
+	}, 20*time.Second, 100*time.Millisecond)
 	// Check file/slices state after the upload
 	files := ts.checkState(t, ctx, expectations.expectedFiles)
 

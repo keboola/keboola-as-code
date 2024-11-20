@@ -110,7 +110,7 @@ func MockTableStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) 
 	// Create table job - ok
 	transport.RegisterResponder(
 		http.MethodGet,
-		`=~/v2/storage/jobs/.+$`,
+		`=~/v2/storage/jobs/1.*`,
 		func(request *http.Request) (*http.Response, error) {
 			lock.Lock()
 			defer lock.Unlock()

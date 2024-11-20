@@ -12,15 +12,35 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	keboolaSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
+	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	bridgeEntity "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
+
+type (
+	// token is an etcd prefix that stores all Keboola Storage API token entities.
+	testToken struct {
+		etcdop.PrefixT[keboolaSink.Token]
+	}
+)
+
+func forToken(s *serde.Serde) testToken {
+	return testToken{PrefixT: etcdop.NewTypedPrefix[keboolaSink.Token]("storage/keboola/secret/token", s)}
+}
+
+func (v testToken) ForSink(k key.SinkKey) etcdop.KeyT[keboolaSink.Token] {
+	return v.PrefixT.Key(k.String())
+}
 
 func TestMetadataCleanup(t *testing.T) {
 	t.Parallel()
@@ -36,7 +56,8 @@ func TestMetadataCleanup(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/slice/all/|storage/stats/|runtime/`)
+	jobKey := key.JobKey{SinkKey: sinkKey, JobID: "321"}
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/slice/all/|storage/stats/|runtime/|storage/keboola/secret/token/`)
 
 	// Get services
 	d, mocked := dependencies.NewMockedCoordinatorScope(t, ctx, commonDeps.WithClock(clk))
@@ -57,6 +78,12 @@ func TestMetadataCleanup(t *testing.T) {
 	cfg.Interval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
+
+	// Register routes for receiving information about jobs
+	transport := mocked.MockedHTTPTransport()
+	{
+		bridgeTest.MockSuccessJobStorageAPICalls(t, transport)
+	}
 
 	// Start metadata cleanup node
 	// -----------------------------------------------------------------------------------------------------------------
@@ -86,7 +113,7 @@ func TestMetadataCleanup(t *testing.T) {
 		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
 	}
 
-	// Create parent branch, source, sink, file
+	// Create parent branch, source, sink, token
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		branch := test.NewBranch(branchKey)
@@ -95,6 +122,8 @@ func TestMetadataCleanup(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
 		sink := dummy.NewSinkWithLocalStorage(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+		token := keboolaSink.Token{SinkKey: sinkKey, Token: keboola.Token{ID: "secret"}}
+		require.NoError(t, forToken(d.EtcdSerde()).ForSink(sinkKey).Put(client, token).Do(ctx).Err())
 	}
 
 	// Create the second file
@@ -194,8 +223,136 @@ func TestMetadataCleanup(t *testing.T) {
 {"level":"info","message":"deleted \"1\" files","deletedFilesCount":1}
 `)
 	}
+	// Check database state
 	{
-		// Check database state
 		etcdhelper.AssertKeys(t, client, nil, ignoredEtcdKeys)
+	}
+
+	// Create job in global level and bridge level
+	{
+		job := bridgeEntity.NewJob(jobKey)
+		require.NoError(t, d.KeboolaBridgeRepository().Job().Create(&job).Do(ctx).Err())
+	}
+
+	// Delete success job as it has finished
+	jobCleanupAttempt := 0
+	{
+		logger.Truncate()
+		startTime := clk.Now()
+		jobCleanupAttempt++
+		clk.Set(startTime.Add(time.Duration(jobCleanupAttempt) * cleanupInterval))
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			logger.AssertJSONMessages(c, `{"level":"info","message":"deleted \"%d\" jobs"}`)
+		}, 2*time.Second, 100*time.Millisecond)
+		logger.AssertJSONMessages(t, `
+{"level":"info","message":"deleting metadata of success jobs"}
+{"level":"info","message":"deleted finished storage job"}
+{"level":"info","message":"deleted \"1\" jobs","deletedJobsCount":1}
+`)
+	}
+	// Check database state
+	{
+		etcdhelper.AssertKeys(t, client, nil, ignoredEtcdKeys)
+	}
+}
+
+func TestMetadataProcessingJobCleanup(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	clk := clock.NewMock()
+	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	by := test.ByUser()
+
+	// Fixtures
+	projectID := keboola.ProjectID(123)
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
+	jobKey := key.JobKey{SinkKey: sinkKey, JobID: "321"}
+	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/file/level/local/|storage/slice/all/|storage/slice/level/local/|storage/stats/|runtime/|storage/keboola/secret/token/`)
+
+	// Get services
+	d, mocked := dependencies.NewMockedCoordinatorScope(t, ctx, commonDeps.WithClock(clk))
+
+	logger := mocked.DebugLogger()
+	client := mocked.TestEtcdClient()
+	defRepo := d.DefinitionRepository()
+	storageRepo := d.StorageRepository()
+	volumeRepo := storageRepo.Volume()
+
+	// Setup cleanup interval
+	cleanupInterval := 12 * time.Hour
+	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
+	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
+	cfg := metacleanup.NewConfig()
+	cfg.Interval = cleanupInterval
+	cfg.ActiveFileExpiration = activeFileExpiration
+	cfg.ArchivedFileExpiration = importedFileExpiration
+
+	// Register routes for receiving information about jobs
+	transport := mocked.MockedHTTPTransport()
+	{
+		bridgeTest.MockProcessingJobStorageAPICalls(t, transport)
+	}
+
+	// Start metadata cleanup node
+	// -----------------------------------------------------------------------------------------------------------------
+	require.NoError(t, metacleanup.Start(d, cfg))
+
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
+
+	// Create parent branch, source, sink, token
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		branch := test.NewBranch(branchKey)
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
+		source := test.NewSource(sourceKey)
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
+		sink := dummy.NewSinkWithLocalStorage(sinkKey)
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+		token := keboolaSink.Token{SinkKey: sinkKey, Token: keboola.Token{ID: "secret"}}
+		require.NoError(t, forToken(d.EtcdSerde()).ForSink(sinkKey).Put(client, token).Do(ctx).Err())
+	}
+
+	// Create job in global level and bridge level
+	{
+		job := bridgeEntity.NewJob(jobKey)
+		require.NoError(t, d.KeboolaBridgeRepository().Job().Create(&job).Do(ctx).Err())
+	}
+
+	// Delete processing job as it has finished
+	jobCleanupAttempt := 0
+	{
+		logger.Truncate()
+		startTime := clk.Now()
+		jobCleanupAttempt++
+		clk.Set(startTime.Add(time.Duration(jobCleanupAttempt) * cleanupInterval))
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			logger.AssertJSONMessages(c, `{"level":"info","message":"deleted \"%d\" jobs"}`)
+		}, 2*time.Second, 100*time.Millisecond)
+		logger.AssertJSONMessages(t, `
+{"level":"info","message":"deleting metadata of success jobs"}
+{"level":"debug","message":"cannot remove storage job, job status: processing"}
+{"level":"info","message":"deleted \"0\" jobs","deletedJobsCount":0}
+`)
+	}
+	// Check database state
+	{
+		etcdhelper.AssertKeys(
+			t,
+			client,
+			[]string{
+				"storage/job/123/456/my-source/my-sink/321",
+			},
+			ignoredEtcdKeys)
 	}
 }

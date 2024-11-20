@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/atomic"
@@ -19,6 +20,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
+	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
+	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -31,29 +35,38 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
+	KeboolaSinkBridge() *keboolaSinkBridge.Bridge
+	KeboolaPublicAPI() *keboola.PublicAPI
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
 	StorageRepository() *storageRepo.Repository
+	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 }
 
 type Node struct {
-	config    Config
-	clock     clock.Clock
-	logger    log.Logger
-	telemetry telemetry.Telemetry
-	dist      *distribution.GroupNode
-	locks     *distlock.Provider
-	storage   *storageRepo.Repository
+	config                  Config
+	clock                   clock.Clock
+	logger                  log.Logger
+	telemetry               telemetry.Telemetry
+	bridge                  *keboolaSinkBridge.Bridge
+	dist                    *distribution.GroupNode
+	publicAPI               *keboola.PublicAPI
+	locks                   *distlock.Provider
+	storageRepository       *storageRepo.Repository
+	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 }
 
 func Start(d dependencies, cfg Config) error {
 	n := &Node{
-		config:    cfg,
-		clock:     d.Clock(),
-		logger:    d.Logger().WithComponent("storage.metadata.cleanup"),
-		telemetry: d.Telemetry(),
-		locks:     d.DistributedLockProvider(),
-		storage:   d.StorageRepository(),
+		config:                  cfg,
+		clock:                   d.Clock(),
+		logger:                  d.Logger().WithComponent("storage.metadata.cleanup"),
+		telemetry:               d.Telemetry(),
+		locks:                   d.DistributedLockProvider(),
+		bridge:                  d.KeboolaSinkBridge(),
+		publicAPI:               d.KeboolaPublicAPI(),
+		storageRepository:       d.StorageRepository(),
+		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 	}
 
 	if dist, err := d.DistributionNode().Group("storage.metadata.cleanup"); err == nil {
@@ -112,11 +125,19 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 	defer span.End(&err)
 
 	// Measure count of deleted files
-	counter := atomic.NewInt64(0)
+	fileCounter := atomic.NewInt64(0)
 	defer func() {
-		count := counter.Load()
+		count := fileCounter.Load()
 		span.SetAttributes(attribute.Int64("deletedFilesCount", count))
 		n.logger.With(attribute.Int64("deletedFilesCount", count)).Info(ctx, `deleted "<deletedFilesCount>" files`)
+	}()
+
+	// Measure count of deleted storage jobs
+	jobCounter := atomic.NewInt64(0)
+	defer func() {
+		count := jobCounter.Load()
+		span.SetAttributes(attribute.Int64("deletedJobsCount", count))
+		n.logger.With(attribute.Int64("deletedJobsCount", count)).Info(ctx, `deleted "<deletedJobsCount>" jobs`)
 	}()
 
 	// Delete files in parallel, but with limit
@@ -125,14 +146,14 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 	grp.SetLimit(n.config.Concurrency)
 
 	// Iterate all files
-	err = n.storage.
+	err = n.storageRepository.
 		File().
 		ListAll().
 		ForEach(func(file model.File, _ *iterator.Header) error {
 			grp.Go(func() error {
 				err, deleted := n.cleanFile(ctx, file)
 				if deleted {
-					counter.Add(1)
+					fileCounter.Add(1)
 				}
 				return err
 			})
@@ -141,6 +162,42 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 		Do(ctx).
 		Err()
 		// Handle iterator error
+	if err != nil {
+		return err
+	}
+
+	n.logger.Info(ctx, `deleting metadata of success jobs`)
+	// Iterate all storage jobs
+	err = n.keboolaBridgeRepository.
+		Job().
+		ListAll().
+		ForEach(func(job keboolaBridgeModel.Job, _ *iterator.Header) error {
+			grp.Go(func() error {
+				// There can be several cleanup nodes, each node processes an own part.
+				if !n.dist.MustCheckIsOwner(job.ProjectID.String()) {
+					return nil
+				}
+
+				// Log/trace job details
+				attrs := job.Telemetry()
+				ctx = ctxattr.ContextWith(ctx, attrs...)
+
+				// Trace each job
+				ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
+
+				err, deleted := n.bridge.CleanJob(ctx, job)
+				if deleted {
+					jobCounter.Add(1)
+				}
+
+				span.End(&err)
+				return err
+			})
+
+			return nil
+		}).
+		Do(ctx).
+		Err()
 	if err != nil {
 		return err
 	}
@@ -183,7 +240,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 	}()
 
 	// Delete the file
-	if err = n.storage.File().Delete(file.FileKey, n.clock.Now()).RequireLock(mutex).Do(ctx).Err(); err != nil {
+	if err = n.storageRepository.File().Delete(file.FileKey, n.clock.Now()).RequireLock(mutex).Do(ctx).Err(); err != nil {
 		err = errors.PrefixErrorf(err, `cannot delete expired file "%s"`, file.FileKey)
 		n.logger.Error(ctx, err.Error())
 		return err, false

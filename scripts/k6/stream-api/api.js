@@ -102,7 +102,7 @@ export class Api {
   }
 
   awaitTask(taskUrl) {
-    const taskTimeout = 60
+    const taskTimeout = 180
     for (let retries = taskTimeout; retries > 0; retries--) {
       let res = http.get(taskUrl, { headers: this.headers, responseType: "text" })
       if (res.status !== 200) {
