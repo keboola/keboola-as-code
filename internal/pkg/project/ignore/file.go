@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const KBCIgnoreFilePath = ".keboola/kbc_ignore"
+const KBCIgnoreFilePath = ".keboola/.kbcignore"
 
 type File struct {
 	rawStringPattern string

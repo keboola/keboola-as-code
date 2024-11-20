@@ -15,7 +15,7 @@ func IsIgnoredFile(path string, d filesystem.FileInfo) bool {
 	return !d.IsDir() &&
 		strings.HasPrefix(base, ".") &&
 		!strings.HasPrefix(base, ".env") &&
-		base != ".gitignore"
+		base != ".gitignore" && base != ".kbcignore"
 }
 
 func IsIgnoredDir(path string, d filesystem.FileInfo) bool {
