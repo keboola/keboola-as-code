@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/singleflight"
 
@@ -41,6 +42,7 @@ const (
 
 type Bridge struct {
 	logger                  log.Logger
+	telemetry               telemetry.Telemetry
 	config                  keboolasink.Config
 	client                  etcd.KV
 	schema                  schema.Schema
@@ -62,6 +64,7 @@ type jobData struct {
 
 type dependencies interface {
 	Logger() log.Logger
+	Telemetry() telemetry.Telemetry
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Process() *servicectx.Process
@@ -75,6 +78,7 @@ type dependencies interface {
 func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Bridge {
 	b := &Bridge{
 		logger:                  d.Logger().WithComponent("keboola.bridge"),
+		telemetry:               d.Telemetry(),
 		config:                  config,
 		client:                  d.EtcdClient(),
 		schema:                  schema.New(d.EtcdSerde()),

@@ -21,8 +21,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
-	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
-	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -40,7 +38,6 @@ type dependencies interface {
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
 	StorageRepository() *storageRepo.Repository
-	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 }
 
 type Node struct {
@@ -53,7 +50,6 @@ type Node struct {
 	publicAPI               *keboola.PublicAPI
 	locks                   *distlock.Provider
 	storageRepository       *storageRepo.Repository
-	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 }
 
 func Start(d dependencies, cfg Config) error {
@@ -66,7 +62,6 @@ func Start(d dependencies, cfg Config) error {
 		bridge:                  d.KeboolaSinkBridge(),
 		publicAPI:               d.KeboolaPublicAPI(),
 		storageRepository:       d.StorageRepository(),
-		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 	}
 
 	if dist, err := d.DistributionNode().Group("storage.metadata.cleanup"); err == nil {
@@ -168,38 +163,21 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 
 	n.logger.Info(ctx, `deleting metadata of success jobs`)
 	// Iterate all storage jobs
-	err = n.keboolaBridgeRepository.
-		Job().
-		ListAll().
-		ForEach(func(job keboolaBridgeModel.Job, _ *iterator.Header) error {
-			grp.Go(func() error {
-				// There can be several cleanup nodes, each node processes an own part.
-				if !n.dist.MustCheckIsOwner(job.ProjectID.String()) {
-					return nil
-				}
+	for item := range n.bridge.CleanupIterator(ctx) {
+		grp.Go(func() error {
+			// There can be several cleanup nodes, each node processes an own part.
+			if !n.dist.MustCheckIsOwner(item.ProjectID.String()) {
+				return nil
+			}
 
-				// Log/trace job details
-				attrs := job.Telemetry()
-				ctx = ctxattr.ContextWith(ctx, attrs...)
+			err, deleted := item.Cleanup(ctx)
+			if deleted {
+				jobCounter.Add(1)
+			}
 
-				// Trace each job
-				ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
-
-				err, deleted := n.bridge.CleanJob(ctx, job)
-				if deleted {
-					jobCounter.Add(1)
-				}
-
-				span.End(&err)
-				return err
-			})
-
-			return nil
-		}).
-		Do(ctx).
-		Err()
-	if err != nil {
-		return err
+			span.End(&err)
+			return err
+		})
 	}
 
 	// Handle error group error

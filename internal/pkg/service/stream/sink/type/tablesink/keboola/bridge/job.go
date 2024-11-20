@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -58,7 +59,47 @@ func (b *Bridge) canAcceptNewFile(ctx context.Context, sinkKey key.SinkKey) bool
 	return runningJobs < b.config.JobLimit
 }
 
-func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, deleted bool) {
+type CleanupItem struct {
+	ProjectID keboola.ProjectID
+	Cleanup   func(ctx context.Context) (error, bool)
+}
+
+func (b *Bridge) CleanupIterator(ctx context.Context) func(func(CleanupItem) bool) {
+	return func(yield func(CleanupItem) bool) {
+		err := b.keboolaBridgeRepository.
+			Job().
+			ListAll().
+			ForEach(func(job model.Job, _ *iterator.Header) error {
+				yield(CleanupItem{
+					ProjectID: job.ProjectID,
+					Cleanup: func(ctx context.Context) (error, bool) {
+						// Log/trace job details
+						attrs := job.Telemetry()
+						ctx = ctxattr.ContextWith(ctx, attrs...)
+
+						// Trace each job
+						ctx, span := b.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
+
+						err, deleted := b.cleanJob(ctx, job)
+
+						defer span.End(&err)
+
+						return err, deleted
+					},
+				})
+
+				return nil
+			}).
+			Do(ctx).
+			Err()
+
+		if err != nil {
+			// TODO: What am I supposed to do with an error here?
+		}
+	}
+}
+
+func (b *Bridge) cleanJob(ctx context.Context, job model.Job) (err error, deleted bool) {
 	// Parse storage job ID from string
 	id64, err := strconv.ParseInt(string(job.JobKey.JobID), 10, 64)
 	if err != nil {
