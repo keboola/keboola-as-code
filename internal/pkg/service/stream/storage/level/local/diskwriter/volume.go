@@ -90,7 +90,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, confi
 		v.allocator = config.Allocation.OverrideAllocator
 	}
 
-	v.ctx, v.cancel = context.WithCancel(context.Background())
+	v.ctx, v.cancel = context.WithCancel(context.WithoutCancel(ctx))
 
 	v.logger = v.logger.WithComponent("volume").With(attribute.String("volume.path", spec.Path))
 	v.logger.Infof(ctx, `opening volume`)

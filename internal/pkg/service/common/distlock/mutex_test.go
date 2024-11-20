@@ -22,7 +22,7 @@ func TestProvider_NewMutex(t *testing.T) {
 	d := dependencies.NewMocked(t, ctx, dependencies.WithEnabledEtcdClient())
 	client := d.TestEtcdClient()
 
-	p, err := distlock.NewProvider(distlock.NewConfig(), d)
+	p, err := distlock.NewProvider(context.Background(), distlock.NewConfig(), d)
 	require.NoError(t, err)
 
 	mtx := p.NewMutex("foo/bar")

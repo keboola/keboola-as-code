@@ -25,7 +25,7 @@ func newDistributedLockScope(ctx context.Context, cfg distlock.Config, d distrib
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewDistributedLockScope")
 	defer span.End(&err)
 
-	provider, err := distlock.NewProvider(cfg, d)
+	provider, err := distlock.NewProvider(ctx, cfg, d)
 	if err != nil {
 		return nil, err
 	}

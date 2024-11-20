@@ -190,7 +190,7 @@ func (u *AppUpstream) notify(ctx context.Context) {
 	go func() {
 		defer u.manager.wg.Done()
 
-		notificationCtx, cancel := context.WithTimeout(context.Background(), notifyRequestTimeout)
+		notificationCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), notifyRequestTimeout)
 		defer cancel()
 
 		notificationCtx = ctxattr.ContextWith(notificationCtx, ctxattr.Attributes(ctx).ToSlice()...)
@@ -210,7 +210,7 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 	go func() {
 		defer u.manager.wg.Done()
 
-		wakeupCtx, cancel := context.WithTimeout(context.Background(), wakeupRequestTimeout)
+		wakeupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), wakeupRequestTimeout)
 		defer cancel()
 
 		wakeupCtx = ctxattr.ContextWith(wakeupCtx, ctxattr.Attributes(ctx).ToSlice()...)

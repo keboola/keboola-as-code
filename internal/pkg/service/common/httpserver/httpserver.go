@@ -74,8 +74,8 @@ func (h *HTTPServer) Start(ctx context.Context) error {
 	// Start HTTP server in a separate goroutine.
 	h.proc.Add(func(shutdown servicectx.ShutdownFn) {
 		h.logger.Infof(ctx, "started HTTP server on %q", h.listenAddress)
-		serverErr := h.ListenAndServe()           // ListenAndServe blocks while the server is running
-		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
+		serverErr := h.ListenAndServe() // ListenAndServe blocks while the server is running
+		shutdown(context.WithoutCancel(ctx), serverErr)
 	})
 
 	// Register graceful shutdown

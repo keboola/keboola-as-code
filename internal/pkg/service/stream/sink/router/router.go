@@ -284,11 +284,11 @@ func (r *Router) dispatchToSink(sink *sinkData, c recordctx.Context) *SinkResult
 		error:      err,
 	}
 
-	if result.StatusCode == http.StatusInternalServerError {
-		r.logger.Errorf(context.Background(), `write record error: %s`, err.Error())
-	}
-
 	finalizationCtx := context.WithoutCancel(c.Ctx())
+
+	if result.StatusCode == http.StatusInternalServerError {
+		r.logger.Errorf(finalizationCtx, `write record error: %s`, err.Error())
+	}
 
 	// Update telemetry
 	attrs := append(

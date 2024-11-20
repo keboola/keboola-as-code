@@ -92,7 +92,7 @@ func NewWithDNSServer(d dependencies, dnsServerAddress string) (http.RoundTrippe
 
 		// Create context for DNS resolving
 		// It separates the events/tracing of the connection to the DNS server, from the connection to the target server.
-		resolveCtx, cancel := context.WithTimeout(context.Background(), DNSResolveTimeout)
+		resolveCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), DNSResolveTimeout)
 		defer cancel()
 
 		// We are using custom DNS resolving to detect if the target host - data app, is running.

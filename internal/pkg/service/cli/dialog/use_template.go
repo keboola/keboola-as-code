@@ -37,7 +37,7 @@ func (p *Dialogs) AskUseTemplateInputs(ctx context.Context, groups input.StepsGr
 		Dialogs:      p,
 		groups:       groups,
 		inputs:       groups.InputsMap(),
-		context:      context.Background(),
+		context:      context.WithoutCancel(ctx),
 		inputsValues: make(map[string]any),
 	}
 	return dialog.ask(ctx, isForTest, inputsFileFlag)
