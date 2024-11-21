@@ -16,7 +16,8 @@ services:
       - sandboxesMock
       - prometheus
     networks:
-      - localprom
+      - prometheus
+      - etcd
     volumes:
       - ./:/code:z
       - cache:/tmp/cache
@@ -99,6 +100,8 @@ services:
   etcd:
     hostname: etcd
     image: docker.io/bitnami/etcd:3.5.11-debian-11-r3
+    networks:
+      - etcd
     environment:
       ALLOW_NONE_AUTHENTICATION: "no"
       ETCD_NAME: "etcd"
@@ -155,7 +158,7 @@ services:
     volumes:
       - "./provisioning/dev/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
     networks:
-      - localprom
+      - prometheus
     ports:
       - 9090:9090
 
@@ -163,5 +166,6 @@ volumes:
   cache:
 
 networks:
-  localprom:
+  prometheus:
     driver: bridge
+  etcd:
