@@ -977,9 +977,6 @@ paths:
                     type: string
                     description: The 'filter' attribute specifies the category of templates to retrieve from the repository.
                     example: keboola.data-apps
-                    enum:
-                        - keboola.components
-                        - keboola.data-apps
                   example: keboola.data-apps
                 - name: repository
                   in: path
@@ -4051,9 +4048,6 @@ components:
                     type: string
                     description: The 'filter' attribute specifies the category of templates to retrieve from the repository.
                     example: keboola.data-apps
-                    enum:
-                        - keboola.components
-                        - keboola.data-apps
                 repository:
                     type: string
                     description: Name of the template repository. Use "keboola" for default Keboola repository.

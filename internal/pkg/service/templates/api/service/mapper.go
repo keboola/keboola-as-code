@@ -137,21 +137,9 @@ func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, 
 		}
 
 		if filterBy != nil && *filterBy != "" {
-			t, found := tmpl.DefaultVersion()
-			if !found {
-				continue
-			}
-
 			filterString := *filterBy
-			switch filterString {
-			case KeboolaDataApps:
-				if !slices.Contains(t.Components, filterString) {
-					continue
-				}
-			case KeboolaComponents:
-				if slices.Contains(t.Components, KeboolaDataApps) {
-					continue
-				}
+			if !slices.Contains(tmpl.Requirements.Components, filterString) {
+				continue
 			}
 		}
 

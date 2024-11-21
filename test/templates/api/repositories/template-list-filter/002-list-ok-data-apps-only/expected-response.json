@@ -24,7 +24,6 @@
       ],
       "components": [
         "keboola.wr-%s",
-        "foo.bar",
         "keboola.data-apps"
       ],
       "versions": [
@@ -50,8 +49,8 @@
       ],
       "components": [
         "keboola.wr-%s",
-        "foo.bar",
-        "keboola.data-apps"
+        "keboola.data-apps",
+        "keboola.wr-google-sheets"
       ],
       "versions": [
         {
