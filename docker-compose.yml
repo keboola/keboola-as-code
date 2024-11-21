@@ -85,17 +85,19 @@ services:
       - "9002:9002" # metrics
       # Go docs
       - "6060:6060"
+
   # To store locks for TEST_KBC_PROJECTS when testing.
   redis:
-      image: redis
-      hostname: redis
-      command: ["redis-server", "/etc/redis/redis.conf"]
-      ports:
-        - "6379:6379"
-      volumes:
-        - ./provisioning/common/redis/redis.conf:/etc/redis/redis.conf
-      environment:
-        REDIS_PORT: 6379
+    image: redis
+    hostname: redis
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./provisioning/common/redis/redis.conf:/etc/redis/redis.conf
+    environment:
+      REDIS_PORT: 6379
+
   # Same etcd is used for all services, but with different namespace
   etcd:
     hostname: etcd
@@ -113,6 +115,7 @@ services:
       ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
       ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
       ETCD_DISABLE_STORE_MEMBER_ID: "true"
+
   k6:
     volumes:
       - ./scripts:/scripts
@@ -143,15 +146,15 @@ services:
       - STREAM_PAYLOAD_SIZE
 
   sandboxesMock:
-      image: mockserver/mockserver:latest
-      ports:
-        - 1080:1080
-      environment:
-        MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
-        MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
-        MOCKSERVER_INITIALIZATION_JSON_PATH: /config/sandboxesMock.json
-      volumes:
-        - ./provisioning/apps-proxy/dev/sandboxesMock.json:/config/sandboxesMock.json:Z
+    image: mockserver/mockserver:latest
+    ports:
+      - 1080:1080
+    environment:
+      MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+      MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/sandboxesMock.json
+    volumes:
+      - ./provisioning/apps-proxy/dev/sandboxesMock.json:/config/sandboxesMock.json:Z
 
   prometheus:
     image: prom/prometheus
