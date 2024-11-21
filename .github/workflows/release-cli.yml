@@ -57,6 +57,7 @@ jobs:
     uses: ./.github/workflows/test-unit.yml
     with:
       without-cache: true
+      test-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/appsproxy"
 
   test-e2e-cli:
     name: "E2E: CLI"
