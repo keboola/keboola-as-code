@@ -50,7 +50,7 @@ func newFile(projectID keboola.ProjectID, apiHost string) *file {
 		Naming:            naming.TemplateWithIds(),
 		AllowedBranches:   model.DefaultAllowedBranches(),
 		IgnoredComponents: model.ComponentIDs{},
-		Templates:         Templates{Repositories: []model.TemplateRepository{repository.DefaultRepository()}},
+		Templates:         Templates{Repositories: []model.TemplateRepository{repository.DefaultRepository(), repository.ComponentsRepository()}},
 		Branches:          make([]*model.BranchManifest, 0),
 		Configs:           make([]*model.ConfigManifestWithRows, 0),
 	}

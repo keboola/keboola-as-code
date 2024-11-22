@@ -72,7 +72,7 @@ func New(projectID keboola.ProjectID, apiHost string) *Manifest {
 		project:      Project{ID: projectID, APIHost: apiHost},
 		naming:       naming.TemplateWithoutIds(),
 		filter:       model.NoFilter(),
-		repositories: []model.TemplateRepository{repository.DefaultRepository()},
+		repositories: []model.TemplateRepository{repository.DefaultRepository(), repository.ComponentsRepository()},
 	}
 }
 
