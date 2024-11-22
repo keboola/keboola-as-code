@@ -40,7 +40,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 			if test.TestDirFS().Exists(ctx, "repository") {
 				repositories = fmt.Sprintf("keboola|file://%s", filepath.Join(test.TestDirFS().BasePath(), "repository"))
 			} else {
-				repositories = "keboola|https://github.com/keboola/keboola-as-code-templates.git|main"
+				repositories = "keboola|https://github.com/keboola/keboola-as-code-templates.git|main;keboola-components|https://github.com/keboola/keboola-as-code-templates-components.git|main"
 			}
 			addArgs := []string{fmt.Sprintf("--repositories=%s", repositories)}
 
