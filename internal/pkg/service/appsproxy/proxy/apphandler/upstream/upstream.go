@@ -193,8 +193,6 @@ func (u *AppUpstream) notify(ctx context.Context) {
 		notificationCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), notifyRequestTimeout)
 		defer cancel()
 
-		notificationCtx = ctxattr.ContextWith(notificationCtx, ctxattr.Attributes(ctx).ToSlice()...)
-
 		_, span := u.manager.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.notify")
 		notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
 
@@ -212,8 +210,6 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 
 		wakeupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), wakeupRequestTimeout)
 		defer cancel()
-
-		wakeupCtx = ctxattr.ContextWith(wakeupCtx, ctxattr.Attributes(ctx).ToSlice()...)
 
 		_, span := u.manager.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.wakeup")
 		span.SetAttributes(attribute.String(attrWakeupReason, err.Error()))
