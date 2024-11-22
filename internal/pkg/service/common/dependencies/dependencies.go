@@ -63,6 +63,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	etcdPkg "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -139,6 +140,11 @@ type DistributionScope interface {
 // DistributedLockScope dependencies to acquire distributed locks in the cluster.
 type DistributedLockScope interface {
 	DistributedLockProvider() *distlock.Provider
+}
+
+// EncryptionScope dependencies to encrypt tokens.
+type EncryptionScope interface {
+	Encryptor() cloudencrypt.Encryptor
 }
 
 // Mocked dependencies for tests.
