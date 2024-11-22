@@ -316,7 +316,7 @@ func (ts *testState) setupSourceThroughAPI(t *testing.T, ctx context.Context, ex
 		Type:     "http",
 		Name:     "testSource",
 	}
-	out, err := json.Marshal(payload)
+	out, err := json.Marshal(payload) // nolint:musttag
 	if !assert.NoError(t, err) {
 		ts.logger.Errorf(ctx, "unable to marshal source create payload: %v", err)
 		return
@@ -369,7 +369,7 @@ func (ts *testState) setupSinkThroughAPI(t *testing.T, ctx context.Context, expe
 		Type:     definition.SinkTypeTable,
 		Name:     "testSink",
 	}
-	out, err := json.Marshal(payload)
+	out, err := json.Marshal(payload) // nolint:musttag
 	if !assert.NoError(t, err) {
 		ts.logger.Errorf(ctx, "unable to marshal sink create payload: %v", err)
 		return

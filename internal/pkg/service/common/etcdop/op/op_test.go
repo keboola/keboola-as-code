@@ -21,7 +21,7 @@ type testOp struct {
 }
 
 type testValue struct {
-	Foo string
+	Foo string `json:"foo"`
 }
 
 type opTestCase[R any] struct {

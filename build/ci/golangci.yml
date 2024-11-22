@@ -138,6 +138,7 @@ linters:
     - ineffassign
     - intrange
     - makezero
+    - musttag
     - nakedret
     - nilerr
     - noctx

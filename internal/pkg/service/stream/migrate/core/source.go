@@ -128,7 +128,7 @@ func (r *Receiver) createSourcePayload() (*bytes.Buffer, error) {
 	}
 
 	payloadBuf := new(bytes.Buffer)
-	err := json.NewEncoder(payloadBuf).Encode(s)
+	err := json.NewEncoder(payloadBuf).Encode(s) // nolint:musttag
 	if err != nil {
 		return nil, err
 	}
