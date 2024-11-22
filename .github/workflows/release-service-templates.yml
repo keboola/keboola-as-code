@@ -35,6 +35,7 @@ jobs:
     uses: ./.github/workflows/test-unit.yml
     with:
       without-cache: true
+      package-exception-regex: "./internal/pkg/service/appsproxy|./internal/pkg/service/stream|./internal/pkg/service/cli"
   test-e2e-service-templates:
     name: "E2E: Templates"
     secrets: inherit

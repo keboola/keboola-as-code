@@ -18,6 +18,7 @@ TEST_LOG_FORMAT="${TEST_LOG_FORMAT:=testname}"
 TEST_DETECT_RACE="${TEST_DETECT_RACE:=true}"
 TEST_COVERAGE="${TEST_COVERAGE:=true}"
 TEST_PACKAGE="${TEST_PACKAGE:=./...}"
+TEST_EXCEPT="${TEST_EXCEPT:=}"
 TEST_ARGS="${TEST_ARGS:=}"
 if [[ $TEST_VERBOSE == "true" ]]; then
   TEST_ARGS="$TEST_ARGS -v"
@@ -27,6 +28,9 @@ if [[ $TEST_DETECT_RACE == "true" ]]; then
 fi
 if [[ $TEST_COVERAGE == "true" ]]; then
   TEST_ARGS="$TEST_ARGS -coverprofile=/tmp/profile.out"
+fi
+if [[ -n $TEST_EXCEPT ]]; then
+  TEST_PACKAGE="\$($TEST_EXCEPT)"
 fi
 
 # Run tests, sequentially because the API is shared resource
