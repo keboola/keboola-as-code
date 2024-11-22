@@ -35,7 +35,7 @@ jobs:
     uses: ./.github/workflows/test-unit.yml
     with:
       without-cache: true
-      test-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/cli"
+      package-exception-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/cli"
   test-k8s-service-apps-proxy:
     name: "K8S: Apps Proxy"
     secrets: inherit

@@ -35,7 +35,7 @@ jobs:
     uses: ./.github/workflows/test-unit.yml
     with:
       without-cache: true
-      test-regex: "./internal/pkg/service/appsproxy|./internal/pkg/service/templates|./internal/pkg/service/cli"
+      package-exception-regex: "./internal/pkg/service/appsproxy|./internal/pkg/service/templates|./internal/pkg/service/cli"
   test-e2e-service-stream:
     name: "E2E: Stream"
     secrets: inherit

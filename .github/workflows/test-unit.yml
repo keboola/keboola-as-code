@@ -7,7 +7,7 @@ on:
         type: boolean
         default: false
         required: false
-      test-regex:
+      package-exception-regex:
         type: string
         default: ""
         required: false
@@ -96,8 +96,8 @@ jobs:
           fi
 
           # Prevent testing unnecessary code for particular release
-          if [ -n "${{ inputs.test-regex }}" ]; then
-            export TEST_EXCEPT="go list ./internal/pkg/... | grep -vE '${{ inputs.test-regex }}'"
+          if [ -n "${{ inputs.package-exception-regex }}" ]; then
+            export TEST_EXCEPT="go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}'"
           fi
 
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
