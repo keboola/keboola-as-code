@@ -151,6 +151,7 @@ linters:
     - thelper
     - tparallel
     - paralleltest
+    - usestdlibvars
     - unconvert
     - unparam
     - unused

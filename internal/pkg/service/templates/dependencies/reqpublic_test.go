@@ -33,7 +33,7 @@ func TestPublicRequestScope_Components_Cached(t *testing.T) {
 	apiScp, mock := NewMockedAPIScope(t, ctx, config.New(), dependencies.WithMockedComponents(components1))
 
 	// Request 1 gets "components1"
-	req1Scp := NewPublicRequestScope(apiScp, httptest.NewRequest("GET", "/req1", nil))
+	req1Scp := NewPublicRequestScope(apiScp, httptest.NewRequest(http.MethodGet, "/req1", nil))
 	assert.Equal(t, components1, req1Scp.Components().All())
 	assert.Equal(t, components1, req1Scp.Components().All())
 
@@ -52,7 +52,7 @@ func TestPublicRequestScope_Components_Cached(t *testing.T) {
 	assert.Equal(t, components1, req1Scp.Components().All())
 
 	// But request2 gets "components2"
-	req2Scp := NewPublicRequestScope(apiScp, httptest.NewRequest("GET", "/req2", nil))
+	req2Scp := NewPublicRequestScope(apiScp, httptest.NewRequest(http.MethodGet, "/req2", nil))
 	assert.Equal(t, components2, req2Scp.Components().All())
 	assert.Equal(t, components2, req2Scp.Components().All())
 }

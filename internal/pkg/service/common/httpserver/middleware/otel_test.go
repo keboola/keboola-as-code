@@ -35,7 +35,7 @@ type MiddlewareTest struct {
 
 func middlewareTests() []MiddlewareTest {
 	req1Attrs := attribute.NewSet(
-		attribute.String("http.method", "GET"),
+		attribute.String("http.method", http.MethodGet),
 		attribute.String("http.scheme", "http"),
 		attribute.String("net.host.name", "example.com"),
 		attribute.String("http.route", "/api/ignored-tracing"),
@@ -261,7 +261,7 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 		// Create request
 		rec := httptest.NewRecorder()
 		body := io.NopCloser(strings.NewReader("some body"))
-		req := httptest.NewRequest("POST", "/api/item/123/my-secret-1?foo=bar&secret2=my-secret-2", body)
+		req := httptest.NewRequest(http.MethodPost, "/api/item/123/my-secret-1?foo=bar&secret2=my-secret-2", body)
 		req.Header.Set("User-Agent", "my-user-agent")
 		req.Header.Set("X-StorageAPI-Token", "my-token")
 
@@ -275,11 +275,11 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 
 		// Send ignored requests
 		rec = httptest.NewRecorder()
-		handler.ServeHTTP(rec, httptest.NewRequest("GET", "/api/ignored-all", nil))
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/ignored-all", nil))
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, responseContent, rec.Body.String())
 		rec = httptest.NewRecorder()
-		handler.ServeHTTP(rec, httptest.NewRequest("GET", "/api/ignored-tracing", nil))
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/ignored-tracing", nil))
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, responseContent, rec.Body.String())
 
