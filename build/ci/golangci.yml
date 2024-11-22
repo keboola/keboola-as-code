@@ -135,6 +135,7 @@ linters:
     - gosimple
     - govet
     - importas
+    - inamedparam
     - ineffassign
     - intrange
     - makezero

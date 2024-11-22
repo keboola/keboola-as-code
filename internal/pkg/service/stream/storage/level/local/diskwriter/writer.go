@@ -32,7 +32,7 @@ type Writer interface {
 	// Events provides listening to the writer lifecycle.
 	Events() *events.Events[Writer]
 	// Close the writer and sync data to the disk.
-	Close(context.Context) error
+	Close(ctx context.Context) error
 }
 
 type writer struct {

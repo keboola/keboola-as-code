@@ -21,11 +21,11 @@ type RecordPaths interface {
 	// GetRelativePath - for example path of the object inside parent object/path.
 	GetRelativePath() string
 	// SetRelativePath - for example path of the object inside parent object/path.
-	SetRelativePath(string)
+	SetRelativePath(path string)
 	// GetParentPath - for example path of the parent object.
 	GetParentPath() string
 	// SetParentPath - for example path of the parent object.
-	SetParentPath(string)
+	SetParentPath(path string)
 	// IsParentPathSet returns true if the parent path is set/resolved.
 	IsParentPathSet() bool
 }
