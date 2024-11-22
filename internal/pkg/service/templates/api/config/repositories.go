@@ -28,7 +28,7 @@ func DefaultRepositories() Repositories {
 		},
 		{
 			Type: model.RepositoryTypeGit,
-			Name: repository.DefaultTemplateRepositoryName,
+			Name: repository.DefaultTemplateRepositoryNameDev,
 			URL:  repository.DefaultTemplateRepositoryURL,
 			Ref:  repository.DefaultTemplateRepositoryRefDev,
 		},
@@ -40,9 +40,9 @@ func DefaultRepositories() Repositories {
 		},
 		{
 			Type: model.RepositoryTypeGit,
-			Name: repository.ComponentsTemplateRepositoryNameDev,
+			Name: repository.ComponentsTemplateRepositoryNameBeta,
 			URL:  repository.ComponentsTemplateRepositoryURL,
-			Ref:  repository.DefaultTemplateRepositoryRefDev,
+			Ref:  repository.DefaultTemplateRepositoryRefBeta,
 		},
 	}
 }

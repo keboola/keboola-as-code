@@ -53,8 +53,8 @@ func (v *projectRequestScope) ProjectRepositories() *model.TemplateRepositories 
 		for _, repo := range v.RepositoryManager().DefaultRepositories() {
 			switch repo.Name {
 			case repository.ComponentsTemplateRepositoryName:
-				if repo.Ref == repository.DefaultTemplateRepositoryRefMain && features.Has(repository.FeatureComponentsTemplateRepositoryDev) {
-					repo.Ref = repository.DefaultTemplateRepositoryRefDev
+				if repo.Ref == repository.DefaultTemplateRepositoryRefMain && features.Has(repository.FeatureComponentsTemplateRepositoryBeta) {
+					repo.Ref = repository.DefaultTemplateRepositoryRefBeta
 				}
 			case repository.DefaultTemplateRepositoryName:
 				if repo.Ref == repository.DefaultTemplateRepositoryRefMain {

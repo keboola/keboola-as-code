@@ -5,12 +5,12 @@ import (
 )
 
 const (
-	ComponentsTemplateRepositoryName    = "keboola-components"
-	ComponentsTemplateRepositoryNameDev = "keboola-components-dev"
+	ComponentsTemplateRepositoryName     = "keboola-components"
+	ComponentsTemplateRepositoryNameBeta = "keboola-components-beta"
 
 	ComponentsTemplateRepositoryURL = "https://github.com/keboola/keboola-as-code-templates-components.git"
 
-	FeatureComponentsTemplateRepositoryDev = "components-repository-dev"
+	FeatureComponentsTemplateRepositoryBeta = "components-repository-beta"
 )
 
 func ComponentsRepository() model.TemplateRepository {
