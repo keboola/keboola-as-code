@@ -99,7 +99,7 @@ func (t Type) ValidateValue(value reflect.Value) error {
 			return errors.Errorf("should be array, got %s", kindStr)
 		} else {
 			// Each element must be string
-			for i := 0; i < value.Len(); i++ {
+			for i := range value.Len() {
 				item := value.Index(i)
 				// Unwrap interface
 				if item.Type().Kind() == reflect.Interface {

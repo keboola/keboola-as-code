@@ -553,7 +553,7 @@ func TestWatchBackoff(t *testing.T) {
 
 	// Get all delays without sleep
 	var delays []time.Duration
-	for i := 0; i < 14; i++ {
+	for range 14 {
 		delay := b.NextBackOff()
 		if delay == backoff.Stop {
 			assert.Fail(t, "unexpected stop")

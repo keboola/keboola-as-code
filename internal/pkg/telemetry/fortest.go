@@ -211,7 +211,7 @@ func (v *forTest) AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, o
 	spansCount := (int)(math.Max((float64)(len(expectedSpans)), (float64)(len(actualSpans))))
 	var actualSpan tracetest.SpanStub
 	var expectedSpan tracetest.SpanStub
-	for i := 0; i < spansCount; i++ {
+	for i := range spansCount {
 		if len(actualSpans) > i {
 			actualSpan = actualSpans[i]
 		} else {
@@ -246,7 +246,7 @@ func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metri
 	metersCount := (int)(math.Max((float64)(len(expectedMetrics)), (float64)(len(actualMetrics))))
 	var actualMeter metricdata.Metrics
 	var expectedMeter metricdata.Metrics
-	for i := 0; i < metersCount; i++ {
+	for i := range metersCount {
 		if len(actualMetrics) > i {
 			actualMeter = actualMetrics[i]
 		} else {

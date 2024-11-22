@@ -22,7 +22,7 @@ func AssignSlices(all []model.SliceKey, nodes []string, nodeID string, minSlices
 	targetCount := min(slicesPerNode, slicesCount)
 	assigned = make([]model.SliceKey, targetCount)
 	start := index * slicesPerNode
-	for i := 0; i < targetCount; i++ {
+	for i := range targetCount {
 		assigned[i] = all[(start+i)%slicesCount]
 	}
 

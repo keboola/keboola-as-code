@@ -291,7 +291,7 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 	wg := sync.WaitGroup{}
 	counter := atomic.NewInt64(0)
 	// Load configuration 10x in parallel
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

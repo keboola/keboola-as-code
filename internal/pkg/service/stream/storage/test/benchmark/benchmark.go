@@ -127,7 +127,7 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 		defer wg.Done()
 
 		// Start wb.Parallelism goroutines
-		for i := 0; i < wb.Parallelism; i++ {
+		for range wb.Parallelism {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()

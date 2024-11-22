@@ -6,7 +6,7 @@ on:
 # Required for aws-actions/configure-aws-credentials using OIDC, assume role
 permissions:
   id-token: write
-  contents: read 
+  contents: read
 
 jobs:
   lint:

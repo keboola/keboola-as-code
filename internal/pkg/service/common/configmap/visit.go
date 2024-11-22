@@ -108,7 +108,7 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 			return err
 		}
 
-		for i := 0; i < typ.NumField(); i++ {
+		for i := range typ.NumField() {
 			// Fill context with field information
 			field := &VisitContext{}
 			field.StructField = typ.Field(i)
