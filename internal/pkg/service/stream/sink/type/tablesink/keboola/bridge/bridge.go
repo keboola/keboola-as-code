@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/singleflight"
 
@@ -49,6 +50,7 @@ type Bridge struct {
 	storageRepository       *storageRepo.Repository
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 	locks                   *distlock.Provider
+	encryptor               cloudencrypt.Encryptor
 	jobs                    *etcdop.MirrorMap[bridgeModel.Job, bridgeModel.JobKey, *jobData]
 
 	getBucketOnce    *singleflight.Group
@@ -69,6 +71,7 @@ type dependencies interface {
 	StorageRepository() *storageRepo.Repository
 	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 	DistributedLockProvider() *distlock.Provider
+	Encryptor() cloudencrypt.Encryptor
 }
 
 func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Bridge {
@@ -83,6 +86,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 		storageRepository:       d.StorageRepository(),
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 		locks:                   d.DistributedLockProvider(),
+		encryptor:               d.Encryptor(),
 		getBucketOnce:           &singleflight.Group{},
 		createBucketOnce:        &singleflight.Group{},
 	}

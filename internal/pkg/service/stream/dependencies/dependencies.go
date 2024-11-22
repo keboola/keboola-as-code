@@ -78,6 +78,7 @@ const (
 type ServiceScope interface {
 	dependencies.BaseScope
 	dependencies.PublicScope
+	dependencies.EncryptionScope
 	dependencies.EtcdClientScope
 	dependencies.DistributedLockScope
 	Plugins() *plugin.Plugins
