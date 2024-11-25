@@ -35,7 +35,7 @@ func TestSourceRepository_List(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.List(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, result)
 	}
 
@@ -56,7 +56,7 @@ func TestSourceRepository_List(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.List(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 2)
 		assert.Equal(t, []definition.Source{source1, source2}, result)
 	}
@@ -82,7 +82,7 @@ func TestSourceRepository_ListDeleted(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListDeleted(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, result)
 	}
 
@@ -103,7 +103,7 @@ func TestSourceRepository_ListDeleted(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListDeleted(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, result)
 	}
 
@@ -112,16 +112,16 @@ func TestSourceRepository_ListDeleted(t *testing.T) {
 	{
 		var err error
 		source1, err = repo.SoftDelete(sourceKey1, now, by).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		source2, err = repo.SoftDelete(sourceKey2, now, by).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	// ListDeleted - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListDeleted(projectID).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 2)
 		assert.Equal(t, []definition.Source{source1, source2}, result)
 	}

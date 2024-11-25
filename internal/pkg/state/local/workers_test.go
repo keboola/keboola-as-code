@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -31,7 +32,7 @@ func TestWorkers(t *testing.T) {
 	assert.Equal(t, int64(0), counter.Load())
 
 	// Start and wait
-	assert.NoError(t, w.StartAndWait())
+	require.NoError(t, w.StartAndWait())
 	assert.Equal(t, int64(2), counter.Load())
 
 	// Cannot be reused
@@ -62,7 +63,7 @@ func TestWorkersErrors(t *testing.T) {
 
 	// The order of errors is the same as the workers were defined
 	err := w.StartAndWait()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "- first\n- second\n- third", err.Error())
 }
 
@@ -94,7 +95,7 @@ func TestLocalUnitOfWork_workersFor(t *testing.T) {
 	assert.Empty(t, order)
 
 	// Invoke
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 	assert.Equal(t, []int{1, 1, 2, 2, 3, 3, 4, 4}, order)
 
 	// Cannot be reused

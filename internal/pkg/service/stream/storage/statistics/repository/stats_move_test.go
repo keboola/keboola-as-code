@@ -8,7 +8,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
@@ -97,7 +96,7 @@ func TestRepository_MoveStatisticsOnSliceUpdate(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		nodeID := "test-node"
-		assert.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
+		require.NoError(t, statsRepo.Put(ctx, nodeID, []statistics.PerSlice{
 			{
 				SliceKey:         sliceKey1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),

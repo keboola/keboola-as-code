@@ -102,45 +102,45 @@ func TestAskCreate(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			assert.NoError(t, console.ExpectString("Select a bucket:"))
+			require.NoError(t, console.ExpectString("Select a bucket:"))
 
-			assert.NoError(t, console.Send("in.c-test_1214124"))
+			require.NoError(t, console.Send("in.c-test_1214124"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Enter the table name."))
+			require.NoError(t, console.ExpectString("Enter the table name."))
 
-			assert.NoError(t, console.ExpectString("Table name:"))
+			require.NoError(t, console.ExpectString("Table name:"))
 
-			assert.NoError(t, console.Send("table1"))
+			require.NoError(t, console.Send("table1"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Want to define column types?"))
+			require.NoError(t, console.ExpectString("Want to define column types?"))
 
-			assert.NoError(t, console.Send("Y"))
+			require.NoError(t, console.Send("Y"))
 
-			assert.NoError(t, console.SendEnter()) // confirm
+			require.NoError(t, console.SendEnter()) // confirm
 
-			assert.NoError(t, console.ExpectString("Columns definitions"))
+			require.NoError(t, console.ExpectString("Columns definitions"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Select columns for primary key"))
+			require.NoError(t, console.ExpectString("Select columns for primary key"))
 
-			assert.NoError(t, console.ExpectString("id"))
+			require.NoError(t, console.ExpectString("id"))
 
-			assert.NoError(t, console.ExpectString("name"))
+			require.NoError(t, console.ExpectString("name"))
 
-			assert.NoError(t, console.SendSpace())
+			require.NoError(t, console.SendSpace())
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Select columns for primary key: id"))
+			require.NoError(t, console.ExpectString("Select columns for primary key: id"))
 		}()
 
 		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, Flags{}, deps.ProjectBackends())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		wg.Wait()
 
 		assert.Equal(t, table.Options{
@@ -188,47 +188,47 @@ func TestAskCreate(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			assert.NoError(t, console.ExpectString("Select a bucket:"))
+			require.NoError(t, console.ExpectString("Select a bucket:"))
 
-			assert.NoError(t, console.Send("in.c-test_1214124"))
+			require.NoError(t, console.Send("in.c-test_1214124"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Enter the table name."))
+			require.NoError(t, console.ExpectString("Enter the table name."))
 
-			assert.NoError(t, console.ExpectString("Table name:"))
+			require.NoError(t, console.ExpectString("Table name:"))
 
-			assert.NoError(t, console.Send("table1"))
+			require.NoError(t, console.Send("table1"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Want to define column types?"))
+			require.NoError(t, console.ExpectString("Want to define column types?"))
 
-			assert.NoError(t, console.Send("N"))
+			require.NoError(t, console.Send("N"))
 
-			assert.NoError(t, console.SendEnter()) // confirm
+			require.NoError(t, console.SendEnter()) // confirm
 
-			assert.NoError(t, console.ExpectString("Enter a comma-separated list of column names."))
+			require.NoError(t, console.ExpectString("Enter a comma-separated list of column names."))
 
-			assert.NoError(t, console.Send("id,name"))
+			require.NoError(t, console.Send("id,name"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Select columns for primary key"))
+			require.NoError(t, console.ExpectString("Select columns for primary key"))
 
-			assert.NoError(t, console.ExpectString("id"))
+			require.NoError(t, console.ExpectString("id"))
 
-			assert.NoError(t, console.ExpectString("name"))
+			require.NoError(t, console.ExpectString("name"))
 
-			assert.NoError(t, console.SendSpace())
+			require.NoError(t, console.SendSpace())
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Select columns for primary key: id"))
+			require.NoError(t, console.ExpectString("Select columns for primary key: id"))
 		}()
 
 		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, Flags{}, deps.ProjectBackends())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		wg.Wait()
 
 		assert.Equal(t, table.Options{
@@ -266,31 +266,31 @@ func TestAskCreate(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			assert.NoError(t, console.ExpectString("Select a bucket:"))
+			require.NoError(t, console.ExpectString("Select a bucket:"))
 
-			assert.NoError(t, console.Send("in.c-test_1214124"))
+			require.NoError(t, console.Send("in.c-test_1214124"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Enter the table name."))
+			require.NoError(t, console.ExpectString("Enter the table name."))
 
-			assert.NoError(t, console.ExpectString("Table name:"))
+			require.NoError(t, console.ExpectString("Table name:"))
 
-			assert.NoError(t, console.Send("table1"))
+			require.NoError(t, console.Send("table1"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Select columns for primary key"))
+			require.NoError(t, console.ExpectString("Select columns for primary key"))
 
-			assert.NoError(t, console.ExpectString("id"))
+			require.NoError(t, console.ExpectString("id"))
 
-			assert.NoError(t, console.ExpectString("name"))
+			require.NoError(t, console.ExpectString("name"))
 
-			assert.NoError(t, console.SendSpace())
+			require.NoError(t, console.SendSpace())
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Select columns for primary key: id"))
+			require.NoError(t, console.ExpectString("Select columns for primary key: id"))
 		}()
 
 		tempDir := t.TempDir()
@@ -313,7 +313,7 @@ func TestAskCreate(t *testing.T) {
 			ColumnsFrom: configmap.NewValueWithOrigin(filePath, configmap.SetByFlag),
 		}
 		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, f, deps.ProjectBackends())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		wg.Wait()
 
 		assert.Equal(t, table.Options{
@@ -361,31 +361,31 @@ func TestAskCreate(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			assert.NoError(t, console.ExpectString("Select a bucket:"))
+			require.NoError(t, console.ExpectString("Select a bucket:"))
 
-			assert.NoError(t, console.Send("in.c-test_1214124"))
+			require.NoError(t, console.Send("in.c-test_1214124"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Enter the table name."))
+			require.NoError(t, console.ExpectString("Enter the table name."))
 
-			assert.NoError(t, console.ExpectString("Table name:"))
+			require.NoError(t, console.ExpectString("Table name:"))
 
-			assert.NoError(t, console.Send("table1"))
+			require.NoError(t, console.Send("table1"))
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Select columns for primary key"))
+			require.NoError(t, console.ExpectString("Select columns for primary key"))
 
-			assert.NoError(t, console.ExpectString("id"))
+			require.NoError(t, console.ExpectString("id"))
 
-			assert.NoError(t, console.ExpectString("name"))
+			require.NoError(t, console.ExpectString("name"))
 
-			assert.NoError(t, console.SendSpace())
+			require.NoError(t, console.SendSpace())
 
-			assert.NoError(t, console.SendEnter())
+			require.NoError(t, console.SendEnter())
 
-			assert.NoError(t, console.ExpectString("Select columns for primary key: id"))
+			require.NoError(t, console.ExpectString("Select columns for primary key: id"))
 		}()
 
 		// set flag --columns
@@ -393,7 +393,7 @@ func TestAskCreate(t *testing.T) {
 			Columns: configmap.NewValueWithOrigin([]string{"id", "name"}, configmap.SetByFlag),
 		}
 		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, f, deps.ProjectBackends())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		wg.Wait()
 
 		assert.Equal(t, table.Options{

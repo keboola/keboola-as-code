@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 )
@@ -23,9 +24,9 @@ type testCase struct {
 func TestJsonnetFunctions(t *testing.T) {
 	t.Parallel()
 	now1, err := time.Parse(`2006-01-02T15:04:05.999999Z07:00`, `2006-01-01T15:04:05.123456+07:00`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	now2, err := time.Parse(`2006-01-02T15:04:05.999999Z07:00`, `2006-01-01T15:04:05.000000+07:00`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cases := []testCase{
 		// Ip()
@@ -189,7 +190,7 @@ func TestJsonnetFunctions(t *testing.T) {
 		if tc.err == "" {
 			res = strings.TrimRight(res, "\n")
 			assert.Equal(t, tc.result, res, tc.name)
-			assert.NoError(t, err, tc.name)
+			require.NoError(t, err, tc.name)
 		} else if assert.Error(t, err) {
 			assert.Equal(t, tc.err, err.Error(), tc.name)
 		}
@@ -209,6 +210,6 @@ func TestJsonnet_InfiniteRecursion(t *testing.T) {
 	defer pool.Put(vm)
 
 	_, err := Evaluate(vm, recordctx.FromHTTP(time.Now(), &http.Request{}), template)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "max stack frames exceeded.", err.Error())
 }

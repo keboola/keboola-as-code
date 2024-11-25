@@ -25,7 +25,7 @@ func TestWriter_AllocateSpace_Enabled(t *testing.T) {
 
 	// Use real allocator
 	w, err := tc.OpenWriter()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Check file size after allocation
 	// The size is rounded to whole blocks, so we check:
@@ -36,7 +36,7 @@ func TestWriter_AllocateSpace_Enabled(t *testing.T) {
 	assert.Less(t, allocated, 2*expectedSize)
 
 	// Close writer
-	assert.NoError(t, w.Close(ctx))
+	require.NoError(t, w.Close(ctx))
 
 	// Check logs
 	tc.AssertLogs(`

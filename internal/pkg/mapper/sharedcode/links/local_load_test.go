@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -23,7 +24,7 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(transformation)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Paths in transformation blocks are replaced by IDs
@@ -105,7 +106,7 @@ missing shared code "branch/missing":
 - referenced from config "branch:123/component:keboola.python-transformation-v2/config:789"
 `
 	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
@@ -135,7 +136,7 @@ missing shared code "branch/_shared/keboola.python-transformation-v2/codes/missi
 - referenced from "branch/transformation/blocks/block-1/code-2"
 `
 	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())
 

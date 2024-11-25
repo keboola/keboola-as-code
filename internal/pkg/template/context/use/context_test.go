@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
@@ -41,14 +42,14 @@ func TestContext(t *testing.T) {
 	)
 	ctx := context.Background()
 	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	tickets := keboola.NewTicketProvider(ctx, api)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response
 	for i := 1; i <= 2; i++ {
 		response, err := httpmock.NewJsonResponse(200, map[string]any{"id": cast.ToString(1000 + i)})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		ticketResponses = append(ticketResponses, response)
 	}
 	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
@@ -128,16 +129,16 @@ func TestContext(t *testing.T) {
 }
 `
 	jsonOutput, err := jsonnet.Evaluate(code, useCtx.JsonnetContext())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), jsonOutput)
 
 	// Check tickets replacement
 	data := orderedmap.New()
 	json.MustDecodeString(jsonOutput, data)
 	replacements, err := useCtx.Replacements()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	modifiedData, err := replacements.Replace(data)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	modifiedJSON := json.MustEncodeString(modifiedData, true)
 
 	expectedJSON = `
@@ -196,7 +197,7 @@ func TestComponentsFunctions(t *testing.T) {
 	)
 	ctx := context.Background()
 	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	d := dependenciesPkg.NewMocked(t, ctx)
 	projectState := d.MockedState()
@@ -227,7 +228,7 @@ func TestComponentsFunctions(t *testing.T) {
 	// Case 1: No component is defined
 	output, err := jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
 	expected := ""
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "jsonnet error: RUNTIME ERROR: no Snowflake Writer component found", err.Error())
 	assert.Equal(t, expected, output)
 
@@ -244,7 +245,7 @@ func TestComponentsFunctions(t *testing.T) {
 }
 `
 	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 3: Only Azure Snowflake Writer
@@ -260,7 +261,7 @@ func TestComponentsFunctions(t *testing.T) {
 }
 `
 	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 4: Only Google Snowflake Writer
@@ -276,7 +277,7 @@ func TestComponentsFunctions(t *testing.T) {
 }
 `
 	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 5: Both AWS and Azure Snowflake Writer
@@ -293,7 +294,7 @@ func TestComponentsFunctions(t *testing.T) {
 }
 `
 	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }
 
@@ -313,7 +314,7 @@ func TestHasBackendFunction(t *testing.T) {
 	d := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
 
 	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", d.StorageAPIToken().Token, keboola.WithClient(&c))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	projectState := d.MockedState()
 	tickets := keboola.NewTicketProvider(context.Background(), api)
@@ -346,7 +347,7 @@ func TestHasBackendFunction(t *testing.T) {
 `
 
 	output, err := jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 2 backend 'bigquery'
@@ -359,6 +360,6 @@ func TestHasBackendFunction(t *testing.T) {
 }
 `
 	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }

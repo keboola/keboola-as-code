@@ -1289,7 +1289,7 @@ func TestTxnOp_Merge_Nested(t *testing.T) {
 	etcdLogs.Reset()
 	result = txn.Do(ctx)
 	assert.True(t, result.Succeeded())
-	assert.NoError(t, result.Err())
+	require.NoError(t, result.Err())
 	etcdlogger.Assert(t, `
 ➡️  TXN
   ➡️  IF:

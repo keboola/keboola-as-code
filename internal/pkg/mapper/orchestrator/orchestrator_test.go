@@ -6,7 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
@@ -43,7 +43,7 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 		Local:  &model.Config{ConfigKey: targetConfigKey1},
 		Remote: &model.Config{ConfigKey: targetConfigKey1},
 	}
-	assert.NoError(t, state.Set(targetConfigState1))
+	require.NoError(t, state.Set(targetConfigState1))
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
@@ -61,7 +61,7 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 		Local:  &model.Config{ConfigKey: targetConfigKey2},
 		Remote: &model.Config{ConfigKey: targetConfigKey2},
 	}
-	assert.NoError(t, state.Set(targetConfigState2))
+	require.NoError(t, state.Set(targetConfigState2))
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
@@ -79,7 +79,7 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 		Local:  &model.Config{ConfigKey: targetConfigKey3},
 		Remote: &model.Config{ConfigKey: targetConfigKey3},
 	}
-	assert.NoError(t, state.Set(targetConfigState3))
+	require.NoError(t, state.Set(targetConfigState3))
 
 	return targetConfigState1, targetConfigState2, targetConfigState3
 }
@@ -100,7 +100,7 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, state.Set(branchState))
+	require.NoError(t, state.Set(branchState))
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -118,7 +118,7 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
 	}
 
-	assert.NoError(t, state.Set(configState))
+	require.NoError(t, state.Set(configState))
 	return configState
 }
 
@@ -262,7 +262,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		},
 		Local: &model.Branch{BranchKey: branchKey},
 	}
-	assert.NoError(t, state.Set(branchState))
+	require.NoError(t, state.Set(branchState))
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
@@ -284,7 +284,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 			Orchestration: orchestration,
 		},
 	}
-	assert.NoError(t, state.Set(configState))
+	require.NoError(t, state.Set(configState))
 
 	// Create targets
 	if !createTargets {
@@ -306,7 +306,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		},
 		Remote: &model.Config{ConfigKey: targetConfigKey1},
 	}
-	assert.NoError(t, state.Set(targetConfigState1))
+	require.NoError(t, state.Set(targetConfigState1))
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
@@ -323,7 +323,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		},
 		Remote: &model.Config{ConfigKey: targetConfigKey2},
 	}
-	assert.NoError(t, state.Set(targetConfigState2))
+	require.NoError(t, state.Set(targetConfigState2))
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
@@ -340,7 +340,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 		},
 		Remote: &model.Config{ConfigKey: targetConfigKey3},
 	}
-	assert.NoError(t, state.Set(targetConfigState3))
+	require.NoError(t, state.Set(targetConfigState3))
 
 	return configState
 }

@@ -24,31 +24,31 @@ func TestAllocate(t *testing.T) {
 
 	// Write some data
 	n, err := file.WriteString("1234567890")
-	assert.Equal(t, n, 10)
+	assert.Equal(t, 10, n)
 	require.NoError(t, err)
 
 	// Check file size before allocation
 	allocated, err := Allocated(path)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Less(t, allocated, expectedSize)
 
 	// Allocate disk space
 	allocator := Default()
 	ok, err := allocator.Allocate(file, expectedSize)
 	assert.True(t, ok)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Check file size after allocation
 	// The size is rounded to whole blocks, so we check:
 	// EXPECTED <= ACTUAL SIZE < 2*EXPECTED
 	allocated, err = Allocated(path)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.GreaterOrEqual(t, allocated, expectedSize)
 	assert.Less(t, allocated, 2*expectedSize)
 
 	// Check file content
 	content, err := os.ReadFile(path)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1234567890", string(content))
 }
 
@@ -58,11 +58,11 @@ func TestAllocate_Error(t *testing.T) {
 	allocator := Default()
 	ok, err := allocator.Allocate(os.Stdout, 10*datasize.KB)
 	assert.False(t, ok)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestAllocated_Error(t *testing.T) {
 	t.Parallel()
 	_, err := Allocated("/missing/file")
-	assert.Error(t, err)
+	require.Error(t, err)
 }

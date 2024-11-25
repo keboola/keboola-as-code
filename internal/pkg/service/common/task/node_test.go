@@ -76,7 +76,7 @@ func TestSuccessfulTask(t *testing.T) {
 				WithOutputsFrom(map[string]int{"int1": 1, "int2": 2})
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
@@ -89,7 +89,7 @@ func TestSuccessfulTask(t *testing.T) {
 			return task.ErrResult(errors.New("the task should not be called"))
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Check etcd state during task
 	etcdhelper.AssertKVsString(t, client, `
@@ -157,7 +157,7 @@ task/123/my-receiver/my-export/some.task/%s
 			return task.OkResult("some result (2)")
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Wait for task to finish
 	finishTaskAndWait(t, client, taskWork, taskDone)
@@ -373,7 +373,7 @@ func TestFailedTask(t *testing.T) {
 				WithOutput("key", "value")
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = node2.StartTask(ctx, task.Config{
 		Key:  tKey,
 		Type: taskType,
@@ -386,7 +386,7 @@ func TestFailedTask(t *testing.T) {
 			return task.ErrResult(errors.New("the task should not be called"))
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Check etcd state during task
 	etcdhelper.AssertKVsString(t, client, `
@@ -458,7 +458,7 @@ task/123/my-receiver/my-export/some.task/%s
 			return task.ErrResult(svcerrors.NewInsufficientStorageError(false, errors.New("no space right on device")))
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Wait for task to finish
 	finishTaskAndWait(t, client, taskWork, taskDone)
@@ -712,7 +712,7 @@ func TestTaskTimeout(t *testing.T) {
 			return task.ErrResult(errors.New("invalid state, task should time out"))
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Wait for the task
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -886,7 +886,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 				return task.OkResult("some result")
 			},
 		})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	// Shutdown node

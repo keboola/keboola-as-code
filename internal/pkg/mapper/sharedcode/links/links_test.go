@@ -6,7 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/links"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -80,7 +80,7 @@ func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.Conf
 			},
 		},
 	}
-	assert.NoError(t, state.Set(transformation))
+	require.NoError(t, state.Set(transformation))
 	return transformation
 }
 
@@ -142,7 +142,7 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 		},
 	}
 
-	assert.NoError(t, state.Set(transformation))
+	require.NoError(t, state.Set(transformation))
 	return transformation
 }
 
@@ -175,6 +175,6 @@ func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey,
 		},
 	}
 
-	assert.NoError(t, state.Set(transformation))
+	require.NoError(t, state.Set(transformation))
 	return transformation
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -18,11 +19,11 @@ func TestLoadInputsFile(t *testing.T) {
 
 	// Write file
 	path := Path()
-	assert.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(path, inputsJsonnet)))
+	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(path, inputsJsonnet)))
 
 	// Load
 	inputs, err := Load(context.Background(), fs, jsonnet.NewContext())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, testInputs(), inputs)
 }
 
@@ -32,11 +33,11 @@ func TestSaveInputsFile(t *testing.T) {
 	ctx := context.Background()
 
 	// Save
-	assert.NoError(t, testInputs().Save(ctx, fs))
+	require.NoError(t, testInputs().Save(ctx, fs))
 
 	// Load file
 	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(Path()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, wildcards.EscapeWhitespaces(inputsJsonnet), wildcards.EscapeWhitespaces(file.Content))
 }
 

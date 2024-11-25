@@ -42,7 +42,7 @@ func TestSourceRepository_Versions(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListVersions(sourceKey).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, result)
 	}
 
@@ -104,7 +104,7 @@ func TestSourceRepository_Versions(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListVersions(sourceKey).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 3)
 		assert.Equal(t, []definition.Source{version1, version2, version3}, result)
 	}
@@ -113,7 +113,7 @@ func TestSourceRepository_Versions(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.Version(sourceKey, version2.VersionNumber()).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, version2, result)
 	}
 
@@ -123,7 +123,7 @@ func TestSourceRepository_Versions(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		version4, err = repo.RollbackVersion(sourceKey, now, by, version2.VersionNumber()).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(4), version4.Version.Number)
 	}
 
@@ -140,7 +140,7 @@ func TestSourceRepository_Versions(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListVersions(sourceKey).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 4)
 		assert.Equal(t, []definition.Source{version1, version2, version3, version4}, result)
 	}

@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBufferedWriter(t *testing.T) {
 	t.Parallel()
 	writer := NewAtomicWriter()
 	_, err := writer.WriteString("test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "test", writer.String())
 }
 
@@ -24,8 +25,8 @@ func TestBufferedWriter_ConnectTo(t *testing.T) {
 	writer.ConnectTo(otherWriter)
 
 	_, err := writer.WriteString("test")
-	assert.NoError(t, err)
-	assert.NoError(t, otherWriter.Flush())
+	require.NoError(t, err)
+	require.NoError(t, otherWriter.Flush())
 
 	assert.Equal(t, "test", writer.String())
 	assert.Equal(t, "test", otherBuffer.String())

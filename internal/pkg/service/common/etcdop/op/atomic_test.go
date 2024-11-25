@@ -671,7 +671,7 @@ func TestAtomicOp_RequireLock(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	// Lock is locked, atomic operation succeeded
 	require.NoError(t, mutex.Lock(ctx))
-	assert.NoError(t, atomicOp.Do(ctx).Err())
+	require.NoError(t, atomicOp.Do(ctx).Err())
 	require.NoError(t, mutex.Unlock(ctx))
 
 	// Lock is not locked, atomic operation failed

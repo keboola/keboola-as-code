@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -24,18 +25,18 @@ func TestResult(t *testing.T) {
 	// HeaderOrErr
 	header, err := result.HeaderOrErr()
 	assert.Same(t, expectedHeader, header)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// ResultOrErr
 	str, err := result.ResultOrErr()
 	assert.Equal(t, "", str)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Result
 	assert.Empty(t, result.Result())
 
 	// Err/AddErr
-	assert.NoError(t, result.Err())
+	require.NoError(t, result.Err())
 	assert.Same(t, expectedHeader, result.Header())
 	result.AddErr(errors.New("error1"))
 	result.AddErr(errors.New("error2"))
@@ -45,5 +46,5 @@ func TestResult(t *testing.T) {
 
 	// Reset
 	result.ResetErr()
-	assert.Nil(t, result.Err())
+	require.NoError(t, result.Err())
 }

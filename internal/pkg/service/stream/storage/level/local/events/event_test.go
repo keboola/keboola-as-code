@@ -28,15 +28,15 @@ func TestEventWriter(t *testing.T) {
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "2"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", volume.IDFile), []byte("HDD_2"), 0o640))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "2"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "2", volume.IDFile), []byte("HDD_2"), 0o640))
 
 	// Detect volumes
 	cfg := mock.TestConfig().Storage.Level.Local.Writer
 	volumes, err := diskwriter.OpenVolumes(ctx, d, volumesPath, cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Register "OnOpen" and "OnClose" events on the "volumes" level
 	volumes.Events().OnOpen(func(w diskwriter.Writer) error {
@@ -58,9 +58,9 @@ func TestEventWriter(t *testing.T) {
 
 	// Register "OnOpen" and "OnClose" events on the "volume" level
 	vol1, err := volumes.Collection().Volume("HDD_1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	vol2, err := volumes.Collection().Volume("HDD_2")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	vol1.Events().OnOpen(func(w diskwriter.Writer) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: OPEN (3), level: volume1`, w.SliceKey().OpenedAt())
 		return nil
@@ -159,13 +159,13 @@ func TestWriterEvents_OpenError(t *testing.T) {
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
 	cfg := mock.TestConfig().Storage.Level.Local.Writer
 	volumes, err := diskwriter.OpenVolumes(ctx, d, volumesPath, cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Register "OnOpen" event on the "volumes" level
 	volumes.Events().OnOpen(func(w diskwriter.Writer) error {
@@ -174,7 +174,7 @@ func TestWriterEvents_OpenError(t *testing.T) {
 
 	// Register "OnOpen" event on the "volume" level
 	vol, err := volumes.Collection().Volume("HDD_1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	vol.Events().OnOpen(func(w diskwriter.Writer) error {
 		return errors.New("error (2)")
 	})
@@ -201,13 +201,13 @@ func TestEventWriter_CloseError(t *testing.T) {
 
 	// There are 2 volumes
 	volumesPath := t.TempDir()
-	assert.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
-	assert.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
+	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath, "hdd", "1"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "1", volume.IDFile), []byte("HDD_1"), 0o640))
 
 	// Detect volumes
 	cfg := mock.TestConfig().Storage.Level.Local.Writer
 	volumes, err := diskwriter.OpenVolumes(ctx, d, volumesPath, cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Register "OnClose" event on the "volumes" level
 	volumes.Events().OnClose(func(w diskwriter.Writer, _ error) error {
@@ -216,7 +216,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 
 	// Register "OnClose" event on the "volume" level
 	vol, err := volumes.Collection().Volume("HDD_1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	vol.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		return errors.New("error (2)")
 	})

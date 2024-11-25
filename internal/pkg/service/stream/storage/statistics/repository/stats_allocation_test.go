@@ -9,7 +9,6 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
@@ -113,7 +112,7 @@ func TestRepository_EstimateSliceSizeOnSliceCreate(t *testing.T) {
 	// Create stats records
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, statsRepo.Put(ctx, "test-node", []statistics.PerSlice{
+		require.NoError(t, statsRepo.Put(ctx, "test-node", []statistics.PerSlice{
 			{
 				SliceKey:         sliceKey1,
 				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -157,14 +156,14 @@ func TestRepository_EstimateSliceSizeOnSliceCreate(t *testing.T) {
 		file4, err := fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		rotateEtcdLogs = etcdLogs.String()
-		assert.True(t, file4.LocalStorage.Allocation.Enabled)
-		assert.Equal(t, uint(110), file4.LocalStorage.Allocation.Relative)
+		require.True(t, file4.LocalStorage.Allocation.Enabled)
+		require.Equal(t, uint(110), file4.LocalStorage.Allocation.Relative)
 
 		slices, err := sliceRepo.ListIn(file4.FileKey).Do(ctx).All()
 		require.NoError(t, err)
 		require.Len(t, slices, 1)
 		slice4 := slices[0]
-		assert.Equal(t, datasize.ByteSize(1000*110/100), slice4.LocalStorage.AllocatedDiskSpace)
+		require.Equal(t, datasize.ByteSize(1000*110/100), slice4.LocalStorage.AllocatedDiskSpace)
 	}
 	{
 		// Etcd state

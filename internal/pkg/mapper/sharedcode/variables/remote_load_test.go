@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -27,7 +28,7 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, object.Relations)
-	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Object has new relation + content without variables ID

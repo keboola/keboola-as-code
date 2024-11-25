@@ -56,7 +56,7 @@ func TestBranchRepository_Enable(t *testing.T) {
 	// Disable - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.Disable(branchKey, now, by, "some reason").Do(ctx).Err())
+		require.NoError(t, repo.Disable(branchKey, now, by, "some reason").Do(ctx).Err())
 	}
 
 	// Enable - ok

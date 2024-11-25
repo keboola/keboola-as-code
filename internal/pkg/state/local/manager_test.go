@@ -100,11 +100,11 @@ func TestLocalSaveMapper(t *testing.T) {
 
 	// Save object
 	uow.SaveObject(configState, configState.Remote, model.ChangedFields{})
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 
 	// File content has been mapped
 	configFile, err := fs.ReadFile(context.Background(), filesystem.NewFileDef(filesystem.Join(`branch`, `config`, naming.ConfigFile)).SetDescription(`config file`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "{\n  \"key\": \"overwritten\",\n  \"new\": \"value\"\n}", strings.TrimSpace(configFile.Content))
 
 	// AfterLocalOperation event has been called
@@ -128,7 +128,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	inputDir := filesystem.Join(testDir, `..`, `..`, `fixtures`, `local`, `minimal`)
-	assert.NoError(t, aferofs.CopyFs2Fs(nil, inputDir, fs, ``))
+	require.NoError(t, aferofs.CopyFs2Fs(nil, inputDir, fs, ``))
 
 	// Replace placeholders in files
 	envs := env.Empty()
@@ -141,9 +141,9 @@ func TestLocalLoadMapper(t *testing.T) {
 
 	// Load objects
 	m, err := projectManifest.Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	uow.LoadAll(m, *m.Filter())
-	assert.NoError(t, uow.Invoke())
+	require.NoError(t, uow.Invoke())
 
 	// Internal state has been mapped
 	configState := projectState.MustGet(model.ConfigKey{BranchID: 111, ComponentID: `ex-generic-v2`, ID: `456`}).(*model.ConfigState)

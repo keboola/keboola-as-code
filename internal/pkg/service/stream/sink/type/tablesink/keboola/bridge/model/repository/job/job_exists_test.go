@@ -90,7 +90,7 @@ func TestJobRepository_Exists(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		job := model.Job{JobKey: jobKey}
-		assert.NoError(t, repo.Purge(&job).Do(ctx).Err())
+		require.NoError(t, repo.Purge(&job).Do(ctx).Err())
 	}
 
 	// MustNotExists - not ok

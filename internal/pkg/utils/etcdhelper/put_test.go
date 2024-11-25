@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -47,29 +48,29 @@ key3/key4
 
 	// PUT
 	err := etcdhelper.PutAllFromSnapshot(context.Background(), client, snapshot)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Put keys
 	res, err := client.Get(context.Background(), "key1")
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(res.Kvs))
+	require.NoError(t, err)
+	assert.Len(t, res.Kvs, 1)
 	assert.Equal(t, "value1", string(res.Kvs[0].Value))
 	assert.Equal(t, int64(0), res.Kvs[0].Lease)
 
 	res, err = client.Get(context.Background(), "key2")
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(res.Kvs))
+	require.NoError(t, err)
+	assert.Len(t, res.Kvs, 1)
 	assert.Equal(t, "value2", string(res.Kvs[0].Value))
-	assert.Greater(t, res.Kvs[0].Lease, int64(0))
+	assert.Positive(t, res.Kvs[0].Lease, int64(0))
 
 	res, err = client.Get(context.Background(), "key3")
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(res.Kvs))
+	require.NoError(t, err)
+	assert.Len(t, res.Kvs, 1)
 	assert.Equal(t, "value3", string(res.Kvs[0].Value))
 	assert.Equal(t, int64(0), res.Kvs[0].Lease)
 
 	res, err = client.Get(context.Background(), "key3/key4")
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(res.Kvs))
+	require.NoError(t, err)
+	assert.Len(t, res.Kvs, 1)
 	assert.Equal(t, "{\n  \"foo1\": \"bar1\",\n  \"foo2\": [\n    \"bar2\",\n    \"bar3\"\n  ]\n}", string(res.Kvs[0].Value))
 }

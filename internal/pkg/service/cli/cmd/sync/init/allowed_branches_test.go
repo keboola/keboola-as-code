@@ -9,6 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
@@ -37,10 +38,10 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 
 	// No interaction expected
 	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{"foo", "bar"}, allowedBranches)
-	assert.NoError(t, console.Tty().Close())
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Close())
 }
 
 // TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
@@ -62,7 +63,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 
 	// No interaction expected
 	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, f)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{model.AllBranchesDef}, allowedBranches)
 }
 
@@ -85,15 +86,15 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		selectOption(t, 1, console) // only main branch
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, model.AllowedBranches{model.MainBranchDef}, allowedBranches)
@@ -118,15 +119,15 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		selectOption(t, 2, console) // all branches
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, model.AllowedBranches{model.AllBranchesDef}, allowedBranches)
@@ -156,31 +157,31 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		selectOption(t, 3, console) // selected branches
-		assert.NoError(t, console.ExpectString(`Main (10)`))
-		assert.NoError(t, console.ExpectString(`foo (20)`))
-		assert.NoError(t, console.ExpectString(`bar (30)`))
-		assert.NoError(t, console.ExpectString(`baz (40)`))
+		require.NoError(t, console.ExpectString(`Main (10)`))
+		require.NoError(t, console.ExpectString(`foo (20)`))
+		require.NoError(t, console.ExpectString(`bar (30)`))
+		require.NoError(t, console.ExpectString(`baz (40)`))
 		time.Sleep(50 * time.Millisecond)
 
 		// Skip Main
-		assert.NoError(t, console.SendDownArrow())
+		require.NoError(t, console.SendDownArrow())
 		// Select foo
-		assert.NoError(t, console.SendSpace())
-		assert.NoError(t, console.SendDownArrow())
+		require.NoError(t, console.SendSpace())
+		require.NoError(t, console.SendDownArrow())
 		// Skip bar
-		assert.NoError(t, console.SendDownArrow())
+		require.NoError(t, console.SendDownArrow())
 		// Select baz
-		assert.NoError(t, console.SendSpace())
-		assert.NoError(t, console.SendEnter())
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.SendSpace())
+		require.NoError(t, console.SendEnter())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert, foo and baz IDs
 	assert.Equal(t, model.AllowedBranches{"20", "40"}, allowedBranches)
@@ -210,19 +211,19 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		selectOption(t, 4, console) // type custom definitions
-		assert.NoError(t, console.ExpectString("Please enter one branch definition per line."))
-		assert.NoError(t, console.Send("f**\n"))
-		assert.NoError(t, console.Send("b*z\n"))
-		assert.NoError(t, console.Send("\n\n\n"))
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectString("Please enter one branch definition per line."))
+		require.NoError(t, console.Send("f**\n"))
+		require.NoError(t, console.Send("b*z\n"))
+		require.NoError(t, console.Send("\n\n\n"))
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
 	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert, foo and baz IDs
 	assert.Equal(t, model.AllowedBranches{"f**", "b*z"}, allowedBranches)
@@ -232,15 +233,15 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 func selectOption(t *testing.T, option int, c terminal.Console) {
 	t.Helper()
 
-	assert.NoError(t, c.ExpectString("Allowed project's branches:"))
-	assert.NoError(t, c.ExpectString(ModeMainBranch))
-	assert.NoError(t, c.ExpectString(ModeAllBranches))
-	assert.NoError(t, c.ExpectString(ModeSelectSpecific))
-	assert.NoError(t, c.ExpectString(ModeTypeList))
+	require.NoError(t, c.ExpectString("Allowed project's branches:"))
+	require.NoError(t, c.ExpectString(ModeMainBranch))
+	require.NoError(t, c.ExpectString(ModeAllBranches))
+	require.NoError(t, c.ExpectString(ModeSelectSpecific))
+	require.NoError(t, c.ExpectString(ModeTypeList))
 	for i := 1; i < option; i++ {
-		assert.NoError(t, c.SendDownArrow())
+		require.NoError(t, c.SendDownArrow())
 	}
-	assert.NoError(t, c.SendEnter())
+	require.NoError(t, c.SendEnter())
 }
 
 func registerMockedBranchesResponse(httpTransport *httpmock.MockTransport, branches []*keboola.Branch) {

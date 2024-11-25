@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -27,7 +28,7 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 	assert.NotNil(t, state)
 	assert.Empty(t, remoteErr)
 	assert.Len(t, state.Branches(), 1)
-	assert.Len(t, state.Configs(), 0)
+	assert.Empty(t, state.Configs())
 }
 
 func TestLoadRemoteStateComplex(t *testing.T) {
@@ -442,13 +443,13 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 
 	testProject := testproject.GetTestProjectForTest(t, "")
 	err := testProject.SetState(projectStateFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	d := dependencies.NewMocked(t, context.Background(), dependencies.WithTestProject(testProject))
 	state, err := New(context.Background(), project.NewWithManifest(context.Background(), aferofs.NewMemoryFs(), m), d)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	filter := m.Filter()
 	_, localErr, remoteErr := state.Load(context.Background(), LoadOptions{RemoteFilter: filter, LoadRemoteState: true})
-	assert.NoError(t, localErr)
+	require.NoError(t, localErr)
 	return state, testProject.Env(), remoteErr
 }

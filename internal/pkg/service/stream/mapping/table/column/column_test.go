@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
@@ -30,12 +31,12 @@ func TestMappedColumns_Serde(t *testing.T) {
 	expectedJSON := `[{"type":"uuid","name":"id","primaryKey":true},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","template":{"language":"jsonnet","content":"Body('my.key')+':'+Body('my.value')'"}}]`
 
 	bytes, err := json.Marshal(&typed)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedJSON, string(bytes))
 
 	var output column.Columns
 	err = json.Unmarshal(bytes, &output)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, typed, output)
 }
 

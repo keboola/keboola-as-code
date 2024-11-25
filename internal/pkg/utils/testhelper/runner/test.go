@@ -212,13 +212,13 @@ func (t *Test) copyInToWorkingDir() {
 	if !t.testDirFS.IsDir(t.ctx, inDirName) {
 		t.t.Fatalf(`Missing directory "%s" in "%s".`, inDirName, t.testDir)
 	}
-	assert.NoError(t.t, aferofs.CopyFs2Fs(t.testDirFS, inDirName, t.workingDirFS, `/`))
+	require.NoError(t.t, aferofs.CopyFs2Fs(t.testDirFS, inDirName, t.workingDirFS, `/`))
 }
 
 func (t *Test) initProjectState() {
 	if t.testDirFS.IsFile(t.ctx, initialStateFileName) {
 		err := t.project.SetState(filesystem.Join(t.testDir, initialStateFileName))
-		assert.NoError(t.t, err)
+		require.NoError(t.t, err)
 	}
 }
 
@@ -353,8 +353,8 @@ func (t *Test) runAPIServer(
 	stdout := newCmdOut()
 	stderr := newCmdOut()
 	t.T().Cleanup(func() {
-		assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile("process-stdout.txt", stdout.String())))
-		assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile("process-stderr.txt", stderr.String())))
+		require.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile("process-stdout.txt", stdout.String())))
+		require.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile("process-stderr.txt", stderr.String())))
 	})
 
 	// Start API server
@@ -439,8 +439,8 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 	t.apiClient.SetPreRequestHook(func(client *resty.Client, request *http.Request) error {
 		if dumpDir, ok := request.Context().Value(dumpDirCtxKey).(string); ok {
 			reqDump, err := httputil.DumpRequest(request, true)
-			assert.NoError(t.t, err)
-			assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile(filesystem.Join(dumpDir, "request.txt"), string(reqDump)))) // nolint: contextcheck
+			require.NoError(t.t, err)
+			require.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile(filesystem.Join(dumpDir, "request.txt"), string(reqDump)))) // nolint: contextcheck
 		}
 		return nil
 	})
@@ -451,13 +451,13 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 	for _, requestDir := range dirs {
 		// Read the request file
 		requestFileStr := t.ReadFileFromTestDir(filesystem.Join(requestDir, "request.json"))
-		assert.NoError(t.t, err)
+		require.NoError(t.t, err)
 
 		request := &APIRequestDef{}
 		err = json.DecodeString(requestFileStr, request)
-		assert.NoError(t.t, err)
+		require.NoError(t.t, err)
 		err = validator.New().Validate(context.Background(), request)
-		assert.NoError(t.t, err)
+		require.NoError(t.t, err)
 		requests[requestDir] = &APIRequest{Definition: *request}
 
 		// Send the request
@@ -503,13 +503,13 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 			// Send request
 			r.SetContext(context.WithValue(r.Context(), dumpDirCtxKey, requestDir))
 			resp, err = r.Execute(request.Method, reqPath)
-			assert.NoError(t.t, err)
+			require.NoError(t.t, err)
 
 			// Dump raw HTTP response
 			if err == nil {
 				respDump, err := httputil.DumpResponse(resp.RawResponse, false)
-				assert.NoError(t.t, err)
-				assert.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+				require.NoError(t.t, err)
+				require.NoError(t.t, t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
 			}
 
 			// Get the response body
@@ -518,7 +518,7 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 				err = json.DecodeString(resp.String(), &respMap)
 			}
 			requests[requestDir].Response = respMap
-			assert.NoError(t.t, err, resp.String())
+			require.NoError(t.t, err, resp.String())
 
 			// Run only once if there is no repeat until condition
 			if request.Repeat.Until == "" {
@@ -541,7 +541,7 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 		}
 
 		respBody, err := json.EncodeString(respMap, true)
-		assert.NoError(t.t, err)
+		require.NoError(t.t, err)
 
 		// Compare response status code
 		expectedCode := cast.ToInt(t.ReadFileFromTestDir(filesystem.Join(requestDir, "expected-http-code")))
@@ -628,11 +628,11 @@ func (t *Test) assertProjectState() {
 
 		// Load actual state
 		actualState, err := t.project.NewSnapshot()
-		assert.NoError(t.t, err)
+		require.NoError(t.t, err)
 
 		// Write actual state
 		err = t.workingDirFS.WriteFile(t.ctx, filesystem.NewRawFile("actual-state.json", json.MustEncodeString(actualState, true)))
-		assert.NoError(t.t, err)
+		require.NoError(t.t, err)
 
 		// Compare expected and actual state
 		wildcards.Assert(

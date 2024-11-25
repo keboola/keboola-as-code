@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	fixtures "github.com/keboola/keboola-as-code/internal/pkg/fixtures/local"
@@ -36,9 +37,9 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 
 	// Prepare the template
 	fs, err := fixtures.LoadFS(context.Background(), "template-simple", env.Empty())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	version, err := model.NewSemVersion("v0.0.1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	tmplRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "tmpl1", version.String())
 	versionRec := repository.VersionRecord{
 		Version:     version,
@@ -56,7 +57,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	}
 
 	tmpl, err := template.New(context.Background(), tmplRef, tmplRec, versionRec, fs, fs, "", testapi.MockedComponentsMap())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -64,25 +65,25 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("Default Group"))
+		require.NoError(t, console.ExpectString("Default Group"))
 
-		assert.NoError(t, console.ExpectString("Default Step"))
+		require.NoError(t, console.ExpectString("Default Step"))
 
-		assert.NoError(t, console.ExpectString("Default Step Description"))
+		require.NoError(t, console.ExpectString("Default Step Description"))
 
-		assert.NoError(t, console.ExpectString("url description"))
+		require.NoError(t, console.ExpectString("url description"))
 
-		assert.NoError(t, console.ExpectString("API URL:"))
+		require.NoError(t, console.ExpectString("API URL:"))
 
-		assert.NoError(t, console.SendLine(`foo.bar.com`))
+		require.NoError(t, console.SendLine(`foo.bar.com`))
 
-		assert.NoError(t, console.ExpectString(`Enter the name of the environment variable that will fill input "API Token". Note that it will get prefix KBC_SECRET_.`))
+		require.NoError(t, console.ExpectString(`Enter the name of the environment variable that will fill input "API Token". Note that it will get prefix KBC_SECRET_.`))
 
-		assert.NoError(t, console.ExpectString("API Token:"))
+		require.NoError(t, console.ExpectString("API Token:"))
 
-		assert.NoError(t, console.SendLine(`VAR1`))
+		require.NoError(t, console.SendLine(`VAR1`))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -90,10 +91,10 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		TestName: configmap.NewValueWithOrigin("one", configmap.SetByFlag),
 	}
 	opts, warnings, err := AskCreateTemplateTestOptions(context.Background(), d, tmpl, f)
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, err)
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 
 	// Assert
 	assert.Equal(t, createOp.Options{

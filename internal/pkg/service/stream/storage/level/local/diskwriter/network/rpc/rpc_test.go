@@ -72,16 +72,16 @@ func TestNetworkFile(t *testing.T) {
 	// Write
 	n, err := file.Write(ctx, true, []byte("foo\n"))
 	assert.Equal(t, 4, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	n, err = file.Write(ctx, true, []byte("bar\n"))
 	assert.Equal(t, 4, n)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Sync
-	assert.NoError(t, file.Sync(ctx))
+	require.NoError(t, file.Sync(ctx))
 
 	// Close
-	assert.NoError(t, file.Close(ctx))
+	require.NoError(t, file.Close(ctx))
 
 	// Shutdown nodes, the writer first
 	writerNode.Process().Shutdown(ctx, errors.New("bye bye"))

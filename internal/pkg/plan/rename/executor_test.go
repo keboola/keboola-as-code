@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -29,9 +30,9 @@ func TestRename(t *testing.T) {
 	ctx := context.Background()
 
 	// Dir structure
-	assert.NoError(t, fs.Mkdir(ctx, `foo1/sub`))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`foo1/sub/file`), `content`)))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`foo2`), `content`)))
+	require.NoError(t, fs.Mkdir(ctx, `foo1/sub`))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`foo1/sub/file`), `content`)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`foo2`), `content`)))
 	logger.Truncate()
 
 	// Plan
@@ -56,7 +57,7 @@ func TestRename(t *testing.T) {
 	projectState := state.NewRegistry(knownpaths.NewNop(ctx), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
-	assert.NoError(t, executor.invoke())
+	require.NoError(t, executor.invoke())
 	logsStr := logger.AllMessages()
 	assert.NotContains(t, logsStr, `warn`)
 	assert.True(t, fs.IsFile(ctx, `bar1/sub/file`))
@@ -86,10 +87,10 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	ctx := context.Background()
 
 	// Dir structure
-	assert.NoError(t, fs.Mkdir(ctx, `foo1/sub`))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo1/sub/file`, `content`)))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo2`, `content`)))
-	assert.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo5`, `content`)))
+	require.NoError(t, fs.Mkdir(ctx, `foo1/sub`))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo1/sub/file`, `content`)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo2`, `content`)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo5`, `content`)))
 	logger.Truncate()
 
 	// Plan
@@ -127,7 +128,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	err := executor.invoke()
-	assert.Error(t, err)
+	require.Error(t, err)
 	logsStr := logger.AllMessages()
 	assert.NotContains(t, logsStr, `warn`)
 	assert.Contains(t, err.Error(), `cannot copy "missing3" -> "missing4"`)

@@ -86,7 +86,7 @@ func TestSinkRepository_ExistsOrErr(t *testing.T) {
 	// ExistsOrErr - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, sinkRepo.ExistsOrErr(sinkKey).Do(ctx).Err())
+		require.NoError(t, sinkRepo.ExistsOrErr(sinkKey).Do(ctx).Err())
 	}
 }
 
@@ -143,7 +143,7 @@ func TestSinkRepository_MustNotExist(t *testing.T) {
 	// MustNotExist - sink not found - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, sinkRepo.MustNotExist(sinkKey).Do(ctx).Err())
+		require.NoError(t, sinkRepo.MustNotExist(sinkKey).Do(ctx).Err())
 	}
 
 	// Create sink

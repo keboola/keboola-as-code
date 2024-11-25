@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -25,13 +26,13 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 
 	// Invoke
 	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// path to shared code is part of the Content
 	sharedCodePath, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
-	assert.Equal(t, sharedCodePath, `_shared/keboola.python-transformation-v2`)
+	assert.Equal(t, `_shared/keboola.python-transformation-v2`, sharedCodePath)
 
 	// IDs in transformation blocks are replaced by paths
 	assert.Equal(t, []*model.Block{
@@ -80,7 +81,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 
 	// Invoke
 	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	expectedLogs := `
 WARN  Warning:
 - Missing shared code config "branch:123/component:keboola.shared-code/config:missing":
@@ -145,7 +146,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 
 	// Invoke
 	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	expectedLogs := `
 WARN  Warning:
 - Missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
@@ -156,7 +157,7 @@ WARN  Warning:
 	// Link to shared code is set, but without missing row
 	sharedCodeID, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
-	assert.Equal(t, sharedCodeID, `_shared/keboola.python-transformation-v2`)
+	assert.Equal(t, `_shared/keboola.python-transformation-v2`, sharedCodeID)
 
 	// IDs in transformation blocks are replaced by paths, except missing row
 	assert.Equal(t, []*model.Block{

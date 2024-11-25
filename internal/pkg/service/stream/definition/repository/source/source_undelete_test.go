@@ -67,7 +67,7 @@ func TestSourceRepository_Undelete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		now = now.Add(time.Hour)
-		assert.NoError(t, repo.SoftDelete(sourceKey, now, by).Do(ctx).Err())
+		require.NoError(t, repo.SoftDelete(sourceKey, now, by).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, "fixtures/source_undelete_snapshot_001.txt", ignoredEtcdKeys)
 	}
 

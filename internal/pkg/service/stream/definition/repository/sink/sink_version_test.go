@@ -44,7 +44,7 @@ func TestSinkRepository_Versions(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListVersions(sinkKey).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, result)
 	}
 
@@ -109,7 +109,7 @@ func TestSinkRepository_Versions(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListVersions(sinkKey).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 3)
 		assert.Equal(t, []definition.Sink{version1, version2, version3}, result)
 	}
@@ -118,7 +118,7 @@ func TestSinkRepository_Versions(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.Version(sinkKey, version2.VersionNumber()).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, version2, result)
 	}
 
@@ -128,7 +128,7 @@ func TestSinkRepository_Versions(t *testing.T) {
 	{
 		now = now.Add(time.Hour)
 		version4, err = repo.RollbackVersion(sinkKey, now, by, version2.VersionNumber()).Do(ctx).ResultOrErr()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, definition.VersionNumber(4), version4.Version.Number)
 	}
 
@@ -145,7 +145,7 @@ func TestSinkRepository_Versions(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		result, err := repo.ListVersions(sinkKey).Do(ctx).All()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, result, 4)
 		assert.Equal(t, []definition.Sink{version1, version2, version3, version4}, result)
 	}

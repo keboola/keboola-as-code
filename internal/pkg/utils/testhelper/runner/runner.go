@@ -11,7 +11,6 @@ import (
 	"time"
 
 	tp "github.com/keboola/go-utils/pkg/testproject"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -68,9 +67,9 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 	})
 
 	testDirFS, err := aferofs.NewLocalFs(testDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	workingDirFS, err := aferofs.NewLocalFs(workingDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	state := &fixtures.StateFile{}
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -26,7 +27,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 	// Add 2 records
 	sliceKey1 := test.NewSliceKeyOpenedAt("2000-01-01T01:00:00.000Z")
 	sliceKey2 := test.NewSliceKeyOpenedAt("2000-01-01T02:00:00.000Z")
-	assert.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{
 		{
 			SliceKey:         sliceKey1,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
@@ -68,7 +69,7 @@ func TestRepository_GetAllAndWatch(t *testing.T) {
 
 	// Add record
 	sliceKey3 := test.NewSliceKeyOpenedAt("2000-01-01T03:00:00.000Z")
-	assert.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{
+	require.NoError(t, repo.Put(ctx, "test-node", []statistics.PerSlice{
 		{
 			SliceKey:         sliceKey3,
 			FirstRecordAt:    utctime.MustParse("2000-01-01T03:00:00.000Z"),

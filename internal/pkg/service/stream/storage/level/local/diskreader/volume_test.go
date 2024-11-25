@@ -35,7 +35,7 @@ func TestOpenVolume_Error_DirPermissions(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Volume directory is readonly
-	assert.NoError(t, os.Chmod(tc.VolumePath, 0o440))
+	require.NoError(t, os.Chmod(tc.VolumePath, 0o440))
 
 	_, err := tc.OpenVolume()
 	if assert.Error(t, err) {
@@ -55,8 +55,8 @@ func TestOpenVolume_Error_VolumeIDFilePermissions(t *testing.T) {
 
 	// Volume ID file is not readable
 	path := filepath.Join(tc.VolumePath, volumeModel.IDFile)
-	assert.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
-	assert.NoError(t, os.Chmod(path, 0o110))
+	require.NoError(t, os.WriteFile(path, []byte("abc"), 0o640))
+	require.NoError(t, os.Chmod(path, 0o110))
 
 	_, err := tc.OpenVolume()
 	if assert.Error(t, err) {
@@ -64,31 +64,31 @@ func TestOpenVolume_Error_VolumeIDFilePermissions(t *testing.T) {
 	}
 }
 
-// TestOpenVolume_NonExistentPath tests successful opening of the volume and filesystem locks.
+// TestOpenVolume_Ok tests successful opening of the volume and filesystem locks.
 func TestOpenVolume_Ok(t *testing.T) {
 	t.Parallel()
 	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
 
 	vol, err := tc.OpenVolume()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, volumeModel.ID("abcdef"), vol.ID())
 
 	// Lock is locked by the volume
 	lock := flock.New(filepath.Join(tc.VolumePath, diskreader.LockFile))
 	locked, err := lock.TryLock()
 	assert.False(t, locked)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
-	assert.NoError(t, err)
-	assert.NoError(t, lock.Unlock())
+	require.NoError(t, err)
+	require.NoError(t, lock.Unlock())
 
 	// Check logs
 	tc.Logger.AssertJSONMessages(tc.TB, `
@@ -114,7 +114,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 		defer close(done)
 		var err error
 		vol, err = tc.OpenVolume()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, volumeModel.ID("abcdef"), vol.ID())
 	}()
 
@@ -128,7 +128,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Create the volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
 	tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
 
 	// Wait for the goroutine
@@ -142,15 +142,15 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	lock := flock.New(filepath.Join(tc.VolumePath, diskreader.LockFile))
 	locked, err := lock.TryLock()
 	assert.False(t, locked)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Lock is release by Close method
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
-	assert.NoError(t, err)
-	assert.NoError(t, lock.Unlock())
+	require.NoError(t, err)
+	require.NoError(t, lock.Unlock())
 
 	// Check logs
 	tc.Logger.AssertJSONMessages(tc.TB, `
@@ -216,11 +216,11 @@ func TestOpenVolume_VolumeLock(t *testing.T) {
 	tc := newVolumeTestCase(t)
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
 
 	// Open volume - first instance - ok
 	vol, err := tc.OpenVolume()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Open volume - second instance - error
 	_, err = tc.OpenVolume()
@@ -229,7 +229,7 @@ func TestOpenVolume_VolumeLock(t *testing.T) {
 	}
 
 	// Close volume
-	assert.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(context.Background()))
 }
 
 // TestVolume_Close_Errors tests propagation of readers close errors on Volume.Close().
@@ -244,13 +244,13 @@ func TestVolume_Close_Errors(t *testing.T) {
 	})
 
 	// Create volume ID file
-	assert.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
+	require.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
 	slice1 := test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z")
 	slice2 := test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z")
-	assert.NoError(tc.TB, os.MkdirAll(slice1.LocalStorage.DirName(tc.VolumePath), 0o750))
-	assert.NoError(tc.TB, os.MkdirAll(slice2.LocalStorage.DirName(tc.VolumePath), 0o750))
-	assert.NoError(tc.TB, os.WriteFile(slice1.LocalStorage.FileName(tc.VolumePath, "my-node"), []byte("abc"), 0o640))
-	assert.NoError(tc.TB, os.WriteFile(slice2.LocalStorage.FileName(tc.VolumePath, "my-node"), []byte("def"), 0o640))
+	require.NoError(tc.TB, os.MkdirAll(slice1.LocalStorage.DirName(tc.VolumePath), 0o750))
+	require.NoError(tc.TB, os.MkdirAll(slice2.LocalStorage.DirName(tc.VolumePath), 0o750))
+	require.NoError(tc.TB, os.WriteFile(slice1.LocalStorage.FileName(tc.VolumePath, "my-node"), []byte("abc"), 0o640))
+	require.NoError(tc.TB, os.WriteFile(slice2.LocalStorage.FileName(tc.VolumePath, "my-node"), []byte("def"), 0o640))
 
 	// Open volume, replace file opener
 	vol, err := tc.OpenVolume()

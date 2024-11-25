@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/branchmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -32,7 +33,7 @@ func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	recipe := model.NewLocalSaveRecipe(state.Manifest(), state.Local, model.NewChangedFields())
-	assert.NoError(t, mockedState.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, mockedState.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	branchManifest := recipe.ObjectManifest.(*model.BranchManifest)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
@@ -101,7 +102,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 	}, res)
 
 	yamlEnc, err := yaml.Marshal(&res)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(`
 version: 2
 sources:
@@ -227,7 +228,7 @@ func TestGenerateSourcesDefinition_LinkedBucket(t *testing.T) {
 	}, res)
 
 	yamlEnc, err := yaml.Marshal(&res)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(`
 version: 2
 sources:

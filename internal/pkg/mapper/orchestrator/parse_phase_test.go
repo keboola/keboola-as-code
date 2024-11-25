@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -161,9 +162,9 @@ func TestParsePhase(t *testing.T) {
 		assert.Equal(t, c.expected, value, desc)
 		assert.Equal(t, c.after, json.MustEncodeString(p.content, false), desc)
 		if c.err == nil {
-			assert.NoError(t, err, desc)
+			require.NoError(t, err, desc)
 		} else {
-			assert.Error(t, err, desc)
+			require.Error(t, err, desc)
 			assert.Equal(t, c.err.Error(), err.Error(), desc)
 		}
 	}

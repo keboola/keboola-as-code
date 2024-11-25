@@ -646,7 +646,7 @@ func sendTestRequests(t *testing.T, f *testState) {
 			// Expected headers
 			if len(tc.ExpectedHeaders) > 0 {
 				for k, v := range tc.ExpectedHeaders {
-					assert.Equal(t, v, resp.Header.Get(k), fmt.Sprintf("key=%s", k))
+					assert.Equal(t, v, resp.Header.Get(k), `key=%s`, k)
 				}
 			}
 

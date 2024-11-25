@@ -103,8 +103,8 @@ func TestCollector(t *testing.T) {
 	// Create 2 writers
 	w1 := &testWriter{SliceKeyValue: slice1.SliceKey}
 	w2 := &testWriter{SliceKeyValue: slice2.SliceKey}
-	assert.NoError(t, writerEvents.WriterOpen(w1))
-	assert.NoError(t, writerEvents.WriterOpen(w2))
+	require.NoError(t, writerEvents.WriterOpen(w1))
+	require.NoError(t, writerEvents.WriterOpen(w2))
 
 	// Sync: no data
 	triggerSyncAndWait()
@@ -141,7 +141,7 @@ func TestCollector(t *testing.T) {
 	w1.LastRowAtValue = utctime.MustParse("2000-01-01T01:40:00.000Z")
 	w1.CompressedSizeValue = 60
 	w1.UncompressedSizeValue = 600
-	assert.NoError(t, writerEvents.WriterClose(w1, nil))
+	require.NoError(t, writerEvents.WriterClose(w1, nil))
 	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_004.txt", ignoredEtcdKeys)
 
 	// Shutdown: stop Collector and remaining writer 2

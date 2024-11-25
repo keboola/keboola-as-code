@@ -49,6 +49,6 @@ func TestBranchRepository_ExistsOrErr(t *testing.T) {
 	// ExistsOrErr - ok
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		assert.NoError(t, repo.ExistsOrErr(branchKey).Do(ctx).Err())
+		require.NoError(t, repo.ExistsOrErr(branchKey).Do(ctx).Err())
 	}
 }

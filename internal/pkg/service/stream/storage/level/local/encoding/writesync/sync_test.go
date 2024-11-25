@@ -46,7 +46,7 @@ func TestSyncWriter_StopStoppedSyncer(t *testing.T) {
 	syncerWriter := tc.NewSyncerWriter()
 
 	// Stop the syncer
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Try stop again
 	err := syncerWriter.Stop(ctx)
@@ -77,19 +77,19 @@ func TestSyncWriter_Write_Wait(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+		require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 		tc.Logger.Info(ctx, "TEST: sync wait unblocked")
 	}()
 
 	// Wait for sync
-	assert.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
+	require.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 	wg.Wait()
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -139,7 +139,7 @@ func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -170,13 +170,13 @@ func TestSyncWriter_SkipEmptySync(t *testing.T) {
 	syncerWriter := tc.NewSyncerWriter()
 
 	// Wait for sync
-	assert.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
+	require.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 
 	// Check output
 	assert.Equal(t, "", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -217,7 +217,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked - part 1")
 		}()
 	}
@@ -236,7 +236,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked - part 2")
 		}()
 	}
@@ -249,7 +249,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	assert.Equal(t, "data1data2data3data4data5data6", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -368,17 +368,17 @@ func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 
 		notifier := syncerWriter.Notifier(ctx)
 		assert.Nil(t, notifier)
-		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+		require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
 
 	// Sync
-	assert.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
+	require.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -419,7 +419,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 
 		notifier := syncerWriter.Notifier(ctx)
 		assert.Nil(t, notifier)
-		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+		require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
 
 	// Sync
@@ -479,7 +479,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked - part 1")
 		}()
 	}
@@ -498,7 +498,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked - part 2")
 		}()
 	}
@@ -511,7 +511,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	assert.Equal(t, "data1data2data3data4data5data6", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -630,17 +630,17 @@ func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 
 		notifier := syncerWriter.Notifier(ctx)
 		assert.Nil(t, notifier)
-		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+		require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
 
 	// Sync
-	assert.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
+	require.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 
 	// Check output
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -681,7 +681,7 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 
 		notifier := syncerWriter.Notifier(ctx)
 		assert.Nil(t, notifier)
-		assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+		require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 	}
 
 	// Sync
@@ -740,7 +740,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
 		}()
 	}
@@ -771,7 +771,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 	assert.Equal(t, "data1data2data3data4data5data6data7", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -820,7 +820,7 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
 		}()
 	}
@@ -841,7 +841,7 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -885,7 +885,7 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
 		}()
 	}
@@ -899,7 +899,7 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -943,7 +943,7 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
+			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
 		}()
 	}
@@ -956,7 +956,7 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 	assert.Equal(t, "data1data2data3", tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`
@@ -997,12 +997,12 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 
 	notifier1 := syncerWriter.Notifier(ctx)
 	assert.NotNil(t, notifier1)
-	assert.NoError(t, err1)
+	require.NoError(t, err1)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, notifier1.WaitWithTimeout(testWaitTimeout))
+		require.NoError(t, notifier1.WaitWithTimeout(testWaitTimeout))
 		tc.Logger.Info(ctx, "TEST: sync wait unblocked")
 	}()
 
@@ -1013,12 +1013,12 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	assert.Equal(t, data2Len, n2)
 	notifier2 := syncerWriter.Notifier(ctx)
 	assert.NotNil(t, notifier2)
-	assert.NoError(t, err2)
+	require.NoError(t, err2)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.NoError(t, notifier2.WaitWithTimeout(testWaitTimeout))
+		require.NoError(t, notifier2.WaitWithTimeout(testWaitTimeout))
 		tc.Logger.Info(ctx, "TEST: sync wait unblocked")
 	}()
 
@@ -1030,7 +1030,7 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	assert.Equal(t, data1+data2, tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
-	assert.NoError(t, syncerWriter.Stop(ctx))
+	require.NoError(t, syncerWriter.Stop(ctx))
 
 	// Check logs
 	tc.AssertLogs(`

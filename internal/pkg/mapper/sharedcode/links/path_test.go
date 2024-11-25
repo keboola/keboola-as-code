@@ -1,7 +1,6 @@
 package links
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +28,7 @@ func TestSharedCodeLinksMatchPath(t *testing.T) {
 	}
 	pathUtils := newPathUtils()
 	for i, c := range cases {
-		assert.Equal(t, c.expected, pathUtils.match(c.input, `keboola.snowflake-transformation`), fmt.Sprintf(`Case "%d"`, i))
+		assert.Equal(t, c.expected, pathUtils.match(c.input, `keboola.snowflake-transformation`), `Case "%d"`, i)
 	}
 }
 

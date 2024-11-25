@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -24,7 +25,7 @@ func TestRelationsMapperLocalLoad(t *testing.T) {
 
 	assert.NotEmpty(t, manifest.Relations)
 	assert.Empty(t, object.Relations)
-	assert.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Copied, manifest.Relations -> object.Relations

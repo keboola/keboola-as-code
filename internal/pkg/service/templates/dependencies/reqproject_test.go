@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -32,8 +33,8 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// Copy the git repository to a temp dir
 	tmpDir := t.TempDir()
 
-	assert.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
-	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
+	require.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
+	require.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 
 	runGitCommand(t, tmpDir, "reset", "--hard", "68656d1287af0ddb5b849f816f73bf89b6f722a4")
@@ -55,13 +56,13 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	repo1, err := reqScpFactory().TemplateRepository(req1Ctx, repoDef)
 
 	// FS contains template1, but doesn't contain template2
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, repo1.Fs().Exists(ctx, "template1"))
 	assert.False(t, repo1.Fs().Exists(ctx, "template2"))
 
 	// Update repository -> no change
 	err = <-manager.Update(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mock.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" update finished, no change found%A"}`)
 	mock.DebugLogger().Truncate()
 
@@ -69,7 +70,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	req2Ctx, req2CancelFn := context.WithCancel(ctx)
 	defer req2CancelFn()
 	repo2, err := reqScpFactory().TemplateRepository(req2Ctx, repoDef)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Repo1 and repo2 use same directory/FS.
 	// FS contains template1, but doesn't contain template2 (no change).
@@ -82,7 +83,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 
 	// Update repository -> change occurred
 	err = <-manager.Update(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mock.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" updated from %s to %s%A"}`)
 	mock.DebugLogger().Truncate()
 
@@ -90,7 +91,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	req3Ctx, req3CancelFn := context.WithCancel(ctx)
 	defer req3CancelFn()
 	repo3, err := reqScpFactory().TemplateRepository(req3Ctx, repoDef)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Repo1 and repo2 use still same directory/FS, without change
 	assert.Equal(t, repo1.Fs(), repo2.Fs())
@@ -132,7 +133,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 
 	// Update repository -> change occurred
 	err = <-manager.Update(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mock.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" updated from %s to %s%A"}`)
 	mock.DebugLogger().Truncate()
 
@@ -152,8 +153,8 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 
 	// Copy the git repository to a temp dir
 	tmpDir := t.TempDir()
-	assert.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
-	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
+	require.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
+	require.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 	tmplDef := model.NewTemplateRef(repoDef, "template1", "1.0.3")
 
@@ -173,14 +174,14 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	req1Ctx, req1CancelFn := context.WithCancel(ctx)
 	defer req1CancelFn()
 	tmpl1Req1, err := reqScopeFactory().Template(req1Ctx, tmplDef)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Readme version 3 ...\n", tmpl1Req1.Readme())
 
 	// Get template for request 2
 	req2Ctx, req2CancelFn := context.WithCancel(ctx)
 	defer req2CancelFn()
 	tmpl1Req2, err := reqScopeFactory().Template(req2Ctx, tmplDef)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Readme version 3 ...\n", tmpl1Req2.Readme())
 
 	// Both requests: 1 and 2, got same template structure
@@ -191,7 +192,7 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 
 	// Update repository -> change occurred
 	err = <-manager.Update(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mock.DebugLogger().AssertJSONMessages(t, `{"level":"info","message":"%Arepository \"%s\" updated from %s to %s%A"}`)
 	mock.DebugLogger().Truncate()
 
@@ -199,14 +200,14 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	req3Ctx, req3CancelFn := context.WithCancel(ctx)
 	defer req3CancelFn()
 	tmpl1Req3, err := reqScopeFactory().Template(req3Ctx, tmplDef)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Readme version 1 ...\n", tmpl1Req3.Readme())
 
 	// Get template for request 4
 	req4Ctx, req4CancelFn := context.WithCancel(ctx)
 	defer req4CancelFn()
 	tmpl1Req4, err := reqScopeFactory().Template(req4Ctx, tmplDef)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Readme version 1 ...\n", tmpl1Req4.Readme())
 
 	// Both requests: 3 and 4, got same template structure
@@ -223,5 +224,5 @@ func runGitCommand(t *testing.T, dir string, args ...string) {
 	cmd.Dir = dir
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	assert.NoError(t, cmd.Run(), "STDOUT:\n"+stdout.String()+"\n\nSTDERR:\n"+stderr.String())
+	require.NoError(t, cmd.Run(), "STDOUT:\n"+stdout.String()+"\n\nSTDERR:\n"+stderr.String())
 }

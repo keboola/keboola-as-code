@@ -5,13 +5,14 @@ import (
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEvaluate(t *testing.T) {
 	t.Parallel()
 	code := `{ foo: "bar" }`
 	json, err := Evaluate(code, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", json)
 }
 
@@ -28,7 +29,7 @@ func TestEvaluateAst(t *testing.T) {
 		},
 	}
 	json, err := EvaluateAst(astNode, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", json)
 }
 
@@ -36,7 +37,7 @@ func TestFormat(t *testing.T) {
 	t.Parallel()
 	code := `{"foo":"bar"}`
 	jsonnetStr, err := Format(code)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetStr)
 }
 
@@ -60,6 +61,6 @@ func TestToAst(t *testing.T) {
 	t.Parallel()
 	code := `{ foo: "bar" }`
 	astNode, err := ToAst(code, "")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, astNode)
 }

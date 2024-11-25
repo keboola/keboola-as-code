@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAskStorageApiToken(t *testing.T) {
@@ -18,11 +19,11 @@ func TestAskStorageApiToken(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(t, console.ExpectString("API token: "))
+		require.NoError(t, console.ExpectString("API token: "))
 
-		assert.NoError(t, console.SendLine(`my-secret`))
+		require.NoError(t, console.SendLine(`my-secret`))
 
-		assert.NoError(t, console.ExpectEOF())
+		require.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -30,7 +31,7 @@ func TestAskStorageApiToken(t *testing.T) {
 	assert.Equal(t, `my-secret`, out)
 
 	// Close terminal
-	assert.NoError(t, console.Tty().Close())
+	require.NoError(t, console.Tty().Close())
 	wg.Wait()
-	assert.NoError(t, console.Close())
+	require.NoError(t, console.Close())
 }

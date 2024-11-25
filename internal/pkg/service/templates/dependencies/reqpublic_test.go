@@ -10,6 +10,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
@@ -45,7 +46,7 @@ func TestPublicRequestScope_Components_Cached(t *testing.T) {
 			Components: components2,
 		}).Once(),
 	)
-	assert.NoError(t, mock.ComponentsProvider().Update(context.Background()))
+	require.NoError(t, mock.ComponentsProvider().Update(context.Background()))
 
 	// Request 1 still gets "components1"
 	assert.Equal(t, components1, req1Scp.Components().All())
