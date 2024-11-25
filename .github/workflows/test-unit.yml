@@ -33,6 +33,16 @@ jobs:
             os: windows-2022
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          android: false
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
       - name: Setup line endings
         run: git config --global core.autocrlf false
 
@@ -70,6 +80,16 @@ jobs:
           build-type: unit-tests
           without-cache: ${{ inputs.without-cache }}
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          android: false
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
 
       - name: Set TEST_KBC_PROJECTS_FILE entries
         uses: ./.github/actions/export-kbc-projects
@@ -118,3 +138,12 @@ jobs:
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
           UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
 
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          android: false
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
