@@ -242,6 +242,11 @@ func ValidateAndNormalize(target any) error {
 				value = value.Addr()
 			}
 
+			// Invalid value may happen if a Normalize call replaces a value with nil before it can be visited
+			if value.Kind() == reflect.Invalid {
+				return nil
+			}
+
 			// Call Normalize method, if any
 			if v, ok := value.Interface().(ValueWithNormalization); ok {
 				v.Normalize()
