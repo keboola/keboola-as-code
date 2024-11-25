@@ -50,7 +50,7 @@ func (ts *testState) checkState(t *testing.T, ctx context.Context, expected []fi
 	files = ts.getFilesAndSlices(t, ctx)
 
 	// Group entities from the actual state
-	var actual []file
+	actual := make([]file, 0, len(expected))
 	volumesIndexMap := make(map[model.FileVolumeKey]int)
 	volumesMap := make(map[model.FileKey][]volume)
 	for _, f := range files {

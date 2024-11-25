@@ -305,7 +305,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 		return nil, errs.ErrorOrNil()
 	}
 
-	var defs []create.ConfigDef
+	defs := make([]create.ConfigDef, 0, len(d.configs))
 	for _, c := range d.configs {
 		// Config definition
 		id := idByKey[c.Key().String()]

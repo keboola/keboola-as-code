@@ -127,7 +127,7 @@ func (p *Paths) TrackedPaths() []string {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	var tracked []string
+	tracked := make([]string, 0, len(p.tracked))
 	for path := range p.tracked {
 		tracked = append(tracked, path)
 	}
@@ -140,7 +140,7 @@ func (p *Paths) UntrackedPaths() []string {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	var untracked []string
+	untracked := make([]string, 0, len(p.all))
 	for path := range p.all {
 		if _, ok := p.tracked[path]; !ok {
 			untracked = append(untracked, path)

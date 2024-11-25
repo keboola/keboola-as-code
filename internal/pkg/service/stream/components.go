@@ -146,10 +146,11 @@ func ParseComponentsList(args []string) (Components, error) {
 }
 
 func (v Components) String() string {
-	var names []string
+	names := make([]string, 0, len(v))
 	for _, n := range v {
 		names = append(names, string(n))
 	}
+
 	sort.Strings(names)
 	return strings.Join(names, ",")
 }

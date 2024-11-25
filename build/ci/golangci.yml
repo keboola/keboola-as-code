@@ -147,6 +147,7 @@ linters:
     - nakedret
     - nilerr
     - noctx
+    - prealloc
     - predeclared
     - promlinter
     - rowserrcheck

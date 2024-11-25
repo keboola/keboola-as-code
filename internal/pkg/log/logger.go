@@ -154,7 +154,7 @@ func (l *zapLogger) logInLevel(level string, message string, fields ...zap.Field
 }
 
 func (l *zapLogger) message(ctx context.Context, message string) string {
-	var replacements []string
+	replacements := make([]string, 0, len(ctxattr.Attributes(ctx).ToSlice()))
 	for _, kv := range ctxattr.Attributes(ctx).ToSlice() {
 		replacements = append(replacements, "<"+string(kv.Key)+">", kv.Value.Emit())
 	}

@@ -30,7 +30,7 @@ func (s *service) AggregationSources(ctx context.Context, d dependencies.BranchR
 
 func (s *service) addSinksToAggregationResponse(ctx context.Context, d dependencies.BranchRequestScope, response *stream.AggregatedSourcesResult) error {
 	// Collect source IDs
-	var sourceKeys []key.SourceKey
+	sourceKeys := make([]key.SourceKey, 0, len(response.Sources))
 	for _, source := range response.Sources {
 		sourceKey := key.SourceKey{
 			BranchKey: d.BranchKey(),

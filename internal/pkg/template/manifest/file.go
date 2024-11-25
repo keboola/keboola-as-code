@@ -87,7 +87,7 @@ func (f *file) validate(ctx context.Context) error {
 }
 
 func (f *file) records() []model.ObjectManifest {
-	var out []model.ObjectManifest
+	out := make([]model.ObjectManifest, 0, len(f.Configs))
 	for _, config := range f.Configs {
 		out = append(out, &config.ConfigManifest)
 		for _, row := range config.Rows {

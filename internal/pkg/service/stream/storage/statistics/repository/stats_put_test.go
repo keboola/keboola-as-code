@@ -60,7 +60,7 @@ func TestRepository_Put(t *testing.T) {
 
 	// Many
 	nodeID3 := "test-node-3"
-	var records []statistics.PerSlice
+	records := make([]statistics.PerSlice, 0, 150)
 	start := utctime.MustParse("2000-01-21T00:00:00.000Z")
 	for i := range 150 {
 		openedAt := start.Add(time.Duration(i) * time.Second)

@@ -75,7 +75,7 @@ func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
 	}
 
 	// Generate slice
-	var phases []*model.Phase
+	phases := make([]*model.Phase, 0, len(order))
 	for phaseIndex, keyRaw := range order {
 		key := keyRaw.(string)
 		phase := s.phaseByKey[key]

@@ -252,7 +252,7 @@ func (n *Node) volumeDiskDirs(volume *diskwriter.Volume) (out []string, err erro
 }
 
 func (n *Node) removeEmptyDirs(ctx context.Context, dirsMap map[string]bool) error {
-	var dirs []string
+	dirs := make([]string, 0, len(dirsMap))
 	for dir := range dirsMap {
 		dirs = append(dirs, dir)
 	}
