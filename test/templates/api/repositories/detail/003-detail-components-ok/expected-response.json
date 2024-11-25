@@ -1,0 +1,9 @@
+{
+  "name": "keboola-components",
+  "url": "https://github.com/keboola/keboola-as-code-templates-components.git",
+  "ref": "main",
+  "author": {
+    "name": "Keboola",
+    "url": "https://keboola.com"
+  }
+}

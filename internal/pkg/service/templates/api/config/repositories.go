@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -15,21 +16,33 @@ func DefaultRepositories() Repositories {
 	return Repositories{
 		{
 			Type: model.RepositoryTypeGit,
-			Name: "keboola",
-			URL:  "https://github.com/keboola/keboola-as-code-templates.git",
-			Ref:  "main",
+			Name: repository.DefaultTemplateRepositoryName,
+			URL:  repository.DefaultTemplateRepositoryURL,
+			Ref:  repository.DefaultTemplateRepositoryRefMain,
 		},
 		{
 			Type: model.RepositoryTypeGit,
-			Name: "keboola-beta",
-			URL:  "https://github.com/keboola/keboola-as-code-templates.git",
-			Ref:  "beta",
+			Name: repository.DefaultTemplateRepositoryNameBeta,
+			URL:  repository.DefaultTemplateRepositoryURL,
+			Ref:  repository.DefaultTemplateRepositoryRefBeta,
 		},
 		{
 			Type: model.RepositoryTypeGit,
-			Name: "keboola-dev",
-			URL:  "https://github.com/keboola/keboola-as-code-templates.git",
-			Ref:  "dev",
+			Name: repository.DefaultTemplateRepositoryNameDev,
+			URL:  repository.DefaultTemplateRepositoryURL,
+			Ref:  repository.DefaultTemplateRepositoryRefDev,
+		},
+		{
+			Type: model.RepositoryTypeGit,
+			Name: repository.ComponentsTemplateRepositoryName,
+			URL:  repository.ComponentsTemplateRepositoryURL,
+			Ref:  repository.DefaultTemplateRepositoryRefMain,
+		},
+		{
+			Type: model.RepositoryTypeGit,
+			Name: repository.ComponentsTemplateRepositoryNameBeta,
+			URL:  repository.ComponentsTemplateRepositoryURL,
+			Ref:  repository.DefaultTemplateRepositoryRefBeta,
 		},
 	}
 }

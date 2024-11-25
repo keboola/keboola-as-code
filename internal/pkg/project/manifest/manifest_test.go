@@ -306,6 +306,12 @@ func minimalJSON() string {
         "name": "keboola",
         "url": "https://github.com/keboola/keboola-as-code-templates.git",
         "ref": "main"
+      },
+      {
+        "type": "git",
+        "name": "keboola-components",
+        "url": "https://github.com/keboola/keboola-as-code-templates-components.git",
+        "ref": "main"
       }
     ]
   },
@@ -352,6 +358,12 @@ func fullJSON() string {
         "type": "git",
         "name": "keboola",
         "url": "https://github.com/keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      },
+      {
+        "type": "git",
+        "name": "keboola-components",
+        "url": "https://github.com/keboola/keboola-as-code-templates-components.git",
         "ref": "main"
       }
     ]

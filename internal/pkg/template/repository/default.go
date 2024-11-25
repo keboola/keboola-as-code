@@ -5,7 +5,10 @@ import (
 )
 
 const (
-	DefaultTemplateRepositoryName    = "keboola"
+	DefaultTemplateRepositoryName     = "keboola"
+	DefaultTemplateRepositoryNameBeta = "keboola-beta"
+	DefaultTemplateRepositoryNameDev  = "keboola-dev"
+
 	DefaultTemplateRepositoryURL     = "https://github.com/keboola/keboola-as-code-templates.git"
 	DefaultTemplateRepositoryRefBeta = "beta"
 	DefaultTemplateRepositoryRefDev  = "dev"
