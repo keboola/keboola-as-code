@@ -300,6 +300,25 @@ storage:
                     slicesCount: 100
                     # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
                     expiration: 30m0s
+encryption:
+    # Encryption provider. Validation rules: required,oneof=native gcp aws azure
+    provider: native
+    native:
+        # Secret key for local encryption. Do not use in production.
+        secretKey: '*****'
+    gcp:
+        # Key ID in Google Cloud Key Management Service. Validation rules: required
+        kmsKeyId: ""
+    aws:
+        # AWS Region. Validation rules: required
+        region: ""
+        # Key ID in AWS Key Management Service. Validation rules: required
+        kmsKeyId: ""
+    azure:
+        # Azure Key Vault URL. Validation rules: required,url
+        keyVaultUrl: ""
+        # Key name in the vault. Validation rules: required
+        keyName: ""
 `), strings.TrimSpace(string(bytes)))
 
 	// Add missing values, and validate it
@@ -310,6 +329,8 @@ storage:
 	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd.Endpoint = "test-etcd"
 	cfg.Etcd.Namespace = "test-namespace"
+	cfg.Encryption.Native.SecretKey = "12345678901234567890123456789012"
+	cfg.Encryption.Normalize()
 	require.NoError(t, validator.New().Validate(context.Background(), cfg))
 }
 
