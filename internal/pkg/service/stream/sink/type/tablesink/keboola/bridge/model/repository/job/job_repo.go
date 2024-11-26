@@ -44,12 +44,12 @@ func (r *Repository) save(updated *model.Job) *op.TxnOp[model.Job] {
 
 	saveTxn := op.TxnWithResult(r.client, updated)
 	if updated.Deleted {
-		// Delete entity from the active prefix
+		// Delete entity from the database
 		saveTxn.Then(
 			r.schema.ByKey(updated.JobKey).Delete(r.client),
 		)
 	} else {
-		// Save record to the "active" prefix
+		// Save record to the keboola job prefix
 		saveTxn.Then(
 			r.schema.ByKey(updated.JobKey).Put(r.client, *updated),
 		)

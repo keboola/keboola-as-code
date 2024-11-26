@@ -177,7 +177,7 @@ definition/source/active/123/567/my-source
 >>>>>
 
 <<<<<
-storage/job/123/567/my-source/my-sink-2/321
+storage/keboola/job/123/567/my-source/my-sink-2/321
 -----
 {
   "projectId": 123,
@@ -189,7 +189,7 @@ storage/job/123/567/my-source/my-sink-2/321
 >>>>>
 
 <<<<<
-storage/job/123/567/my-source/my-sink-2/322
+storage/keboola/job/123/567/my-source/my-sink-2/322
 -----
 {
   "projectId": 123,
@@ -201,7 +201,7 @@ storage/job/123/567/my-source/my-sink-2/322
 >>>>>
 
 <<<<<
-storage/job/123/567/my-source/my-sink-3/323
+storage/keboola/job/123/567/my-source/my-sink-3/323
 -----
 {
   "projectId": 123,
