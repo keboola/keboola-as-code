@@ -200,7 +200,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ProjectLockedError4'
+                                $ref: '#/components/schemas/ProjectLockedError5'
                             example:
                                 statusCode: 503
                                 error: templates.projectLocked
@@ -388,7 +388,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ProjectLockedError3'
+                                $ref: '#/components/schemas/ProjectLockedError4'
                             example:
                                 statusCode: 503
                                 error: templates.projectLocked
@@ -524,7 +524,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ProjectLockedError5'
+                                $ref: '#/components/schemas/ProjectLockedError6'
                             example:
                                 statusCode: 503
                                 error: templates.projectLocked
@@ -1494,6 +1494,149 @@ paths:
                                 statusCode: 404
                                 error: templates.versionNotFound
                                 message: Version "v1.2.3" not found.
+            security:
+                - storage-api-token: []
+    /v1/repositories/{repository}/templates/{template}/{version}/preview:
+        post:
+            tags:
+                - template
+            summary: Preview template
+            description: |-
+                Validate inputs and use template in the branch.
+                Only configured steps should be send.
+            operationId: Preview
+            parameters:
+                - name: repository
+                  in: path
+                  description: Name of the template repository. Use "keboola" for default Keboola repository.
+                  required: true
+                  schema:
+                    type: string
+                    description: Name of the template repository. Use "keboola" for default Keboola repository.
+                    example: keboola
+                  example: keboola
+                - name: template
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the template.
+                    example: my-template
+                    minLength: 1
+                    maxLength: 40
+                  example: my-template
+                - name: version
+                  in: path
+                  description: Semantic version of the template. Use "default" for default version.
+                  required: true
+                  schema:
+                    type: string
+                    description: Semantic version of the template. Use "default" for default version.
+                    example: v1.2.3
+                  example: v1.2.3
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UseTemplateVersionRequestBody'
+                        example:
+                            branch: default
+                            name: My Instance
+                            steps:
+                                - id: g01-s01
+                                  inputs:
+                                    - id: user
+                                      value: user@example.com
+                                    - id: api-token
+                                      value: "123456"
+            responses:
+                "202":
+                    description: Accepted response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                id: task-1
+                                url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
+                                type: template.use
+                                createdAt: "2018-01-01T00:00:00.000Z"
+                                finishedAt: "2018-01-01T00:00:00.000Z"
+                                isFinished: true
+                                duration: 123
+                                result: task succeeded
+                                outputs:
+                                    instanceId: V1StGXR8IZ5jdHi6BAmyT
+                "400":
+                    description: 'InvalidInputs: Inputs are not valid.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                            example:
+                                ValidationResult:
+                                    valid: false
+                                    stepGroups:
+                                        - id: g01
+                                          valid: false
+                                          error: All steps must be configured.
+                                          steps:
+                                            - id: g01-s01
+                                              configured: true
+                                              valid: false
+                                              inputs:
+                                                - id: api-token
+                                                  visible: true
+                                                  error: Value cannot be empty.
+                                                - id: password
+                                                  visible: false
+                                                  error: null
+                                        - id: g02
+                                          valid: true
+                                          error: null
+                                          steps:
+                                            - id: g02-s01
+                                              configured: false
+                                              valid: true
+                                              inputs: []
+                                            - id: g02-s02
+                                              configured: true
+                                              valid: true
+                                              inputs:
+                                                - id: username
+                                                  visible: true
+                                                  error: null
+                                error: InvalidPayload
+                                message: Inputs are not valid.
+                "404":
+                    description: 'templates.versionNotFound: Version not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: templates.versionNotFound
+                                message: Version "v1.2.3" not found.
+                "503":
+                    description: 'templates.projectLocked: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.'
+                    headers:
+                        Retry-After:
+                            description: Indicates how long the user agent should wait before making a follow-up request.
+                            schema:
+                                type: string
+                                description: Indicates how long the user agent should wait before making a follow-up request.
+                                example: <http-date>/<delay-seconds>
+                            example: <http-date>/<delay-seconds>
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ProjectLockedError3'
+                            example:
+                                statusCode: 503
+                                error: templates.projectLocked
+                                message: The project is locked, another operation is in progress, please try again later.
             security:
                 - storage-api-token: []
     /v1/repositories/{repository}/templates/{template}/{version}/use:
@@ -2917,6 +3060,31 @@ components:
                 - error
                 - message
         ProjectLockedError5:
+            type: object
+            properties:
+                error:
+                    type: string
+                    description: Name of error.
+                    example: templates.internalError
+                message:
+                    type: string
+                    description: Error message.
+                    example: The project is locked, another operation is in progress, please try again later.
+                statusCode:
+                    type: integer
+                    description: HTTP status code.
+                    example: 503
+                    format: int64
+            description: Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.
+            example:
+                statusCode: 503
+                error: templates.projectLocked
+                message: The project is locked, another operation is in progress, please try again later.
+            required:
+                - statusCode
+                - error
+                - message
+        ProjectLockedError6:
             type: object
             properties:
                 error:

@@ -29,6 +29,7 @@ type Endpoints struct {
 	InputsIndex                   goa.Endpoint
 	ValidateInputs                goa.Endpoint
 	UseTemplateVersion            goa.Endpoint
+	Preview                       goa.Endpoint
 	InstancesIndex                goa.Endpoint
 	InstanceIndex                 goa.Endpoint
 	UpdateInstance                goa.Endpoint
@@ -55,6 +56,7 @@ func NewEndpoints(s Service) *Endpoints {
 		InputsIndex:                   NewInputsIndexEndpoint(s, a.APIKeyAuth),
 		ValidateInputs:                NewValidateInputsEndpoint(s, a.APIKeyAuth),
 		UseTemplateVersion:            NewUseTemplateVersionEndpoint(s, a.APIKeyAuth),
+		Preview:                       NewPreviewEndpoint(s, a.APIKeyAuth),
 		InstancesIndex:                NewInstancesIndexEndpoint(s, a.APIKeyAuth),
 		InstanceIndex:                 NewInstanceIndexEndpoint(s, a.APIKeyAuth),
 		UpdateInstance:                NewUpdateInstanceEndpoint(s, a.APIKeyAuth),
@@ -79,6 +81,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.InputsIndex = m(e.InputsIndex)
 	e.ValidateInputs = m(e.ValidateInputs)
 	e.UseTemplateVersion = m(e.UseTemplateVersion)
+	e.Preview = m(e.Preview)
 	e.InstancesIndex = m(e.InstancesIndex)
 	e.InstanceIndex = m(e.InstanceIndex)
 	e.UpdateInstance = m(e.UpdateInstance)
@@ -273,6 +276,26 @@ func NewUseTemplateVersionEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFu
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.UseTemplateVersion(ctx, deps, p)
+	}
+}
+
+// NewPreviewEndpoint returns an endpoint function that calls the method
+// "Preview" of service "templates".
+func NewPreviewEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*PreviewPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
+		return s.Preview(ctx, deps, p)
 	}
 }
 

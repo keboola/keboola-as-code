@@ -43,6 +43,9 @@ type Service interface {
 	// Validate inputs and use template in the branch.
 	// Only configured steps should be send.
 	UseTemplateVersion(context.Context, dependencies.ProjectRequestScope, *UseTemplateVersionPayload) (res *Task, err error)
+	// Validate inputs and use template in the branch.
+	// Only configured steps should be send.
+	Preview(context.Context, dependencies.ProjectRequestScope, *PreviewPayload) (res *Task, err error)
 	// InstancesIndex implements InstancesIndex.
 	InstancesIndex(context.Context, dependencies.ProjectRequestScope, *InstancesIndexPayload) (res *Instances, err error)
 	// InstanceIndex implements InstanceIndex.
@@ -81,7 +84,7 @@ const ServiceName = "templates"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [19]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "RepositoriesIndex", "RepositoryIndex", "TemplatesIndex", "TemplateIndex", "VersionIndex", "InputsIndex", "ValidateInputs", "UseTemplateVersion", "InstancesIndex", "InstanceIndex", "UpdateInstance", "DeleteInstance", "UpgradeInstance", "UpgradeInstanceInputsIndex", "UpgradeInstanceValidateInputs", "GetTask"}
+var MethodNames = [20]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "RepositoriesIndex", "RepositoryIndex", "TemplatesIndex", "TemplateIndex", "VersionIndex", "InputsIndex", "ValidateInputs", "UseTemplateVersion", "Preview", "InstancesIndex", "InstanceIndex", "UpdateInstance", "DeleteInstance", "UpgradeInstance", "UpgradeInstanceInputsIndex", "UpgradeInstanceValidateInputs", "GetTask"}
 
 // Author of template or repository.
 type Author struct {
@@ -282,6 +285,23 @@ type MainConfig struct {
 	ComponentID string
 	// Configuration ID.
 	ConfigID string
+}
+
+// PreviewPayload is the payload type of the templates service Preview method.
+type PreviewPayload struct {
+	StorageAPIToken string
+	// Name of the new template instance.
+	Name string
+	// ID of the branch. Use "default" for default branch.
+	Branch string
+	// Semantic version of the template. Use "default" for default version.
+	Version  string
+	Template TemplateID
+	// Name of the template repository. Use "keboola" for default Keboola
+	// repository.
+	Repository string
+	// Steps with input values filled in by user.
+	Steps []*StepPayload
 }
 
 // Project locked error

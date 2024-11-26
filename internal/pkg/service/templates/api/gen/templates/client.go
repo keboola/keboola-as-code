@@ -27,6 +27,7 @@ type Client struct {
 	InputsIndexEndpoint                   goa.Endpoint
 	ValidateInputsEndpoint                goa.Endpoint
 	UseTemplateVersionEndpoint            goa.Endpoint
+	PreviewEndpoint                       goa.Endpoint
 	InstancesIndexEndpoint                goa.Endpoint
 	InstanceIndexEndpoint                 goa.Endpoint
 	UpdateInstanceEndpoint                goa.Endpoint
@@ -38,7 +39,7 @@ type Client struct {
 }
 
 // NewClient initializes a "templates" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, repositoriesIndex, repositoryIndex, templatesIndex, templateIndex, versionIndex, inputsIndex, validateInputs, useTemplateVersion, instancesIndex, instanceIndex, updateInstance, deleteInstance, upgradeInstance, upgradeInstanceInputsIndex, upgradeInstanceValidateInputs, getTask goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, repositoriesIndex, repositoryIndex, templatesIndex, templateIndex, versionIndex, inputsIndex, validateInputs, useTemplateVersion, preview, instancesIndex, instanceIndex, updateInstance, deleteInstance, upgradeInstance, upgradeInstanceInputsIndex, upgradeInstanceValidateInputs, getTask goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:                  aPIRootIndex,
 		APIVersionIndexEndpoint:               aPIVersionIndex,
@@ -51,6 +52,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, repositoriesIndex, re
 		InputsIndexEndpoint:                   inputsIndex,
 		ValidateInputsEndpoint:                validateInputs,
 		UseTemplateVersionEndpoint:            useTemplateVersion,
+		PreviewEndpoint:                       preview,
 		InstancesIndexEndpoint:                instancesIndex,
 		InstanceIndexEndpoint:                 instanceIndex,
 		UpdateInstanceEndpoint:                updateInstance,
@@ -200,6 +202,23 @@ func (c *Client) ValidateInputs(ctx context.Context, p *ValidateInputsPayload) (
 func (c *Client) UseTemplateVersion(ctx context.Context, p *UseTemplateVersionPayload) (res *Task, err error) {
 	var ires any
 	ires, err = c.UseTemplateVersionEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
+}
+
+// Preview calls the "Preview" endpoint of the "templates" service.
+// Preview may return the following errors:
+//   - "InvalidInputs" (type *ValidationError): Inputs are not valid.
+//   - "templates.repositoryNotFound" (type *GenericError): Repository not found error.
+//   - "templates.templateNotFound" (type *GenericError): Template not found error.
+//   - "templates.versionNotFound" (type *GenericError): Version not found error.
+//   - "templates.projectLocked" (type *ProjectLockedError): Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.
+//   - error: internal error
+func (c *Client) Preview(ctx context.Context, p *PreviewPayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.PreviewEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

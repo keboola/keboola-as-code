@@ -67,6 +67,11 @@ func UseTemplateVersionTemplatesPath(repository string, template string, version
 	return fmt.Sprintf("/v1/repositories/%v/templates/%v/%v/use", repository, template, version)
 }
 
+// PreviewTemplatesPath returns the URL path to the templates service Preview HTTP endpoint.
+func PreviewTemplatesPath(repository string, template string, version string) string {
+	return fmt.Sprintf("/v1/repositories/%v/templates/%v/%v/preview", repository, template, version)
+}
+
 // InstancesIndexTemplatesPath returns the URL path to the templates service InstancesIndex HTTP endpoint.
 func InstancesIndexTemplatesPath(branch string) string {
 	return fmt.Sprintf("/v1/project/%v/instances", branch)
