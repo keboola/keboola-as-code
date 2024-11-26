@@ -50,7 +50,7 @@ type Bridge struct {
 	storageRepository       *storageRepo.Repository
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 	locks                   *distlock.Provider
-	encryptor               cloudencrypt.Encryptor
+	encryptor               cloudencrypt.GenericEncryptor[keboola.Token]
 	jobs                    *etcdop.MirrorMap[bridgeModel.Job, bridgeModel.JobKey, *jobData]
 
 	getBucketOnce    *singleflight.Group
@@ -86,7 +86,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 		storageRepository:       d.StorageRepository(),
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 		locks:                   d.DistributedLockProvider(),
-		encryptor:               d.Encryptor(),
+		encryptor:               cloudencrypt.NewGenericEncryptor[keboola.Token](d.Encryptor()),
 		getBucketOnce:           &singleflight.Group{},
 		createBucketOnce:        &singleflight.Group{},
 	}

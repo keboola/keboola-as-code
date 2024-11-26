@@ -10,9 +10,8 @@ import (
 // The token is scoped only to the target table, so there is a separate token for each definition.TableSink.
 type Token struct {
 	key.SinkKey
-	Token keboola.Token `json:"token"`
-}
-
-func (v Token) TokenString() string {
-	return v.Token.Token
+	// Deprecated: Use TokenID and EncryptedToken instead
+	Token          *keboola.Token `json:"token"`
+	TokenID        string         `json:"tokenId"`
+	EncryptedToken []byte         `json:"encryptedToken"`
 }

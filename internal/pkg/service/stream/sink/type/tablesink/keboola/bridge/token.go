@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -47,7 +48,12 @@ func (b *Bridge) deleteToken(api *keboola.AuthorizedAPI, sinkKey key.SinkKey) *o
 		}).
 		Write(func(ctx context.Context) op.Op {
 			// Delete old token
-			tokenID := oldToken.Token.ID
+			var tokenID string
+			if oldToken.EncryptedToken != nil {
+				tokenID = oldToken.TokenID
+			} else {
+				tokenID = oldToken.Token.ID //nolint:staticcheck
+			}
 			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", tokenID))
 			b.logger.Info(ctx, "deleting token")
 			err := api.DeleteTokenRequest(tokenID).SendOrErr(ctx)
@@ -64,7 +70,7 @@ func (b *Bridge) deleteToken(api *keboola.AuthorizedAPI, sinkKey key.SinkKey) *o
 		})
 }
 
-func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definition.Sink) (keboolasink.Token, error) {
+func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definition.Sink) (keboola.Token, error) {
 	// Get token from database, if any.
 	// The token is scoped to the sink bucket,
 	// but an API operation can modify the target bucket,
@@ -73,9 +79,13 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 	if !sink.CreatedAt().Time().Equal(now) {
 		err := b.schema.Token().ForSink(sink.SinkKey).GetOrNil(b.client).WithResultTo(&existingToken).Do(ctx).Err()
 		if err != nil {
-			return keboolasink.Token{}, err
+			return keboola.Token{}, err
 		}
 	}
+
+	// Prepare encryption metadata
+	metadata := cloudencrypt.Metadata{}
+	metadata["sink"] = sink.SinkKey.String()
 
 	// Use token from the database, if the operation is not called from the API,
 	// so no modification of the sink target bucket is expected and the token should work.
@@ -83,11 +93,23 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 	if err != nil {
 		if existingToken == nil {
 			// Operation is not called from the API and there is no token in the database.
-			return keboolasink.Token{}, serviceError.NewResourceNotFoundError("sink token", sink.SinkKey.String(), "database")
+			return keboola.Token{}, serviceError.NewResourceNotFoundError("sink token", sink.SinkKey.String(), "database")
+		}
+
+		// Decrypt token
+		var token keboola.Token
+		if existingToken.EncryptedToken != nil {
+			token, err = b.encryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
+			if err != nil {
+				return keboola.Token{}, err
+			}
+		} else {
+			// Backwards compatibility, should be dropped later
+			token = *existingToken.Token //nolint:staticcheck
 		}
 
 		// Operation is not called from the API and there is a token in the database, so we are using the token.
-		return *existingToken, nil
+		return token, nil
 	}
 
 	// Operation is called from the API (for example sink create/update), so we are creating a new token and deleting the old one,
@@ -118,7 +140,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		}).
 		Send(ctx)
 	if err != nil {
-		return keboolasink.Token{}, err
+		return keboola.Token{}, err
 	}
 
 	// Register rollback
@@ -127,8 +149,18 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		return api.DeleteTokenRequest(result.ID).SendOrErr(ctx)
 	})
 
+	// Encrypt token
+	ciphertext, err := b.encryptor.Encrypt(ctx, *result, metadata)
+	if err != nil {
+		return keboola.Token{}, err
+	}
+
 	// Update atomic operation
-	newToken = keboolasink.Token{SinkKey: sink.SinkKey, Token: *result}
+	newToken = keboolasink.Token{
+		SinkKey:        sink.SinkKey,
+		TokenID:        result.ID,
+		EncryptedToken: ciphertext,
+	}
 	op.AtomicOpCtxFrom(ctx).AddFrom(op.Atomic(b.client, &newToken).
 		// Save token to database
 		Write(func(ctx context.Context) op.Op {
@@ -142,7 +174,12 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 			}
 
 			// Delete old token
-			tokenID := existingToken.Token.ID
+			var tokenID string
+			if existingToken.EncryptedToken != nil {
+				tokenID = existingToken.TokenID
+			} else {
+				tokenID = existingToken.Token.ID //nolint:staticcheck
+			}
 			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", tokenID))
 			b.logger.Info(ctx, "deleting old token")
 			if err := api.DeleteTokenRequest(tokenID).SendOrErr(ctx); err != nil {
@@ -157,5 +194,5 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 	)
 
 	b.logger.Info(ctx, "created token")
-	return newToken, nil
+	return *result, nil
 }

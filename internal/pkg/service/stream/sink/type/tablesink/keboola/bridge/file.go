@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -45,8 +46,8 @@ func (b *Bridge) setupOnFileOpen() {
 			}
 
 			// Following API operations are always called using the limited token - scoped to the bucket.
-			api := b.publicAPI.NewAuthorizedAPI(token.TokenString(), 1*time.Minute)
-			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", token.Token.ID))
+			api := b.publicAPI.NewAuthorizedAPI(token.Token, 1*time.Minute)
+			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", token.ID))
 
 			// Create table if not exists
 			if err := b.ensureTableExists(ctx, api, tableKey, sink); err != nil {
@@ -130,7 +131,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	start := time.Now()
 
 	// Get authorization token
-	token, err := b.schema.Token().ForSink(file.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
+	existingToken, err := b.schema.Token().ForSink(file.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
 		return err
 	}
@@ -152,8 +153,24 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 		attribute.String("stagingFile.ID", fileKey.FileID.String()),
 	)
 
+	// Prepare encryption metadata
+	metadata := cloudencrypt.Metadata{}
+	metadata["sink"] = file.SinkKey.String()
+
+	// Decrypt token
+	var token keboola.Token
+	if existingToken.EncryptedToken != nil {
+		token, err = b.encryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Backwards compatibility, should be dropped later
+		token = *existingToken.Token //nolint:staticcheck
+	}
+
 	// Authorized API
-	api := b.publicAPI.NewAuthorizedAPI(token.TokenString(), 1*time.Minute)
+	api := b.publicAPI.NewAuthorizedAPI(token.Token, 1*time.Minute)
 
 	// Skip import if the file is empty.
 	// The state is anyway switched to the FileImported by the operator.
