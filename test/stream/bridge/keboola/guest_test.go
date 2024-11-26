@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 )
@@ -26,7 +27,12 @@ func TestGuestUserWorkflow(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
+
+	secretKey, err := encryption.RandomSecretKey()
+	require.NoError(t, err)
+
 	modifyConfig := func(cfg *config.Config) {
+		cfg.Encryption.Native.SecretKey = secretKey
 		apiPort := netutils.FreePortForTest(t)
 		cfg.API.Listen = "0.0.0.0:" + strconv.FormatInt(int64(apiPort), 10)
 		u, err := url.Parse("http://localhost:" + strconv.FormatInt(int64(apiPort), 10))
