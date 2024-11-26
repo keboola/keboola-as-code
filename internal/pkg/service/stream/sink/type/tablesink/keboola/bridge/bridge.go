@@ -3,7 +3,9 @@ package bridge
 import (
 	"context"
 	"sync"
+	"time"
 
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -50,7 +52,7 @@ type Bridge struct {
 	storageRepository       *storageRepo.Repository
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 	locks                   *distlock.Provider
-	encryptor               cloudencrypt.GenericEncryptor[keboola.Token]
+	encryptor               *cloudencrypt.GenericEncryptor[keboola.Token]
 	jobs                    *etcdop.MirrorMap[bridgeModel.Job, bridgeModel.JobKey, *jobData]
 
 	getBucketOnce    *singleflight.Group
@@ -74,7 +76,20 @@ type dependencies interface {
 	Encryptor() cloudencrypt.Encryptor
 }
 
-func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Bridge {
+func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*Bridge, error) {
+	cache, err := ristretto.NewCache(
+		&ristretto.Config[[]byte, []byte]{
+			NumCounters: 1e6,
+			MaxCost:     1 << 20,
+			BufferItems: 64,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptor := cloudencrypt.NewCachedEncryptor(d.Encryptor(), time.Hour, cache)
+
 	b := &Bridge{
 		logger:                  d.Logger().WithComponent("keboola.bridge"),
 		config:                  config,
@@ -86,7 +101,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 		storageRepository:       d.StorageRepository(),
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 		locks:                   d.DistributedLockProvider(),
-		encryptor:               cloudencrypt.NewGenericEncryptor[keboola.Token](d.Encryptor()),
+		encryptor:               cloudencrypt.NewGenericEncryptor[keboola.Token](encryptor),
 		getBucketOnce:           &singleflight.Group{},
 		createBucketOnce:        &singleflight.Group{},
 	}
@@ -97,7 +112,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 	b.plugins.RegisterFileImporter(targetProvider, b.importFile)
 	b.plugins.RegisterSliceUploader(stagingFileProvider, b.uploadSlice)
 	b.plugins.RegisterCanAcceptNewFile(targetProvider, b.canAcceptNewFile)
-	return b
+	return b, nil
 }
 
 func (b *Bridge) isKeboolaTableSink(sink *definition.Sink) bool {

@@ -227,7 +227,10 @@ func newServiceScope(
 		return nil, err
 	}
 
-	d.keboolaBridge = keboolaSinkBridge.New(d, apiCtxProvider, cfg.Sink.Table.Keboola)
+	d.keboolaBridge, err = keboolaSinkBridge.New(d, apiCtxProvider, cfg.Sink.Table.Keboola)
+	if err != nil {
+		return nil, err
+	}
 
 	d.storageStatisticsRepository = statsRepo.New(d)
 
