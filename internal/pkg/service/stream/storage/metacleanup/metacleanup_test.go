@@ -123,7 +123,7 @@ func TestMetadataCleanup(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
 		sink := dummy.NewSinkWithLocalStorage(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
-		token := keboolaSink.Token{SinkKey: sinkKey, Token: keboola.Token{ID: "secret"}}
+		token := keboolaSink.Token{SinkKey: sinkKey, Token: &keboola.Token{ID: "secret"}}
 		require.NoError(t, forToken(d.EtcdSerde()).ForSink(sinkKey).Put(client, token).Do(ctx).Err())
 	}
 
@@ -320,7 +320,7 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
 		sink := dummy.NewSinkWithLocalStorage(sinkKey)
 		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
-		token := keboolaSink.Token{SinkKey: sinkKey, Token: keboola.Token{ID: "secret"}}
+		token := keboolaSink.Token{SinkKey: sinkKey, Token: &keboola.Token{ID: "secret"}}
 		require.NoError(t, forToken(d.EtcdSerde()).ForSink(sinkKey).Put(client, token).Do(ctx).Err())
 	}
 

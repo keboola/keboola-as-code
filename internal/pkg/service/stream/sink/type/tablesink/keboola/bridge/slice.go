@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
@@ -30,16 +31,32 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	}
 
 	// Get authorization token
-	token, err := b.schema.Token().ForSink(slice.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
+	existingToken, err := b.schema.Token().ForSink(slice.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
 		return err
+	}
+
+	// Prepare encryption metadata
+	metadata := cloudencrypt.Metadata{}
+	metadata["sink"] = slice.SinkKey.String()
+
+	// Decrypt token
+	var token keboola.Token
+	if existingToken.EncryptedToken != nil {
+		token, err = b.encryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Backwards compatibility, should be dropped later
+		token = *existingToken.Token //nolint:staticcheck
 	}
 
 	// Error when sending the event is not a fatal error
 	defer func() {
 		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
 		// We do not want to return err when send upload slice fails
-		uErr := b.SendSliceUploadEvent(ctx, b.publicAPI.NewAuthorizedAPI(token.TokenString(), 1*time.Minute), time.Since(start), &err, slice.SliceKey, stats)
+		uErr := b.SendSliceUploadEvent(ctx, b.publicAPI.NewAuthorizedAPI(token.Token, 1*time.Minute), time.Since(start), &err, slice.SliceKey, stats)
 		cancel()
 		if uErr != nil {
 			b.logger.Warnf(ctx, "unable to send slice upload event: %v", uErr)

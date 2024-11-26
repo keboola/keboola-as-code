@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -73,15 +74,31 @@ func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, delete
 		return err, false
 	}
 
-	token, err := b.schema.Token().ForSink(job.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
+	existingToken, err := b.schema.Token().ForSink(job.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
 		b.logger.Warnf(ctx, "cannot get token for sink, already deleted: %s", err.Error())
 		return nil, false
 	}
 
+	// Prepare encryption metadata
+	metadata := cloudencrypt.Metadata{}
+	metadata["sink"] = job.SinkKey.String()
+
+	// Decrypt token
+	var token keboola.Token
+	if existingToken.EncryptedToken != nil {
+		token, err = b.encryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
+		if err != nil {
+			return err, false
+		}
+	} else {
+		// Backwards compatibility, should be dropped later
+		token = *existingToken.Token //nolint:staticcheck
+	}
+
 	// Get job details from storage API
 	id := int(id64)
-	api := b.publicAPI.NewAuthorizedAPI(token.TokenString(), 1*time.Minute)
+	api := b.publicAPI.NewAuthorizedAPI(token.Token, 1*time.Minute)
 	var jobStatus *keboola.StorageJob
 	if jobStatus, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: keboola.StorageJobID(id)}).Send(ctx); err != nil {
 		b.logger.Warnf(ctx, "cannot get information about storage job, probably already deleted: %s", err.Error())

@@ -486,8 +486,8 @@ github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 h1:Z9n2FFNU
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
 github.com/keboola/go-client v1.28.0 h1:oXgyw9gSACMkEBmVjhx26rmeFP2nn/h+EpV5LEeD7ds=
 github.com/keboola/go-client v1.28.0/go.mod h1:UKsl17jZA1xSa0jQrxw1MAo7GNj+OA5Y/MXjOp/6FkM=
-github.com/keboola/go-cloud-encrypt v0.0.0-20241121132734-4f213439dbba h1:qJv8+xV1L0uujAek/yqrLG4S+/TSYvjkjqhI1Hc5nz4=
-github.com/keboola/go-cloud-encrypt v0.0.0-20241121132734-4f213439dbba/go.mod h1:ynHaykn5QuPKbUB2uJYNN+feY/Hg5BCp/TDb+yOSoTo=
+github.com/keboola/go-cloud-encrypt v0.0.0-20241126090228-b10b32c15cf8 h1:W9uQegQWWfUxlsf5MfTSc/R5qiT8O3FaHh3p10mc2Us=
+github.com/keboola/go-cloud-encrypt v0.0.0-20241126090228-b10b32c15cf8/go.mod h1:ynHaykn5QuPKbUB2uJYNN+feY/Hg5BCp/TDb+yOSoTo=
 github.com/keboola/go-jsonnet v0.20.1-0.20240430105602-71646d8d4fa9 h1:BY9wMWSN1SEIjhBJSrFWpLLS3DiAR+GNANOSTNtfzGA=
 github.com/keboola/go-jsonnet v0.20.1-0.20240430105602-71646d8d4fa9/go.mod h1:pSOb2+VoKZjVbIB4z58am8q15yWO/VTEp6n1GxW3x0I=
 github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6 h1:HcvX1VQkiavyfqDzXeCsNYlhiPaLiGhU7jlIKUj8JOE=
