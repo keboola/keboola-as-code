@@ -10,7 +10,7 @@ env:
   DOCKERHUB_USER: "keboolabot"
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  IMAGE_TAG: ${{ github.ref_name }}
+  IMAGE_TAG: production-${{ github.ref_name }}
   IMAGE_NAME: "keboola/stream-service"
  
   ECR_REGION: "us-east-1"
@@ -91,3 +91,9 @@ jobs:
           acrRepository: ${{ env.ACR_REPOSITORY }}
           acrUsername: ${{ env.ACR_USERNAME }}
           acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
+      - name: Trigger image tag update
+        uses: keboola/kbc-stacks/.github/actions/trigger-image-tag-update@main
+        with:
+          helm-chart: "stream"
+          image-tag: ${{ env.IMAGE_TAG }}
+          github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}          
