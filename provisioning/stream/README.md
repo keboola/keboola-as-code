@@ -54,6 +54,23 @@ Included files (they are not called directly):
 
 ## Local Deployment
 
+In case you would like to test it using minikube, run the 
+```
+deploy_local.sh
+```
+Once it is set up, there is need to check service loadbalancer in minikube
+```
+export MINIKUBE_PROFILE=stream
+minikube service -n stream --all
+```
+
+Make sure to copy both API and HTTP source ports as we use it within the configuration.
+Go to lens configuration and change both
+source.http.publicUrl configuration to `http://localhost:{http-source-port-loadbalancer}`
+AND
+api.publicUrl: `http://localhost:{api-port-loadbalancer}`
+Restart both deployments, so the new configuration is applied
+
 ### Docker
 
 In most cases, it is enough to run the service locally via Docker.
