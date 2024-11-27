@@ -1,6 +1,7 @@
 # Build container
 FROM golang:1.23.3-alpine3.20 AS buildContainer
 RUN apk add -U --no-cache bash make curl
+RUN apk add --no-cache --update gcc g++
 WORKDIR /app
 
 COPY Makefile Makefile

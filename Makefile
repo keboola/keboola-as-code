@@ -35,7 +35,7 @@ run-templates-api:
 	air -c ./provisioning/templates-api/dev/.air-api.toml
 
 build-stream-service:
-	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/stream/service)" ./cmd/stream
+	CGO_ENABLED=1 go build -race -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/stream/service)" ./cmd/stream
 
 build-stream-service-with-race:
 	CGO_ENABLED=1 go build -race -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/stream/service)" ./cmd/stream
