@@ -3,14 +3,15 @@ name: 'Release: Stream Service'
 on:
   push:
     tags:
-      - 'stream-v**'
+      - 'production-stream-v**'
+      - 'dev-stream-v**'
 
 env:
   # DockerHub login
   DOCKERHUB_USER: "keboolabot"
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  IMAGE_TAG: production-${{ github.ref_name }}
+  IMAGE_TAG: ${{ github.ref_name }}
   IMAGE_NAME: "keboola/stream-service"
  
   ECR_REGION: "us-east-1"
@@ -96,4 +97,4 @@ jobs:
         with:
           helm-chart: "stream"
           image-tag: ${{ env.IMAGE_TAG }}
-          github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}          
+          github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}
