@@ -1,0 +1,51 @@
+{
+  "error": "InvalidInputs",
+  "message": "Inputs are not valid.",
+  "ValidationResult": {
+    "valid": false,
+    "stepGroups": [
+      {
+        "id": "g01",
+        "valid": false,
+        "steps": [
+          {
+            "id": "g01-s01",
+            "configured": true,
+            "valid": false,
+            "inputs": [
+              {
+                "id": "shopify-token",
+                "visible": true,
+                "error": "Shopify token is a required field."
+              },
+              {
+                "id": "oauth",
+                "visible": true
+              },
+              {
+                "id": "oauth2",
+                "visible": true
+              },
+              {
+                "id": "oauth2Accounts",
+                "visible": true
+              }
+            ]
+          },
+          {
+            "id": "g01-s02",
+            "configured": true,
+            "valid": false,
+            "inputs": [
+              {
+                "id": "data-app-param1",
+                "visible": true,
+                "error": "Param 1 is a required field."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true,
+        "metadata": {
+          "KBC.KAC.templates.instances": "[{\"instanceId\":\"\",\"instanceName\":\"inst-001\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
+        }
+      },
+      "configs": [
+        {
+          "componentId": "keboola.data-apps",
+          "name": "My Data App",
+          "description": "test fixture",
+          "changeDescription": "From template keboola/my-template-id/1.2.3",
+          "configuration": {
+            "parameters": {
+              "param1": "value1",
+              "param2": "value2"
+            }
+          },
+          "rows": [],
+          "metadata": {
+            "KBC.KAC.templates.configId": "{\"idInTemplate\":\"my-app\"}",
+            "KBC.KAC.templates.configInputs": "[{\"input\":\"data-app-param1\",\"key\":\"parameters.param1\"}]",
+            "KBC.KAC.templates.repository": "keboola",
+            "KBC.KAC.templates.templateId": "my-template-id"
+          },
+          "isDisabled": false
+        },
+        {
+          "componentId": "keboola.ex-instagram",
+          "name": "instagram",
+          "description": "test fixture",
+          "changeDescription": "From template keboola/my-template-id/1.2.3",
+          "configuration": {
+            "authorization": {
+              "oauth_api": {
+                "id": "98765",
+                "version": 3
+              }
+            },
+            "parameters": {
+              "accounts": {
+                "123456789101112": {
+                  "category": "Musician/Band",
+                  "fb_page_id": "1234",
+                  "id": "4567",
+                  "name": "Foo"
+                }
+              },
+              "foo": "bar"
+            }
+          },
+          "rows": [],
+          "metadata": {
+            "KBC.KAC.templates.configId": "{\"idInTemplate\":\"instagram\"}",
+            "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth2\",\"key\":\"authorization.oauth_api\"},{\"input\":\"oauth2Accounts\",\"key\":\"parameters\",\"objectKeys\":[\"accounts\"]}]",
+            "KBC.KAC.templates.repository": "keboola",
+            "KBC.KAC.templates.templateId": "my-template-id"
+          },
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "shopify",
+          "description": "test fixture",
+          "changeDescription": "From template keboola/my-template-id/1.2.3",
+          "configuration": {
+            "authorization": {
+              "oauth_api": {}
+            },
+            "parameters": {
+              "shop": "shop",
+              "token": "token"
+            }
+          },
+          "rows": [],
+          "metadata": {
+            "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shopify\"}",
+            "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth\",\"key\":\"authorization.oauth_api\"},{\"input\":\"shopify-token\",\"key\":\"parameters.token\"}]",
+            "KBC.KAC.templates.repository": "keboola",
+            "KBC.KAC.templates.templateId": "my-template-id"
+          },
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}
