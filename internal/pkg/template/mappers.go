@@ -23,13 +23,11 @@ import (
 
 // useContext is common interface for *use.Context and *upgrade.Context.
 type useContext interface {
-	TemplateRef() model.TemplateRef
+	previewContext
 	InstanceID() string
-	ObjectIds() metadata.ObjectIdsMap
-	InputsUsage() *metadata.InputsUsage
 }
 
-// useContext is common interface for *use.Context and *upgrade.Context.
+// previewContext is common interface for *preview.Context.
 type previewContext interface {
 	TemplateRef() model.TemplateRef
 	ObjectIds() metadata.ObjectIdsMap
@@ -74,13 +72,21 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 		replacevalues.NewMapper(s, replacements),
 	}
 
+	// Add metadata on "template preview" operation
+	if c, ok := ctx.(previewContext); ok {
+		if _, isUseContext := ctx.(useContext); !isUseContext {
+			mappers = append(mappers, metadata.NewMapperWithoutInstanceID(
+				s,
+				c.TemplateRef(),
+				c.ObjectIds(),
+				c.InputsUsage(),
+			))
+		}
+	}
+
 	// Add metadata on "template use" operation
 	if c, ok := ctx.(useContext); ok {
 		mappers = append(mappers, metadata.NewMapper(s, c.TemplateRef(), c.InstanceID(), c.ObjectIds(), c.InputsUsage()))
-	}
-	// Add metadata on "template preview" operation
-	if c, ok := ctx.(previewContext); ok {
-		mappers = append(mappers, metadata.NewMapperWithoutInstanceID(s, c.TemplateRef(), c.ObjectIds(), c.InputsUsage()))
 	}
 
 	return mappers, nil

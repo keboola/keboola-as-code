@@ -240,7 +240,7 @@ func (s *service) Preview(ctx context.Context, d dependencies.ProjectRequestScop
 			}
 
 			return task.
-				OkResult(fmt.Sprintf(`template preview created`))
+				OkResult(`template preview created`)
 		},
 	})
 	if err != nil {
