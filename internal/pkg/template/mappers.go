@@ -29,6 +29,13 @@ type useContext interface {
 	InputsUsage() *metadata.InputsUsage
 }
 
+// useContext is common interface for *use.Context and *upgrade.Context.
+type previewContext interface {
+	TemplateRef() model.TemplateRef
+	ObjectIds() metadata.ObjectIdsMap
+	InputsUsage() *metadata.InputsUsage
+}
+
 func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, error) {
 	jsonnetCtx := ctx.JsonnetContext()
 	replacements, err := ctx.Replacements()
@@ -70,6 +77,10 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 	// Add metadata on "template use" operation
 	if c, ok := ctx.(useContext); ok {
 		mappers = append(mappers, metadata.NewMapper(s, c.TemplateRef(), c.InstanceID(), c.ObjectIds(), c.InputsUsage()))
+	}
+	// Add metadata on "template preview" operation
+	if c, ok := ctx.(previewContext); ok {
+		mappers = append(mappers, metadata.NewMapperWithoutInstanceID(s, c.TemplateRef(), c.ObjectIds(), c.InputsUsage()))
 	}
 
 	return mappers, nil
