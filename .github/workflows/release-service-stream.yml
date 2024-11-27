@@ -3,7 +3,8 @@ name: 'Release: Stream Service'
 on:
   push:
     tags:
-      - 'stream-v**'
+      - 'production-stream-v**'
+      - 'dev-stream-v**'
 
 env:
   # DockerHub login
@@ -91,3 +92,9 @@ jobs:
           acrRepository: ${{ env.ACR_REPOSITORY }}
           acrUsername: ${{ env.ACR_USERNAME }}
           acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
+      - name: Trigger image tag update
+        uses: keboola/kbc-stacks/.github/actions/trigger-image-tag-update@main
+        with:
+          helm-chart: "stream"
+          image-tag: ${{ env.IMAGE_TAG }}
+          github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}
