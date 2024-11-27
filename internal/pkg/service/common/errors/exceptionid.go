@@ -1,8 +1,11 @@
 package errors
 
-import "github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
+import (
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+)
 
-type ErrorWithExceptionID struct {
+type WithExceptionIDError struct {
 	error
 	exceptionID string
 }
@@ -13,7 +16,8 @@ func GenerateExceptionID() string {
 
 func WrapWithExceptionID(exceptionID string, err error) error {
 	// Skip, if there is already an exceptionID
-	if _, ok := err.(WithExceptionID); ok {
+	var withExceptionID WithExceptionIDError
+	if errors.As(err, &withExceptionID) {
 		return err
 	}
 
@@ -22,13 +26,13 @@ func WrapWithExceptionID(exceptionID string, err error) error {
 		exceptionID = GenerateExceptionID()
 	}
 
-	return ErrorWithExceptionID{error: err, exceptionID: exceptionID}
+	return WithExceptionIDError{error: err, exceptionID: exceptionID}
 }
 
-func (e ErrorWithExceptionID) Unwrap() error {
+func (e WithExceptionIDError) Unwrap() error {
 	return e.error
 }
 
-func (e ErrorWithExceptionID) ErrorExceptionID() string {
+func (e WithExceptionIDError) ExceptionID() string {
 	return e.exceptionID
 }

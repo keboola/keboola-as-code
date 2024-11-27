@@ -32,5 +32,5 @@ func TestImporter(t *testing.T) {
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("foo/bar/C.jsonnet", `{some: "value"}`)))
 	out, err := jsonnet.Evaluate(`import "foo/bar/A.jsonnet"`, jsonnetCtx)
 	require.NoError(t, err)
-	assert.Equal(t, "{\n  \"some\": \"value\"\n}\n", out)
+	assert.JSONEq(t, `{"some":"value"}`, out)
 }

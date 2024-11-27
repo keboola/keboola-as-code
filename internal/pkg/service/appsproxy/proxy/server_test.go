@@ -639,5 +639,5 @@ func TestAppProxyHandler(t *testing.T) {
   }
 ]
 `
-	assert.Equal(t, strings.TrimSpace(expectedMetricsJSON), strings.TrimSpace(actualMetricsJSON))
+	assert.Equal(t, strings.TrimSpace(expectedMetricsJSON), strings.TrimSpace(actualMetricsJSON)) //nolint: testifylint
 }

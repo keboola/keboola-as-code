@@ -105,7 +105,7 @@ func TestLocalSaveMapper(t *testing.T) {
 	// File content has been mapped
 	configFile, err := fs.ReadFile(context.Background(), filesystem.NewFileDef(filesystem.Join(`branch`, `config`, naming.ConfigFile)).SetDescription(`config file`))
 	require.NoError(t, err)
-	assert.Equal(t, "{\n  \"key\": \"overwritten\",\n  \"new\": \"value\"\n}", strings.TrimSpace(configFile.Content))
+	assert.JSONEq(t, `{"key": "overwritten","new": "value"}`, strings.TrimSpace(configFile.Content))
 
 	// AfterLocalOperation event has been called
 	assert.Equal(t, []string{
@@ -147,7 +147,7 @@ func TestLocalLoadMapper(t *testing.T) {
 
 	// Internal state has been mapped
 	configState := projectState.MustGet(model.ConfigKey{BranchID: 111, ComponentID: `ex-generic-v2`, ID: `456`}).(*model.ConfigState)
-	assert.Equal(t, `{"parameters":"overwritten","new":"value"}`, json.MustEncodeString(configState.Local.Content, false))
+	assert.JSONEq(t, `{"parameters":"overwritten","new":"value"}`, json.MustEncodeString(configState.Local.Content, false))
 
 	// AfterLocalOperation event has been called
 	assert.Equal(t, []string{

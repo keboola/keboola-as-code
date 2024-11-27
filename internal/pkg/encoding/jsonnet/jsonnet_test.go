@@ -13,7 +13,7 @@ func TestEvaluate(t *testing.T) {
 	code := `{ foo: "bar" }`
 	json, err := Evaluate(code, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", json)
+	assert.JSONEq(t, `{"foo":"bar"}`, json)
 }
 
 func TestEvaluateAst(t *testing.T) {
@@ -30,7 +30,7 @@ func TestEvaluateAst(t *testing.T) {
 	}
 	json, err := EvaluateAst(astNode, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", json)
+	assert.JSONEq(t, `{"foo":"bar"}`, json)
 }
 
 func TestFormat(t *testing.T) {
@@ -38,7 +38,7 @@ func TestFormat(t *testing.T) {
 	code := `{"foo":"bar"}`
 	jsonnetStr, err := Format(code)
 	require.NoError(t, err)
-	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetStr)
+	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetStr) //nolint: testifylint
 }
 
 func TestFormatAst(t *testing.T) {
@@ -54,7 +54,7 @@ func TestFormatAst(t *testing.T) {
 		},
 	}
 	jsonnetStr := FormatAst(astNode)
-	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetStr)
+	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetStr) //nolint: testifylint
 }
 
 func TestToAst(t *testing.T) {

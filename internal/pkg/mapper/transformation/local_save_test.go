@@ -35,7 +35,7 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 	err := state.Mapper().MapBeforeLocalSave(context.Background(), recipe)
 	require.NoError(t, err)
 	require.NoError(t, err)
-	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(object.Content, false))
+	assert.JSONEq(t, `{"foo":"bar"}`, json.MustEncodeString(object.Content, false))
 }
 
 func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {

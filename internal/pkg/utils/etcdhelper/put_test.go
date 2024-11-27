@@ -72,5 +72,5 @@ key3/key4
 	res, err = client.Get(context.Background(), "key3/key4")
 	require.NoError(t, err)
 	assert.Len(t, res.Kvs, 1)
-	assert.Equal(t, "{\n  \"foo1\": \"bar1\",\n  \"foo2\": [\n    \"bar2\",\n    \"bar3\"\n  ]\n}", string(res.Kvs[0].Value))
+	assert.JSONEq(t, `{"foo1": "bar1","foo2": ["bar2","bar3"]}`, string(res.Kvs[0].Value))
 }

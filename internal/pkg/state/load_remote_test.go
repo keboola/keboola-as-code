@@ -26,7 +26,7 @@ func TestLoadRemoteStateEmpty(t *testing.T) {
 	m := createManifest(t)
 	state, _, remoteErr := loadRemoteState(t, m, "empty.json")
 	assert.NotNil(t, state)
-	assert.Empty(t, remoteErr)
+	require.NoError(t, remoteErr)
 	assert.Len(t, state.Branches(), 1)
 	assert.Empty(t, state.Configs())
 }
@@ -36,7 +36,7 @@ func TestLoadRemoteStateComplex(t *testing.T) {
 	m := createManifest(t)
 	state, envs, remoteErr := loadRemoteState(t, m, "complex.json")
 	assert.NotNil(t, state)
-	assert.Empty(t, remoteErr)
+	require.NoError(t, remoteErr)
 	assert.Equal(t, complexRemoteExpectedBranches(envs), state.Branches())
 	assert.Equal(t, complexRemoteExpectedConfigs(envs), state.Configs())
 	assert.Equal(t, complexRemoteExpectedConfigsRows(envs), state.ConfigRows())
@@ -48,7 +48,7 @@ func TestLoadRemoteStateAllowedBranches(t *testing.T) {
 	m.SetAllowedBranches(model.AllowedBranches{"f??"}) // foo
 	state, envs, remoteErr := loadRemoteState(t, m, "complex.json")
 	assert.NotNil(t, state)
-	assert.Empty(t, remoteErr)
+	require.NoError(t, remoteErr)
 	// Only Foo branch is loaded, other are "invisible"
 	assert.Equal(t, []*model.BranchState{
 		{

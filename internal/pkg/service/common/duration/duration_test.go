@@ -21,7 +21,7 @@ func TestDuration_MarshalText_JSON(t *testing.T) {
 	data := Data{Duration: duration.From(123 * time.Hour)}
 	jsonOut, err := json.Marshal(data)
 	require.NoError(t, err)
-	assert.Equal(t, `{"duration":"123h0m0s"}`, string(jsonOut))
+	assert.JSONEq(t, `{"duration":"123h0m0s"}`, string(jsonOut))
 }
 
 func TestDuration_MarshalText_YAML(t *testing.T) {
@@ -29,7 +29,7 @@ func TestDuration_MarshalText_YAML(t *testing.T) {
 	data := Data{Duration: duration.From(123 * time.Hour)}
 	yamlOut, err := yaml.Marshal(data)
 	require.NoError(t, err)
-	assert.Equal(t, "duration: 123h0m0s\n", string(yamlOut))
+	assert.YAMLEq(t, "duration: 123h0m0s\n", string(yamlOut))
 }
 
 func TestDuration_UnmarshalText_JSON(t *testing.T) {

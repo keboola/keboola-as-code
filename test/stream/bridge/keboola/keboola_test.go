@@ -392,7 +392,7 @@ func (ts *testState) testSlicesUpload(t *testing.T, ctx context.Context, expecta
 		require.NoError(t, rawReader.Close())
 	}
 	for i := range expectations.records.count {
-		assert.True(t, strings.Contains(allSlicesContent, fmt.Sprintf(`,"foo%d"`, expectations.records.startID+i)))
+		assert.Contains(t, allSlicesContent, fmt.Sprintf(`,"foo%d"`, expectations.records.startID+i))
 	}
 }
 
@@ -474,7 +474,7 @@ func (ts *testState) checkKeboolaTable(t *testing.T, ctx context.Context, start,
 
 	tablePreviewStr := json.MustEncodeString(tablePreview, true)
 	for i := range expectedCount {
-		assert.True(t, strings.Contains(tablePreviewStr, fmt.Sprintf("foo%d", start+i)))
+		assert.Contains(t, tablePreviewStr, fmt.Sprintf("foo%d", start+i))
 	}
 }
 

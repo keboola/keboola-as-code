@@ -15,7 +15,7 @@ func TestDumpFlat_Empty(t *testing.T) {
 	t.Parallel()
 	bytes, err := NewDumper().Dump(TestConfig{}).Flat().AsJSON(true)
 	require.NoError(t, err)
-	assert.Equal(t, strings.TrimSpace(`
+	assert.JSONEq(t, strings.TrimSpace(`
 {
   "address": "",
   "addressNullable": null,
@@ -41,7 +41,7 @@ func TestDumpFlat(t *testing.T) {
 	t.Parallel()
 	bytes, err := NewDumper().Dump(dumpTestConfig()).Flat().AsJSON(true)
 	require.NoError(t, err)
-	assert.Equal(t, strings.TrimSpace(`
+	assert.JSONEq(t, strings.TrimSpace(`
 {
   "address": "1.2.3.4",
   "addressNullable": null,
@@ -73,7 +73,7 @@ func TestDumpAsJSON(t *testing.T) {
 	t.Parallel()
 	bytes, err := NewDumper().Dump(dumpTestConfig()).AsJSON(true)
 	require.NoError(t, err)
-	assert.Equal(t, strings.TrimSpace(`
+	assert.JSONEq(t, strings.TrimSpace(`
 {
   "embedded": "embedded Value",
   "customString": "custom",

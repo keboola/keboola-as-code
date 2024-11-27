@@ -116,7 +116,7 @@ func TestRemoteSaveMapper(t *testing.T) {
 
 	// But the internal state is unchanged
 	assert.Equal(t, `internal name`, configState.Local.Name)
-	assert.Equal(t, `{"key":"internal value"}`, json.MustEncodeString(configState.Local.Content, false))
+	assert.JSONEq(t, `{"key":"internal value"}`, json.MustEncodeString(configState.Local.Content, false))
 
 	// AfterRemoteOperation event has been called
 	assert.Equal(t, []string{
@@ -199,7 +199,7 @@ func TestRemoteLoadMapper(t *testing.T) {
 
 	// API response has been mapped
 	assert.Equal(t, `internal name`, config.Name)
-	assert.Equal(t, `{"key":"internal value","new":"value"}`, json.MustEncodeString(config.Content, false))
+	assert.JSONEq(t, `{"key":"internal value","new":"value"}`, json.MustEncodeString(config.Content, false))
 
 	// AfterRemoteOperation event has been called
 	assert.Equal(t, []string{
@@ -361,7 +361,7 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	require.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
 	require.NoError(t, err)
-	assert.Equal(t, `{"metadata":[{"key":"KBC-KaC-meta1","value":"val1"}]}`, reqBody)
+	assert.JSONEq(t, `{"metadata":[{"key":"KBC-KaC-meta1","value":"val1"}]}`, reqBody)
 }
 
 func TestSaveConfigMetadata_Create_Empty(t *testing.T) {
@@ -433,7 +433,7 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 	require.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
 	require.NoError(t, err)
-	assert.Equal(t, `{"metadata":[{"key":"KBC-KaC-meta1","value":"val1"}]}`, reqBody)
+	assert.JSONEq(t, `{"metadata":[{"key":"KBC-KaC-meta1","value":"val1"}]}`, reqBody)
 }
 
 func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {

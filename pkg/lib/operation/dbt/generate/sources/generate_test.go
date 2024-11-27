@@ -103,7 +103,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 
 	yamlEnc, err := yaml.Marshal(&res)
 	require.NoError(t, err)
-	assert.Equal(t, strings.TrimSpace(`
+	assert.YAMLEq(t, strings.TrimSpace(`
 version: 2
 sources:
 - name: out.c-main
@@ -229,7 +229,7 @@ func TestGenerateSourcesDefinition_LinkedBucket(t *testing.T) {
 
 	yamlEnc, err := yaml.Marshal(&res)
 	require.NoError(t, err)
-	assert.Equal(t, strings.TrimSpace(`
+	assert.YAMLEq(t, strings.TrimSpace(`
 version: 2
 sources:
 - name: out.c-main

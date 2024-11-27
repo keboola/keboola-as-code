@@ -24,7 +24,7 @@ const (
 
 // nolint: gochecknoglobals
 var (
-	SkipDir     = fs.SkipDir
+	SkipDir     = fs.SkipDir // nolint: errname
 	ErrNotExist = os.ErrNotExist
 )
 

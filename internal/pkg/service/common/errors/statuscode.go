@@ -13,7 +13,7 @@ const (
 	StatusClientClosedRequest = 499
 )
 
-type withStatusCode struct {
+type withStatusCodeError struct {
 	error
 	httpCode int
 }
@@ -47,13 +47,13 @@ func HTTPCodeFrom(err error) int {
 }
 
 func WrapWithStatusCode(err error, httpCode int) WithStatusCode {
-	return withStatusCode{error: err, httpCode: httpCode}
+	return withStatusCodeError{error: err, httpCode: httpCode}
 }
 
-func (w withStatusCode) StatusCode() int {
+func (w withStatusCodeError) StatusCode() int {
 	return w.httpCode
 }
 
-func (w withStatusCode) Unwrap() error {
+func (w withStatusCodeError) Unwrap() error {
 	return w.error
 }
