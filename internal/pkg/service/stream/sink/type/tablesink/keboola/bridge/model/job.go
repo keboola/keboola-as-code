@@ -8,7 +8,7 @@ import (
 )
 
 // Job contains all Keboola-specific data we need for polling jobs.
-// At the end throttle the sink, so it does not overloads the service.
+// At the end throttle the sink, so it does not overload the service.
 type Job struct {
 	JobKey
 	Deleted bool `json:"-"` // internal field to mark the entity for deletion, there is no soft delete
