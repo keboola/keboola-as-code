@@ -158,11 +158,11 @@ func (s *service) ValidateInputs(ctx context.Context, d dependencies.ProjectRequ
 
 func (s *service) Preview(ctx context.Context, d dependencies.ProjectRequestScope, payload *PreviewPayload) (res *Task, err error) {
 	// Lock project
-	if unlockFn, err := tryLockProject(ctx, d); err != nil {
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
 		return nil, err
-	} else {
-		defer unlockFn(ctx)
 	}
+	defer unlockFn(ctx)
 
 	branchKey, err := getBranch(ctx, d, payload.Branch)
 	if err != nil {
@@ -251,11 +251,11 @@ func (s *service) Preview(ctx context.Context, d dependencies.ProjectRequestScop
 
 func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.ProjectRequestScope, payload *UseTemplateVersionPayload) (res *Task, err error) {
 	// Lock project
-	if unlockFn, err := tryLockProject(ctx, d); err != nil {
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
 		return nil, err
-	} else {
-		defer unlockFn(ctx)
 	}
+	defer unlockFn(ctx)
 
 	// Note:
 	//   A very strange code follows.
@@ -403,11 +403,11 @@ func (s *service) InstanceIndex(ctx context.Context, d dependencies.ProjectReque
 
 func (s *service) UpdateInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *UpdateInstancePayload) (res *InstanceDetail, err error) {
 	// Lock project
-	if unlockFn, err := tryLockProject(ctx, d); err != nil {
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
 		return nil, err
-	} else {
-		defer unlockFn(ctx)
 	}
+	defer unlockFn(ctx)
 
 	// Get instance
 	prjState, branchKey, instance, err := getTemplateInstance(ctx, d, payload.Branch, payload.InstanceID, true)
@@ -437,11 +437,11 @@ func (s *service) UpdateInstance(ctx context.Context, d dependencies.ProjectRequ
 
 func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *DeleteInstancePayload) (*Task, error) {
 	// Lock project
-	if unlockFn, err := tryLockProject(ctx, d); err != nil {
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
 		return nil, err
-	} else {
-		defer unlockFn(ctx)
 	}
+	defer unlockFn(ctx)
 
 	// Get instance
 	prjState, branchKey, _, err := getTemplateInstance(ctx, d, payload.Branch, payload.InstanceID, true)
@@ -491,11 +491,11 @@ func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequ
 
 func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *UpgradeInstancePayload) (res *Task, err error) {
 	// Lock project
-	if unlockFn, err := tryLockProject(ctx, d); err != nil {
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
 		return nil, err
-	} else {
-		defer unlockFn(ctx)
 	}
+	defer unlockFn(ctx)
 
 	// Get instance
 	prjState, branchKey, instance, err := getTemplateInstance(ctx, d, payload.Branch, payload.InstanceID, true)
