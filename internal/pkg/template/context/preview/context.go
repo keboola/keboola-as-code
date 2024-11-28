@@ -210,6 +210,7 @@ func (c *Context) registerJsonnetFunctions() {
 	c.jsonnetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
 	c.jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
 	c.jsonnetCtx.NativeFunctionWithAlias(function.HasProjectBackend(c.projectBackends))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.GeneratorInstanceIDShort())
 }
 
 // mapID maps ConfigId/ConfigRowId in Jsonnet files to a <<~~ticket:123~~>> placeholder.
