@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 )
 
 func TestJobSchema(t *testing.T) {
@@ -26,7 +27,7 @@ func TestJobSchema(t *testing.T) {
 		SinkID:    "my-sink",
 	}
 
-	jobKey := key.JobKey{
+	jobKey := model.JobKey{
 		SinkKey: sinkKey,
 		JobID:   "321",
 	}

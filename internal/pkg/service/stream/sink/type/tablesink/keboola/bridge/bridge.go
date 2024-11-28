@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	keboolasink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	bridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
@@ -50,14 +49,14 @@ type Bridge struct {
 	storageRepository       *storageRepo.Repository
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 	locks                   *distlock.Provider
-	jobs                    *etcdop.MirrorMap[bridgeModel.Job, key.JobKey, *jobData]
+	jobs                    *etcdop.MirrorMap[bridgeModel.Job, bridgeModel.JobKey, *jobData]
 
 	getBucketOnce    *singleflight.Group
 	createBucketOnce *singleflight.Group
 }
 
 type jobData struct {
-	key.JobKey
+	bridgeModel.JobKey
 }
 
 type dependencies interface {
@@ -118,9 +117,9 @@ func (b *Bridge) MirrorJobs(ctx context.Context, d dependencies) error {
 
 		b.logger.Info(ctx, "closed bridge job mirror")
 	})
-	b.jobs = etcdop.SetupMirrorMap[bridgeModel.Job, key.JobKey, *jobData](
+	b.jobs = etcdop.SetupMirrorMap[bridgeModel.Job, bridgeModel.JobKey, *jobData](
 		b.keboolaBridgeRepository.Job().GetAllAndWatch(ctx, etcd.WithPrevKV()),
-		func(_ string, job bridgeModel.Job) key.JobKey {
+		func(_ string, job bridgeModel.Job) bridgeModel.JobKey {
 			return job.JobKey
 		},
 		func(_ string, job bridgeModel.Job, rawValue *op.KeyValue, oldValue **jobData) *jobData {

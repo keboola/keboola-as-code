@@ -38,7 +38,7 @@ func TestJobRepository_Purge(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	jobKey := key.JobKey{SinkKey: sinkKey, JobID: "321"}
+	jobKey := model.JobKey{SinkKey: sinkKey, JobID: "321"}
 
 	// Purge - not found
 	// -----------------------------------------------------------------------------------------------------------------
@@ -106,9 +106,9 @@ func TestJobRepository_PurgeJobsOnSinkDelete(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	jobKey1 := key.JobKey{SinkKey: sinkKey, JobID: "321"}
-	jobKey2 := key.JobKey{SinkKey: sinkKey, JobID: "322"}
-	jobKey3 := key.JobKey{SinkKey: sinkKey, JobID: "323"}
+	jobKey1 := model.JobKey{SinkKey: sinkKey, JobID: "321"}
+	jobKey2 := model.JobKey{SinkKey: sinkKey, JobID: "322"}
+	jobKey3 := model.JobKey{SinkKey: sinkKey, JobID: "323"}
 
 	// Create Branch, Source and Sink
 	// -----------------------------------------------------------------------------------------------------------------
@@ -174,10 +174,10 @@ func TestJobRepository_PurgeJobsOnSourceDelete_DeleteSource(t *testing.T) {
 	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
 	sinkKey3 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-3"}
-	jobKey0 := key.JobKey{SinkKey: sinkKey1, JobID: "320"}
-	jobKey1 := key.JobKey{SinkKey: sinkKey2, JobID: "321"}
-	jobKey2 := key.JobKey{SinkKey: sinkKey2, JobID: "322"}
-	jobKey3 := key.JobKey{SinkKey: sinkKey3, JobID: "323"}
+	jobKey0 := model.JobKey{SinkKey: sinkKey1, JobID: "320"}
+	jobKey1 := model.JobKey{SinkKey: sinkKey2, JobID: "321"}
+	jobKey2 := model.JobKey{SinkKey: sinkKey2, JobID: "322"}
+	jobKey3 := model.JobKey{SinkKey: sinkKey3, JobID: "323"}
 
 	// Create Branch and Source
 	// -----------------------------------------------------------------------------------------------------------------
@@ -276,10 +276,10 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
 	sinkKey3 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-3"}
-	jobKey0 := key.JobKey{SinkKey: sinkKey1, JobID: "320"}
-	jobKey1 := key.JobKey{SinkKey: sinkKey2, JobID: "321"}
-	jobKey2 := key.JobKey{SinkKey: sinkKey2, JobID: "322"}
-	jobKey3 := key.JobKey{SinkKey: sinkKey3, JobID: "323"}
+	jobKey0 := model.JobKey{SinkKey: sinkKey1, JobID: "320"}
+	jobKey1 := model.JobKey{SinkKey: sinkKey2, JobID: "321"}
+	jobKey2 := model.JobKey{SinkKey: sinkKey2, JobID: "322"}
+	jobKey3 := model.JobKey{SinkKey: sinkKey3, JobID: "323"}
 
 	// Create Branch and Source
 	// -----------------------------------------------------------------------------------------------------------------
