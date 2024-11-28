@@ -100,6 +100,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedA
 	// Save credentials to database
 	ctx = ctxattr.ContextWith(ctx, attribute.String("file.resourceID", stagingFile.FileID.String()))
 	keboolaFile := keboolasink.File{
+		FileKey:           &file.FileKey,
 		SinkKey:           file.SinkKey,
 		TableID:           sink.Table.Keboola.TableID,
 		Columns:           sink.Table.Mapping.Columns.Names(),
