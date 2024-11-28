@@ -1,6 +1,7 @@
 # Build container
 FROM golang:1.23.3-alpine3.20 AS buildContainer
 RUN apk add -U --no-cache bash make curl
+RUN apk add --no-cache --update gcc g++
 WORKDIR /app
 
 COPY Makefile Makefile
@@ -12,7 +13,7 @@ COPY go.sum go.sum
 RUN go mod download
 
 COPY . .
-RUN make build-stream-service
+RUN make build-stream-service-with-race
 
 # Production container
 FROM alpine:3.20

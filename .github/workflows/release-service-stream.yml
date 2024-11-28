@@ -76,6 +76,14 @@ jobs:
           context: .
           file: provisioning/stream/docker/service/Dockerfile
 
+      - name: Build Service image with race detector
+        uses: docker/build-push-action@v6
+        with:
+          load: true
+          tags: ${{ env.IMAGE_NAME }}-race:${{ env.IMAGE_TAG }}
+          context: .
+          file: provisioning/stream/docker/service/race/Dockerfile
+
       - name: Push Service image to Amazon ECR, Azure ACR and GCP GAR
         uses: ./.github/actions/push-image-aws-azure-gcp
         with:
@@ -92,6 +100,24 @@ jobs:
           acrRepository: ${{ env.ACR_REPOSITORY }}
           acrUsername: ${{ env.ACR_USERNAME }}
           acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
+
+      - name: Push Service image with race detector to Amazon ECR, Azure ACR and GCP GAR
+        uses: ./.github/actions/push-image-aws-azure-gcp
+        with:
+          imageName: ${{ env.IMAGE_NAME }}-race
+          imageTag: ${{ env.IMAGE_TAG }}
+          ecrRegion: ${{ env.ECR_REGION }}
+          ecrRepository: ${{ env.ECR_REPOSITORY }}
+          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
+          gcpRegistry: ${{ env.GCP_REGISTRY }}
+          gcpRepository: ${{ env.GCP_REPOSITORY }}
+          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+          gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
+          acrRegistry: ${{ env.ACR_REGISTRY }}
+          acrRepository: ${{ env.ACR_REPOSITORY }}
+          acrUsername: ${{ env.ACR_USERNAME }}
+          acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
+
       - name: Trigger image tag update
         uses: keboola/kbc-stacks/.github/actions/trigger-image-tag-update@main
         with:
