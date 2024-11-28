@@ -1,6 +1,8 @@
 package template
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/branchmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/configmetadata"
@@ -73,15 +75,8 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 	}
 
 	// Add metadata on "template preview" operation
-	if c, ok := ctx.(previewContext); ok {
-		if _, isUseContext := ctx.(useContext); !isUseContext {
-			mappers = append(mappers, metadata.NewMapperWithoutInstanceID(
-				s,
-				c.TemplateRef(),
-				c.ObjectIds(),
-				c.InputsUsage(),
-			))
-		}
+	if c, ok := isPreviewContext(ctx); ok {
+		mappers = append(mappers, metadata.NewMapperWithoutInstanceID(s, c.TemplateRef(), c.ObjectIds(), c.InputsUsage()))
 	}
 
 	// Add metadata on "template use" operation
@@ -90,4 +85,13 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 	}
 
 	return mappers, nil
+}
+
+func isPreviewContext(ctx context.Context) (previewContext, bool) {
+	if c, ok := ctx.(previewContext); ok {
+		if _, isUseContext := ctx.(useContext); !isUseContext {
+			return c, true
+		}
+	}
+	return nil, false
 }
