@@ -1,3 +1,3 @@
 {
-  name: "My Data App",
+  name: "My Data App /" + GeneratorInstanceIDShort(),
 }

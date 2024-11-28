@@ -12,7 +12,7 @@
       "configs": [
         {
           "componentId": "keboola.data-apps",
-          "name": "My Data App",
+          "name": "My Data App /%s",
           "description": "test fixture",
           "changeDescription": "From template keboola/my-template-id/1.2.3",
           "configuration": {
