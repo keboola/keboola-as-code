@@ -1,5 +1,5 @@
 <<<<<
-storage/job/123/567/my-source/my-sink/321
+storage/keboola/job/123/567/my-source/my-sink/321
 -----
 {
   "projectId": 123,
@@ -11,7 +11,7 @@ storage/job/123/567/my-source/my-sink/321
 >>>>>
 
 <<<<<
-storage/job/123/567/my-source/my-sink/322
+storage/keboola/job/123/567/my-source/my-sink/322
 -----
 {
   "projectId": 123,

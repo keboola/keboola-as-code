@@ -18,7 +18,7 @@ type (
 )
 
 func New(s *serde.Serde) Job {
-	return Job{PrefixT: etcdop.NewTypedPrefix[model.Job]("storage/job", s)}
+	return Job{PrefixT: etcdop.NewTypedPrefix[model.Job]("storage/keboola/job", s)}
 }
 
 func (j Job) ForSink(k key.JobKey) etcdop.KeyT[model.Job] {

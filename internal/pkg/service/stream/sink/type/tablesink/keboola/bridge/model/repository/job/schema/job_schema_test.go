@@ -34,43 +34,43 @@ func TestJobSchema(t *testing.T) {
 	cases := []struct{ actual, expected string }{
 		{
 			s.Prefix(),
-			"storage/job/",
+			"storage/keboola/job/",
 		},
 		{
 			s.Prefix(),
-			"storage/job/",
+			"storage/keboola/job/",
 		},
 		{
 			s.In(jobKey.ProjectID).Prefix(),
-			"storage/job/123/",
+			"storage/keboola/job/123/",
 		},
 		{
 			s.In(jobKey.BranchKey).Prefix(),
-			"storage/job/123/456/",
+			"storage/keboola/job/123/456/",
 		},
 		{
 			s.In(jobKey.SourceKey).Prefix(),
-			"storage/job/123/456/my-source/",
+			"storage/keboola/job/123/456/my-source/",
 		},
 		{
 			s.InProject(jobKey.ProjectID).Prefix(),
-			"storage/job/123/",
+			"storage/keboola/job/123/",
 		},
 		{
 			s.InBranch(jobKey.BranchKey).Prefix(),
-			"storage/job/123/456/",
+			"storage/keboola/job/123/456/",
 		},
 		{
 			s.InSource(jobKey.SourceKey).Prefix(),
-			"storage/job/123/456/my-source/",
+			"storage/keboola/job/123/456/my-source/",
 		},
 		{
 			s.InSink(jobKey.SinkKey).Prefix(),
-			"storage/job/123/456/my-source/my-sink/",
+			"storage/keboola/job/123/456/my-source/my-sink/",
 		},
 		{
 			s.ByKey(jobKey).Key(),
-			"storage/job/123/456/my-source/my-sink/321",
+			"storage/keboola/job/123/456/my-source/my-sink/321",
 		},
 	}
 
