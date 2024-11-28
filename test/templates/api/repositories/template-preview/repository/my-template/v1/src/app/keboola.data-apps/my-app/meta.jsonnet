@@ -1,3 +1,3 @@
 {
-  name: "My Data App /" + GeneratorInstanceIDShort(),
+  name: "My Data App /" + RandomUID(),
 }
