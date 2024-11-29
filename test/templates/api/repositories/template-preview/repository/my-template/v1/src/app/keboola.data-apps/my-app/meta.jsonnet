@@ -1,3 +1,3 @@
 {
-  name: "My Data App /" + RandomUID(),
+  name: "My Data App /" + RandomID(),
 }

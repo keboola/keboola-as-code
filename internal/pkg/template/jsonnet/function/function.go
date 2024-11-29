@@ -126,10 +126,10 @@ func InstanceIDShort(instanceIDShort string) *jsonnet.NativeFunction {
 	}
 }
 
-// RandomUID Jsonnet function returns a random, shortened id of the template instance.
-func RandomUID() *jsonnet.NativeFunction {
+// RandomID Jsonnet function returns a random, shortened id of the template instance.
+func RandomID() *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
-		Name:   `RandomUID`,
+		Name:   `RandomID`,
 		Params: ast.Identifiers{},
 		Func: func(params []any) (any, error) {
 			instanceID := idgenerator.TemplateInstanceID()
