@@ -19,13 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (b *Bridge) GetToken(k key.SinkKey) op.WithResult[keboolasink.Token] {
-	return b.schema.Token().ForSink(k).GetOrErr(b.client).
-		WithEmptyResultAsError(func() error {
-			return serviceError.NewResourceNotFoundError("sink token", k.String(), "database")
-		})
-}
-
 func (b *Bridge) deleteTokenOnSinkDeactivation() {
 	b.plugins.Collection().OnSinkDeactivation(func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
 		if b.isKeboolaTableSink(sink) {
