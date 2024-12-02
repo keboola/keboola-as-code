@@ -18,7 +18,7 @@ COPY Makefile /tmp/build/Makefile
 COPY scripts  /tmp/build/scripts
 RUN cd /tmp/build && make tools && cd / && rm -rf /tmp/build && go clean -cache -modcache
 RUN apt update && apt install -y graphviz
-RUN apt-get install --no-install-recommends --assume-yes build-essential libsqlite3-0
+RUN apt-get install --no-install-recommends --assume-yes build-essential
 
 # Install envsubstr and helm
 RUN curl -L https://github.com/a8m/envsubst/releases/download/v1.2.0/envsubst-$(uname -s)-$(uname -m) -o /usr/local/bin/envsubst && \
