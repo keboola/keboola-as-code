@@ -168,7 +168,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 			ctx := req.Context()
 
 			// Trace connection events
-			ctx = httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
+			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
 					u.notify(ctx)
 				},
@@ -179,7 +179,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 				},
 			})
 
-			return next.ServeHTTPOrError(w, req.WithContext(ctx))
+			return next.ServeHTTPOrError(w, req.WithContext(reqCtx))
 		})
 	}
 }
