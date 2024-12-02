@@ -3,6 +3,7 @@ package load
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet/fsimporter"
@@ -29,6 +30,7 @@ func NewContext(ctx context.Context, objectsRoot filesystem.Fs, components *mode
 		projectBackends: projectBackends,
 	}
 
+	fmt.Println("AAA: ", projectBackends)
 	// Register Jsonnet functions
 	c.registerJsonnetFunctions()
 
@@ -41,6 +43,6 @@ func (c *Context) JsonnetContext() *jsonnet.Context {
 
 func (c *Context) registerJsonnetFunctions() {
 	c.jsonnetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
-	c.jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
+	//c.jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
 	c.jsonnetCtx.NativeFunctionWithAlias(function.HasProjectBackend(c.projectBackends))
 }
