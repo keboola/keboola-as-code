@@ -35,6 +35,17 @@ type UseTemplateVersionRequestBody struct {
 	Steps []*StepPayloadRequestBody `form:"steps,omitempty" json:"steps,omitempty" xml:"steps,omitempty"`
 }
 
+// PreviewRequestBody is the type of the "templates" service "Preview" endpoint
+// HTTP request body.
+type PreviewRequestBody struct {
+	// Name of the new template instance.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID of the branch. Use "default" for default branch.
+	Branch *string `form:"branch,omitempty" json:"branch,omitempty" xml:"branch,omitempty"`
+	// Steps with input values filled in by user.
+	Steps []*StepPayloadRequestBody `form:"steps,omitempty" json:"steps,omitempty" xml:"steps,omitempty"`
+}
+
 // UpdateInstanceRequestBody is the type of the "templates" service
 // "UpdateInstance" endpoint HTTP request body.
 type UpdateInstanceRequestBody struct {
@@ -158,6 +169,29 @@ type ValidateInputsResponseBody struct {
 // UseTemplateVersionResponseBody is the type of the "templates" service
 // "UseTemplateVersion" endpoint HTTP response body.
 type UseTemplateVersionResponseBody struct {
+	ID string `form:"id" json:"id" xml:"id"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+}
+
+// PreviewResponseBody is the type of the "templates" service "Preview"
+// endpoint HTTP response body.
+type PreviewResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
 	// Task type.
 	Type string `form:"type" json:"type" xml:"type"`
@@ -534,6 +568,64 @@ type UseTemplateVersionTemplatesProjectLockedResponseBody struct {
 // service "UseTemplateVersion" endpoint HTTP response body for the
 // "InvalidInputs" error.
 type UseTemplateVersionInvalidInputsResponseBody struct {
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message          string                        `form:"message" json:"message" xml:"message"`
+	ValidationResult *ValidationResultResponseBody `form:"ValidationResult" json:"ValidationResult" xml:"ValidationResult"`
+}
+
+// PreviewTemplatesRepositoryNotFoundResponseBody is the type of the
+// "templates" service "Preview" endpoint HTTP response body for the
+// "templates.repositoryNotFound" error.
+type PreviewTemplatesRepositoryNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// PreviewTemplatesTemplateNotFoundResponseBody is the type of the "templates"
+// service "Preview" endpoint HTTP response body for the
+// "templates.templateNotFound" error.
+type PreviewTemplatesTemplateNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// PreviewTemplatesVersionNotFoundResponseBody is the type of the "templates"
+// service "Preview" endpoint HTTP response body for the
+// "templates.versionNotFound" error.
+type PreviewTemplatesVersionNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// PreviewTemplatesProjectLockedResponseBody is the type of the "templates"
+// service "Preview" endpoint HTTP response body for the
+// "templates.projectLocked" error.
+type PreviewTemplatesProjectLockedResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// PreviewInvalidInputsResponseBody is the type of the "templates" service
+// "Preview" endpoint HTTP response body for the "InvalidInputs" error.
+type PreviewInvalidInputsResponseBody struct {
 	// Name of error.
 	Name string `form:"error" json:"error" xml:"error"`
 	// Error message.
@@ -1278,6 +1370,27 @@ func NewUseTemplateVersionResponseBody(res *templates.Task) *UseTemplateVersionR
 	return body
 }
 
+// NewPreviewResponseBody builds the HTTP response body from the result of the
+// "Preview" endpoint of the "templates" service.
+func NewPreviewResponseBody(res *templates.Task) *PreviewResponseBody {
+	body := &PreviewResponseBody{
+		ID:         string(res.ID),
+		Type:       res.Type,
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalTemplatesTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
+	return body
+}
+
 // NewInstancesIndexResponseBody builds the HTTP response body from the result
 // of the "InstancesIndex" endpoint of the "templates" service.
 func NewInstancesIndexResponseBody(res *templates.Instances) *InstancesIndexResponseBody {
@@ -1676,6 +1789,63 @@ func NewUseTemplateVersionTemplatesProjectLockedResponseBody(res *templates.Proj
 // service.
 func NewUseTemplateVersionInvalidInputsResponseBody(res *templates.ValidationError) *UseTemplateVersionInvalidInputsResponseBody {
 	body := &UseTemplateVersionInvalidInputsResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	if res.ValidationResult != nil {
+		body.ValidationResult = marshalTemplatesValidationResultToValidationResultResponseBody(res.ValidationResult)
+	}
+	return body
+}
+
+// NewPreviewTemplatesRepositoryNotFoundResponseBody builds the HTTP response
+// body from the result of the "Preview" endpoint of the "templates" service.
+func NewPreviewTemplatesRepositoryNotFoundResponseBody(res *templates.GenericError) *PreviewTemplatesRepositoryNotFoundResponseBody {
+	body := &PreviewTemplatesRepositoryNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewPreviewTemplatesTemplateNotFoundResponseBody builds the HTTP response
+// body from the result of the "Preview" endpoint of the "templates" service.
+func NewPreviewTemplatesTemplateNotFoundResponseBody(res *templates.GenericError) *PreviewTemplatesTemplateNotFoundResponseBody {
+	body := &PreviewTemplatesTemplateNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewPreviewTemplatesVersionNotFoundResponseBody builds the HTTP response body
+// from the result of the "Preview" endpoint of the "templates" service.
+func NewPreviewTemplatesVersionNotFoundResponseBody(res *templates.GenericError) *PreviewTemplatesVersionNotFoundResponseBody {
+	body := &PreviewTemplatesVersionNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewPreviewTemplatesProjectLockedResponseBody builds the HTTP response body
+// from the result of the "Preview" endpoint of the "templates" service.
+func NewPreviewTemplatesProjectLockedResponseBody(res *templates.ProjectLockedError) *PreviewTemplatesProjectLockedResponseBody {
+	body := &PreviewTemplatesProjectLockedResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewPreviewInvalidInputsResponseBody builds the HTTP response body from the
+// result of the "Preview" endpoint of the "templates" service.
+func NewPreviewInvalidInputsResponseBody(res *templates.ValidationError) *PreviewInvalidInputsResponseBody {
+	body := &PreviewInvalidInputsResponseBody{
 		Name:    res.Name,
 		Message: res.Message,
 	}
@@ -2085,6 +2255,24 @@ func NewUseTemplateVersionPayload(body *UseTemplateVersionRequestBody, repositor
 	return v
 }
 
+// NewPreviewPayload builds a templates service Preview endpoint payload.
+func NewPreviewPayload(body *PreviewRequestBody, repository string, template string, version string, storageAPIToken string) *templates.PreviewPayload {
+	v := &templates.PreviewPayload{
+		Name:   *body.Name,
+		Branch: *body.Branch,
+	}
+	v.Steps = make([]*templates.StepPayload, len(body.Steps))
+	for i, val := range body.Steps {
+		v.Steps[i] = unmarshalStepPayloadRequestBodyToTemplatesStepPayload(val)
+	}
+	v.Repository = repository
+	v.Template = templates.TemplateID(template)
+	v.Version = version
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
 // NewInstancesIndexPayload builds a templates service InstancesIndex endpoint
 // payload.
 func NewInstancesIndexPayload(branch string, storageAPIToken string) *templates.InstancesIndexPayload {
@@ -2203,6 +2391,28 @@ func ValidateValidateInputsRequestBody(body *ValidateInputsRequestBody, errConte
 // ValidateUseTemplateVersionRequestBody runs the validations defined on
 // UseTemplateVersionRequestBody
 func ValidateUseTemplateVersionRequestBody(body *UseTemplateVersionRequestBody, errContext []string) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
+	}
+	if body.Branch == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("branch", strings.Join(errContext, ".")))
+	}
+	if body.Steps == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("steps", strings.Join(errContext, ".")))
+	}
+	for i, e := range body.Steps {
+		errContext := append(errContext, fmt.Sprintf(`steps[%d]`, i))
+		if e != nil {
+			if err2 := ValidateStepPayloadRequestBody(e, errContext); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidatePreviewRequestBody runs the validations defined on PreviewRequestBody
+func ValidatePreviewRequestBody(body *PreviewRequestBody, errContext []string) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}

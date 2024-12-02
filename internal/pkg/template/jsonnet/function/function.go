@@ -11,9 +11,11 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 const (
@@ -120,6 +122,18 @@ func InstanceIDShort(instanceIDShort string) *jsonnet.NativeFunction {
 		Params: ast.Identifiers{},
 		Func: func(params []any) (any, error) {
 			return instanceIDShort, nil
+		},
+	}
+}
+
+// RandomID Jsonnet function returns a random, shortened id of the template instance.
+func RandomID() *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name:   `RandomID`,
+		Params: ast.Identifiers{},
+		Func: func(params []any) (any, error) {
+			instanceID := idgenerator.TemplateInstanceID()
+			return strhelper.FirstN(instanceID, 8), nil
 		},
 	}
 }

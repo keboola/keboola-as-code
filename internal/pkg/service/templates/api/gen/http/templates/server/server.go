@@ -33,6 +33,7 @@ type Server struct {
 	InputsIndex                   http.Handler
 	ValidateInputs                http.Handler
 	UseTemplateVersion            http.Handler
+	Preview                       http.Handler
 	InstancesIndex                http.Handler
 	InstanceIndex                 http.Handler
 	UpdateInstance                http.Handler
@@ -108,6 +109,7 @@ func New(
 			{"InputsIndex", "GET", "/v1/repositories/{repository}/templates/{template}/{version}/inputs"},
 			{"ValidateInputs", "POST", "/v1/repositories/{repository}/templates/{template}/{version}/validate"},
 			{"UseTemplateVersion", "POST", "/v1/repositories/{repository}/templates/{template}/{version}/use"},
+			{"Preview", "POST", "/v1/repositories/{repository}/templates/{template}/{version}/preview"},
 			{"InstancesIndex", "GET", "/v1/project/{branch}/instances"},
 			{"InstanceIndex", "GET", "/v1/project/{branch}/instances/{instanceId}"},
 			{"UpdateInstance", "PUT", "/v1/project/{branch}/instances/{instanceId}"},
@@ -127,6 +129,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/repositories/{repository}/templates/{template}/{version}/inputs"},
 			{"CORS", "OPTIONS", "/v1/repositories/{repository}/templates/{template}/{version}/validate"},
 			{"CORS", "OPTIONS", "/v1/repositories/{repository}/templates/{template}/{version}/use"},
+			{"CORS", "OPTIONS", "/v1/repositories/{repository}/templates/{template}/{version}/preview"},
 			{"CORS", "OPTIONS", "/v1/project/{branch}/instances"},
 			{"CORS", "OPTIONS", "/v1/project/{branch}/instances/{instanceId}"},
 			{"CORS", "OPTIONS", "/v1/project/{branch}/instances/{instanceId}/upgrade/{version}"},
@@ -154,6 +157,7 @@ func New(
 		InputsIndex:                   NewInputsIndexHandler(e.InputsIndex, mux, decoder, encoder, errhandler, formatter),
 		ValidateInputs:                NewValidateInputsHandler(e.ValidateInputs, mux, decoder, encoder, errhandler, formatter),
 		UseTemplateVersion:            NewUseTemplateVersionHandler(e.UseTemplateVersion, mux, decoder, encoder, errhandler, formatter),
+		Preview:                       NewPreviewHandler(e.Preview, mux, decoder, encoder, errhandler, formatter),
 		InstancesIndex:                NewInstancesIndexHandler(e.InstancesIndex, mux, decoder, encoder, errhandler, formatter),
 		InstanceIndex:                 NewInstanceIndexHandler(e.InstanceIndex, mux, decoder, encoder, errhandler, formatter),
 		UpdateInstance:                NewUpdateInstanceHandler(e.UpdateInstance, mux, decoder, encoder, errhandler, formatter),
@@ -187,6 +191,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.InputsIndex = m(s.InputsIndex)
 	s.ValidateInputs = m(s.ValidateInputs)
 	s.UseTemplateVersion = m(s.UseTemplateVersion)
+	s.Preview = m(s.Preview)
 	s.InstancesIndex = m(s.InstancesIndex)
 	s.InstanceIndex = m(s.InstanceIndex)
 	s.UpdateInstance = m(s.UpdateInstance)
@@ -214,6 +219,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountInputsIndexHandler(mux, h.InputsIndex)
 	MountValidateInputsHandler(mux, h.ValidateInputs)
 	MountUseTemplateVersionHandler(mux, h.UseTemplateVersion)
+	MountPreviewHandler(mux, h.Preview)
 	MountInstancesIndexHandler(mux, h.InstancesIndex)
 	MountInstanceIndexHandler(mux, h.InstanceIndex)
 	MountUpdateInstanceHandler(mux, h.UpdateInstance)
@@ -761,6 +767,57 @@ func NewUseTemplateVersionHandler(
 	})
 }
 
+// MountPreviewHandler configures the mux to serve the "templates" service
+// "Preview" endpoint.
+func MountPreviewHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleTemplatesOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/repositories/{repository}/templates/{template}/{version}/preview", f)
+}
+
+// NewPreviewHandler creates a HTTP handler which loads the HTTP request and
+// calls the "templates" service "Preview" endpoint.
+func NewPreviewHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodePreviewRequest(mux, decoder)
+		encodeResponse = EncodePreviewResponse(encoder)
+		encodeError    = EncodePreviewError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "Preview")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "templates")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountInstancesIndexHandler configures the mux to serve the "templates"
 // service "InstancesIndex" endpoint.
 func MountInstancesIndexHandler(mux goahttp.Muxer, h http.Handler) {
@@ -1238,6 +1295,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/repositories/{repository}/templates/{template}/{version}/inputs", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/repositories/{repository}/templates/{template}/{version}/validate", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/repositories/{repository}/templates/{template}/{version}/use", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/repositories/{repository}/templates/{template}/{version}/preview", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/project/{branch}/instances", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/project/{branch}/instances/{instanceId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/project/{branch}/instances/{instanceId}/upgrade/{version}", h.ServeHTTP)

@@ -65,3 +65,7 @@ func NewMapper(state *state.State, templateRef model.TemplateRef, instanceID str
 	}
 	return &metadataMapper{state: state, templateRef: templateRef, instanceID: instanceID, objectIds: objectIds, inputsUsage: inputsUsage}
 }
+
+func NewMapperWithoutInstanceID(state *state.State, templateRef model.TemplateRef, objectIds ObjectIdsMap, inputsUsage *InputsUsage) *metadataMapper {
+	return &metadataMapper{state: state, templateRef: templateRef, objectIds: objectIds, inputsUsage: inputsUsage}
+}

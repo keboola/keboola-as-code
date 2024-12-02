@@ -1,0 +1,22 @@
+{
+  "path": "/v1/repositories/keboola/templates/my-template-id/1.2.3/preview",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "branch": "default",
+    "name": "inst-001",
+    "steps": [
+      {
+        "id": "g01-s01",
+        "inputs": []
+      },
+      {
+        "id": "g01-s02",
+        "inputs": []
+      }
+    ]
+  }
+}

@@ -455,7 +455,9 @@ func (m ConfigMetadata) AddRowInputUsage(rowID keboola.RowID, inputName string, 
 func (m ConfigMetadata) SetTemplateInstance(repo string, tmpl string, inst string) {
 	m[repositoryMetadataKey] = repo
 	m[templateIDMetadataKey] = tmpl
-	m[instanceIDMetadataKey] = inst
+	if inst != "" {
+		m[instanceIDMetadataKey] = inst
+	}
 }
 
 func (m ConfigMetadata) Repository() string {

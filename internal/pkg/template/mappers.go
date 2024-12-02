@@ -1,6 +1,8 @@
 package template
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/branchmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/configmetadata"
@@ -23,8 +25,13 @@ import (
 
 // useContext is common interface for *use.Context and *upgrade.Context.
 type useContext interface {
-	TemplateRef() model.TemplateRef
+	previewContext
 	InstanceID() string
+}
+
+// previewContext is common interface for *preview.Context.
+type previewContext interface {
+	TemplateRef() model.TemplateRef
 	ObjectIds() metadata.ObjectIdsMap
 	InputsUsage() *metadata.InputsUsage
 }
@@ -67,10 +74,24 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 		replacevalues.NewMapper(s, replacements),
 	}
 
+	// Add metadata on "template preview" operation
+	if c, ok := isPreviewContext(ctx); ok {
+		mappers = append(mappers, metadata.NewMapperWithoutInstanceID(s, c.TemplateRef(), c.ObjectIds(), c.InputsUsage()))
+	}
+
 	// Add metadata on "template use" operation
 	if c, ok := ctx.(useContext); ok {
 		mappers = append(mappers, metadata.NewMapper(s, c.TemplateRef(), c.InstanceID(), c.ObjectIds(), c.InputsUsage()))
 	}
 
 	return mappers, nil
+}
+
+func isPreviewContext(ctx context.Context) (previewContext, bool) {
+	if c, ok := ctx.(previewContext); ok {
+		if _, isUseContext := ctx.(useContext); !isUseContext {
+			return c, true
+		}
+	}
+	return nil, false
 }

@@ -25,6 +25,7 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/context/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -40,6 +41,7 @@ const (
 	ProjectLockedRetryAfter = 5 * time.Second
 	TemplateUpgradeTaskType = "template.upgrade"
 	TemplateUseTaskType     = "template.use"
+	TemplatePreviewTaskType = "template.preview"
 	TemplateDeleteTaskType  = "template.delete"
 )
 
@@ -154,13 +156,106 @@ func (s *service) ValidateInputs(ctx context.Context, d dependencies.ProjectRequ
 	return result, err
 }
 
+func (s *service) Preview(ctx context.Context, d dependencies.ProjectRequestScope, payload *PreviewPayload) (res *Task, err error) {
+	// Lock project
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
+		return nil, err
+	}
+	defer unlockFn(ctx)
+
+	branchKey, err := getBranch(ctx, d, payload.Branch)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get template
+	_, tmpl, err := getTemplateVersion(ctx, d, payload.Repository, payload.Template, payload.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	// Process inputs
+	result, values, err := validateInputs(ctx, tmpl.Inputs(), payload.Steps)
+	if err != nil {
+		return nil, err
+	}
+	if !result.Valid {
+		return nil, &ValidationError{
+			Name:             "InvalidInputs",
+			Message:          "Inputs are not valid.",
+			ValidationResult: result,
+		}
+	}
+
+	tKey := task.Key{
+		ProjectID: d.ProjectID(),
+		TaskID:    task.ID(TemplatePreviewTaskType),
+	}
+
+	t, err := s.tasks.StartTask(ctx, task.Config{
+		Type: TemplatePreviewTaskType,
+		Key:  tKey,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), 5*time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			// Create virtual fs, after refactoring it will be removed
+			fs := aferofs.NewMemoryFs(filesystem.WithLogger(d.Logger()))
+
+			// Create fake manifest
+			m := project.NewManifest(123, "foo")
+
+			// Load all from the target branch, we need shared codes
+			m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.ID))})
+			prj := project.NewWithManifest(ctx, fs, m)
+
+			// Load project state
+			prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
+			if err != nil {
+				return task.ErrResult(err)
+			}
+
+			// Copy remote state to the local
+			for _, objectState := range prjState.All() {
+				objectState.SetLocalState(deepcopy.Copy(objectState.RemoteState()).(model.Object))
+			}
+
+			// Options
+			options := preview.Options{
+				InstanceName: payload.Name,
+				TargetBranch: branchKey,
+				Inputs:       values,
+			}
+
+			// Use template
+			if err = generateTemplatePreview(ctx, tmpl, d, prjState, options); err != nil {
+				return task.ErrResult(err)
+			}
+
+			// Push changes
+			changeDesc := fmt.Sprintf("From template %s", tmpl.FullName())
+			if err := push.Run(ctx, prjState, push.Options{ChangeDescription: changeDesc, SkipValidation: true}, d); err != nil {
+				return task.ErrResult(err)
+			}
+
+			return task.
+				OkResult(`template preview created`)
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.TaskPayload(t), nil
+}
+
 func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.ProjectRequestScope, payload *UseTemplateVersionPayload) (res *Task, err error) {
 	// Lock project
-	if unlockFn, err := tryLockProject(ctx, d); err != nil {
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
 		return nil, err
-	} else {
-		defer unlockFn(ctx)
 	}
+	defer unlockFn(ctx)
 
 	// Note:
 	//   A very strange code follows.
@@ -308,11 +403,11 @@ func (s *service) InstanceIndex(ctx context.Context, d dependencies.ProjectReque
 
 func (s *service) UpdateInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *UpdateInstancePayload) (res *InstanceDetail, err error) {
 	// Lock project
-	if unlockFn, err := tryLockProject(ctx, d); err != nil {
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
 		return nil, err
-	} else {
-		defer unlockFn(ctx)
 	}
+	defer unlockFn(ctx)
 
 	// Get instance
 	prjState, branchKey, instance, err := getTemplateInstance(ctx, d, payload.Branch, payload.InstanceID, true)
@@ -342,11 +437,11 @@ func (s *service) UpdateInstance(ctx context.Context, d dependencies.ProjectRequ
 
 func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *DeleteInstancePayload) (*Task, error) {
 	// Lock project
-	if unlockFn, err := tryLockProject(ctx, d); err != nil {
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
 		return nil, err
-	} else {
-		defer unlockFn(ctx)
 	}
+	defer unlockFn(ctx)
 
 	// Get instance
 	prjState, branchKey, _, err := getTemplateInstance(ctx, d, payload.Branch, payload.InstanceID, true)
@@ -396,11 +491,11 @@ func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequ
 
 func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *UpgradeInstancePayload) (res *Task, err error) {
 	// Lock project
-	if unlockFn, err := tryLockProject(ctx, d); err != nil {
+	unlockFn, err := tryLockProject(ctx, d)
+	if err != nil {
 		return nil, err
-	} else {
-		defer unlockFn(ctx)
 	}
+	defer unlockFn(ctx)
 
 	// Get instance
 	prjState, branchKey, instance, err := getTemplateInstance(ctx, d, payload.Branch, payload.InstanceID, true)
@@ -717,4 +812,35 @@ func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (un
 		}
 	}
 	return unlockFn, nil
+}
+
+func generateTemplatePreview(ctx context.Context, tmpl *template.Template, d dependencies.ProjectRequestScope, projectState *project.State, o preview.Options) (err error) {
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.template.preview")
+	defer span.End(&err)
+
+	// Create tickets provider, to generate new IDS
+	tickets := d.ObjectIDGeneratorFactory()(ctx)
+
+	// Prepare template
+	tmplCtx := preview.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State(), d.ProjectBackends())
+	plan, err := useTemplate.PrepareTemplate(ctx, d, useTemplate.ExtendedOptions{
+		TargetBranch:          o.TargetBranch,
+		Inputs:                o.Inputs,
+		InstanceName:          o.InstanceName,
+		ProjectState:          projectState,
+		Template:              tmpl,
+		TemplateCtx:           tmplCtx,
+		Upgrade:               false,
+		SkipEncrypt:           o.SkipEncrypt,
+		SkipSecretsValidation: o.SkipSecretsValidation,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = plan.Invoke(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
