@@ -65,9 +65,9 @@ fi
 # Build Docker image in the local Docker, so it is cached, if Minikube is destroyed
 SERVICE_IMAGE="$STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG"
 echo
-echo "Building Service image ..."
+echo "Building Service image with race detector ..."
 echo "--------------------------"
-docker build -t "$SERVICE_IMAGE" -f "./docker/service/Dockerfile" "../../"
+docker build -t "$SERVICE_IMAGE" -f "./docker/service/race/Dockerfile" "../../"
 echo
 
 # Load the images to the Minikube

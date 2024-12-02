@@ -15,7 +15,7 @@ COPY . .
 RUN make build-apps-proxy
 
 # Production container
-FROM alpine:3.19
+FROM alpine:3.20
 RUN apk add -U --no-cache ca-certificates git
 
 COPY --from=buildContainer /app/target/apps-proxy/proxy /app/server

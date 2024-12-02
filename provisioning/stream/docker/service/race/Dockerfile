@@ -13,7 +13,7 @@ COPY go.sum go.sum
 RUN go mod download
 
 COPY . .
-RUN make build-stream-service
+RUN make build-stream-service-race
 
 # Production container
 FROM alpine:3.20
