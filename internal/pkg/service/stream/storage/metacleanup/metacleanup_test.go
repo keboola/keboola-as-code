@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	keboolaSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
+	keboolaModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -56,7 +57,7 @@ func TestMetadataCleanup(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	jobKey := key.JobKey{SinkKey: sinkKey, JobID: "321"}
+	jobKey := keboolaModel.JobKey{SinkKey: sinkKey, JobID: "321"}
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/slice/all/|storage/stats/|runtime/|storage/keboola/secret/token/`)
 
 	// Get services
@@ -270,7 +271,7 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	jobKey := key.JobKey{SinkKey: sinkKey, JobID: "321"}
+	jobKey := keboolaModel.JobKey{SinkKey: sinkKey, JobID: "321"}
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/secret/|storage/volume/|storage/file/all/|storage/file/level/local/|storage/slice/all/|storage/slice/level/local/|storage/stats/|runtime/|storage/keboola/secret/token/`)
 
 	// Get services

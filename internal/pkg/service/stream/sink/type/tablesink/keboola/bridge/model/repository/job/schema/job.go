@@ -21,7 +21,7 @@ func New(s *serde.Serde) Job {
 	return Job{PrefixT: etcdop.NewTypedPrefix[model.Job]("storage/keboola/job", s)}
 }
 
-func (j Job) ForSink(k key.JobKey) etcdop.KeyT[model.Job] {
+func (j Job) ForSink(k model.JobKey) etcdop.KeyT[model.Job] {
 	return j.PrefixT.Key(k.String())
 }
 
@@ -56,6 +56,6 @@ func (j Job) InSink(k key.SinkKey) etcdop.PrefixT[model.Job] {
 	return j.PrefixT.Add(k.String())
 }
 
-func (j Job) ByKey(k key.JobKey) etcdop.KeyT[model.Job] {
+func (j Job) ByKey(k model.JobKey) etcdop.KeyT[model.Job] {
 	return j.PrefixT.Key(k.String())
 }

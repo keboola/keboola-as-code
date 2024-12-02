@@ -35,8 +35,8 @@ func TestJobRepository_List(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	jobKey1 := key.JobKey{SinkKey: sinkKey, JobID: "321"}
-	jobKey2 := key.JobKey{SinkKey: sinkKey, JobID: "322"}
+	jobKey1 := model.JobKey{SinkKey: sinkKey, JobID: "321"}
+	jobKey2 := model.JobKey{SinkKey: sinkKey, JobID: "322"}
 
 	// List - empty
 	// -----------------------------------------------------------------------------------------------------------------
@@ -109,8 +109,8 @@ func TestJobRepository_ListDeleted(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey1 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-1"}
 	sinkKey2 := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink-2"}
-	jobKey1 := key.JobKey{SinkKey: sinkKey1, JobID: "321"}
-	jobKey2 := key.JobKey{SinkKey: sinkKey2, JobID: "322"}
+	jobKey1 := model.JobKey{SinkKey: sinkKey1, JobID: "321"}
+	jobKey2 := model.JobKey{SinkKey: sinkKey2, JobID: "322"}
 
 	// Create two sinks
 	// -----------------------------------------------------------------------------------------------------------------

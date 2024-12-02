@@ -36,7 +36,7 @@ func TestJobRepository_Exists(t *testing.T) {
 	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
-	jobKey := key.JobKey{SinkKey: sinkKey, JobID: "321"}
+	jobKey := model.JobKey{SinkKey: sinkKey, JobID: "321"}
 
 	// Exists and MustNotExists - the job does not exists, MustNotExists returns error
 	// -----------------------------------------------------------------------------------------------------------------

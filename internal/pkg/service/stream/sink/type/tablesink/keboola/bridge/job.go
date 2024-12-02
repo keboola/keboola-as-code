@@ -19,7 +19,7 @@ import (
 
 func (b *Bridge) createJob(ctx context.Context, file plugin.File, storageJob *keboola.StorageJob) error {
 	keboolaJob := model.Job{
-		JobKey: key.JobKey{SinkKey: file.SinkKey, JobID: key.JobID(storageJob.ID.String())},
+		JobKey: model.JobKey{SinkKey: file.SinkKey, JobID: model.JobID(storageJob.ID.String())},
 	}
 	// Add context attributes
 	ctx = ctxattr.ContextWith(ctx, attribute.String("job.id", keboolaJob.String()))
@@ -47,7 +47,7 @@ func (b *Bridge) createJob(ctx context.Context, file plugin.File, storageJob *ke
 func (b *Bridge) canAcceptNewFile(ctx context.Context, sinkKey key.SinkKey) bool {
 	// Count running jobs only for given sink accessed by file.SinkKey
 	var runningJobs int
-	b.jobs.ForEach(func(jobKey key.JobKey, _ *jobData) (stop bool) {
+	b.jobs.ForEach(func(jobKey model.JobKey, _ *jobData) (stop bool) {
 		if jobKey.SinkKey == sinkKey {
 			runningJobs++
 		}
