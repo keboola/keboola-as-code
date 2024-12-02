@@ -44,6 +44,7 @@ type ctxKey string
 const (
 	PublicRequestScopeCtxKey  = ctxKey("PublicRequestScope")
 	ProjectRequestScopeCtxKey = ctxKey("ProjectRequestScope")
+	APIRequestScopeCtxKey     = ctxKey("APIRequestScope")
 )
 
 // APIScope interface provides dependencies for Templates API server.
