@@ -4,7 +4,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type multipleErrors struct {
+type multipleErrors struct { // nolint:errname
 	error
 	httpCode int
 }

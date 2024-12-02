@@ -18,7 +18,7 @@ func TestVmContext_Nil(t *testing.T) {
 	t.Parallel()
 	output, err := Evaluate(`{foo: "bar"}`, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", output)
+	assert.JSONEq(t, `{"foo":"bar"}`, output)
 }
 
 func TestVmContext_Empty(t *testing.T) {
@@ -26,7 +26,7 @@ func TestVmContext_Empty(t *testing.T) {
 	ctx := NewContext()
 	output, err := Evaluate(`{foo: "bar"}`, ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", output)
+	assert.JSONEq(t, `{"foo":"bar"}`, output)
 }
 
 func TestVmContext_Pretty_False(t *testing.T) {
@@ -34,7 +34,7 @@ func TestVmContext_Pretty_False(t *testing.T) {
 	ctx := NewContext().WithPretty(false)
 	output, err := Evaluate(`{foo: "bar"}`, ctx)
 	require.NoError(t, err)
-	assert.Equal(t, `{"foo":"bar"}`, output)
+	assert.JSONEq(t, `{"foo":"bar"}`, output)
 }
 
 func TestVmContext_Complex(t *testing.T) {

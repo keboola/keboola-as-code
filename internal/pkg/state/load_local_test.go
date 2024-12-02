@@ -28,7 +28,7 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 	m, fs := loadManifest(t, "minimal")
 	_, state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
-	assert.Empty(t, localErr)
+	require.NoError(t, localErr)
 	assert.Len(t, state.Branches(), 1)
 	assert.Len(t, state.Configs(), 1)
 	assert.Empty(t, state.UntrackedPaths())
@@ -52,7 +52,7 @@ func TestLoadLocalStateComplex(t *testing.T) {
 	m, fs := loadManifest(t, "complex")
 	_, state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
-	assert.Empty(t, localErr)
+	require.NoError(t, localErr)
 	assert.Equal(t, complexLocalExpectedBranches(), reflecthelper.SortByName(state.Branches()))
 	assert.Equal(t, complexLocalExpectedConfigs(), reflecthelper.SortByName(state.Configs()))
 	assert.Equal(t, complexLocalExpectedConfigRows(), reflecthelper.SortByName(state.ConfigRows()))
@@ -109,7 +109,7 @@ func TestLoadLocalStateAllowedBranches(t *testing.T) {
 	m.SetAllowedBranches(model.AllowedBranches{"main"})
 	_, state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
-	assert.Empty(t, localErr)
+	require.NoError(t, localErr)
 }
 
 func TestLoadLocalStateAllowedBranchesWarning(t *testing.T) {

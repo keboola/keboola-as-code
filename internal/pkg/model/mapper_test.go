@@ -105,7 +105,7 @@ func TestFilesLoader(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `foo1.json`, rawFile1.Path())
 	assert.Equal(t, `my description`, rawFile1.Description())
-	assert.Equal(t, jsonContent, rawFile1.Content)
+	assert.JSONEq(t, jsonContent, rawFile1.Content)
 
 	// ReadJSONFile
 	jsonFile1, err := files.
@@ -146,7 +146,7 @@ func TestFilesLoader(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `foo4.json`, rawFile2.Path())
 	assert.Equal(t, `my description`, rawFile2.Description())
-	assert.Equal(t, jsonContent, target2.Content)
+	assert.JSONEq(t, jsonContent, target2.Content)
 
 	// ReadJSONMapTo
 	target3 := &myStruct{}

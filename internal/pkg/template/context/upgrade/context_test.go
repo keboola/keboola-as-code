@@ -138,7 +138,7 @@ func TestContext(t *testing.T) {
 `
 	jsonOutput, err := jsonnet.Evaluate(code, tmplContext.JsonnetContext())
 	require.NoError(t, err)
-	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), jsonOutput)
+	assert.JSONEq(t, strings.TrimLeft(expectedJSON, "\n"), jsonOutput)
 
 	// Check tickets replacement
 	data := orderedmap.New()
@@ -165,5 +165,5 @@ func TestContext(t *testing.T) {
   }
 }
 `
-	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), modifiedJSON)
+	assert.JSONEq(t, strings.TrimLeft(expectedJSON, "\n"), modifiedJSON)
 }

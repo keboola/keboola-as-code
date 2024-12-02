@@ -42,8 +42,8 @@ if ! command -v golangci-lint &> /dev/null
 then
   # Disabled due to issues with windows curl command not working
   # Related to https://github.com/keboola/keboola-as-code/pull/1818/commits/df23a4e2855557a01460593f7d6ba59b5dc8825c
-  # curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$GOBIN" v1.61.0
-  go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
+  # curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$GOBIN" v1.62.2
+  go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
 fi
 
 # gci

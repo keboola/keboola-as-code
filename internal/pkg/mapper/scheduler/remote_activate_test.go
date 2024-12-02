@@ -83,5 +83,5 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 	reqBody, err := io.ReadAll(httpRequest.Body)
 	require.NoError(t, err)
 	require.NoError(t, err)
-	assert.Equal(t, `{"configurationId":"456"}`, string(reqBody))
+	assert.JSONEq(t, `{"configurationId":"456"}`, string(reqBody))
 }

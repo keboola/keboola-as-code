@@ -44,7 +44,7 @@ func TestGenerateDocument(t *testing.T) {
   }
 }
 `
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(documentJSON))
+	assert.JSONEq(t, strings.TrimSpace(expected), strings.TrimSpace(documentJSON))
 }
 
 func TestGenerateDocumentEmptySchema(t *testing.T) {
@@ -52,7 +52,7 @@ func TestGenerateDocumentEmptySchema(t *testing.T) {
 	document, err := GenerateDocument([]byte(`{}`))
 	documentJSON := json.MustEncodeString(document, true)
 	require.NoError(t, err)
-	assert.Equal(t, "{}\n", documentJSON)
+	assert.JSONEq(t, `{}`, documentJSON)
 }
 
 func getSampleSchema() []byte {

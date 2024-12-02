@@ -76,7 +76,9 @@ func TestRenderer_Headers(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"Foo1":"bar1","Foo2":"bar2"}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"Foo1":"bar1","Foo2":"bar2"}`, value)
 }
 
 func TestRenderer_Path_Json_Scalar(t *testing.T) {
@@ -140,7 +142,9 @@ func TestRenderer_Path_Json_Object(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"key2":"val2"}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"key2":"val2"}`, value)
 }
 
 func TestRenderer_Path_Json_ArrayOfObjects(t *testing.T) {
@@ -156,7 +160,9 @@ func TestRenderer_Path_Json_ArrayOfObjects(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `[{"key2":"val2","key3":"val3"}]`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `[{"key2":"val2","key3":"val3"}]`, value)
 }
 
 func TestRenderer_Path_Json_ArrayIndex(t *testing.T) {
@@ -172,7 +178,9 @@ func TestRenderer_Path_Json_ArrayIndex(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `"val3"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"val3"`, value)
 }
 
 func TestRenderer_Path_Json_ArrayIndex_RawString(t *testing.T) {
@@ -203,7 +211,9 @@ func TestRenderer_Path_Json_Full(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"key1":[{"key2":"val2","key3":"val3"}]}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"key1":[{"key2":"val2","key3":"val3"}]}`, value)
 }
 
 func TestRenderer_Path_Json_UndefinedKey_Error(t *testing.T) {
@@ -252,7 +262,9 @@ func TestRenderer_Path_Json_UndefinedKey_DefaultValue(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `"123"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"123"`, value)
 }
 
 func TestRenderer_Path_Json_UndefinedIndex_DefaultValue(t *testing.T) {
@@ -269,7 +281,9 @@ func TestRenderer_Path_Json_UndefinedIndex_DefaultValue(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `"123"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"123"`, value)
 }
 
 func TestRenderer_Path_Json_UndefinedKey_DefaultValue_RawString(t *testing.T) {
@@ -317,7 +331,9 @@ func TestRenderer_Path_FormData_Full(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"key1":"bar1","key2":["bar2","bar3"]}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"key1":"bar1","key2":["bar2","bar3"]}`, value)
 }
 
 func TestRenderer_Path_FormData_Scalar(t *testing.T) {
@@ -333,7 +349,9 @@ func TestRenderer_Path_FormData_Scalar(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `"bar1"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"bar1"`, value)
 }
 
 func TestRenderer_Path_FormData_RawString(t *testing.T) {
@@ -350,7 +368,9 @@ func TestRenderer_Path_FormData_RawString(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `42`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `42`, value)
 }
 
 func TestRenderer_Path_FormData_Object(t *testing.T) {
@@ -366,7 +386,9 @@ func TestRenderer_Path_FormData_Object(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"x":"bar2","y":"bar3"}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"x":"bar2","y":"bar3"}`, value)
 }
 
 func TestRenderer_Path_FormData_ArrayOfObjects(t *testing.T) {
@@ -382,7 +404,9 @@ func TestRenderer_Path_FormData_ArrayOfObjects(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `[{"x":"bar2"},{"x":"bar3"}]`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `[{"x":"bar2"},{"x":"bar3"}]`, value)
 }
 
 func TestRenderer_Path_FormData_ArrayIndex(t *testing.T) {
@@ -398,7 +422,9 @@ func TestRenderer_Path_FormData_ArrayIndex(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"x":"bar3"}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"x":"bar3"}`, value)
 }
 
 func TestRenderer_Path_FormData_UndefinedKey_Error(t *testing.T) {
@@ -447,7 +473,9 @@ func TestRenderer_Path_FormData_UndefinedKey_DefaultValue(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `"123"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"123"`, value)
 }
 
 func TestRenderer_Path_FormData_UndefinedKey_DefaultValue_RawString(t *testing.T) {
@@ -465,7 +493,9 @@ func TestRenderer_Path_FormData_UndefinedKey_DefaultValue_RawString(t *testing.T
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `123`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `123`, value)
 }
 
 func TestRenderer_Template_Json_Scalar(t *testing.T) {
@@ -482,7 +512,9 @@ func TestRenderer_Template_Json_Scalar(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `"val2"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"val2"`, value)
 }
 
 func TestRenderer_Template_Json_Object(t *testing.T) {
@@ -499,7 +531,9 @@ func TestRenderer_Template_Json_Object(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"key2":"val2"}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"key2":"val2"}`, value)
 }
 
 func TestRenderer_Template_Json_ArrayOfObjects(t *testing.T) {
@@ -516,7 +550,9 @@ func TestRenderer_Template_Json_ArrayOfObjects(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `[{"key2":"val2","key3":"val3"}]`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `[{"key2":"val2","key3":"val3"}]`, value)
 }
 
 func TestRenderer_Template_Json_ArrayIndex(t *testing.T) {
@@ -533,7 +569,9 @@ func TestRenderer_Template_Json_ArrayIndex(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `"val3"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"val3"`, value)
 }
 
 func TestRenderer_Template_Json_ArrayIndex_RawString(t *testing.T) {
@@ -553,7 +591,9 @@ func TestRenderer_Template_Json_ArrayIndex_RawString(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, "val3", val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, "val3", value)
 }
 
 func TestRenderer_Template_Json_Full(t *testing.T) {
@@ -570,7 +610,9 @@ func TestRenderer_Template_Json_Full(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"key1":[{"key2":"val2","key3":"val3"}]}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"key1":[{"key2":"val2","key3":"val3"}]}`, value)
 }
 
 func TestRenderer_Template_Json_UndefinedKey_Error(t *testing.T) {
@@ -604,7 +646,9 @@ func TestRenderer_Template_Json_UndefinedKey_DefaultValue(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, "123", val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, "123", value)
 }
 
 func TestRenderer_Template_Json_Invalid(t *testing.T) {
@@ -637,7 +681,9 @@ func TestRenderer_Template_FormData_Full(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"key1":"bar1","key2":["bar2","bar3"]}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"key1":"bar1","key2":["bar2","bar3"]}`, value)
 }
 
 func TestRenderer_Template_Headers(t *testing.T) {
@@ -653,7 +699,9 @@ func TestRenderer_Template_Headers(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	require.NoError(t, err)
-	assert.Equal(t, `"gzip"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"gzip"`, value)
 }
 
 func TestRenderer_Template_Headers_Case(t *testing.T) {
@@ -669,7 +717,9 @@ func TestRenderer_Template_Headers_Case(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	require.NoError(t, err)
-	assert.Equal(t, `"gzip"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"gzip"`, value)
 }
 
 func TestRenderer_Template_Headers_All(t *testing.T) {
@@ -685,7 +735,9 @@ func TestRenderer_Template_Headers_All(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	require.NoError(t, err)
-	assert.Equal(t, `{"Content-Encoding":"gzip","Content-Type":"application/json"}`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.JSONEq(t, `{"Content-Encoding":"gzip","Content-Type":"application/json"}`, value)
 }
 
 func TestRenderer_Template_Headers_UndefinedKey_Error(t *testing.T) {
@@ -716,7 +768,9 @@ func TestRenderer_Template_Headers_UndefinedKey_DefaultValue(t *testing.T) {
 
 	val, err := renderer.CSVValue(c, recordctx.FromHTTP(time.Now(), &http.Request{Header: header}))
 	require.NoError(t, err)
-	assert.Equal(t, `"abc"`, val)
+	value, ok := val.(string)
+	require.True(t, ok)
+	assert.Equal(t, `"abc"`, value)
 }
 
 func TestRenderer_Template_InvalidLanguage(t *testing.T) {

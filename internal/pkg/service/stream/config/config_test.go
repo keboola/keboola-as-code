@@ -333,7 +333,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	assert.Equal(t, strings.TrimSpace(`
+	assert.JSONEq(t, strings.TrimSpace(`
 [
   {
     "key": "storage.level.local.encoding.compression.gzip.blockSize",

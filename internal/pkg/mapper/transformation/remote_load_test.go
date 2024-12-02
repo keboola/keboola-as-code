@@ -158,6 +158,6 @@ func TestLoadRemoteTransformation(t *testing.T) {
 	}
 
 	// In internal object are blocks in Blocks field, not in Content
-	assert.Equal(t, `{"parameters":{}}`, json.MustEncodeString(object.Content, false))
+	assert.JSONEq(t, `{"parameters":{}}`, json.MustEncodeString(object.Content, false))
 	assert.Equal(t, expected, object.Transformation.Blocks)
 }

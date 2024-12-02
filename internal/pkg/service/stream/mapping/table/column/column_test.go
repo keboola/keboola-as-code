@@ -32,7 +32,7 @@ func TestMappedColumns_Serde(t *testing.T) {
 
 	bytes, err := json.Marshal(&typed)
 	require.NoError(t, err)
-	assert.Equal(t, expectedJSON, string(bytes))
+	assert.JSONEq(t, expectedJSON, string(bytes))
 
 	var output column.Columns
 	err = json.Unmarshal(bytes, &output)

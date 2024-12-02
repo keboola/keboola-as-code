@@ -33,7 +33,7 @@ func TestRawFile_ToJsonnetFile(t *testing.T) {
 	f, err := NewRawFile(`path`, `{foo:"bar"}`).ToJSONNetFile(nil)
 	require.NoError(t, err)
 	assert.Equal(t, `path`, f.Path())
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", jsonnet.MustEvaluateAst(f.Content, nil))
+	assert.JSONEq(t, `{"foo":"bar"}`, jsonnet.MustEvaluateAst(f.Content, nil))
 }
 
 func TestNewJsonFile(t *testing.T) {
@@ -54,7 +54,7 @@ func TestJsonFile_ToRawFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `path`, f.Path())
 	assert.Equal(t, `desc`, f.Description())
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", f.Content)
+	assert.JSONEq(t, `{"foo":"bar"}`, f.Content)
 }
 
 func TestJsonFile_ToJsonnetFile(t *testing.T) {
@@ -64,7 +64,7 @@ func TestJsonFile_ToJsonnetFile(t *testing.T) {
 	f, err := NewJSONFile(`path.json`, m).ToJsonnetFile()
 	require.NoError(t, err)
 	assert.Equal(t, `path.jsonnet`, f.Path())
-	assert.Equal(t, "{\n  foo: \"bar\",\n}\n", jsonnet.FormatAst(f.Content))
+	assert.Equal(t, "{\n  foo: \"bar\",\n}\n", jsonnet.FormatAst(f.Content)) //nolint: testifylint
 }
 
 func TestNewJsonnetFile(t *testing.T) {
@@ -94,7 +94,7 @@ func TestJsonnetFile_ToRawFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `path`, file.Path())
 	assert.Equal(t, `desc`, file.Description())
-	assert.Equal(t, "{ foo: \"bar\" }\n", file.Content)
+	assert.Equal(t, "{ foo: \"bar\" }\n", file.Content) //nolint: testifylint
 }
 
 func TestJsonnetFile_ToJsonFile(t *testing.T) {
@@ -146,7 +146,7 @@ func TestJsonnetFile_ToRawJsonFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `path`, rawJSONFile.Path())
 	assert.Equal(t, `desc`, rawJSONFile.Description())
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", rawJSONFile.Content)
+	assert.JSONEq(t, `{"foo":"bar"}`, rawJSONFile.Content)
 }
 
 func TestFiles(t *testing.T) {

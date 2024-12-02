@@ -601,7 +601,7 @@ func (*testCases) TestWriteFile_JsonFile(t *testing.T, fs filesystem.Fs, logger 
 	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(filePath))
 	require.NoError(t, err)
 	assert.NotNil(t, file)
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", file.Content)
+	assert.JSONEq(t, `{"foo":"bar"}`, file.Content)
 }
 
 func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {

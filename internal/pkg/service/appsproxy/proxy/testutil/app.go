@@ -44,7 +44,7 @@ func StartAppServer(t *testing.T) *AppServer {
 		c, err := websocket.Accept(w, r, nil)
 		require.NoError(t, err)
 
-		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second*15)
 		defer cancel()
 
 		ticker := time.NewTicker(5 * time.Second)
