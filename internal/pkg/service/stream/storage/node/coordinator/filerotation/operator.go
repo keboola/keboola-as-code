@@ -497,7 +497,7 @@ func (o *operator) waitForFileClosing(ctx context.Context, file *fileData) (stat
 
 	// Make sure the statistics cache is up-to-date
 	if err := o.statisticsCache.WaitForRevision(ctx, file.ModRevision); err != nil {
-		return statistics.Aggregated{}, errors.PrefixError(err, "error when waiting for statistics cache revision")
+		return statistics.Aggregated{}, errors.PrefixErrorf(err, "error when waiting for statistics cache revision, actual: %v, expected: %v", o.statisticsCache.Revision(), file.ModRevision)
 	}
 
 	// Get file statistics
