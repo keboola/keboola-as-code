@@ -180,7 +180,7 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 
 				// Log/trace job details
 				attrs := job.Telemetry()
-				ctx = ctxattr.ContextWith(ctx, attrs...)
+				ctx := ctxattr.ContextWith(ctx, attrs...)
 
 				// Trace each job
 				ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
