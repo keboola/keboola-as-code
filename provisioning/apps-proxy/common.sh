@@ -33,7 +33,7 @@ if ! kubectl get secret apps-proxy-salt --namespace apps-proxy > /dev/null 2>&1;
 fi
 
 if ! kubectl get secret apps-proxy-csrf-token-salt --namespace apps-proxy > /dev/null 2>&1; then
-  APPS_PROXY_CSRF_TOKEN_SALT=$(head -c 32 /dev/urandom | openssl enc | xxd -p -c 32)
+  APPS_PROXY_CSRF_TOKEN_SALT=$(head -c 32 /dev/urandom | openssl enc | hexdump -v -e '/1 "%02x"' -n 32)
   export APPS_PROXY_CSRF_TOKEN_SALT
   envsubst < kubernetes/templates/proxy/csrf-salt.yaml > kubernetes/deploy/proxy/csrf-salt.yaml
   kubectl apply -f ./kubernetes/deploy/proxy/csrf-salt.yaml
