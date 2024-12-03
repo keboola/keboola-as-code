@@ -66,7 +66,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, confi
 		readers:      make(map[string]*readerRef),
 	}
 
-	v.ctx, v.cancel = context.WithCancel(context.Background())
+	v.ctx, v.cancel = context.WithCancel(context.WithoutCancel(ctx))
 
 	v.logger.With(attribute.String("volume.path", spec.Path)).Infof(ctx, `opening volume`)
 

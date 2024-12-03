@@ -182,7 +182,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		// Create connection
 		conn, err := net.Listen("tcp4", cfg.Listen)
 		if err != nil {
-			shutdown(context.Background(), err) // nolint: contextcheck // intentionally creating new context for the shutdown operation
+			shutdown(context.WithoutCancel(ctx), err)
 			return
 		}
 		// Serve requests
@@ -190,7 +190,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		serverErr := srv.Serve(conn) // blocks while the server is running
 		// Server finished
 		startDone()
-		shutdown(context.Background(), serverErr) // nolint: contextcheck // intentionally creating new context for the shutdown operation
+		shutdown(context.WithoutCancel(ctx), serverErr)
 	})
 
 	// Register graceful shutdown

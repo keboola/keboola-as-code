@@ -40,11 +40,11 @@ func NewConfig() Config {
 	}
 }
 
-func NewProvider(cfg Config, d dependencies) (*Provider, error) {
+func NewProvider(ctx context.Context, cfg Config, d dependencies) (*Provider, error) {
 	p := &Provider{}
 	p.logger = d.Logger().WithComponent("distribution.mutex.provider")
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(_ context.Context) {
 		p.logger.Info(ctx, "received shutdown request")

@@ -168,7 +168,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 			ctx := req.Context()
 
 			// Trace connection events
-			ctx = httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
+			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
 					u.notify(ctx)
 				},
@@ -179,7 +179,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 				},
 			})
 
-			return next.ServeHTTPOrError(w, req.WithContext(ctx))
+			return next.ServeHTTPOrError(w, req.WithContext(reqCtx))
 		})
 	}
 }
@@ -190,10 +190,8 @@ func (u *AppUpstream) notify(ctx context.Context) {
 	go func() {
 		defer u.manager.wg.Done()
 
-		notificationCtx, cancel := context.WithTimeout(context.Background(), notifyRequestTimeout)
+		notificationCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), notifyRequestTimeout)
 		defer cancel()
-
-		notificationCtx = ctxattr.ContextWith(notificationCtx, ctxattr.Attributes(ctx).ToSlice()...)
 
 		_, span := u.manager.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.notify")
 		notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
@@ -210,10 +208,8 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 	go func() {
 		defer u.manager.wg.Done()
 
-		wakeupCtx, cancel := context.WithTimeout(context.Background(), wakeupRequestTimeout)
+		wakeupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), wakeupRequestTimeout)
 		defer cancel()
-
-		wakeupCtx = ctxattr.ContextWith(wakeupCtx, ctxattr.Attributes(ctx).ToSlice()...)
 
 		_, span := u.manager.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.wakeup")
 		span.SetAttributes(attribute.String(attrWakeupReason, err.Error()))
