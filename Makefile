@@ -37,12 +37,15 @@ run-templates-api:
 build-stream-service:
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/stream/service)" ./cmd/stream
 
+build-stream-service-with-race:
+	CGO_ENABLED=1 go build -race -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/stream/service)" ./cmd/stream
+
 run-stream-service:
 	rm -rf /tmp/stream-volumes && \
     mkdir -p /tmp/stream-volumes/hdd/my-volume && \
 	air -c ./provisioning/stream/dev/.air.toml
 
-run-stream-service-once: build-stream-service
+run-stream-service-once: build-stream-service-with-race
 	./target/stream/service api http-source storage-writer storage-reader storage-coordinator
 
 build-apps-proxy:

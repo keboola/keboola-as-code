@@ -9,7 +9,7 @@ ENV GOLANGCI_LINT_CACHE=/tmp/cache/golangci-lint
 ENV PATH="$PATH:$GOBIN"
 
 # Install packages
-RUN apt-get update && apt-get install -y nano protobuf-compiler
+RUN apt-get update && apt-get install --no-install-recommends --yes nano protobuf-compiler graphviz build-essential
 ENV EDITOR=nano
 
 # Install tools
@@ -17,7 +17,6 @@ RUN mkdir -p /tmp/build
 COPY Makefile /tmp/build/Makefile
 COPY scripts  /tmp/build/scripts
 RUN cd /tmp/build && make tools && cd / && rm -rf /tmp/build && go clean -cache -modcache
-RUN apt update && apt install -y graphviz
 
 # Install envsubstr and helm
 RUN curl -L https://github.com/a8m/envsubst/releases/download/v1.2.0/envsubst-$(uname -s)-$(uname -m) -o /usr/local/bin/envsubst && \

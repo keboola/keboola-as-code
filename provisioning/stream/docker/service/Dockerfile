@@ -15,7 +15,7 @@ COPY . .
 RUN make build-stream-service
 
 # Production container
-FROM alpine:3.19
+FROM alpine:3.20
 RUN apk add -U --no-cache ca-certificates git
 
 COPY --from=buildContainer /app/target/stream/service /app/service
