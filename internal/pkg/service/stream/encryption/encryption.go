@@ -2,8 +2,6 @@ package encryption
 
 import (
 	"context"
-	"crypto/rand"
-	"math/big"
 
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 )
@@ -52,21 +50,4 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 	}
 
 	return encryptor, nil
-}
-
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-func RandomSecretKey() (string, error) {
-	result := make([]byte, 32)
-	charsetLength := big.NewInt(int64(len(charset)))
-
-	for i := range result {
-		randIndex, err := rand.Int(rand.Reader, charsetLength)
-		if err != nil {
-			return "", err
-		}
-		result[i] = charset[randIndex.Int64()]
-	}
-
-	return string(result), nil
 }
