@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
@@ -60,7 +60,8 @@ func TestStreamApiE2E(t *testing.T) {
 			require.NoError(t, os.WriteFile(filepath.Join(volumePath, volume.IDFile), []byte("my-volume"), 0o600))
 
 			// Use native encryption for tests
-			secretKey, err := encryption.RandomSecretKey()
+			secretKey := make([]byte, 32)
+			_, err = rand.Read(secretKey)
 			require.NoError(t, err)
 
 			addEnvs := env.FromMap(map[string]string{
@@ -76,7 +77,7 @@ func TestStreamApiE2E(t *testing.T) {
 				"STREAM_ETCD_ENDPOINT":                             etcdCfg.Endpoint,
 				"STREAM_ETCD_USERNAME":                             etcdCfg.Username,
 				"STREAM_ETCD_PASSWORD":                             etcdCfg.Password,
-				"STREAM_ENCRYPTION_NATIVE_SECRET_KEY":              secretKey,
+				"STREAM_ENCRYPTION_NATIVE_SECRET_KEY":              string(secretKey),
 			})
 
 			// Run the test

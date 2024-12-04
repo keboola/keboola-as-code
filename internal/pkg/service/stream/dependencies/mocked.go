@@ -1,19 +1,18 @@
 package dependencies
 
 import (
+	"crypto/rand"
 	"fmt"
 	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/benbjohnson/clock"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 )
@@ -64,9 +63,10 @@ func testConfig(tb testing.TB, d dependencies.Mocked) config.Config {
 	cfg.API.Task.CleanupEnabled = false
 
 	// Use native encryption for tests
-	key, err := encryption.RandomSecretKey()
-	assert.NoError(tb, err)
-	cfg.Encryption.Native.SecretKey = key
+	secretKey := make([]byte, 32)
+	_, err := rand.Read(secretKey)
+	require.NoError(tb, err)
+	cfg.Encryption.Native.SecretKey = string(secretKey)
 
 	// Validate configuration
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
