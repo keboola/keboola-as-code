@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	ProviderNone   = Provider("none")
 	ProviderNative = Provider("native")
 	ProviderGCP    = Provider("gcp")
 	ProviderAWS    = Provider("aws")
@@ -20,6 +21,8 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 	var err error
 
 	switch config.Provider {
+	case ProviderNone:
+		return nil, nil
 	case ProviderNative:
 		encryptor, err = cloudencrypt.NewNativeEncryptor([]byte(config.Native.SecretKey))
 		if err != nil {

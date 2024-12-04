@@ -77,6 +77,7 @@ func TestStreamApiE2E(t *testing.T) {
 				"STREAM_ETCD_ENDPOINT":                             etcdCfg.Endpoint,
 				"STREAM_ETCD_USERNAME":                             etcdCfg.Username,
 				"STREAM_ETCD_PASSWORD":                             etcdCfg.Password,
+				"STREAM_ENCRYPTION_PROVIDER":                       "native",
 				"STREAM_ENCRYPTION_NATIVE_SECRET_KEY":              string(secretKey),
 			})
 

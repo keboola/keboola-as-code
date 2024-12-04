@@ -77,18 +77,24 @@ type dependencies interface {
 }
 
 func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*Bridge, error) {
-	cache, err := ristretto.NewCache(
-		&ristretto.Config[[]byte, []byte]{
-			NumCounters: 1e6,
-			MaxCost:     1 << 20,
-			BufferItems: 64,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
+	var tokenEncryptor *cloudencrypt.GenericEncryptor[keboola.Token]
 
-	encryptor := cloudencrypt.NewCachedEncryptor(d.Encryptor(), time.Hour, cache)
+	encryptor := d.Encryptor()
+	if encryptor != nil {
+		cache, err := ristretto.NewCache(
+			&ristretto.Config[[]byte, []byte]{
+				NumCounters: 1e6,
+				MaxCost:     1 << 20,
+				BufferItems: 64,
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		encryptor = cloudencrypt.NewCachedEncryptor(encryptor, time.Hour, cache)
+		tokenEncryptor = cloudencrypt.NewGenericEncryptor[keboola.Token](encryptor)
+	}
 
 	b := &Bridge{
 		logger:                  d.Logger().WithComponent("keboola.bridge"),
@@ -101,7 +107,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*B
 		storageRepository:       d.StorageRepository(),
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 		locks:                   d.DistributedLockProvider(),
-		encryptor:               cloudencrypt.NewGenericEncryptor[keboola.Token](encryptor),
+		encryptor:               tokenEncryptor,
 		getBucketOnce:           &singleflight.Group{},
 		createBucketOnce:        &singleflight.Group{},
 	}
