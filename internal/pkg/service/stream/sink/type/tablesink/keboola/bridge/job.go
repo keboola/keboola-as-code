@@ -92,8 +92,7 @@ func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, delete
 			return err, false
 		}
 	} else {
-		// Backwards compatibility, should be dropped later
-		token = *existingToken.Token //nolint:staticcheck
+		token = *existingToken.Token
 	}
 
 	// Get job details from storage API

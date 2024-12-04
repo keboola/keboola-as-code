@@ -165,8 +165,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 			return err
 		}
 	} else {
-		// Backwards compatibility, should be dropped later
-		token = *existingToken.Token //nolint:staticcheck
+		token = *existingToken.Token
 	}
 
 	// Authorized API

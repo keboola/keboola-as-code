@@ -48,8 +48,7 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 			return err
 		}
 	} else {
-		// Backwards compatibility, should be dropped later
-		token = *existingToken.Token //nolint:staticcheck
+		token = *existingToken.Token
 	}
 
 	// Error when sending the event is not a fatal error

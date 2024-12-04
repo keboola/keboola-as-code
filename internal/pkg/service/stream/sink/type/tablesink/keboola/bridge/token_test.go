@@ -208,7 +208,7 @@ func TestBridge_MigrateTokens(t *testing.T) {
 	{
 		err := bridgeSchema.Token().ForSink(sinkKey1).GetOrErr(client).WithResultTo(&token1).Do(ctx).Err()
 		require.NoError(t, err)
-		assert.Nil(t, token1.Token) //nolint:staticcheck
+		assert.Nil(t, token1.Token)
 		assert.Equal(t, "1", token1.TokenID)
 		assert.NotNil(t, token1.EncryptedToken)
 
@@ -222,7 +222,7 @@ func TestBridge_MigrateTokens(t *testing.T) {
 	{
 		err := bridgeSchema.Token().ForSink(sinkKey2).GetOrErr(client).WithResultTo(&token2).Do(ctx).Err()
 		require.NoError(t, err)
-		assert.Nil(t, token2.Token) //nolint:staticcheck
+		assert.Nil(t, token2.Token)
 		assert.Equal(t, "2", token2.TokenID)
 		assert.NotNil(t, token2.EncryptedToken)
 
@@ -243,7 +243,7 @@ func TestBridge_MigrateTokens(t *testing.T) {
 		var token keboolasink.Token
 		err := bridgeSchema.Token().ForSink(sinkKey1).GetOrErr(client).WithResultTo(&token).Do(ctx).Err()
 		require.NoError(t, err)
-		assert.Nil(t, token.Token) //nolint:staticcheck
+		assert.Nil(t, token.Token)
 		assert.Equal(t, "1", token.TokenID)
 		assert.Equal(t, token.EncryptedToken, token1.EncryptedToken)
 	}
@@ -251,7 +251,7 @@ func TestBridge_MigrateTokens(t *testing.T) {
 		var token keboolasink.Token
 		err := bridgeSchema.Token().ForSink(sinkKey2).GetOrErr(client).WithResultTo(&token).Do(ctx).Err()
 		require.NoError(t, err)
-		assert.Nil(t, token.Token) //nolint:staticcheck
+		assert.Nil(t, token.Token)
 		assert.Equal(t, "2", token.TokenID)
 		assert.Equal(t, token.EncryptedToken, token2.EncryptedToken)
 	}
