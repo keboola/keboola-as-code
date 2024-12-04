@@ -28,7 +28,7 @@ type AzureConfig struct {
 
 func NewConfig() Config {
 	return Config{
-		Provider: ProviderNative,
+		Provider: ProviderNone,
 		Native:   &NativeConfig{},
 		GCP:      &GCPConfig{},
 		AWS:      &AWSConfig{},

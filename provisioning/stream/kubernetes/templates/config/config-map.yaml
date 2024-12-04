@@ -289,7 +289,7 @@ data:
       provider: "$STREAM_ENCRYPTION_PROVIDER"
       native:
         # Secret key for local encryption. Do not use in production.
-        secretKey: "$STREAM_ENCRYPTION_NATIVE_SECRET_KEY"
+        secretKey: ""
       gcp:
         # Key ID in Google Cloud Key Management Service. Validation rules: required
         kmsKeyId: ""

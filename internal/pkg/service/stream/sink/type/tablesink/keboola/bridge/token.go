@@ -143,18 +143,23 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		return api.DeleteTokenRequest(result.ID).SendOrErr(ctx)
 	})
 
-	// Encrypt token
-	ciphertext, err := b.encryptor.Encrypt(ctx, *result, metadata)
-	if err != nil {
-		return keboola.Token{}, err
-	}
-
 	// Update atomic operation
 	newToken = keboolasink.Token{
-		SinkKey:        sink.SinkKey,
-		TokenID:        result.ID,
-		EncryptedToken: ciphertext,
+		SinkKey: sink.SinkKey,
+		TokenID: result.ID,
 	}
+
+	if b.encryptor != nil {
+		// Encrypt token
+		ciphertext, err := b.encryptor.Encrypt(ctx, *result, metadata)
+		if err != nil {
+			return keboola.Token{}, err
+		}
+		newToken.EncryptedToken = ciphertext
+	} else {
+		newToken.Token = result //nolint:staticcheck
+	}
+
 	op.AtomicOpCtxFrom(ctx).AddFrom(op.Atomic(b.client, &newToken).
 		// Save token to database
 		Write(func(ctx context.Context) op.Op {
@@ -192,6 +197,10 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 }
 
 func (b *Bridge) MigrateTokens(ctx context.Context) error {
+	if b.encryptor == nil {
+		return nil
+	}
+
 	var tokens, updatedTokens []keboolasink.Token
 	return op.Atomic(b.client, &updatedTokens).
 		// Load tokens
