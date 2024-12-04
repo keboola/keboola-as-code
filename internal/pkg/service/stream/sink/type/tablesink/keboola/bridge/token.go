@@ -46,7 +46,7 @@ func (b *Bridge) deleteToken(api *keboola.AuthorizedAPI, sinkKey key.SinkKey) *o
 			if oldToken.EncryptedToken != nil {
 				tokenID = oldToken.TokenID
 			} else {
-				tokenID = oldToken.Token.ID //nolint:staticcheck
+				tokenID = oldToken.Token.ID
 			}
 			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", tokenID))
 			b.logger.Info(ctx, "deleting token")
@@ -99,7 +99,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 			}
 		} else {
 			// Backwards compatibility, should be dropped later
-			token = *existingToken.Token //nolint:staticcheck
+			token = *existingToken.Token
 		}
 
 		// Operation is not called from the API and there is a token in the database, so we are using the token.
@@ -157,7 +157,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		}
 		newToken.EncryptedToken = ciphertext
 	} else {
-		newToken.Token = result //nolint:staticcheck
+		newToken.Token = result
 	}
 
 	op.AtomicOpCtxFrom(ctx).AddFrom(op.Atomic(b.client, &newToken).
@@ -177,7 +177,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 			if existingToken.EncryptedToken != nil {
 				tokenID = existingToken.TokenID
 			} else {
-				tokenID = existingToken.Token.ID //nolint:staticcheck
+				tokenID = existingToken.Token.ID
 			}
 			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", tokenID))
 			b.logger.Info(ctx, "deleting old token")
@@ -218,7 +218,7 @@ func (b *Bridge) encryptRawTokens(ctx context.Context, tokens []keboolasink.Toke
 	var updated []keboolasink.Token
 	txn := op.TxnWithResult(b.client, &updated)
 	for _, token := range tokens {
-		if token.Token == nil { //nolint:staticcheck
+		if token.Token == nil {
 			continue
 		}
 
@@ -232,13 +232,13 @@ func (b *Bridge) encryptRawTokens(ctx context.Context, tokens []keboolasink.Toke
 func (b *Bridge) encryptToken(ctx context.Context, token keboolasink.Token) *op.TxnOp[keboolasink.Token] {
 	metadata := cloudencrypt.Metadata{}
 	metadata["sink"] = token.SinkKey.String()
-	ciphertext, err := b.encryptor.Encrypt(ctx, *token.Token, metadata) //nolint:staticcheck
+	ciphertext, err := b.encryptor.Encrypt(ctx, *token.Token, metadata)
 	if err != nil {
 		return op.ErrorTxn[keboolasink.Token](err)
 	}
-	token.TokenID = token.Token.ID //nolint:staticcheck
+	token.TokenID = token.Token.ID
 	token.EncryptedToken = ciphertext
-	token.Token = nil //nolint:staticcheck
+	token.Token = nil
 
 	return b.saveToken(ctx, token)
 }
