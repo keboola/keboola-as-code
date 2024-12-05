@@ -42,12 +42,7 @@ func (b *Bridge) deleteToken(api *keboola.AuthorizedAPI, sinkKey key.SinkKey) *o
 		}).
 		Write(func(ctx context.Context) op.Op {
 			// Delete old token
-			var tokenID string
-			if oldToken.EncryptedToken != nil {
-				tokenID = oldToken.TokenID
-			} else {
-				tokenID = oldToken.Token.ID
-			}
+			tokenID := oldToken.ID()
 			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", tokenID))
 			b.logger.Info(ctx, "deleting token")
 			err := api.DeleteTokenRequest(tokenID).SendOrErr(ctx)
@@ -172,12 +167,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 			}
 
 			// Delete old token
-			var tokenID string
-			if existingToken.EncryptedToken != nil {
-				tokenID = existingToken.TokenID
-			} else {
-				tokenID = existingToken.Token.ID
-			}
+			tokenID := existingToken.ID()
 			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", tokenID))
 			b.logger.Info(ctx, "deleting old token")
 			if err := api.DeleteTokenRequest(tokenID).SendOrErr(ctx); err != nil {
