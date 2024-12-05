@@ -53,6 +53,7 @@ type Bridge struct {
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 	locks                   *distlock.Provider
 	tokenEncryptor          *cloudencrypt.GenericEncryptor[keboola.Token]
+	credentialsEncryptor    *cloudencrypt.GenericEncryptor[keboola.FileUploadCredentials]
 	jobs                    *etcdop.MirrorMap[bridgeModel.Job, bridgeModel.JobKey, *jobData]
 
 	getBucketOnce    *singleflight.Group
@@ -78,6 +79,7 @@ type dependencies interface {
 
 func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*Bridge, error) {
 	var tokenEncryptor *cloudencrypt.GenericEncryptor[keboola.Token]
+	var credentialsEncryptor *cloudencrypt.GenericEncryptor[keboola.FileUploadCredentials]
 
 	encryptor := d.Encryptor()
 	if encryptor != nil {
@@ -94,6 +96,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*B
 
 		encryptor = cloudencrypt.NewCachedEncryptor(encryptor, time.Hour, cache)
 		tokenEncryptor = cloudencrypt.NewGenericEncryptor[keboola.Token](encryptor)
+		credentialsEncryptor = cloudencrypt.NewGenericEncryptor[keboola.FileUploadCredentials](encryptor)
 	}
 
 	b := &Bridge{
@@ -108,6 +111,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*B
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 		locks:                   d.DistributedLockProvider(),
 		tokenEncryptor:          tokenEncryptor,
+		credentialsEncryptor:    credentialsEncryptor,
 		getBucketOnce:           &singleflight.Group{},
 		createBucketOnce:        &singleflight.Group{},
 	}
