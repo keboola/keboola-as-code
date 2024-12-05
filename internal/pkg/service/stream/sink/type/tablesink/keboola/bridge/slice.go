@@ -42,7 +42,7 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	// Decrypt token
 	var token keboola.Token
 	if existingToken.EncryptedToken != nil {
-		token, err = b.encryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
+		token, err = b.tokenEncryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
 		if err != nil {
 			return err
 		}
