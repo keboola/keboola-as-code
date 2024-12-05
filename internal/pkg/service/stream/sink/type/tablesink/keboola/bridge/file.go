@@ -11,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
@@ -64,7 +65,7 @@ func (b *Bridge) setupOnFileOpen() {
 			file.Mapping = sink.Table.Mapping
 			file.StagingStorage.Provider = stagingFileProvider // staging file is provided by the Keboola
 			file.TargetStorage.Provider = targetProvider       // destination is a Keboola table
-			file.StagingStorage.Expiration = utctime.From(keboolaFile.UploadCredentials.CredentialsExpiration())
+			file.StagingStorage.Expiration = keboolaFile.Expiration()
 		}
 
 		return nil
@@ -101,11 +102,24 @@ func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedA
 	// Save credentials to database
 	ctx = ctxattr.ContextWith(ctx, attribute.String("file.resourceID", stagingFile.FileID.String()))
 	keboolaFile := keboolasink.File{
-		FileKey:           &file.FileKey,
-		SinkKey:           file.SinkKey,
-		TableID:           sink.Table.Keboola.TableID,
-		Columns:           sink.Table.Mapping.Columns.Names(),
-		UploadCredentials: *stagingFile,
+		FileKey:               &file.FileKey,
+		SinkKey:               file.SinkKey,
+		TableID:               sink.Table.Keboola.TableID,
+		Columns:               sink.Table.Mapping.Columns.Names(),
+		FileID:                &stagingFile.FileID,
+		FileName:              &stagingFile.Name,
+		CredentialsExpiration: ptr.Ptr(utctime.From(stagingFile.CredentialsExpiration())),
+	}
+	if b.credentialsEncryptor != nil {
+		// Encrypt credentials
+		metadata := cloudencrypt.Metadata{"file": file.FileKey.String()}
+		ciphertext, err := b.credentialsEncryptor.Encrypt(ctx, *stagingFile, metadata)
+		if err != nil {
+			return keboolasink.File{}, err
+		}
+		keboolaFile.EncryptedCredentials = ciphertext
+	} else {
+		keboolaFile.UploadCredentials = stagingFile
 	}
 	op.AtomicOpCtxFrom(ctx).Write(func(ctx context.Context) op.Op {
 		return b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile)
@@ -144,12 +158,12 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 
 	// Compose keys
 	tableKey := keboola.TableKey{BranchID: keboolaFile.SinkKey.BranchID, TableID: keboolaFile.TableID}
-	fileKey := keboola.FileKey{BranchID: keboolaFile.SinkKey.BranchID, FileID: keboolaFile.UploadCredentials.FileID}
+	fileKey := keboola.FileKey{BranchID: keboolaFile.SinkKey.BranchID, FileID: keboolaFile.ID()}
 
 	// Add context attributes
 	ctx = ctxattr.ContextWith(
 		ctx,
-		attribute.String("stagingFile.Name", keboolaFile.UploadCredentials.Name),
+		attribute.String("stagingFile.Name", keboolaFile.Name()),
 		attribute.String("stagingFile.ID", fileKey.FileID.String()),
 	)
 

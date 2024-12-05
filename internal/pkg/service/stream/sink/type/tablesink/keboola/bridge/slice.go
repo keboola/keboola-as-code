@@ -77,8 +77,20 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 		return err
 	}
 
+	// Decrypt file upload credentials
+	var credentials keboola.FileUploadCredentials
+	if keboolaFile.EncryptedCredentials != nil {
+		fileMetadata := cloudencrypt.Metadata{"file": slice.FileKey.String()}
+		credentials, err = b.credentialsEncryptor.Decrypt(ctx, keboolaFile.EncryptedCredentials, fileMetadata)
+		if err != nil {
+			return err
+		}
+	} else {
+		credentials = *keboolaFile.UploadCredentials
+	}
+
 	// Upload slice
-	uploader, err := keboola.NewUploadSliceWriter(ctx, &keboolaFile.UploadCredentials, slice.StagingStorage.Path)
+	uploader, err := keboola.NewUploadSliceWriter(ctx, &credentials, slice.StagingStorage.Path)
 	if err != nil {
 		return err
 	}
@@ -126,6 +138,6 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	manifestSlices = append(manifestSlices, slice.StagingStorage.Path)
 
 	// Update the manifest
-	_, err = keboola.UploadSlicedFileManifest(ctx, &keboolaFile.UploadCredentials, manifestSlices)
+	_, err = keboola.UploadSlicedFileManifest(ctx, &credentials, manifestSlices)
 	return err
 }
