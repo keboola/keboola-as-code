@@ -1,7 +1,7 @@
 package encryption
 
 type Config struct {
-	Provider Provider      `json:"provider" configKey:"provider" validate:"required,oneof=native gcp aws azure" configUsage:"Encryption provider."`
+	Provider Provider      `json:"provider" configKey:"provider" validate:"required,oneof=none native gcp aws azure" configUsage:"Encryption provider."`
 	Native   *NativeConfig `json:"native" configKey:"native" validate:"required_if=Provider native"`
 	GCP      *GCPConfig    `json:"gcp" configKey:"gcp" validate:"required_if=Provider gcp"`
 	AWS      *AWSConfig    `json:"aws" configKey:"aws" validate:"required_if=Provider aws"`

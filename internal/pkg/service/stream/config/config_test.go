@@ -301,7 +301,7 @@ storage:
                     # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
                     expiration: 30m0s
 encryption:
-    # Encryption provider. Validation rules: required,oneof=native gcp aws azure
+    # Encryption provider. Validation rules: required,oneof=none native gcp aws azure
     provider: native
     native:
         # Secret key for local encryption. Do not use in production.

@@ -25,7 +25,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "invalid provider",
-			ExpectedError: `"provider" must be one of [native gcp aws azure]`,
+			ExpectedError: `"provider" must be one of [none native gcp aws azure]`,
 			Config: Config{
 				Provider: "foo",
 			},
