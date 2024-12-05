@@ -87,7 +87,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		// Decrypt token
 		var token keboola.Token
 		if existingToken.EncryptedToken != nil {
-			token, err = b.encryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
+			token, err = b.tokenEncryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
 			if err != nil {
 				return keboola.Token{}, err
 			}
@@ -143,9 +143,9 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		TokenID: result.ID,
 	}
 
-	if b.encryptor != nil {
+	if b.tokenEncryptor != nil {
 		// Encrypt token
-		ciphertext, err := b.encryptor.Encrypt(ctx, *result, metadata)
+		ciphertext, err := b.tokenEncryptor.Encrypt(ctx, *result, metadata)
 		if err != nil {
 			return keboola.Token{}, err
 		}
@@ -186,7 +186,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 }
 
 func (b *Bridge) MigrateTokens(ctx context.Context) error {
-	if b.encryptor == nil {
+	if b.tokenEncryptor == nil {
 		return nil
 	}
 
@@ -220,7 +220,7 @@ func (b *Bridge) encryptRawTokens(ctx context.Context, tokens []keboolasink.Toke
 
 func (b *Bridge) encryptToken(ctx context.Context, token keboolasink.Token) *op.TxnOp[keboolasink.Token] {
 	metadata := cloudencrypt.Metadata{"sink": token.SinkKey.String()}
-	ciphertext, err := b.encryptor.Encrypt(ctx, *token.Token, metadata)
+	ciphertext, err := b.tokenEncryptor.Encrypt(ctx, *token.Token, metadata)
 	if err != nil {
 		return op.ErrorTxn[keboolasink.Token](err)
 	}

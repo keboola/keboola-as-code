@@ -86,7 +86,7 @@ func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, delete
 	// Decrypt token
 	var token keboola.Token
 	if existingToken.EncryptedToken != nil {
-		token, err = b.encryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
+		token, err = b.tokenEncryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
 		if err != nil {
 			return err, false
 		}

@@ -159,7 +159,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	// Decrypt token
 	var token keboola.Token
 	if existingToken.EncryptedToken != nil {
-		token, err = b.encryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
+		token, err = b.tokenEncryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
 		if err != nil {
 			return err
 		}
