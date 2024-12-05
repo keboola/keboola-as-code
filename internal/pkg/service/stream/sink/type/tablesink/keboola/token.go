@@ -14,3 +14,10 @@ type Token struct {
 	TokenID        string         `json:"tokenId"`
 	EncryptedToken []byte         `json:"encryptedToken"`
 }
+
+func (token Token) ID() string {
+	if token.EncryptedToken != nil {
+		return token.TokenID
+	}
+	return token.Token.ID
+}
