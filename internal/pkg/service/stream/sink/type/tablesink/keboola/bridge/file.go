@@ -154,8 +154,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	)
 
 	// Prepare encryption metadata
-	metadata := cloudencrypt.Metadata{}
-	metadata["sink"] = file.SinkKey.String()
+	metadata := cloudencrypt.Metadata{"sink": file.SinkKey.String()}
 
 	// Decrypt token
 	var token keboola.Token

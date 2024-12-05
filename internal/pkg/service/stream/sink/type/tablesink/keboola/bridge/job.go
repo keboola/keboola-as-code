@@ -81,8 +81,7 @@ func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, delete
 	}
 
 	// Prepare encryption metadata
-	metadata := cloudencrypt.Metadata{}
-	metadata["sink"] = job.SinkKey.String()
+	metadata := cloudencrypt.Metadata{"sink": job.SinkKey.String()}
 
 	// Decrypt token
 	var token keboola.Token

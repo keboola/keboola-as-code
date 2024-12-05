@@ -37,8 +37,7 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	}
 
 	// Prepare encryption metadata
-	metadata := cloudencrypt.Metadata{}
-	metadata["sink"] = slice.SinkKey.String()
+	metadata := cloudencrypt.Metadata{"sink": slice.SinkKey.String()}
 
 	// Decrypt token
 	var token keboola.Token

@@ -78,8 +78,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 	}
 
 	// Prepare encryption metadata
-	metadata := cloudencrypt.Metadata{}
-	metadata["sink"] = sink.SinkKey.String()
+	metadata := cloudencrypt.Metadata{"sink": sink.SinkKey.String()}
 
 	// Use token from the database, if the operation is not called from the API,
 	// so no modification of the sink target bucket is expected and the token should work.
@@ -230,8 +229,7 @@ func (b *Bridge) encryptRawTokens(ctx context.Context, tokens []keboolasink.Toke
 }
 
 func (b *Bridge) encryptToken(ctx context.Context, token keboolasink.Token) *op.TxnOp[keboolasink.Token] {
-	metadata := cloudencrypt.Metadata{}
-	metadata["sink"] = token.SinkKey.String()
+	metadata := cloudencrypt.Metadata{"sink": token.SinkKey.String()}
 	ciphertext, err := b.encryptor.Encrypt(ctx, *token.Token, metadata)
 	if err != nil {
 		return op.ErrorTxn[keboolasink.Token](err)
