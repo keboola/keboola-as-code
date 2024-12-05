@@ -39,7 +39,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 	// Update configuration to make the cluster testable
 	configFn := func(cfg *config.Config) {
 		// Setup encryption
-		cfg.Encryption.Native.SecretKey = string(secretKey)
+		cfg.Encryption.Native.SecretKey = secretKey
 		// Enable metadata cleanup for removing storage jobs
 		cfg.Storage.MetadataCleanup.Enabled = true
 		// Disable unrelated workers

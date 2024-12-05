@@ -24,7 +24,7 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 	case ProviderNone:
 		return nil, nil
 	case ProviderNative:
-		encryptor, err = cloudencrypt.NewNativeEncryptor([]byte(config.Native.SecretKey))
+		encryptor, err = cloudencrypt.NewNativeEncryptor(config.Native.SecretKey)
 		if err != nil {
 			return nil, err
 		}

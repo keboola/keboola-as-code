@@ -9,7 +9,7 @@ type Config struct {
 }
 
 type NativeConfig struct {
-	SecretKey string `json:"secretKey" configKey:"secretKey" sensitive:"true" validate:"required,len=32" configUsage:"Secret key for local encryption. Do not use in production."`
+	SecretKey []byte `json:"secretKey" configKey:"secretKey" sensitive:"true" validate:"required,len=32" configUsage:"Secret key for local encryption. Do not use in production."`
 }
 
 type GCPConfig struct {
