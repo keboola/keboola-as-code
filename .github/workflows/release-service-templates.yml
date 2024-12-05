@@ -3,7 +3,8 @@ name: 'Release: Templates API'
 on:
   push:
     tags:
-      - 'templates-api-v**'
+      - 'production-templates-api-v**'
+      - 'dev-templates-api-v**'
 
 env:
   # DockerHub login
@@ -93,3 +94,10 @@ jobs:
           acrRegistry: ${{ env.ACR_REGISTRY }}
           acrUsername: ${{ env.ACR_USERNAME }}
           acrPassword: ${{ secrets.TEMPLATES_API_ACR_PASSWORD }}
+
+      - name: Trigger image tag update
+        uses: keboola/kbc-stacks/.github/actions/trigger-image-tag-update@main
+        with:
+          helm-chart: "templates-api"
+          image-tag: ${{ env.IMAGE_TAG }}
+          github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}
