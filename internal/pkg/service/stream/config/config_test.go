@@ -329,7 +329,7 @@ encryption:
 	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd.Endpoint = "test-etcd"
 	cfg.Etcd.Namespace = "test-namespace"
-	cfg.Encryption.Native.SecretKey = "12345678901234567890123456789012"
+	cfg.Encryption.Native.SecretKey = []byte("12345678901234567890123456789012")
 	cfg.Encryption.Normalize()
 	require.NoError(t, validator.New().Validate(context.Background(), cfg))
 }

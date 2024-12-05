@@ -52,11 +52,21 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "native: length",
-			ExpectedError: "\"native.secretKey\" must be 32 characters in length",
+			ExpectedError: "\"native.secretKey\" must contain 32 items",
 			Config: Config{
 				Provider: ProviderNative,
 				Native: &NativeConfig{
-					SecretKey: "0",
+					SecretKey: []byte("0"),
+				},
+			},
+		},
+		{
+			Name:          "native: multibyte characters",
+			ExpectedError: "\"native.secretKey\" must contain 32 items",
+			Config: Config{
+				Provider: ProviderNative,
+				Native: &NativeConfig{
+					SecretKey: []byte("ěščřžýáíéúůďťňó|ěščřžýáíéúůďťňó|"),
 				},
 			},
 		},
@@ -65,7 +75,7 @@ func TestConfig_Validation(t *testing.T) {
 			Config: Config{
 				Provider: ProviderNative,
 				Native: &NativeConfig{
-					SecretKey: "12345678901234567890123456789012",
+					SecretKey: []byte("12345678901234567890123456789012"),
 				},
 			},
 		},
