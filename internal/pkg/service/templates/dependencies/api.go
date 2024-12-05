@@ -27,7 +27,6 @@ const (
 // apiScope implements APIScope interface.
 type apiScope struct {
 	dependencies.BaseScope
-	dependencies.ProjectScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.DistributionScope
@@ -42,7 +41,6 @@ type apiScope struct {
 
 type parentScopes struct {
 	dependencies.BaseScope
-	dependencies.ProjectScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
 	dependencies.DistributionScope
@@ -131,8 +129,6 @@ func newAPIScope(ctx context.Context, p *parentScopes, cfg config.Config) (v *ap
 	d := &apiScope{}
 
 	d.BaseScope = p.BaseScope
-
-	d.ProjectScope = p.ProjectScope
 
 	d.PublicScope = p.PublicScope
 

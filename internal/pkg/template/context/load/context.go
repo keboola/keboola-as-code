@@ -43,6 +43,6 @@ func (c *Context) JsonnetContext() *jsonnet.Context {
 
 func (c *Context) registerJsonnetFunctions() {
 	c.jsonnetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
-	//c.jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
 	c.jsonnetCtx.NativeFunctionWithAlias(function.HasProjectBackend(c.projectBackends))
 }

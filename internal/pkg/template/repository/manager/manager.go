@@ -17,7 +17,6 @@ package manager
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -60,7 +59,6 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
 	Components() *model.ComponentsMap
-	ProjectBackends() []string
 }
 
 func New(ctx context.Context, d dependencies, defaultRepositories []model.TemplateRepository) (*Manager, error) {
@@ -74,7 +72,7 @@ func New(ctx context.Context, d dependencies, defaultRepositories []model.Templa
 		repositoriesInit:    &singleflight.Group{},
 		repositoriesLock:    &sync.RWMutex{},
 	}
-	fmt.Println("BB: ", d.ProjectBackends())
+
 	// Free all repositories on server shutdown
 	d.Process().OnShutdown(func(ctx context.Context) {
 		m.Free(ctx)
