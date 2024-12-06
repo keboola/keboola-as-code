@@ -78,6 +78,7 @@ const (
 type ServiceScope interface {
 	dependencies.BaseScope
 	dependencies.PublicScope
+	dependencies.EncryptionScope
 	dependencies.EtcdClientScope
 	dependencies.DistributedLockScope
 	Plugins() *plugin.Plugins
@@ -153,6 +154,10 @@ type StorageWriterScope interface {
 type StorageReaderScope interface {
 	StorageScope
 	Volumes() *diskreader.Volumes
+}
+
+type MigratorScope interface {
+	ServiceScope
 }
 
 type Mocked interface {
