@@ -26,6 +26,7 @@ func TestGenerateAndBind_Help_Minimal(t *testing.T) {
 Usage of "app":
       --address string             
       --address-nullable string    
+      --byte-slice string          
       --custom-int int             
       --custom-string string       
       --duration string            
@@ -70,6 +71,7 @@ func TestGenerateAndBind_Help_Full(t *testing.T) {
 Usage of "app":
       --address string             
       --address-nullable string    
+      --byte-slice string          
       --config-file strings        Path to the configuration file.
       --custom-int int             
       --custom-string string       

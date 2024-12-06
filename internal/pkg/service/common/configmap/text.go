@@ -2,6 +2,7 @@ package configmap
 
 import (
 	"encoding"
+	"encoding/base64"
 	"encoding/json"
 	"reflect"
 	"time"
@@ -35,6 +36,8 @@ func MarshalText(typ reflect.Type, value reflect.Value) (text []byte, err error)
 	switch v := value.Interface().(type) {
 	case *time.Duration:
 		fn = marshalDuration(v)
+	case *[]byte:
+		fn = marshalByteSlice(v)
 	case json.Marshaler:
 		fn = v.MarshalJSON
 	case encoding.TextMarshaler:
@@ -72,6 +75,8 @@ func UnmarshalText(text []byte, target reflect.Value) (err error) {
 	switch v := toPtr.Interface().(type) {
 	case *time.Duration:
 		fn = unmarshalDuration(v)
+	case *[]byte:
+		fn = unmarshalByteSlice(v)
 	case encoding.TextUnmarshaler:
 		fn = v.UnmarshalText
 	case encoding.BinaryUnmarshaler:
@@ -103,5 +108,25 @@ func unmarshalDuration(target *time.Duration) func([]byte) error {
 	return func(text []byte) (err error) {
 		*target, err = time.ParseDuration(string(text))
 		return err
+	}
+}
+
+func marshalByteSlice(from *[]byte) func() ([]byte, error) {
+	return func() ([]byte, error) {
+		dst := make([]byte, base64.StdEncoding.EncodedLen(len(*from)))
+		base64.StdEncoding.Encode(dst, *from)
+		return dst, nil
+	}
+}
+
+func unmarshalByteSlice(target *[]byte) func([]byte) error {
+	return func(text []byte) (err error) {
+		dst := make([]byte, base64.StdEncoding.DecodedLen(len(text)))
+		n, err := base64.StdEncoding.Decode(dst, text)
+		if err != nil {
+			return err
+		}
+		*target = dst[:n]
+		return nil
 	}
 }

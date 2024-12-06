@@ -60,6 +60,7 @@ type TestConfig struct {
 	URL              *url.URL         `configKey:"url" configShorthand:"u"`
 	Addr             netip.Addr       `configKey:"address"`         // TextUnmarshaler/BinaryUnmarshaler interface
 	AddrNullable     *netip.Addr      `configKey:"addressNullable"` // TextUnmarshaler/BinaryUnmarshaler interface
+	ByteSlice        []byte           `configKey:"byteSlice"`
 	Nested           Nested           `configKey:"nested"`
 	Skipped          bool             `configKey:"-"`
 }
@@ -89,6 +90,7 @@ type TestConfigWithValueStruct struct {
 	URL              Value[*url.URL]         `configKey:"url" configShorthand:"u"`
 	Addr             Value[netip.Addr]       `configKey:"address"`         // TextUnmarshaler/BinaryUnmarshaler interface
 	AddrNullable     Value[*netip.Addr]      `configKey:"addressNullable"` // TextUnmarshaler/BinaryUnmarshaler interface
+	ByteSlice        Value[[]byte]           `configKey:"byteSlice"`
 	Nested           NestedValue             `configKey:"nested"`
 	Skipped          bool                    `configKey:"-"`
 }
