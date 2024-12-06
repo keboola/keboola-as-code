@@ -94,6 +94,7 @@ func TestGenerateAndBind_DefaultValues(t *testing.T) {
 		URL:              &url.URL{Scheme: "http", Host: "localhost:1234"},
 		Addr:             addrValue,
 		AddrNullable:     &addrValue,
+		ByteSlice:        []byte("value3"),
 	}
 	target := expected
 
@@ -121,6 +122,7 @@ func TestGenerateAndBind_Flags(t *testing.T) {
 			"--url", "https://foo.bar",
 			"--address", "10.20.30.40",
 			"--address-nullable", "10.20.30.40",
+			"--byte-slice", "Ynl0ZXM=",
 			"pos1", "pos2", "pos3",
 		},
 		EnvNaming:              env.NewNamingConvention("MY_APP_"),
@@ -150,6 +152,7 @@ func TestGenerateAndBind_Flags(t *testing.T) {
 		URL:              &url.URL{Scheme: "http", Host: "localhost:1234"},
 		Addr:             defaultAddrValue,
 		AddrNullable:     &defaultAddrValue,
+		ByteSlice:        []byte("value3"),
 	}
 
 	// Default values are replaced from flags
@@ -172,6 +175,7 @@ func TestGenerateAndBind_Flags(t *testing.T) {
 		URL:              &url.URL{Scheme: "https", Host: "foo.bar"},
 		Addr:             expectedAddrValue,
 		AddrNullable:     &expectedAddrValue,
+		ByteSlice:        []byte("bytes"),
 	}, target)
 }
 
@@ -191,6 +195,7 @@ func TestGenerateAndBind_Env(t *testing.T) {
 	envs.Set("MY_APP_DURATION_NULLABLE", "100s")
 	envs.Set("MY_APP_ADDRESS", "10.20.30.40")
 	envs.Set("MY_APP_ADDRESS_NULLABLE", "10.20.30.40")
+	envs.Set("MY_APP_BYTE_SLICE", "Ynl0ZXM=")
 
 	cfg := GenerateAndBindConfig{
 		Args: []string{
@@ -222,6 +227,7 @@ func TestGenerateAndBind_Env(t *testing.T) {
 		URL:              &url.URL{Scheme: "http", Host: "localhost:1234"},
 		Addr:             defaultAddrValue,
 		AddrNullable:     &defaultAddrValue,
+		ByteSlice:        []byte("value3"),
 	}
 
 	// Default values are replaced from ENVs
@@ -245,6 +251,7 @@ func TestGenerateAndBind_Env(t *testing.T) {
 		URL:              &url.URL{Scheme: "http", Host: "localhost:1234"},
 		Addr:             expectedAddrValue,
 		AddrNullable:     &expectedAddrValue,
+		ByteSlice:        []byte("bytes"),
 	}, target)
 }
 
@@ -295,6 +302,7 @@ func TestGenerateAndBind_ConfigFile_YAML(t *testing.T) {
 		URL:              &url.URL{Scheme: "http", Host: "localhost:1234"},
 		Addr:             defaultAddrValue,
 		AddrNullable:     &defaultAddrValue,
+		ByteSlice:        []byte("value3"),
 	}
 
 	// Write YAML config files
@@ -304,6 +312,7 @@ nested:
   bar: 1000
 address: 11.22.33.44
 addressNullable: 11.22.33.44
+byteSlice: "Ynl0ZXM="
 `
 	require.NoError(t, os.WriteFile(configFilePath1, []byte(config1), 0o600))
 	config2 := `
@@ -333,6 +342,7 @@ int: 999
 		URL:              &url.URL{Scheme: "https", Host: "foo.bar"},
 		Addr:             expectedAddrValue,
 		AddrNullable:     &expectedAddrValue,
+		ByteSlice:        []byte("bytes"),
 	}, target)
 }
 
@@ -384,6 +394,7 @@ func TestGenerateAndBind_ConfigFile_JSON(t *testing.T) {
 		URL:              &url.URL{Scheme: "http", Host: "localhost:1234"},
 		Addr:             defaultAddrValue,
 		AddrNullable:     &defaultAddrValue,
+		ByteSlice:        []byte("value3"),
 	}
 
 	// Write YAML config files
@@ -394,7 +405,8 @@ func TestGenerateAndBind_ConfigFile_JSON(t *testing.T) {
     "bar": 1000
   },
   "address": "11.22.33.44",
-  "addressNullable": "11.22.33.44"
+  "addressNullable": "11.22.33.44",
+  "byteSlice": "dmFsdWUz"
 }
 `
 	require.NoError(t, os.WriteFile(configFilePath1, []byte(config1), 0o600))
@@ -427,6 +439,7 @@ func TestGenerateAndBind_ConfigFile_JSON(t *testing.T) {
 		URL:              &url.URL{Scheme: "https", Host: "foo.bar"},
 		Addr:             expectedAddrValue,
 		AddrNullable:     &expectedAddrValue,
+		ByteSlice:        []byte("value3"),
 	}, target)
 }
 
@@ -449,6 +462,7 @@ func TestGenerateAndBind_ValueType(t *testing.T) {
 			"--embedded", "flag takes precedence over ENV",
 			"--address", "11.22.33.44",
 			"--address-nullable", "11.22.33.44",
+			"--byte-slice", "Ynl0ZXM=",
 			"--config-file", configFilePath,
 		},
 		EnvNaming:              env.NewNamingConvention("MY_APP_"),
@@ -482,6 +496,7 @@ stringSlice: a,b,c
 		URL:              Value[*url.URL]{Value: &url.URL{Scheme: "http", Host: "localhost:1234"}},
 		Addr:             Value[netip.Addr]{Value: defaultAddrValue},
 		AddrNullable:     Value[*netip.Addr]{Value: &defaultAddrValue},
+		ByteSlice:        Value[[]byte]{Value: []byte("value3")},
 	}
 
 	// Default values are replaced from the flags and ENVs
@@ -510,6 +525,7 @@ stringSlice: a,b,c
 		URL:              Value[*url.URL]{Value: &url.URL{Scheme: "http", Host: "localhost:1234"}, SetBy: SetByDefault},
 		Addr:             Value[netip.Addr]{Value: expectedAddrValue, SetBy: SetByFlag},
 		AddrNullable:     Value[*netip.Addr]{Value: &expectedAddrValue, SetBy: SetByFlag},
+		ByteSlice:        Value[[]byte]{Value: []byte("bytes"), SetBy: SetByFlag},
 	}, target)
 }
 
@@ -558,6 +574,7 @@ durationNullable: 1m40s
 url: null
 address: ""
 addressNullable: null
+byteSlice: ""
 nested:
     foo: ""
     bar: 0

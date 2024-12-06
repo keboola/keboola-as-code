@@ -49,6 +49,7 @@ func TestFlagToFieldMap_AlmostEmpty(t *testing.T) {
 	expectedFlagToField := map[string]orderedmap.Path{
 		"address":           orderedmap.PathFromStr("address"),
 		"address-nullable":  orderedmap.PathFromStr("addressNullable"),
+		"byte-slice":        orderedmap.PathFromStr("byteSlice"),
 		"custom-int":        orderedmap.PathFromStr("customInt"),
 		"custom-string":     orderedmap.PathFromStr("customString"),
 		"duration":          orderedmap.PathFromStr("duration"),
@@ -88,6 +89,7 @@ func TestFlagToFieldMap_Default(t *testing.T) {
 		URL:              &url.URL{Scheme: "http", Host: "localhost:1234"},
 		Addr:             addrValue,
 		AddrNullable:     &addrValue,
+		ByteSlice:        []byte("value3"),
 		Nested: Nested{
 			Foo: "foo",
 			Bar: 789,
@@ -106,6 +108,7 @@ func TestFlagToFieldMap_Default(t *testing.T) {
 	expectedFlagToField := map[string]orderedmap.Path{
 		"address":           orderedmap.PathFromStr("address"),
 		"address-nullable":  orderedmap.PathFromStr("addressNullable"),
+		"byte-slice":        orderedmap.PathFromStr("byteSlice"),
 		"custom-int":        orderedmap.PathFromStr("customInt"),
 		"custom-string":     orderedmap.PathFromStr("customString"),
 		"duration":          orderedmap.PathFromStr("duration"),
