@@ -99,7 +99,6 @@ func TestGenerateAndBind_DefaultValues(t *testing.T) {
 
 	// TestConfig is unmodified, default values are kept
 	require.NoError(t, GenerateAndBind(cfg, &target))
-	assert.NotSame(t, expected, target)
 	assert.Equal(t, expected, target)
 }
 
