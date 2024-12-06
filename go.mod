@@ -89,7 +89,7 @@ require (
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.19.1
 	goa.design/plugins/v3 v3.19.1
-	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
+	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
 	golang.org/x/sync v0.10.0
 	google.golang.org/grpc v1.68.1
 	gopkg.in/DataDog/dd-trace-go.v1 v1.70.1
