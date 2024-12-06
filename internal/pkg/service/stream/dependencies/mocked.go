@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 )
@@ -66,6 +67,7 @@ func testConfig(tb testing.TB, d dependencies.Mocked) config.Config {
 	secretKey := make([]byte, 32)
 	_, err := rand.Read(secretKey)
 	require.NoError(tb, err)
+	cfg.Encryption.Provider = encryption.ProviderNative
 	cfg.Encryption.Native.SecretKey = secretKey
 
 	// Validate configuration

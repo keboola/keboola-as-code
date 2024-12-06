@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	local "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
@@ -302,7 +303,7 @@ storage:
                     expiration: 30m0s
 encryption:
     # Encryption provider. Validation rules: required,oneof=none native gcp aws azure
-    provider: native
+    provider: none
     native:
         # Secret key for local encryption. Do not use in production.
         secretKey: '*****'
@@ -329,6 +330,7 @@ encryption:
 	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd.Endpoint = "test-etcd"
 	cfg.Etcd.Namespace = "test-namespace"
+	cfg.Encryption.Provider = encryption.ProviderNative
 	cfg.Encryption.Native.SecretKey = []byte("12345678901234567890123456789012")
 	cfg.Encryption.Normalize()
 	require.NoError(t, validator.New().Validate(context.Background(), cfg))

@@ -3,6 +3,7 @@ package bridge_test
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"testing"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	keboolasink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/schema"
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/test"
@@ -48,6 +50,9 @@ func TestBridge_MigrateTokens(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 	ignoredKeys := etcdhelper.WithIgnoredKeyPattern("^definition/|storage/file/all/|storage/slice/all/|storage/volume/")
+	secretKey := make([]byte, 32)
+	_, err := rand.Read(secretKey)
+	require.NoError(t, err)
 
 	// Get services
 	d, mocked := dependencies.NewMockedAPIScopeWithConfig(t, ctx, func(cfg *config.Config) {
@@ -63,6 +68,10 @@ func TestBridge_MigrateTokens(t *testing.T) {
 			Interval:    duration.From(5 * time.Minute),
 			SlicesCount: 100,
 			Expiration:  duration.From(30 * time.Minute),
+		}
+		cfg.Encryption.Provider = encryption.ProviderNative
+		cfg.Encryption.Native = &encryption.NativeConfig{
+			SecretKey: secretKey,
 		}
 	}, deps.WithClock(clk))
 	client := mocked.TestEtcdClient()
