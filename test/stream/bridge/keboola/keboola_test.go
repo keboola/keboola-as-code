@@ -24,8 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
-// To see details run: TEST_VERBOSE=true go test ./test/stream/bridge/... -v
-
+// To see details run: TEST_VERBOSE=true go test ./test/stream/bridge/... -v.
 func TestKeboolaBridgeWorkflow(t *testing.T) {
 	t.Parallel()
 
