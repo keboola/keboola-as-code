@@ -53,11 +53,11 @@ jobs:
           android: true
           dotnet: true
           haskell: true
-          large-packages: false
-          docker-images: false
+          large-packages: true
+          docker-images: true
           swap-storage: false
 
-        # To free up disk space to not run out during the run
+      # To free up disk space to not run out during the run
       - name: Delete unused SDKs MacOS
         if: matrix.name == 'mac-os'
         run: |
@@ -75,6 +75,14 @@ jobs:
           without-cache: ${{ inputs.without-cache }}
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
+      - name: Check how much space is left after go setup
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          echo "AFTER GO SETUP:"
+          df -h /
+          df -a /
+
       - name: Set TEST_KBC_PROJECTS_FILE entries
         uses: ./.github/actions/export-kbc-projects
         with:
@@ -86,6 +94,14 @@ jobs:
           set -Eeuo pipefail
           docker compose run -d --rm --publish 2379:2379 etcd
           sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
+
+      - name: Check how much space is left after etcd setup
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          echo "AFTER ETCD SETUP:"
+          df -h /
+          df -a /
 
       - name: Run tests
         shell: bash
@@ -127,4 +143,12 @@ jobs:
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
           UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
+
+      - name: Check how much space is left after unit test
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          echo "AFTER UNIT TEST:"
+          df -h /
+          df -a /
 

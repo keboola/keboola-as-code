@@ -28,7 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 )
 
-// To see details run: TEST_VERBOSE=true go test ./test/stream/bridge/... -v
+// To see details run: TEST_VERBOSE=true go test ./test/stream/bridge/... -v.
 func TestKeboolaBridgeWorkflow(t *testing.T) {
 	t.Parallel()
 
@@ -542,7 +542,7 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
 {"level":"info","message":"imported file","component":"storage.node.operator.file.import"}
 		`)
 	}, 60*time.Second, 100*time.Millisecond)
-	//ts.checkKeboolaTable(t, ctx, 1, 129)
+	// ts.checkKeboolaTable(t, ctx, 1, 129)
 }
 
 func (ts *testState) testSlicesUpload(t *testing.T, ctx context.Context, expectations sliceUpload) {
