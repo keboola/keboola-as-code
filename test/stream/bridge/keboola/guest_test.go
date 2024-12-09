@@ -35,10 +35,9 @@ func TestGuestUserWorkflow(t *testing.T) {
 	}
 	ts := setup(
 		t,
-		ctx,
-		modifyConfig,
 		utilsproject.WithIsGuest(),
 	)
+	ts.startNodes(t, ctx, modifyConfig)
 	ts.setupSourceThroughAPI(t, ctx, http.StatusForbidden)
 	defer ts.teardown(t, ctx)
 	recreateStreamAPI(t, &ts, ctx, modifyConfig)
