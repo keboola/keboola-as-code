@@ -36,10 +36,11 @@ func TestBridge_SendSliceUploadEvent_OkEvent(t *testing.T) {
 
 	cfg := keboolasink.NewConfig()
 	// Send event
-	b := bridge.New(d, nil, cfg)
+	b, err := bridge.New(d, nil, cfg)
+	require.NoError(t, err)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
-	err := error(nil)
+	err = error(nil)
 	slice := test.NewSlice()
 	b.SendSliceUploadEvent(ctx, api, duration, &err, slice.SliceKey, testStats(slice.OpenedAt(), now))
 
@@ -69,10 +70,11 @@ func TestBridge_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 
 	cfg := keboolasink.NewConfig()
 	// Send event
-	b := bridge.New(d, nil, cfg)
+	b, err := bridge.New(d, nil, cfg)
+	require.NoError(t, err)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
-	err := errors.New("some error")
+	err = errors.New("some error")
 	slice := test.NewSlice()
 	b.SendSliceUploadEvent(ctx, api, duration, &err, slice.SliceKey, testStats(slice.OpenedAt(), now))
 
@@ -100,10 +102,11 @@ func TestBridge_SendSliceUploadEvent_HTTPError(t *testing.T) {
 
 	cfg := keboolasink.NewConfig()
 	// Send event
-	b := bridge.New(d, nil, cfg)
+	b, err := bridge.New(d, nil, cfg)
+	require.NoError(t, err)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
-	err := error(nil)
+	err = error(nil)
 	slice := test.NewSlice()
 	b.SendSliceUploadEvent(ctx, api, duration, &err, slice.SliceKey, testStats(slice.OpenedAt(), now))
 
@@ -123,10 +126,11 @@ func TestBridge_SendFileImportEvent_OkEvent(t *testing.T) {
 
 	cfg := keboolasink.NewConfig()
 	// Send event
-	b := bridge.New(d, nil, cfg)
+	b, err := bridge.New(d, nil, cfg)
+	require.NoError(t, err)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
-	err := error(nil)
+	err = error(nil)
 	file := test.NewFile()
 	b.SendFileImportEvent(ctx, api, duration, &err, file.FileKey, testStats(file.OpenedAt(), now))
 
@@ -156,10 +160,11 @@ func TestBridge_SendFileImportEvent_ErrorEvent(t *testing.T) {
 
 	cfg := keboolasink.NewConfig()
 	// Send event
-	b := bridge.New(d, nil, cfg)
+	b, err := bridge.New(d, nil, cfg)
+	require.NoError(t, err)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
-	err := errors.New("some error")
+	err = errors.New("some error")
 	file := test.NewFile()
 	b.SendFileImportEvent(ctx, api, duration, &err, file.FileKey, testStats(file.OpenedAt(), now))
 
@@ -187,10 +192,11 @@ func TestBridge_SendFileImportEvent_HTTPError(t *testing.T) {
 
 	cfg := keboolasink.NewConfig()
 	// Send event
-	b := bridge.New(d, nil, cfg)
+	b, err := bridge.New(d, nil, cfg)
+	require.NoError(t, err)
 	now := utctime.MustParse("2000-01-02T01:00:00.000Z")
 	duration := 3 * time.Second
-	err := error(nil)
+	err = error(nil)
 	file := test.NewFile()
 	b.SendFileImportEvent(ctx, api, duration, &err, file.FileKey, testStats(file.OpenedAt(), now))
 
