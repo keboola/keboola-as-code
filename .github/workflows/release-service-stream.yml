@@ -2,9 +2,11 @@ name: 'Release: Stream Service'
 
 on:
   push:
-    tags:
-      - 'production-stream-v**'
-      - 'dev-stream-v**'
+    branches:
+      - 'michal-kbc-stacks-action-sanity-check'
+    # tags:
+    #   - 'production-stream-v**'
+    #   - 'dev-stream-v**'
 
 env:
   # DockerHub login
@@ -26,21 +28,21 @@ env:
   GCP_REPOSITORY: "keboola-prod-artifacts/keboola-as-code/stream-service"
 
 jobs:
-  test-lint:
-    name: "Lint"
-    secrets: inherit
-    uses: ./.github/workflows/test-lint.yml
-  test-unit:
-    name: "Unit Tests"
-    secrets: inherit
-    uses: ./.github/workflows/test-unit.yml
-    with:
-      without-cache: true
-      package-exception-regex: "./internal/pkg/service/appsproxy|./internal/pkg/service/templates|./internal/pkg/service/cli"
-  test-e2e-service-stream:
-    name: "E2E: Stream"
-    secrets: inherit
-    uses: ./.github/workflows/test-e2e-service-stream.yml
+  # test-lint:
+  #   name: "Lint"
+  #   secrets: inherit
+  #   uses: ./.github/workflows/test-lint.yml
+  # test-unit:
+  #   name: "Unit Tests"
+  #   secrets: inherit
+  #   uses: ./.github/workflows/test-unit.yml
+  #   with:
+  #     without-cache: true
+  #     package-exception-regex: "./internal/pkg/service/appsproxy|./internal/pkg/service/templates|./internal/pkg/service/cli"
+  # test-e2e-service-stream:
+  #   name: "E2E: Stream"
+  #   secrets: inherit
+  #   uses: ./.github/workflows/test-e2e-service-stream.yml
 #  test-k8s-service-stream:
 #    name: "K8S: Stream"
 #    secrets: inherit
@@ -50,77 +52,78 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-    needs:
-      - test-lint
-      - test-unit
-      - test-e2e-service-stream
+    # needs:
+    #   - test-lint
+    #   - test-unit
+    #   - test-e2e-service-stream
 #      - test-k8s-service-stream
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v3
 
-      - name: Docker login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USER }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
+      # - name: Docker login
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ env.DOCKERHUB_USER }}
+      #     password: ${{ env.DOCKERHUB_TOKEN }}
 
-      - name: Build Service image
-        uses: docker/build-push-action@v6
-        with:
-          load: true
-          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          context: .
-          file: provisioning/stream/docker/service/Dockerfile
+      # - name: Build Service image
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     load: true
+      #     tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+      #     context: .
+      #     file: provisioning/stream/docker/service/Dockerfile
 
-      - name: Build Service image with race detector
-        uses: docker/build-push-action@v6
-        with:
-          load: true
-          tags: ${{ env.IMAGE_NAME }}-race:${{ env.IMAGE_TAG }}
-          context: .
-          file: provisioning/stream/docker/service/race/Dockerfile
+      # - name: Build Service image with race detector
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     load: true
+      #     tags: ${{ env.IMAGE_NAME }}-race:${{ env.IMAGE_TAG }}
+      #     context: .
+      #     file: provisioning/stream/docker/service/race/Dockerfile
 
-      - name: Push Service image to Amazon ECR, Azure ACR and GCP GAR
-        uses: ./.github/actions/push-image-aws-azure-gcp
-        with:
-          imageName: ${{ env.IMAGE_NAME }}
-          imageTag: ${{ env.IMAGE_TAG }}
-          ecrRegion: ${{ env.ECR_REGION }}
-          ecrRepository: ${{ env.ECR_REPOSITORY }}
-          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
-          gcpRegistry: ${{ env.GCP_REGISTRY }}
-          gcpRepository: ${{ env.GCP_REPOSITORY }}
-          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
-          gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
-          acrRegistry: ${{ env.ACR_REGISTRY }}
-          acrRepository: ${{ env.ACR_REPOSITORY }}
-          acrUsername: ${{ env.ACR_USERNAME }}
-          acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
+      # - name: Push Service image to Amazon ECR, Azure ACR and GCP GAR
+      #   uses: ./.github/actions/push-image-aws-azure-gcp
+      #   with:
+      #     imageName: ${{ env.IMAGE_NAME }}
+      #     imageTag: ${{ env.IMAGE_TAG }}
+      #     ecrRegion: ${{ env.ECR_REGION }}
+      #     ecrRepository: ${{ env.ECR_REPOSITORY }}
+      #     ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
+      #     gcpRegistry: ${{ env.GCP_REGISTRY }}
+      #     gcpRepository: ${{ env.GCP_REPOSITORY }}
+      #     gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+      #     gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
+      #     acrRegistry: ${{ env.ACR_REGISTRY }}
+      #     acrRepository: ${{ env.ACR_REPOSITORY }}
+      #     acrUsername: ${{ env.ACR_USERNAME }}
+      #     acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
 
-      - name: Push Service image with race detector to Amazon ECR, Azure ACR and GCP GAR
-        uses: ./.github/actions/push-image-aws-azure-gcp
-        with:
-          imageName: ${{ env.IMAGE_NAME }}-race
-          imageTag: ${{ env.IMAGE_TAG }}
-          ecrRegion: ${{ env.ECR_REGION }}
-          ecrRepository: ${{ env.ECR_REPOSITORY }}
-          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
-          gcpRegistry: ${{ env.GCP_REGISTRY }}
-          gcpRepository: ${{ env.GCP_REPOSITORY }}
-          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
-          gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
-          acrRegistry: ${{ env.ACR_REGISTRY }}
-          acrRepository: ${{ env.ACR_REPOSITORY }}
-          acrUsername: ${{ env.ACR_USERNAME }}
-          acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
+      # - name: Push Service image with race detector to Amazon ECR, Azure ACR and GCP GAR
+      #   uses: ./.github/actions/push-image-aws-azure-gcp
+      #   with:
+      #     imageName: ${{ env.IMAGE_NAME }}-race
+      #     imageTag: ${{ env.IMAGE_TAG }}
+      #     ecrRegion: ${{ env.ECR_REGION }}
+      #     ecrRepository: ${{ env.ECR_REPOSITORY }}
+      #     ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
+      #     gcpRegistry: ${{ env.GCP_REGISTRY }}
+      #     gcpRepository: ${{ env.GCP_REPOSITORY }}
+      #     gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+      #     gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
+      #     acrRegistry: ${{ env.ACR_REGISTRY }}
+      #     acrRepository: ${{ env.ACR_REPOSITORY }}
+      #     acrUsername: ${{ env.ACR_USERNAME }}
+      #     acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
 
       - name: Trigger image tag update
         uses: keboola/kbc-stacks/.github/actions/trigger-image-tag-update@main
         with:
-          helm-chart: "stream"
+          helm-chart: "test-tohle-spadne-neboj"
           image-tag: ${{ env.IMAGE_TAG }}
           github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}
+          dry-run: true
