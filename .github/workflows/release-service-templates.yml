@@ -96,7 +96,7 @@ jobs:
           acrPassword: ${{ secrets.TEMPLATES_API_ACR_PASSWORD }}
 
       - name: Trigger image tag update
-        uses: keboola/kbc-stacks/.github/actions/trigger-image-tag-update@main
+        uses: ./.github/actions/trigger-image-tag-update
         with:
           helm-chart: "templates-api"
           image-tag: ${{ env.IMAGE_TAG }}
