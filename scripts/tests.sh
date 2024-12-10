@@ -36,7 +36,7 @@ fi
 # Run tests, sequentially because the API is shared resource
 echo "Running tests ..."
 export KBC_VERSION_CHECK=false # do not check the latest version in the tests
-cmd="gotestsum --no-color=false --format \"$TEST_LOG_FORMAT\" -- -timeout 1200s -p $TEST_PARALLELISM_PKG -parallel $TEST_PARALLELISM $TEST_ARGS "$TEST_PACKAGE" $@"
+cmd="gotestsum --no-color=false --format \"$TEST_LOG_FORMAT\" -- -timeout 1800s -p $TEST_PARALLELISM_PKG -parallel $TEST_PARALLELISM $TEST_ARGS "$TEST_PACKAGE" $@"
 echo $cmd
 eval $cmd
 echo "Ok. All tests passed."

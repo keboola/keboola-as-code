@@ -5,7 +5,6 @@ import (
 	"io"
 	"net"
 
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -86,12 +85,6 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, telemetry telemetry
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultServiceConfig(serviceConfig),
-		grpc.WithStatsHandler(
-			otelgrpc.NewClientHandler(
-				otelgrpc.WithMeterProvider(telemetry.MeterProvider()),
-				otelgrpc.WithTracerProvider(telemetry.TracerProvider()),
-			),
-		),
 	)
 	if err != nil {
 		return nil, err
