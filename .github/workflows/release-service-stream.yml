@@ -41,10 +41,11 @@ jobs:
     name: "E2E: Stream"
     secrets: inherit
     uses: ./.github/workflows/test-e2e-service-stream.yml
-#  test-k8s-service-stream:
-#    name: "K8S: Stream"
-#    secrets: inherit
-#    uses: ./.github/workflows/test-k8s-service-stream.yml
+  # test-k8s-service-stream:
+  #   name: "K8S: Stream"
+  #   secrets: inherit
+  #   uses: ./.github/workflows/test-k8s-service-stream.yml
+
   build-and-push-api-image:
     name: "Build & Push Image"
     runs-on: ubuntu-latest
@@ -54,7 +55,7 @@ jobs:
       - test-lint
       - test-unit
       - test-e2e-service-stream
-#      - test-k8s-service-stream
+#     - test-k8s-service-stream
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -119,7 +120,7 @@ jobs:
           acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
 
       - name: Trigger image tag update
-        uses: keboola/kbc-stacks/.github/actions/trigger-image-tag-update@main
+        uses: ./.github/actions/trigger-image-tag-update
         with:
           helm-chart: "stream"
           image-tag: ${{ env.IMAGE_TAG }}
