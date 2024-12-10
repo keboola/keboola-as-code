@@ -56,6 +56,8 @@ export STREAM_VOLUME_FAST_STORAGE_SIZE="100Mi"
 export STREAM_VOLUME_MEDIUM_STORAGE_SIZE="100Mi"
 export STREAM_VOLUME_SLOW_STORAGE_SIZE="100Mi"
 
+export STREAM_ENCRYPTION_PROVIDER="none"
+
 
 # Start minikube if needed
 if ! minikube status > /dev/null; then
