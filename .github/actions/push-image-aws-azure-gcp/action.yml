@@ -55,14 +55,9 @@ runs:
 
     - name: Push image to Amazon ECR
       shell: bash
-      env:
-        IMAGE: ${{ inputs.imageName }}
-        TAG: ${{ inputs.imageTag }}
-        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        REPOSITORY: ${{ inputs.ecrRepository }}
       run: |
-        docker tag $IMAGE:$TAG $REGISTRY/$REPOSITORY:$TAG
-        docker push $REGISTRY/$REPOSITORY:$TAG
+        docker tag ${{ inputs.imageName }}:${{ inputs.imageTag }} ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepository }}:${{ inputs.imageTag }}
+        docker push ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepository }}:${{ inputs.imageTag }}
 
     - id: 'gcpAuth'
       name: Authenticate to GCP
@@ -82,14 +77,9 @@ runs:
 
     - name: Push image to GCP GAR
       shell: bash
-      env:
-        IMAGE: ${{ inputs.imageName }}
-        TAG: ${{ inputs.imageTag }}
-        REGISTRY: ${{ inputs.gcpRegistry }}
-        REPOSITORY: ${{ inputs.gcpRepository }}
       run: |
-        docker tag $IMAGE:$TAG $REGISTRY/$REPOSITORY:$TAG
-        docker push $REGISTRY/$REPOSITORY:$TAG
+        docker tag ${{ inputs.imageName }}:${{ inputs.imageTag }} ${{ inputs.gcpRegistry }}/${{ inputs.gcpRepository }}:${{ inputs.imageTag }}
+        docker push ${{ inputs.gcpRegistry }}/${{ inputs.gcpRepository }}:${{ inputs.imageTag }}
 
     - name: Login to Azure ACR
       uses: azure/docker-login@v2
@@ -100,11 +90,7 @@ runs:
 
     - name: Push image to Azure ACR
       shell: bash
-      env:
-        IMAGE: ${{ inputs.imageName }}
-        TAG: ${{ inputs.imageTag }}
-        REGISTRY: ${{ inputs.acrRegistry }}
-        REPOSITORY: ${{ inputs.acrRepository }}
       run: |
-        docker tag $IMAGE:$TAG $REGISTRY/$REPOSITORY:$TAG
-        docker push $REGISTRY/$REPOSITORY:$TAG
+        docker tag ${{ inputs.imageName }}:${{ inputs.imageTag }} ${{ inputs.acrRegistry }}/${{ inputs.acrRepository }}:${{ inputs.imageTag }}
+        docker push ${{ inputs.acrRegistry }}/${{ inputs.acrRepository }}:${{ inputs.imageTag }}
+
