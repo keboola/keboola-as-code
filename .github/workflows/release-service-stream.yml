@@ -105,8 +105,8 @@ jobs:
       - name: Push Service image with race detector to Amazon ECR, Azure ACR and GCP GAR
         uses: ./.github/actions/push-image-aws-azure-gcp
         with:
-          imageName: ${{ env.IMAGE_NAME }}-race
-          imageTag: ${{ env.IMAGE_TAG }}
+          imageName: ${{ env.IMAGE_NAME }}
+          imageTag: ${{ env.IMAGE_TAG }}-race
           ecrRegion: ${{ env.ECR_REGION }}
           ecrRepository: ${{ env.ECR_REPOSITORY }}
           ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
