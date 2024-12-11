@@ -81,7 +81,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           load: true
-          tags: ${{ env.IMAGE_NAME }}-race:${{ env.IMAGE_TAG }}
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}-race
           context: .
           file: provisioning/stream/docker/service/race/Dockerfile
 
