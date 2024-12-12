@@ -151,6 +151,7 @@ func (c *ClientConnection) Close(ctx context.Context) error {
 
 func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 	b := newClientConnBackoff()
+	b.InitialInterval = 100 * time.Millisecond
 	var closeErr error
 	for {
 		if c.isClosed() || c.client.isClosed() || errors.Is(closeErr, yamux.ErrSessionShutdown) || errors.Is(closeErr, io.EOF) {

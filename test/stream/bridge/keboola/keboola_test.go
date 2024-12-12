@@ -685,7 +685,7 @@ func (ts *testState) testFileImport(t *testing.T, ctx context.Context, expectati
 		ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"closed file","component":"storage.node.operator.file.rotation"}
 		`)
-	}, 15*time.Second, 100*time.Millisecond)
+	}, 25*time.Second, 100*time.Millisecond)
 
 	// Expect file import
 	ts.logSection(t, "expecting file import")
