@@ -29,9 +29,7 @@ import (
 )
 
 // To see details run: TEST_VERBOSE=true go test ./test/stream/bridge/... -v.
-func TestKeboolaBridgeWorkflow(t *testing.T) {
-	t.Parallel()
-
+func TestKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
@@ -307,9 +305,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 	ts.checkKeboolaTable(t, ctx, 1, 129)
 }
 
-func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
-	t.Parallel()
-
+func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
 	metrics := toxiproxy.NewMetricsContainer(nil)
 	server := toxiproxy.NewServer(metrics, zerolog.New(os.Stderr))
 	go server.Listen("localhost:8474")
