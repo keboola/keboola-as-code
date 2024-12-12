@@ -175,3 +175,10 @@ func normalizeString(input string) string {
 	return regexp.MustCompile(`-\d+`).
 		ReplaceAllString(input, "-%s")
 }
+
+func Normalize(t assert.TestingT, input string) string {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
+	return normalizeString(input)
+}
