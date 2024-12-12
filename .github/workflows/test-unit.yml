@@ -151,8 +151,18 @@ jobs:
       - name: Upload test cache
         uses: actions/upload-artifact@v4
         with:
-          name: gotestcache
+          name: gotestcache-${{ runner.os }}
           path: ${{ github.workspace }}/cache.out
+
+      - name: Set env variable
+        run: |
+          echo "GOCACHE=`go env GOCACHE`" >> $GITHUB_ENV
+
+      - name: Uploade test cache folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: gotestcachef-${{ runner.os }}
+          path: ${{ env.GOCACHE }}
 
       - name: Check how much space is left after unit test
         if: matrix.name == 'linux'
