@@ -4,6 +4,7 @@ package testhelper
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
@@ -54,9 +55,12 @@ func DirectoryContentsSame(ctx context.Context, expectedFs filesystem.Fs, expect
 				if err != nil {
 					return err
 				}
+				normalizeExpectedFile := normalizeString(expectedFile.Content)
+				normalizeActualFile := normalizeString(actualFile.Content)
+
 				err = wildcards.Compare(
-					expectedFile.Content,
-					actualFile.Content,
+					normalizeExpectedFile,
+					normalizeActualFile,
 				)
 				if err != nil {
 					return errors.PrefixErrorf(err, `different content of the file "%s"`, node.relPath)
@@ -116,8 +120,8 @@ func compareDirectories(ctx context.Context, expectedFs filesystem.Fs, expectedD
 		}
 
 		// Create node
-		hashMap[relPath] = &fileNodeState{
-			relPath: relPath,
+		hashMap[normalizeString(relPath)] = &fileNodeState{
+			relPath: normalizeString(relPath),
 			actual:  &fileNode{info.IsDir(), path},
 		}
 
@@ -151,11 +155,11 @@ func compareDirectories(ctx context.Context, expectedFs filesystem.Fs, expectedD
 		}
 
 		// Create node if not exists
-		if _, ok := hashMap[relPath]; !ok {
-			hashMap[relPath] = &fileNodeState{}
+		if _, ok := hashMap[normalizeString(relPath)]; !ok {
+			hashMap[normalizeString(relPath)] = &fileNodeState{}
 		}
-		hashMap[relPath].relPath = relPath
-		hashMap[relPath].expected = &fileNode{info.IsDir(), path}
+		hashMap[normalizeString(relPath)].relPath = normalizeString(relPath)
+		hashMap[normalizeString(relPath)].expected = &fileNode{info.IsDir(), path}
 
 		return nil
 	})
@@ -164,4 +168,10 @@ func compareDirectories(ctx context.Context, expectedFs filesystem.Fs, expectedD
 	}
 
 	return hashMap
+}
+
+// normalizeString replaces numeric IDs in a string with "-%s".
+func normalizeString(input string) string {
+	return regexp.MustCompile(`-\d+`).
+		ReplaceAllString(input, "-%s")
 }
