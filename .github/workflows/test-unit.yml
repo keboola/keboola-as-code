@@ -148,6 +148,12 @@ jobs:
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
           UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
 
+      - name: Upload test cache
+        uses: actions/upload-artifact@v4
+        with:
+          name: gotestcache
+          path: ${{ github.workspace }}/cache.out
+
       - name: Check how much space is left after unit test
         if: matrix.name == 'linux'
         shell: bash
