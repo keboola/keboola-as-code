@@ -717,7 +717,6 @@ func (ts *testState) checkKeboolaTable(t *testing.T, ctx context.Context, start,
 	tablePreview, err := ts.project.ProjectAPI().PreviewTableRequest(keboola.TableKey{BranchID: ts.branchID, TableID: ts.tableID}, keboola.WithLimitRows(500)).Send(ctx)
 	require.NoError(t, err)
 
-	fmt.Println(tablePreview.Rows)
 	assert.Equal(t, []string{"datetime", "body"}, tablePreview.Columns)
 	assert.Len(t, tablePreview.Rows, expectedCount)
 
