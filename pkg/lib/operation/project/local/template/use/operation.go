@@ -112,10 +112,12 @@ type TemplatePlan struct {
 	renameOp      *local.PathsGenerator
 	saveOp        *local.UnitOfWork
 	modified      ModifiedObjects
+	result        *Result
 }
 
 type Result struct {
 	InstanceID string
+	ConfigID   string
 	Warnings   []string
 }
 
@@ -206,6 +208,19 @@ func PrepareTemplate(ctx context.Context, d dependencies, o ExtendedOptions) (pl
 		existingObjects[objectState.Key()] = true
 		plan.modified = append(plan.modified, ModifiedObject{ObjectState: objectState, OpMark: opMark})
 
+		if objectState.Kind().IsConfig() {
+			// Change config name that is used in the template instead of meta.json one
+			if plan.options.ConfigName != "" {
+				config := objectState.(*model.ConfigState)
+				config.Local.Name = plan.options.ConfigName
+			}
+
+			configID := objectState.ObjectID()
+			if plan.result == nil {
+				plan.result = &Result{ConfigID: configID}
+			}
+		}
+
 		// Save to filesystem
 		plan.saveOp.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields())
 	}
@@ -273,7 +288,12 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 		logger.Warn(ctx, `Push operation is only possible when project is valid.`)
 	}
 
-	result := &Result{InstanceID: p.options.InstanceID}
+	result := p.result
+	if result == nil {
+		result = &Result{InstanceID: p.options.InstanceID}
+	} else {
+		result.InstanceID = p.options.InstanceID
+	}
 
 	// Return urls to oauth configurations
 	if tmplCtx, ok := p.options.TemplateCtx.(interface{ InputsUsage() *metadata.InputsUsage }); ok {

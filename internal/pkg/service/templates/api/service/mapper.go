@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cast"
@@ -45,7 +46,7 @@ func NewMapper(d mapperDependencies) *Mapper {
 	}
 }
 
-func (m Mapper) TaskPayload(model task.Task) (r *Task) {
+func (m Mapper) TaskPayload(model task.Task) (r *Task, err error) {
 	out := &Task{
 		ID:        model.TaskID,
 		Type:      model.Type,
@@ -84,9 +85,19 @@ func (m Mapper) TaskPayload(model task.Task) (r *Task) {
 				InstanceID: &v,
 			}
 		}
+
+		if v, ok := model.Outputs["configId"].(string); ok {
+			configID, err := strconv.ParseUint(v, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			out.Outputs = &TaskOutputs{
+				ConfigID: &configID,
+			}
+		}
 	}
 
-	return out
+	return out, nil
 }
 
 func formatTaskURL(apiHost string, k task.Key) string {

@@ -113,6 +113,9 @@ type Config struct {
 	Name string
 }
 
+// Config ID of the configuration created by preview.
+type ConfigID = uint64
+
 // DeleteInstancePayload is the payload type of the templates service
 // DeleteInstance method.
 type DeleteInstancePayload struct {
@@ -454,6 +457,8 @@ type TaskID = task.ID
 type TaskOutputs struct {
 	// ID of the created/updated template instance.
 	InstanceID *InstanceID
+	// ID of the created/updated configuration. Typically used by preview endpoint
+	ConfigID *ConfigID
 }
 
 // Template.

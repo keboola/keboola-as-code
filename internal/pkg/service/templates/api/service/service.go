@@ -32,6 +32,7 @@ import (
 	deleteTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
 	renameInst "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -223,13 +224,13 @@ func (s *service) Preview(ctx context.Context, d dependencies.ProjectRequestScop
 
 			// Options
 			options := preview.Options{
-				InstanceName: payload.Name,
 				TargetBranch: branchKey,
 				Inputs:       values,
 			}
 
 			// Use template
-			if err = generateTemplatePreview(ctx, tmpl, d, prjState, options); err != nil {
+			opResult, err := generateTemplatePreview(ctx, tmpl, d, prjState, options)
+			if err != nil {
 				return task.ErrResult(err)
 			}
 
@@ -240,13 +241,20 @@ func (s *service) Preview(ctx context.Context, d dependencies.ProjectRequestScop
 			}
 
 			return task.
-				OkResult(`template preview created`)
+				OkResult(`template preview created`).
+				WithOutput("configId", opResult.ConfigID)
 		},
 	})
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.TaskPayload(t), nil
+
+	task, err := s.mapper.TaskPayload(t)
+	if err != nil {
+		return nil, err
+	}
+
+	return task, nil
 }
 
 func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.ProjectRequestScope, payload *UseTemplateVersionPayload) (res *Task, err error) {
@@ -346,7 +354,13 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.TaskPayload(t), nil
+
+	task, err := s.mapper.TaskPayload(t)
+	if err != nil {
+		return nil, err
+	}
+
+	return task, nil
 }
 
 func (s *service) InstancesIndex(ctx context.Context, d dependencies.ProjectRequestScope, payload *InstancesIndexPayload) (res *Instances, err error) {
@@ -486,7 +500,13 @@ func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequ
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.TaskPayload(t), err
+
+	task, err := s.mapper.TaskPayload(t)
+	if err != nil {
+		return nil, err
+	}
+
+	return task, err
 }
 
 func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectRequestScope, payload *UpgradeInstancePayload) (res *Task, err error) {
@@ -559,7 +579,13 @@ func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectReq
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.TaskPayload(t), nil
+
+	task, err := s.mapper.TaskPayload(t)
+	if err != nil {
+		return nil, err
+	}
+
+	return task, nil
 }
 
 func (s *service) UpgradeInstanceInputsIndex(ctx context.Context, d dependencies.ProjectRequestScope, payload *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
@@ -601,7 +627,13 @@ func (s *service) GetTask(ctx context.Context, d dependencies.ProjectRequestScop
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.TaskPayload(t), nil
+
+	task, err := s.mapper.TaskPayload(t)
+	if err != nil {
+		return nil, err
+	}
+
+	return task, nil
 }
 
 func repositoryRef(d dependencies.ProjectRequestScope, name string) (model.TemplateRepository, error) {
@@ -814,7 +846,7 @@ func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (un
 	return unlockFn, nil
 }
 
-func generateTemplatePreview(ctx context.Context, tmpl *template.Template, d dependencies.ProjectRequestScope, projectState *project.State, o preview.Options) (err error) {
+func generateTemplatePreview(ctx context.Context, tmpl *template.Template, d dependencies.ProjectRequestScope, projectState *project.State, o preview.Options) (result *use.Result, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.template.preview")
 	defer span.End(&err)
 
@@ -826,7 +858,6 @@ func generateTemplatePreview(ctx context.Context, tmpl *template.Template, d dep
 	plan, err := useTemplate.PrepareTemplate(ctx, d, useTemplate.ExtendedOptions{
 		TargetBranch:          o.TargetBranch,
 		Inputs:                o.Inputs,
-		InstanceName:          o.InstanceName,
 		ProjectState:          projectState,
 		Template:              tmpl,
 		TemplateCtx:           tmplCtx,
@@ -835,12 +866,8 @@ func generateTemplatePreview(ctx context.Context, tmpl *template.Template, d dep
 		SkipSecretsValidation: o.SkipSecretsValidation,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = plan.Invoke(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
+	return plan.Invoke(ctx)
 }
