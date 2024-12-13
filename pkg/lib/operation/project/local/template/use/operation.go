@@ -97,6 +97,7 @@ type ExtendedOptions struct {
 	Inputs                template.InputsValues
 	InstanceID            string
 	InstanceName          string
+	ConfigName            string
 	ProjectState          *project.State
 	Template              *template.Template
 	TemplateCtx           template.Context
@@ -215,6 +216,7 @@ func PrepareTemplate(ctx context.Context, d dependencies, o ExtendedOptions) (pl
 				config.Local.Name = plan.options.ConfigName
 			}
 
+			// Save config ID
 			configID := objectState.ObjectID()
 			if plan.result == nil {
 				plan.result = &Result{ConfigID: configID}

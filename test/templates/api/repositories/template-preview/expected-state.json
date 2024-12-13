@@ -6,13 +6,36 @@
         "description": "",
         "isDefault": true,
         "metadata": {
-          "KBC.KAC.templates.instances": "[{\"instanceId\":\"\",\"instanceName\":\"inst-001\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
+          "KBC.KAC.templates.instances": "[{\"instanceId\":\"\",\"instanceName\":\"\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
         }
       },
       "configs": [
         {
+          "componentId": "ex-generic-v2",
+          "name": "inst-001",
+          "description": "test fixture",
+          "changeDescription": "From template keboola/my-template-id/1.2.3",
+          "configuration": {
+            "authorization": {
+              "oauth_api": {}
+            },
+            "parameters": {
+              "shop": "shop",
+              "token": "token"
+            }
+          },
+          "rows": [],
+          "metadata": {
+            "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shopify\"}",
+            "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth\",\"key\":\"authorization.oauth_api\"},{\"input\":\"shopify-token\",\"key\":\"parameters.token\"}]",
+            "KBC.KAC.templates.repository": "keboola",
+            "KBC.KAC.templates.templateId": "my-template-id"
+          },
+          "isDisabled": false
+        },
+        {
           "componentId": "keboola.data-apps",
-          "name": "My Data App /%s",
+          "name": "inst-001",
           "description": "test fixture",
           "changeDescription": "From template keboola/my-template-id/1.2.3",
           "configuration": {
@@ -32,7 +55,7 @@
         },
         {
           "componentId": "keboola.ex-instagram",
-          "name": "instagram",
+          "name": "inst-001",
           "description": "test fixture",
           "changeDescription": "From template keboola/my-template-id/1.2.3",
           "configuration": {
@@ -58,29 +81,6 @@
           "metadata": {
             "KBC.KAC.templates.configId": "{\"idInTemplate\":\"instagram\"}",
             "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth2\",\"key\":\"authorization.oauth_api\"},{\"input\":\"oauth2Accounts\",\"key\":\"parameters\",\"objectKeys\":[\"accounts\"]}]",
-            "KBC.KAC.templates.repository": "keboola",
-            "KBC.KAC.templates.templateId": "my-template-id"
-          },
-          "isDisabled": false
-        },
-        {
-          "componentId": "ex-generic-v2",
-          "name": "shopify",
-          "description": "test fixture",
-          "changeDescription": "From template keboola/my-template-id/1.2.3",
-          "configuration": {
-            "authorization": {
-              "oauth_api": {}
-            },
-            "parameters": {
-              "shop": "shop",
-              "token": "token"
-            }
-          },
-          "rows": [],
-          "metadata": {
-            "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shopify\"}",
-            "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth\",\"key\":\"authorization.oauth_api\"},{\"input\":\"shopify-token\",\"key\":\"parameters.token\"}]",
             "KBC.KAC.templates.repository": "keboola",
             "KBC.KAC.templates.templateId": "my-template-id"
           },

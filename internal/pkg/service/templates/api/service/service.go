@@ -224,6 +224,7 @@ func (s *service) Preview(ctx context.Context, d dependencies.ProjectRequestScop
 
 			// Options
 			options := preview.Options{
+				ConfigName:   payload.Name,
 				TargetBranch: branchKey,
 				Inputs:       values,
 			}
@@ -858,6 +859,7 @@ func generateTemplatePreview(ctx context.Context, tmpl *template.Template, d dep
 	plan, err := useTemplate.PrepareTemplate(ctx, d, useTemplate.ExtendedOptions{
 		TargetBranch:          o.TargetBranch,
 		Inputs:                o.Inputs,
+		ConfigName:            o.ConfigName,
 		ProjectState:          projectState,
 		Template:              tmpl,
 		TemplateCtx:           tmplCtx,

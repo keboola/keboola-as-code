@@ -43,7 +43,7 @@ type Context struct {
 }
 
 type Options struct {
-	InstanceName          string
+	ConfigName            string
 	TargetBranch          model.BranchKey
 	Inputs                template.InputsValues
 	SkipEncrypt           bool
