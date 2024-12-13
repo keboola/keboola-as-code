@@ -211,3 +211,44 @@ func TestAssertDirectorySameWildcards(t *testing.T) {
 func newMockedT() *mockedT {
 	return &mockedT{buf: bytes.NewBuffer(nil)}
 }
+
+func TestNormalize(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		input string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Test with .json file",
+			args: args{
+				input: "/main/other/keboola.orchestrator/flow-mgmt-jira-instance/phases/003-load/001-keboola-wr-snowflake-10960305/task.json",
+			},
+			want: "/main/other/keboola.orchestrator/flow-mgmt-jira-instance/phases/003-load/001-keboola-wr-snowflake-%s/task.json",
+		},
+		{
+			name: "Test with .yaml file (numeric suffix at the end)",
+			args: args{
+				input: "/main/other/keboola.orchestrator/flow-mgmt-jira-instance/phases/003-load/001-keboola-wr-snowflake-98765432/task.yaml",
+			},
+			want: "/main/other/keboola.orchestrator/flow-mgmt-jira-instance/phases/003-load/001-keboola-wr-snowflake-%s/task.yaml",
+		},
+		{
+			name: "Test with path without digits before file extension",
+			args: args{
+				input: "/main/other/keboola.orchestrator/flow-mgmt-jira-instance/phases/003-load/001-keboola-wr-snowflake",
+			},
+			want: "/main/other/keboola.orchestrator/flow-mgmt-jira-instance/phases/003-load/001-keboola-wr-snowflake",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equalf(t, tt.want, Normalize(t, tt.args.input), "Normalize(%v, %v)", t, tt.args.input)
+		})
+	}
+}
