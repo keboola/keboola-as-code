@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -49,7 +50,7 @@ func Test_getTemplateVersion_Requirements(t *testing.T) {
 			templateID:      "template2-required-feature",
 			projectFeatures: keboola.Features{"my-feature-wrong"},
 			stackComponents: nil,
-			exceptedError:   &templates.GenericError{Name: "templates.templateNoRequirements", Message: `Template "template2-required-feature" doesn't have requirements.`},
+			exceptedError:   &templates.GenericError{StatusCode: http.StatusBadRequest, Name: "templates.templateNoRequirements", Message: `Template "template2-required-feature" does not met requirements because of project misconfiguration.`},
 		},
 		{
 			name:            "required-feature",
@@ -70,7 +71,7 @@ func Test_getTemplateVersion_Requirements(t *testing.T) {
 			templateID:      "template3-required-component",
 			projectFeatures: nil,
 			stackComponents: keboola.Components{{ComponentKey: keboola.ComponentKey{ID: "my.component.wrong"}, Name: "My Component-wrong"}},
-			exceptedError:   &templates.GenericError{Name: "templates.templateNoRequirements", Message: `Template "template3-required-component" doesn't have requirements.`},
+			exceptedError:   &templates.GenericError{StatusCode: http.StatusBadRequest, Name: "templates.templateNoRequirements", Message: `Template "template3-required-component" does not met requirements because of project misconfiguration.`},
 		},
 	}
 
