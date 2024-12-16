@@ -40,14 +40,9 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	metadata := cloudencrypt.Metadata{"sink": slice.SinkKey.String()}
 
 	// Decrypt token
-	var token keboola.Token
-	if existingToken.EncryptedToken != nil {
-		token, err = b.tokenEncryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
-		if err != nil {
-			return err
-		}
-	} else {
-		token = *existingToken.Token
+	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
+	if err != nil {
+		return err
 	}
 
 	// Error when sending the event is not a fatal error

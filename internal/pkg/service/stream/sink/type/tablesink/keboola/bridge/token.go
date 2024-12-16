@@ -85,15 +85,9 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		}
 
 		// Decrypt token
-		var token keboola.Token
-		if existingToken.EncryptedToken != nil {
-			token, err = b.tokenEncryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
-			if err != nil {
-				return keboola.Token{}, err
-			}
-		} else {
-			// Backwards compatibility, should be dropped later
-			token = *existingToken.Token
+		token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
+		if err != nil {
+			return keboola.Token{}, err
 		}
 
 		// Operation is not called from the API and there is a token in the database, so we are using the token.

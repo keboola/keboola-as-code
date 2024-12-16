@@ -84,14 +84,9 @@ func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, delete
 	metadata := cloudencrypt.Metadata{"sink": job.SinkKey.String()}
 
 	// Decrypt token
-	var token keboola.Token
-	if existingToken.EncryptedToken != nil {
-		token, err = b.tokenEncryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
-		if err != nil {
-			return err, false
-		}
-	} else {
-		token = *existingToken.Token
+	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
+	if err != nil {
+		return err, false
 	}
 
 	// Get job details from storage API

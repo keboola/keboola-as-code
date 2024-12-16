@@ -171,14 +171,9 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	metadata := cloudencrypt.Metadata{"sink": file.SinkKey.String()}
 
 	// Decrypt token
-	var token keboola.Token
-	if existingToken.EncryptedToken != nil {
-		token, err = b.tokenEncryptor.Decrypt(ctx, existingToken.EncryptedToken, metadata)
-		if err != nil {
-			return err
-		}
-	} else {
-		token = *existingToken.Token
+	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
+	if err != nil {
+		return err
 	}
 
 	// Authorized API
