@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, slice plugin.Slice, stats statistics.Value) error {
@@ -75,6 +76,10 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	// Decrypt file upload credentials
 	var credentials keboola.FileUploadCredentials
 	if keboolaFile.EncryptedCredentials != nil {
+		if b.credentialsEncryptor == nil {
+			return errors.New("missing credentials encryptor")
+		}
+
 		fileMetadata := cloudencrypt.Metadata{"file": slice.FileKey.String()}
 		credentials, err = b.credentialsEncryptor.Decrypt(ctx, keboolaFile.EncryptedCredentials, fileMetadata)
 		if err != nil {
