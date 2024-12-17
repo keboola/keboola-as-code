@@ -609,8 +609,9 @@ func repositoryRef(d dependencies.ProjectRequestScope, name string) (model.Templ
 		return repo, nil
 	} else {
 		return model.TemplateRepository{}, &GenericError{
-			Name:    "templates.repositoryNotFound",
-			Message: fmt.Sprintf(`Repository "%s" not found.`, name),
+			StatusCode: http.StatusNotFound,
+			Name:       "templates.repositoryNotFound",
+			Message:    fmt.Sprintf(`Repository "%s" not found.`, name),
 		}
 	}
 }
@@ -641,8 +642,9 @@ func templateRecord(ctx context.Context, d dependencies.ProjectRequestScope, rep
 	tmpl, found := repo.RecordByID(templateID)
 	if !found {
 		return nil, nil, &GenericError{
-			Name:    "templates.templateNotFound",
-			Message: fmt.Sprintf(`Template "%s" not found.`, templateID),
+			StatusCode: http.StatusNotFound,
+			Name:       "templates.templateNotFound",
+			Message:    fmt.Sprintf(`Template "%s" not found.`, templateID),
 		}
 	}
 	return repo, &tmpl, nil
@@ -659,15 +661,17 @@ func getTemplateVersion(ctx context.Context, d dependencies.ProjectRequestScope,
 
 	if !found {
 		return nil, nil, &GenericError{
-			Name:    "templates.templateNotFound",
-			Message: fmt.Sprintf(`Template "%s" not found.`, templateID),
+			StatusCode: http.StatusNotFound,
+			Name:       "templates.templateNotFound",
+			Message:    fmt.Sprintf(`Template "%s" not found.`, templateID),
 		}
 	}
 
 	if !hasRequirements(tmplRecord, d) {
 		return nil, nil, &GenericError{
-			Name:    "templates.templateNoRequirements",
-			Message: fmt.Sprintf(`Template "%s" doesn't have requirements.`, templateID),
+			StatusCode: http.StatusBadRequest,
+			Name:       "templates.templateNoRequirements",
+			Message:    fmt.Sprintf(`Template "%s" does not met requirements because of project misconfiguration.`, templateID),
 		}
 	}
 
@@ -677,8 +681,9 @@ func getTemplateVersion(ctx context.Context, d dependencies.ProjectRequestScope,
 		// Default version
 		if versionRecord, err := tmplRecord.DefaultVersionOrErr(); err != nil {
 			return nil, nil, &GenericError{
-				Name:    "templates.templateNotFound",
-				Message: err.Error(),
+				StatusCode: http.StatusNotFound,
+				Name:       "templates.templateNotFound",
+				Message:    err.Error(),
 			}
 		} else {
 			semVersion = versionRecord.Version
@@ -696,14 +701,16 @@ func getTemplateVersion(ctx context.Context, d dependencies.ProjectRequestScope,
 	if err != nil {
 		if errors.As(err, &manifest.TemplateNotFoundError{}) {
 			return nil, nil, &GenericError{
-				Name:    "templates.templateNotFound",
-				Message: fmt.Sprintf(`Template "%s" not found.`, templateID),
+				StatusCode: http.StatusNotFound,
+				Name:       "templates.templateNotFound",
+				Message:    fmt.Sprintf(`Template "%s" not found.`, templateID),
 			}
 		}
 		if errors.As(err, &manifest.VersionNotFoundError{}) {
 			return nil, nil, &GenericError{
-				Name:    "templates.versionNotFound",
-				Message: fmt.Sprintf(`Version "%s" not found.`, versionStr),
+				StatusCode: http.StatusNotFound,
+				Name:       "templates.versionNotFound",
+				Message:    fmt.Sprintf(`Version "%s" not found.`, versionStr),
 			}
 		}
 		return nil, nil, err
@@ -779,8 +786,9 @@ func getTemplateInstance(ctx context.Context, d dependencies.ProjectRequestScope
 	instance, found, _ := branch.Local.Metadata.TemplateInstance(instanceId)
 	if !found {
 		return nil, branchKey, nil, &GenericError{
-			Name:    "templates.instanceNotFound",
-			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.ID),
+			StatusCode: http.StatusNotFound,
+			Name:       "templates.instanceNotFound",
+			Message:    fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.ID),
 		}
 	}
 	return prjState, branchKey, instance, nil
