@@ -1,0 +1,4 @@
+{
+  name: "activity",
+  isDisabled: false,
+}

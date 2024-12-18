@@ -1,0 +1,23 @@
+{
+  "path": "/v1/repositories/keboola/templates/my-template-id/2.0.0/use",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "branch": "default",
+    "name": "inst-001",
+    "steps": [
+      {
+        "id": "g01-s01",
+        "inputs": [
+          {
+            "id": "wr-bigquery-host",
+            "value": "my-host"
+          }
+        ]
+      }
+    ]
+  }
+}
