@@ -257,6 +257,24 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 	}
 	defer unlockFn(ctx)
 
+	/*s.mapper
+	mountPoint := mountfs.NewMountPoint(repository.CommonDirectoryMountPoint, commonDir)
+	templateDir, err := aferofs.NewMountFs(templateDir, []mountfs.MountPoint{mountPoint})
+	if err != nil {
+		return nil, err
+	}
+	srcDir, err := d.SubDirFs(SrcDirectory)
+	if err != nil {
+		return nil, err
+	}
+	srcDir, err = aferofs.NewMountFs(srcDir, []mountfs.MountPoint{mountPoint})
+	if err != nil {
+		return nil, err
+	}
+	jsonnetCtx := jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot))
+
+	jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(d.Components()))*/
+
 	// Note:
 	//   A very strange code follows.
 	//   Since I did not manage to complete the refactoring - separation of remote and local state.

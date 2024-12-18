@@ -138,11 +138,16 @@ type Test struct {
 	fs   filesystem.Fs
 }
 
+type Option struct {
+	ProjectBackend []string
+	ProjectPath    string
+}
+
 type CreatedTest struct {
 	*Test
 }
 
-func New(ctx context.Context, reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, projectsFilePath string, components *model.ComponentsMap) (*Template, error) {
+func New(ctx context.Context, reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, components *model.ComponentsMap, o Option) (*Template, error) {
 	// Mount <common> directory to:
 	//   template dir FS - used to load manifest, inputs, readme
 	//   src dir FS - objects root
@@ -161,10 +166,10 @@ func New(ctx context.Context, reference model.TemplateRef, template repository.T
 	}
 
 	// Create struct
-	out := &Template{_reference: reference, template: template, version: version, fs: templateDir, srcDir: srcDir, projectsFilePath: projectsFilePath}
+	out := &Template{_reference: reference, template: template, version: version, fs: templateDir, srcDir: srcDir, projectsFilePath: o.ProjectPath}
 
 	// Create load context
-	loadCtx := load.NewContext(ctx, srcDir, components)
+	loadCtx := load.NewContext(ctx, srcDir, components, o.ProjectBackend)
 
 	// Load manifest
 	out.manifestFile, err = LoadManifest(ctx, templateDir)

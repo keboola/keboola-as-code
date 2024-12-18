@@ -128,8 +128,13 @@ func (v *localCommandScope) TemplateForTests(ctx context.Context, reference mode
 		}
 	}
 
+	o := template.Option{
+		ProjectPath:    path,
+		ProjectBackend: v.projectBackends,
+	}
+
 	// Load template
-	return loadTemplateOp.Run(ctx, v, repo, reference, path)
+	return loadTemplateOp.Run(ctx, v, repo, reference, o)
 }
 
 func (v *localCommandScope) LocalProject(ctx context.Context, ignoreErrors bool) (*projectPkg.Project, bool, error) {
