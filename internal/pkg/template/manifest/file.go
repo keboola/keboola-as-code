@@ -111,7 +111,7 @@ func (f *file) records() (oms []model.ObjectManifest, err error) {
 func (f *file) setRecords(records []model.ObjectManifest) {
 	// Convert records map to slices
 	configsMap := make(map[string]*model.ConfigManifestWithRows)
-	f.Configs = make([]*model.ConfigManifestWithRows, 0)
+	f.Configs = make([]*model.ConfigManifestWithRows, 0, len(records))
 
 	for _, manifest := range records {
 		// Skip invalid (eg. missing config file)

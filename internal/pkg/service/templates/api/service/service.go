@@ -3,10 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet/fsimporter"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"net/http"
 	"path"
 	"strconv"
@@ -261,7 +257,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 	}
 	defer unlockFn(ctx)
 
-	s.mapper
+	/*s.mapper
 	mountPoint := mountfs.NewMountPoint(repository.CommonDirectoryMountPoint, commonDir)
 	templateDir, err := aferofs.NewMountFs(templateDir, []mountfs.MountPoint{mountPoint})
 	if err != nil {
@@ -277,7 +273,8 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 	}
 	jsonnetCtx := jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot))
 
-	jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(d.Components()))
+	jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(d.Components()))*/
+
 	// Note:
 	//   A very strange code follows.
 	//   Since I did not manage to complete the refactoring - separation of remote and local state.
