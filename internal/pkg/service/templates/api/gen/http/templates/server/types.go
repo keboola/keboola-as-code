@@ -1092,6 +1092,8 @@ type InputValidationResultResponseBody struct {
 type TaskOutputsResponseBody struct {
 	// ID of the created/updated template instance.
 	InstanceID *string `form:"instanceId,omitempty" json:"instanceId,omitempty" xml:"instanceId,omitempty"`
+	// ID of the created/updated configuration. Typically used by preview endpoint
+	ConfigID *uint64 `form:"configId,omitempty" json:"configId,omitempty" xml:"configId,omitempty"`
 }
 
 // InstanceResponseBody is used to define fields on response body types.
