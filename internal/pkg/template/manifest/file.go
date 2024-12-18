@@ -102,7 +102,7 @@ func (f *file) records() (oms []model.ObjectManifest, err error) {
 		}
 	}
 	if len(out) == 0 {
-		return nil, errors.New("unable to create template using invalid manifest configuration")
+		return out, errors.New("unable to create template using invalid manifest configuration")
 	}
 
 	return out, nil
