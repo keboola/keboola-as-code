@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 const (
@@ -16,7 +18,7 @@ const (
 
 type Provider string
 
-func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, error) {
+func NewEncryptor(ctx context.Context, config Config, logger log.Logger) (cloudencrypt.Encryptor, error) {
 	var encryptor cloudencrypt.Encryptor
 	var err error
 
@@ -45,6 +47,11 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	encryptor, err = NewLoggedEncryptor(ctx, encryptor, logger)
+	if err != nil {
+		return nil, err
 	}
 
 	encryptor, err = cloudencrypt.NewDualEncryptor(ctx, encryptor)

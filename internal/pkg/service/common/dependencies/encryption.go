@@ -27,7 +27,7 @@ func newEncryptionScope(ctx context.Context, cfg encryption.Config, d encryption
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewEncryptionScope")
 	defer span.End(&err)
 
-	encryptor, err := encryption.NewEncryptor(ctx, cfg)
+	encryptor, err := encryption.NewEncryptor(ctx, cfg, d.Logger())
 	if err != nil {
 		return nil, err
 	}
