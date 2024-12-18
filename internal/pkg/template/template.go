@@ -367,8 +367,8 @@ func (t *Template) evaluate(templateCtx Context) (tmpl *evaluatedTemplate, err e
 	_, span := t.deps.Telemetry().Tracer().Start(templateCtx, "keboola.go.declarative.template.evaluate")
 	defer span.End(&err)
 
-	// Evaluate manifest
-	evaluatedManifest, err := t.manifestFile.Evaluate(templateCtx, templateCtx.JsonnetContext())
+	// Evaluate manifest to always have records
+	evaluatedManifest, err := t.manifestFile.EvaluateAlwaysWithRecords(templateCtx, templateCtx.JsonnetContext())
 	if err != nil {
 		return nil, err
 	}
