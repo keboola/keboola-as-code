@@ -58,8 +58,14 @@ func (f *File) Evaluate(ctx context.Context, jsonnetCtx *jsonnet.Context) (*Mani
 	// Create manifest
 	m := New()
 
+	// Get records
+	records, err := content.records()
+	if err != nil {
+		return nil, errors.Errorf(`cannot load configurations from manifest "%s": %w`, f.file.Path(), err)
+	}
+
 	// Set records
-	if err := m.records.SetRecords(content.records()); err != nil {
+	if err := m.records.SetRecords(records); err != nil {
 		return nil, errors.Errorf(`cannot load manifest: %w`, err)
 	}
 
