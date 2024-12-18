@@ -23,6 +23,13 @@ func NewLoggedEncryptor(ctx context.Context, encryptor cloudencrypt.Encryptor, l
 }
 
 func (encryptor *LoggedEncryptor) Encrypt(ctx context.Context, plaintext []byte, metadata cloudencrypt.Metadata) ([]byte, error) {
+	meta := ""
+	for k, v := range metadata {
+		meta += k + ": " + v + ", "
+	}
+
+	encryptor.logger.Infof(ctx, "encryption metadata: "+meta)
+
 	if len(plaintext) == 0 {
 		err := errors.New("text should not be empty")
 		encryptor.logger.Infof(ctx, "encryption error: %s", err.Error())
@@ -41,6 +48,13 @@ func (encryptor *LoggedEncryptor) Encrypt(ctx context.Context, plaintext []byte,
 }
 
 func (encryptor *LoggedEncryptor) Decrypt(ctx context.Context, ciphertext []byte, metadata cloudencrypt.Metadata) ([]byte, error) {
+	meta := ""
+	for k, v := range metadata {
+		meta += k + ": " + v + ", "
+	}
+
+	encryptor.logger.Infof(ctx, "decryption metadata: "+meta)
+
 	if len(ciphertext) == 0 {
 		err := errors.New("text should not be empty")
 		encryptor.logger.Infof(ctx, "decryption error: %s", err.Error())
