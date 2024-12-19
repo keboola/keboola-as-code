@@ -170,6 +170,8 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	// Prepare encryption metadata
 	metadata := cloudencrypt.Metadata{"sink": file.SinkKey.String()}
 
+	b.logger.Infof(ctx, "decryption token: %s, %s", file.SinkKey.String(), string(existingToken.EncryptedToken))
+
 	// Decrypt token
 	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
 	if err != nil {

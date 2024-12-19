@@ -84,6 +84,8 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 			return keboola.Token{}, serviceError.NewResourceNotFoundError("sink token", sink.SinkKey.String(), "database")
 		}
 
+		b.logger.Infof(ctx, "decryption token: %s, %s", sink.SinkKey.String(), string(existingToken.EncryptedToken))
+
 		// Decrypt token
 		token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
 		if err != nil {
@@ -145,10 +147,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		}
 		newToken.EncryptedToken = ciphertext
 
-		_, err = b.tokenEncryptor.Decrypt(ctx, newToken.EncryptedToken, metadata)
-		if err != nil {
-			return keboola.Token{}, err
-		}
+		b.logger.Infof(ctx, "encryption token: %s, %s", sink.SinkKey.String(), string(newToken.EncryptedToken))
 	} else {
 		newToken.Token = result
 	}
