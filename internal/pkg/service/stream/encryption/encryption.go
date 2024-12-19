@@ -33,7 +33,7 @@ func NewEncryptor(ctx context.Context, config Config, logger log.Logger) (cloude
 
 		return encryptor, nil
 	case ProviderGCP:
-		encryptor, err = cloudencrypt.NewGCPEncryptor(ctx, config.GCP.KMSKeyID)
+		encryptor, err = NewGCPEncryptor(ctx, config.GCP.KMSKeyID, logger)
 		if err != nil {
 			return nil, err
 		}
