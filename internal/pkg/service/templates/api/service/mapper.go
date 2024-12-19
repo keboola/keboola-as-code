@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"slices"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/spf13/cast"
@@ -87,12 +86,8 @@ func (m Mapper) TaskPayload(model task.Task) (r *Task, err error) {
 		}
 
 		if v, ok := model.Outputs["configId"].(string); ok {
-			configID, err := strconv.ParseUint(v, 10, 64)
-			if err != nil {
-				return nil, err
-			}
 			out.Outputs = &TaskOutputs{
-				ConfigID: &configID,
+				ConfigID: &v,
 			}
 		}
 	}
