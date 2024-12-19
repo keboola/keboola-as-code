@@ -58,8 +58,40 @@ func (f *File) Evaluate(ctx context.Context, jsonnetCtx *jsonnet.Context) (*Mani
 	// Create manifest
 	m := New()
 
+	// Get records
+	records, err := content.records()
+	if err != nil {
+		return nil, errors.Errorf(`cannot load configurations from manifest "%s": %w`, f.file.Path(), err)
+	}
+
 	// Set records
-	if err := m.records.SetRecords(content.records()); err != nil {
+	if err := m.records.SetRecords(records); err != nil {
+		return nil, errors.Errorf(`cannot load manifest: %w`, err)
+	}
+
+	// Set main config
+	m.mainConfig = content.MainConfig
+
+	// Return
+	return m, nil
+}
+
+// EvaluateWithoutRecords is used for empty manifests to load context information into `Manifest` structure.
+func (f *File) EvaluateAlwaysWithRecords(ctx context.Context, jsonnetCtx *jsonnet.Context) (m *Manifest, err error) {
+	// Evaluate Jsonnet
+	content, err := evaluateFile(ctx, f.file, jsonnetCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create manifest
+	m = New()
+
+	// Get records, skip error to proceed
+	records, _ := content.records()
+
+	// Set records
+	if err := m.records.SetRecords(records); err != nil {
 		return nil, errors.Errorf(`cannot load manifest: %w`, err)
 	}
 
