@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/migrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/type/httpsource"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/readernode"
@@ -22,6 +23,7 @@ const (
 	ComponentStorageCoordinator Component = "storage-coordinator"
 	ComponentStorageWriter      Component = "storage-writer"
 	ComponentStorageReader      Component = "storage-reader"
+	ComponentMigrator           Component = "migrator"
 	ExceptionIDPrefix                     = "keboola-stream-"
 )
 
@@ -91,11 +93,11 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 	}
 
 	if componentsMap[ComponentAPI] {
-		apiScp, err := dependencies.NewAPIScope(serviceScp, distScp, taskScp, cfg) // nolint:forbidigo
+		d, err := dependencies.NewAPIScope(serviceScp, distScp, taskScp, cfg)
 		if err != nil {
 			return err
 		}
-		if err := api.Start(ctx, apiScp, cfg); err != nil {
+		if err := api.Start(ctx, d, cfg); err != nil {
 			return err
 		}
 	}
@@ -106,6 +108,16 @@ func StartComponents(ctx context.Context, serviceScp dependencies.ServiceScope, 
 			return err
 		}
 		if err := httpsource.Start(ctx, d, cfg.Source.HTTP); err != nil {
+			return err
+		}
+	}
+
+	if componentsMap[ComponentMigrator] {
+		d, err := dependencies.NewMigratorScope(ctx, serviceScp, cfg)
+		if err != nil {
+			return err
+		}
+		if err := migrator.Run(ctx, d, cfg); err != nil {
 			return err
 		}
 	}
@@ -130,7 +142,7 @@ func ParseComponentsList(args []string) (Components, error) {
 	for _, component := range args {
 		switch Component(component) {
 		// expected components
-		case ComponentAPI, ComponentHTTPSource, ComponentStorageCoordinator, ComponentStorageWriter, ComponentStorageReader:
+		case ComponentAPI, ComponentHTTPSource, ComponentStorageCoordinator, ComponentStorageWriter, ComponentStorageReader, ComponentMigrator:
 			components = append(components, Component(component))
 		default:
 			unexpected = append(unexpected, component)

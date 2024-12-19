@@ -3,6 +3,8 @@ package api
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -58,6 +60,11 @@ func TestStreamApiE2E(t *testing.T) {
 			require.NoError(t, os.MkdirAll(volumePath, 0o700))
 			require.NoError(t, os.WriteFile(filepath.Join(volumePath, volume.IDFile), []byte("my-volume"), 0o600))
 
+			// Use native encryption for tests
+			secretKey := make([]byte, 32)
+			_, err = rand.Read(secretKey)
+			require.NoError(t, err)
+
 			addEnvs := env.FromMap(map[string]string{
 				"STREAM_DATADOG_ENABLED":                           "false",
 				"STREAM_NODE_ID":                                   "test-node",
@@ -71,6 +78,8 @@ func TestStreamApiE2E(t *testing.T) {
 				"STREAM_ETCD_ENDPOINT":                             etcdCfg.Endpoint,
 				"STREAM_ETCD_USERNAME":                             etcdCfg.Username,
 				"STREAM_ETCD_PASSWORD":                             etcdCfg.Password,
+				"STREAM_ENCRYPTION_PROVIDER":                       "native",
+				"STREAM_ENCRYPTION_NATIVE_SECRET_KEY":              base64.StdEncoding.EncodeToString(secretKey),
 			})
 
 			// Run the test
