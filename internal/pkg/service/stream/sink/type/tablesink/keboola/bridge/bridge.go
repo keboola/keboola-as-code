@@ -3,9 +3,7 @@ package bridge
 import (
 	"context"
 	"sync"
-	"time"
 
-	"github.com/dgraph-io/ristretto/v2"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -83,18 +81,6 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*B
 
 	encryptor := d.Encryptor()
 	if encryptor != nil {
-		cache, err := ristretto.NewCache(
-			&ristretto.Config[[]byte, []byte]{
-				NumCounters: 1e6,
-				MaxCost:     1 << 20,
-				BufferItems: 64,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		encryptor = cloudencrypt.NewCachedEncryptor(encryptor, time.Hour, cache)
 		tokenEncryptor = cloudencrypt.NewGenericEncryptor[keboola.Token](encryptor)
 		credentialsEncryptor = cloudencrypt.NewGenericEncryptor[keboola.FileUploadCredentials](encryptor)
 	}
