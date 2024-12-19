@@ -144,6 +144,11 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 			return keboola.Token{}, err
 		}
 		newToken.EncryptedToken = ciphertext
+
+		_, err = b.tokenEncryptor.Decrypt(ctx, newToken.EncryptedToken, metadata)
+		if err != nil {
+			return keboola.Token{}, err
+		}
 	} else {
 		newToken.Token = result
 	}
