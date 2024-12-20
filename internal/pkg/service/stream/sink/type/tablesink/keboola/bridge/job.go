@@ -83,6 +83,8 @@ func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, delete
 	// Prepare encryption metadata
 	metadata := cloudencrypt.Metadata{"sink": job.SinkKey.String()}
 
+	b.logger.Infof(ctx, "decryption token: %s, %s", job.SinkKey.String(), string(existingToken.EncryptedToken))
+
 	// Decrypt token
 	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
 	if err != nil {

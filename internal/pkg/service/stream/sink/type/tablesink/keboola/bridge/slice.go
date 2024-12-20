@@ -40,6 +40,8 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	// Prepare encryption metadata
 	metadata := cloudencrypt.Metadata{"sink": slice.SinkKey.String()}
 
+	b.logger.Infof(ctx, "decryption token: %s, %s", slice.SinkKey.String(), string(existingToken.EncryptedToken))
+
 	// Decrypt token
 	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
 	if err != nil {
