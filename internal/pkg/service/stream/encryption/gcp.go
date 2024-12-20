@@ -2,6 +2,7 @@ package encryption
 
 import (
 	"context"
+	"encoding/json"
 	"hash/crc32"
 
 	kms "cloud.google.com/go/kms/apiv1"
@@ -33,7 +34,7 @@ func NewGCPEncryptor(ctx context.Context, keyID string, logger log.Logger) (*GCP
 }
 
 func (encryptor *GCPEncryptor) Encrypt(ctx context.Context, plaintext []byte, metadata cloudencrypt.Metadata) ([]byte, error) {
-	additionalData, err := Encode(metadata)
+	additionalData, err := json.Marshal(metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (encryptor *GCPEncryptor) Encrypt(ctx context.Context, plaintext []byte, me
 }
 
 func (encryptor *GCPEncryptor) Decrypt(ctx context.Context, ciphertext []byte, metadata cloudencrypt.Metadata) ([]byte, error) {
-	additionalData, err := Encode(metadata)
+	additionalData, err := json.Marshal(metadata)
 	if err != nil {
 		return nil, err
 	}
