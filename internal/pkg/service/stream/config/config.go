@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
@@ -32,6 +33,7 @@ type Config struct {
 	Source          source.Config       `configKey:"source"`
 	Sink            sink.Config         `configKey:"sink"`
 	Storage         storage.Config      `configKey:"storage"`
+	Encryption      encryption.Config   `configKey:"encryption"`
 }
 
 type Patch struct {
@@ -65,6 +67,7 @@ func New() Config {
 		Source:       source.NewConfig(),
 		Sink:         sink.NewConfig(),
 		Storage:      storage.NewConfig(),
+		Encryption:   encryption.NewConfig(),
 	}
 }
 

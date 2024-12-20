@@ -19,6 +19,7 @@ func TestDumpFlat_Empty(t *testing.T) {
 {
   "address": "",
   "addressNullable": null,
+  "byteSlice": "",
   "customInt": 0,
   "customString": "",
   "duration": "0s",
@@ -45,6 +46,7 @@ func TestDumpFlat(t *testing.T) {
 {
   "address": "1.2.3.4",
   "addressNullable": null,
+  "byteSlice": "dmFsdWUz",
   "customInt": 567,
   "customString": "custom",
   "duration": "2m3s",
@@ -95,6 +97,7 @@ func TestDumpAsJSON(t *testing.T) {
   "url": "http://localhost:1234",
   "address": "1.2.3.4",
   "addressNullable": null,
+  "byteSlice": "dmFsdWUz",
   "nested": {
     "foo": "foo",
     "bar": 789
@@ -127,6 +130,7 @@ durationNullable: 2m3s
 url: http://localhost:1234
 address: 1.2.3.4
 addressNullable: null
+byteSlice: dmFsdWUz
 nested:
     foo: foo
     bar: 789
@@ -154,6 +158,7 @@ durationNullable: null
 url: null
 address: ""
 addressNullable: null
+byteSlice: ""
 nested:
     foo: ""
     bar: 0
@@ -185,6 +190,7 @@ durationNullable: 2m3s
 url: http://localhost:1234
 address: 1.2.3.4
 addressNullable: null
+byteSlice: dmFsdWUz
 nested:
     foo: foo
     bar: 789
@@ -208,6 +214,7 @@ func dumpTestConfig() TestConfig {
 		DurationNullable: &duration,
 		URL:              &url.URL{Scheme: "http", Host: "localhost:1234"},
 		Addr:             addrValue,
+		ByteSlice:        []byte("value3"),
 		Nested: Nested{
 			Foo: "foo",
 			Bar: 789,
@@ -235,6 +242,7 @@ func dumpTestConfigWithValueStruct() TestConfigWithValueStruct {
 		DurationNullable: Value[*time.Duration]{Value: &duration},
 		URL:              Value[*url.URL]{Value: &url.URL{Scheme: "http", Host: "localhost:1234"}},
 		Addr:             Value[netip.Addr]{Value: addrValue},
+		ByteSlice:        Value[[]byte]{Value: []byte("value3")},
 		Nested: NestedValue{
 			Foo: Value[string]{Value: "foo"},
 			Bar: Value[int]{Value: 789},

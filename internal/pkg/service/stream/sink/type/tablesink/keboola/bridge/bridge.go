@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/singleflight"
 
@@ -49,6 +50,8 @@ type Bridge struct {
 	storageRepository       *storageRepo.Repository
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 	locks                   *distlock.Provider
+	tokenEncryptor          *cloudencrypt.GenericEncryptor[keboola.Token]
+	credentialsEncryptor    *cloudencrypt.GenericEncryptor[keboola.FileUploadCredentials]
 	jobs                    *etcdop.MirrorMap[bridgeModel.Job, bridgeModel.JobKey, *jobData]
 
 	getBucketOnce    *singleflight.Group
@@ -69,9 +72,19 @@ type dependencies interface {
 	StorageRepository() *storageRepo.Repository
 	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 	DistributedLockProvider() *distlock.Provider
+	Encryptor() cloudencrypt.Encryptor
 }
 
-func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Bridge {
+func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*Bridge, error) {
+	var tokenEncryptor *cloudencrypt.GenericEncryptor[keboola.Token]
+	var credentialsEncryptor *cloudencrypt.GenericEncryptor[keboola.FileUploadCredentials]
+
+	encryptor := d.Encryptor()
+	if encryptor != nil {
+		tokenEncryptor = cloudencrypt.NewGenericEncryptor[keboola.Token](encryptor)
+		credentialsEncryptor = cloudencrypt.NewGenericEncryptor[keboola.FileUploadCredentials](encryptor)
+	}
+
 	b := &Bridge{
 		logger:                  d.Logger().WithComponent("keboola.bridge"),
 		config:                  config,
@@ -83,6 +96,8 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 		storageRepository:       d.StorageRepository(),
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 		locks:                   d.DistributedLockProvider(),
+		tokenEncryptor:          tokenEncryptor,
+		credentialsEncryptor:    credentialsEncryptor,
 		getBucketOnce:           &singleflight.Group{},
 		createBucketOnce:        &singleflight.Group{},
 	}
@@ -93,7 +108,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) *Br
 	b.plugins.RegisterFileImporter(targetProvider, b.importFile)
 	b.plugins.RegisterSliceUploader(stagingFileProvider, b.uploadSlice)
 	b.plugins.RegisterCanAcceptNewFile(targetProvider, b.canAcceptNewFile)
-	return b
+	return b, nil
 }
 
 func (b *Bridge) isKeboolaTableSink(sink *definition.Sink) bool {
