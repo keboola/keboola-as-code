@@ -2,6 +2,7 @@ package encryption
 
 import (
 	"context"
+	"hash/crc32"
 
 	kms "cloud.google.com/go/kms/apiv1"
 	"cloud.google.com/go/kms/apiv1/kmspb"
@@ -37,9 +38,11 @@ func (encryptor *GCPEncryptor) Encrypt(ctx context.Context, plaintext []byte, me
 		return nil, err
 	}
 
-	encryptor.logger.Infof(ctx, "encryption key: %s", encryptor.keyID)
-	encryptor.logger.Infof(ctx, "encryption metadata: %s", string(additionalData))
-	encryptor.logger.Infof(ctx, "encryption plaintext: %s", string(plaintext))
+	table := crc32.MakeTable(crc32.IEEE)
+
+	encryptor.logger.Infof(ctx, "encryption key: %08x, %s", crc32.Checksum([]byte(encryptor.keyID), table), encryptor.keyID)
+	encryptor.logger.Infof(ctx, "encryption metadata: %08x, %s", crc32.Checksum(additionalData, table), string(additionalData))
+	encryptor.logger.Infof(ctx, "encryption plaintext: %08x, %s", crc32.Checksum(plaintext, table), string(plaintext))
 
 	request := &kmspb.EncryptRequest{
 		Name:                        encryptor.keyID,
@@ -52,7 +55,7 @@ func (encryptor *GCPEncryptor) Encrypt(ctx context.Context, plaintext []byte, me
 		return nil, errors.Wrapf(err, "gcp encryption failed: %s", err.Error())
 	}
 
-	encryptor.logger.Infof(ctx, "encryption ciphertext: %s", string(response.GetCiphertext()))
+	encryptor.logger.Infof(ctx, "encryption ciphertext: %08x, %s", crc32.Checksum(response.GetCiphertext(), table), string(response.GetCiphertext()))
 
 	return response.GetCiphertext(), nil
 }
@@ -63,9 +66,11 @@ func (encryptor *GCPEncryptor) Decrypt(ctx context.Context, ciphertext []byte, m
 		return nil, err
 	}
 
-	encryptor.logger.Infof(ctx, "decryption key: %s", encryptor.keyID)
-	encryptor.logger.Infof(ctx, "decryption metadata: %s", string(additionalData))
-	encryptor.logger.Infof(ctx, "decryption ciphertext: %s", string(ciphertext))
+	table := crc32.MakeTable(crc32.IEEE)
+
+	encryptor.logger.Infof(ctx, "decryption key: %08x, %s", crc32.Checksum([]byte(encryptor.keyID), table), encryptor.keyID)
+	encryptor.logger.Infof(ctx, "decryption metadata: %08x, %s", crc32.Checksum(additionalData, table), string(additionalData))
+	encryptor.logger.Infof(ctx, "decryption ciphertext: %08x, %s", crc32.Checksum(ciphertext, table), string(ciphertext))
 
 	request := &kmspb.DecryptRequest{
 		Name:                        encryptor.keyID,
@@ -78,7 +83,7 @@ func (encryptor *GCPEncryptor) Decrypt(ctx context.Context, ciphertext []byte, m
 		return nil, errors.Wrapf(err, "gcp decryption failed: %s", err.Error())
 	}
 
-	encryptor.logger.Infof(ctx, "decryption plaintext: %s", string(response.GetPlaintext()))
+	encryptor.logger.Infof(ctx, "decryption plaintext: %08x, %s", crc32.Checksum(response.GetPlaintext(), table), string(response.GetPlaintext()))
 
 	return response.GetPlaintext(), nil
 }
