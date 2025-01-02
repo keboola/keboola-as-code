@@ -263,7 +263,7 @@ func BenchmarkKey_Exists(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		found, err := k.Exists(client).Do(ctx).ResultOrErr()
 		if err != nil || !found {
 			b.Fatalf("unexpected result")
@@ -282,7 +282,7 @@ func BenchmarkKey_Get(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		kv, err := k.Get(client).Do(ctx).ResultOrErr()
 		if err != nil || kv == nil {
 			b.Fatalf("unexpected result")
@@ -301,7 +301,7 @@ func BenchmarkKey_Delete(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		found, err := k.Delete(client).Do(ctx).ResultOrErr()
 		if err != nil || found != (i == 0) {
 			b.Fatalf("unexpected result")
@@ -317,7 +317,7 @@ func BenchmarkKey_Put(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		err := k.Put(client, "bar").Do(ctx).Err()
 		if err != nil {
 			b.Fatalf("unexpected result")
@@ -333,7 +333,7 @@ func BenchmarkKey_PutIfNotExists(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		ok, err := k.PutIfNotExists(client, "bar").Do(ctx).ResultOrErr()
 		if err != nil || ok != (i == 0) {
 			b.Fatalf("unexpected result")
@@ -352,7 +352,7 @@ func BenchmarkKeyT_Exists(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		found, err := k.Exists(client).Do(ctx).ResultOrErr()
 		if err != nil || !found {
 			b.Fatalf("unexpected result")
@@ -371,7 +371,7 @@ func BenchmarkKeyT_GetKV(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		kv, err := k.GetKV(client).Do(ctx).ResultOrErr()
 		if err != nil || kv == nil {
 			b.Fatalf("unexpected result")
@@ -390,7 +390,7 @@ func BenchmarkKeyT_Delete(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		found, err := k.Delete(client).Do(ctx).ResultOrErr()
 		if err != nil || found != (i == 0) {
 			b.Fatalf("unexpected result")
@@ -406,7 +406,7 @@ func BenchmarkKeyT_Put(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		err := k.Put(client, "bar").Do(ctx).Err()
 		if err != nil {
 			b.Fatalf("unexpected result")
@@ -422,7 +422,7 @@ func BenchmarkKeyT_PutIfNotExists(b *testing.B) {
 
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		ok, err := k.PutIfNotExists(client, "bar").Do(ctx).ResultOrErr()
 		if err != nil || ok != (i == 0) {
 			b.Fatalf("unexpected result")
