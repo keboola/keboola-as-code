@@ -71,6 +71,10 @@ func Command(p dependencies.Provider) *cobra.Command {
 				templates = append(templates, tmpl)
 			} else {
 				for _, t := range repo.Templates() {
+					// Don't test deprecated templates
+					if t.Deprecated {
+						continue
+					}
 					v, err := t.DefaultVersionOrErr()
 					if err != nil {
 						return errors.Errorf(`loading default version for template "%s" failed: %w`, t.ID, err)
