@@ -50,3 +50,7 @@ vendor/*
 
 # CPU profiles
 /**/*.prof
+
+# Certificates
+/ca
+/certs
