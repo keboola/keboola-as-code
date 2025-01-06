@@ -36,14 +36,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Options
-			options := testOp.Options{
-				LocalOnly:  f.LocalOnly,
-				RemoteOnly: f.RemoteOnly,
-				TestName:   f.TestName,
-				Verbose:    f.Verbose,
-			}
-
 			// Get dependencies
 			d, err := p.LocalCommandScope(cmd.Context(), f.StorageAPIHost, dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
@@ -71,6 +63,10 @@ func Command(p dependencies.Provider) *cobra.Command {
 				templates = append(templates, tmpl)
 			} else {
 				for _, t := range repo.Templates() {
+					// Don't test deprecated templates
+					if t.Deprecated {
+						continue
+					}
 					v, err := t.DefaultVersionOrErr()
 					if err != nil {
 						return errors.Errorf(`loading default version for template "%s" failed: %w`, t.ID, err)
@@ -81,6 +77,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 					}
 					templates = append(templates, tmpl)
 				}
+			}
+
+			// Options
+			options := testOp.Options{
+				LocalOnly:  f.LocalOnly,
+				RemoteOnly: f.RemoteOnly,
+				TestName:   f.TestName,
+				Verbose:    f.Verbose,
 			}
 
 			// Test templates

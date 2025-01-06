@@ -38,6 +38,22 @@
           "path": "v2"
         }
       ]
+    },
+    {
+      "id": "template-3",
+      "name": "My Template 3",
+      "deprecated": true,
+      "description": "Full workflow to ...",
+      "versions": [
+        {
+          "version": "2.0.0",
+          "description": "notes",
+          "stable": false,
+          "components": [
+            "keboola.ex-facebook"
+          ]
+        }
+      ]
     }
   ]
 }
