@@ -34,7 +34,7 @@ fi
 # golangci-lint
 if ! command -v golangci-lint &> /dev/null
 then
-  go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+  go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.63.1
 fi
 
 # gci
@@ -52,7 +52,7 @@ fi
 # air - code changes watcher
 if ! command -v air &> /dev/null
 then
-  go install github.com/air-verse/air@v1.61.1
+  go install github.com/air-verse/air@v1.61.5
 fi
 
 # godoc
