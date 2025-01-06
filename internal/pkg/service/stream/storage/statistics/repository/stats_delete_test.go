@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,8 +36,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelLocalStaging(t *testing.T)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -86,10 +85,10 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelLocalStaging(t *testing.T)
 	var fileKey1, fileKey2, fileKey3 model.FileKey
 	var sliceKey1, sliceKey2, sliceKey3 model.SliceKey
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 
 		files, err := fileRepo.ListIn(sinkKey).Do(ctx).All()
@@ -157,7 +156,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelLocalStaging(t *testing.T)
 	// Delete files
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Delete(fileKey1, clk.Now()).Do(ctx).Err())
 		require.NoError(t, fileRepo.Delete(fileKey2, clk.Now()).Do(ctx).Err())
 		require.NoError(t, fileRepo.Delete(fileKey3, clk.Now()).Do(ctx).Err())
@@ -178,8 +177,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -228,10 +226,10 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	var fileKey1, fileKey2, fileKey3 model.FileKey
 	var sliceKey1, sliceKey2, sliceKey3 model.SliceKey
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 
 		files, err := fileRepo.ListIn(sinkKey).Do(ctx).All()
@@ -284,22 +282,22 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 		// Disable sink, it triggers closing of the active file
 		require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "some reason").Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey1, clk.Now(), false).Do(ctx).Err())
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey2, clk.Now(), false).Do(ctx).Err())
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey3, clk.Now(), false).Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey1, clk.Now()).Do(ctx).Err())
 		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey2, clk.Now()).Do(ctx).Err())
 		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey3, clk.Now()).Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImporting(fileKey1, clk.Now(), false).Do(ctx).Err())
 		require.NoError(t, fileRepo.SwitchToImporting(fileKey2, clk.Now(), false).Do(ctx).Err())
 		require.NoError(t, fileRepo.SwitchToImporting(fileKey3, clk.Now(), false).Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImported(fileKey1, clk.Now()).Do(ctx).Err())
 		require.NoError(t, fileRepo.SwitchToImported(fileKey2, clk.Now()).Do(ctx).Err())
 		require.NoError(t, fileRepo.SwitchToImported(fileKey3, clk.Now()).Do(ctx).Err())
@@ -314,7 +312,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	// Delete files
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Delete(fileKey1, clk.Now()).Do(ctx).Err())
 		require.NoError(t, fileRepo.Delete(fileKey2, clk.Now()).Do(ctx).Err())
 		require.NoError(t, fileRepo.Delete(fileKey3, clk.Now()).Do(ctx).Err())
@@ -324,7 +322,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	// Reset statistics
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, statsRepo.ResetSinkStats(sinkKey).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, `fixtures/stats_delete_snapshot_004.txt`, etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/file/|storage/slice/|storage/volume/`))
 	}
@@ -370,16 +368,16 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 		// Disable sink, it triggers closing of the active file
 		require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "some reason").Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey4, clk.Now(), false).Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey4, clk.Now()).Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImporting(fileKey4, clk.Now(), false).Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImported(fileKey4, clk.Now()).Do(ctx).Err())
 	}
 
@@ -392,7 +390,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	// Reset statistics
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, statsRepo.ResetSinkStats(sinkKey).Do(ctx).Err())
 		etcdhelper.AssertKVsFromFile(t, client, `fixtures/stats_delete_snapshot_006.txt`, etcdhelper.WithIgnoredKeyPattern(`^definition/|storage/file/|storage/slice/|storage/volume/`))
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -47,8 +47,7 @@ func TestSliceUpload(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(volumePath2, volume.IDFile), []byte("vol-2"), 0o600))
 
 	// Create dependencies
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 
 	d, mock := dependencies.NewMockedStorageReaderScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Storage.VolumesPath = volumesPath
@@ -106,7 +105,7 @@ func TestSliceUpload(t *testing.T) {
 	require.Equal(t, model.SliceWriting, slices[1].State)
 
 	// Prevent duplicate file slice keys
-	clk.Add(1 * time.Second)
+	clk.Advance(1 * time.Second)
 	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now(), false).Do(ctx).Err())
 	logger.Truncate()
@@ -129,7 +128,7 @@ func TestSliceUpload(t *testing.T) {
 	require.NoError(t, d.StatisticsRepository().Put(ctx, "node", []statistics.PerSlice{{SliceKey: slices[0].SliceKey, RecordsCount: 1}}))
 	waitForSlicesSync(t)
 	// Triggers slice upload
-	clk.Add(slicesCheckInterval)
+	clk.Advance(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `{"level":"info","message":"uploading slice","slice.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.slice.upload"}`)
 		logger.AssertJSONMessages(c, `{"level":"info","message":"uploaded slice","slice.id":"2000-01-01T00:00:00.000Z","component":"storage.node.operator.slice.upload"}`)
@@ -145,7 +144,7 @@ func TestSliceUpload(t *testing.T) {
 		return nil
 	}
 
-	clk.Add(1 * time.Second)
+	clk.Advance(1 * time.Second)
 	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
 	logger.Truncate()
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[2].SliceKey, clk.Now(), false).Do(ctx).Err())
@@ -155,7 +154,7 @@ func TestSliceUpload(t *testing.T) {
 	waitForSlicesSync(t)
 
 	// Triggers slice upload
-	clk.Add(slicesCheckInterval)
+	clk.Advance(slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
 {"level":"error","message":"slice upload failed: bla","component":"storage.node.operator.slice.upload"}
@@ -177,7 +176,7 @@ func TestSliceUpload(t *testing.T) {
 	}, slice.Retryable)
 
 	// Trigger slice upload again
-	clk.Add(-clk.Now().Sub(retryAfter.Time()) + slicesCheckInterval)
+	clk.Advance(-clk.Now().Sub(retryAfter.Time()) + slicesCheckInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
 {"level":"error","message":"slice upload failed: bla","component":"storage.node.operator.slice.upload"}
@@ -221,8 +220,7 @@ func TestSliceUploadDisabledSink(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(volumePath1, volume.IDFile), []byte("vol-1"), 0o600))
 
 	// Create dependencies
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 
 	d, mock := dependencies.NewMockedStorageReaderScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Storage.VolumesPath = volumesPath
@@ -280,7 +278,7 @@ func TestSliceUploadDisabledSink(t *testing.T) {
 	require.Len(t, slices, 1)
 	require.Equal(t, model.SliceWriting, slices[0].State)
 
-	clk.Add(1 * time.Second)
+	clk.Advance(1 * time.Second)
 	require.NoError(t, d.StorageRepository().File().Rotate(sink.SinkKey, clk.Now()).Do(ctx).Err())
 	logger.Truncate()
 	require.NoError(t, d.StorageRepository().Slice().SwitchToUploading(slices[0].SliceKey, clk.Now(), false).Do(ctx).Err())
@@ -289,7 +287,7 @@ func TestSliceUploadDisabledSink(t *testing.T) {
 	waitForSlicesSync(t)
 
 	// Triggers slice upload
-	clk.Add(slicesCheckInterval)
+	clk.Advance(slicesCheckInterval)
 
 	// Shutdown
 	d.Process().Shutdown(ctx, errors.New("bye bye"))

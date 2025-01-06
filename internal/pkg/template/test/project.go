@@ -6,7 +6,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -123,7 +123,7 @@ func newTestDependencies(
 	apiHost,
 	apiToken string,
 ) (*Dependencies, error) {
-	baseDeps := dependenciesPkg.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, client.NewTestClient())
+	baseDeps := dependenciesPkg.NewBaseScope(ctx, logger, tel, stdout, stderr, clockwork.NewRealClock(), proc, client.NewTestClient())
 	publicDeps, err := dependenciesPkg.NewPublicScope(ctx, baseDeps, apiHost, dependenciesPkg.WithPreloadComponents(true))
 	if err != nil {
 		return nil, err

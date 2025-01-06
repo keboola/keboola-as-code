@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -32,7 +32,7 @@ type Counter struct {
 type CounterWithBackup struct {
 	*Counter
 	backup       backup
-	backupTicker *clock.Ticker
+	backupTicker clockwork.Ticker
 }
 
 // backup interface contains used methods from *os.File.
@@ -47,7 +47,7 @@ func NewCounter() *Counter {
 	return &Counter{lock: &sync.RWMutex{}}
 }
 
-func NewCounterWithBackupFile(ctx context.Context, clk clock.Clock, logger log.Logger, backupPath string, backupInterval time.Duration) (*CounterWithBackup, error) {
+func NewCounterWithBackupFile(ctx context.Context, clk clockwork.Clock, logger log.Logger, backupPath string, backupInterval time.Duration) (*CounterWithBackup, error) {
 	backupFile, err := os.OpenFile(backupPath, os.O_CREATE|os.O_RDWR, 0o640)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func NewCounterWithBackupFile(ctx context.Context, clk clock.Clock, logger log.L
 	return counter, nil
 }
 
-func NewCounterWithBackup(ctx context.Context, clk clock.Clock, logger log.Logger, backup backup, backupInterval time.Duration) (*CounterWithBackup, error) {
+func NewCounterWithBackup(ctx context.Context, clk clockwork.Clock, logger log.Logger, backup backup, backupInterval time.Duration) (*CounterWithBackup, error) {
 	c := &CounterWithBackup{Counter: NewCounter(), backup: backup}
 
 	// Read value
@@ -99,9 +99,9 @@ func NewCounterWithBackup(ctx context.Context, clk clock.Clock, logger log.Logge
 
 	// Start backup ticker
 	if backupInterval > 0 {
-		c.backupTicker = clk.Ticker(backupInterval)
+		c.backupTicker = clk.NewTicker(backupInterval)
 		go func() {
-			for range c.backupTicker.C {
+			for range c.backupTicker.Chan() {
 				if err = c.SyncBackup(); err != nil {
 					err = errors.PrefixErrorf(err, `cannot flush counter backup %v`, backup)
 					logger.Error(ctx, err.Error())

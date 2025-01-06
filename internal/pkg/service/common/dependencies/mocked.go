@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/require"
@@ -51,7 +51,7 @@ type mocked struct {
 type MockedConfig struct {
 	enableEtcdClient bool
 
-	clock       clock.Clock
+	clock       clockwork.Clock
 	telemetry   telemetry.ForTest
 	debugLogger log.DebugLogger
 	procOpts    []servicectx.Option
@@ -94,7 +94,7 @@ func WithBigQueryBackend() MockedOption {
 	}
 }
 
-func WithClock(v clock.Clock) MockedOption {
+func WithClock(v clockwork.Clock) MockedOption {
 	return func(c *MockedConfig) {
 		c.clock = v
 	}
@@ -205,7 +205,7 @@ func newMockedConfig(tb testing.TB, opts []MockedOption) *MockedConfig {
 	tb.Helper()
 
 	cfg := &MockedConfig{
-		clock:       clock.New(),
+		clock:       clockwork.NewRealClock(),
 		telemetry:   telemetry.NewForTest(tb),
 		useRealAPIs: false,
 		services: keboola.Services{

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
@@ -227,7 +227,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			clk := clock.NewMock()
+			clk := clockwork.NewFakeClock()
 			d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
 			transport := mock.MockedHTTPTransport()
@@ -235,7 +235,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 
 			for i, attempt := range tc.attempts {
 				t.Logf("attempt %d/%d", i+1, len(tc.attempts))
-				clk.Add(attempt.delay)
+				clk.Advance(attempt.delay)
 
 				transport.Reset()
 				transport.RegisterResponder(
@@ -268,7 +268,7 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
 	appID := api.AppID("test")

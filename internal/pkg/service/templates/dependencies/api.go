@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -91,7 +91,7 @@ func newParentScopes(
 
 	d := &parentScopes{}
 
-	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, httpClient)
+	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clockwork.NewRealClock(), proc, httpClient)
 
 	d.PublicScope, err = dependencies.NewPublicScope(
 		ctx, d, cfg.StorageAPIHost,

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,8 +28,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 
 	ctx := context.Background()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -83,14 +82,14 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	// var rotateEtcdLogs string
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, sliceRepo.Rotate(sliceKey, clk.Now()).Do(ctx).Err())
 	}
 
 	// Switch the slice to the Uploading state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploading(sliceKey, clk.Now(), false).Do(ctx).Err())
 	}
 
@@ -98,7 +97,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		var err error
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		slice, err := sliceRepo.IncrementRetryAttempt(sliceKey, clk.Now(), "some reason 1").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploading, slice.State)
@@ -110,7 +109,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 	var rotateEtcdLogs string
 	{
 		var err error
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		etcdLogs.Reset()
 		slice, err := sliceRepo.IncrementRetryAttempt(sliceKey, clk.Now(), "some reason 2").Do(ctx).ResultOrErr()
 		rotateEtcdLogs = etcdLogs.String()
@@ -130,7 +129,7 @@ func TestSliceRepository_IncrementRetry(t *testing.T) {
 	// Switch slice to the Uploaded state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		slice, err := sliceRepo.SwitchToUploaded(sliceKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.SliceUploaded, slice.State)

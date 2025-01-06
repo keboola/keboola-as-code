@@ -2,7 +2,7 @@
 package store
 
 import (
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -11,7 +11,7 @@ import (
 )
 
 type Store struct {
-	clock  clock.Clock
+	clock  clockwork.Clock
 	logger log.Logger
 	client *etcd.Client
 	tracer telemetry.Tracer
@@ -19,7 +19,7 @@ type Store struct {
 }
 
 type dependencies interface {
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Schema() *schema.Schema
@@ -30,7 +30,7 @@ func New(d dependencies) *Store {
 	return newFrom(d.Clock(), d.Logger(), d.Telemetry().Tracer(), d.EtcdClient(), d.Schema())
 }
 
-func newFrom(clock clock.Clock, logger log.Logger, tracer telemetry.Tracer, etcdClient *etcd.Client, schema *schema.Schema) *Store {
+func newFrom(clock clockwork.Clock, logger log.Logger, tracer telemetry.Tracer, etcdClient *etcd.Client, schema *schema.Schema) *Store {
 	return &Store{
 		clock:  clock,
 		logger: logger,

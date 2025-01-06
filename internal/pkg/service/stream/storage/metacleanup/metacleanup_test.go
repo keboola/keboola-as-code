@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,8 +48,7 @@ func TestMetadataCleanup(t *testing.T) {
 
 	ctx := context.Background()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -98,7 +97,7 @@ func TestMetadataCleanup(t *testing.T) {
 		cleanupAttempt := 0
 		doCleanup = func() {
 			cleanupAttempt++
-			clk.Set(startTime.Add(time.Duration(cleanupAttempt) * cleanupInterval))
+			clk.Advance(startTime.Add(time.Duration(cleanupAttempt) * cleanupInterval).Sub(clk.Now()))
 			assert.EventuallyWithT(t, func(c *assert.CollectT) {
 				logger.AssertJSONMessages(c, `{"level":"info","message":"deleted \"%d\" files"}`)
 			}, 2*time.Second, 100*time.Millisecond)
@@ -130,7 +129,7 @@ func TestMetadataCleanup(t *testing.T) {
 	// Create the second file
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 	}
 
@@ -148,7 +147,7 @@ func TestMetadataCleanup(t *testing.T) {
 		slice1 := slices[0]
 		require.Equal(t, file1.FileKey, slice1.FileKey)
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.Equal(t, model.SliceClosing, slice1.State)
 		slice1, err = sliceRepo.SwitchToUploading(slice1.SliceKey, clk.Now(), false).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
@@ -157,7 +156,7 @@ func TestMetadataCleanup(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, model.SliceUploaded, slice1.State)
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.Equal(t, model.FileClosing, file1.State)
 		file1, err = fileRepo.SwitchToImporting(file1.FileKey, clk.Now(), false).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
@@ -241,7 +240,7 @@ func TestMetadataCleanup(t *testing.T) {
 		logger.Truncate()
 		startTime := clk.Now()
 		jobCleanupAttempt++
-		clk.Set(startTime.Add(time.Duration(jobCleanupAttempt) * cleanupInterval))
+		clk.Advance(startTime.Add(time.Duration(jobCleanupAttempt) * cleanupInterval).Sub(clk.Now()))
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			logger.AssertJSONMessages(c, `{"level":"info","message":"deleted \"%d\" jobs"}`)
 		}, 2*time.Second, 100*time.Millisecond)
@@ -262,8 +261,7 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 
 	ctx := context.Background()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -336,7 +334,7 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 		logger.Truncate()
 		startTime := clk.Now()
 		jobCleanupAttempt++
-		clk.Set(startTime.Add(time.Duration(jobCleanupAttempt) * cleanupInterval))
+		clk.Advance(startTime.Add(time.Duration(jobCleanupAttempt) * cleanupInterval).Sub(clk.Now()))
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			logger.AssertJSONMessages(c, `{"level":"info","message":"deleted \"%d\" jobs"}`)
 		}, 2*time.Second, 100*time.Millisecond)

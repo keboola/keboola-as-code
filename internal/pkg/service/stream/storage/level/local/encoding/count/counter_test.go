@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +50,7 @@ func TestCounterWithBackup_SyncBackupManually(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewDebugLogger()
 	backupInterval := time.Second
 	backupPath := filepath.Join(t.TempDir(), "backup")
@@ -121,7 +121,7 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewDebugLogger()
 	backupInterval := time.Second
 	backupPath := filepath.Join(t.TempDir(), "backup")
@@ -151,7 +151,7 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	assert.Equal(t, utctime.MustParse("2002-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Sync backup by clock
-	clk.Add(backupInterval)
+	clk.Advance(backupInterval)
 	content, err := os.ReadFile(backupPath)
 	require.NoError(t, err)
 	assert.Equal(t, "5,2001-01-01T00:00:00.000Z,2002-01-01T00:00:00.000Z", string(content))
@@ -163,7 +163,7 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	assert.Equal(t, utctime.MustParse("2003-01-01T00:00:00.000Z"), c.LastAt())
 
 	// Close (sync backup)
-	clk.Add(backupInterval)
+	clk.Advance(backupInterval)
 	require.NoError(t, c.Close())
 	content, err = os.ReadFile(backupPath)
 	require.NoError(t, err)
@@ -193,7 +193,7 @@ func TestCounterWithBackup_OpenError_Missing(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 
@@ -206,7 +206,7 @@ func TestCounterWithBackup_OpenError_Invalid(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 
@@ -252,7 +252,7 @@ func TestCounterWithBackup_ReadError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 
@@ -269,7 +269,7 @@ func TestCounterWithBackup_FlushError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 
@@ -297,7 +297,7 @@ func TestCounterWithBackup_CloseError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 

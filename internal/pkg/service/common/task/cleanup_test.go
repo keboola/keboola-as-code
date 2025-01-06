@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -30,8 +30,7 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2020-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2020-01-01T01:00:00.000Z").Time())
 
 	mock := dependencies.NewMocked(t, ctx, dependencies.WithClock(clk), dependencies.WithEnabledEtcdClient())
 	client := mock.TestEtcdClient()
@@ -98,7 +97,7 @@ func TestCleanup(t *testing.T) {
 	require.NoError(t, taskPrefix.Key(taskKey3.String()).Put(client, task3).Do(ctx).Err())
 
 	// Run the cleanup
-	clk.Add(cleanupInterval)
+	clk.Advance(cleanupInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		d.DebugLogger().AssertJSONMessages(c, `{"level":"info","message":"starting task cleanup","component":"task.cleanup"}`)
 	}, 5*time.Second, 50*time.Millisecond)

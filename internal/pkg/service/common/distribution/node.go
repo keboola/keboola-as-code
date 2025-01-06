@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.opentelemetry.io/otel/attribute"
@@ -46,7 +46,7 @@ type GroupNode struct {
 type assigner = Assigner
 
 type dependencies interface {
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Logger() log.Logger
 	EtcdClient() *etcd.Client
 	Process() *servicectx.Process

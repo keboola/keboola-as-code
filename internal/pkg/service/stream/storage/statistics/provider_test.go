@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,8 +38,7 @@ func TestStatisticsProviders(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -87,10 +86,10 @@ func TestStatisticsProviders(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var sliceKey1, sliceKey2, sliceKey3 model.SliceKey
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 
 		slices, err := sliceRepo.ListIn(sinkKey).Do(ctx).All()
@@ -460,7 +459,7 @@ func TestStatisticsProviders(t *testing.T) {
 		tc.Assert(l1Cache)
 
 		// Invalidate L2
-		clk.Add(mock.TestConfig().Storage.Statistics.Cache.L2.InvalidationInterval.Duration())
+		clk.Advance(mock.TestConfig().Storage.Statistics.Cache.L2.InvalidationInterval.Duration())
 		if expectedRevision > 0 {
 			assert.EventuallyWithT(t, func(c *assert.CollectT) {
 				assert.GreaterOrEqual(c, l2Cache.Revision(), expectedRevision)

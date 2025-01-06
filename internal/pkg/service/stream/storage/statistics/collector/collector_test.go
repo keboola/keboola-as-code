@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,8 +42,7 @@ func TestCollector(t *testing.T) {
 	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
 	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	cfg := statistics.NewConfig().Collector
 
 	ignoredEtcdKeys := etcdhelper.WithIgnoredKeyPattern("^(definition/)|(storage/volume/)|(storage/file/)|(storage/slice/)")
@@ -61,7 +60,7 @@ func TestCollector(t *testing.T) {
 	syncCounter := 0
 	triggerSyncAndWait := func() {
 		syncCounter++
-		clk.Add(cfg.SyncInterval.Duration())
+		clk.Advance(cfg.SyncInterval.Duration())
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			assert.Equal(c, syncCounter, strings.Count(mock.DebugLogger().AllMessages(), "sync done"))
 		}, time.Second, 10*time.Millisecond)

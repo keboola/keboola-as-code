@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
@@ -21,7 +21,7 @@ import (
 func TestOnChangeListener(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

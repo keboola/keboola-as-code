@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -511,7 +511,7 @@ type encodingTestCase struct {
 	T       *testing.T
 	Ctx     context.Context
 	Logger  log.DebugLogger
-	Clock   *clock.Mock
+	Clock   *clockwork.FakeClock
 	Events  *events.Events[encoding.Pipeline]
 	Output  *dummyOutput
 	Manager *encoding.Manager
@@ -532,7 +532,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 
 	// Disable real clocks, in tests, sync is triggered manually.
 	// The sync timer may cause unexpected log messages.
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	d, mock := dependencies.NewMockedSourceScope(t, ctx, commonDeps.WithClock(clk))
 
 	helper := &writerSyncHelper{writeDone: make(chan struct{}, 100)}
@@ -546,7 +546,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 		writerSyncHelper: helper,
 		Ctx:              ctx,
 		Logger:           mock.DebugLogger(),
-		Clock:            clock.NewMock(),
+		Clock:            clockwork.NewFakeClock(),
 		Events:           events.New[encoding.Pipeline](),
 		Output:           newDummyOutput(),
 		Slice:            slice,
@@ -582,7 +582,7 @@ func (h *writerSyncHelper) NewEncoder(cfg encoder.Config, mapping any, out io.Wr
 
 // NewSyncer implements writesync.SyncerFactory.
 // See also ExpectWritesCount and TriggerSync methods.
-func (h *writerSyncHelper) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config writesync.Config, chain writesync.Pipeline, statistics writesync.StatisticsProvider,
+func (h *writerSyncHelper) NewSyncer(ctx context.Context, logger log.Logger, clock clockwork.Clock, config writesync.Config, chain writesync.Pipeline, statistics writesync.StatisticsProvider,
 ) *writesync.Syncer {
 	s := writesync.NewSyncer(ctx, logger, clock, config, chain, statistics)
 	h.syncers = append(h.syncers, s)

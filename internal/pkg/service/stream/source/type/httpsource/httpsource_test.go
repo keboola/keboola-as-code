@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,7 +52,7 @@ type testState struct {
 	url             string
 	maxHeaderSize   int
 	maxBodySize     int
-	clk             *clock.Mock
+	clk             *clockwork.FakeClock
 	d               dependencies.ServiceScope
 	mock            dependencies.Mocked
 	validSecret     string
@@ -86,7 +86,7 @@ func TestHTTPSource(t *testing.T) {
 	port := netutils.FreePortForTest(t)
 	listenAddr := fmt.Sprintf("localhost:%d", port)
 	ts.url = fmt.Sprintf(`http://%s`, listenAddr)
-	ts.clk = clock.NewMock()
+	ts.clk = clockwork.NewFakeClock()
 	ts.d, ts.mock = dependencies.NewMockedServiceScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Source.HTTP.Listen = fmt.Sprintf("0.0.0.0:%d", port)
 		cfg.Source.HTTP.ReadBufferSize = datasize.ByteSize(ts.maxHeaderSize) * datasize.B // ReadBufferSize is a limit for headers, not for the body
@@ -320,7 +320,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Name: "stream input - POST - write error",
 			Prepare: func(t *testing.T) {
 				t.Helper()
-				ts.clk.Add(10 * time.Second) // skip backoff delay for open pipeline operation
+				ts.clk.Advance(10 * time.Second) // skip backoff delay for open pipeline operation
 				c := ts.mock.TestDummySinkController()
 				c.PipelineOpenError = nil
 				c.PipelineWriteError = errors.New("some write error")

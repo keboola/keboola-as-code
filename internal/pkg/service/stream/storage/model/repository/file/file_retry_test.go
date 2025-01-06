@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,8 +28,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -77,14 +76,14 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	// Create the second file, the first file is switched to the Closing state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 	}
 
 	// Mark all slices as Uploading
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, sliceRepo.ListIn(fileKey).ForEach(func(s model.Slice, header *iterator.Header) error {
 			return sliceRepo.SwitchToUploading(s.SliceKey, clk.Now(), false).Do(ctx).Err()
 		}).Do(ctx).Err())
@@ -93,7 +92,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	// Mark all slices as Uploading
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, sliceRepo.ListIn(fileKey).ForEach(func(s model.Slice, header *iterator.Header) error {
 			return sliceRepo.SwitchToUploaded(s.SliceKey, clk.Now()).Do(ctx).Err()
 		}).Do(ctx).Err())
@@ -102,14 +101,14 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	// Switch file to the Importing state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImporting(fileKey, clk.Now(), false).Do(ctx).Err())
 	}
 
 	// Import failed, increment retry attempt
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		file, err := fileRepo.IncrementRetryAttempt(fileKey, clk.Now(), "some reason 1").Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		require.NotEmpty(t, file)
@@ -121,7 +120,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var incrementRetryAttemptLogs string
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		etcdLogs.Reset()
 		file, err := fileRepo.IncrementRetryAttempt(fileKey, clk.Now(), "some reason 2").Do(ctx).ResultOrErr()
 		incrementRetryAttemptLogs = etcdLogs.String()
@@ -142,7 +141,7 @@ func TestFileRepository_IncrementRetry(t *testing.T) {
 	// Switch file to the Imported state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		file, err := fileRepo.SwitchToImported(fileKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, model.FileImported, file.State)

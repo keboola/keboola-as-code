@@ -48,9 +48,9 @@ func newListeners(ctx context.Context, wg *sync.WaitGroup, cfg Config, logger lo
 		// Otherwise, trigger is called immediately, see Notify method.
 		var tickerC <-chan time.Time
 		if v.config.EventsGroupInterval > 0 {
-			ticker := d.Clock().Ticker(v.config.EventsGroupInterval)
+			ticker := d.Clock().NewTicker(v.config.EventsGroupInterval)
 			defer ticker.Stop()
-			tickerC = ticker.C
+			tickerC = ticker.Chan()
 		}
 
 		for {

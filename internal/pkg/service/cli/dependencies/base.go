@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
@@ -50,7 +50,7 @@ func newBaseScope(
 	envs *env.Map,
 ) *baseScope {
 	return &baseScope{
-		BaseScope:    dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), stdout, stderr, clock.New(), proc, httpClient),
+		BaseScope:    dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), stdout, stderr, clockwork.NewRealClock(), proc, httpClient),
 		envs:         envs,
 		fs:           fs,
 		fsInfo:       FsInfo{fs: fs},

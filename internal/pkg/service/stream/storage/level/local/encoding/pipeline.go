@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 	"github.com/ccoveille/go-safecast"
+	"github.com/jonboulle/clockwork"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -111,7 +111,7 @@ type pipeline struct {
 func newPipeline(
 	ctx context.Context,
 	logger log.Logger,
-	clk clock.Clock,
+	clk clockwork.Clock,
 	sliceKey model.SliceKey,
 	mappingCfg table.Mapping,
 	encodingCfg encoding.Config,
@@ -420,7 +420,7 @@ func (p *pipeline) Close(ctx context.Context) error {
 	return errs.ErrorOrNil()
 }
 
-func (p *pipeline) processChunks(ctx context.Context, clk clock.Clock, encodingCfg encoding.Config) {
+func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encodingCfg encoding.Config) {
 	b := newChunkBackoff()
 	for {
 		// The channel is unblocked if there is an unprocessed chunk,

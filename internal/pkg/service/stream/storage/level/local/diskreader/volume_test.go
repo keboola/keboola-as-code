@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/gofrs/flock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -122,14 +122,14 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.Equal(c, 1, strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file"))
 	}, 5*time.Second, 10*time.Millisecond)
-	tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
+	tc.Clock.Advance(diskreader.WaitForVolumeIDInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.Equal(c, 2, strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file"))
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Create the volume ID file
 	require.NoError(t, os.WriteFile(filepath.Join(tc.VolumePath, volumeModel.IDFile), []byte("abcdef"), 0o640))
-	tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
+	tc.Clock.Advance(diskreader.WaitForVolumeIDInterval)
 
 	// Wait for the goroutine
 	select {
@@ -188,9 +188,9 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			assert.Equal(c, i, strings.Count(tc.Logger.AllMessages(), "waiting for volume ID file"))
 		}, time.Second, 5*time.Millisecond)
-		tc.Clock.Add(diskreader.WaitForVolumeIDInterval)
+		tc.Clock.Advance(diskreader.WaitForVolumeIDInterval)
 	}
-	tc.Clock.Add(timeoutExtra)
+	tc.Clock.Advance(timeoutExtra)
 
 	// Wait for the goroutine
 	select {
@@ -276,7 +276,7 @@ type volumeTestCase struct {
 	TB                testing.TB
 	Ctx               context.Context
 	Logger            log.DebugLogger
-	Clock             *clock.Mock
+	Clock             *clockwork.FakeClock
 	Config            diskreader.Config
 	VolumeNodeID      string
 	VolumeNodeAddress volumeModel.RemoteAddr
@@ -301,7 +301,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 		TB:                tb,
 		Ctx:               ctx,
 		Logger:            logger,
-		Clock:             clock.NewMock(),
+		Clock:             clockwork.NewFakeClock(),
 		Config:            diskreader.NewConfig(),
 		VolumeNodeID:      "my-node",
 		VolumeNodeAddress: "localhost:1234",

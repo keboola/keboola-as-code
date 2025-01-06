@@ -3,7 +3,7 @@ package diskwriter
 import (
 	"context"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -14,7 +14,7 @@ import (
 )
 
 type Volumes struct {
-	clock  clock.Clock
+	clock  clockwork.Clock
 	logger log.Logger
 	// events instance is passed to each volume and then to each writer
 	events     *events.Events[Writer]
@@ -23,7 +23,7 @@ type Volumes struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Process() *servicectx.Process
 }
 

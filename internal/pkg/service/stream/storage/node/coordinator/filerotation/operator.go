@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/ccoveille/go-safecast"
+	"github.com/jonboulle/clockwork"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -41,7 +41,7 @@ const dbOperationTimeout = 30 * time.Second
 
 type operator struct {
 	config          targetConfig.OperatorConfig
-	clock           clock.Clock
+	clock           clockwork.Clock
 	logger          log.Logger
 	storage         *storageRepo.Repository
 	statisticsCache *statsCache.L1
@@ -86,7 +86,7 @@ type sinkData struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Process() *servicectx.Process
 	StorageRepository() *storageRepo.Repository
 	DefinitionRepository() *definitionRepo.Repository
@@ -259,7 +259,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 	// Start conditions check ticker
 	{
 		wg.Add(1)
-		ticker := d.Clock().Ticker(o.config.FileRotationCheckInterval.Duration())
+		ticker := d.Clock().NewTicker(o.config.FileRotationCheckInterval.Duration())
 
 		go func() {
 			defer wg.Done()
@@ -269,7 +269,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 				select {
 				case <-ctx.Done():
 					return
-				case <-ticker.C:
+				case <-ticker.Chan():
 					o.checkFiles(ctx, wg)
 				}
 			}

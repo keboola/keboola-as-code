@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -26,8 +26,7 @@ func TestFileRepository_Delete(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -75,7 +74,7 @@ func TestFileRepository_Delete(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var fileKey2 model.FileKey
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		file, err := fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		fileKey2 = file.FileKey

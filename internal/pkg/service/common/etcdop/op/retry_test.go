@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +15,7 @@ func TestAtomicUpdateBackoff(t *testing.T) {
 	b := newBackoff()
 	b.RandomizationFactor = 0
 
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	b.Clock = clk
 	b.Reset()
 
@@ -27,7 +27,7 @@ func TestAtomicUpdateBackoff(t *testing.T) {
 			break
 		}
 		delays = append(delays, delay)
-		clk.Add(delay)
+		clk.Advance(delay)
 	}
 
 	// Assert

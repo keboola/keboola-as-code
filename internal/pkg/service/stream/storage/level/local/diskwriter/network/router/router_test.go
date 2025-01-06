@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -311,7 +311,7 @@ func TestRouter_ShutdownSourceNodeFirst(t *testing.T) {
 	`)
 }
 
-func createSink(t *testing.T, ctx context.Context, clk clock.Clock, r *definitionRepo.Repository) (definition.Sink, int64) {
+func createSink(t *testing.T, ctx context.Context, clk clockwork.Clock, r *definitionRepo.Repository) (definition.Sink, int64) {
 	t.Helper()
 
 	branchKey := key.BranchKey{ProjectID: 123, BranchID: 111}

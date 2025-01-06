@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/util"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/xsrftoken"
@@ -32,7 +32,7 @@ const (
 
 type Handler struct {
 	logger        log.Logger
-	clock         clock.Clock
+	clock         clockwork.Clock
 	pageWriter    *pagewriter.Writer
 	csrfTokenSalt string
 	publicURL     *url.URL
@@ -44,7 +44,7 @@ type Handler struct {
 func NewHandler(
 	logger log.Logger,
 	config config.Config,
-	clock clock.Clock,
+	clock clockwork.Clock,
 	pageWriter *pagewriter.Writer,
 	app api.AppConfig,
 	auth provider.Basic,

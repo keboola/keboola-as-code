@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
@@ -108,7 +108,7 @@ func newParentScopes(
 
 	d := &parentScopes{}
 
-	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clock.New(), proc, httpClient)
+	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clockwork.NewRealClock(), proc, httpClient)
 
 	d.PublicScope, err = dependencies.NewPublicScope(ctx, d, cfg.StorageAPIHost, dependencies.WithLogIndexLoading(true))
 	if err != nil {

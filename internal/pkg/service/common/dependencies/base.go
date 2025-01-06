@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -20,7 +20,7 @@ type baseScope struct {
 	telemetry  telemetry.Telemetry
 	stdout     io.Writer
 	stderr     io.Writer
-	clock      clock.Clock
+	clock      clockwork.Clock
 	httpClient client.Client
 	validator  validator.Validator
 	process    *servicectx.Process
@@ -32,7 +32,7 @@ func NewBaseScope(
 	tel telemetry.Telemetry,
 	stdout io.Writer,
 	stderr io.Writer,
-	clk clock.Clock,
+	clk clockwork.Clock,
 	process *servicectx.Process,
 	httpClient client.Client,
 ) BaseScope {
@@ -45,7 +45,7 @@ func newBaseScope(
 	tel telemetry.Telemetry,
 	stdout io.Writer,
 	stderr io.Writer,
-	clk clock.Clock,
+	clk clockwork.Clock,
 	process *servicectx.Process,
 	httpClient client.Client,
 ) *baseScope {
@@ -79,7 +79,7 @@ func (v *baseScope) Telemetry() telemetry.Telemetry {
 	return v.telemetry
 }
 
-func (v *baseScope) Clock() clock.Clock {
+func (v *baseScope) Clock() clockwork.Clock {
 	v.check()
 	return v.clock
 }

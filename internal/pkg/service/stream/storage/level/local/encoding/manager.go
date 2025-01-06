@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -19,7 +19,7 @@ import (
 // Manager opens and closes encoding pipelines.
 type Manager struct {
 	logger log.Logger
-	clock  clock.Clock
+	clock  clockwork.Clock
 	events *events.Events[Pipeline]
 
 	pipelinesLock *sync.Mutex
@@ -32,7 +32,7 @@ type pipelineRef struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Process() *servicectx.Process
 }
 

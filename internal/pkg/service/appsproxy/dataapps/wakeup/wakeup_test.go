@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
@@ -25,7 +25,7 @@ func TestManager_Wakeup(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
 	appID := api.AppID("app")
@@ -45,13 +45,13 @@ func TestManager_Wakeup(t *testing.T) {
 	assert.Equal(t, 1, transport.GetTotalCallCount())
 
 	// Request is skipped, the Interval was not exceeded
-	clk.Add(time.Millisecond)
+	clk.Advance(time.Millisecond)
 	err = manager.Wakeup(ctx, appID)
 	require.NoError(t, err)
 	assert.Equal(t, 1, transport.GetTotalCallCount())
 
 	// Exceed the Interval
-	clk.Add(wakeup.Interval)
+	clk.Advance(wakeup.Interval)
 	err = manager.Wakeup(ctx, appID)
 	require.NoError(t, err)
 	assert.Equal(t, 2, transport.GetTotalCallCount())
@@ -61,7 +61,7 @@ func TestManager_Wakeup_Race(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
 	appID := api.AppID("app")

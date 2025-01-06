@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	etcdPkg "go.etcd.io/etcd/client/v3"
@@ -38,7 +38,7 @@ func TestFileImport(t *testing.T) {
 	file := ts.getFile(t, ctx)
 	slice := ts.getSlice(t, ctx)
 
-	ts.clk.Add(time.Second)
+	ts.clk.Advance(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
@@ -65,7 +65,7 @@ func TestFileImport(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Trigger import
-	ts.clk.Add(ts.interval)
+	ts.clk.Advance(ts.interval)
 
 	// Await import success
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -108,7 +108,7 @@ func TestFileImportError(t *testing.T) {
 	// Fail first file import
 	ts.mock.TestDummySinkController().ImportError = errors.New("File import to keboola failed")
 
-	ts.clk.Add(time.Second)
+	ts.clk.Advance(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
@@ -140,7 +140,7 @@ func TestFileImportError(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Trigger import
-	ts.clk.Add(ts.interval)
+	ts.clk.Advance(ts.interval)
 
 	// Await import error
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -174,8 +174,8 @@ func TestFileImportError(t *testing.T) {
 	// File import retry should succeed
 	ts.mock.TestDummySinkController().ImportError = nil
 	ts.logger.Truncate()
-	ts.clk.Set(files[0].RetryAfter.Time())
-	ts.clk.Add(ts.interval)
+	ts.clk.Advance(files[0].RetryAfter.Time().Sub(ts.clk.Now()))
+	ts.clk.Advance(ts.interval)
 
 	// Await import success
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -224,7 +224,7 @@ func TestFileImportDisabledSink(t *testing.T) {
 	// Disable sink, this causes fileimport operator to skip the files in this sink
 	require.NoError(t, ts.dependencies.DefinitionRepository().Sink().Disable(ts.sink.SinkKey, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
 
-	ts.clk.Add(time.Second)
+	ts.clk.Advance(time.Second)
 	require.NoError(t, ts.dependencies.StorageRepository().File().Rotate(ts.sink.SinkKey, ts.clk.Now()).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploading(slice.SliceKey, ts.clk.Now(), false).Do(ctx).Err())
 	require.NoError(t, ts.dependencies.StorageRepository().Slice().SwitchToUploaded(slice.SliceKey, ts.clk.Now()).Do(ctx).Err())
@@ -239,7 +239,7 @@ func TestFileImportDisabledSink(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Trigger import
-	ts.clk.Add(ts.interval)
+	ts.clk.Advance(ts.interval)
 
 	// Shutdown
 	ts.dependencies.Process().Shutdown(ctx, errors.New("bye bye"))
@@ -251,7 +251,7 @@ func TestFileImportDisabledSink(t *testing.T) {
 
 type testState struct {
 	interval     time.Duration
-	clk          *clock.Mock
+	clk          *clockwork.FakeClock
 	logger       log.DebugLogger
 	client       *etcdPkg.Client
 	mock         dependencies.Mocked
@@ -267,8 +267,7 @@ func setup(t *testing.T, ctx context.Context) *testState {
 	importingFilesCheckInterval := time.Second
 
 	// Create dependencies
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Storage.Level.Target.Operator.FileImportCheckInterval = duration.From(importingFilesCheckInterval)
 	}, commonDeps.WithClock(clk))

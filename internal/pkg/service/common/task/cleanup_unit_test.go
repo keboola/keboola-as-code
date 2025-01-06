@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -13,7 +13,7 @@ import (
 func TestIsForCleanup(t *testing.T) {
 	t.Parallel()
 
-	node := &Cleaner{clock: clock.New()}
+	node := &Cleaner{clock: clockwork.NewRealClock()}
 
 	// Unfinished task, too recent
 	createdAt := utctime.UTCTime(time.Now().Add(-1 * time.Hour))
