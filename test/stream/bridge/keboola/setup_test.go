@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	toxiproxyClient "github.com/Shopify/toxiproxy/v2/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	utilsproject "github.com/keboola/go-utils/pkg/testproject"
 	"github.com/stretchr/testify/assert"
@@ -78,9 +79,11 @@ type testState struct {
 
 	sinkKey key.SinkKey
 	tableID keboola.TableID
+
+	proxy *toxiproxyClient.Proxy
 }
 
-func setup(t *testing.T, ctx context.Context, modifyConfig func(cfg *config.Config), options ...utilsproject.Option) testState {
+func setup(t *testing.T, options ...utilsproject.Option) testState {
 	t.Helper()
 
 	ts := testState{}
@@ -92,7 +95,10 @@ func setup(t *testing.T, ctx context.Context, modifyConfig func(cfg *config.Conf
 
 	ts.setupProject(t, options...)
 	ts.setupEtcd(t)
-	ts.startNodes(t, ctx, modifyConfig)
+	ts.sourcePort1 = netutils.FreePortForTest(t)
+	ts.sourcePort2 = netutils.FreePortForTest(t)
+	ts.sourceURL1 = fmt.Sprintf("http://localhost:%d", ts.sourcePort1)
+	ts.sourceURL2 = fmt.Sprintf("http://localhost:%d", ts.sourcePort2)
 
 	ts.logSection(t, "setup done")
 
@@ -137,10 +143,6 @@ func (ts *testState) startNodes(t *testing.T, ctx context.Context, modifyConfig 
 
 	// Source
 	ts.logSection(t, "creating 2 source scopes")
-	ts.sourcePort1 = netutils.FreePortForTest(t)
-	ts.sourcePort2 = netutils.FreePortForTest(t)
-	ts.sourceURL1 = fmt.Sprintf("http://localhost:%d", ts.sourcePort1)
-	ts.sourceURL2 = fmt.Sprintf("http://localhost:%d", ts.sourcePort2)
 	ts.sourceScp1, ts.sourceMock1 = dependencies.NewMockedSourceScopeWithConfig(
 		t,
 		ctx,

@@ -11,6 +11,9 @@ ENV PATH="$PATH:$GOBIN"
 # Install packages
 RUN apt-get update && apt-get install --no-install-recommends --yes nano protobuf-compiler graphviz build-essential
 ENV EDITOR=nano
+# Download toxiproxy
+RUN curl -L https://github.com/Shopify/toxiproxy/releases/download/v2.11.0/toxiproxy-server-linux-amd64 -o /usr/local/bin/toxiproxy-server
+RUN chmod +x /usr/local/bin/toxiproxy-server
 
 # Install tools
 RUN mkdir -p /tmp/build
