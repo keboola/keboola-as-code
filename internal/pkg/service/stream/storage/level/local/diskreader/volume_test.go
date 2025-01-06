@@ -179,7 +179,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Timeout(t *testing.T) {
 		defer close(done)
 		_, err := tc.OpenVolume()
 		if assert.Error(t, err) {
-			wildcards.Assert(t, "cannot open volume ID file \"%s\":\n- context deadline exceeded", err.Error())
+			wildcards.Assert(t, "cannot open volume ID file \"%s\":\n- %s", err.Error(), clockwork.ErrFakeClockDeadlineExceeded)
 		}
 	}()
 

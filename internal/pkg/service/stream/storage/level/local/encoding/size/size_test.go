@@ -185,9 +185,11 @@ func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
 
 	// Sync backup by clock
 	clk.Advance(backupInterval)
-	content, err := os.ReadFile(backupPath)
-	require.NoError(t, err)
-	assert.Equal(t, "6", string(content))
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		content, err := os.ReadFile(backupPath)
+		require.NoError(t, err)
+		assert.Equal(t, "6", string(content))
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// Data
 	out.writeError = nil
@@ -199,7 +201,7 @@ func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	// Close (flush backup)
 	clk.Advance(backupInterval)
 	require.NoError(t, m.Close())
-	content, err = os.ReadFile(backupPath)
+	content, err := os.ReadFile(backupPath)
 	require.NoError(t, err)
 	assert.Equal(t, "9", string(content))
 
