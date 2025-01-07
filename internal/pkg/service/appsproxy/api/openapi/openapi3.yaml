@@ -4,7 +4,7 @@ info:
     description: A service for proxing requests/authorization to data applications using Keboola components.
     version: "1.0"
 servers:
-    - url: https://appsproxy.{stack}
+    - url: https://hub.{stack}
       variables:
         stack:
             enum:
