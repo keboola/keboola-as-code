@@ -3,6 +3,7 @@ package keboola_test
 import (
 	"compress/gzip"
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	stagingConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/staging/config"
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
@@ -33,8 +35,15 @@ func TestKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
+	secretKey := make([]byte, 32)
+	_, err := rand.Read(secretKey)
+	require.NoError(t, err)
+
 	// Update configuration to make the cluster testable
 	configFn := func(cfg *config.Config) {
+		// Setup encryption
+		cfg.Encryption.Provider = encryption.ProviderNative
+		cfg.Encryption.Native.SecretKey = secretKey
 		// Enable metadata cleanup for removing storage jobs
 		cfg.Storage.MetadataCleanup.Enabled = true
 		// Disable unrelated workers

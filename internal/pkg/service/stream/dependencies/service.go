@@ -39,6 +39,7 @@ type serviceScope struct {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
+	dependencies.EncryptionScope
 	dependencies.DistributedLockScope
 	logger                      log.Logger
 	plugins                     *plugin.Plugins
@@ -54,6 +55,7 @@ type parentScopes struct {
 	dependencies.BaseScope
 	dependencies.PublicScope
 	dependencies.EtcdClientScope
+	dependencies.EncryptionScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
 }
@@ -75,7 +77,7 @@ func NewServiceScope(
 		return nil, err
 	}
 
-	return newServiceScope(p.BaseScope, p.PublicScope, p.EtcdClientScope, p.DistributedLockScope, cfg, model.DefaultBackoff())
+	return newServiceScope(p.BaseScope, p.PublicScope, p.EtcdClientScope, p.EncryptionScope, p.DistributedLockScope, cfg, model.DefaultBackoff())
 }
 
 func newParentScopes(
@@ -123,6 +125,11 @@ func newParentScopes(
 		return nil, err
 	}
 
+	d.EncryptionScope, err = dependencies.NewEncryptionScope(ctx, cfg.Encryption, d)
+	if err != nil {
+		return nil, err
+	}
+
 	return d, nil
 }
 
@@ -155,8 +162,11 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, ctx context.Context, modifyC
 	distLockScope, err := dependencies.NewDistributedLockScope(ctx, distlock.NewConfig(), mock)
 	require.NoError(tb, err)
 
+	encryptionScope, err := dependencies.NewEncryptionScope(ctx, cfg.Encryption, mock)
+	require.NoError(tb, err)
+
 	backoff := model.NoRandomizationBackoff()
-	serviceScp, err := newServiceScope(mock, mock, mock, distLockScope, cfg, backoff)
+	serviceScp, err := newServiceScope(mock, mock, mock, encryptionScope, distLockScope, cfg, backoff)
 	require.NoError(tb, err)
 
 	mock.DebugLogger().Truncate()
@@ -169,7 +179,15 @@ func NewMockedServiceScopeWithConfig(tb testing.TB, ctx context.Context, modifyC
 	return serviceScp, mock
 }
 
-func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.PublicScope, etcdClientScp dependencies.EtcdClientScope, distLockScp dependencies.DistributedLockScope, cfg config.Config, storageBackoff model.RetryBackoff) (ServiceScope, error) {
+func newServiceScope(
+	baseScp dependencies.BaseScope,
+	publicScp dependencies.PublicScope,
+	etcdClientScp dependencies.EtcdClientScope,
+	encryptionScp dependencies.EncryptionScope,
+	distLockScp dependencies.DistributedLockScope,
+	cfg config.Config,
+	storageBackoff model.RetryBackoff,
+) (ServiceScope, error) {
 	var err error
 
 	d := &serviceScope{}
@@ -181,6 +199,8 @@ func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.Publ
 	d.EtcdClientScope = etcdClientScp
 
 	d.DistributedLockScope = distLockScp
+
+	d.EncryptionScope = encryptionScp
 
 	d.logger = baseScp.Logger().With(attribute.String("nodeId", cfg.NodeID))
 
@@ -207,7 +227,10 @@ func newServiceScope(baseScp dependencies.BaseScope, publicScp dependencies.Publ
 		return nil, err
 	}
 
-	d.keboolaBridge = keboolaSinkBridge.New(d, apiCtxProvider, cfg.Sink.Table.Keboola)
+	d.keboolaBridge, err = keboolaSinkBridge.New(d, apiCtxProvider, cfg.Sink.Table.Keboola)
+	if err != nil {
+		return nil, err
+	}
 
 	d.storageStatisticsRepository = statsRepo.New(d)
 

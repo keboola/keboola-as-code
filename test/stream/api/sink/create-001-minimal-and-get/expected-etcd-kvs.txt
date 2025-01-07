@@ -96,12 +96,9 @@ storage/keboola/secret/token/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/
   "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
   "sourceId": "my-source",
   "sinkId": "my-sink",
-  "token": {
-    %A,
-    "bucketPermissions": {
-      "in.c-my-bucket": "write"
-    }
-  }
+  "token": null,
+  "tokenId": "%s",
+  "encryptedToken": "%s"
 }
 >>>>>
 

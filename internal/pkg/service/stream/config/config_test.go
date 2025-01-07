@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	local "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
@@ -300,6 +301,25 @@ storage:
                     slicesCount: 100
                     # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
                     expiration: 30m0s
+encryption:
+    # Encryption provider. Validation rules: required,oneof=none native gcp aws azure
+    provider: none
+    native:
+        # Secret key for local encryption. Do not use in production.
+        secretKey: '*****'
+    gcp:
+        # Key ID in Google Cloud Key Management Service. Validation rules: required
+        kmsKeyId: ""
+    aws:
+        # AWS Region. Validation rules: required
+        region: ""
+        # Key ID in AWS Key Management Service. Validation rules: required
+        kmsKeyId: ""
+    azure:
+        # Azure Key Vault URL. Validation rules: required,url
+        keyVaultUrl: ""
+        # Key name in the vault. Validation rules: required
+        keyName: ""
 `), strings.TrimSpace(string(bytes)))
 
 	// Add missing values, and validate it
@@ -310,6 +330,9 @@ storage:
 	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd.Endpoint = "test-etcd"
 	cfg.Etcd.Namespace = "test-namespace"
+	cfg.Encryption.Provider = encryption.ProviderNative
+	cfg.Encryption.Native.SecretKey = []byte("12345678901234567890123456789012")
+	cfg.Encryption.Normalize()
 	require.NoError(t, validator.New().Validate(context.Background(), cfg))
 }
 

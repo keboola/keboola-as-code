@@ -99,6 +99,8 @@ func GenerateFlags(fs *pflag.FlagSet, v any) error {
 				fs.Float32SliceP(flagName, shorthand, v, usage)
 			case []float64:
 				fs.Float64SliceP(flagName, shorthand, v, usage)
+			case []byte:
+				fs.BytesBase64P(flagName, shorthand, v, usage)
 			default:
 				return errors.Errorf(`unexpected type "%T", please implement some method to convert the type to string`, vc.PrimitiveValue.Interface())
 			}

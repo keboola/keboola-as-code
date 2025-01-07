@@ -20,6 +20,7 @@ func TestGenerateFlags_AlmostEmpty(t *testing.T) {
 	expected := `
       --address string             
       --address-nullable string    
+      --byte-slice string          
       --custom-int int             
       --custom-string string       
       --duration string            
@@ -69,6 +70,7 @@ func TestGenerateFlags_Default(t *testing.T) {
 		URL:              &url.URL{Scheme: "http", Host: "localhost:1234"},
 		Addr:             addrValue,
 		AddrNullable:     &addrValue,
+		ByteSlice:        []byte("value3"),
 		Nested: Nested{
 			Foo: "foo",
 			Bar: 789,
@@ -78,6 +80,7 @@ func TestGenerateFlags_Default(t *testing.T) {
 	expected := `
       --address string              (default "1.2.3.4")
       --address-nullable string     (default "1.2.3.4")
+      --byte-slice string           (default "dmFsdWUz")
       --custom-int int              (default 567)
       --custom-string string        (default "custom")
       --duration string             (default "2m3s")
@@ -127,6 +130,7 @@ func TestGenerateFlags_Default_Value(t *testing.T) {
 		URL:              NewValue(&url.URL{Scheme: "http", Host: "localhost:1234"}),
 		Addr:             NewValue(addrValue),
 		AddrNullable:     NewValue(&addrValue),
+		ByteSlice:        NewValue([]byte("value3")),
 		Nested: NestedValue{
 			Foo: NewValue("foo"),
 			Bar: NewValue(789),
@@ -136,6 +140,7 @@ func TestGenerateFlags_Default_Value(t *testing.T) {
 	expected := `
       --address string              (default "1.2.3.4")
       --address-nullable string     (default "1.2.3.4")
+      --byte-slice string           (default "dmFsdWUz")
       --custom-int int              (default 567)
       --custom-string string        (default "custom")
       --duration string             (default "2m3s")
