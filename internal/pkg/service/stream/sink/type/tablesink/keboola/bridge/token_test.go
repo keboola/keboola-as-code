@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	"github.com/stretchr/testify/assert"
@@ -40,8 +40,7 @@ func TestBridge_MigrateTokens(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
