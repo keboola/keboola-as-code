@@ -31,6 +31,7 @@ type MeterWithBackup struct {
 	*Meter
 	backup       backup
 	backupTicker clockwork.Ticker
+	lock         sync.RWMutex
 }
 
 // backup interface contains used methods from *os.File.
@@ -115,6 +116,13 @@ func (m *Meter) Size() datasize.ByteSize {
 }
 
 func (w *MeterWithBackup) SyncBackup() error {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+
+	if w.backup == nil {
+		return nil
+	}
+
 	// Seek to the beginning of the file
 	// The size counter can only grow, so it guarantees that the entire file will be overwritten.
 	if _, err := w.backup.Seek(0, io.SeekStart); err != nil {
@@ -137,9 +145,14 @@ func (w *MeterWithBackup) Close() error {
 		return err
 	}
 
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
 	if err := w.backup.Close(); err != nil {
 		return errors.Errorf(`cannot close the backup file: %w`, err)
 	}
+
+	w.backup = nil
 
 	return nil
 }
