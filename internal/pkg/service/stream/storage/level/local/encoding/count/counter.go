@@ -158,6 +158,10 @@ func (c *CounterWithBackup) SyncBackup() error {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
+	if c.backup == nil {
+		return nil
+	}
+
 	// Seek to the beginning of the file
 	// The size counter can only grow, so it guarantees that the entire file will be overwritten.
 	if _, err := c.backup.Seek(0, io.SeekStart); err != nil {
@@ -189,9 +193,14 @@ func (c *CounterWithBackup) Close() error {
 		return err
 	}
 
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if err := c.backup.Close(); err != nil {
 		return errors.Errorf(`cannot close the backup file: %w`, err)
 	}
+
+	c.backup = nil
 
 	return nil
 }
