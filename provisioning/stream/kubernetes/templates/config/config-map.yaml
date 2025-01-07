@@ -193,7 +193,7 @@ data:
                 # GZIP implementation: standard, fast, parallel. Validation rules: required,oneof=standard fast parallel
                 implementation: fast
                 # GZIP parallel block size. Validation rules: required,minBytes=16kB,maxBytes=100MB
-                blockSize: 256KB
+                blockSize: 2MB
                 # GZIP parallel concurrency, 0 = auto.
                 concurrency: 0
             sync:
