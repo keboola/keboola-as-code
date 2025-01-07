@@ -107,7 +107,7 @@ data:
         # The maximum number of concurrent connections the server may serve. Validation rules: required,min=100,max=1000000
         maxConnections: 200000
         # Read buffer size, all HTTP headers must fit in. Validation rules: required,minBytes=1kB,maxBytes=1MB
-        readBufferSize: 16KB
+        readBufferSize: 512KB
         # Write buffer size. Validation rules: required,minBytes=1kB,maxBytes=1MB
         writeBufferSize: 4KB
         # Max size of the HTTP request body. Validation rules: required,minBytes=100B,maxBytes=4MB
