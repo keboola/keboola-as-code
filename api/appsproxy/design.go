@@ -52,7 +52,7 @@ var _ = API("appsproxy", func() {
 	})
 	Server("appsproxy", func() {
 		Host("production", func() {
-			URI("https://appsproxy.{stack}")
+			URI("https://hub.{stack}")
 			Variable("stack", String, "Base URL of the stack", func() {
 				Default("keboola.com")
 				Enum("keboola.com", "eu-central-1.keboola.com", "north-europe.azure.keboola.com", "eu-west-1.aws.keboola.dev", "east-us-2.azure.keboola-testing.com")
