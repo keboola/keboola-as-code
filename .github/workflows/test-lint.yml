@@ -45,6 +45,7 @@ jobs:
             --exclude '^https://app.datadoghq.eu/.*'
             --exclude '^https://community.chocolatey.org/.*'
             --exclude '^https://packages.debian.org/$'
+            --exclude '^https://test.hub.keboola.local/$'
 
       - name: Run code linters
         run: make lint

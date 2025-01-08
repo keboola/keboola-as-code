@@ -2,11 +2,11 @@
   {
     "httpRequest": {
       "method": "GET",
-      "path": "/apps/123/proxy-config"
+      "path": "/apps/test/proxy-config"
     },
     "httpResponse": {
       "body": {
-        "appId": "123",
+        "appId": "test",
         "appName": "app",
         "projectId": "11",
         "upstreamAppUrl": "http://localhost:1235",
