@@ -9,17 +9,18 @@ import (
 
 type OIDC struct {
 	Base
-	ClientID     string    `json:"clientId"`
-	ClientSecret string    `json:"clientSecret"`
-	IssuerURL    string    `json:"issuerUrl"`
-	LogoutURL    string    `json:"logoutUrl"`
-	AllowedRoles *[]string `json:"allowedRoles"`
+	OIDCProviderType proxyOptions.ProviderType `json:"oidcProviderType"`
+	ClientID         string                    `json:"clientId"`
+	ClientSecret     string                    `json:"clientSecret"`
+	IssuerURL        string                    `json:"issuerUrl"`
+	LogoutURL        string                    `json:"logoutUrl"`
+	AllowedRoles     *[]string                 `json:"allowedRoles"`
 }
 
 func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	p := proxyOptions.Provider{
 		ID:                  v.ID().String(),
-		Type:                proxyOptions.OIDCProvider,
+		Type:                v.OIDCProviderType,
 		Name:                v.Name(),
 		CodeChallengeMethod: providers.CodeChallengeMethodS256,
 		ClientID:            v.ClientID,
