@@ -15,6 +15,10 @@ inputs:
     description: "Do a dry run"
     required: false
     default: 'false'
+  commit-sha:
+    description: "Enable to commit pipeline's SHA to tag.yaml"
+    required: false
+    default: 'true'
   github-app-private-key:
     description: 'The "Keboola - kbc-stacks trigger" GitHub App private key'
     required: true
@@ -63,4 +67,5 @@ runs:
         -f image-tag=${{ inputs.image-tag }} \
         -f automerge=${{ inputs.automerge }} \
         -f dry-run=${{ inputs.dry-run }} \
+        -f commit-sha=${{ inputs.commit-sha }} \
         -f metadata="$ENCODED_METADATA"
