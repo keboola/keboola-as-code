@@ -59,8 +59,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
@@ -85,7 +85,7 @@ import (
 type BaseScope interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	HTTPClient() client.Client
 	Validator() validator.Validator
 	Process() *servicectx.Process

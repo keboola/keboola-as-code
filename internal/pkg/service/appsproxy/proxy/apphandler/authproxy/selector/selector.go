@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/util"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -34,7 +34,7 @@ const (
 type ctxKey string
 
 type Selector struct {
-	clock      clock.Clock
+	clock      clockwork.Clock
 	config     config.Config
 	pageWriter *pagewriter.Writer
 }
@@ -46,7 +46,7 @@ type SelectorForAppRule struct {
 }
 
 type dependencies interface {
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Config() config.Config
 	PageWriter() *pagewriter.Writer
 }

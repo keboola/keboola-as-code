@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -59,7 +59,7 @@ func TestMeterWithBackup_SyncBackupManually(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewDebugLogger()
 	backupInterval := time.Second
 	backupPath := filepath.Join(t.TempDir(), "backup")
@@ -143,7 +143,7 @@ func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewDebugLogger()
 	backupInterval := time.Second
 	backupPath := filepath.Join(t.TempDir(), "backup")
@@ -184,10 +184,12 @@ func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	}
 
 	// Sync backup by clock
-	clk.Add(backupInterval)
-	content, err := os.ReadFile(backupPath)
-	require.NoError(t, err)
-	assert.Equal(t, "6", string(content))
+	clk.Advance(backupInterval)
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		content, err := os.ReadFile(backupPath)
+		require.NoError(t, err)
+		assert.Equal(t, "6", string(content))
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// Data
 	out.writeError = nil
@@ -197,9 +199,9 @@ func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close (flush backup)
-	clk.Add(backupInterval)
+	clk.Advance(backupInterval)
 	require.NoError(t, m.Close())
-	content, err = os.ReadFile(backupPath)
+	content, err := os.ReadFile(backupPath)
 	require.NoError(t, err)
 	assert.Equal(t, "9", string(content))
 
@@ -228,7 +230,7 @@ func TestMeterWithBackup_OpenError_Missing(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 
@@ -241,7 +243,7 @@ func TestMeterWithBackup_OpenError_Invalid(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 	backupPath := filepath.Join(t.TempDir(), "backup")
@@ -257,7 +259,7 @@ func TestMeterWithBackup_ReadError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 
@@ -273,7 +275,7 @@ func TestMeterWithBackup_FlushError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 
@@ -300,7 +302,7 @@ func TestMeterWithBackup_CloseError(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
+	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
 

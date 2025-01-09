@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
@@ -30,14 +30,14 @@ const (
 )
 
 type Cleaner struct {
-	clock          clock.Clock
+	clock          clockwork.Clock
 	logger         log.Logger
 	client         *etcd.Client
 	taskEtcdPrefix etcdop.PrefixT[Task]
 }
 
 type cleanerDeps interface {
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
 	EtcdSerde() *serde.Serde
@@ -73,14 +73,14 @@ func StartCleaner(d cleanerDeps, interval time.Duration) error {
 	go func() {
 		defer wg.Done()
 
-		ticker := c.clock.Ticker(interval)
+		ticker := c.clock.NewTicker(interval)
 		defer ticker.Stop()
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case <-ticker.C:
+			case <-ticker.Chan():
 				// Only one node in cluster should be responsible for tasks cleanup
 				if distGroup.MustCheckIsOwner("task.cleanup") {
 					if err := c.clean(ctx); err != nil && !errors.Is(err, context.Canceled) {

@@ -6,8 +6,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -19,7 +19,7 @@ import (
 // Regarding waiting for sync, see Notifier methods.
 type Syncer struct {
 	logger   log.Logger
-	clock    clock.Clock
+	clock    clockwork.Clock
 	config   Config
 	pipeline Pipeline
 
@@ -48,12 +48,12 @@ type Syncer struct {
 }
 
 type SyncerFactory interface {
-	NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, pipeline Pipeline, statistics StatisticsProvider) *Syncer
+	NewSyncer(ctx context.Context, logger log.Logger, clock clockwork.Clock, config Config, pipeline Pipeline, statistics StatisticsProvider) *Syncer
 }
 
 type DefaultSyncerFactory struct{}
 
-func (DefaultSyncerFactory) NewSyncer(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, pipeline Pipeline, statistics StatisticsProvider) *Syncer {
+func (DefaultSyncerFactory) NewSyncer(ctx context.Context, logger log.Logger, clock clockwork.Clock, config Config, pipeline Pipeline, statistics StatisticsProvider) *Syncer {
 	return NewSyncer(ctx, logger, clock, config, pipeline, statistics)
 }
 
@@ -77,7 +77,7 @@ type StatisticsProvider interface {
 func NewSyncer(
 	ctx context.Context,
 	logger log.Logger,
-	clock clock.Clock,
+	clock clockwork.Clock,
 	config Config,
 	pipeline Pipeline,
 	statistics StatisticsProvider,
@@ -231,7 +231,7 @@ func (s *Syncer) isCancelled() bool {
 }
 
 func (s *Syncer) syncLoop() {
-	ticker := s.clock.Ticker(s.config.CheckInterval.Duration())
+	ticker := s.clock.NewTicker(s.config.CheckInterval.Duration())
 
 	s.wg.Add(1)
 	go func() {
@@ -244,7 +244,7 @@ func (s *Syncer) syncLoop() {
 			case <-s.cancelled:
 				// The Close method has been called
 				return
-			case <-ticker.C:
+			case <-ticker.Chan():
 				if s.checkSyncConditions() {
 					s.TriggerSync(false)
 				}

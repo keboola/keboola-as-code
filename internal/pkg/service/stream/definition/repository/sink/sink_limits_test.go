@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,8 +32,7 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	ctx := context.Background()
 	by := test.ByUser()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
@@ -91,8 +90,7 @@ func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	ctx := context.Background()
 	by := test.ByUser()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)

@@ -53,7 +53,7 @@ func NewL2Cache(d dependencies, l1Cache *L1, config statistics.L2CacheConfig) (*
 	// Periodically invalidates the cache.
 	if c.enabled {
 		c.wg.Add(1)
-		ticker := d.Clock().Ticker(config.InvalidationInterval.Duration())
+		ticker := d.Clock().NewTicker(config.InvalidationInterval.Duration())
 		go func() {
 			defer c.wg.Done()
 			defer ticker.Stop()
@@ -61,7 +61,7 @@ func NewL2Cache(d dependencies, l1Cache *L1, config statistics.L2CacheConfig) (*
 				select {
 				case <-ctx.Done():
 					return
-				case <-ticker.C:
+				case <-ticker.Chan():
 					c.Clear()
 				}
 			}

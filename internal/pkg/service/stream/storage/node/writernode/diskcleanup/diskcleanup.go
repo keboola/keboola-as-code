@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
@@ -33,7 +33,7 @@ import (
 
 type Node struct {
 	config     Config
-	clock      clock.Clock
+	clock      clockwork.Clock
 	logger     log.Logger
 	telemetry  telemetry.Telemetry
 	repository *storageRepo.Repository
@@ -50,7 +50,7 @@ type volumeState struct {
 }
 
 type dependencies interface {
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
@@ -89,7 +89,7 @@ func Start(d dependencies, cfg Config) error {
 	go func() {
 		defer wg.Done()
 
-		ticker := d.Clock().Ticker(n.config.Interval)
+		ticker := d.Clock().NewTicker(n.config.Interval)
 		defer ticker.Stop()
 
 		for {
@@ -100,7 +100,7 @@ func Start(d dependencies, cfg Config) error {
 			select {
 			case <-ctx.Done():
 				return
-			case <-ticker.C:
+			case <-ticker.Chan():
 				continue
 			}
 		}

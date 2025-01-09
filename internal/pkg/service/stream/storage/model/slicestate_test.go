@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,8 +16,7 @@ import (
 func TestSlice_StateTransition(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Mock{}
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 
 	// Create file entity
 	sliceKey := testSliceKey()
@@ -29,7 +28,7 @@ func TestSlice_StateTransition(t *testing.T) {
 	}
 
 	// SliceClosing
-	clk.Add(time.Hour)
+	clk.Advance(time.Hour)
 	slice, err = slice.WithState(clk.Now(), SliceClosing)
 	require.NoError(t, err)
 	assert.Equal(t, Slice{
@@ -39,7 +38,7 @@ func TestSlice_StateTransition(t *testing.T) {
 	}, slice)
 
 	// SliceUploading
-	clk.Add(time.Hour)
+	clk.Advance(time.Hour)
 	slice, err = slice.WithState(clk.Now(), SliceUploading)
 	require.NoError(t, err)
 	assert.Equal(t, Slice{
@@ -50,7 +49,7 @@ func TestSlice_StateTransition(t *testing.T) {
 	}, slice)
 
 	// SliceUploaded
-	clk.Add(time.Hour)
+	clk.Advance(time.Hour)
 	slice, err = slice.WithState(clk.Now(), SliceUploaded)
 	require.NoError(t, err)
 	assert.Equal(t, Slice{
@@ -62,7 +61,7 @@ func TestSlice_StateTransition(t *testing.T) {
 	}, slice)
 
 	// SliceImported
-	clk.Add(time.Hour)
+	clk.Advance(time.Hour)
 	slice, err = slice.WithState(clk.Now(), SliceImported)
 	require.NoError(t, err)
 	assert.Equal(t, Slice{

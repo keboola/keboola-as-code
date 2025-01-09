@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/gofrs/flock"
+	"github.com/jonboulle/clockwork"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -37,7 +37,7 @@ type Volume struct {
 
 	config       Config
 	logger       log.Logger
-	clock        clock.Clock
+	clock        clockwork.Clock
 	readerEvents *events.Events[Reader]
 
 	fsLock *flock.Flock
@@ -55,7 +55,7 @@ type readerRef struct {
 //   - The IDFile is loaded.
 //   - If the IDFile doesn't exist, the function waits until the writer.Open function will create it.
 //   - The LockFile ensures only one opening of the volume for reading.
-func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, readerEvents *events.Events[Reader], spec volume.Spec) (*Volume, error) {
+func OpenVolume(ctx context.Context, logger log.Logger, clock clockwork.Clock, config Config, readerEvents *events.Events[Reader], spec volume.Spec) (*Volume, error) {
 	v := &Volume{
 		spec:         spec,
 		config:       config,
@@ -249,10 +249,10 @@ func (v *Volume) Close(ctx context.Context) error {
 // The file is created by the writer.Open
 // and this reader.Open is waiting for it.
 func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
-	ctx, cancel := v.clock.WithTimeout(ctx, v.config.WaitForVolumeIDTimeout)
+	ctx, cancel := clockwork.WithTimeout(ctx, v.clock, v.config.WaitForVolumeIDTimeout)
 	defer cancel()
 
-	ticker := v.clock.Ticker(WaitForVolumeIDInterval)
+	ticker := v.clock.NewTicker(WaitForVolumeIDInterval)
 	defer ticker.Stop()
 
 	path := filepath.Join(v.spec.Path, volume.IDFile)
@@ -267,7 +267,7 @@ func (v *Volume) waitForVolumeID(ctx context.Context) (volume.ID, error) {
 		}
 
 		select {
-		case <-ticker.C:
+		case <-ticker.Chan():
 			// One more attempt
 		case <-ctx.Done():
 			// Stop on context cancellation / timeout

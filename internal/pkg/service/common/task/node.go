@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/spf13/cast"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
@@ -46,7 +46,7 @@ type Node struct {
 	tracer  telemetry.Tracer
 	metrics *metrics
 
-	clock  clock.Clock
+	clock  clockwork.Clock
 	logger log.Logger
 	client *etcd.Client
 
@@ -67,7 +67,7 @@ type Node struct {
 
 type dependencies interface {
 	Telemetry() telemetry.Telemetry
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client

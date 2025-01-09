@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	etcdPkg "go.etcd.io/etcd/client/v3"
@@ -50,7 +50,7 @@ func TestFileRotation(t *testing.T) {
 `)
 
 	// Trigger check - file expiration import trigger
-	ts.clk.Add(fileExpirationDiff)
+	ts.clk.Advance(fileExpirationDiff)
 	ts.triggerCheck(t, true, ` 
 {"level":"info","message":"rotating file, import conditions met: expiration threshold met, expiration: 2000-01-01T00:31:00.000Z, remains: %s, threshold: 30m0s","file.id":"%s","component":"storage.node.operator.file.rotation"}
 `)
@@ -185,7 +185,7 @@ func TestFileRotation(t *testing.T) {
 type testState struct {
 	interval      time.Duration
 	importTrigger targetConfig.ImportTrigger
-	clk           *clock.Mock
+	clk           *clockwork.FakeClock
 	logger        log.DebugLogger
 	client        *etcdPkg.Client
 	mock          dependencies.Mocked
@@ -211,8 +211,7 @@ func setup(t *testing.T, ctx context.Context) *testState {
 	require.GreaterOrEqual(t, conditionsCheckInterval, minImportInterval)
 
 	// Create dependencies
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
 			MinInterval: duration.From(minImportInterval),
@@ -267,7 +266,7 @@ func (ts *testState) waitForStatsSync(t *testing.T) {
 
 func (ts *testState) triggerCheck(t *testing.T, expectEntityModification bool, expectedLogs string) {
 	t.Helper()
-	ts.clk.Add(ts.interval)
+	ts.clk.Advance(ts.interval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, expectedLogs)
 	}, 5*time.Second, 10*time.Millisecond)

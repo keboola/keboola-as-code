@@ -6,7 +6,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -47,7 +47,7 @@ type writerSnapshot struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Process() *servicectx.Process
 	StatisticsRepository() *repository.Repository
 }
@@ -118,7 +118,7 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 	// For example clock.Add(time.Hour) invokes the timer 3600 times, if the interval is 1s.
 	if c.config.Enabled {
 		c.wg.Add(1)
-		ticker := d.Clock().Ticker(c.config.SyncInterval.Duration())
+		ticker := d.Clock().NewTicker(c.config.SyncInterval.Duration())
 		go func() {
 			defer c.wg.Done()
 			defer ticker.Stop()
@@ -129,7 +129,7 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 				case <-ctx.Done():
 					_ = c.syncAll()
 					return
-				case <-ticker.C:
+				case <-ticker.Chan():
 					_ = c.syncAll()
 				}
 			}

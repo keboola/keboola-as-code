@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -26,8 +26,7 @@ func TestSliceRepository_OpenSliceOnFileCreate(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -72,7 +71,7 @@ func TestSliceRepository_OpenSliceOnFileCreate(t *testing.T) {
 	// Disable Source, it in cascade disables Sink, it triggers file closing, it triggers slices closing
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, defRepo.Source().Disable(sourceKey, clk.Now(), by, "test reason").Do(ctx).Err())
 	}
 
@@ -80,7 +79,7 @@ func TestSliceRepository_OpenSliceOnFileCreate(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var openEtcdLogs string
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		etcdLogs.Reset()
 		require.NoError(t, defRepo.Source().Enable(sourceKey, clk.Now(), by).Do(ctx).Err())
 		openEtcdLogs = etcdLogs.String()

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -25,7 +25,7 @@ func TestNodesDiscovery(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.New() // use real clock
+	clk := clockwork.NewRealClock() // use real clock
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
 	client := etcdhelper.ClientForTest(t, etcdCfg)
@@ -282,7 +282,7 @@ node4
 `)
 }
 
-func createNode(t *testing.T, ctx context.Context, clk clock.Clock, etcdCfg etcdclient.Config, nodeID string) (*distribution.GroupNode, dependencies.Mocked) {
+func createNode(t *testing.T, ctx context.Context, clk clockwork.Clock, etcdCfg etcdclient.Config, nodeID string) (*distribution.GroupNode, dependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
@@ -292,7 +292,7 @@ func createNode(t *testing.T, ctx context.Context, clk clock.Clock, etcdCfg etcd
 	// and disable events grouping interval in tests with mocked clocks,
 	// events will be processed immediately.
 	groupInterval := 10 * time.Millisecond
-	if _, ok := clk.(*clock.Mock); ok {
+	if _, ok := clk.(*clockwork.FakeClock); ok {
 		groupInterval = 0
 	}
 
@@ -306,7 +306,7 @@ func createNode(t *testing.T, ctx context.Context, clk clock.Clock, etcdCfg etcd
 	return groupNode, d
 }
 
-func createDeps(t *testing.T, ctx context.Context, clk clock.Clock, logs io.Writer, etcdCfg etcdclient.Config) dependencies.Mocked {
+func createDeps(t *testing.T, ctx context.Context, clk clockwork.Clock, logs io.Writer, etcdCfg etcdclient.Config) dependencies.Mocked {
 	t.Helper()
 	d := dependencies.NewMocked(
 		t,

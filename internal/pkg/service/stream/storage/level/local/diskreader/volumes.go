@@ -3,7 +3,7 @@ package diskreader
 import (
 	"context"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -23,7 +23,7 @@ type Volumes struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Process() *servicectx.Process
 }
 

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/gcs"
 	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
@@ -14,7 +14,7 @@ import (
 	"go.uber.org/atomic"
 )
 
-func MockFileStorageAPICalls(tb testing.TB, clk clock.Clock, transport *httpmock.MockTransport) {
+func MockFileStorageAPICalls(tb testing.TB, clk clockwork.Clock, transport *httpmock.MockTransport) {
 	tb.Helper()
 
 	fileID := atomic.NewInt32(1000)

@@ -9,8 +9,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/benbjohnson/clock"
 	"github.com/gofrs/flock"
+	"github.com/jonboulle/clockwork"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/atomic"
 
@@ -38,7 +38,7 @@ type Volume struct {
 	spec volume.Spec
 
 	logger       log.Logger
-	clock        clock.Clock
+	clock        clockwork.Clock
 	writerEvents *events.Events[Writer]
 	config       Config
 	fileOpener   FileOpener
@@ -66,7 +66,7 @@ type writerRef struct {
 //   - If the drainFile exists, then writing is prohibited and the function ends with an error.
 //   - The IDFile is loaded or generated, it contains storage.ID, unique identifier of the volume.
 //   - The lockFile ensures only one opening of the volume for writing.
-func OpenVolume(ctx context.Context, logger log.Logger, clock clock.Clock, config Config, spec volume.Spec, writerEvents *events.Events[Writer]) (*Volume, error) {
+func OpenVolume(ctx context.Context, logger log.Logger, clock clockwork.Clock, config Config, spec volume.Spec, writerEvents *events.Events[Writer]) (*Volume, error) {
 	v := &Volume{
 		spec:          spec,
 		logger:        logger,

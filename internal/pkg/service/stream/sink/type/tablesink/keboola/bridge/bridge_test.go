@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,8 +34,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 
 	ctx := context.Background()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -150,7 +149,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var disableSinkEtcdLogs string
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		etcdLogs.Reset()
 		require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "some reason").Do(apiCtx).Err())
 		disableSinkEtcdLogs = etcdLogs.String()
@@ -181,7 +180,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var enableSinkEtcdLogs string
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		etcdLogs.Reset()
 		require.NoError(t, defRepo.Sink().Enable(sinkKey, clk.Now(), by).Do(apiCtx).Err())
 		enableSinkEtcdLogs = etcdLogs.String()
@@ -215,7 +214,7 @@ func TestBridge_FullWorkflow(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var deleteFilesEtcdLogs string
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		fileKey1 := model.FileKey{SinkKey: sinkKey, FileID: model.FileID{OpenedAt: utctime.MustParse("2000-01-01T01:00:00.000Z")}}
 		fileKey2 := model.FileKey{SinkKey: sinkKey, FileID: model.FileID{OpenedAt: utctime.MustParse("2000-01-01T03:00:00.000Z")}}
 		etcdLogs.Reset()

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -46,8 +46,7 @@ func TestSliceRotation(t *testing.T) {
 	require.GreaterOrEqual(t, conditionsCheckInterval, minUploadInterval)
 
 	// Create dependencies
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	d, mock := dependencies.NewMockedCoordinatorScopeWithConfig(t, ctx, func(cfg *config.Config) {
 		cfg.Storage.Level.Staging.Upload = stagingConfig.UploadConfig{
 			MinInterval: duration.From(minUploadInterval),
@@ -86,7 +85,7 @@ func TestSliceRotation(t *testing.T) {
 	}
 	triggerCheck := func(t *testing.T, expectEntityModification bool, expectedLogs string) {
 		t.Helper()
-		clk.Add(conditionsCheckInterval)
+		clk.Advance(conditionsCheckInterval)
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			logger.AssertJSONMessages(c, expectedLogs)
 		}, 5*time.Second, 10*time.Millisecond)

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -892,7 +892,7 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 
 	// Trigger sync by the records count
 	syncerWriter.Counter.Add(tc.Clock.Now(), uint64(tc.Config.CountTrigger)-syncerWriter.Counter.Count())
-	tc.Clock.Add(tc.Config.CheckInterval.Duration())
+	tc.Clock.Advance(tc.Config.CheckInterval.Duration())
 	wg.Wait()
 
 	// Check output
@@ -949,7 +949,7 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 	}
 
 	// Wait for sync
-	tc.Clock.Add(tc.Config.IntervalTrigger.Duration())
+	tc.Clock.Advance(tc.Config.IntervalTrigger.Duration())
 	wg.Wait()
 
 	// Check output
@@ -1023,7 +1023,7 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	}()
 
 	// Wait for sync
-	tc.Clock.Add(tc.Config.CheckInterval.Duration())
+	tc.Clock.Advance(tc.Config.CheckInterval.Duration())
 	wg.Wait()
 
 	// Check output
@@ -1056,7 +1056,7 @@ type writerTestCase struct {
 	TB     testing.TB
 	Ctx    context.Context
 	Logger log.DebugLogger
-	Clock  *clock.Mock
+	Clock  *clockwork.FakeClock
 	Chain  *testChain
 	Config Config
 }
@@ -1138,7 +1138,7 @@ func newWriterTestCase(tb testing.TB) *writerTestCase {
 		TB:     tb,
 		Ctx:    ctx,
 		Logger: logger,
-		Clock:  clock.NewMock(),
+		Clock:  clockwork.NewFakeClock(),
 		Chain: &testChain{
 			Logger:   logger,
 			SyncLock: &sync.Mutex{},

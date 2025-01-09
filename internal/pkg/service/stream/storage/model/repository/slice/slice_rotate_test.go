@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,8 +29,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 
 	ctx := context.Background()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -84,7 +83,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		etcdLogs.Reset()
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		slice2, err := sliceRepo.Rotate(sliceKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.Equal(t, clk.Now(), slice2.OpenedAt().Time())
@@ -95,7 +94,7 @@ func TestSliceRepository_Rotate(t *testing.T) {
 	var rotateEtcdLogs string
 	{
 		var err error
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		etcdLogs.Reset()
 		slice3, err := sliceRepo.Rotate(sliceKey, clk.Now()).Do(ctx).ResultOrErr()
 		rotateEtcdLogs = etcdLogs.String()
@@ -117,8 +116,7 @@ func TestSliceRepository_Rotate_WithClosingFile(t *testing.T) {
 
 	ctx := context.Background()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	// Fixtures
@@ -163,7 +161,7 @@ func TestSliceRepository_Rotate_WithClosingFile(t *testing.T) {
 	// Rotate - create the second file
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		etcdLogs.Reset()
 		file2, err := storageRepo.File().Rotate(sinkKey, clk.Now()).Do(ctx).ResultOrErr()
 		require.NoError(t, err)

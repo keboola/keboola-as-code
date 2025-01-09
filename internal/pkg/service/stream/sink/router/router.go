@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -33,7 +33,7 @@ const (
 
 type Router struct {
 	sourceType  string
-	clock       clock.Clock
+	clock       clockwork.Clock
 	logger      log.Logger
 	plugins     *plugin.Plugins
 	definitions *definitionRepo.Repository
@@ -60,7 +60,7 @@ type metrics struct {
 }
 
 type dependencies interface {
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
 	Plugins() *plugin.Plugins

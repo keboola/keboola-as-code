@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -27,8 +27,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 
 	ctx := context.Background()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 
 	// Fixtures
 	projectID := keboola.ProjectID(123)
@@ -85,7 +84,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// Switch slice to the storage.SliceClosing state by file rotate
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.Rotate(sinkKey, clk.Now()).Do(ctx).Err())
 	}
 
@@ -94,7 +93,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// var toUploadingEtcdLogs string
 	{
 		etcdLogs.Reset()
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, sliceRepo.SwitchToUploading(slice.SliceKey, clk.Now(), false).Do(ctx).Err())
 	}
 
@@ -102,7 +101,7 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var toUploadedEtcdLogs string
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		etcdLogs.Reset()
 		require.NoError(t, sliceRepo.SwitchToUploaded(slice.SliceKey, clk.Now()).Do(ctx).Err())
 		toUploadedEtcdLogs = etcdLogs.String()
@@ -111,9 +110,9 @@ func TestSliceRepository_StateTransition(t *testing.T) {
 	// Switch slice to the storage.SliceImported state, together with the file to the storage.FileImported state
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImporting(file.FileKey, clk.Now(), false).Do(ctx).Err())
-		clk.Add(time.Hour)
+		clk.Advance(time.Hour)
 		require.NoError(t, fileRepo.SwitchToImported(file.FileKey, clk.Now()).Do(ctx).Err())
 	}
 

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/ccoveille/go-safecast"
+	"github.com/jonboulle/clockwork"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/keboola/go-client/pkg/keboola"
 	routing "github.com/qiangxue/fasthttp-routing"
@@ -42,7 +42,7 @@ var (
 )
 
 type dependencies interface {
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
 	DefinitionRepository() *definitionRepo.Repository

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 
 	commonErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -23,7 +23,7 @@ const (
 )
 
 type Checker struct {
-	clock         clock.Clock
+	clock         clockwork.Clock
 	cachedL2Stats *statsCache.L2
 
 	// nextLogAt prevents errors from flooding the log
@@ -32,7 +32,7 @@ type Checker struct {
 }
 
 type dependencies interface {
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	StatisticsL2Cache() *statsCache.L2
 }
 

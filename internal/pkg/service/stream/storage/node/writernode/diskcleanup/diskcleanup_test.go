@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,8 +32,7 @@ func TestDiskCleanup(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	by := test.ByUser()
 
 	volumeID := volume.ID("my-volume")
@@ -75,12 +74,11 @@ func TestDiskCleanup(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	var doCleanup func()
 	{
-		startTime := clk.Now()
 		cleanupAttempt := 0
 		doCleanup = func() {
 			cleanupAttempt++
 			logger.Truncate()
-			clk.Set(startTime.Add(time.Duration(cleanupAttempt) * cleanupInterval))
+			clk.Advance(cleanupInterval)
 			assert.EventuallyWithT(t, func(c *assert.CollectT) {
 				logger.AssertJSONMessages(c, `{"level":"info","message":"removed \"%d\" directories"}`)
 			}, 2*time.Second, 100*time.Millisecond)
@@ -171,9 +169,9 @@ func TestDiskCleanup(t *testing.T) {
 	// Remove slice from DB
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		clk.Add(time.Second)
+		clk.Advance(time.Second)
 		require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "reason").Do(ctx).Err())
-		clk.Add(time.Second)
+		clk.Advance(time.Second)
 		require.NoError(t, fileRepo.Delete(slice.FileKey, clk.Now()).Do(ctx).Err())
 	}
 

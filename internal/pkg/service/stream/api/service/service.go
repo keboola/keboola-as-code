@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
@@ -23,7 +23,7 @@ const (
 
 type service struct {
 	logger     log.Logger
-	clock      clock.Clock
+	clock      clockwork.Clock
 	publicURL  *url.URL
 	tasks      *task.Node
 	locks      *distlock.Provider

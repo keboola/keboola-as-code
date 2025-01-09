@@ -322,8 +322,15 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: parallelt
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
+	secretKey := make([]byte, 32)
+	_, err := rand.Read(secretKey)
+	require.NoError(t, err)
+
 	// Update configuration to make the cluster testable
 	configFn := func(cfg *config.Config) {
+		// Setup encryption
+		cfg.Encryption.Provider = encryption.ProviderNative
+		cfg.Encryption.Native.SecretKey = secretKey
 		// Enable metadata cleanup for removing storage jobs
 		cfg.Storage.MetadataCleanup.Enabled = true
 		// Disable unrelated workers

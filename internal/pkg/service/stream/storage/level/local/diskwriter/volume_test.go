@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 	"github.com/gofrs/flock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -245,7 +245,7 @@ type volumeTestCase struct {
 	TB                testing.TB
 	Ctx               context.Context
 	Logger            log.DebugLogger
-	Clock             *clock.Mock
+	Clock             *clockwork.FakeClock
 	Events            *events.Events[diskwriter.Writer]
 	Allocator         *allocator
 	Config            diskwriter.Config
@@ -275,7 +275,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 		TB:                tb,
 		Ctx:               ctx,
 		Logger:            logger,
-		Clock:             clock.NewMock(),
+		Clock:             clockwork.NewFakeClock(),
 		Events:            events.New[diskwriter.Writer](),
 		Allocator:         testAllocator,
 		Config:            cfg,

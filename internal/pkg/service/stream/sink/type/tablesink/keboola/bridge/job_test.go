@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,8 +31,7 @@ func TestBridge_CreateJob(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
 	checkInterval := time.Minute
@@ -88,7 +87,7 @@ func TestBridge_CreateJob(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// Rotate file
-		clk.Add(time.Second)
+		clk.Advance(time.Second)
 		require.NoError(t, storageRepo.File().Rotate(sinkKey, clk.Now()).Do(apiCtx).Err())
 		files, err := storageRepo.File().ListAll().Do(ctx).All()
 		require.NoError(t, err)
@@ -103,12 +102,12 @@ func TestBridge_CreateJob(t *testing.T) {
 		slice := slices[0]
 
 		// Upload of non empty slice
-		clk.Add(time.Second)
+		clk.Advance(time.Second)
 		require.NoError(t, storageRepo.Slice().SwitchToUploading(slice.SliceKey, clk.Now(), false).Do(ctx).Err())
 		require.NoError(t, storageRepo.Slice().SwitchToUploaded(slice.SliceKey, clk.Now()).Do(ctx).Err())
 
 		// Switch file to the FileImporting state
-		clk.Add(time.Second)
+		clk.Advance(time.Second)
 		require.NoError(t, storageRepo.File().SwitchToImporting(file.FileKey, clk.Now(), false).Do(ctx).Err())
 	}
 
@@ -119,7 +118,7 @@ func TestBridge_CreateJob(t *testing.T) {
 	// Wait import of the empty file
 	// -----------------------------------------------------------------------------------------------------------------
 	logger.Truncate()
-	clk.Add(checkInterval)
+	clk.Advance(checkInterval)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		logger.AssertJSONMessages(c, `
 {"level":"info","message":"importing file","component":"storage.node.operator.file.import"}

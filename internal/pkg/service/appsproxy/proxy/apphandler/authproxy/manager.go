@@ -1,7 +1,7 @@
 package authproxy
 
 import (
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -18,13 +18,13 @@ type Manager struct {
 	logger           log.Logger
 	config           config.Config
 	pageWriter       *pagewriter.Writer
-	clock            clock.Clock
+	clock            clockwork.Clock
 	providerSelector *selector.Selector
 }
 
 type dependencies interface {
 	Logger() log.Logger
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Config() config.Config
 	PageWriter() *pagewriter.Writer
 }

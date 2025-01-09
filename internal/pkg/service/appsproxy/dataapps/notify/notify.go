@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -19,7 +19,7 @@ import (
 const Interval = time.Second * 30
 
 type Manager struct {
-	clock    clock.Clock
+	clock    clockwork.Clock
 	logger   log.Logger
 	api      *api.API
 	stateMap *syncmap.SyncMap[api.AppID, state]
@@ -31,7 +31,7 @@ type state struct {
 }
 
 type dependencies interface {
-	Clock() clock.Clock
+	Clock() clockwork.Clock
 	Logger() log.Logger
 	AppsAPI() *api.API
 }

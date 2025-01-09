@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -30,7 +30,8 @@ type Meter struct {
 type MeterWithBackup struct {
 	*Meter
 	backup       backup
-	backupTicker *clock.Ticker
+	backupTicker clockwork.Ticker
+	lock         sync.RWMutex
 }
 
 // backup interface contains used methods from *os.File.
@@ -45,7 +46,7 @@ func NewMeter(w io.Writer) *Meter {
 	return &Meter{w: w}
 }
 
-func NewMeterWithBackupFile(ctx context.Context, clk clock.Clock, logger log.Logger, w io.Writer, backupPath string, backupInterval time.Duration) (*MeterWithBackup, error) {
+func NewMeterWithBackupFile(ctx context.Context, clk clockwork.Clock, logger log.Logger, w io.Writer, backupPath string, backupInterval time.Duration) (*MeterWithBackup, error) {
 	backupFile, err := os.OpenFile(backupPath, os.O_CREATE|os.O_RDWR, 0o640)
 	if err != nil {
 		return nil, err
@@ -60,7 +61,7 @@ func NewMeterWithBackupFile(ctx context.Context, clk clock.Clock, logger log.Log
 	return meter, nil
 }
 
-func NewMeterWithBackup(ctx context.Context, clk clock.Clock, logger log.Logger, w io.Writer, backup backup, backupInterval time.Duration) (*MeterWithBackup, error) {
+func NewMeterWithBackup(ctx context.Context, clk clockwork.Clock, logger log.Logger, w io.Writer, backup backup, backupInterval time.Duration) (*MeterWithBackup, error) {
 	// Read value
 	buffer := make([]byte, 32)
 	n, err := io.ReadFull(backup, buffer)
@@ -85,9 +86,9 @@ func NewMeterWithBackup(ctx context.Context, clk clock.Clock, logger log.Logger,
 
 	// Start backup ticker
 	if backupInterval > 0 {
-		m.backupTicker = clk.Ticker(backupInterval)
+		m.backupTicker = clk.NewTicker(backupInterval)
 		go func() {
-			for range m.backupTicker.C {
+			for range m.backupTicker.Chan() {
 				if err = m.SyncBackup(); err != nil {
 					err = errors.PrefixErrorf(err, `cannot flush meter backup %v`, backup)
 					logger.Error(ctx, err.Error())
@@ -115,6 +116,13 @@ func (m *Meter) Size() datasize.ByteSize {
 }
 
 func (w *MeterWithBackup) SyncBackup() error {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+
+	if w.backup == nil {
+		return nil
+	}
+
 	// Seek to the beginning of the file
 	// The size counter can only grow, so it guarantees that the entire file will be overwritten.
 	if _, err := w.backup.Seek(0, io.SeekStart); err != nil {
@@ -137,9 +145,14 @@ func (w *MeterWithBackup) Close() error {
 		return err
 	}
 
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
 	if err := w.backup.Close(); err != nil {
 		return errors.Errorf(`cannot close the backup file: %w`, err)
 	}
+
+	w.backup = nil
 
 	return nil
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/benbjohnson/clock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -21,8 +21,7 @@ func TestRepository_Volume(t *testing.T) {
 
 	ctx := context.Background()
 
-	clk := clock.NewMock()
-	clk.Set(utctime.MustParse("2000-01-03T01:00:00.000Z").Time())
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-03T01:00:00.000Z").Time())
 
 	// Get services
 	d, mocked := dependencies.NewMockedStorageScope(t, ctx, deps.WithClock(clk))
