@@ -9,7 +9,8 @@ type Config struct {
 }
 
 type AESConfig struct {
-	SecretKey []byte `json:"secretKey" configKey:"secretKey" sensitive:"true" validate:"required,len=32" configUsage:"Secret key for local encryption. Do not use in production."`
+	SecretKey      []byte                    `json:"secretKey" configKey:"secretKey" sensitive:"true" validate:"required,len=32" configUsage:"Secret key for local encryption. Do not use in production."`
+	NonceGenerator func(int) ([]byte, error) `json:"-"`
 }
 
 type GCPConfig struct {

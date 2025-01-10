@@ -24,7 +24,12 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 	case ProviderNone:
 		return nil, nil
 	case ProviderAES:
-		encryptor, err = cloudencrypt.NewAESEncryptor(config.AES.SecretKey)
+		if config.AES.NonceGenerator != nil {
+			encryptor, err = cloudencrypt.NewAESEncryptorWithNonceGenerator(config.AES.SecretKey, config.AES.NonceGenerator)
+		} else {
+			encryptor, err = cloudencrypt.NewAESEncryptor(config.AES.SecretKey)
+		}
+
 		if err != nil {
 			return nil, err
 		}
