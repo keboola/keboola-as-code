@@ -9,8 +9,14 @@ ENV GOLANGCI_LINT_CACHE=/tmp/cache/golangci-lint
 ENV PATH="$PATH:$GOBIN"
 
 # Install packages
-RUN apt-get update && apt-get install --no-install-recommends --yes nano protobuf-compiler graphviz build-essential
+RUN apt-get update && apt-get install --no-install-recommends --yes unzip nano libprotobuf-dev graphviz build-essential
 ENV EDITOR=nano
+
+# Install Protobuf
+RUN curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v29.2/protoc-29.2-linux-x86_64.zip && \
+    unzip protoc-29.2-linux-x86_64.zip -d /usr/local && \
+    rm -f protoc-29.2-linux-x86_64.zip
+
 # Download toxiproxy
 RUN curl -L https://github.com/Shopify/toxiproxy/releases/download/v2.11.0/toxiproxy-server-linux-amd64 -o /usr/local/bin/toxiproxy-server
 RUN chmod +x /usr/local/bin/toxiproxy-server

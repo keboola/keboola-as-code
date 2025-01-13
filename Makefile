@@ -7,6 +7,9 @@ tools:
 generate-model:
 	./scripts/generate-model.sh
 
+generate-protobuf:
+	./scripts/generate-protobuf.sh
+
 generate-appsproxy-api:
 	SERVICE_NAME=appsproxy bash ./scripts/generate-api.sh
 
