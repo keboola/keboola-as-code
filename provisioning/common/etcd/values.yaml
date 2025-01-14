@@ -1,4 +1,4 @@
-# Common etcd definition for the Templates API and Buffer API.
+# Common etcd definition for the Templates API and Stream API.
 # Values can be overridden by Helm --set flag or by another --values files.
 # Chart default values: https://github.com/bitnami/charts/blob/master/bitnami/etcd/values.yaml
 
