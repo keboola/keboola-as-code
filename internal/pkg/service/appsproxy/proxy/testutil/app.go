@@ -57,7 +57,8 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 		for {
 			select {
 			case <-ctx.Done():
-				require.NoError(t, c.Close(websocket.StatusNormalClosure, "Connection closed"))
+				// Ignore error, the websocket can be closed at this point
+				c.Close(websocket.StatusNormalClosure, "Connection closed") //nolint:errcheck
 				return
 			case <-ticker.C:
 				// Ignore error, the websocket can be closed at this point
