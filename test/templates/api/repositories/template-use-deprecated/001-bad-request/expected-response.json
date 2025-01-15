@@ -1,5 +1,5 @@
 {
-  "statusCode": 400,
+  "statusCode": 200,
   "error": "template.deprecated",
   "message": "Template \"my-template-id\" is deprecated, cannot be used."
 }
