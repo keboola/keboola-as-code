@@ -28,8 +28,6 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 		if err != nil {
 			return nil, err
 		}
-
-		return encryptor, nil
 	case ProviderGCP:
 		encryptor, err = cloudencrypt.NewGCPEncryptor(ctx, config.GCP.KMSKeyID)
 		if err != nil {
@@ -47,7 +45,14 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 		}
 	}
 
-	encryptor, err = cloudencrypt.NewDualEncryptor(ctx, encryptor)
+	if config.Provider != ProviderNative {
+		encryptor, err = cloudencrypt.NewDualEncryptor(ctx, encryptor)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	encryptor, err = cloudencrypt.NewPrefixEncryptor(ctx, encryptor, []byte(config.Provider+"::"))
 	if err != nil {
 		return nil, err
 	}
