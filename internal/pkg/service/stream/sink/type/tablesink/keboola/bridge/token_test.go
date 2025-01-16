@@ -221,7 +221,7 @@ func TestBridge_MigrateTokens(t *testing.T) {
 		assert.NotNil(t, token1.EncryptedToken)
 
 		metadata := cloudencrypt.Metadata{"sink": token1.SinkKey.String()}
-		keboolaToken, err := encryptor.Decrypt(ctx, token1.EncryptedToken, metadata)
+		keboolaToken, err := encryptor.Decrypt(ctx, []byte(token1.EncryptedToken), metadata)
 		require.NoError(t, err)
 		assert.Equal(t, "token1", keboolaToken.Token)
 	}
@@ -234,7 +234,7 @@ func TestBridge_MigrateTokens(t *testing.T) {
 		assert.NotNil(t, token2.EncryptedToken)
 
 		metadata := cloudencrypt.Metadata{"sink": token2.SinkKey.String()}
-		keboolaToken, err := encryptor.Decrypt(ctx, token2.EncryptedToken, metadata)
+		keboolaToken, err := encryptor.Decrypt(ctx, []byte(token2.EncryptedToken), metadata)
 		require.NoError(t, err)
 		assert.Equal(t, "token2", keboolaToken.Token)
 	}
