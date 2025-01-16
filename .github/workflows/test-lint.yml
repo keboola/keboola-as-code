@@ -13,6 +13,9 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
+      - working-directory: /
+        run: du | sort -rn | head -n100 -$worstOffenders
+
       # Removing this directory helps to prevent a "no space left on device" error.
       - name: Remove useless data
         run: rm -rf /opt/hostedtoolcache
@@ -30,11 +33,17 @@ jobs:
           docker-images: false
           swap-storage: false
 
+      - working-directory: /
+        run: du | sort -rn | head -n100 -$worstOffenders
+
       - name: Setup Go, tools and caching
         uses: ./.github/actions/go-setup
         with:
           build-type: lint
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+
+      - working-directory: /
+        run: du | sort -rn | head -n100 -$worstOffenders
 
       - name: Check links in Markdown files
         uses: lycheeverse/lychee-action@v2.2.0
@@ -51,6 +60,13 @@ jobs:
             --exclude '^https://packages.debian.org/$'
             --exclude '^https://test.hub.keboola.local/$'
 
+      - working-directory: /
+        run: du | sort -rn | head -n100 -$worstOffenders
+
       - name: Run code linters
         run: make lint
         shell: bash
+
+      - working-directory: /
+        if: always()
+        run: du | sort -rn | head -n100 -$worstOffenders
