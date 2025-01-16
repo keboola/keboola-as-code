@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	ProviderNone   = Provider("none")
-	ProviderNative = Provider("native")
-	ProviderGCP    = Provider("gcp")
-	ProviderAWS    = Provider("aws")
-	ProviderAzure  = Provider("azure")
+	ProviderNone  = Provider("none")
+	ProviderAES   = Provider("aes")
+	ProviderGCP   = Provider("gcp")
+	ProviderAWS   = Provider("aws")
+	ProviderAzure = Provider("azure")
 )
 
 type Provider string
@@ -23,8 +23,8 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 	switch config.Provider {
 	case ProviderNone:
 		return nil, nil
-	case ProviderNative:
-		encryptor, err = cloudencrypt.NewAESEncryptor(config.Native.SecretKey)
+	case ProviderAES:
+		encryptor, err = cloudencrypt.NewAESEncryptor(config.AES.SecretKey)
 		if err != nil {
 			return nil, err
 		}
@@ -47,8 +47,8 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 
 	prefix := string(config.Provider) + "::"
 
-	if config.Provider != ProviderNative {
-		prefix += string(ProviderNative) + "::"
+	if config.Provider != ProviderAES {
+		prefix += string(ProviderAES) + "::"
 		encryptor, err = cloudencrypt.NewAESWrapEncryptor(ctx, encryptor)
 		if err != nil {
 			return nil, err

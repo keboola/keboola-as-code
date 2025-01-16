@@ -57,7 +57,7 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 		// Special components
 		scheduler.NewMapper(s, d),
 		orchestrator.NewMapper(s),
-		// Native codes
+		// AES codes
 		transformation.NewMapper(s),
 		sharedcode.NewCodesMapper(s),
 		// Shared code links

@@ -25,7 +25,7 @@ func TestConfig_Validation(t *testing.T) {
 		},
 		{
 			Name:          "invalid provider",
-			ExpectedError: `"provider" must be one of [none native gcp aws azure]`,
+			ExpectedError: `"provider" must be one of [none aes gcp aws azure]`,
 			Config: Config{
 				Provider: "foo",
 			},
@@ -33,48 +33,48 @@ func TestConfig_Validation(t *testing.T) {
 		{
 			Name:          "default  invalid",
 			Config:        NewConfig(),
-			ExpectedError: "- \"native.secretKey\" is a required field\n- \"gcp.kmsKeyId\" is a required field\n- \"aws.region\" is a required field\n- \"aws.kmsKeyId\" is a required field\n- \"azure.keyVaultUrl\" is a required field\n- \"azure.keyName\" is a required field",
+			ExpectedError: "- \"aes.secretKey\" is a required field\n- \"gcp.kmsKeyId\" is a required field\n- \"aws.region\" is a required field\n- \"aws.kmsKeyId\" is a required field\n- \"azure.keyVaultUrl\" is a required field\n- \"azure.keyName\" is a required field",
 		},
 		{
-			Name:          "native: nil",
-			ExpectedError: "\"native\" is a required field",
+			Name:          "aes: nil",
+			ExpectedError: "\"aes\" is a required field",
 			Config: Config{
-				Provider: ProviderNative,
+				Provider: ProviderAES,
 			},
 		},
 		{
-			Name:          "native: empty",
-			ExpectedError: "\"native.secretKey\" is a required field",
+			Name:          "aes: empty",
+			ExpectedError: "\"aes.secretKey\" is a required field",
 			Config: Config{
-				Provider: ProviderNative,
-				Native:   &NativeConfig{},
+				Provider: ProviderAES,
+				AES:      &AESConfig{},
 			},
 		},
 		{
-			Name:          "native: length",
-			ExpectedError: "\"native.secretKey\" must contain 32 items",
+			Name:          "aes: length",
+			ExpectedError: "\"aes.secretKey\" must contain 32 items",
 			Config: Config{
-				Provider: ProviderNative,
-				Native: &NativeConfig{
+				Provider: ProviderAES,
+				AES: &AESConfig{
 					SecretKey: []byte("0"),
 				},
 			},
 		},
 		{
-			Name:          "native: multibyte characters",
-			ExpectedError: "\"native.secretKey\" must contain 32 items",
+			Name:          "aes: multibyte characters",
+			ExpectedError: "\"aes.secretKey\" must contain 32 items",
 			Config: Config{
-				Provider: ProviderNative,
-				Native: &NativeConfig{
+				Provider: ProviderAES,
+				AES: &AESConfig{
 					SecretKey: []byte("ěščřžýáíéúůďťňó|ěščřžýáíéúůďťňó|"),
 				},
 			},
 		},
 		{
-			Name: "native: ok",
+			Name: "aes: ok",
 			Config: Config{
-				Provider: ProviderNative,
-				Native: &NativeConfig{
+				Provider: ProviderAES,
+				AES: &AESConfig{
 					SecretKey: []byte("12345678901234567890123456789012"),
 				},
 			},

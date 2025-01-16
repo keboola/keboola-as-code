@@ -68,8 +68,8 @@ func TestBridge_MigrateTokens(t *testing.T) {
 			SlicesCount: 100,
 			Expiration:  duration.From(30 * time.Minute),
 		}
-		cfg.Encryption.Provider = encryption.ProviderNative
-		cfg.Encryption.Native = &encryption.NativeConfig{
+		cfg.Encryption.Provider = encryption.ProviderAES
+		cfg.Encryption.AES = &encryption.AESConfig{
 			SecretKey: secretKey,
 		}
 	}, deps.WithClock(clk))

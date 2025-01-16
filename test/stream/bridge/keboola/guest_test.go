@@ -34,8 +34,8 @@ func TestGuestUserWorkflow(t *testing.T) {
 	require.NoError(t, err)
 
 	modifyConfig := func(cfg *config.Config) {
-		cfg.Encryption.Provider = encryption.ProviderNative
-		cfg.Encryption.Native.SecretKey = secretKey
+		cfg.Encryption.Provider = encryption.ProviderAES
+		cfg.Encryption.AES.SecretKey = secretKey
 		apiPort := netutils.FreePortForTest(t)
 		cfg.API.Listen = "0.0.0.0:" + strconv.FormatInt(int64(apiPort), 10)
 		u, err := url.Parse("http://localhost:" + strconv.FormatInt(int64(apiPort), 10))

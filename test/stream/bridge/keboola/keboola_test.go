@@ -42,8 +42,8 @@ func TestKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
 	// Update configuration to make the cluster testable
 	configFn := func(cfg *config.Config) {
 		// Setup encryption
-		cfg.Encryption.Provider = encryption.ProviderNative
-		cfg.Encryption.Native.SecretKey = secretKey
+		cfg.Encryption.Provider = encryption.ProviderAES
+		cfg.Encryption.AES.SecretKey = secretKey
 		// Enable metadata cleanup for removing storage jobs
 		cfg.Storage.MetadataCleanup.Enabled = true
 		// Disable unrelated workers
@@ -329,8 +329,8 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: parallelt
 	// Update configuration to make the cluster testable
 	configFn := func(cfg *config.Config) {
 		// Setup encryption
-		cfg.Encryption.Provider = encryption.ProviderNative
-		cfg.Encryption.Native.SecretKey = secretKey
+		cfg.Encryption.Provider = encryption.ProviderAES
+		cfg.Encryption.AES.SecretKey = secretKey
 		// Enable metadata cleanup for removing storage jobs
 		cfg.Storage.MetadataCleanup.Enabled = true
 		// Disable unrelated workers
