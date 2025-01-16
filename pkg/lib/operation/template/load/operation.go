@@ -35,7 +35,7 @@ func (e DeprecatedTemplateError) ErrorUserMessage() string {
 }
 
 func (e DeprecatedTemplateError) StatusCode() int {
-	return http.StatusBadRequest
+	return http.StatusOK
 }
 
 func Run(ctx context.Context, d dependencies, repository *repository.Repository, reference model.TemplateRef, projectsFilePath string) (tmpl *template.Template, err error) {
