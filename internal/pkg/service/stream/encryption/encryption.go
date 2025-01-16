@@ -24,12 +24,10 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 	case ProviderNone:
 		return nil, nil
 	case ProviderNative:
-		encryptor, err = cloudencrypt.NewNativeEncryptor(config.Native.SecretKey)
+		encryptor, err = cloudencrypt.NewAESEncryptor(config.Native.SecretKey)
 		if err != nil {
 			return nil, err
 		}
-
-		return encryptor, nil
 	case ProviderGCP:
 		encryptor, err = cloudencrypt.NewGCPEncryptor(ctx, config.GCP.KMSKeyID)
 		if err != nil {
@@ -47,7 +45,17 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 		}
 	}
 
-	encryptor, err = cloudencrypt.NewDualEncryptor(ctx, encryptor)
+	prefix := string(config.Provider) + "::"
+
+	if config.Provider != ProviderNative {
+		prefix += string(ProviderNative) + "::"
+		encryptor, err = cloudencrypt.NewAESWrapEncryptor(ctx, encryptor)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	encryptor, err = cloudencrypt.NewPrefixEncryptor(ctx, encryptor, []byte(prefix))
 	if err != nil {
 		return nil, err
 	}
