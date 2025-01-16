@@ -56,7 +56,8 @@ func StartAppServer(t *testing.T) *AppServer {
 				require.NoError(t, c.Close(websocket.StatusNormalClosure, "Connection closed"))
 				return
 			case <-ticker.C:
-				require.NoError(t, wsjson.Write(ctx, c, "Hello from websocket"))
+				// Ignore error, the websocket can be closed at this point
+				wsjson.Write(ctx, c, "Hello from websocket") //nolint:errcheck
 			}
 		}
 	})
