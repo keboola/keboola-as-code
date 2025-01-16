@@ -27,6 +27,41 @@ func TestLoadInputsFile(t *testing.T) {
 	assert.Equal(t, testInputs(), inputs)
 }
 
+func TestLoadInputsFileWithJsonnetFunction(t *testing.T) {
+	t.Parallel()
+	fs := aferofs.NewMemoryFs()
+
+	// Write file
+	path := Path()
+	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(path, inputsJsonnetWithFunction)))
+
+	// Load
+	inputs, err := Load(context.Background(), fs, jsonnet.NewContext())
+	require.NoError(t, err)
+	assert.Equal(t, StepsGroups{
+		{
+			Description: "Group One",
+			Required:    "all",
+			Steps: []Step{
+				{
+					Icon:        "common:settings",
+					Name:        "Snowflake",
+					Description: "Destination",
+					Inputs: Inputs{
+						{
+							ID:          "wr-snowflake-host",
+							Name:        "Hostname",
+							Description: "Insert database hostname",
+							Type:        "string",
+							Kind:        "input",
+						},
+					},
+				},
+			},
+		},
+	}, inputs)
+}
+
 func TestSaveInputsFile(t *testing.T) {
 	t.Parallel()
 	fs := aferofs.NewMemoryFs()
@@ -85,6 +120,48 @@ const inputsJsonnet = `{
             },
           ],
         },
+      ],
+    },
+  ],
+}
+`
+
+const inputsJsonnetWithFunction = `{
+  stepsGroups: [
+    {
+      description: 'Group One',
+      required: 'all',
+      steps: [
+        if HasProjectBackend('snowflake') then
+          {
+            icon: 'common:settings',
+            name: 'Snowflake',
+            description: 'Destination',
+            inputs: [
+              {
+                id: 'wr-snowflake-host',
+                name: 'Hostname',
+                description: 'Insert database hostname',
+                type: 'string',
+                kind: 'input',
+              },
+            ],
+          }
+        else
+          {
+            icon: 'component:keboola.wr-google-bigquery-v2',
+            name: 'BigQuery',
+            description: 'Destination',
+            inputs: [
+              {
+                id: 'wr-bigquery-host',
+                name: 'Hostname',
+                description: 'Insert database hostname',
+                type: 'string',
+                kind: 'input',
+              },
+            ],
+          },
       ],
     },
   ],
