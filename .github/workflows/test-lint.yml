@@ -13,6 +13,10 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
+      # Removing this directory helps to prevent a "no space left on device" error.
+      - name: Remove useless data
+        run: rm -rf /opt/hostedtoolcache
+
       - name: Checkout
         uses: actions/checkout@v4
 

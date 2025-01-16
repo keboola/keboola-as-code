@@ -37,10 +37,6 @@ jobs:
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
     steps:
-    # Removing this directory helps to prevent a "no space left on device" error.
-    - name: Remove useless data
-      run: rm -rf ./opt/hostedtoolcache/CodeQL
-
     - name: Checkout repository
       uses: actions/checkout@v4
 
