@@ -55,7 +55,12 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 		}
 	}
 
-	encryptor, err = cloudencrypt.NewPrefixEncryptor(ctx, encryptor, []byte(prefix))
+	encryptor, err = cloudencrypt.NewBase64Encryptor(encryptor)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptor, err = cloudencrypt.NewPrefixEncryptor(encryptor, []byte(prefix))
 	if err != nil {
 		return nil, err
 	}
