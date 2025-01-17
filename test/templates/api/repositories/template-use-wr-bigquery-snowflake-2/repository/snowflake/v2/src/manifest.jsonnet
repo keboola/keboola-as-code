@@ -1,6 +1,6 @@
 {
   configurations: [
-    if HasProjectBackend('bigquery') == 'true' then
+    if HasProjectBackend('bigquery')== true then
       {
         componentId: SnowflakeWriterComponentId(),
         id: ConfigId('destination'),

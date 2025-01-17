@@ -1,0 +1,52 @@
+{
+  "stepGroups": [
+    {
+      "id": "g01",
+      "description": "Configure the Snowflake",
+      "required": "all",
+      "steps": [
+        {
+          "id": "g01-s01",
+          "icon": "component:keboola.wr-db-snowflake-gcs-s3",
+          "name": "Snowflake",
+          "description": "Destination",
+          "dialogName": "Snowflake",
+          "dialogDescription": "Destination",
+          "inputs": [
+            {
+              "id": "wr-snowflake-host",
+              "name": "Hostname",
+              "description": "Insert database hostname",
+              "type": "string",
+              "kind": "input",
+              "default": ""
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "initialState": {
+    "valid": false,
+    "stepGroups": [
+      {
+        "id": "g01",
+        "valid": false,
+        "error": "All steps (1) must be selected.",
+        "steps": [
+          {
+            "id": "g01-s01",
+            "configured": false,
+            "valid": true,
+            "inputs": [
+              {
+                "id": "wr-snowflake-host",
+                "visible": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

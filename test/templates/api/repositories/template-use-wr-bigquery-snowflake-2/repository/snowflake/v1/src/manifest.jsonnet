@@ -1,4 +1,4 @@
-local data = if HasProjectBackend('bigquery') == 'true' then
+local data = if HasProjectBackend('bigquery') then
   {
     configurations: [
       {

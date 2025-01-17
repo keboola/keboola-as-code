@@ -1,4 +1,4 @@
-local data = if HasProjectBackend('snowflake') == 'true' then
+local data = if HasProjectBackend('snowflake') then
   {
     configurations: [
       {
