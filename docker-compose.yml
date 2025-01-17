@@ -7,9 +7,10 @@ services:
     # Uncomment when you would like to inspect metrics of your service using prometheus container.
     # Change the <your-service> placeholder with desired service to be inspected. E.g apps-proxy
     # See ./docs/development.md for more information how to startup the compose etc.
-    #command: >
-    #       sh -c "git config --global --add safe.directory /code
-    #              make run-<your-service>"
+    command: >
+           sh -c "git config --global --add safe.directory /code
+                  make build-apps-proxy
+                  make run-apps-proxy"
     links:
       - etcd
       - redis
@@ -55,7 +56,8 @@ services:
       # Disable DataDog integration
       - TEMPLATES_DATADOG_ENABLED=false
       - STREAM_DATADOG_ENABLED=false
-      - APPS_PROXY_DATADOG_ENABLED=false
+      - APPS_PROXY_DATADOG_ENABLED=true
+      - DD_AGENT_HOST=datadog
       # Etcd for unit tests
       - UNIT_ETCD_ENABLED=true
       - UNIT_ETCD_ENDPOINT=etcd:2379
@@ -183,6 +185,27 @@ services:
       - prometheus
     ports:
       - 9090:9090
+
+  datadog:
+    image: gcr.io/datadoghq/agent:7
+    container_name: dd-agent
+    environment:
+      - DD_API_KEY
+      - DD_SITE=datadoghq.eu
+      - DD_HOSTNAME=datadog
+      - DD_APM_ENABLED=false
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+      - DD_CONTAINER_EXCLUDE=image:gcr.io/datadoghq/agent*
+      - DD_CONTAINER_EXCLUDE_METRICS=image:gcr.io/datadoghq/agent*
+      - DD_CONTAINER_EXCLUDE_LOGS=image:gcr.io/datadoghq/agent*
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+        #- /opt/datadog-agent/run:/opt/datadog-agent/run:rw
 
 volumes:
   cache:
