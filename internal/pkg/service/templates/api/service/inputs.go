@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"

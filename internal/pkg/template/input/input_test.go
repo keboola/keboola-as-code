@@ -109,6 +109,7 @@ func TestInput_Available(t *testing.T) {
 }
 
 func TestInput_MatchesAvailableBackend(t *testing.T) {
+	t.Parallel()
 	type fields struct {
 		ID          string
 		Name        string
@@ -174,6 +175,7 @@ func TestInput_MatchesAvailableBackend(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			i := Input{
 				ID:          tt.fields.ID,
 				Name:        tt.fields.Name,
