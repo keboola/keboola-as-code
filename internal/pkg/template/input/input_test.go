@@ -107,3 +107,82 @@ func TestInput_Available(t *testing.T) {
 	assert.False(t, v)
 	require.NoError(t, err)
 }
+
+func TestInput_MatchesAvailableBackend(t *testing.T) {
+	type fields struct {
+		ID          string
+		Name        string
+		Description string
+		Backend     string
+		Type        Type
+		Kind        Kind
+	}
+	type args struct {
+		backends []string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "matches backend",
+			fields: fields{
+				ID:          "input.id",
+				Name:        "input",
+				Description: "input description",
+				Backend:     "snowflake",
+				Type:        "string",
+				Kind:        "input",
+			},
+			args: args{
+				backends: []string{"snowflake"},
+			},
+			want: true,
+		},
+		{
+			name: "empty backend",
+			fields: fields{
+				ID:          "input.id",
+				Name:        "input",
+				Description: "input description",
+				Backend:     "",
+				Type:        "string",
+				Kind:        "input",
+			},
+			args: args{
+				backends: []string{"snowflake"},
+			},
+			want: true,
+		},
+		{
+			name: "does not match backend",
+			fields: fields{
+				ID:          "input.id",
+				Name:        "input",
+				Description: "input description",
+				Backend:     "bigquery",
+				Type:        "string",
+				Kind:        "input",
+			},
+			args: args{
+				backends: []string{"snowflake"},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := Input{
+				ID:          tt.fields.ID,
+				Name:        tt.fields.Name,
+				Description: tt.fields.Description,
+				Backend:     tt.fields.Backend,
+				Type:        tt.fields.Type,
+				Kind:        tt.fields.Kind,
+			}
+			assert.Equalf(t, tt.want, i.MatchesAvailableBackend(tt.args.backends), "MatchesAvailableBackend(%v)", tt.args.backends)
+		})
+	}
+}
