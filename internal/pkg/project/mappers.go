@@ -30,7 +30,7 @@ func MappersFor(s *state.State, d dependencies) (mapper.Mappers, error) {
 		// Special components
 		scheduler.NewMapper(s, d),
 		orchestrator.NewMapper(s),
-		// Native codes
+		// AES codes
 		transformation.NewMapper(s),
 		sharedcode.NewCodesMapper(s),
 		// Shared code links

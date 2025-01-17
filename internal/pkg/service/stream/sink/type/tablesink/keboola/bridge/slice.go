@@ -75,13 +75,13 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 
 	// Decrypt file upload credentials
 	var credentials keboola.FileUploadCredentials
-	if keboolaFile.EncryptedCredentials != nil {
+	if keboolaFile.EncryptedCredentials != "" {
 		if b.credentialsEncryptor == nil {
 			return errors.New("missing credentials encryptor")
 		}
 
 		fileMetadata := cloudencrypt.Metadata{"file": slice.FileKey.String()}
-		credentials, err = b.credentialsEncryptor.Decrypt(ctx, keboolaFile.EncryptedCredentials, fileMetadata)
+		credentials, err = b.credentialsEncryptor.Decrypt(ctx, []byte(keboolaFile.EncryptedCredentials), fileMetadata)
 		if err != nil {
 			return err
 		}

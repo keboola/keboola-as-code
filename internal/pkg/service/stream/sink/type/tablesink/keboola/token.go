@@ -16,23 +16,23 @@ type Token struct {
 	key.SinkKey
 	Token          *keboola.Token `json:"token"`
 	TokenID        string         `json:"tokenId"`
-	EncryptedToken []byte         `json:"encryptedToken"`
+	EncryptedToken string         `json:"encryptedToken"`
 }
 
 func (token Token) ID() string {
-	if token.EncryptedToken != nil {
+	if token.EncryptedToken != "" {
 		return token.TokenID
 	}
 	return token.Token.ID
 }
 
 func (token Token) DecryptToken(ctx context.Context, encryptor *cloudencrypt.GenericEncryptor[keboola.Token], metadata cloudencrypt.Metadata) (keboola.Token, error) {
-	if token.EncryptedToken != nil {
+	if token.EncryptedToken != "" {
 		if encryptor == nil {
 			return keboola.Token{}, errors.New("missing token encryptor")
 		}
 
-		return encryptor.Decrypt(ctx, token.EncryptedToken, metadata)
+		return encryptor.Decrypt(ctx, []byte(token.EncryptedToken), metadata)
 	}
 
 	return *token.Token, nil

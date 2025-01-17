@@ -143,7 +143,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		if err != nil {
 			return keboola.Token{}, err
 		}
-		newToken.EncryptedToken = ciphertext
+		newToken.EncryptedToken = string(ciphertext)
 	} else {
 		newToken.Token = result
 	}
@@ -219,7 +219,7 @@ func (b *Bridge) encryptToken(ctx context.Context, token keboolasink.Token) *op.
 		return op.ErrorTxn[keboolasink.Token](err)
 	}
 	token.TokenID = token.Token.ID
-	token.EncryptedToken = ciphertext
+	token.EncryptedToken = string(ciphertext)
 	token.Token = nil
 
 	return b.saveToken(ctx, token)

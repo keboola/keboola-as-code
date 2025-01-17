@@ -302,9 +302,9 @@ storage:
                     # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
                     expiration: 30m0s
 encryption:
-    # Encryption provider. Validation rules: required,oneof=none native gcp aws azure
+    # Encryption provider. Validation rules: required,oneof=none aes gcp aws azure
     provider: none
-    native:
+    aes:
         # Secret key for local encryption. Do not use in production.
         secretKey: '*****'
     gcp:
@@ -330,8 +330,8 @@ encryption:
 	cfg.Source.HTTP.PublicURL, _ = url.Parse("https://stream-in.keboola.local")
 	cfg.Etcd.Endpoint = "test-etcd"
 	cfg.Etcd.Namespace = "test-namespace"
-	cfg.Encryption.Provider = encryption.ProviderNative
-	cfg.Encryption.Native.SecretKey = []byte("12345678901234567890123456789012")
+	cfg.Encryption.Provider = encryption.ProviderAES
+	cfg.Encryption.AES.SecretKey = []byte("12345678901234567890123456789012")
 	cfg.Encryption.Normalize()
 	require.NoError(t, validator.New().Validate(context.Background(), cfg))
 }

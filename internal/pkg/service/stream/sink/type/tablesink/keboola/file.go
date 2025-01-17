@@ -16,28 +16,28 @@ type File struct {
 	Columns               []string
 	StorageJobID          *keboola.StorageJobID
 	UploadCredentials     *keboola.FileUploadCredentials
-	EncryptedCredentials  []byte
+	EncryptedCredentials  string
 	FileID                *keboola.FileID
 	FileName              *string
 	CredentialsExpiration *utctime.UTCTime
 }
 
 func (file File) ID() keboola.FileID {
-	if file.EncryptedCredentials != nil {
+	if file.EncryptedCredentials != "" {
 		return *file.FileID
 	}
 	return file.UploadCredentials.FileID
 }
 
 func (file File) Name() string {
-	if file.EncryptedCredentials != nil {
+	if file.EncryptedCredentials != "" {
 		return *file.FileName
 	}
 	return file.UploadCredentials.Name
 }
 
 func (file File) Expiration() utctime.UTCTime {
-	if file.EncryptedCredentials != nil {
+	if file.EncryptedCredentials != "" {
 		return *file.CredentialsExpiration
 	}
 	return utctime.From(file.UploadCredentials.CredentialsExpiration())

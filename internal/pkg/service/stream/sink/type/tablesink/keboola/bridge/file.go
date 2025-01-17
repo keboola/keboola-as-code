@@ -117,7 +117,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedA
 		if err != nil {
 			return keboolasink.File{}, err
 		}
-		keboolaFile.EncryptedCredentials = ciphertext
+		keboolaFile.EncryptedCredentials = string(ciphertext)
 	} else {
 		keboolaFile.UploadCredentials = stagingFile
 	}

@@ -1,14 +1,14 @@
 package encryption
 
 type Config struct {
-	Provider Provider      `json:"provider" configKey:"provider" validate:"required,oneof=none native gcp aws azure" configUsage:"Encryption provider."`
-	Native   *NativeConfig `json:"native" configKey:"native" validate:"required_if=Provider native"`
-	GCP      *GCPConfig    `json:"gcp" configKey:"gcp" validate:"required_if=Provider gcp"`
-	AWS      *AWSConfig    `json:"aws" configKey:"aws" validate:"required_if=Provider aws"`
-	Azure    *AzureConfig  `json:"azure" configKey:"azure" validate:"required_if=Provider azure"`
+	Provider Provider     `json:"provider" configKey:"provider" validate:"required,oneof=none aes gcp aws azure" configUsage:"Encryption provider."`
+	AES      *AESConfig   `json:"aes" configKey:"aes" validate:"required_if=Provider aes"`
+	GCP      *GCPConfig   `json:"gcp" configKey:"gcp" validate:"required_if=Provider gcp"`
+	AWS      *AWSConfig   `json:"aws" configKey:"aws" validate:"required_if=Provider aws"`
+	Azure    *AzureConfig `json:"azure" configKey:"azure" validate:"required_if=Provider azure"`
 }
 
-type NativeConfig struct {
+type AESConfig struct {
 	SecretKey []byte `json:"secretKey" configKey:"secretKey" sensitive:"true" validate:"required,len=32" configUsage:"Secret key for local encryption. Do not use in production."`
 }
 
@@ -29,7 +29,7 @@ type AzureConfig struct {
 func NewConfig() Config {
 	return Config{
 		Provider: ProviderNone,
-		Native:   &NativeConfig{},
+		AES:      &AESConfig{},
 		GCP:      &GCPConfig{},
 		AWS:      &AWSConfig{},
 		Azure:    &AzureConfig{},
@@ -37,8 +37,8 @@ func NewConfig() Config {
 }
 
 func (c *Config) Normalize() {
-	if c.Provider != ProviderNative {
-		c.Native = nil
+	if c.Provider != ProviderAES {
+		c.AES = nil
 	}
 	if c.Provider != ProviderGCP {
 		c.GCP = nil

@@ -67,8 +67,8 @@ func testConfig(tb testing.TB, d dependencies.Mocked) config.Config {
 	secretKey := make([]byte, 32)
 	_, err := rand.Read(secretKey)
 	require.NoError(tb, err)
-	cfg.Encryption.Provider = encryption.ProviderNative
-	cfg.Encryption.Native.SecretKey = secretKey
+	cfg.Encryption.Provider = encryption.ProviderAES
+	cfg.Encryption.AES.SecretKey = secretKey
 
 	// Validate configuration
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))

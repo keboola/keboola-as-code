@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	ProviderNone   = Provider("none")
-	ProviderNative = Provider("native")
-	ProviderGCP    = Provider("gcp")
-	ProviderAWS    = Provider("aws")
-	ProviderAzure  = Provider("azure")
+	ProviderNone  = Provider("none")
+	ProviderAES   = Provider("aes")
+	ProviderGCP   = Provider("gcp")
+	ProviderAWS   = Provider("aws")
+	ProviderAzure = Provider("azure")
 )
 
 type Provider string
@@ -23,13 +23,11 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 	switch config.Provider {
 	case ProviderNone:
 		return nil, nil
-	case ProviderNative:
-		encryptor, err = cloudencrypt.NewNativeEncryptor(config.Native.SecretKey)
+	case ProviderAES:
+		encryptor, err = cloudencrypt.NewAESEncryptor(config.AES.SecretKey)
 		if err != nil {
 			return nil, err
 		}
-
-		return encryptor, nil
 	case ProviderGCP:
 		encryptor, err = cloudencrypt.NewGCPEncryptor(ctx, config.GCP.KMSKeyID)
 		if err != nil {
@@ -47,7 +45,22 @@ func NewEncryptor(ctx context.Context, config Config) (cloudencrypt.Encryptor, e
 		}
 	}
 
-	encryptor, err = cloudencrypt.NewDualEncryptor(ctx, encryptor)
+	prefix := string(config.Provider) + "::"
+
+	if config.Provider != ProviderAES {
+		prefix += string(ProviderAES) + "::"
+		encryptor, err = cloudencrypt.NewAESWrapEncryptor(ctx, encryptor)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	encryptor, err = cloudencrypt.NewBase64Encryptor(encryptor)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptor, err = cloudencrypt.NewPrefixEncryptor(encryptor, []byte(prefix))
 	if err != nil {
 		return nil, err
 	}
