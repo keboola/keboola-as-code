@@ -368,7 +368,7 @@ func (t *Template) evaluate(templateCtx Context) (tmpl *evaluatedTemplate, err e
 	defer span.End(&err)
 
 	// Evaluate manifest to always have records
-	evaluatedManifest, err := t.manifestFile.EvaluateAlwaysWithRecords(templateCtx, templateCtx.JsonnetContext())
+	evaluatedManifest, err := t.manifestFile.Evaluate(templateCtx, templateCtx.JsonnetContext())
 	if err != nil {
 		return nil, err
 	}

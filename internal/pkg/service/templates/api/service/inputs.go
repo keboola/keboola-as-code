@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -10,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-func validateInputs(ctx context.Context, groups template.StepsGroups, payload []*StepPayload) (out *ValidationResult, allValues template.InputsValues, err error) {
+func validateInputs(ctx context.Context, backends []string, groups template.StepsGroups, payload []*StepPayload) (out *ValidationResult, allValues template.InputsValues, err error) {
 	out = &ValidationResult{Valid: true}
 	stepInputs := inputsPayloadToMap(payload)
 
@@ -24,9 +23,20 @@ func validateInputs(ctx context.Context, groups template.StepsGroups, payload []
 		outGroup := &StepGroupValidationResult{ID: group.ID, Valid: true, Steps: make([]*StepValidationResult, 0)}
 		out.StepGroups = append(out.StepGroups, outGroup)
 		configuredSteps := 0
-
+		stepsCount := 0
 		// Check each step
 		for _, step := range group.Steps {
+			var filteredInputs int
+			for _, input := range step.Inputs {
+				if !input.MatchesAvailableBackend(backends) {
+					filteredInputs++
+					continue
+				}
+			}
+
+			if filteredInputs == len(step.Inputs) {
+				continue
+			}
 			outStep := &StepValidationResult{ID: step.ID, Valid: true, Inputs: make([]*InputValidationResult, 0)}
 			outGroup.Steps = append(outGroup.Steps, outStep)
 			allStepsIds[step.ID] = true
@@ -98,10 +108,11 @@ func validateInputs(ctx context.Context, groups template.StepsGroups, payload []
 			if !outStep.Valid {
 				outGroup.Valid = false
 			}
+			stepsCount++
 		}
 
 		// Check if required number of steps is configured
-		if err := group.ValidateStepsCount(len(group.Steps), configuredSteps); err != nil {
+		if err := group.ValidateStepsCount(stepsCount, configuredSteps); err != nil {
 			msg := strhelper.AsSentence(err.Error())
 			outGroup.Error = &msg
 			outGroup.Valid = false

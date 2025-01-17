@@ -113,6 +113,7 @@ type Input struct {
 	ID           string  `json:"id" validate:"required,template-input-id"`
 	Name         string  `json:"name" validate:"required,min=1,max=25"`
 	Description  string  `json:"description" validate:"max=60"`
+	Backend      string  `json:"backend,omitempty"`
 	Type         Type    `json:"type" validate:"required,template-input-type,template-input-type-for-kind"`
 	Kind         Kind    `json:"kind" validate:"required,template-input-kind"`
 	Default      any     `json:"default,omitempty" validate:"omitempty,template-input-default-value,template-input-default-options"`
@@ -138,6 +139,22 @@ func (i Input) Available(params map[string]any) (bool, error) {
 		return false, errors.PrefixErrorf(err, `invalid input "%s"`, i.ID)
 	}
 	return result, nil
+}
+
+func (i Input) MatchesAvailableBackend(backends []string) bool {
+	// If Backend is empty, consider it available by default
+	if i.Backend == "" {
+		return true
+	}
+
+	// Check if i.Backend exists in the list of available backends
+	for _, backend := range backends {
+		if backend == i.Backend {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (i Input) DefaultOrEmpty() any {
