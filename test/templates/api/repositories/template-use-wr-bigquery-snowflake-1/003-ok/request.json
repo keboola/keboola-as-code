@@ -10,7 +10,7 @@
     "name": "inst-001",
     "steps": [
       {
-        "id": "g01-s01",
+        "id": "g01-s02",
         "inputs": [
           {
             "id": "wr-bigquery-host",

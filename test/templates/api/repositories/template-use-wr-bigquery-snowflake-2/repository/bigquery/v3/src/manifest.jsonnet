@@ -1,6 +1,6 @@
 {
   configurations: [
-    if HasProjectBackend('snowflake') == 'true' then
+    if HasProjectBackend('snowflake') then
       {
         componentId: SnowflakeWriterComponentId(),
         id: ConfigId('destination'),

@@ -4,7 +4,6 @@
       description: 'Configure the Snowflake',
       required: 'all',
       steps: [
-        if HasProjectBackend('snowflake') == 'true' then
           {
             icon: 'component:' + SnowflakeWriterComponentId(),
             name: 'Snowflake',
@@ -18,8 +17,7 @@
                 kind: 'input',
               },
             ],
-          }
-        else
+          },
           {
             icon: 'component:keboola.wr-google-bigquery-v2',
             name: 'BigQuery',

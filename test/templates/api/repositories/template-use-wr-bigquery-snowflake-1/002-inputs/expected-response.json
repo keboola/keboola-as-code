@@ -1,0 +1,52 @@
+{
+  "stepGroups": [
+    {
+      "id": "g01",
+      "description": "Configure the Database",
+      "required": "all",
+      "steps": [
+        {
+          "id": "g01-s02",
+          "icon": "component:keboola.wr-google-bigquery-v2",
+          "name": "BigQuery",
+          "description": "Destination",
+          "dialogName": "BigQuery",
+          "dialogDescription": "Destination",
+          "inputs": [
+            {
+              "id": "wr-bigquery-host",
+              "name": "Hostname",
+              "description": "Insert database hostname",
+              "type": "string",
+              "kind": "input",
+              "default": ""
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "initialState": {
+    "valid": false,
+    "stepGroups": [
+      {
+        "id": "g01",
+        "valid": false,
+        "error": "All steps (1) must be selected.",
+        "steps": [
+          {
+            "id": "g01-s02",
+            "configured": false,
+            "valid": true,
+            "inputs": [
+              {
+                "id": "wr-bigquery-host",
+                "visible": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
