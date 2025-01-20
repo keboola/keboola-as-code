@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -126,10 +127,10 @@ func (v *projectScope) ProjectBackends() []string {
 	var backends []string
 
 	if v.token.Owner.HasSnowflake {
-		backends = append(backends, "snowflake")
+		backends = append(backends, project.BackendSnowflake)
 	}
 	if v.token.Owner.HasBigquery {
-		backends = append(backends, "bigquery")
+		backends = append(backends, project.BackendBigQuery)
 	}
 	return backends
 }

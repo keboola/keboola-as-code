@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
@@ -193,12 +194,12 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 			Categories:  []string{"Other"},
 			Path:        "path1",
 			Requirements: Requirements{
-				Backends: []string{"snowflake"},
+				Backends: []string{project.BackendSnowflake},
 			},
 			Versions: []VersionRecord{
 				{Version: version("1.2.4"), Description: "", Stable: false},
 			},
-		}, args: args{projectBackends: []string{"bigquery", "teradata", "snowflake", "mysql"}}, want: true},
+		}, args: args{projectBackends: []string{project.BackendBigQuery, "teradata", project.BackendSnowflake, "mysql"}}, want: true},
 
 		{name: "unsupported backend", fields: fields{
 			ID:          "my-template-1",
@@ -208,12 +209,12 @@ func TestTemplateRecord_HasBackend(t *testing.T) {
 			Categories:  []string{"Other"},
 			Path:        "path1",
 			Requirements: Requirements{
-				Backends: []string{"bigquery"},
+				Backends: []string{project.BackendBigQuery},
 			},
 			Versions: []VersionRecord{
 				{Version: version("1.2.4"), Description: "", Stable: false},
 			},
-		}, args: args{projectBackends: []string{"teradata", "snowflake", "mysql"}}, want: false},
+		}, args: args{projectBackends: []string{"teradata", project.BackendSnowflake, "mysql"}}, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -1,5 +1,5 @@
 {
-  "path": "<<003-ok:response.url>>",
+  "path": "<<004-ok:response.url>>",
   "method": "GET",
   "headers": {
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
