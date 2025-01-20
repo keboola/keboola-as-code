@@ -6,6 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 )
 
 func TestInput_ValidateUserInput(t *testing.T) {
@@ -114,7 +117,7 @@ func TestInput_MatchesAvailableBackend(t *testing.T) {
 		ID          string
 		Name        string
 		Description string
-		Backend     string
+		Backend     *string
 		Type        Type
 		Kind        Kind
 	}
@@ -133,12 +136,12 @@ func TestInput_MatchesAvailableBackend(t *testing.T) {
 				ID:          "input.id",
 				Name:        "input",
 				Description: "input description",
-				Backend:     "snowflake",
+				Backend:     ptr.Ptr(project.BackendSnowflake),
 				Type:        "string",
 				Kind:        "input",
 			},
 			args: args{
-				backends: []string{"snowflake"},
+				backends: []string{project.BackendSnowflake},
 			},
 			want: true,
 		},
@@ -148,12 +151,11 @@ func TestInput_MatchesAvailableBackend(t *testing.T) {
 				ID:          "input.id",
 				Name:        "input",
 				Description: "input description",
-				Backend:     "",
 				Type:        "string",
 				Kind:        "input",
 			},
 			args: args{
-				backends: []string{"snowflake"},
+				backends: []string{project.BackendSnowflake},
 			},
 			want: true,
 		},
@@ -163,12 +165,12 @@ func TestInput_MatchesAvailableBackend(t *testing.T) {
 				ID:          "input.id",
 				Name:        "input",
 				Description: "input description",
-				Backend:     "bigquery",
+				Backend:     ptr.Ptr(project.BackendBigQuery),
 				Type:        "string",
 				Kind:        "input",
 			},
 			args: args{
-				backends: []string{"snowflake"},
+				backends: []string{project.BackendSnowflake},
 			},
 			want: false,
 		},

@@ -114,7 +114,7 @@ type Input struct {
 	ID           string  `json:"id" validate:"required,template-input-id"`
 	Name         string  `json:"name" validate:"required,min=1,max=25"`
 	Description  string  `json:"description" validate:"max=60"`
-	Backend      string  `json:"backend,omitempty"`
+	Backend      *string `json:"backend,omitempty"`
 	Type         Type    `json:"type" validate:"required,template-input-type,template-input-type-for-kind"`
 	Kind         Kind    `json:"kind" validate:"required,template-input-kind"`
 	Default      any     `json:"default,omitempty" validate:"omitempty,template-input-default-value,template-input-default-options"`
@@ -147,7 +147,7 @@ func (i Input) Available(params map[string]any) (bool, error) {
 // empty (""), or it matches one of the backends in the provided list, the
 // function returns true. Otherwise, it returns false.
 func (i Input) MatchesAvailableBackend(backends []string) bool {
-	if i.Backend == "" || slices.Contains(backends, i.Backend) {
+	if i.Backend == nil || slices.Contains(backends, *i.Backend) {
 		return true
 	}
 
