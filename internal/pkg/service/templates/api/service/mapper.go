@@ -331,7 +331,7 @@ func InputsResponse(ctx context.Context, d dependencies.ProjectRequestScope, ste
 				}
 			}
 
-			if filteredInputs == len(step.Inputs) {
+			if filteredInputs != 0 {
 				continue
 			}
 			// If the step is pre-configured -> validate default values.

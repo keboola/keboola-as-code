@@ -35,7 +35,7 @@ func validateInputs(ctx context.Context, backends []string, groups template.Step
 				}
 			}
 
-			if filteredInputs == len(step.Inputs) {
+			if filteredInputs != 0 {
 				continue
 			}
 			outStep := &StepValidationResult{ID: step.ID, Valid: true, Inputs: make([]*InputValidationResult, 0)}
