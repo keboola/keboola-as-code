@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -22,7 +23,6 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/miekg/dns"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
@@ -49,6 +49,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
 
 type testCase struct {
@@ -1275,7 +1276,7 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedWakeUps: map[string]int{},
 		},
 		{
-			name: "websocket connection check",
+			name: "websocket-connection-check",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 				defer cancel()
@@ -2375,26 +2376,26 @@ func TestAppProxyRouter(t *testing.T) {
 		privateAppTestCaseFactory(http.MethodDelete),
 	)
 
+	pm, _ := server.NewPortManager(t, "/tmp/TestAppProxyRouter", "appsproxy")
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
 			ctx := context.Background()
 
 			// Create testing apps API
-			appsAPI := testutil.StartDataAppsAPI(t)
+			appsAPI := testutil.StartDataAppsAPI(t, pm)
 			t.Cleanup(func() {
 				appsAPI.Close()
 			})
 
 			// Create testing app upstream
-			appServer := testutil.StartAppServer(t)
+			appServer := testutil.StartAppServer(t, pm)
 			t.Cleanup(func() {
 				appServer.Close()
 			})
 
 			// Create dependencies
-			d, mocked := createDependencies(t, ctx, appsAPI.URL)
+			d, mocked := createDependencies(t, ctx, appsAPI.URL, pm)
 
 			// Test generated spans
 			if tc.expectedSpans != nil {
@@ -2405,7 +2406,7 @@ func TestAppProxyRouter(t *testing.T) {
 			dnsServer := mocked.TestDNSServer()
 
 			// Create test OIDC providers
-			providers := testAuthProviders(t)
+			providers := testAuthProviders(t, pm)
 
 			// Register data apps
 			appURL := testutil.AddAppDNSRecord(t, appServer, dnsServer)
@@ -2415,8 +2416,17 @@ func TestAppProxyRouter(t *testing.T) {
 			handler := createProxyHandler(ctx, d)
 
 			// Create a test server for the proxy handler
-			proxySrv := httptest.NewUnstartedServer(handler)
-			proxySrv.Config.ErrorLog = log.NewStdErrorLogger(d.Logger())
+			port := pm.GetFreePort()
+			l, err := net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+			for err != nil {
+				port = pm.GetFreePort()
+				l, err = net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+			}
+
+			proxySrv := &httptest.Server{
+				Listener: l,
+				Config:   &http.Server{Handler: handler, ErrorLog: log.NewStdErrorLogger(d.Logger())},
+			}
 			proxySrv.StartTLS()
 			t.Cleanup(func() {
 				proxySrv.Close()
@@ -2439,15 +2449,15 @@ func TestAppProxyRouter(t *testing.T) {
 	}
 }
 
-func testAuthProviders(t *testing.T) []*mockoidc.MockOIDC {
+func testAuthProviders(t *testing.T, pm server.PortManager) []*mockoidc.MockOIDC {
 	t.Helper()
 
-	oidc0 := testutil.StartOIDCProviderServer(t)
+	oidc0 := testutil.StartOIDCProviderServer(t, pm)
 	t.Cleanup(func() {
 		require.NoError(t, oidc0.Shutdown())
 	})
 
-	oidc1 := testutil.StartOIDCProviderServer(t)
+	oidc1 := testutil.StartOIDCProviderServer(t, pm)
 	t.Cleanup(func() {
 		require.NoError(t, oidc1.Shutdown())
 	})
@@ -2753,7 +2763,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 	}
 }
 
-func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL string) (proxyDependencies.ServiceScope, proxyDependencies.Mocked) {
+func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL string, pm server.PortManager) (proxyDependencies.ServiceScope, proxyDependencies.Mocked) {
 	t.Helper()
 
 	secret := make([]byte, 32)
@@ -2769,8 +2779,8 @@ func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL strin
 	cfg.CookieSecretSalt = string(secret)
 	cfg.CsrfTokenSalt = string(csrfSecret)
 	cfg.SandboxesAPI.URL = sandboxesAPIURL
-
-	return proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
+	port := pm.GetFreePort()
+	return proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient(), dependencies.WithMockedDNSPort(port))
 }
 
 func createProxyHandler(ctx context.Context, d proxyDependencies.ServiceScope) http.Handler {

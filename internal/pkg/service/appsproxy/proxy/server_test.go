@@ -23,7 +23,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
+
+type portManager struct{}
+
+func newZeroPortManager() server.PortManager {
+	return &portManager{}
+}
+
+func (p portManager) GeneratePorts() {}
+
+func (p portManager) GetFreePort() int {
+	return 0
+}
 
 func TestAppProxyHandler(t *testing.T) {
 	t.Parallel()
@@ -31,11 +44,12 @@ func TestAppProxyHandler(t *testing.T) {
 	ctx := context.Background()
 
 	// Start app
-	appServer := testutil.StartAppServer(t)
+	pm := newZeroPortManager()
+	appServer := testutil.StartAppServer(t, pm)
 	defer appServer.Close()
 
 	// Start api
-	appsAPI := testutil.StartDataAppsAPI(t)
+	appsAPI := testutil.StartDataAppsAPI(t, pm)
 	defer appsAPI.Close()
 
 	// Configure proxy

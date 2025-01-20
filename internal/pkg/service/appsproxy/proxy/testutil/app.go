@@ -3,14 +3,17 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +23,7 @@ type AppServer struct {
 	Requests *[]*http.Request
 }
 
-func StartAppServer(t *testing.T) *AppServer {
+func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 	t.Helper()
 
 	lock := &sync.Mutex{}
@@ -68,8 +71,18 @@ func StartAppServer(t *testing.T) *AppServer {
 		_, _ = fmt.Fprint(w, "Hello, client")
 	})
 
-	ts := httptest.NewUnstartedServer(mux)
-	ts.EnableHTTP2 = true
+	port := pm.GetFreePort()
+	l, err := net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+	for err != nil {
+		port = pm.GetFreePort()
+		l, err = net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+	}
+
+	ts := &httptest.Server{
+		Listener:    l,
+		Config:      &http.Server{Handler: mux},
+		EnableHTTP2: true,
+	}
 	ts.Start()
 
 	return &AppServer{ts, &requests}

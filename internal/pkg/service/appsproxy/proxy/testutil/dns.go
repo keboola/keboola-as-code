@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"errors"
 	"net"
 	"net/url"
 	"testing"
@@ -11,10 +12,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 )
 
-func StartDNSServer(t *testing.T) *dnsmock.Server {
+func StartDNSServer(t *testing.T, port int) *dnsmock.Server {
 	t.Helper()
 
-	server := dnsmock.New()
+	server := dnsmock.New(port)
 	err := server.Start()
 	require.NoError(t, err)
 

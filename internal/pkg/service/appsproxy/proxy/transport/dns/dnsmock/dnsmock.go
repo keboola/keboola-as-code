@@ -5,6 +5,7 @@ package dnsmock
 
 import (
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +15,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type DNSRecordError struct {
+	Err error
+}
+
+func (d DNSRecordError) Error() string {
+	return d.Err.Error()
+}
+
 // Server acts as DNS server but returns mock values.
 type Server struct {
 	server     *dns.Server
@@ -21,7 +30,7 @@ type Server struct {
 	updateLock *sync.Mutex
 }
 
-func New() *Server {
+func New(port int) *Server {
 	server := &Server{
 		records:    make(map[uint16][]dns.RR),
 		updateLock: &sync.Mutex{},
@@ -30,7 +39,7 @@ func New() *Server {
 	var handler dns.HandlerFunc = server.handleRequest
 
 	server.server = &dns.Server{
-		Addr:    "[::]:0",
+		Addr:    "[::]:" + strconv.FormatInt(int64(port), 10),
 		Net:     "udp",
 		Handler: handler,
 	}
@@ -90,7 +99,12 @@ func (s *Server) AddNSRecord(fqdn, nsName string) {
 	s.records[dns.TypeNS] = append(s.records[dns.TypeNS], ns)
 }
 
-func (s *Server) AddARecord(fqdn string, ip net.IP) {
+func (s *Server) AddARecord(fqdn string, ip net.IP) error {
+	ipv4 := ip.To4()
+	if ipv4 == nil {
+		return &DNSRecordError{Err: errors.New("Unable to create A record")}
+	}
+
 	rr := &dns.A{
 		Hdr: dns.RR_Header{Name: fqdn, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 0},
 		A:   ip.To4(),
@@ -98,9 +112,14 @@ func (s *Server) AddARecord(fqdn string, ip net.IP) {
 	s.updateLock.Lock()
 	defer s.updateLock.Unlock()
 	s.records[dns.TypeA] = append(s.records[dns.TypeA], rr)
+	return nil
 }
 
-func (s *Server) AddAAAARecord(fqdn string, ip net.IP) {
+func (s *Server) AddAAAARecord(fqdn string, ip net.IP) error {
+	ipv6 := ip.To16()
+	if ipv6 == nil {
+		return &DNSRecordError{Err: errors.New("Unable to create AAAA record")}
+	}
 	rr := &dns.AAAA{
 		Hdr:  dns.RR_Header{Name: fqdn, Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: 0},
 		AAAA: ip.To16(),
@@ -108,6 +127,7 @@ func (s *Server) AddAAAARecord(fqdn string, ip net.IP) {
 	s.updateLock.Lock()
 	defer s.updateLock.Unlock()
 	s.records[dns.TypeAAAA] = append(s.records[dns.TypeAAAA], rr)
+	return nil
 }
 
 func (s *Server) RemoveTXTRecords(fqdn string) {
