@@ -5,7 +5,7 @@
       required: 'all',
       steps: [
         {
-          icon: 'component:' + SnowflakeWriterComponentId(),
+          icon: 'component:keboola.wr-db-snowflake-gcs-s3',
           name: 'Snowflake',
           description: 'Destination',
           inputs: [
