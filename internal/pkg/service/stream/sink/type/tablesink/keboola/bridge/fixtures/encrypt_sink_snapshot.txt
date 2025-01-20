@@ -1,0 +1,54 @@
+<<<<<
+storage/keboola/file/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z
+-----
+{
+  "FileKey": {
+    "projectId": 123,
+    "branchId": 456,
+    "sourceId": "my-source",
+    "sinkId": "my-sink",
+    "fileOpenedAt": "2000-01-01T01:00:00.000Z"
+  },
+  "SinkKey": {
+    "projectId": 123,
+    "branchId": 456,
+    "sourceId": "my-source",
+    "sinkId": "my-sink"
+  },
+  "TableID": "in.c-bucket.my-table",
+  "Columns": [
+    "datetime",
+    "body"
+  ],
+  "StorageJobID": null,
+  "UploadCredentials": null,
+  "EncryptedCredentials": "aes::AAECAwQFBgcICQoL%s",
+  "FileID": 1001,
+  "FileName": "",
+  "CredentialsExpiration": "2000-01-01T02:00:00.000Z"
+}
+>>>>>
+
+<<<<<
+storage/keboola/secret/token/123/456/my-source/my-sink
+-----
+{
+  "projectId": 123,
+  "branchId": 456,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "token": null,
+  "tokenId": "1001",
+  "encryptedToken": "aes::AAECAwQFBgcICQoL%s"
+}
+>>>>>
+
+<<<<<
+storage/stats/local/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z/_open
+-----
+{
+  "slicesCount": 1,
+  "firstRecordAt": "",
+  "lastRecordAt": ""
+}
+>>>>>
