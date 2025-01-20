@@ -20,6 +20,7 @@ Call `make fix` or `go mod vendor` to fix the `vendor` packages. Also when rebas
 
 Create `.env` file with definition of testing projects for example:
 ```
+TEST_KBC_TMP_DIR=/tmp
 TEST_KBC_PROJECTS_FILE=~/keboola-as-code/projects.json
 ```
 

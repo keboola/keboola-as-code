@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -2377,7 +2378,8 @@ func TestAppProxyRouter(t *testing.T) {
 		privateAppTestCaseFactory(http.MethodDelete),
 	)
 
-	pm, _ := server.NewPortManager(t, "/tmp/TestAppProxyRouter", "appsproxy")
+	tmpDir := path.Join(os.Getenv("TEST_KBC_TMP_DIR"), "TestAppsProxyRouter") // nolint:forbidigo
+	pm, _ := server.NewPortManager(t, tmpDir, "appsproxy")
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -2426,7 +2428,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 			proxySrv := &httptest.Server{
 				Listener: l,
-				Config:   &http.Server{Handler: handler, ErrorLog: log.NewStdErrorLogger(d.Logger())},
+				Config:   &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.NewStdErrorLogger(d.Logger())},
 			}
 			proxySrv.StartTLS()
 			t.Cleanup(func() {

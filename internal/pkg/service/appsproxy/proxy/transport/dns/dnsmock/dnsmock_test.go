@@ -98,5 +98,4 @@ func TestWrongARecord(t *testing.T) {
 	a, err = dns.Exchange(g, dnsMock.Addr())
 	require.NoError(t, err)
 	require.Empty(t, a.Answer)
-
 }

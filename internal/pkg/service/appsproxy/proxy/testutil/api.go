@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mitchellh/hashstructure/v2"
 	"github.com/stretchr/testify/require"
@@ -89,7 +90,7 @@ func StartDataAppsAPI(t *testing.T, pm server.PortManager) *DataAppsAPI {
 	}
 	ts := &httptest.Server{
 		Listener:    l,
-		Config:      &http.Server{Handler: mux},
+		Config:      &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second},
 		EnableHTTP2: true,
 	}
 	ts.Start()

@@ -13,9 +13,10 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
 
 type AppServer struct {
@@ -80,7 +81,7 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 
 	ts := &httptest.Server{
 		Listener:    l,
-		Config:      &http.Server{Handler: mux},
+		Config:      &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second},
 		EnableHTTP2: true,
 	}
 	ts.Start()

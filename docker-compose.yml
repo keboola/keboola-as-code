@@ -27,6 +27,7 @@ services:
         hard: 50000
     environment:
       # For all
+      - TEST_KBC_TMP_DIR=/tmp
       - TEST_KBC_PROJECTS_FILE=/code/projects.json
       - TEST_KBC_PROJECTS_LOCK_HOST
       - TEST_KBC_PROJECTS_LOCK_PASSWORD

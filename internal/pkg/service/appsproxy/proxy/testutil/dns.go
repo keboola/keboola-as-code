@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"errors"
 	"net"
 	"net/url"
 	"testing"
@@ -10,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func StartDNSServer(t *testing.T, port int) *dnsmock.Server {
@@ -39,7 +39,6 @@ func AddAppDNSRecord(t *testing.T, appServer *AppServer, dnsServer *dnsmock.Serv
 		if err != nil {
 			return nil
 		}
-
 	}
 
 	return &url.URL{

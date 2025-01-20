@@ -1,7 +1,7 @@
 package server
 
 import (
-	"math/rand"
+	rand "math/rand/v2"
 	"net"
 	"os"
 	"path"
@@ -29,12 +29,17 @@ type portManager struct {
 }
 
 func NewPortManager(t *testing.T, tempDir, subFolder string) (pm *portManager, err error) {
-	source := rand.NewSource(time.Now().UnixNano())
-	random := rand.New(source)
+	t.Helper()
+	source := rand.NewPCG(42, 1024)
+	random := rand.New(source) // nolint:gosec
 	p := path.Join(tempDir, subFolder)
 	// Remove test folder so the used ports can be saved
-	os.RemoveAll(p)
-	err = os.MkdirAll(p, 0644)
+	err = os.RemoveAll(tempDir) // nolint:forbidigo
+	if err != nil {
+		panic(err)
+	}
+
+	err = os.MkdirAll(p, 0o755)
 	if err != nil {
 		panic(err)
 	}
@@ -52,10 +57,10 @@ func NewPortManager(t *testing.T, tempDir, subFolder string) (pm *portManager, e
 func (p portManager) GeneratePorts() {
 	// Generate ports (1024-65535)
 	duplicates := make([]int, 0, numberOfPorts)
-	for i := 0; i < numberOfPorts; i++ {
-		port := p.random.Intn(65535-1024+1) + 1024
+	for i := range numberOfPorts {
+		port := p.random.IntN(65535-1024+1) + 1024
 		for IsPortOccupied(port) && slices.Contains(duplicates, port) {
-			port = p.random.Intn(65535-1024+1) + 1024
+			port = p.random.IntN(65535-1024+1) + 1024
 		}
 
 		duplicates = append(duplicates, port)
@@ -64,22 +69,24 @@ func (p portManager) GeneratePorts() {
 }
 
 func (p portManager) GetFreePort() int {
-	source := rand.NewSource(time.Now().UnixNano())
-	random := rand.New(source)
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	randomPort := random.Intn(len(p.ports))
+	randomPort := p.random.IntN(len(p.ports))
 	port := p.ports[randomPort]
 	dir := path.Join(p.dir, strconv.FormatInt(int64(port), 10))
-	for _, err := os.Open(dir); err == nil; {
-		randomPort = random.Intn(len(p.ports))
+	for _, err := os.Open(dir); err == nil; { // nolint:forbidigo
+		randomPort = p.random.IntN(len(p.ports))
 		port = p.ports[randomPort]
 		dir = path.Join(p.dir, strconv.FormatInt(int64(port), 10))
-		_, err = os.Open(dir)
+		_, err = os.Open(dir) // nolint:forbidigo
 	}
 
 	delete(p.ports, randomPort)
-	os.Mkdir(dir, 0644)
+	err := os.Mkdir(dir, 0o644) // nolint:forbidigo
+	if err != nil {
+		panic("unable to create random port. All ports exhausted" + err.Error())
+	}
+
 	return port
 }
 

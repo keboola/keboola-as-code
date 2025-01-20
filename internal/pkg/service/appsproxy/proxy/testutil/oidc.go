@@ -5,9 +5,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
 
 func StartOIDCProviderServer(t *testing.T, pm server.PortManager) *mockoidc.MockOIDC {
@@ -19,14 +20,12 @@ func StartOIDCProviderServer(t *testing.T, pm server.PortManager) *mockoidc.Mock
 	}
 
 	port := pm.GetFreePort()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
 	for err != nil {
 		port = pm.GetFreePort()
 		ln, err = net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
 	}
 
-	m.Start(ln, nil)
-	require.NoError(t, err)
-
+	require.NoError(t, m.Start(ln, nil))
 	return m
 }
