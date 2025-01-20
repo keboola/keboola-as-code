@@ -61,14 +61,19 @@ func (c *Client) DNSServer() string {
 	return c.dnsServer
 }
 
-func (c *Client) Resolve(ctx context.Context, host string) (string, error) {
+func createDNSMessage(host string, typ uint16) *dns.Msg {
 	msg := &dns.Msg{}
-	msg.SetQuestion(dns.Fqdn(host), dns.TypeA)
+	msg.SetQuestion(dns.Fqdn(host), typ)
 	msg.Authoritative = true
 	// Disable recursion because we want to know if service pod is available in k8s.
 	// No need to recursively ask other servers. Also disables caching which we also want.
 	msg.RecursionDesired = false
 	msg.RecursionAvailable = false
+	return msg
+}
+
+func (c *Client) Resolve(ctx context.Context, host string) (string, error) {
+	msg := createDNSMessage(host, dns.TypeA)
 
 	// Send DNS query
 	resp, _, err := c.client.ExchangeContext(ctx, msg, c.dnsServer)
@@ -87,6 +92,5 @@ func (c *Client) Resolve(ctx context.Context, host string) (string, error) {
 
 	// nolint: gosec // we don't need to use crypto.rand here
 	ip := resp.Answer[rand.Intn(len(resp.Answer))].(*dns.A).A.String()
-
 	return ip, nil
 }
