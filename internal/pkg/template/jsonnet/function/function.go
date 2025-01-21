@@ -168,6 +168,8 @@ func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.Native
 				return SnowflakeWriterIDAzure.String(), nil
 			} else if _, found := components.Get(SnowflakeWriterIDGCPS3); found {
 				return SnowflakeWriterIDGCPS3.String(), nil
+			} else if _, found := components.Get(SnowflakeWriterIDGCP); found {
+				return SnowflakeWriterIDGCP.String(), nil
 			} else {
 				return nil, errors.New("no Snowflake Writer component found")
 			}
