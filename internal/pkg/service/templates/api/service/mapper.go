@@ -323,6 +323,17 @@ func InputsResponse(ctx context.Context, d dependencies.ProjectRequestScope, ste
 
 		// Steps
 		for _, step := range group.Steps {
+			var filteredInputs int
+			for _, in := range step.Inputs {
+				if !in.MatchesAvailableBackend(d.ProjectBackends()) {
+					filteredInputs++
+					continue
+				}
+			}
+
+			if filteredInputs != 0 {
+				continue
+			}
 			// If the step is pre-configured -> validate default values.
 			var stepValues *StepPayload
 			if step.Show {
@@ -372,7 +383,7 @@ func InputsResponse(ctx context.Context, d dependencies.ProjectRequestScope, ste
 
 	// Together with the inputs definitions, the initial state (initial validation) is generated.
 	// It is primarily intended for the upgrade operation, where the step may be pre-configured.
-	out.InitialState, _, _ = validateInputs(ctx, stepsGroups.ToValue(), initialValues)
+	out.InitialState, _, _ = validateInputs(ctx, d.ProjectBackends(), stepsGroups.ToValue(), initialValues)
 	return out
 }
 

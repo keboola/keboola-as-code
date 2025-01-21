@@ -39,10 +39,44 @@ func cases() []test {
 	}
 }
 
+func TestLoadMinimalManifestFile(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	for _, c := range cases() {
+		if c.name != "minimal" {
+			continue
+		}
+
+		fs := aferofs.NewMemoryFs()
+
+		// Write file
+		path := Path()
+		require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(path, c.jsonnet)))
+
+		// Load
+		manifestFile, err := Load(ctx, fs)
+		assert.NotNil(t, manifestFile)
+		require.NoError(t, err)
+
+		// Evaluate
+		manifest, err := manifestFile.EvaluateAlwaysWithRecords(context.Background(), nil)
+		assert.NotNil(t, manifest)
+		require.NoError(t, err)
+
+		// Assert
+		assert.Equal(t, c.records, manifest.records.All(), c.name)
+		assert.Equal(t, c.mainConfig, manifest.MainConfig())
+	}
+}
+
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	for _, c := range cases() {
+		if c.name == "minimal" {
+			continue
+		}
+
 		fs := aferofs.NewMemoryFs()
 
 		// Write file

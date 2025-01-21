@@ -6,6 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 )
 
 func TestInput_ValidateUserInput(t *testing.T) {
@@ -106,4 +109,84 @@ func TestInput_Available(t *testing.T) {
 	v, err = input.Available(params)
 	assert.False(t, v)
 	require.NoError(t, err)
+}
+
+func TestInput_MatchesAvailableBackend(t *testing.T) {
+	t.Parallel()
+	type fields struct {
+		ID          string
+		Name        string
+		Description string
+		Backend     *string
+		Type        Type
+		Kind        Kind
+	}
+	type args struct {
+		backends []string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "matches backend",
+			fields: fields{
+				ID:          "input.id",
+				Name:        "input",
+				Description: "input description",
+				Backend:     ptr.Ptr(project.BackendSnowflake),
+				Type:        "string",
+				Kind:        "input",
+			},
+			args: args{
+				backends: []string{project.BackendSnowflake},
+			},
+			want: true,
+		},
+		{
+			name: "empty backend",
+			fields: fields{
+				ID:          "input.id",
+				Name:        "input",
+				Description: "input description",
+				Type:        "string",
+				Kind:        "input",
+			},
+			args: args{
+				backends: []string{project.BackendSnowflake},
+			},
+			want: true,
+		},
+		{
+			name: "does not match backend",
+			fields: fields{
+				ID:          "input.id",
+				Name:        "input",
+				Description: "input description",
+				Backend:     ptr.Ptr(project.BackendBigQuery),
+				Type:        "string",
+				Kind:        "input",
+			},
+			args: args{
+				backends: []string{project.BackendSnowflake},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			i := Input{
+				ID:          tt.fields.ID,
+				Name:        tt.fields.Name,
+				Description: tt.fields.Description,
+				Backend:     tt.fields.Backend,
+				Type:        tt.fields.Type,
+				Kind:        tt.fields.Kind,
+			}
+			assert.Equalf(t, tt.want, i.MatchesAvailableBackend(tt.args.backends), "MatchesAvailableBackend(%v)", tt.args.backends)
+		})
+	}
 }

@@ -39,6 +39,7 @@ func evaluateFile(ctx context.Context, file *filesystem.RawFile, jsonnetCtx *jso
 	}
 
 	content := newFile()
+	// Decode string and set Configs object
 	if err := json.DecodeString(jsonContent, content); err != nil {
 		return nil, err
 	}
@@ -86,9 +87,13 @@ func (f *file) validate(ctx context.Context) error {
 	return nil
 }
 
-func (f *file) records() []model.ObjectManifest {
+func (f *file) records() ([]model.ObjectManifest, error) {
 	out := make([]model.ObjectManifest, 0, len(f.Configs))
 	for _, config := range f.Configs {
+		if config == nil {
+			continue
+		}
+
 		out = append(out, &config.ConfigManifest)
 		for _, row := range config.Rows {
 			row.ComponentID = config.ComponentID
@@ -96,7 +101,11 @@ func (f *file) records() []model.ObjectManifest {
 			out = append(out, row)
 		}
 	}
-	return out
+	if len(out) == 0 {
+		return nil, errors.New("unable to create template using invalid manifest configuration")
+	}
+
+	return out, nil
 }
 
 func (f *file) setRecords(records []model.ObjectManifest) {

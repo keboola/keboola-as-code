@@ -340,6 +340,10 @@ func (t *Template) ManifestExists(ctx context.Context) (bool, error) {
 }
 
 func (t *Template) LoadState(templateCtx Context, options loadState.Options, d dependencies) (*State, error) {
+	return t.LoadAndPrepareState(templateCtx, options, d, false)
+}
+
+func (t *Template) LoadAndPrepareState(templateCtx Context, options loadState.Options, d dependencies, isLoadCLI bool) (*State, error) {
 	t.deps = d
 	localFilter := templateCtx.LocalObjectsFilter()
 	remoteFilter := templateCtx.RemoteObjectsFilter()
@@ -350,7 +354,7 @@ func (t *Template) LoadState(templateCtx Context, options loadState.Options, d d
 	}
 
 	// Evaluate manifest
-	container, err := t.evaluate(templateCtx)
+	container, err := t.evaluate(templateCtx, isLoadCLI)
 	if err != nil {
 		return nil, err
 	}
@@ -363,12 +367,12 @@ func (t *Template) LoadState(templateCtx Context, options loadState.Options, d d
 	}
 }
 
-func (t *Template) evaluate(templateCtx Context) (tmpl *evaluatedTemplate, err error) {
+func (t *Template) evaluate(templateCtx Context, isLoadFromCLI bool) (tmpl *evaluatedTemplate, err error) {
 	_, span := t.deps.Telemetry().Tracer().Start(templateCtx, "keboola.go.declarative.template.evaluate")
 	defer span.End(&err)
 
-	// Evaluate manifest
-	evaluatedManifest, err := t.manifestFile.Evaluate(templateCtx, templateCtx.JsonnetContext())
+	// Evaluate manifest to always have records
+	evaluatedManifest, err := t.evaluateManifest(templateCtx, isLoadFromCLI)
 	if err != nil {
 		return nil, err
 	}
@@ -378,6 +382,13 @@ func (t *Template) evaluate(templateCtx Context) (tmpl *evaluatedTemplate, err e
 		context:  templateCtx,
 		manifest: evaluatedManifest,
 	}, nil
+}
+
+func (t *Template) evaluateManifest(templateCtx Context, isLoadCLI bool) (*Manifest, error) {
+	if isLoadCLI {
+		return t.manifestFile.EvaluateAlwaysWithRecords(templateCtx, templateCtx.JsonnetContext())
+	}
+	return t.manifestFile.Evaluate(templateCtx, templateCtx.JsonnetContext())
 }
 
 type evaluatedTemplate struct {

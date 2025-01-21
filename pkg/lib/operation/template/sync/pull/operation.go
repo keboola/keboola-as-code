@@ -43,7 +43,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	logger := d.Logger()
 
 	// Load state
-	templateState, err := tmpl.LoadState(o.Context, LoadStateOptions(), d)
+	templateState, err := tmpl.LoadAndPrepareState(o.Context, LoadStateOptions(), d, true)
 	if err != nil {
 		return err
 	}
