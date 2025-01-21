@@ -180,6 +180,7 @@ func (m *Manager) updateConnections(ctx context.Context) {
 		if err := conn.Close(ctx); err != nil {
 			m.logger.Errorf(ctx, "cannot close connection to %q - %q: %s", conn.RemoteNodeID(), conn.RemoteAddr(), err)
 		}
+		m.logger.Infof(ctx, "closing connection:", conn.RemoteAddr(), conn.RemoteNodeID())
 	}
 	for _, node := range toOpen {
 		// Start dial loop, errors are logged
