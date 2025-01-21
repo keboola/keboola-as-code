@@ -142,6 +142,11 @@ func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGr
 			m.revision = header.Revision
 			m.revisionLock.Unlock()
 
+			// TODO: add logs for each revision
+			// TODO: maybe we missed the revision, but after deadline?
+			// TODO: the statistics for slice does not exists
+			// TODO: slicerotation issue -> old file has not been imported
+			// TODO: when all slices are not in `Uploaded` state -> file import not working
 			logger.Debugf(ctx, `watch stream mirror synced to revision %d`, header.Revision)
 
 			// Unblock WaitForRevision loops
