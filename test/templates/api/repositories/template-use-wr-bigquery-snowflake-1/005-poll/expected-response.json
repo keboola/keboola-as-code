@@ -2,13 +2,10 @@
   "id": "template.use/%s",
   "type": "template.use",
   "url": "https://templates.keboola.local/v1/tasks/template.use/%s",
-  "status": "success",
+  "status": "error",
   "isFinished": true,
   "createdAt": "%s",
   "finishedAt": "%s",
   "duration": %d,
-  "result": "template instance with id \"%s\" created",
-  "outputs": {
-    "instanceId": "%s"
-  }
+  "error": "cannot load configurations from manifest \"src/manifest.jsonnet\": unable to create template using invalid manifest configuration"
 }
