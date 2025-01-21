@@ -166,6 +166,8 @@ func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.Native
 				return SnowflakeWriterIDAws.String(), nil
 			} else if _, found := components.Get(SnowflakeWriterIDAzure); found {
 				return SnowflakeWriterIDAzure.String(), nil
+			} else if _, found := components.Get(SnowflakeWriterIDGCP); found {
+				return SnowflakeWriterIDGCP.String(), nil
 			} else if _, found := components.Get(SnowflakeWriterIDGCPS3); found {
 				return SnowflakeWriterIDGCPS3.String(), nil
 			} else {
