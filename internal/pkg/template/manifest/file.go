@@ -87,7 +87,7 @@ func (f *file) validate(ctx context.Context) error {
 	return nil
 }
 
-func (f *file) records() (oms []model.ObjectManifest, err error) {
+func (f *file) records() ([]model.ObjectManifest, error) {
 	out := make([]model.ObjectManifest, 0, len(f.Configs))
 	for _, config := range f.Configs {
 		if config == nil {
@@ -102,7 +102,7 @@ func (f *file) records() (oms []model.ObjectManifest, err error) {
 		}
 	}
 	if len(out) == 0 {
-		return out, errors.New("unable to create template using invalid manifest configuration")
+		return nil, errors.New("unable to create template using invalid manifest configuration")
 	}
 
 	return out, nil
