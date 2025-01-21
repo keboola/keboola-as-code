@@ -75,7 +75,7 @@ func (r *Repository) stateTransition(k model.SliceKey, now time.Time, from, to m
 
 func (r *Repository) switchState(ctx context.Context, fileState model.FileState, oldValue model.Slice, now time.Time, from, to model.SliceState, opts ...switchStateOption) *op.TxnOp[model.Slice] {
 	// Validate from state
-	if oldValue.State != from {
+	if oldValue.State != from && oldValue.State != to {
 		return op.ErrorTxn[model.Slice](errors.Errorf(`slice "%s" is in "%s" state, expected "%s"`, oldValue.SliceKey, oldValue.State, from))
 	}
 
