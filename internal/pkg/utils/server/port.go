@@ -75,6 +75,11 @@ func (p portManager) GetFreePort() int {
 	port := p.ports[randomPort]
 	dir := path.Join(p.dir, strconv.FormatInt(int64(port), 10))
 	for _, err := os.Open(dir); err == nil; { // nolint:forbidigo
+		// no available ports were left, use system ones
+		if len(p.ports) == 0 {
+			return 0
+		}
+
 		randomPort = p.random.IntN(len(p.ports))
 		port = p.ports[randomPort]
 		dir = path.Join(p.dir, strconv.FormatInt(int64(port), 10))
