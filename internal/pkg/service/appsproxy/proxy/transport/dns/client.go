@@ -82,6 +82,18 @@ func (c *Client) Resolve(ctx context.Context, host string) (string, error) {
 	}
 
 	if len(resp.Answer) == 0 {
+		msg = createDNSMessage(host, dns.TypeAAAA)
+		resp, _, err = c.client.ExchangeContext(ctx, msg, c.dnsServer)
+		if err != nil {
+			return "", err
+		}
+
+		if len(resp.Answer) > 0 {
+			// nolint: gosec // we don't need to use crypto.rand here
+			ip := resp.Answer[rand.Intn(len(resp.Answer))].(*dns.AAAA).AAAA.String()
+			return ip, nil
+		}
+
 		return "", &net.DNSError{
 			Err:        fmt.Sprintf(`host not found: %s`, host),
 			Name:       host,

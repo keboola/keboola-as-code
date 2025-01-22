@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -75,10 +74,10 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 	})
 
 	port := pm.GetFreePort()
-	l, err := net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	for err != nil {
 		port = pm.GetFreePort()
-		l, err = net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+		l, err = net.Listen("tcp", fmt.Sprintf("[::1]:%d", port))
 	}
 
 	ts := &httptest.Server{

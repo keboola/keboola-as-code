@@ -83,10 +83,10 @@ func StartDataAppsAPI(t *testing.T, pm server.PortManager) *DataAppsAPI {
 	})
 
 	port := pm.GetFreePort()
-	l, err := net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	for err != nil {
 		port = pm.GetFreePort()
-		l, err = net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+		l, err = net.Listen("tcp", fmt.Sprintf("[::1]:%d", port))
 	}
 	ts := &httptest.Server{
 		Listener:    l,

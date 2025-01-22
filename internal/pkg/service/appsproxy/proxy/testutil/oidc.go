@@ -1,8 +1,8 @@
 package testutil
 
 import (
+	"fmt"
 	"net"
-	"strconv"
 	"testing"
 
 	"github.com/oauth2-proxy/mockoidc"
@@ -20,10 +20,10 @@ func StartOIDCProviderServer(t *testing.T, pm server.PortManager) *mockoidc.Mock
 	}
 
 	port := pm.GetFreePort()
-	ln, err := net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	for err != nil {
 		port = pm.GetFreePort()
-		ln, err = net.Listen("tcp", "127.0.0.1:"+strconv.FormatInt(int64(port), 10))
+		ln, err = net.Listen("tcp", fmt.Sprintf("[::1]:%d", port))
 	}
 
 	require.NoError(t, m.Start(ln, nil))
