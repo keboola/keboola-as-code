@@ -82,6 +82,8 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 			if cfg.Datadog.Enabled {
 				return datadog.NewTracerProvider(
 					logger, proc,
+					tracer.WithTraceEnabled(true),
+					tracer.WithDogstatsdAddress("app.datadoghq.eu:8125"),
 					tracer.WithRuntimeMetrics(),
 					tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
 					tracer.WithAnalyticsRate(1.0),

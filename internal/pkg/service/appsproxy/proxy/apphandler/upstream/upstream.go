@@ -129,7 +129,18 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, false))
 			ctx, cancel := context.WithTimeout(ctx, timeout)
-			defer cancel()
+			tracer := u.manager.telemetry.Tracer()
+			ctx, span := tracer.Start(req.Context(), "test")
+			attrs := []attribute.KeyValue{
+				attribute.String("app.id", string(u.app.ID)),
+				attribute.String("context.appId", string(u.app.ID)),
+			}
+			span.SetAttributes(attrs...)
+			defer func() {
+				span.End(nil)
+				cancel()
+			}()
+
 			proxy.ServeHTTP(w, req.WithContext(ctx))
 			return nil
 		})).
