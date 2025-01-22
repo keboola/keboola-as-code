@@ -74,17 +74,8 @@ func (p portManager) GetFreePort() int {
 	randomPort := p.random.IntN(len(p.ports))
 	port := p.ports[randomPort]
 	dir := path.Join(p.dir, strconv.FormatInt(int64(port), 10))
-	for _, err := os.Open(dir); err == nil; { // nolint:forbidigo
-		// no available ports were left, use system ones
-		if len(p.ports) == 0 {
-			return 0
-		}
 
-		randomPort = p.random.IntN(len(p.ports))
-		port = p.ports[randomPort]
-		dir = path.Join(p.dir, strconv.FormatInt(int64(port), 10))
-		_, err = os.Open(dir) // nolint:forbidigo
-	}
+	dir, port = p.retryOnOccupiedPort(dir, port)
 
 	delete(p.ports, randomPort)
 	err := os.Mkdir(dir, 0o644) // nolint:forbidigo
@@ -93,6 +84,24 @@ func (p portManager) GetFreePort() int {
 	}
 
 	return port
+}
+
+func (p portManager) retryOnOccupiedPort(dir string, startPort int) (outDir string, port int) {
+	finalPort := startPort
+	outDir = dir
+	for _, err := os.Open(outDir); err == nil; { // nolint:forbidigo
+		// no available ports were left, use system ones
+		if len(p.ports) == 0 {
+			return outDir, 0
+		}
+
+		randomPort := p.random.IntN(len(p.ports))
+		finalPort = p.ports[randomPort]
+		outDir = path.Join(p.dir, strconv.FormatInt(int64(finalPort), 10))
+		_, err = os.Open(outDir) // nolint:forbidigo
+	}
+
+	return outDir, finalPort
 }
 
 func IsPortOccupied(port int) bool {
