@@ -113,8 +113,8 @@ runs:
         path: |
           ${{ env.GODIRS }}/modcache
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
-        restore-keys: |
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
+        # restore-keys: |
+        #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -126,8 +126,8 @@ runs:
         path: |
           ${{ env.GODIRS }}/cache
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
-        restore-keys: |
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
+        # restore-keys: |
+        #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -139,8 +139,8 @@ runs:
         path: |
           ${{ env.GODIRS }}/lintcache
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-${{ hashFiles('**/go.mod') }}
-        restore-keys: |
-          ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
+        # restore-keys: |
+        #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
