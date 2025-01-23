@@ -119,6 +119,10 @@ func (w *MeterWithBackup) SyncBackup() error {
 	w.lock.RLock()
 	defer w.lock.RUnlock()
 
+	return w.syncBackup()
+}
+
+func (w *MeterWithBackup) syncBackup() error {
 	if w.backup == nil {
 		return nil
 	}
@@ -141,12 +145,12 @@ func (w *MeterWithBackup) Close() error {
 		w.backupTicker.Stop()
 	}
 
-	if err := w.SyncBackup(); err != nil {
-		return err
-	}
-
 	w.lock.Lock()
 	defer w.lock.Unlock()
+
+	if err := w.syncBackup(); err != nil {
+		return err
+	}
 
 	if err := w.backup.Close(); err != nil {
 		return errors.Errorf(`cannot close the backup file: %w`, err)

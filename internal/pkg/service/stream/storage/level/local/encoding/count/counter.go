@@ -158,6 +158,10 @@ func (c *CounterWithBackup) SyncBackup() error {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
+	return c.syncBackup()
+}
+
+func (c *CounterWithBackup) syncBackup() error {
 	if c.backup == nil {
 		return nil
 	}
@@ -189,12 +193,12 @@ func (c *CounterWithBackup) Close() error {
 		c.backupTicker.Stop()
 	}
 
-	if err := c.SyncBackup(); err != nil {
-		return err
-	}
-
 	c.lock.Lock()
 	defer c.lock.Unlock()
+
+	if err := c.syncBackup(); err != nil {
+		return err
+	}
 
 	if err := c.backup.Close(); err != nil {
 		return errors.Errorf(`cannot close the backup file: %w`, err)
