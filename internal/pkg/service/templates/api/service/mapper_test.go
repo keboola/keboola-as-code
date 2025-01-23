@@ -13,6 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 )
 
 func TestTemplatesResponse(t *testing.T) {
@@ -89,6 +91,94 @@ func TestTemplatesResponse(t *testing.T) {
 				actualIDs = append(actualIDs, template.ID)
 			}
 			assert.Equal(t, tc.expectedTemplates, actualIDs)
+		})
+	}
+}
+
+func TestComponentsResponse(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		name            string
+		inputComponents []string
+		projectBackends commonDeps.MockedOption
+		mockComponents  keboola.Components
+		expectedOutput  []string
+	}
+
+	cases := []testCase{
+		{
+			name:            "placeholder component",
+			inputComponents: []string{manifest.SnowflakeWriterComponentIDPlaceholder},
+			projectBackends: commonDeps.WithSnowflakeBackend(),
+			mockComponents:  keboola.Components{{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAws}}},
+			expectedOutput:  []string{function.SnowflakeWriterIDAws.String()},
+		},
+		{
+			name:            "placeholder component not found",
+			inputComponents: []string{manifest.SnowflakeWriterComponentIDPlaceholder},
+			projectBackends: commonDeps.WithSnowflakeBackend(),
+			mockComponents:  keboola.Components{},
+			expectedOutput:  []string{},
+		},
+		{
+			name:            "multiple components with placeholders",
+			inputComponents: []string{"component1", manifest.SnowflakeWriterComponentIDPlaceholder, "component2"},
+			projectBackends: commonDeps.WithSnowflakeBackend(),
+			mockComponents: keboola.Components{
+				{ComponentKey: keboola.ComponentKey{ID: "component1"}},
+				{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAws}},
+				{ComponentKey: keboola.ComponentKey{ID: "component2"}},
+			},
+			expectedOutput: []string{"component1", function.SnowflakeWriterIDAws.String(), "component2"},
+		},
+		{
+			name:            "azure component",
+			inputComponents: []string{manifest.SnowflakeWriterComponentIDPlaceholder},
+			projectBackends: commonDeps.WithSnowflakeBackend(),
+			mockComponents:  keboola.Components{{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAzure}}},
+			expectedOutput:  []string{function.SnowflakeWriterIDAzure.String()},
+		},
+		{
+			name:            "gcp component with snowflake backend",
+			inputComponents: []string{manifest.SnowflakeWriterComponentIDPlaceholder},
+			projectBackends: commonDeps.WithSnowflakeBackend(),
+			mockComponents: keboola.Components{
+				{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCPS3}},
+				{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCP}},
+			},
+			expectedOutput: []string{function.SnowflakeWriterIDGCPS3.String()},
+		},
+		{
+			name:            "gcp component with bigquery backend",
+			inputComponents: []string{manifest.SnowflakeWriterComponentIDPlaceholder},
+			projectBackends: commonDeps.WithBigQueryBackend(),
+			mockComponents: keboola.Components{
+				{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCPS3}},
+				{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCP}},
+			},
+			expectedOutput: []string{function.SnowflakeWriterIDGCP.String()},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			d, _ := dependencies.NewMockedProjectRequestScope(
+				t,
+				ctx,
+				config.New(),
+				commonDeps.WithMockedComponents(tc.mockComponents),
+				tc.projectBackends,
+			)
+
+			actualOutput := ComponentsResponse(d, tc.inputComponents)
+
+			assert.Equal(t, tc.expectedOutput, actualOutput)
 		})
 	}
 }

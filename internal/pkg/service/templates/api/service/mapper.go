@@ -286,6 +286,10 @@ func ComponentsResponse(d dependencies.ProjectRequestScope, in []string) (out []
 				componentId = function.SnowflakeWriterIDAws.String()
 			} else if _, found := d.Components().Get(function.SnowflakeWriterIDAzure); found {
 				componentId = function.SnowflakeWriterIDAzure.String()
+			} else if _, found := d.Components().Get(function.SnowflakeWriterIDGCPS3); found && slices.Contains(d.ProjectBackends(), project.BackendSnowflake) {
+				componentId = function.SnowflakeWriterIDGCPS3.String()
+			} else if _, found := d.Components().Get(function.SnowflakeWriterIDGCP); found && slices.Contains(d.ProjectBackends(), project.BackendBigQuery) {
+				componentId = function.SnowflakeWriterIDGCP.String()
 			} else {
 				continue
 			}
