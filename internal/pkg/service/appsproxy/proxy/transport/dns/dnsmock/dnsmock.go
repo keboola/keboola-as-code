@@ -99,6 +99,15 @@ func (s *Server) AddNSRecord(fqdn, nsName string) {
 	s.records[dns.TypeNS] = append(s.records[dns.TypeNS], ns)
 }
 
+func (s *Server) AddAOrAAAARecord(fqdn string, ip net.IP) error {
+	ipv4 := ip.To4()
+	if ipv4 != nil {
+		return s.AddARecord(fqdn, ipv4)
+	}
+
+	return s.AddAAAARecord(fqdn, ip)
+}
+
 func (s *Server) AddARecord(fqdn string, ip net.IP) error {
 	ipv4 := ip.To4()
 	if ipv4 == nil {
@@ -107,7 +116,7 @@ func (s *Server) AddARecord(fqdn string, ip net.IP) error {
 
 	rr := &dns.A{
 		Hdr: dns.RR_Header{Name: fqdn, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 0},
-		A:   ip.To4(),
+		A:   ipv4,
 	}
 	s.updateLock.Lock()
 	defer s.updateLock.Unlock()
@@ -120,9 +129,10 @@ func (s *Server) AddAAAARecord(fqdn string, ip net.IP) error {
 	if ipv6 == nil {
 		return &DNSRecordError{Err: errors.New("Unable to create AAAA record")}
 	}
+
 	rr := &dns.AAAA{
 		Hdr:  dns.RR_Header{Name: fqdn, Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: 0},
-		AAAA: ip.To16(),
+		AAAA: ipv6,
 	}
 	s.updateLock.Lock()
 	defer s.updateLock.Unlock()

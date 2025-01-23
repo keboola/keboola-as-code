@@ -32,13 +32,10 @@ func AddAppDNSRecord(t *testing.T, appServer *AppServer, dnsServer *dnsmock.Serv
 	require.NoError(t, err)
 
 	appHost := "app.local"
-	err = dnsServer.AddARecord(dns.Fqdn(appHost), net.ParseIP(ip))
 	var derr *dnsmock.DNSRecordError
+	err = dnsServer.AddAOrAAAARecord(dns.Fqdn(appHost), net.ParseIP(ip))
 	if err != nil && errors.As(err, &derr) {
-		err = dnsServer.AddAAAARecord(dns.Fqdn(appHost), net.ParseIP(ip))
-		if err != nil {
-			return nil
-		}
+		return nil
 	}
 
 	return &url.URL{
