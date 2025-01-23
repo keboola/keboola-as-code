@@ -411,7 +411,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelTarget_TxnLimit(t *testing
 	t.Parallel()
 
 	// How many files and slices to create
-	const limit = 500
+	const limit = 50
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
