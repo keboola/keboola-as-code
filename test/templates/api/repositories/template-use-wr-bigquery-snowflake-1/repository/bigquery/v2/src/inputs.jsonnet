@@ -8,9 +8,9 @@
           icon: 'component:' + SnowflakeWriterComponentId(),
           name: 'Snowflake',
           description: 'Destination',
+          backend: 'snowflake',
           inputs: [
             {
-              backend: 'snowflake',
               id: 'wr-snowflake-host',
               name: 'Hostname',
               description: 'Insert database hostname',
@@ -22,10 +22,10 @@
         {
           icon: 'component:keboola.wr-google-bigquery-v2',
           name: 'BigQuery',
+          backend: 'bigquery',
           description: 'Destination',
           inputs: [
             {
-              backend: 'bigquery',
               id: 'wr-bigquery-host',
               name: 'Hostname',
               description: 'Insert database hostname',

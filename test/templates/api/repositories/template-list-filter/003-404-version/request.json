@@ -1,5 +1,5 @@
 {
-  "path": "/v1/repositories/keboola/templates?filter=312312",
+  "path": "/v1/repositories/keboola/templates/my-template-id/2.0.0/inputs",
   "method": "GET",
   "headers": {
     "Content-Type": "application/json",

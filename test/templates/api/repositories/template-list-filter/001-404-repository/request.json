@@ -1,5 +1,5 @@
 {
-  "path": "/v1/repositories/keboola/templates?filter=keboola.wr-google-sheets",
+  "path": "/v1/repositories/unknown/templates/my-template-id/1.2.3/inputs",
   "method": "GET",
   "headers": {
     "Content-Type": "application/json",
