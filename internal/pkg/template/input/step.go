@@ -231,7 +231,7 @@ type Step struct {
 	Description       string  `json:"description" validate:"min=1,max=60"`
 	DialogName        string  `json:"dialogName,omitempty" validate:"omitempty,max=25"`
 	DialogDescription string  `json:"dialogDescription,omitempty" validate:"omitempty,mdmax=200"`
-	Backend           *string `json:"backend,omitempty"`
+	Backend           *string `json:"backend,omitempty" validate:"omitempty,oneof=snowflake bigquery"`
 	Inputs            Inputs  `json:"inputs" validate:"omitempty,dive"`
 }
 
@@ -254,9 +254,9 @@ func (s Step) DescriptionForDialog() string {
 // empty (""), or it matches one of the backends in the provided list, the
 // function returns true. Otherwise, it returns false.
 func (s Step) MatchesAvailableBackend(backends []string) bool {
-	if s.Backend == nil || slices.Contains(backends, *s.Backend) {
+	if s.Backend == nil || *s.Backend == "" {
 		return true
 	}
 
-	return false
+	return slices.Contains(backends, *s.Backend)
 }
