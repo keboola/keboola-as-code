@@ -254,9 +254,9 @@ func (s Step) DescriptionForDialog() string {
 // empty (""), or it matches one of the backends in the provided list, the
 // function returns true. Otherwise, it returns false.
 func (s Step) MatchesAvailableBackend(backends []string) bool {
-	if s.Backend == nil || slices.Contains(backends, *s.Backend) {
+	if s.Backend == nil || *s.Backend == "" {
 		return true
 	}
 
-	return false
+	return slices.Contains(backends, *s.Backend)
 }
