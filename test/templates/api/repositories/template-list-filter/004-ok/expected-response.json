@@ -1,0 +1,91 @@
+{
+  "stepGroups": [
+    {
+      "id": "g01",
+      "description": "Configure the eshop platforms",
+      "required": "all",
+      "steps": [
+        {
+          "id": "g01-s01",
+          "icon": "common:settings",
+          "name": "Shopify",
+          "description": "Sell online with an ecommerce website",
+          "dialogName": "Shopify",
+          "dialogDescription": "Sell online with an ecommerce website",
+          "inputs": [
+            {
+              "id": "shopify-token",
+              "name": "Shopify token",
+              "description": "Please enter Shopify token",
+              "type": "string",
+              "kind": "hidden",
+              "default": ""
+            },
+            {
+              "id": "oauth",
+              "name": "Shopify oAuth",
+              "description": "Shopify Authorization",
+              "type": "object",
+              "kind": "oauth",
+              "default": {},
+              "componentId": "keboola.ex-shopify"
+            },
+            {
+              "id": "oauth2",
+              "name": "Instagram oAuth",
+              "description": "Instagram Authorization",
+              "type": "object",
+              "kind": "oauth",
+              "default": {},
+              "componentId": "keboola.ex-instagram"
+            },
+            {
+              "id": "oauth2Accounts",
+              "name": "Instagram Profiles",
+              "description": "Instagram Profiles",
+              "type": "object",
+              "kind": "oauthAccounts",
+              "default": {},
+              "oauthInputId": "oauth2"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "initialState": {
+    "valid": false,
+    "stepGroups": [
+      {
+        "id": "g01",
+        "valid": false,
+        "error": "All steps (1) must be selected.",
+        "steps": [
+          {
+            "id": "g01-s01",
+            "configured": false,
+            "valid": true,
+            "inputs": [
+              {
+                "id": "shopify-token",
+                "visible": true
+              },
+              {
+                "id": "oauth",
+                "visible": true
+              },
+              {
+                "id": "oauth2",
+                "visible": true
+              },
+              {
+                "id": "oauth2Accounts",
+                "visible": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
