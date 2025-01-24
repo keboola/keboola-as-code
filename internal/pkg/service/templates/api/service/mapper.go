@@ -327,15 +327,7 @@ func InputsResponse(ctx context.Context, d dependencies.ProjectRequestScope, ste
 
 		// Steps
 		for _, step := range group.Steps {
-			var filteredInputs int
-			for _, in := range step.Inputs {
-				if !in.MatchesAvailableBackend(d.ProjectBackends()) {
-					filteredInputs++
-					continue
-				}
-			}
-
-			if filteredInputs != 0 {
+			if !step.MatchesAvailableBackend(d.ProjectBackends()) {
 				continue
 			}
 			// If the step is pre-configured -> validate default values.
