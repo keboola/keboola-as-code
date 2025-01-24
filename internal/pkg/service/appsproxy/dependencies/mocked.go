@@ -54,7 +54,7 @@ func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 
 	var dnsServer *dnsmock.Server
 	if cfg.DNSServer == "" {
-		dnsServer = dnsmock.New()
+		dnsServer = dnsmock.New(commonMock.MockedDNSPort())
 		require.NoError(tb, dnsServer.Start())
 		tb.Cleanup(func() {
 			_ = dnsServer.Shutdown()

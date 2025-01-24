@@ -137,6 +137,7 @@ jobs:
             TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
             TEST_EXCEPT="$TEST_EXCEPT" \
+            TEST_KBC_TMP_DIR="${{ runner.temp }}" \
           make tests-unit
         env:
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}

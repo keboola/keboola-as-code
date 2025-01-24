@@ -9,12 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func StartDNSServer(t *testing.T) *dnsmock.Server {
+func StartDNSServer(t *testing.T, port int) *dnsmock.Server {
 	t.Helper()
 
-	server := dnsmock.New()
+	server := dnsmock.New(port)
 	err := server.Start()
 	require.NoError(t, err)
 
@@ -31,7 +32,11 @@ func AddAppDNSRecord(t *testing.T, appServer *AppServer, dnsServer *dnsmock.Serv
 	require.NoError(t, err)
 
 	appHost := "app.local"
-	dnsServer.AddARecord(dns.Fqdn(appHost), net.ParseIP(ip))
+	var derr *dnsmock.DNSRecordError
+	err = dnsServer.AddAOrAAAARecord(dns.Fqdn(appHost), net.ParseIP(ip))
+	if err != nil && errors.As(err, &derr) {
+		return nil
+	}
 
 	return &url.URL{
 		Scheme: tsURL.Scheme,

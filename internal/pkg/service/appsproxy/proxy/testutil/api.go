@@ -3,17 +3,20 @@ package testutil
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mitchellh/hashstructure/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
 
 type DataAppsAPI struct {
@@ -23,7 +26,7 @@ type DataAppsAPI struct {
 	WakeUps       map[string]int
 }
 
-func StartDataAppsAPI(t *testing.T) *DataAppsAPI {
+func StartDataAppsAPI(t *testing.T, pm server.PortManager) *DataAppsAPI {
 	t.Helper()
 
 	service := &DataAppsAPI{
@@ -79,8 +82,17 @@ func StartDataAppsAPI(t *testing.T) *DataAppsAPI {
 		}
 	})
 
-	ts := httptest.NewUnstartedServer(mux)
-	ts.EnableHTTP2 = true
+	port := pm.GetFreePort()
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	for err != nil {
+		port = pm.GetFreePort()
+		l, err = net.Listen("tcp", fmt.Sprintf("[::1]:%d", port))
+	}
+	ts := &httptest.Server{
+		Listener:    l,
+		Config:      &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second},
+		EnableHTTP2: true,
+	}
 	ts.Start()
 
 	service.Server = ts

@@ -16,7 +16,7 @@ import (
 func TestMultipleTXTRecords(t *testing.T) {
 	t.Parallel()
 
-	dnsMock := dnsmock.New()
+	dnsMock := dnsmock.New(0)
 	dnsMock.AddTXTRecord("heartbeat-us.cloud.example.com.", "1")
 	dnsMock.AddTXTRecord("heartbeat-uk.cloud.example.com.", "2")
 	dnsMock.AddTXTRecord("heartbeat-eu.cloud.example.com.", "0", "6", "8")
@@ -53,7 +53,7 @@ func TestMultipleTXTRecords(t *testing.T) {
 func TestSimple(t *testing.T) {
 	t.Parallel()
 
-	dnsMock := dnsmock.New()
+	dnsMock := dnsmock.New(0)
 	dnsMock.AddNSRecord("blah.cloud.example.com.", "gslb-ns-us-cloud.example.com.")
 	dnsMock.AddNSRecord("blah.cloud.example.com.", "gslb-ns-uk-cloud.example.com.")
 	dnsMock.AddNSRecord("blah.cloud.example.com.", "gslb-ns-eu-cloud.example.com.")
@@ -72,6 +72,29 @@ func TestSimple(t *testing.T) {
 	require.NotEmpty(t, a.Answer)
 
 	dnsMock.RemoveARecords("ip.blah.cloud.example.com.")
+	a, err = dns.Exchange(g, dnsMock.Addr())
+	require.NoError(t, err)
+	require.Empty(t, a.Answer)
+}
+
+func TestWrongARecord(t *testing.T) {
+	t.Parallel()
+
+	dnsMock := dnsmock.New(0)
+	require.Error(t, dnsMock.AddARecord("ipv4.net.", net.IPv6loopback))
+	require.Error(t, dnsMock.AddAAAARecord("ipv6.net.", net.IP{0, 0}))
+	err := dnsMock.Start()
+	require.NoError(t, err)
+
+	defer dnsMock.Shutdown()
+
+	g := new(dns.Msg)
+	g.SetQuestion("ipv4.net.", dns.TypeA)
+	a, err := dns.Exchange(g, dnsMock.Addr())
+	require.NoError(t, err)
+	require.Empty(t, a.Answer)
+
+	g.SetQuestion("ipv6.net.", dns.TypeAAAA)
 	a, err = dns.Exchange(g, dnsMock.Addr())
 	require.NoError(t, err)
 	require.Empty(t, a.Answer)

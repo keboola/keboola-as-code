@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -13,6 +14,8 @@ import (
 	"github.com/coder/websocket/wsjson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
 
 type AppServer struct {
@@ -20,7 +23,7 @@ type AppServer struct {
 	Requests *[]*http.Request
 }
 
-func StartAppServer(t *testing.T) *AppServer {
+func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 	t.Helper()
 
 	lock := &sync.Mutex{}
@@ -53,10 +56,12 @@ func StartAppServer(t *testing.T) *AppServer {
 		for {
 			select {
 			case <-ctx.Done():
-				require.NoError(t, c.Close(websocket.StatusNormalClosure, "Connection closed"))
+				// Ignore error, the websocket can be closed at this point
+				c.Close(websocket.StatusNormalClosure, "Connection closed") //nolint:errcheck
 				return
 			case <-ticker.C:
-				require.NoError(t, wsjson.Write(ctx, c, "Hello from websocket"))
+				// Ignore error, the websocket can be closed at this point
+				wsjson.Write(ctx, c, "Hello from websocket") //nolint:errcheck
 			}
 		}
 	})
@@ -68,8 +73,18 @@ func StartAppServer(t *testing.T) *AppServer {
 		_, _ = fmt.Fprint(w, "Hello, client")
 	})
 
-	ts := httptest.NewUnstartedServer(mux)
-	ts.EnableHTTP2 = true
+	port := pm.GetFreePort()
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	for err != nil {
+		port = pm.GetFreePort()
+		l, err = net.Listen("tcp", fmt.Sprintf("[::1]:%d", port))
+	}
+
+	ts := &httptest.Server{
+		Listener:    l,
+		Config:      &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second},
+		EnableHTTP2: true,
+	}
 	ts.Start()
 
 	return &AppServer{ts, &requests}

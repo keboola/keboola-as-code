@@ -166,6 +166,7 @@ type MockControl interface {
 	TestTelemetry() telemetry.ForTest
 	TestEtcdConfig() etcdclient.Config
 	TestEtcdClient() *etcdPkg.Client
+	MockedDNSPort() int
 	MockedRequest() *http.Request
 	MockedHTTPTransport() *httpmock.MockTransport
 	MockedProject(fs filesystem.Fs) *projectPkg.Project

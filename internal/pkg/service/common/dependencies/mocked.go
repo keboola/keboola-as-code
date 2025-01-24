@@ -59,6 +59,8 @@ type MockedConfig struct {
 	etcdConfig   etcdclient.Config
 	etcdDebugLog bool
 
+	dnsPort int
+
 	stdout io.Writer
 	stderr io.Writer
 
@@ -198,6 +200,12 @@ func WithMultipleTokenVerification(v bool) MockedOption {
 func WithRealHTTPClient() MockedOption {
 	return func(c *MockedConfig) {
 		c.useRealHTTPClient = true
+	}
+}
+
+func WithMockedDNSPort(port int) MockedOption {
+	return func(c *MockedConfig) {
+		c.dnsPort = port
 	}
 }
 
@@ -348,6 +356,10 @@ func (v *mocked) MockedHTTPTransport() *httpmock.MockTransport {
 		panic(errors.Errorf(`mocked dependencies have been created WithTestProject(...), there is no mocked HTTP transport`))
 	}
 	return v.mockedHTTPTransport
+}
+
+func (v *mocked) MockedDNSPort() int {
+	return v.config.dnsPort
 }
 
 func (v *mocked) MockedRequest() *http.Request {
