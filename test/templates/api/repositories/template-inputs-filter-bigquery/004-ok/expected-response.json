@@ -1,0 +1,138 @@
+{
+  "stepGroups": [
+    {
+      "id": "g01",
+      "description": "Configure your credentials for Mailchimp data source.",
+      "required": "all",
+      "steps": [
+        {
+          "id": "g01-s01",
+          "icon": "component:keboola.ex-mailchimp",
+          "name": "Mailchimp",
+          "description": "Mailchimp - Data Source",
+          "dialogName": "Mailchimp Data Source",
+          "dialogDescription": "Extractor collects data from Mailchimp about campaigns, lists and members.",
+          "inputs": []
+        }
+      ]
+    },
+    {
+      "id": "g02",
+      "description": "Transformations",
+      "required": "all",
+      "steps": [
+        {
+          "id": "g02-s02",
+          "icon": "component:keboola.google-bigquery-transformation",
+          "name": "BigQuery SQL",
+          "description": "Transformations",
+          "dialogName": "BigQuery SQL",
+          "dialogDescription": "Transformations",
+          "inputs": []
+        }
+      ]
+    },
+    {
+      "id": "g03",
+      "description": "Configure your credentials for data destination.",
+      "required": "optional",
+      "steps": [
+        {
+          "id": "g03-s01",
+          "icon": "component:keboola.wr-snowflake",
+          "name": "Snowflake Destination",
+          "description": "Load to data into snowflake",
+          "dialogName": "Snowflake Destination",
+          "dialogDescription": "Data load to Snowflake DB.",
+          "inputs": []
+        },
+        {
+          "id": "g03-s02",
+          "icon": "component:keboola.wr-google-bigquery-v2",
+          "name": "Google Big Query",
+          "description": "Big Query - Destination",
+          "dialogName": "Big Query Destination",
+          "dialogDescription": "Data load to Google Big Query",
+          "inputs": []
+        },
+        {
+          "id": "g03-s03",
+          "icon": "component:keboola.wr-google-sheets",
+          "name": "Google sheet Destination",
+          "description": "Load to data into google sheet",
+          "dialogName": "Google Sheet Destination",
+          "dialogDescription": "Make a copy of [this sheet](https://docs.google.com/spreadsheets/d/14SnNVWo62MfDZPbnmuJQrg2NzKZzIzwgEg5ubRYyNLo) into your Drive. Copy text between 'spreadsheets/d/' and '/edit', paste it below",
+          "inputs": []
+        },
+        {
+          "id": "g03-s04",
+          "icon": "component:keboola.wr-db-pgsql",
+          "name": "PostgreSQL Destination",
+          "description": "Load to data into PostgreSQL",
+          "dialogName": "PostgreSQL Destination",
+          "dialogDescription": "Data load to PostgreSQL DB.",
+          "inputs": []
+        }
+      ]
+    }
+  ],
+  "initialState": {
+    "valid": true,
+    "stepGroups": [
+      {
+        "id": "g01",
+        "valid": true,
+        "steps": [
+          {
+            "id": "g01-s01",
+            "configured": true,
+            "valid": true,
+            "inputs": []
+          }
+        ]
+      },
+      {
+        "id": "g02",
+        "valid": true,
+        "steps": [
+          {
+            "id": "g02-s02",
+            "configured": true,
+            "valid": true,
+            "inputs": []
+          }
+        ]
+      },
+      {
+        "id": "g03",
+        "valid": true,
+        "steps": [
+          {
+            "id": "g03-s01",
+            "configured": true,
+            "valid": true,
+            "inputs": []
+          },
+          {
+            "id": "g03-s02",
+            "configured": true,
+            "valid": true,
+            "inputs": []
+          },
+          {
+            "id": "g03-s03",
+            "configured": true,
+            "valid": true,
+            "inputs": []
+          },
+          {
+            "id": "g03-s04",
+            "configured": true,
+            "valid": true,
+            "inputs": []
+          }
+        ]
+      }
+    ]
+  }
+}
