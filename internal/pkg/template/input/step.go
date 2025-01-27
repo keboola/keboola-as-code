@@ -3,6 +3,7 @@ package input
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -225,12 +226,13 @@ type Steps []Step
 
 // Step is a container for Inputs.
 type Step struct {
-	Icon              string `json:"icon" validate:"required,templateicon,min=1"`
-	Name              string `json:"name" validate:"required,min=1,max=25"`
-	Description       string `json:"description" validate:"min=1,max=60"`
-	DialogName        string `json:"dialogName,omitempty" validate:"omitempty,max=25"`
-	DialogDescription string `json:"dialogDescription,omitempty" validate:"omitempty,mdmax=200"`
-	Inputs            Inputs `json:"inputs" validate:"omitempty,dive"`
+	Icon              string  `json:"icon" validate:"required,templateicon,min=1"`
+	Name              string  `json:"name" validate:"required,min=1,max=25"`
+	Description       string  `json:"description" validate:"min=1,max=60"`
+	DialogName        string  `json:"dialogName,omitempty" validate:"omitempty,max=25"`
+	DialogDescription string  `json:"dialogDescription,omitempty" validate:"omitempty,mdmax=200"`
+	Backend           *string `json:"backend,omitempty" validate:"omitempty,oneof=snowflake bigquery"`
+	Inputs            Inputs  `json:"inputs" validate:"omitempty,dive"`
 }
 
 func (s Step) NameForDialog() string {
@@ -245,4 +247,16 @@ func (s Step) DescriptionForDialog() string {
 		return s.DialogDescription
 	}
 	return s.Description
+}
+
+// MatchesAvailableBackend checks whether the Input's backend is compatible
+// with the provided list of available backends. If the Input's Backend is
+// empty (""), or it matches one of the backends in the provided list, the
+// function returns true. Otherwise, it returns false.
+func (s Step) MatchesAvailableBackend(backends []string) bool {
+	if s.Backend == nil || *s.Backend == "" {
+		return true
+	}
+
+	return slices.Contains(backends, *s.Backend)
 }

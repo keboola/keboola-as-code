@@ -27,17 +27,10 @@ func validateInputs(ctx context.Context, backends []string, groups template.Step
 		stepsCount := 0
 		// Check each step
 		for _, step := range group.Steps {
-			var filteredInputs int
-			for _, input := range step.Inputs {
-				if !input.MatchesAvailableBackend(backends) {
-					filteredInputs++
-					continue
-				}
-			}
-
-			if filteredInputs != 0 {
+			if !step.MatchesAvailableBackend(backends) {
 				continue
 			}
+
 			outStep := &StepValidationResult{ID: step.ID, Valid: true, Inputs: make([]*InputValidationResult, 0)}
 			outGroup.Steps = append(outGroup.Steps, outStep)
 			allStepsIds[step.ID] = true

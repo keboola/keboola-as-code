@@ -7,6 +7,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 )
 
 func TestStepsGroup_AreStepsSelectable(t *testing.T) {
@@ -231,4 +234,74 @@ func TestStepsGroups_Validate_InputsErrors(t *testing.T) {
 	err := groups.ValidateDefinitions(context.Background())
 	require.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())
+}
+
+func TestSteps_MatchesAvailableBackend(t *testing.T) {
+	t.Parallel()
+	type fields struct {
+		Icon        string
+		Name        string
+		Description string
+		Backend     *string
+	}
+	type args struct {
+		backends []string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "matches backend",
+			fields: fields{
+				Icon:        "component:keboola.snowflake",
+				Name:        "input",
+				Description: "input description",
+				Backend:     ptr.Ptr(project.BackendSnowflake),
+			},
+			args: args{
+				backends: []string{project.BackendSnowflake},
+			},
+			want: true,
+		},
+		{
+			name: "empty backend",
+			fields: fields{
+				Icon:        "input.id",
+				Name:        "input",
+				Description: "input description",
+			},
+			args: args{
+				backends: []string{project.BackendSnowflake},
+			},
+			want: true,
+		},
+		{
+			name: "does not match backend",
+			fields: fields{
+				Icon:        "component:keboola.bigquery",
+				Name:        "input",
+				Description: "input description",
+				Backend:     ptr.Ptr(project.BackendBigQuery),
+			},
+			args: args{
+				backends: []string{project.BackendSnowflake},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			i := Step{
+				Icon:        tt.fields.Icon,
+				Name:        tt.fields.Name,
+				Description: tt.fields.Description,
+				Backend:     tt.fields.Backend,
+			}
+			assert.Equalf(t, tt.want, i.MatchesAvailableBackend(tt.args.backends), "MatchesAvailableBackend(%v)", tt.args.backends)
+		})
+	}
 }
