@@ -173,7 +173,8 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	// Decrypt token
 	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
 	if err != nil {
-		return err
+		b.logger.Errorf(ctx, "cannot decrypt token: %s", err)
+		token = *existingToken.Token
 	}
 
 	// Authorized API

@@ -86,7 +86,8 @@ func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, delete
 	// Decrypt token
 	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
 	if err != nil {
-		return err, false
+		b.logger.Errorf(ctx, "cannot decrypt token: %s", err)
+		token = *existingToken.Token
 	}
 
 	// Get job details from storage API

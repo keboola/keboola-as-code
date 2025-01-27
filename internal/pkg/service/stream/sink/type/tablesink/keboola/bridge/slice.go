@@ -43,7 +43,8 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	// Decrypt token
 	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
 	if err != nil {
-		return err
+		b.logger.Errorf(ctx, "cannot decrypt token: %s", err)
+		token = *existingToken.Token
 	}
 
 	// Error when sending the event is not a fatal error
