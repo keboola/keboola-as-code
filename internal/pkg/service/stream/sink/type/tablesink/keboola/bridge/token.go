@@ -201,7 +201,7 @@ func (b *Bridge) encryptRawTokens(ctx context.Context, tokens []keboolasink.Toke
 	var updated []keboolasink.Token
 	txn := op.TxnWithResult(b.client, &updated)
 	for _, token := range tokens {
-		if token.Token == nil {
+		if token.Token == nil || token.EncryptedToken != "" {
 			continue
 		}
 
@@ -220,7 +220,6 @@ func (b *Bridge) encryptToken(ctx context.Context, token keboolasink.Token) *op.
 	}
 	token.TokenID = token.Token.ID
 	token.EncryptedToken = string(ciphertext)
-	token.Token = nil
 
 	return b.saveToken(ctx, token)
 }
