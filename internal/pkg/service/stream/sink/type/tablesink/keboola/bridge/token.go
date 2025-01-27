@@ -87,7 +87,8 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 		// Decrypt token
 		token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
 		if err != nil {
-			return keboola.Token{}, err
+			b.logger.Errorf(ctx, "cannot decrypt token: %s", err)
+			token = *existingToken.Token
 		}
 
 		// Operation is not called from the API and there is a token in the database, so we are using the token.
@@ -201,7 +202,7 @@ func (b *Bridge) encryptRawTokens(ctx context.Context, tokens []keboolasink.Toke
 	var updated []keboolasink.Token
 	txn := op.TxnWithResult(b.client, &updated)
 	for _, token := range tokens {
-		if token.Token == nil {
+		if token.Token == nil || token.EncryptedToken != "" {
 			continue
 		}
 
@@ -220,7 +221,6 @@ func (b *Bridge) encryptToken(ctx context.Context, token keboolasink.Token) *op.
 	}
 	token.TokenID = token.Token.ID
 	token.EncryptedToken = string(ciphertext)
-	token.Token = nil
 
 	return b.saveToken(ctx, token)
 }
