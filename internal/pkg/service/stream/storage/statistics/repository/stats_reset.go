@@ -12,14 +12,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
 
-func (r *Repository) ResetAllSinksStats(ctx context.Context, sinkKeys []key.SinkKey) error {
+func (r *Repository) ResetAllSinksStats(sinkKeys []key.SinkKey) *op.AtomicOp[op.NoResult] {
 	ops := op.Atomic(r.client, &op.NoResult{})
 
 	for _, sinkKey := range sinkKeys {
 		ops.AddFrom(r.ResetSinkStats(sinkKey))
 	}
 
-	return ops.Do(ctx).Err()
+	return ops
 }
 
 // ResetSinkStats sums all statistics for data in target level and saves the sum in _reset key.
