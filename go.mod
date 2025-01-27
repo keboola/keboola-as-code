@@ -29,7 +29,7 @@ require (
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.24.0
-	github.com/go-resty/resty/v2 v2.16.4
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/gofrs/flock v0.12.1
 	github.com/gofrs/uuid/v5 v5.3.0
 	github.com/google/go-cmp v0.6.0
@@ -50,7 +50,7 @@ require (
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
 	github.com/lestrrat-go/strftime v1.1.0
 	github.com/mattn/go-sqlite3 v1.14.24
-	github.com/miekg/dns v1.1.62
+	github.com/miekg/dns v1.1.63
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/oauth2-proxy/mockoidc v0.0.0-20240214162133-caebfff84d25
 	github.com/oauth2-proxy/oauth2-proxy/v7 v7.8.1
@@ -74,9 +74,9 @@ require (
 	github.com/valyala/fastjson v1.6.4
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
 	github.com/xtaci/kcp-go/v5 v5.6.18
-	go.etcd.io/etcd/api/v3 v3.5.17
-	go.etcd.io/etcd/client/v3 v3.5.17
-	go.etcd.io/etcd/tests/v3 v3.5.17
+	go.etcd.io/etcd/api/v3 v3.5.18
+	go.etcd.io/etcd/client/v3 v3.5.18
+	go.etcd.io/etcd/tests/v3 v3.5.18
 	go.nhat.io/aferocopy/v2 v2.0.2
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
@@ -93,8 +93,8 @@ require (
 	goa.design/plugins/v3 v3.19.1
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 	golang.org/x/sync v0.10.0
-	google.golang.org/grpc v1.69.4
-	gopkg.in/DataDog/dd-trace-go.v1 v1.70.3
+	google.golang.org/grpc v1.70.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.71.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.21
 )
@@ -140,7 +140,7 @@ require (
 	golang.org/x/time v0.9.0 // indirect
 	golang.org/x/tools v0.29.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
-	google.golang.org/protobuf v1.36.3
+	google.golang.org/protobuf v1.36.4
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -148,7 +148,7 @@ require (
 )
 
 require (
-	cel.dev/expr v0.16.2 // indirect
+	cel.dev/expr v0.19.0 // indirect
 	cloud.google.com/go v0.118.0 // indirect
 	cloud.google.com/go/auth v0.13.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
@@ -174,7 +174,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.58.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.0 // indirect
 	github.com/DataDog/go-libddwaf/v3 v3.5.1 // indirect
-	github.com/DataDog/go-runtime-metrics-internal v0.0.0-20241106155157-194426bbbd59 // indirect
+	github.com/DataDog/go-runtime-metrics-internal v0.0.4-0.20241206090539-a14610dc22b6 // indirect
 	github.com/DataDog/go-sqllexer v0.0.14 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/gostackparse v0.7.0 // indirect
@@ -318,11 +318,11 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zclconf/go-cty v1.14.4 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.17 // indirect
-	go.etcd.io/etcd/client/v2 v2.305.17 // indirect
-	go.etcd.io/etcd/pkg/v3 v3.5.17 // indirect
-	go.etcd.io/etcd/raft/v3 v3.5.17 // indirect
-	go.etcd.io/etcd/server/v3 v3.5.17 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.18 // indirect
+	go.etcd.io/etcd/client/v2 v2.305.18 // indirect
+	go.etcd.io/etcd/pkg/v3 v3.5.18 // indirect
+	go.etcd.io/etcd/raft/v3 v3.5.18 // indirect
+	go.etcd.io/etcd/server/v3 v3.5.18 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component v0.104.0 // indirect
@@ -330,7 +330,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.11.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.104.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.104.0 // indirect
-	go.opentelemetry.io/contrib/detectors/gcp v1.31.0 // indirect
+	go.opentelemetry.io/contrib/detectors/gcp v1.32.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.20.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.20.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
