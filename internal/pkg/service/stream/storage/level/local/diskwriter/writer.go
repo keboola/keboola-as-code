@@ -146,6 +146,11 @@ func (w *writer) Write(ctx context.Context, aligned bool, p []byte) (n int, err 
 }
 
 func (w *writer) Sync(ctx context.Context) error {
+	if w.isClosed() {
+		return nil
+		// return errors.New(`writer is already closed, cannot sync`)
+	}
+
 	w.wg.Add(1)
 	defer w.wg.Done()
 	return w.file.Sync()
@@ -158,16 +163,18 @@ func (w *writer) Events() *events.Events[Writer] {
 func (w *writer) Close(ctx context.Context) error {
 	w.logger.Debug(ctx, "closing disk writer")
 
+	errs := errors.NewMultiError()
 	// Close only once
 	if w.isClosed() {
 		return errors.New(`writer is already closed`)
 	}
+
+	// Close and wait for running writes
 	close(w.closed)
-
-	errs := errors.NewMultiError()
-
-	// Wait for running writes
 	w.wg.Wait()
+
+	// Wait for sync / perform sync one more time to be sure that all data are on the disk
+	_ = w.Sync(ctx)
 
 	if w.writen != w.aligned {
 		w.logger.Warnf(ctx, `file is not aligned, truncating`)
