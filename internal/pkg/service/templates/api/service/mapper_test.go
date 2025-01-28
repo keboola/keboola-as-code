@@ -223,7 +223,7 @@ func TestSnowflakePlaceholders(t *testing.T) {
 			name:            "GCP-component-with-BigQuery-backend-icon",
 			mockComponents:  keboola.Components{{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCP}}},
 			projectBackends: commonDeps.WithBigQueryBackend(),
-			input:           "component: " + manifest.SnowflakeWriterComponentIDPlaceholder,
+			input:           "component:" + manifest.SnowflakeWriterComponentIDPlaceholder,
 			expectedOutput:  "component:" + function.SnowflakeWriterIDGCP.String(),
 		},
 	}
