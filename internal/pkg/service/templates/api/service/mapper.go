@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/spf13/cast"
@@ -299,6 +300,29 @@ func ComponentsResponse(d dependencies.ProjectRequestScope, in []string) (out []
 	return out
 }
 
+// ReplacePlaceholders replaces the Snowflake writer component ID placeholder with the appropriate backend component ID.
+func ReplacePlaceholders(d dependencies.ProjectRequestScope, value string) string {
+	if !strings.Contains(value, manifest.SnowflakeWriterComponentIDPlaceholder) {
+		return value
+	}
+
+	var replacement string
+	switch {
+	case d.Components().Has(function.SnowflakeWriterIDAws):
+		replacement = function.SnowflakeWriterIDAws.String()
+	case d.Components().Has(function.SnowflakeWriterIDAzure):
+		replacement = function.SnowflakeWriterIDAzure.String()
+	case d.Components().Has(function.SnowflakeWriterIDGCPS3) && slices.Contains(d.ProjectBackends(), project.BackendSnowflake):
+		replacement = function.SnowflakeWriterIDGCPS3.String()
+	case d.Components().Has(function.SnowflakeWriterIDGCP) && slices.Contains(d.ProjectBackends(), project.BackendBigQuery):
+		replacement = function.SnowflakeWriterIDGCP.String()
+	default:
+		return value
+	}
+
+	return strings.ReplaceAll(value, manifest.SnowflakeWriterComponentIDPlaceholder, replacement)
+}
+
 func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ProjectRequestScope, prjState *project.State, branchKey model.BranchKey, instance *model.TemplateInstance, tmpl *template.Template) (out *Inputs) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.UpgradeInstanceInputsResponse")
 	defer span.End(nil)
@@ -340,7 +364,7 @@ func InputsResponse(ctx context.Context, d dependencies.ProjectRequestScope, ste
 			// Step
 			stepResponse := &Step{
 				ID:                step.ID,
-				Icon:              step.Icon,
+				Icon:              ReplacePlaceholders(d, step.Icon),
 				Name:              step.Name,
 				Description:       step.Description,
 				DialogName:        step.NameForDialog(),

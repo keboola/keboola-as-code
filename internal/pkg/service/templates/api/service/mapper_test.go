@@ -182,3 +182,69 @@ func TestComponentsResponse(t *testing.T) {
 		})
 	}
 }
+
+func TestSnowflakePlaceholders(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		name            string
+		mockComponents  keboola.Components
+		projectBackends commonDeps.MockedOption
+		input           string
+		expectedOutput  string
+	}
+
+	cases := []testCase{
+		{
+			name:            "Azure-component",
+			mockComponents:  keboola.Components{{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAzure}}},
+			projectBackends: commonDeps.WithSnowflakeBackend(),
+			input:           manifest.SnowflakeWriterComponentIDPlaceholder,
+			expectedOutput:  function.SnowflakeWriterIDAzure.String(),
+		},
+		{
+			name: "GCP-S3-component-with-Snowflake-backend",
+			mockComponents: keboola.Components{
+				{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCP}},
+				{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCPS3}},
+			},
+			projectBackends: commonDeps.WithSnowflakeBackend(),
+			input:           manifest.SnowflakeWriterComponentIDPlaceholder,
+			expectedOutput:  function.SnowflakeWriterIDGCPS3.String(),
+		},
+		{
+			name:            "GCP-component-with-BigQuery-backend",
+			mockComponents:  keboola.Components{{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCP}}},
+			projectBackends: commonDeps.WithBigQueryBackend(),
+			input:           manifest.SnowflakeWriterComponentIDPlaceholder,
+			expectedOutput:  function.SnowflakeWriterIDGCP.String(),
+		},
+		{
+			name:            "GCP-component-with-BigQuery-backend-icon",
+			mockComponents:  keboola.Components{{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCP}}},
+			projectBackends: commonDeps.WithBigQueryBackend(),
+			input:           "component: " + manifest.SnowflakeWriterComponentIDPlaceholder,
+			expectedOutput:  "component:" + function.SnowflakeWriterIDGCP.String(),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			d, _ := dependencies.NewMockedProjectRequestScope(
+				t,
+				ctx,
+				config.New(),
+				commonDeps.WithMockedComponents(tc.mockComponents),
+				tc.projectBackends,
+			)
+
+			actualOutput := ReplacePlaceholders(d, tc.input)
+			assert.Equal(t, tc.expectedOutput, actualOutput)
+		})
+	}
+}
