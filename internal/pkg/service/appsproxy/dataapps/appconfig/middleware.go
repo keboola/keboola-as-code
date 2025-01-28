@@ -13,10 +13,10 @@ import (
 type ctxKey string
 
 const (
-	AppIDCtxKey       = ctxKey("app-id")
-	AppConfigCtxKey   = ctxKey("app-config")
-	AppModifiedCtxKey = ctxKey("app-modified")
-	AppErrorCtxKey    = ctxKey("app-error")
+	appIDCtxKey       = ctxKey("app-id")
+	appConfigCtxKey   = ctxKey("app-config")
+	appModifiedCtxKey = ctxKey("app-modified")
+	appErrorCtxKey    = ctxKey("app-error")
 )
 
 func Middleware(configLoader *Loader, host string) middleware.Middleware {
@@ -25,15 +25,15 @@ func Middleware(configLoader *Loader, host string) middleware.Middleware {
 			appID, ok := parseAppID(req, host)
 			if ok {
 				ctx := req.Context()
-				ctx = context.WithValue(ctx, AppIDCtxKey, appID)
+				ctx = context.WithValue(ctx, appIDCtxKey, appID)
 
 				appConfig, modified, err := configLoader.GetConfig(ctx, appID)
 
 				if err != nil {
-					ctx = context.WithValue(ctx, AppErrorCtxKey, err)
+					ctx = context.WithValue(ctx, appErrorCtxKey, err)
 				} else {
-					ctx = context.WithValue(ctx, AppConfigCtxKey, appConfig)
-					ctx = context.WithValue(ctx, AppModifiedCtxKey, modified)
+					ctx = context.WithValue(ctx, appConfigCtxKey, appConfig)
+					ctx = context.WithValue(ctx, appModifiedCtxKey, modified)
 					ctx = ctxattr.ContextWith(ctx, appConfig.Telemetry()...)
 				}
 
@@ -67,4 +67,36 @@ func parseAppID(req *http.Request, host string) (api.AppID, bool) {
 	}
 
 	return api.AppID(subdomain), true
+}
+
+func AppIDFromContext(ctx context.Context) api.AppID {
+	appID := ctx.Value(appIDCtxKey)
+	if appID == nil {
+		return ""
+	}
+	return appID.(api.AppID)
+}
+
+func AppConfigFromContext(ctx context.Context) api.AppConfig {
+	appConfig := ctx.Value(appConfigCtxKey)
+	if appConfig == nil {
+		return api.AppConfig{}
+	}
+	return appConfig.(api.AppConfig)
+}
+
+func AppModifiedFromContext(ctx context.Context) bool {
+	modified := ctx.Value(appModifiedCtxKey)
+	if modified == nil {
+		return false
+	}
+	return modified.(bool)
+}
+
+func AppErrorFromContext(ctx context.Context) error {
+	err := ctx.Value(appErrorCtxKey)
+	if err == nil {
+		return nil
+	}
+	return err.(error)
 }

@@ -57,7 +57,12 @@ func NewManager(d dependencies) *Manager {
 	}
 }
 
-func (m *Manager) HandlerFor(ctx context.Context, appID api.AppID) http.Handler {
+func (m *Manager) HandlerFor(ctx context.Context) http.Handler {
+	appID := appconfig.AppIDFromContext(ctx)
+	if appID == "" {
+		return nil
+	}
+
 	wrapper := m.handlers.GetOrInit(appID)
 
 	// Only one newHandler method runs in parallel per app.
@@ -66,7 +71,9 @@ func (m *Manager) HandlerFor(ctx context.Context, appID api.AppID) http.Handler 
 	defer wrapper.lock.Unlock()
 
 	// Load configuration for the app
-	app, modified, err := m.configLoader.GetConfig(ctx, appID)
+	app := appconfig.AppConfigFromContext(ctx)
+	modified := appconfig.AppModifiedFromContext(ctx)
+	err := appconfig.AppErrorFromContext(ctx)
 	if err != nil {
 		return m.newErrorHandler(ctx, api.AppConfig{ID: appID}, err)
 	}
