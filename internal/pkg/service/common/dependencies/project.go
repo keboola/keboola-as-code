@@ -135,6 +135,10 @@ func (v *projectScope) ProjectBackends() []string {
 	return backends
 }
 
+func (v *projectScope) FileStorageProvider() string {
+	return v.token.Owner.FileStorageProvider
+}
+
 func (v *projectScope) ProjectID() keboola.ProjectID {
 	v.check()
 	return keboola.ProjectID(v.token.ProjectID())
