@@ -13,11 +13,23 @@ import (
 type ctxKey string
 
 const (
-	appIDCtxKey       = ctxKey("app-id")
-	appConfigCtxKey   = ctxKey("app-config")
-	appModifiedCtxKey = ctxKey("app-modified")
-	appErrorCtxKey    = ctxKey("app-error")
+	appConfigCtxKey = ctxKey("app-config")
 )
+
+type AppConfigResult struct {
+	AppID     api.AppID
+	AppConfig api.AppConfig
+	Modified  bool
+	Err       error
+}
+
+func AppConfigFromContext(ctx context.Context) AppConfigResult {
+	appConfig := ctx.Value(appConfigCtxKey)
+	if appConfig == nil {
+		return AppConfigResult{}
+	}
+	return appConfig.(AppConfigResult)
+}
 
 func Middleware(configLoader *Loader, host string) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
@@ -25,15 +37,17 @@ func Middleware(configLoader *Loader, host string) middleware.Middleware {
 			appID, ok := parseAppID(req, host)
 			if ok {
 				ctx := req.Context()
-				ctx = context.WithValue(ctx, appIDCtxKey, appID)
 
 				appConfig, modified, err := configLoader.GetConfig(ctx, appID)
+				result := AppConfigResult{
+					AppID:     appID,
+					AppConfig: appConfig,
+					Modified:  modified,
+					Err:       err,
+				}
 
-				if err != nil {
-					ctx = context.WithValue(ctx, appErrorCtxKey, err)
-				} else {
-					ctx = context.WithValue(ctx, appConfigCtxKey, appConfig)
-					ctx = context.WithValue(ctx, appModifiedCtxKey, modified)
+				ctx = context.WithValue(ctx, appConfigCtxKey, result)
+				if err == nil {
 					ctx = ctxattr.ContextWith(ctx, appConfig.Telemetry()...)
 				}
 
@@ -67,36 +81,4 @@ func parseAppID(req *http.Request, host string) (api.AppID, bool) {
 	}
 
 	return api.AppID(subdomain), true
-}
-
-func AppIDFromContext(ctx context.Context) api.AppID {
-	appID := ctx.Value(appIDCtxKey)
-	if appID == nil {
-		return ""
-	}
-	return appID.(api.AppID)
-}
-
-func AppConfigFromContext(ctx context.Context) api.AppConfig {
-	appConfig := ctx.Value(appConfigCtxKey)
-	if appConfig == nil {
-		return api.AppConfig{}
-	}
-	return appConfig.(api.AppConfig)
-}
-
-func AppModifiedFromContext(ctx context.Context) bool {
-	modified := ctx.Value(appModifiedCtxKey)
-	if modified == nil {
-		return false
-	}
-	return modified.(bool)
-}
-
-func AppErrorFromContext(ctx context.Context) error {
-	err := ctx.Value(appErrorCtxKey)
-	if err == nil {
-		return nil
-	}
-	return err.(error)
 }
