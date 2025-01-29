@@ -39,7 +39,7 @@
       required: "optional",
       steps: [
         {
-          icon: "component:keboola.wr-snowflake",
+          icon: "component:<keboola.wr-snowflake>",
           name: "Snowflake Destination",
           description: "Load to data into snowflake",
           dialogName: "Snowflake Destination", 

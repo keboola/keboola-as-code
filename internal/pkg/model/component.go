@@ -120,6 +120,11 @@ func (m ComponentsMap) Get(id keboola.ComponentID) (*keboola.Component, bool) {
 	return v, ok
 }
 
+func (m ComponentsMap) Has(id keboola.ComponentID) bool {
+	_, ok := m.Get(id)
+	return ok
+}
+
 func (m ComponentsMap) GetOrErr(id keboola.ComponentID) (*keboola.Component, error) {
 	v, ok := m.Get(id)
 	if !ok {

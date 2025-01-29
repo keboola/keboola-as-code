@@ -39,7 +39,7 @@
       "steps": [
         {
           "id": "g03-s01",
-          "icon": "component:keboola.wr-snowflake",
+          "icon": "component:%s",
           "name": "Snowflake Destination",
           "description": "Load to data into snowflake",
           "dialogName": "Snowflake Destination",
