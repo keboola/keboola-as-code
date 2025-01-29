@@ -7,7 +7,7 @@
       "steps": [
         {
           "id": "g01-s01",
-          "icon": "component:keboola.wr-db-snowflake-gcs-s3",
+          "icon": "component:%s",
           "name": "Snowflake",
           "description": "Destination",
           "dialogName": "Snowflake",

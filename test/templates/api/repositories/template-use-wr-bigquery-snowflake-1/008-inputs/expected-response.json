@@ -7,7 +7,7 @@
       "steps": [
         {
           "id": "g01-s01",
-          "icon": "component:keboola.wr-google-bigquery-v2",
+          "icon": "component:keboola.wr-db-snowflake-gcs",
           "name": "BigQuery",
           "description": "Destination",
           "dialogName": "BigQuery",

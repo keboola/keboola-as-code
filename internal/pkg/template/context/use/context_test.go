@@ -199,7 +199,7 @@ func TestComponentsFunctions(t *testing.T) {
 	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
 	require.NoError(t, err)
 
-	d := dependenciesPkg.NewMocked(t, ctx)
+	d := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
 	projectState := d.MockedState()
 	tickets := keboola.NewTicketProvider(context.Background(), api)
 	components := model.NewComponentsMap(keboola.Components{})
@@ -266,6 +266,7 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Case 4: Only Google Snowflake Writer
 	components = model.NewComponentsMap(keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCP}},
 		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDGCPS3}},
 	})
 	expected = `

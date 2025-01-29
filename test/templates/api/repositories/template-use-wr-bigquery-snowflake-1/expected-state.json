@@ -11,7 +11,7 @@
       },
       "configs": [
         {
-          "componentId": "keboola.%s",
+          "componentId": "keboola.wr-db-snowflake-gcs",
           "name": "Data Destination",
           "description": "## Description:\nData load to BigQuery DB.",
           "changeDescription": "From template keboola/bigquery/3.0.0",
