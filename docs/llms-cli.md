@@ -111,7 +111,9 @@ These commands operate on the local project directory.
     *   `kbc local create row <component-type> <component-id> <config-name> <row-name>`: Creates a new config row. [https://developers.keboola.com/cli/commands/local/create/row/](https://developers.keboola.com/cli/commands/local/create/row/)
 *   `kbc local persist`:  Persists changes you have made to local files (for example newly created configurations or rows) by recording them in the project manifest. Typically, "persist" is called under the hood by other "local" commands (like create, fix-paths, etc.). However, if you have manually created or moved files and need the manifest to reflect these new paths, "local persist" ensures that the local directory structure and manifest remain consistent.
     *   Example:
-      kbc local persist  
+      ```bash
+      kbc local persist 
+      ```
       // Will update .keboola/manifest.json to reflect any new or moved files.
 *   `kbc local encrypt`: Encrypts values in configuration files locally before pushing them to the project. [https://developers.keboola.com/cli/commands/local/encrypt/](https://developers.keboola.com/cli/commands/local/encrypt/)
 *   `kbc local validate`: Validates the local project directory against Keboola schema and rules.
@@ -129,11 +131,13 @@ These commands operate on the local project directory.
 Below are some simplified examples of non-interactive usage that specify all needed flags:
 
 1) Create a new config for the MySQL extractor in the "dev" branch:
+   ```bash
    kbc local create config extractor keboola.ex-db-mysql "My New Config" --branch=dev
-
+   ```
 2) Create a new config row named "Row1" in an existing config called "My New Config":
+   ```bash
    kbc local create row extractor keboola.ex-db-mysql "My New Config" "Row1" --branch=dev
-
+   ```
 ### 4. `remote` - Remote Commands
 
 These commands interact directly with the remote Keboola project.
@@ -223,8 +227,10 @@ Refer to: [https://developers.keboola.com/cli/templates/](https://developers.keb
 *   **Non-interactive Mode:**  For automated tasks, use the CLI in non-interactive mode by providing all necessary parameters as command flags. This is crucial for CI/CD pipelines and scripts.
 *   **Documentation is Key:**  Always refer to the official Keboola CLI documentation ([https://developers.keboola.com/cli/](https://developers.keboola.com/cli/)) for the most up-to-date information on commands, options, and best practices.
 *   **For inline help and usage details, run:**
+    ```bash
     kbc --help  
     kbc <command> --help  
+    ```
     This will display both short and long usage messages, along with any available flags or sub-commands.
 
 This document provides a foundational understanding of the Keboola CLI for AI agents. By leveraging these commands and concepts, AI agents can effectively manage and automate Keboola projects.
