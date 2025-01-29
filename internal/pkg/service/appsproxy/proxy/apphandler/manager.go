@@ -21,7 +21,7 @@ import (
 type Manager struct {
 	config           config.Config
 	telemetry        telemetry.Telemetry
-	configLoader     *appconfig.Loader
+	configLoader     appconfig.Loader
 	upstreamManager  *upstream.Manager
 	authProxyManager *authproxy.Manager
 	pageWriter       *pagewriter.Writer
@@ -40,7 +40,7 @@ type dependencies interface {
 	PageWriter() *pagewriter.Writer
 	UpstreamManager() *upstream.Manager
 	AuthProxyManager() *authproxy.Manager
-	AppConfigLoader() *appconfig.Loader
+	AppConfigLoader() appconfig.Loader
 }
 
 func NewManager(d dependencies) *Manager {

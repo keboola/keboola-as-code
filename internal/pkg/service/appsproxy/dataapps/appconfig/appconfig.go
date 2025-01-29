@@ -21,7 +21,11 @@ import (
 // staleCacheFallbackDuration is the maximum duration for which the old configuration of an application is used if loading new configuration is not possible.
 const staleCacheFallbackDuration = time.Hour
 
-type Loader struct {
+type Loader interface {
+	GetConfig(ctx context.Context, appID api.AppID) (out api.AppConfig, modified bool, err error)
+}
+
+type loader struct {
 	clock     clockwork.Clock
 	logger    log.Logger
 	telemetry telemetry.Telemetry
@@ -42,8 +46,8 @@ type dependencies interface {
 	AppsAPI() *api.API
 }
 
-func NewLoader(d dependencies) *Loader {
-	return &Loader{
+func NewLoader(d dependencies) Loader {
+	return &loader{
 		clock:     d.Clock(),
 		logger:    d.Logger(),
 		api:       d.AppsAPI(),
@@ -56,7 +60,7 @@ func NewLoader(d dependencies) *Loader {
 
 // GetConfig gets the AppConfig by the ID from Sandboxes Service.
 // It handles local caching based on the Cache-Control and ETag headers.
-func (l *Loader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppConfig, modified bool, err error) {
+func (l *loader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppConfig, modified bool, err error) {
 	ctx, span := l.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.appconfig.Loader.GetConfig")
 	defer span.End(&err)
 

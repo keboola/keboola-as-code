@@ -41,7 +41,7 @@ type Manager struct {
 	telemetry    telemetry.Telemetry
 	transport    http.RoundTripper
 	pageWriter   *pagewriter.Writer
-	configLoader *appconfig.Loader
+	configLoader appconfig.Loader
 	notify       *notify.Manager
 	wakeup       *wakeup.Manager
 	config       config.Config
@@ -62,7 +62,7 @@ type dependencies interface {
 	Telemetry() telemetry.Telemetry
 	UpstreamTransport() http.RoundTripper
 	PageWriter() *pagewriter.Writer
-	AppConfigLoader() *appconfig.Loader
+	AppConfigLoader() appconfig.Loader
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
 	Config() config.Config

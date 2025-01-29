@@ -31,7 +31,7 @@ func AppConfigFromContext(ctx context.Context) AppConfigResult {
 	return appConfig.(AppConfigResult)
 }
 
-func Middleware(configLoader *Loader, host string) middleware.Middleware {
+func Middleware(configLoader Loader, host string) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			appID, ok := parseAppID(req, host)
