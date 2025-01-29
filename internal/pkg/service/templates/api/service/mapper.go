@@ -300,7 +300,7 @@ func ComponentsResponse(d dependencies.ProjectRequestScope, in []string) (out []
 	return out
 }
 
-// ReplacePlaceholders replaces the Snowflake writer component ID placeholder with the appropriate backend component ID.
+// ReplacePlaceholders replaces the component ID placeholder with the appropriate backend component ID.
 func ReplacePlaceholders(d dependencies.ProjectRequestScope, value string) string {
 	if !strings.Contains(value, manifest.SnowflakeWriterComponentIDPlaceholder) {
 		return value
