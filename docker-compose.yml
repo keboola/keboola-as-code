@@ -118,6 +118,7 @@ services:
       ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
       ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
       ETCD_DISABLE_STORE_MEMBER_ID: "true"
+      ETCD_MAX_TXN_OPS: "128"
 
   k6:
     volumes:

@@ -16,12 +16,14 @@ func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 	attempt := 0
 
 	var ok bool
+	var ops int
 	var err error
 	var header *Header
 
 	for {
 		txnResult := v.DoWithoutRetry(ctx, opts...)
 		ok = txnResult.Succeeded()
+		ops = txnResult.MaxOps()
 		err = txnResult.Err()
 		header = txnResult.Header()
 		if err == nil && !ok {
@@ -44,7 +46,7 @@ func (v *AtomicOp[R]) Do(ctx context.Context, opts ...Option) AtomicResult[R] {
 		)
 	}
 
-	return AtomicResult[R]{result: v.result, error: err, header: header, attempt: attempt, elapsedTime: elapsedTime}
+	return AtomicResult[R]{result: v.result, ops: ops, error: err, header: header, attempt: attempt, elapsedTime: elapsedTime}
 }
 
 func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnResult[R] {

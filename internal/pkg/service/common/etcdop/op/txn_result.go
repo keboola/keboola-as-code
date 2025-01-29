@@ -4,6 +4,7 @@ package op
 type TxnResult[R any] struct {
 	*resultBase
 	result *R
+	maxOps int
 }
 
 func newTxnResult[R any](base *resultBase, result *R) *TxnResult[R] {
@@ -14,6 +15,14 @@ func newErrorTxnResult[R any](err error) *TxnResult[R] {
 	r := newTxnResult[R](newResultBase(nil), nil)
 	r.AddErr(err)
 	return r
+}
+
+func (v *TxnResult[R]) setMaxOps(maxOps int) {
+	v.maxOps = maxOps
+}
+
+func (v *TxnResult[R]) MaxOps() int {
+	return v.maxOps
 }
 
 func (v *TxnResult[R]) Succeeded() bool {

@@ -364,7 +364,10 @@ func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRe
 		return err
 	}
 
-	return d.StatisticsRepository().ResetSinkStats(d.SinkKey()).Do(ctx).Err()
+	result := d.StatisticsRepository().ResetSinkStats(d.SinkKey()).Do(ctx)
+	s.logger.Infof(ctx, `Statistics clear for sink "%s" used %d operations`, d.SinkKey().String(), result.MaxOps())
+
+	return result.Err()
 }
 
 func (s *service) DisableSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.DisableSinkPayload) (res *api.Task, err error) {

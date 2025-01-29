@@ -6,6 +6,7 @@ import (
 
 type AtomicResult[R any] struct {
 	result      *R
+	ops         int
 	error       error
 	header      *Header
 	attempt     int
@@ -18,6 +19,10 @@ func (v AtomicResult[R]) Result() R {
 		return empty
 	}
 	return *v.result
+}
+
+func (v AtomicResult[R]) MaxOps() int {
+	return v.ops
 }
 
 func (v AtomicResult[R]) Err() error {

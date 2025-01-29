@@ -219,10 +219,38 @@ func (v *TxnOp[R]) OnSucceeded(fn func(result *TxnResult[R])) *TxnOp[R] {
 
 func (v *TxnOp[R]) Do(ctx context.Context, opts ...Option) *TxnResult[R] {
 	if lowLevel, err := v.lowLevelTxn(ctx); err == nil {
-		return lowLevel.Do(ctx, opts...)
+		result := lowLevel.Do(ctx, opts...)
+		result.setMaxOps(v.maxOps(lowLevel.op().Op))
+		return result
 	} else {
 		return newErrorTxnResult[R](err)
 	}
+}
+
+// https://github.com/etcd-io/etcd/blob/e289ba30780208c1a464ea18f2f08259c75ac23a/server/etcdserver/api/v3rpc/key.go#L150-L179
+func (v *TxnOp[R]) maxOps(op etcd.Op) int {
+	if !op.IsTxn() {
+		return 0
+	}
+
+	cmps, thenOps, elseOps := op.Txn()
+	maxOps := len(cmps)
+	if len(thenOps) > maxOps {
+		maxOps = len(thenOps)
+	}
+	if len(elseOps) > maxOps {
+		maxOps = len(elseOps)
+	}
+
+	maxTxn := 0
+	for _, subOp := range append(thenOps, elseOps...) {
+		maxOps := v.maxOps(subOp)
+		if maxOps > maxTxn {
+			maxTxn = maxOps
+		}
+	}
+
+	return maxOps + maxTxn
 }
 
 func (v *TxnOp[R]) Op(ctx context.Context) (LowLevelOp, error) {
