@@ -5,7 +5,7 @@
       required: 'all',
       steps: [
           {
-            icon: 'component:' + SnowflakeWriterComponentId(),
+            icon: 'component:<keboola.wr-snowflake>',
             name: 'Snowflake',
             description: 'Destination',
             inputs: [
@@ -19,7 +19,7 @@
             ],
           }
           {
-            icon: 'component:keboola.wr-google-bigquery-v2',
+            icon: 'component:<keboola.wr-snowflake>',
             name: 'BigQuery',
             description: 'Destination',
             inputs: [

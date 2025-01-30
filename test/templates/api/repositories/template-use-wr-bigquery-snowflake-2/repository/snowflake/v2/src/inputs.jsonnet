@@ -5,7 +5,7 @@
       required: 'all',
       steps: [
           {
-            icon: 'component:keboola.wr-db-snowflake-gcs-s3',
+            icon: 'component:<keboola.wr-snowflake>',
             name: 'Snowflake',
             description: 'Destination',
             backend: "snowflake",

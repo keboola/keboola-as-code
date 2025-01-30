@@ -9,7 +9,7 @@
       },
     if HasProjectBackend('bigquery') then
       {
-        componentId: 'keboola.wr-google-bigquery-v2',
+        componentId: SnowflakeWriterComponentId(),
         id: ConfigId('destination'),
         path: 'writer/keboola.wr-bigquery/destination',
         rows: [],

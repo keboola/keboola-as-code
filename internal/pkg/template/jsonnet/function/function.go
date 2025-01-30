@@ -7,12 +7,15 @@
 package function
 
 import (
+	"slices"
+
 	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -157,20 +160,21 @@ func ComponentIsAvailable(components *model.ComponentsMap) *jsonnet.NativeFuncti
 }
 
 // SnowflakeWriterComponentID Jsonnet function returns component ID of the Snowflake Writer it the stack.
-func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.NativeFunction {
+func SnowflakeWriterComponentID(components *model.ComponentsMap, backends []string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `SnowflakeWriterComponentId`,
 		Params: ast.Identifiers{},
 		Func: func(params []any) (any, error) {
-			if _, found := components.Get(SnowflakeWriterIDAws); found {
+			switch {
+			case components.Has(SnowflakeWriterIDAws):
 				return SnowflakeWriterIDAws.String(), nil
-			} else if _, found := components.Get(SnowflakeWriterIDAzure); found {
+			case components.Has(SnowflakeWriterIDAzure):
 				return SnowflakeWriterIDAzure.String(), nil
-			} else if _, found := components.Get(SnowflakeWriterIDGCPS3); found {
+			case components.Has(SnowflakeWriterIDGCPS3) && slices.Contains(backends, project.BackendSnowflake):
 				return SnowflakeWriterIDGCPS3.String(), nil
-			} else if _, found := components.Get(SnowflakeWriterIDGCP); found {
+			case components.Has(SnowflakeWriterIDGCP) && slices.Contains(backends, project.BackendBigQuery):
 				return SnowflakeWriterIDGCP.String(), nil
-			} else {
+			default:
 				return nil, errors.New("no Snowflake Writer component found")
 			}
 		},
