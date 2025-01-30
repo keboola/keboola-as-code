@@ -19,8 +19,8 @@
 {"level":"info","message":"starting HTTP server on \"%s\"","component":"api"}
 {"level":"info","message":"mounted HTTP endpoints","component":"api"}
 {"level":"info","message":"started HTTP server on \"%s\"","component":"api"}
-{"level":"info","message":"req / status=301 %s","http.request_id":"%s","component":"api.http"}
-{"level":"info","message":"req /v1 status=200 %s","http.request_id":"%s","component":"api.http"}
+{"level":"info","message":"req 301 /","http.request_id":"%s","component":"api.http"}
+{"level":"info","message":"req 200 /v1","http.request_id":"%s","component":"api.http"}
 {"level":"info","message":"exiting (terminated)"}
 {"level":"info","message":"shutting down HTTP server at \"%s\"","component":"api"}
 {"level":"info","message":"HTTP server shutdown finished","component":"api"}

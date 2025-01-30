@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	goaHttpMiddleware "goa.design/goa/v3/http/middleware"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -27,12 +28,15 @@ func Logger(baseLogger log.Logger) Middleware {
 
 			// Log
 			userAgent := req.Header.Get("User-Agent")
-			logger.Infof(
-				req.Context(),
-				"req %s status=%d bytes=%d time=%s client_ip=%s agent=%s",
-				log.Sanitize(req.URL.String()), rw.StatusCode, rw.ContentLength, time.Since(started).String(),
-				log.Sanitize(ip.From(req).String()), userAgent,
-			)
+			logger.
+				With(
+					attribute.Int("http.status", rw.StatusCode),
+					attribute.Int("http.bytes", rw.ContentLength),
+					attribute.String("http.time", time.Since(started).String()),
+					attribute.String("http.client.ip", log.Sanitize(ip.From(req).String())),
+					attribute.String("http.client.agent", userAgent),
+				).
+				Infof(req.Context(), "req %d %s", rw.StatusCode, log.Sanitize(req.URL.String()))
 		})
 	}
 }
