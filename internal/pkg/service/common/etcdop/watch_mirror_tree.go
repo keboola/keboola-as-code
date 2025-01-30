@@ -2,7 +2,6 @@ package etcdop
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -209,12 +208,10 @@ func (m *MirrorTree[T, V]) Revision() int64 {
 
 func (m *MirrorTree[T, V]) WaitForRevision(ctx context.Context, expected int64) error {
 	for {
-		fmt.Println("waiting for revision", expected)
 		m.revisionLock.RLock()
 		actual := m.revision
 		m.revisionLock.RUnlock()
 
-		fmt.Printf("revision received. Actual: %d, expected: %d", actual, expected)
 		// Is the condition already met?
 		if actual >= expected {
 			return nil
@@ -229,8 +226,7 @@ func (m *MirrorTree[T, V]) WaitForRevision(ctx context.Context, expected int64) 
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-notifier:
-			fmt.Println("trying again :(")
-			// try again
+			// The revision has been updated, try again
 		}
 	}
 }

@@ -2,7 +2,6 @@ package transport
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 	"sync"
@@ -108,7 +107,6 @@ func (c *Client) Close() error {
 		go func() {
 			defer wg.Done()
 			if !conn.isClosed() {
-				fmt.Println("closing all connections: ", conn.RemoteAddr(), conn.RemoteNodeID())
 				if err := conn.Close(ctx); err != nil {
 					c.logger.Error(ctx, err.Error())
 				}
