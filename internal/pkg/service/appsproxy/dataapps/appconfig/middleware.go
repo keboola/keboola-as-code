@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
@@ -49,6 +51,8 @@ func Middleware(configLoader Loader, host string) middleware.Middleware {
 				ctx = context.WithValue(ctx, appConfigCtxKey, result)
 				if err == nil {
 					ctx = ctxattr.ContextWith(ctx, appConfig.Telemetry()...)
+					// Duplicate app ID in the event attributes under the same key as sandboxes service.
+					ctx = ctxattr.ContextWith(ctx, attribute.String("context.appId", string(appID)))
 				}
 
 				req = req.WithContext(ctx)
