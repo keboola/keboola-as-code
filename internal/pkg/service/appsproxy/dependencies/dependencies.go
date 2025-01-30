@@ -71,7 +71,7 @@ type ServiceScope interface {
 	Config() config.Config
 	AppsAPI() *api.API
 	AppHandlers() *apphandler.Manager
-	AppConfigLoader() *appconfig.Loader
+	AppConfigLoader() appconfig.Loader
 	UpstreamTransport() http.RoundTripper
 	UpstreamManager() *upstream.Manager
 	AuthProxyManager() *authproxy.Manager
@@ -96,7 +96,7 @@ type serviceScope struct {
 	upstreamManager   *upstream.Manager
 	authProxyManager  *authproxy.Manager
 	pageWriter        *pagewriter.Writer
-	appConfigLoader   *appconfig.Loader
+	appConfigLoader   appconfig.Loader
 	notifyManager     *notify.Manager
 	wakeupManager     *wakeup.Manager
 }
@@ -194,7 +194,7 @@ func (v *serviceScope) AppHandlers() *apphandler.Manager {
 	return v.appHandlers
 }
 
-func (v *serviceScope) AppConfigLoader() *appconfig.Loader {
+func (v *serviceScope) AppConfigLoader() appconfig.Loader {
 	return v.appConfigLoader
 }
 

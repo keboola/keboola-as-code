@@ -18,8 +18,8 @@
 {"level":"info","message":"starting Templates API HTTP server, listen-address=localhost:%d"}
 {"level":"info","message":"mounted HTTP endpoints"}
 {"level":"info","message":"started HTTP server on \"%s\"","component":"api"}
-{"level":"info","message":"req / status=301 bytes=%d time=%s client_ip=%s agent=%s","component":"api.http","http.request_id":"%s"}
-{"level":"info","message":"req /v1 status=200 bytes=%d time=%s client_ip=%s agent=%s","component":"api.http","http.request_id":"%s"}
+{"level":"info","message":"req 301 /","component":"api.http","http.time":"%s","http.client.ip":"%s","http.client.agent":"%s","http.request_id":"%s"}
+{"level":"info","message":"req 200 /v1","component":"api.http","http.time":"%s","http.client.ip":"%s","http.client.agent":"%s","http.request_id":"%s"}
 {"level":"info","message":"exiting (terminated)"}
 {"level":"info","message":"shutting down HTTP server at \"localhost:%d\""}
 {"level":"info","message":"HTTP server shutdown finished"}

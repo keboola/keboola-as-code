@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oidcproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/approuter"
@@ -170,6 +171,7 @@ func NewHandler(ctx context.Context, d dependencies.ServiceScope) http.Handler {
 		// Mandatory middleware when used in combination with newTracerProviderWrapper
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
+		appconfig.Middleware(d.AppConfigLoader(), d.Config().API.PublicURL.Host),
 		middleware.Logger(d.Logger()),
 		middleware.OpenTelemetry(
 			newTracerProviderWrapper(d.Telemetry().TracerProvider()),
