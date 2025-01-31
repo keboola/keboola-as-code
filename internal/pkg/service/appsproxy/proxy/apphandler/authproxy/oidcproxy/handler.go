@@ -32,7 +32,7 @@ func NewHandler(
 	selector *selector.Selector,
 	pw *pagewriter.Writer,
 	app api.AppConfig,
-	auth provider.OIDC,
+	auth provider.OIDCProvider,
 	upstream chain.Handler,
 ) *Handler {
 	var err error
