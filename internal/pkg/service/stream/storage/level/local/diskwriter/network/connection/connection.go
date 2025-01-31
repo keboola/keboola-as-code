@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -55,6 +56,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
 	StorageRepository() *storageRepo.Repository
+	Telemetry() telemetry.Telemetry
 }
 
 func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, error) {
@@ -114,7 +116,7 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 				m.updateConnections(ctx)
 			}).
 			BuildMirror()
-		if err := <-m.volumes.StartMirroring(ctx, wg, m.logger); err != nil {
+		if err := <-m.volumes.StartMirroring(ctx, wg, m.logger, d.Telemetry()); err != nil {
 			return nil, err
 		}
 	}

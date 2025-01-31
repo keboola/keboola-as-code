@@ -27,6 +27,7 @@ import (
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 const (
@@ -75,6 +76,7 @@ type dependencies interface {
 	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 	DistributedLockProvider() *distlock.Provider
 	Encryptor() cloudencrypt.Encryptor
+	Telemetry() telemetry.Telemetry
 }
 
 func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*Bridge, error) {
@@ -157,7 +159,7 @@ func (b *Bridge) MirrorJobs(ctx context.Context, d dependencies) error {
 			}
 		},
 	).BuildMirror()
-	if err := <-b.jobs.StartMirroring(ctx, wg, b.logger); err != nil {
+	if err := <-b.jobs.StartMirroring(ctx, wg, b.logger, d.Telemetry()); err != nil {
 		b.logger.Errorf(ctx, "cannot start mirroring jobs: %s", err)
 		return err
 	}

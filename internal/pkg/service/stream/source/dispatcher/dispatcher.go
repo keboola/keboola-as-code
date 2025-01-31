@@ -17,6 +17,7 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 // Dispatcher decides whether the request is to be accepted and dispatches it to all sinks that belong to the given Source entity.
@@ -43,6 +44,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 	DefinitionRepository() *definitionRepo.Repository
 	SinkRouter() *sinkRouter.Router
+	Telemetry() telemetry.Telemetry
 }
 
 func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
@@ -75,7 +77,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 				return event.Value.Type == definition.SourceTypeHTTP
 			}).
 			BuildMirror()
-		if err := <-dp.sources.StartMirroring(ctx, &dp.wg, dp.logger); err != nil {
+		if err := <-dp.sources.StartMirroring(ctx, &dp.wg, dp.logger, d.Telemetry()); err != nil {
 			return nil, err
 		}
 	}

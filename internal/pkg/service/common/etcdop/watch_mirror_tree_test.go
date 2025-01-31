@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -44,6 +45,7 @@ func TestMirrorTree(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
+	tel := telemetry.NewForTest(t)
 	mirror := SetupMirrorTree[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(key string, value testUser) string { return value.FirstName + " " + value.LastName },
@@ -53,7 +55,7 @@ func TestMirrorTree(t *testing.T) {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -161,6 +163,7 @@ func TestMirrorTree_WithOnUpdate(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
+	tel := telemetry.NewForTest(t)
 	mirror := SetupMirrorTree[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(key string, value testUser) string { return value.FirstName + " " + value.LastName },
@@ -173,7 +176,7 @@ func TestMirrorTree_WithOnUpdate(t *testing.T) {
 			updateCh <- update
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -250,6 +253,7 @@ func TestMirrorTree_WithOnChanges(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
+	tel := telemetry.NewForTest(t)
 	mirror := SetupMirrorTree[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(key string, value testUser) string { return value.FirstName + " " + value.LastName },
@@ -262,7 +266,7 @@ func TestMirrorTree_WithOnChanges(t *testing.T) {
 			changesCh <- changes
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -371,13 +375,14 @@ func TestFullMirrorTree(t *testing.T) {
 
 	// Setup full mirroring of the etcd prefix tree to the memory.
 	logger := log.NewDebugLogger()
+	tel := telemetry.NewForTest(t)
 	mirror := SetupFullMirrorTree(
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV())).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header

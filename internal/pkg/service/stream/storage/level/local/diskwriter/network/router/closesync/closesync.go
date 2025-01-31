@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type dependencies interface {
@@ -16,6 +17,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
+	Telemetry() telemetry.Telemetry
 }
 
 type schema struct {
