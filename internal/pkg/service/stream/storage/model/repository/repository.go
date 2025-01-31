@@ -13,6 +13,7 @@ import (
 	file "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/file"
 	slice "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/slice"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/volume"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type dependencies interface {
@@ -22,6 +23,7 @@ type dependencies interface {
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
 	DefinitionRepository() *definitionRepo.Repository
+	Telemetry() telemetry.Telemetry
 }
 
 // Repository provides database operations with the storage entities.

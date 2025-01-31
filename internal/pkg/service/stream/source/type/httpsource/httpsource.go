@@ -47,6 +47,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 	DefinitionRepository() *definitionRepo.Repository
 	SinkRouter() *sinkRouter.Router
+	Telemetry() telemetry.Telemetry
 }
 
 func Start(ctx context.Context, d dependencies, cfg Config) error {

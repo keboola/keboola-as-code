@@ -148,7 +148,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 				}
 			}).
 			BuildMirror()
-		if err := <-r.slices.StartMirroring(ctx, wg, r.logger); err != nil {
+		if err := <-r.slices.StartMirroring(ctx, wg, r.logger, d.Telemetry()); err != nil {
 			return nil, err
 		}
 	}
