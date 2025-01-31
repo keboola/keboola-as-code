@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -13,8 +14,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc/pb"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -33,11 +35,31 @@ type networkFile struct {
 	closed <-chan struct{}
 }
 
-func OpenNetworkFile(ctx context.Context, logger log.Logger, telemetry telemetry.Telemetry, sourceNodeID string, conn *transport.ClientConnection, sliceKey model.SliceKey, slice localModel.Slice, onServerTermination func(ctx context.Context, cause string)) (encoding.NetworkOutput, error) {
+func OpenNetworkFile(
+	ctx context.Context,
+	logger log.Logger,
+	telemetry telemetry.Telemetry,
+	connections *connection.Manager,
+	sliceKey model.SliceKey,
+	slice localModel.Slice,
+	onServerTermination func(ctx context.Context, cause string),
+) (encoding.NetworkOutput, error) {
 	logger = logger.WithComponent("rpc")
 
 	// Use transport layer with multiplexer for connection
 	dialer := func(_ context.Context, _ string) (net.Conn, error) {
+		// Get connection
+		conn, found := connections.ConnectionToVolume(sliceKey.VolumeID)
+		if !found || !conn.IsConnected() {
+			return nil, errors.Errorf("no connection to the volume %q", sliceKey.VolumeID.String())
+		}
+
+		ctx = ctxattr.ContextWith(
+			ctx,
+			attribute.String("writerNodeId", conn.RemoteNodeID()),
+			attribute.String("writerNodeAddress", conn.RemoteAddr()),
+		)
+
 		stream, err := conn.OpenStream()
 		if err != nil {
 			return nil, errors.PrefixErrorf(err, `cannot open stream to the volume "%s" for the slice "%s"`, sliceKey.VolumeID.String(), sliceKey.String())
@@ -100,7 +122,7 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, telemetry telemetry
 	}
 
 	// Try to open remote file
-	if err := f.open(ctx, sourceNodeID, slice); err != nil {
+	if err := f.open(ctx, connections.NodeID(), slice); err != nil {
 		_ = clientConn.Close()
 		return nil, err
 	}
@@ -113,6 +135,7 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, telemetry telemetry
 		return nil, err
 	}
 	go func() {
+		ctx := context.Background()
 		// It is expected to receive only one message, `io.EOF` or `message` that the termination is done
 		if _, err := termStream.Recv(); err != nil {
 			if errors.Is(err, io.EOF) {
@@ -121,6 +144,11 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, telemetry telemetry
 			}
 
 			if s, ok := status.FromError(err); !ok || s.Code() != codes.Canceled {
+				if s.Code() == codes.Unavailable && errors.Is(s.Err(), io.EOF) {
+					onServerTermination(ctx, "remote server shutdown")
+					return
+				}
+
 				logger.Errorf(ctx, "error when waiting for network file server termination: %s", err)
 			}
 		}

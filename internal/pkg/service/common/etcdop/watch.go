@@ -206,7 +206,14 @@ func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, op
 			}
 
 			// Map event type
+			var newRevision int64
 			for _, rawEvent := range rawResp.Events {
+				// Skip events that have modification revision lower than the last newly created revision
+				// This resolves delete after create issue.
+				if rawEvent.Kv.ModRevision < newRevision {
+					continue
+				}
+
 				var typ EventType
 				switch {
 				case rawEvent.IsCreate():
@@ -232,6 +239,7 @@ func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, op
 				}
 
 				resp.Events = append(resp.Events, out)
+				newRevision = rawEvent.Kv.CreateRevision
 			}
 
 			// Pass the response

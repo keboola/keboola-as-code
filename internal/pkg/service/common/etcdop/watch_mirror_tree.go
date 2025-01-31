@@ -226,7 +226,7 @@ func (m *MirrorTree[T, V]) WaitForRevision(ctx context.Context, expected int64) 
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-notifier:
-			// try again
+			// The revision has been updated, try again
 		}
 	}
 }
