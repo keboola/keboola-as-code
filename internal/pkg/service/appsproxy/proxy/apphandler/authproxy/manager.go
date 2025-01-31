@@ -49,7 +49,8 @@ func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) map[pro
 		switch p := auth.(type) {
 		case provider.OIDC:
 			authHandlers[auth.ID()] = oidcproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, upstream)
-
+		case provider.GitLab:
+			authHandlers[auth.ID()] = oidcproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, upstream)
 		case provider.Basic:
 			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.config, m.clock, m.pageWriter, app, p, upstream)
 
