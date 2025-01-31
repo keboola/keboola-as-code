@@ -158,7 +158,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 				return o.distribution.MustCheckIsOwner(event.Value.SourceKey.String())
 			}).
 			BuildMirror()
-		if err = <-o.slices.StartMirroring(ctx, wg, o.logger); err != nil {
+		if err = <-o.slices.StartMirroring(ctx, wg, o.logger, d.Telemetry()); err != nil {
 			return err
 		}
 	}
