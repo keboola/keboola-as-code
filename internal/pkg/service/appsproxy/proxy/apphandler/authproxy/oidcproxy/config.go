@@ -23,7 +23,7 @@ func proxyConfig(
 	selector *selector.Selector,
 	pageWriter *pagewriter.Writer,
 	app api.AppConfig,
-	authProvider provider.OIDCProvider,
+	authProvider provider.OAuthProvider,
 	upstream chain.Handler,
 ) (*options.Options, error) {
 	// Generate unique cookies secret

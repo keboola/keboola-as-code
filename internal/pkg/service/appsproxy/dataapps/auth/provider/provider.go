@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"reflect"
 
+	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -29,6 +31,11 @@ type Provider interface {
 	ID() ID
 	Name() string
 	Type() Type
+}
+
+type OAuthProvider interface {
+	Provider
+	ProxyProviderOptions() (proxyOptions.Provider, error)
 }
 
 func (v ID) String() string {

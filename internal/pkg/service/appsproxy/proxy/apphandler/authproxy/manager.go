@@ -47,7 +47,7 @@ func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) map[pro
 	authHandlers := make(map[provider.ID]selector.Handler, len(app.AuthProviders))
 	for _, auth := range app.AuthProviders {
 		switch p := auth.(type) {
-		case provider.OIDCProvider:
+		case provider.OAuthProvider:
 			authHandlers[auth.ID()] = oidcproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, upstream)
 		case provider.Basic:
 			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.config, m.clock, m.pageWriter, app, p, upstream)
