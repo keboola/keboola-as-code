@@ -23,16 +23,16 @@ func proxyConfig(
 	selector *selector.Selector,
 	pageWriter *pagewriter.Writer,
 	app api.AppConfig,
-	authProvider provider.OAuthProvider,
+	oAuthProvider provider.OAuthProvider,
 	upstream chain.Handler,
 ) (*options.Options, error) {
 	// Generate unique cookies secret
-	secret, err := generateCookieSecret(cfg, app, authProvider.ID())
+	secret, err := generateCookieSecret(cfg, app, oAuthProvider.ID())
 	if err != nil {
 		return nil, err
 	}
 
-	proxyProvider, err := authProvider.ProxyProviderOptions()
+	proxyProvider, err := oAuthProvider.ProxyProviderOptions()
 	if err != nil {
 		return nil, err
 	}
