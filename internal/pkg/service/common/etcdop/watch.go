@@ -1,9 +1,7 @@
 package etcdop
 
 import (
-	"bytes"
 	"context"
-	"sort"
 	"time"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -190,16 +188,6 @@ func (v Prefix) WatchWithoutRestart(ctx context.Context, client etcd.Watcher, op
 				stream.channel <- resp
 				continue
 			}
-
-			// Sort events from the batch (if multiple keys have been modified in one txn, in one revision)
-			// 1. By type, PUT before DELETE
-			// 2. By key, A->Z
-			sort.SliceStable(rawResp.Events, func(i, j int) bool {
-				if rawResp.Events[i].Type != rawResp.Events[j].Type {
-					return rawResp.Events[i].Type < rawResp.Events[j].Type
-				}
-				return bytes.Compare(rawResp.Events[i].Kv.Key, rawResp.Events[j].Kv.Key) == -1
-			})
 
 			if len(rawResp.Events) > 0 {
 				resp.Events = make([]WatchEvent[[]byte], 0, len(rawResp.Events))
