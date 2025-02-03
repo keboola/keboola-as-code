@@ -1,4 +1,4 @@
-package oidcproxy
+package oauthproxy
 
 import (
 	"fmt"
