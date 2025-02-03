@@ -19,6 +19,8 @@ func TestGitHub(t *testing.T) {
   "name": "My Name",
   "type": "github",
   "url": "https://github.example.com",
+  "clientId": "my-client-id",
+  "clientSecret": "my-client-secret",
   "organization": "my-org",
   "team": "my-team",
   "repository": "my-repo",
@@ -43,6 +45,8 @@ func TestGitHub(t *testing.T) {
 			},
 		},
 		URL:          "https://github.example.com",
+		ClientID:     "my-client-id",
+		ClientSecret: "my-client-secret",
 		Organization: "my-org",
 		Team:         "my-team",
 		Repository:   "my-repo",
@@ -56,9 +60,11 @@ func TestGitHub(t *testing.T) {
 	proxyOpts, err := oAuth2ProxyProvider.ProxyProviderOptions()
 	require.NoError(t, err)
 	assert.Equal(t, proxyOptions.Provider{
-		ID:   "my-id",
-		Type: "github",
-		Name: "My Name",
+		ID:           "my-id",
+		Type:         "github",
+		Name:         "My Name",
+		ClientID:     "my-client-id",
+		ClientSecret: "my-client-secret",
 		LoginURLParameters: []proxyOptions.LoginURLParameter{
 			{
 				Name:    "allow_signup",

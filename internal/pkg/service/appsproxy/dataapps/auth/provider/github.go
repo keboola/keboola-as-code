@@ -4,6 +4,8 @@ import proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 
 type GitHub struct {
 	Base
+	ClientID     string   `json:"clientId"`
+	ClientSecret string   `json:"clientSecret"`
 	URL          string   `json:"url"`
 	Organization string   `json:"organization"`
 	Team         string   `json:"team"`
@@ -14,9 +16,11 @@ type GitHub struct {
 
 func (v GitHub) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	p := proxyOptions.Provider{
-		ID:   v.ID().String(),
-		Type: proxyOptions.GitHubProvider,
-		Name: v.Name(),
+		ID:           v.ID().String(),
+		Type:         proxyOptions.GitHubProvider,
+		Name:         v.Name(),
+		ClientID:     v.ClientID,
+		ClientSecret: v.ClientSecret,
 		LoginURLParameters: []proxyOptions.LoginURLParameter{
 			{
 				Name:    "allow_signup",
