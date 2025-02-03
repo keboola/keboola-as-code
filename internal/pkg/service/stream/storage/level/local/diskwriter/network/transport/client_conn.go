@@ -33,7 +33,7 @@ type ClientConnection struct {
 func newClientConnection(ctx context.Context, remoteNodeID, remoteAddr string, client *Client, initDone chan error) (*ClientConnection, error) {
 	// Stop, if the client is closed
 	if client.isClosed() {
-		return nil, yamux.ErrSessionShutdown
+		return nil, errors.Wrap(yamux.ErrSessionShutdown, "new client connection error: Client is closed")
 	}
 
 	ctx = ctxattr.ContextWith(
@@ -88,8 +88,12 @@ func (c *ClientConnection) IsConnected() bool {
 
 func (c *ClientConnection) OpenStream() (*ClientStream, error) {
 	// Stop, if the client is closed
-	if c.isClosed() || c.client.isClosed() {
-		return nil, yamux.ErrSessionShutdown
+	if c.isClosed() {
+		return nil, errors.Wrap(yamux.ErrSessionShutdown, "client connection error: client connection is closed")
+	}
+
+	if c.client.isClosed() {
+		return nil, errors.Wrap(yamux.ErrDuplicateStream, "client connection error: client is closed")
 	}
 
 	// Get session, if connected
