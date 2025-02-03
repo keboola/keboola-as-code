@@ -11,6 +11,7 @@ import (
 const (
 	TypeOIDC   Type = "oidc"
 	TypeGitLab Type = "gitlab"
+	TypeGitHub Type = "github"
 	TypeBasic  Type = "password"
 )
 
@@ -41,6 +42,8 @@ func (t Type) new() (Provider, error) {
 		return OIDC{}, nil
 	case TypeGitLab:
 		return GitLab{}, nil
+	case TypeGitHub:
+		return GitHub{}, nil
 	case TypeBasic:
 		return Basic{}, nil
 	default:
