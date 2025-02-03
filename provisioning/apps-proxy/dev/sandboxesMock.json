@@ -22,6 +22,15 @@
             "clientId": "<client id>",
             "clientSecret": "<client secret>",
             "issuerUrl": "https://gitlab.com"
+          },
+          {
+            "type": "github",
+            "id": "github",
+            "organization": "keboola",
+            "team": "",
+            "repository": "",
+            "token": "<github token>",
+            "users": []
           }
         ],
         "authRules": [
