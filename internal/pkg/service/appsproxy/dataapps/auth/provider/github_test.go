@@ -18,6 +18,7 @@ func TestGitHub(t *testing.T) {
   "id": "my-id",
   "name": "My Name",
   "type": "github",
+  "url": "https://github.example.com",
   "organization": "my-org",
   "team": "my-team",
   "repository": "my-repo",
@@ -41,6 +42,7 @@ func TestGitHub(t *testing.T) {
 				Type: TypeGitHub,
 			},
 		},
+		URL:          "https://github.example.com",
 		Organization: "my-org",
 		Team:         "my-team",
 		Repository:   "my-repo",
@@ -70,5 +72,8 @@ func TestGitHub(t *testing.T) {
 			Token: "my-token",
 			Users: []string{"user1", "user2"},
 		},
+		LoginURL:    "https://github.example.com/login/oauth/authorize",
+		RedeemURL:   "https://github.example.com/login/oauth/access_token",
+		ValidateURL: "https://github.example.com/api/v3",
 	}, proxyOpts)
 }
