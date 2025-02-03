@@ -10,6 +10,7 @@ package connection
 
 import (
 	"context"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
@@ -38,7 +39,9 @@ type Manager struct {
 
 	// volumes field contains in-memory snapshot of all active disk writer volumes.
 	// It is used to get info about active disk writers, to open/close connections.
-	volumes *etcdop.MirrorMap[volume.Metadata, volume.ID, *volumeData]
+	volumes    *etcdop.MirrorMap[volume.Metadata, volume.ID, *volumeData]
+	oldVolumes map[string]nodeData
+	mapLock    sync.RWMutex
 }
 
 type volumeData struct {
@@ -59,8 +62,9 @@ type dependencies interface {
 
 func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, error) {
 	m := &Manager{
-		logger: d.Logger().WithComponent("storage.router.connections"),
-		nodeID: nodeID,
+		logger:     d.Logger().WithComponent("storage.router.connections"),
+		nodeID:     nodeID,
+		oldVolumes: make(map[string]nodeData),
 	}
 
 	// Create transport
@@ -143,17 +147,27 @@ func (m *Manager) ConnectionsCount() int {
 }
 
 func (m *Manager) updateConnections(ctx context.Context) {
-	m.logger.Infof(ctx, `the list of volumes has changed, updating connections`)
-
 	activeNodes := m.writerNodes()
+	if len(m.oldVolumes) > len(activeNodes) {
+		activeNodes = m.oldVolumes
+	}
 
+	if maps.Equal(m.oldVolumes, activeNodes) {
+		m.logger.Infof(ctx, "no changes in volumes, skipping connection update")
+		return
+	}
+
+	m.mapLock.Lock()
+	m.oldVolumes = maps.Clone(activeNodes)
+	m.mapLock.Unlock()
+	m.logger.Infof(ctx, `the list of volumes has changed, updating connections`)
 	// Detect new nodes - to open connection
 	var toOpen []*nodeData
 	{
 		for _, node := range activeNodes {
 			if _, found := m.client.Connection(node.ID); !found {
 				m.logger.Debugf(ctx, "new disk writer node %q", node.ID)
-				toOpen = append(toOpen, node)
+				toOpen = append(toOpen, &node)
 			}
 		}
 		slices.SortStableFunc(toOpen, func(a, b *nodeData) int {
@@ -180,6 +194,7 @@ func (m *Manager) updateConnections(ctx context.Context) {
 		if err := conn.Close(ctx); err != nil {
 			m.logger.Errorf(ctx, "cannot close connection to %q - %q: %s", conn.RemoteNodeID(), conn.RemoteAddr(), err)
 		}
+		m.logger.Infof(ctx, "closing connection:", conn.RemoteAddr(), conn.RemoteNodeID())
 	}
 	for _, node := range toOpen {
 		// Start dial loop, errors are logged
@@ -190,10 +205,10 @@ func (m *Manager) updateConnections(ctx context.Context) {
 }
 
 // writerNodes returns all active writer nodes.
-func (m *Manager) writerNodes() map[string]*nodeData {
-	out := make(map[string]*nodeData)
+func (m *Manager) writerNodes() map[string]nodeData {
+	out := make(map[string]nodeData)
 	m.volumes.ForEach(func(id volume.ID, vol *volumeData) (stop bool) {
-		out[vol.Node.ID] = vol.Node
+		out[vol.Node.ID] = *vol.Node
 		return false
 	})
 	return out
