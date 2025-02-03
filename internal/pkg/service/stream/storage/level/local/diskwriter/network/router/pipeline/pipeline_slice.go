@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -160,21 +159,9 @@ func (p *SlicePipeline) tryOpen() error {
 
 	ctx := p.ctx
 
-	// Get connection
-	conn, found := p.connections.ConnectionToVolume(p.slice.SliceKey.VolumeID)
-	if !found || !conn.IsConnected() {
-		return errors.Errorf("no connection to the volume %q", p.slice.SliceKey.VolumeID.String())
-	}
-
-	ctx = ctxattr.ContextWith(
-		ctx,
-		attribute.String("writerNodeId", conn.RemoteNodeID()),
-		attribute.String("writerNodeAddress", conn.RemoteAddr()),
-	)
-
 	// Open remote RPC file
 	// The disk writer node can notify us of its termination. In that case, we have to gracefully close the pipeline, see Close method.
-	remoteFile, err := rpc.OpenNetworkFile(ctx, p.logger, p.telemetry, p.connections.NodeID(), conn, p.slice.SliceKey, p.slice.LocalStorage, p.Close)
+	remoteFile, err := rpc.OpenNetworkFile(ctx, p.logger, p.telemetry, p.connections, p.slice.SliceKey, p.slice.LocalStorage, p.Close)
 	if err != nil {
 		return errors.PrefixErrorf(err, "cannot open network file for new slice pipeline")
 	}
