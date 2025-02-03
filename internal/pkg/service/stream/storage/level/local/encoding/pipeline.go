@@ -434,6 +434,10 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 
 		// Write all chunks to the network output
 		err := p.chunks.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
+			if !p.network.IsReady() {
+				return errors.New("network is not ready")
+			}
+
 			length, err := safecast.ToUint64(chunk.Len())
 			if err != nil {
 				return err
