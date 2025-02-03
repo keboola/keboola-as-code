@@ -146,6 +146,10 @@ func (w *writer) Write(ctx context.Context, aligned bool, p []byte) (n int, err 
 }
 
 func (w *writer) Sync(ctx context.Context) error {
+	if w.isClosed() {
+		return nil
+	}
+
 	w.wg.Add(1)
 	defer w.wg.Done()
 	return w.file.Sync()
@@ -159,14 +163,13 @@ func (w *writer) Close(ctx context.Context) error {
 	w.logger.Debug(ctx, "closing disk writer")
 
 	// Close only once
+	errs := errors.NewMultiError()
 	if w.isClosed() {
 		return errors.New(`writer is already closed`)
 	}
-	close(w.closed)
-
-	errs := errors.NewMultiError()
 
 	// Wait for running writes
+	close(w.closed)
 	w.wg.Wait()
 
 	if w.writen != w.aligned {
