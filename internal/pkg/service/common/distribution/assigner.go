@@ -121,6 +121,6 @@ func (a *Assigner) addNode(nodeID string) {
 	a.nodes.Add(nodeID)
 }
 
-func (a *Assigner) removeNode(nodeID string) bool {
-	return a.nodes.Remove(nodeID)
+func (a *Assigner) removeNode(nodeID string) {
+	a.nodes.Remove(nodeID)
 }

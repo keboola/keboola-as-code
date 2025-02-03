@@ -3,6 +3,7 @@ package distribution
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sync"
 	"time"
 
@@ -26,6 +27,11 @@ type Node struct {
 	groups       map[string]*GroupNode
 }
 
+type nodeChange struct {
+	eventType EventType
+	f         func(nodeID string)
+}
+
 // GroupNode is created within each node in the group.
 // One physical cluster node can be present in multiple independent distribution groups.
 //
@@ -41,6 +47,9 @@ type GroupNode struct {
 	client      *etcd.Client
 	groupPrefix etcdop.Prefix
 	listeners   *listeners
+
+	sameNodes      map[string]nodeChange
+	duplicateNodes map[string]nodeChange
 }
 
 type assigner = Assigner
@@ -87,11 +96,13 @@ func newGroupMember(nodeID, groupID string, cfg Config, d dependencies) (*GroupN
 
 	// Create instance
 	g := &GroupNode{
-		assigner:    newAssigner(nodeID),
-		logger:      d.Logger().WithComponent("distribution"),
-		config:      cfg,
-		client:      d.EtcdClient(),
-		groupPrefix: etcdop.NewPrefix(fmt.Sprintf("runtime/distribution/group/%s/nodes", groupID)),
+		assigner:       newAssigner(nodeID),
+		logger:         d.Logger().WithComponent("distribution"),
+		config:         cfg,
+		client:         d.EtcdClient(),
+		groupPrefix:    etcdop.NewPrefix(fmt.Sprintf("runtime/distribution/group/%s/nodes", groupID)),
+		sameNodes:      make(map[string]nodeChange),
+		duplicateNodes: make(map[string]nodeChange),
 	}
 
 	// Graceful shutdown
@@ -220,19 +231,39 @@ func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEv
 		switch rawEvent.Type {
 		case etcdop.CreateEvent, etcdop.UpdateEvent:
 			nodeID := string(rawEvent.Kv.Value)
+			if _, ok := n.sameNodes[nodeID]; ok {
+				continue
+			}
 			event := Event{Type: EventNodeAdded, NodeID: nodeID, Message: fmt.Sprintf(`found a new node "%s"`, nodeID)}
 			out = append(out, event)
-			n.assigner.addNode(nodeID)
+			n.sameNodes[nodeID] = nodeChange{eventType: EventNodeAdded, f: n.assigner.addNode}
 			n.logger.Infof(ctx, event.Message)
 		case etcdop.DeleteEvent:
 			nodeID := string(rawEvent.PrevKv.Value)
+			if _, ok := n.sameNodes[nodeID]; !ok {
+				continue
+			}
 			event := Event{Type: EventNodeRemoved, NodeID: nodeID, Message: fmt.Sprintf(`the node "%s" gone`, nodeID)}
 			out = append(out, event)
-			n.assigner.removeNode(nodeID)
+			n.sameNodes[nodeID] = nodeChange{eventType: EventNodeRemoved, f: n.assigner.removeNode}
 			n.logger.Infof(ctx, event.Message)
 		default:
 			panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 		}
 	}
+
+	// Make sure that nodes are updated only when there is maximum nodes
+	if len(n.duplicateNodes) > len(n.sameNodes) {
+		return Events{}
+	}
+
+	for key, nodeChange := range n.sameNodes {
+		nodeChange.f(key)
+		if nodeChange.eventType == EventNodeRemoved {
+			delete(n.sameNodes, key)
+		}
+	}
+
+	n.duplicateNodes = maps.Clone(n.sameNodes)
 	return out
 }
