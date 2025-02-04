@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -72,6 +73,9 @@ func (s MirrorMapSetup[T, K, V]) BuildMirror() *MirrorMap[T, K, V] {
 	}
 }
 
+// StartMirroring initializes the mirroring process for the MirrorMap by starting a watcher and processing events.
+// It locks and updates the internal map on event changes, captures telemetry, and invokes registered callbacks.
+// Returns a channel of initialization errors if the consumer fails to start.
 func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry) (initErr <-chan error) {
 	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", m.stream.WatchedPrefix()))
 
@@ -135,6 +139,9 @@ func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGr
 					panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
 				}
 			}
+
+			// Record telemetry for the current mirroring state, including event metrics.
+			m.recordTelemetry(ctx, tel)
 
 			m.mapLock.Unlock()
 
@@ -248,4 +255,18 @@ func (m *MirrorMap[T, K, V]) ForEach(fn func(K, V) (stop bool)) {
 			return
 		}
 	}
+}
+
+func (m *MirrorMap[T, K, V]) recordTelemetry(ctx context.Context, tel telemetry.Telemetry) {
+	tel.Meter().
+		IntCounter(
+			"keboola.go.mirror.map.num.keys",
+			"Number of keys in the mirror map.",
+			"count",
+		).
+		Add(
+			ctx,
+			int64(len(m.mapData)),
+			metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())),
+		)
 }
