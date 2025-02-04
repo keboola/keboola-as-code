@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -32,9 +33,10 @@ func New(d dependencies) *Router {
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	appHandler := r.appHandlers.HandlerFor(req.Context())
-	if appHandler != nil {
-		appHandler.ServeHTTP(w, req)
+	ctx := req.Context()
+	result := appconfig.AppConfigFromContext(ctx)
+	if result.AppID != "" {
+		r.appHandlers.HandlerFor(ctx, result).ServeHTTP(w, req)
 		return
 	}
 
