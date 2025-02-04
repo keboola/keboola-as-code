@@ -26,11 +26,10 @@ type AppConfigResult struct {
 }
 
 func AppConfigFromContext(ctx context.Context) AppConfigResult {
-	appConfig := ctx.Value(appConfigCtxKey)
-	if appConfig == nil {
-		return AppConfigResult{}
+	if appConfig, ok := ctx.Value(appConfigCtxKey).(AppConfigResult); ok {
+		return appConfig
 	}
-	return appConfig.(AppConfigResult)
+	return AppConfigResult{}
 }
 
 func Middleware(configLoader Loader, host string) middleware.Middleware {
@@ -81,7 +80,7 @@ func parseAppID(req *http.Request, host string) (api.AppID, bool) {
 	// Remove optional app name prefix, if any
 	lastDash := strings.LastIndexByte(subdomain, '-')
 	if lastDash >= 0 {
-		return api.AppID(subdomain[lastDash+1:]), true
+		subdomain = subdomain[lastDash+1:]
 	}
 
 	return api.AppID(subdomain), true

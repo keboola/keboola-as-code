@@ -22,7 +22,7 @@ import (
 const staleCacheFallbackDuration = time.Hour
 
 type Loader interface {
-	GetConfig(ctx context.Context, appID api.AppID) (api.AppConfig, bool, error)
+	GetConfig(ctx context.Context, appID api.AppID) (config api.AppConfig, modified bool, err error)
 }
 
 type loader struct {

@@ -25,10 +25,10 @@ func From(r *http.Request) net.IP {
 	// Get IP from X-FORWARDED-FOR header
 	ips := r.Header.Get(XForwardedForHeader)
 	splitIps := strings.Split(ips, ",")
-	for _, ipport := range splitIps {
-		ip, _, err := net.SplitHostPort(ipport)
+	for _, ipWithPort := range splitIps {
+		ip, _, err := net.SplitHostPort(ipWithPort)
 		if err != nil {
-			ip = ipport
+			ip = ipWithPort
 		}
 		if netIP := net.ParseIP(ip); netIP != nil {
 			return netIP
