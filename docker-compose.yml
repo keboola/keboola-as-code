@@ -57,6 +57,7 @@ services:
       - TEMPLATES_DATADOG_ENABLED=false
       - STREAM_DATADOG_ENABLED=false
       - APPS_PROXY_DATADOG_ENABLED=false
+      - DD_AGENT_HOST=datadog
       # Etcd for unit tests
       - UNIT_ETCD_ENABLED=true
       - UNIT_ETCD_ENDPOINT=etcd:2379
@@ -176,6 +177,27 @@ services:
       - 443:443
     networks:
       - apps-proxy
+
+  datadog:
+    image: gcr.io/datadoghq/agent:7
+    container_name: dd-agent
+    environment:
+      - DD_API_KEY
+      - DD_SITE=datadoghq.eu
+      - DD_HOSTNAME=datadog
+      - DD_APM_ENABLED=false
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+      - DD_CONTAINER_EXCLUDE=image:gcr.io/datadoghq/agent*
+      - DD_CONTAINER_EXCLUDE_METRICS=image:gcr.io/datadoghq/agent*
+      - DD_CONTAINER_EXCLUDE_LOGS=image:gcr.io/datadoghq/agent*
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+        #- /opt/datadog-agent/run:/opt/datadog-agent/run:rw
 
   prometheus:
     image: prom/prometheus
