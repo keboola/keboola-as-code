@@ -29,6 +29,10 @@ func (s Slice) FileName(volumePath string, sourceNodeID string) string {
 	return filepath.Join(s.DirName(volumePath), fmt.Sprintf("%s-%s.%s", s.FilenamePrefix, sourceNodeID, s.FilenameExtension))
 }
 
+func (s Slice) FileNameWithBackup(volumePath string, sourceNodeID string) string {
+	return filepath.Join(s.DirName(volumePath), fmt.Sprintf(".%s-%s.%s", s.FilenamePrefix, sourceNodeID, s.FilenameExtension))
+}
+
 func (s Slice) FileGlob(volumePath string) string {
 	return filepath.Join(s.DirName(volumePath), fmt.Sprintf("%s*%s", s.FilenamePrefix, s.FilenameExtension))
 }
