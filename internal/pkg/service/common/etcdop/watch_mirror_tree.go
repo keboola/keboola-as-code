@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -162,6 +163,8 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 				m.updatedLock.Unlock()
 			})
 
+			m.recordTelemetry(ctx, tel)
+
 			// Call callbacks
 			for _, fn := range m.onUpdate {
 				go fn(update)
@@ -270,4 +273,18 @@ func (m *MirrorTree[T, V]) WalkAll(fn func(key string, value V) (stop bool)) {
 
 func (m *MirrorTree[T, V]) ToMap() map[string]V {
 	return m.tree.ToMap()
+}
+
+// recordTelemetry captures and reports the number of keys in the MirrorTree using the provided telemetry system.
+func (m *MirrorTree[T, V]) recordTelemetry(ctx context.Context, tel telemetry.Telemetry) {
+	tel.Meter().
+		IntCounter(
+			"keboola.go.mirror.tree.num.keys",
+			"Number of keys in the mirror tree.",
+			"count",
+		).
+		Add(
+			ctx,
+			int64(m.tree.Len()),
+			metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())))
 }
