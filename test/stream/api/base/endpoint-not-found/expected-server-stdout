@@ -1,3 +1,3 @@
 {"level":"info","message":"started HTTP server on \"%s\"","component":"api"}
 {"level":"info","message":"no endpoint found for path \"/foo/bar\"","error.name":"stream.api.endpointNotFound"}
-{"level":"info","message":"req /foo/bar status=404 %s","http.request_id":"%s","component":"api.http"}
+{"level":"info","message":"req 404 /foo/bar","http.request_id":"%s","component":"api.http"}

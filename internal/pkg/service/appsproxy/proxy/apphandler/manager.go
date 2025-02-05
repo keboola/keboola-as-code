@@ -21,7 +21,7 @@ import (
 type Manager struct {
 	config           config.Config
 	telemetry        telemetry.Telemetry
-	configLoader     *appconfig.Loader
+	configLoader     appconfig.Loader
 	upstreamManager  *upstream.Manager
 	authProxyManager *authproxy.Manager
 	pageWriter       *pagewriter.Writer
@@ -40,7 +40,7 @@ type dependencies interface {
 	PageWriter() *pagewriter.Writer
 	UpstreamManager() *upstream.Manager
 	AuthProxyManager() *authproxy.Manager
-	AppConfigLoader() *appconfig.Loader
+	AppConfigLoader() appconfig.Loader
 }
 
 func NewManager(d dependencies) *Manager {
@@ -57,8 +57,8 @@ func NewManager(d dependencies) *Manager {
 	}
 }
 
-func (m *Manager) HandlerFor(ctx context.Context, appID api.AppID) http.Handler {
-	wrapper := m.handlers.GetOrInit(appID)
+func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {
+	wrapper := m.handlers.GetOrInit(result.AppID)
 
 	// Only one newHandler method runs in parallel per app.
 	// If there is an in-flight update, we are waiting for its results.
@@ -66,17 +66,16 @@ func (m *Manager) HandlerFor(ctx context.Context, appID api.AppID) http.Handler 
 	defer wrapper.lock.Unlock()
 
 	// Load configuration for the app
-	app, modified, err := m.configLoader.GetConfig(ctx, appID)
-	if err != nil {
-		return m.newErrorHandler(ctx, api.AppConfig{ID: appID}, err)
+	if result.Err != nil {
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.AppID}, result.Err)
 	}
 
 	// Create a new handler, if needed
-	if wrapper.handler == nil || modified {
+	if wrapper.handler == nil || result.Modified {
 		if wrapper.cancel != nil {
 			wrapper.cancel()
 		}
-		wrapper.handler, wrapper.cancel = m.newHandler(ctx, app)
+		wrapper.handler, wrapper.cancel = m.newHandler(ctx, result.AppConfig)
 	}
 
 	return wrapper.handler

@@ -121,10 +121,10 @@ func TestAppProxyHandler(t *testing.T) {
 	assert.Equal(t, "OK\n", rec.Body.String())
 
 	mocked.DebugLogger().AssertJSONMessages(t, `
-{"level":"info","message":"req https://hub.keboola.local/_proxy/assets/foo.bar status=404 %s","http.request_id":"%s","component":"http"}
+{"level":"info","message":"req 404 https://hub.keboola.local/_proxy/assets/foo.bar","http.request_id":"%s","component":"http"}
 {"level":"warn","message":"badRequest: unexpected domain, missing application ID %A","http.request_id":"%s"}
-{"level":"info","message":"req https://public-123.foo.bar.local/path status=400 %s","http.request_id":"%s","component":"http"}
-{"level":"info","message":"req https://public-123.hub.keboola.local/path status=200 %s","http.request_id":"%s","component":"http"}
+{"level":"info","message":"req 400 https://public-123.foo.bar.local/path","http.request_id":"%s","component":"http"}
+{"level":"info","message":"req 200 https://public-123.hub.keboola.local/path","http.request_id":"%s","component":"http"}
 `)
 
 	actualMetricsJSON := mocked.TestTelemetry().MetricsJSONString(
