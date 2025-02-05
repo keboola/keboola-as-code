@@ -7,6 +7,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type OIDCProvider interface {
+	ID() ID
+	Name() string
+	Type() Type
+	ProxyProviderOptions() (proxyOptions.Provider, error)
+}
+
 type OIDC struct {
 	Base
 	ClientID     string    `json:"clientId"`

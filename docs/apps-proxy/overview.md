@@ -1,7 +1,7 @@
 # Apps proxy Architecture Overview
 
 - Serves for data apps authentication and authorization.
-- Typicall usage is to perform OIDC login through some OIDC provider (e.g Microsoft login, Google login etc.)
+- Typical usage is to perform OIDC login through some OIDC provider (e.g. Microsoft login, Google login etc.)
 - Has possibility to add basic authorization which consists of password prompt on a web page.
 
 
@@ -19,7 +19,7 @@ In `/etc/hosts` add this:
 127.0.0.1 test.hub.keboola.local
 127.0.0.1 hub.keboola.local
 ```
-In project directory uncommect in [docker-compose.yml](../../docker-compose.yml) the `command` section and fill it with `apps-proxy` service. It should look like this
+In project directory uncomment in [docker-compose.yml](../../docker-compose.yml) the `command` section and fill it with `apps-proxy` service. It should look like this
 ```
 command: >
     sh -c "git config --global --add safe.directory /code
@@ -44,9 +44,7 @@ docker build -t https-proxy .
 And then go back to the root repository and launch the https-proxy:
 
 ```
-docker compose up https-proxy 
+docker compose up https-proxy
 ```
 
 Now the proxy should be available under https://test.hub.keboola.local/.
-
-

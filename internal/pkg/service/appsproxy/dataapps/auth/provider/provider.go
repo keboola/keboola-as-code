@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	TypeOIDC  Type = "oidc"
-	TypeBasic Type = "password"
+	TypeOIDC   Type = "oidc"
+	TypeGitLab Type = "gitlab"
+	TypeBasic  Type = "password"
 )
 
 // ID is unique identifier of the authentication provider inside a data app.
@@ -38,6 +39,8 @@ func (t Type) new() (Provider, error) {
 	switch t {
 	case TypeOIDC:
 		return OIDC{}, nil
+	case TypeGitLab:
+		return GitLab{}, nil
 	case TypeBasic:
 		return Basic{}, nil
 	default:
