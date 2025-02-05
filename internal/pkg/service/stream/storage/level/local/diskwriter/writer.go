@@ -53,26 +53,6 @@ type writerKey struct {
 	SourceNodeID string
 }
 
-// writerWithBackup writes to a temporary file first and moves it to the final location on close.
-type writerWithBackup struct {
-	*writer
-	tmpFilePath string
-	finalPath   string
-}
-
-func newWriterWithBackup(
-	ctx context.Context,
-	logger log.Logger,
-	volumePath string,
-	opener FileOpener,
-	allocator diskalloc.Allocator,
-	key writerKey,
-	slice localModel.Slice,
-	events *events.Events[Writer],
-) (out Writer, err error) {
-	return newWriter(ctx, logger, volumePath, opener, allocator, key, slice, events, true)
-}
-
 func newWriter(
 	ctx context.Context,
 	logger log.Logger,
@@ -101,9 +81,14 @@ func newWriter(
 	}
 
 	// Open file
+
 	filePath := slice.FileName(volumePath, w.writerKey.SourceNodeID)
 	if withBackup {
-		filePath = slice.FileNameWithBackup(volumePath, w.writerKey.SourceNodeID)
+		filePath = NewFileWithBackupFile(
+			slice,
+			volumePath,
+			w.writerKey.SourceNodeID,
+		)
 	}
 
 	logger = logger.With(attribute.String("file.path", filePath))
