@@ -1,4 +1,4 @@
-package oidcproxy
+package oauthproxy
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ func NewHandler(
 	selector *selector.Selector,
 	pw *pagewriter.Writer,
 	app api.AppConfig,
-	auth provider.OIDCProvider,
+	auth provider.OAuthProvider,
 	upstream chain.Handler,
 ) *Handler {
 	var err error

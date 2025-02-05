@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"reflect"
 
+	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
 	TypeOIDC   Type = "oidc"
 	TypeGitLab Type = "gitlab"
+	TypeGitHub Type = "github"
 	TypeBasic  Type = "password"
 )
 
@@ -30,6 +33,11 @@ type Provider interface {
 	Type() Type
 }
 
+type OAuthProvider interface {
+	Provider
+	ProxyProviderOptions() (proxyOptions.Provider, error)
+}
+
 func (v ID) String() string {
 	return string(v)
 }
@@ -41,6 +49,8 @@ func (t Type) new() (Provider, error) {
 		return OIDC{}, nil
 	case TypeGitLab:
 		return GitLab{}, nil
+	case TypeGitHub:
+		return GitHub{}, nil
 	case TypeBasic:
 		return Basic{}, nil
 	default:
