@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"sync"
+	"unsafe"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -13,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/memory"
 )
 
 // MirrorMap [T,K, V] is an in memory Go map filled via the etcd Watch API from a RestartableWatchStream[T].
@@ -22,6 +24,7 @@ import (
 //
 // MirrorMap is ideal for quick single key access or iteration over all keys.
 // To get all keys from a common prefix, use MirrorTree instead.
+
 type MirrorMap[T any, K comparable, V any] struct {
 	stream    RestartableWatchStream[T]
 	filter    func(event WatchEvent[T]) bool
@@ -142,6 +145,8 @@ func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGr
 
 			// Record telemetry for the current mirroring state, including event metrics.
 			m.recordTelemetry(ctx, tel)
+
+			m.recordMemoryTelemetry(ctx, tel)
 
 			m.mapLock.Unlock()
 
@@ -269,4 +274,28 @@ func (m *MirrorMap[T, K, V]) recordTelemetry(ctx context.Context, tel telemetry.
 			int64(len(m.mapData)),
 			metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())),
 		)
+}
+
+func (m *MirrorMap[T, K, V]) recordMemoryTelemetry(ctx context.Context, tel telemetry.Telemetry) {
+	// Variable to track memory consumed
+	var memoryConsumed int64
+
+	// Measure base memory usage of the map structure
+	memoryConsumed += int64(unsafe.Sizeof(*m))
+
+	// Lock the map to measure memory usage of its elements
+	for k, v := range m.mapData {
+		memoryConsumed += int64(unsafe.Sizeof(k)) // Add key size
+		memoryConsumed += int64(memory.Size(v))   // Add value size
+	}
+
+	// Emit metrics for the current map memory
+	meter := tel.Meter()
+
+	// Track memory consumed by the map itself
+	meter.IntCounter(
+		"keboola.go.mirror.map.memory.usage.bytes",
+		"Memory consumed by the MirrorMap, including keys and values.",
+		"bytes",
+	).Add(ctx, memoryConsumed, metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())))
 }

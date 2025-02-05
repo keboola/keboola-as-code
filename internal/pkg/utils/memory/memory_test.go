@@ -32,7 +32,6 @@ func TestCalculateSize(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Parallel()
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			visited := make(map[uintptr]bool)

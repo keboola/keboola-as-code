@@ -3,6 +3,7 @@ package etcdop
 import (
 	"context"
 	"sync"
+	"unsafe"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -13,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/memory"
 )
 
 // MirrorTree [T,V] is an in memory AtomicTree filled via the etcd Watch API from a RestartableWatchStream[T].
@@ -164,6 +166,7 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 			})
 
 			m.recordTelemetry(ctx, tel)
+			m.recordMemoryTelemetry(ctx, tel)
 
 			// Call callbacks
 			for _, fn := range m.onUpdate {
@@ -287,4 +290,31 @@ func (m *MirrorTree[T, V]) recordTelemetry(ctx context.Context, tel telemetry.Te
 			ctx,
 			int64(m.tree.Len()),
 			metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())))
+}
+
+func (m *MirrorTree[T, V]) recordMemoryTelemetry(ctx context.Context, tel telemetry.Telemetry) {
+	// Initialize a variable to track memory allocated for the tree
+	var memoryConsumed int64
+
+	// Measure base memory usage of the tree structure
+	memoryConsumed += int64(unsafe.Sizeof(*m))
+
+	// Measure size of the tree nodes and their elements
+	m.tree.AtomicReadOnly(func(t prefixtree.TreeReadOnly[V]) {
+		t.WalkAll(func(key string, value V) (stop bool) {
+			memoryConsumed += int64(len(key))           // Account for key size
+			memoryConsumed += int64(memory.Size(value)) // Account for value size
+			return false
+		})
+	})
+
+	// Emit telemetry
+	meter := tel.Meter()
+
+	// Gauge for tree memory consumption
+	meter.IntCounter(
+		"keboola.go.mirror_tree.memory.usage.bytes",
+		"Memory consumed by the MirrorTree, including keys and values.",
+		"bytes",
+	).Add(ctx, memoryConsumed, metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())))
 }

@@ -43,7 +43,9 @@ func TestMirrorMap(t *testing.T) {
 		func(key string, value testUser) testUserFullName {
 			return testUserFullName(value.FirstName + " " + value.LastName)
 		},
-		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int {
+			return value.Age
+		},
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
@@ -163,7 +165,9 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 		func(key string, value testUser) testUserFullName {
 			return testUserFullName(value.FirstName + " " + value.LastName)
 		},
-		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int {
+			return value.Age
+		},
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
@@ -255,7 +259,9 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		func(key string, value testUser) testUserFullName {
 			return testUserFullName(value.FirstName + " " + value.LastName)
 		},
-		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int {
+			return value.Age
+		},
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
@@ -282,11 +288,11 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Created: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "John Brown",
-				Value: 10,
+				Value: (10),
 			},
 			{
 				Key:   "Paul Green",
-				Value: 20,
+				Value: (20),
 			},
 		},
 	}, waitForUpdate())
@@ -299,7 +305,7 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Created: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "Luke Blue",
-				Value: 30,
+				Value: (30),
 			},
 		},
 	}, waitForUpdate())
@@ -312,7 +318,7 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Updated: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "Jacob Brown",
-				Value: 15,
+				Value: (15),
 			},
 		},
 	}, waitForUpdate())
@@ -325,7 +331,7 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Deleted: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "Paul Green",
-				Value: 20,
+				Value: (20),
 			},
 		},
 	}, waitForUpdate())
@@ -346,11 +352,11 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Created: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "Jacob Brown",
-				Value: 15,
+				Value: (15),
 			},
 			{
 				Key:   "Luke Blue",
-				Value: 30,
+				Value: (30),
 			},
 		},
 	}, waitForUpdate())
