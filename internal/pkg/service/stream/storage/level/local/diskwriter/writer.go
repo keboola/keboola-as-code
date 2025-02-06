@@ -186,7 +186,7 @@ func (w *writer) Close(ctx context.Context) error {
 	}
 
 	// Sync file
-	if err := w.Sync(ctx); err != nil {
+	if err := w.file.Sync(); err != nil {
 		errs.Append(errors.Errorf(`cannot sync file: %w`, err))
 	}
 
