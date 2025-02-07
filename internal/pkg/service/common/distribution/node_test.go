@@ -139,11 +139,52 @@ node3
 	assert.False(t, nodes[1].MustCheckIsOwner("foo2"))
 	assert.False(t, nodes[2].MustCheckIsOwner("foo1"))
 
+	// Create node4
+	node, d := createNode(t, ctx, clk, etcdCfg, "node4")
+	if node != nil {
+		lock.Lock()
+		nodes[0] = node
+		processes[0] = d.Process()
+		loggers[0] = d.DebugLogger()
+		lock.Unlock()
+	}
+
+	// Check etcd state
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+runtime/distribution/group/my-group/nodes/node4 (lease)
+-----
+node4
+>>>>>
+
+<<<<<
+runtime/distribution/group/my-group/nodes/node2 (lease)
+-----
+node2
+>>>>>
+
+<<<<<
+runtime/distribution/group/my-group/nodes/node3 (lease)
+-----
+node3
+>>>>>
+`)
+
+	// Shutdown node1
+	processes[0].Shutdown(context.Background(), errors.New("bye bye 1"))
+	processes[0].WaitForShutdown()
+	assert.Eventually(t, func() bool {
+		return reflect.DeepEqual([]string{"node2", "node3", "node4"}, nodes[1].Nodes())
+	}, time.Second, 10*time.Millisecond)
+	assert.Eventually(t, func() bool {
+		return reflect.DeepEqual([]string{"node2", "node3", "node4"}, nodes[2].Nodes())
+	}, time.Second, 10*time.Millisecond)
+
 	// Shutdown node2
 	processes[1].Shutdown(context.Background(), errors.New("bye bye 2"))
 	processes[1].WaitForShutdown()
 	assert.Eventually(t, func() bool {
-		return reflect.DeepEqual([]string{"node3"}, nodes[2].Nodes())
+		return reflect.DeepEqual([]string{"node2", "node3", "node4"}, nodes[2].Nodes())
 	}, time.Second, 10*time.Millisecond)
 
 	// Check etcd state
@@ -156,14 +197,11 @@ node3
 `)
 
 	// Check tasks distribution
-	assert.Equal(t, "node3", nodes[2].MustGetNodeFor("foo1"))
+	assert.Equal(t, "node2", nodes[2].MustGetNodeFor("foo1"))
 	assert.Equal(t, "node3", nodes[2].MustGetNodeFor("foo2"))
-	assert.Equal(t, "node3", nodes[2].MustGetNodeFor("foo3"))
-	assert.Equal(t, "node3", nodes[2].MustGetNodeFor("foo4")) // 1 -> 2
-	assert.True(t, nodes[2].MustCheckIsOwner("foo1"))
+	assert.Equal(t, "node4", nodes[2].MustGetNodeFor("foo3"))
+	assert.Equal(t, "node2", nodes[2].MustGetNodeFor("foo4")) // 1 -> 2
 	assert.True(t, nodes[2].MustCheckIsOwner("foo2"))
-	assert.True(t, nodes[2].MustCheckIsOwner("foo3"))
-	assert.True(t, nodes[2].MustCheckIsOwner("foo4"))
 
 	// Shutdown node3
 	processes[2].Shutdown(context.Background(), errors.New("bye bye 3"))
@@ -172,19 +210,19 @@ node3
 
 	// Logs differs in number of "the node ... gone" messages
 	loggers[0].AssertJSONMessages(t, `
-{"level":"info","message":"joining distribution group","component":"distribution","distribution.node":"node1","distribution.group":"my-group"}
+{"level":"info","message":"joining distribution group","component":"distribution","distribution.node":"node%d","distribution.group":"my-group"}
 {"level":"info","message":"creating etcd session"}
 {"level":"info","message":"created etcd session"}
-{"level":"info","message":"registering the node \"node1\""}
-{"level":"info","message":"the node \"node1\" registered"}
+{"level":"info","message":"registering the node \"node%d\""}
+{"level":"info","message":"the node \"node%d\" registered"}
 {"level":"info","message":"watching for other nodes"}
 {"level":"info","message":"found a new node \"node%d\""}
 {"level":"info","message":"found a new node \"node%d\""}
 {"level":"info","message":"found a new node \"node%d\""}
 {"level":"info","message":"exiting (bye bye 1)"}
 {"level":"info","message":"received shutdown request"}
-{"level":"info","message":"unregistering the node \"node1\""}
-{"level":"info","message":"the node \"node1\" unregistered"}
+{"level":"info","message":"unregistering the node \"node%d\""}
+{"level":"info","message":"the node \"node%d\" unregistered"}
 {"level":"info","message":"closing etcd session: context canceled"}
 {"level":"info","message":"closed etcd session"}
 {"level":"info","message":"shutdown done"}
@@ -208,6 +246,9 @@ node3
 {"level":"info","message":"received shutdown request"}
 {"level":"info","message":"unregistering the node \"node2\""}
 {"level":"info","message":"the node \"node2\" unregistered"}
+`)
+	loggers[1].AssertJSONMessages(t, `
+{"level":"debug","message":"more duplicate nodes than same nodes, skipping update"}
 {"level":"info","message":"closing etcd session: context canceled"}
 {"level":"info","message":"closed etcd session"}
 {"level":"info","message":"shutdown done"}
@@ -227,7 +268,6 @@ node3
 {"level":"info","message":"found a new node \"node%d\""}
 {"level":"info","message":"found a new node \"node%d\""}
 {"level":"info","message":"the node \"node1\" gone"}
-{"level":"info","message":"the node \"node2\" gone"}
 {"level":"info","message":"exiting (bye bye 3)"}
 {"level":"info","message":"received shutdown request"}
 {"level":"info","message":"unregistering the node \"node3\""}

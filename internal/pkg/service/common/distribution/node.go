@@ -30,6 +30,7 @@ type Node struct {
 type nodeChange struct {
 	eventType EventType
 	f         func(nodeID string)
+	message   string
 }
 
 // GroupNode is created within each node in the group.
@@ -236,8 +237,7 @@ func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEv
 			}
 			event := Event{Type: EventNodeAdded, NodeID: nodeID, Message: fmt.Sprintf(`found a new node "%s"`, nodeID)}
 			out = append(out, event)
-			n.sameNodes[nodeID] = nodeChange{eventType: EventNodeAdded, f: n.assigner.addNode}
-			n.logger.Infof(ctx, event.Message)
+			n.sameNodes[nodeID] = nodeChange{eventType: EventNodeAdded, f: n.assigner.addNode, message: event.Message}
 		case etcdop.DeleteEvent:
 			nodeID := string(rawEvent.PrevKv.Value)
 			if _, ok := n.sameNodes[nodeID]; !ok {
@@ -245,8 +245,7 @@ func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEv
 			}
 			event := Event{Type: EventNodeRemoved, NodeID: nodeID, Message: fmt.Sprintf(`the node "%s" gone`, nodeID)}
 			out = append(out, event)
-			n.sameNodes[nodeID] = nodeChange{eventType: EventNodeRemoved, f: n.assigner.removeNode}
-			n.logger.Infof(ctx, event.Message)
+			n.sameNodes[nodeID] = nodeChange{eventType: EventNodeRemoved, f: n.assigner.removeNode, message: event.Message}
 		default:
 			panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 		}
@@ -254,6 +253,7 @@ func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEv
 
 	// Make sure that nodes are updated only when there is maximum nodes
 	if len(n.duplicateNodes) > len(n.sameNodes) {
+		n.logger.Debugf(ctx, "more duplicate nodes than same nodes, skipping update")
 		return Events{}
 	}
 
@@ -262,8 +262,9 @@ func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEv
 		if nodeChange.eventType == EventNodeRemoved {
 			delete(n.sameNodes, key)
 		}
+		n.logger.Infof(ctx, nodeChange.message)
 	}
 
-	n.duplicateNodes = maps.Clone(n.sameNodes)
+	maps.Copy(n.duplicateNodes, n.sameNodes)
 	return out
 }
