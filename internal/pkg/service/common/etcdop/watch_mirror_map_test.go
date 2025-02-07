@@ -288,11 +288,11 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Created: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "John Brown",
-				Value: (10),
+				Value: 10,
 			},
 			{
 				Key:   "Paul Green",
-				Value: (20),
+				Value: 20,
 			},
 		},
 	}, waitForUpdate())
@@ -305,7 +305,7 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Created: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "Luke Blue",
-				Value: (30),
+				Value: 30,
 			},
 		},
 	}, waitForUpdate())
@@ -318,7 +318,7 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Updated: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "Jacob Brown",
-				Value: (15),
+				Value: 15,
 			},
 		},
 	}, waitForUpdate())
@@ -331,7 +331,7 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Deleted: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "Paul Green",
-				Value: (20),
+				Value: 20,
 			},
 		},
 	}, waitForUpdate())
@@ -352,11 +352,11 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 		Created: []MirrorKVPair[testUserFullName, int]{
 			{
 				Key:   "Jacob Brown",
-				Value: (15),
+				Value: 15,
 			},
 			{
 				Key:   "Luke Blue",
-				Value: (30),
+				Value: 30,
 			},
 		},
 	}, waitForUpdate())

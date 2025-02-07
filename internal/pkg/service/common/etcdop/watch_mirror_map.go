@@ -24,7 +24,6 @@ import (
 //
 // MirrorMap is ideal for quick single key access or iteration over all keys.
 // To get all keys from a common prefix, use MirrorTree instead.
-
 type MirrorMap[T any, K comparable, V any] struct {
 	stream    RestartableWatchStream[T]
 	filter    func(event WatchEvent[T]) bool
