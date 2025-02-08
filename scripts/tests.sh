@@ -37,7 +37,7 @@ fi
 # Run tests, sequentially because the API is shared resource
 echo "Running tests ..."
 export KBC_VERSION_CHECK=false # do not check the latest version in the tests
-cmd="gotestsum --no-color=false --format \"$TEST_LOG_FORMAT\" -- -timeout 1800s -p $TEST_PARALLELISM_PKG -parallel $TEST_PARALLELISM $TEST_ARGS "$TEST_PACKAGE" $@"
+cmd="GODEBUG=gocachehash=1 gotestsum --no-color=false --format \"$TEST_LOG_FORMAT\" -- -timeout 1800s -p $TEST_PARALLELISM_PKG -parallel $TEST_PARALLELISM $TEST_ARGS "$TEST_PACKAGE" $@ 2> cache.out"
 echo $cmd
 eval $cmd
 echo "Ok. All tests passed."
