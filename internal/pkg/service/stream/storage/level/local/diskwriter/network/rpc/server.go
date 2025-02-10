@@ -167,6 +167,7 @@ func (s *NetworkFileServer) KeepAliveStream(req *pb.KeepAliveStreamRequest, stre
 			return nil
 		}
 
+		fmt.Println("closing writer on the other side", w.SliceKey().String())
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		return w.Close(ctx)
@@ -196,6 +197,7 @@ func (s *NetworkFileServer) Sync(ctx context.Context, req *pb.SyncRequest) (*pb.
 }
 
 func (s *NetworkFileServer) Close(ctx context.Context, req *pb.CloseRequest) (*pb.CloseResponse, error) {
+	fmt.Println("close called from client")
 	w, err := s.writer(req.FileId)
 	if err != nil {
 		return nil, err

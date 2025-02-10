@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -82,10 +83,13 @@ func StartCleaner(d cleanerDeps, interval time.Duration) error {
 				return
 			case <-ticker.Chan():
 				// Only one node in cluster should be responsible for tasks cleanup
-				if distGroup.MustCheckIsOwner("task.cleanup") {
-					if err := c.clean(ctx); err != nil && !errors.Is(err, context.Canceled) {
-						logger.Error(ctx, err.Error())
-					}
+				if _, err := distGroup.IsOwner("task.cleanup"); err != nil {
+					fmt.Println("not task cleanup owner", err)
+					continue
+				}
+
+				if err := c.clean(ctx); err != nil && !errors.Is(err, context.Canceled) {
+					logger.Error(ctx, err.Error())
 				}
 			}
 		}

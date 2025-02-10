@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -169,6 +170,7 @@ func (p *SlicePipeline) tryOpen() error {
 	// Open pipeline
 	p.pipeline, err = p.encoding.OpenPipeline(ctx, p.slice.SliceKey, p.slice.Mapping, p.slice.Encoding, remoteFile)
 	if err != nil {
+		fmt.Println("error opening pipeline", err)
 		_ = remoteFile.Close(ctx)
 		return errors.PrefixErrorf(err, "cannot open slice pipeline")
 	}

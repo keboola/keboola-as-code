@@ -2,6 +2,7 @@ package encoding
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -407,6 +408,7 @@ func (p *pipeline) Close(ctx context.Context) error {
 	p.chunksWg.Wait()
 
 	// Close remote network file
+	fmt.Println("closing remote network file using pipeline", p.sliceKey.String())
 	if err := p.network.Close(ctx); err != nil {
 		errs.Append(err)
 	}

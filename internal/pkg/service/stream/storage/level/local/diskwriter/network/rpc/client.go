@@ -2,8 +2,10 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
+	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc"
@@ -138,7 +140,8 @@ func OpenNetworkFile(
 		ctx := context.Background()
 		// It is expected to receive only one message, `io.EOF` or `message` that the termination is done
 		if _, err := termStream.Recv(); err != nil {
-			if errors.Is(err, io.EOF) {
+			fmt.Println("error when waiting for network file server termination", err, "unwrap", errors.Unwrap(err))
+			if strings.HasSuffix(err.Error(), "EOF") {
 				onServerTermination(ctx, "remote server shutdown")
 				return
 			}

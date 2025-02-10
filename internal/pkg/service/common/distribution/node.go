@@ -3,7 +3,6 @@ package distribution
 import (
 	"context"
 	"fmt"
-	"maps"
 	"sync"
 	"time"
 
@@ -251,12 +250,6 @@ func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEv
 		}
 	}
 
-	// Make sure that nodes are updated only when there is maximum nodes
-	if len(n.duplicateNodes) > len(n.sameNodes) {
-		n.logger.Debugf(ctx, "more duplicate nodes than same nodes, skipping update")
-		return Events{}
-	}
-
 	for key, nodeChange := range n.sameNodes {
 		nodeChange.f(key)
 		if nodeChange.eventType == EventNodeRemoved {
@@ -265,6 +258,5 @@ func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEv
 		n.logger.Infof(ctx, nodeChange.message)
 	}
 
-	maps.Copy(n.duplicateNodes, n.sameNodes)
 	return out
 }
