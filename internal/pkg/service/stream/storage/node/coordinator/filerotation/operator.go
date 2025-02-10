@@ -165,7 +165,8 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		).
 			// Check only files owned by the node
 			WithFilter(func(event etcdop.WatchEvent[model.File]) bool {
-				return o.distribution.MustCheckIsOwner(event.Value.SourceKey.String())
+				b, _ := o.distribution.IsOwner(event.Value.SourceKey.String())
+				return b
 			}).
 			BuildMirror()
 		if err = <-o.files.StartMirroring(ctx, wg, o.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {
@@ -381,7 +382,24 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		o.logger.Errorf(ctx, `file rotation lock error: %s`, err)
 		return
 	}
+
 	defer unlock()
+
+	// Skip filerotation if target provider is throttled
+	if !o.plugins.CanAcceptNewFile(ctx, file.Provider, file.FileKey.SinkKey) {
+		o.logger.Warnf(ctx, "skipping file rotation: sink is throttled")
+		// Increment retry delay
+		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), "sink is throttled").RequireLock(lock).Do(ctx).Err()
+		if rErr != nil {
+			o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", rErr)
+			return
+		}
+
+		return
+	}
+
+	// Log cause
+	o.logger.Infof(ctx, "rotating file, import conditions met: %s", result.Cause())
 
 	// Rollback when error occurs in ETCD/StorageAPI
 	rb := rollback.New(o.logger)
