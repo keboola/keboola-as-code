@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"sync"
+	"time"
 	"unsafe"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -81,6 +82,11 @@ func (s MirrorMapSetup[T, K, V]) BuildMirror() *MirrorMap[T, K, V] {
 func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry) (initErr <-chan error) {
 	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", m.stream.WatchedPrefix()))
 
+	// Start telemetry collection in a separate goroutine.
+	// This routine collects metrics about the memory usage and the state of the MirrorMap.
+	wg.Add(1)
+	go m.startTelemetryCollection(ctx, wg, logger, tel)
+
 	consumer := newConsumerSetup(m.stream).
 		WithForEach(func(events []WatchEvent[T], header *Header, restart bool) {
 			update := MirrorUpdate{Header: header, Restart: restart}
@@ -141,11 +147,6 @@ func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGr
 					panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
 				}
 			}
-
-			// Record telemetry for the current mirroring state, including event metrics.
-			m.recordTelemetry(ctx, tel)
-
-			m.recordMemoryTelemetry(ctx, tel)
 
 			m.mapLock.Unlock()
 
@@ -297,4 +298,26 @@ func (m *MirrorMap[T, K, V]) recordMemoryTelemetry(ctx context.Context, tel tele
 		"Memory consumed by the MirrorMap, including keys and values.",
 		"bytes",
 	).Add(ctx, memoryConsumed, metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())))
+}
+
+// Function for periodic telemetry collection (runs as a goroutine).
+func (m *MirrorMap[T, K, V]) startTelemetryCollection(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry) {
+	defer wg.Done()
+
+	ticker := time.NewTicker(30 * time.Second) // Emit telemetry every 5 minutes
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// Emit telemetry metrics
+			m.mapLock.RLock()
+			m.recordTelemetry(ctx, tel)
+			m.recordMemoryTelemetry(ctx, tel)
+			m.mapLock.RUnlock()
+		case <-ctx.Done():
+			logger.Debugf(ctx, "Telemetry collection stopped: %v", ctx.Err())
+			return
+		}
+	}
 }
