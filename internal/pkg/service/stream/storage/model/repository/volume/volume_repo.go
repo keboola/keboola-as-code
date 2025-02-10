@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/assignment"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/volume/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 // Repository provides database operations with the storage.Metadata entity.
@@ -33,6 +34,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
+	Telemetry() telemetry.Telemetry
 }
 
 func NewRepository(d dependencies) (*Repository, error) {
@@ -43,14 +45,14 @@ func NewRepository(d dependencies) (*Repository, error) {
 		schema:  schema.New(d.EtcdSerde()),
 	}
 
-	if err := r.watchVolumes(); err != nil {
+	if err := r.watchVolumes(d); err != nil {
 		return nil, err
 	}
 
 	return r, nil
 }
 
-func (r *Repository) watchVolumes() error {
+func (r *Repository) watchVolumes(d dependencies) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	r.process.OnShutdown(func(ctx context.Context) {
@@ -61,7 +63,7 @@ func (r *Repository) watchVolumes() error {
 	})
 
 	r.volumes = etcdop.SetupFullMirrorTree(r.schema.WriterVolumes().GetAllAndWatch(ctx, r.client)).BuildMirror()
-	return <-r.volumes.StartMirroring(ctx, wg, r.logger)
+	return <-r.volumes.StartMirroring(ctx, wg, r.logger, d.Telemetry())
 }
 
 // AssignVolumes assigns volumes to a new file.

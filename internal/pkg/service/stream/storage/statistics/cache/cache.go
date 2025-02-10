@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type dependencies interface {
@@ -19,4 +20,5 @@ type dependencies interface {
 	Clock() clockwork.Clock
 	Process() *servicectx.Process
 	StatisticsRepository() *statsRepo.Repository
+	Telemetry() telemetry.Telemetry
 }

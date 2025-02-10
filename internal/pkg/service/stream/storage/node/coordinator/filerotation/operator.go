@@ -167,7 +167,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 				return o.distribution.MustCheckIsOwner(event.Value.SourceKey.String())
 			}).
 			BuildMirror()
-		if err = <-o.files.StartMirroring(ctx, wg, o.logger); err != nil {
+		if err = <-o.files.StartMirroring(ctx, wg, o.logger, d.Telemetry()); err != nil {
 			return err
 		}
 	}
@@ -231,7 +231,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 				}
 			},
 		).BuildMirror()
-		if err = <-o.sinks.StartMirroring(ctx, wg, o.logger); err != nil {
+		if err = <-o.sinks.StartMirroring(ctx, wg, o.logger, o.telemetry); err != nil {
 			return err
 		}
 	}

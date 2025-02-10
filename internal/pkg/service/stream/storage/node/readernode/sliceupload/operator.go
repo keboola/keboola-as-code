@@ -147,7 +147,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 				return o.volumes.Collection().HasVolume(event.Value.VolumeID)
 			}).
 			BuildMirror()
-		if err = <-o.slices.StartMirroring(ctx, wg, o.logger); err != nil {
+		if err = <-o.slices.StartMirroring(ctx, wg, o.logger, d.Telemetry()); err != nil {
 			return err
 		}
 	}
@@ -166,7 +166,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 				}
 			},
 		).BuildMirror()
-		if err = <-o.sinks.StartMirroring(ctx, wg, o.logger); err != nil {
+		if err = <-o.sinks.StartMirroring(ctx, wg, o.logger, o.telemetry); err != nil {
 			return err
 		}
 	}

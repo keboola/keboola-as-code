@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -36,18 +37,21 @@ func TestMirrorMap(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
+	tel := telemetry.NewForTest(t)
 	mirror := SetupMirrorMap[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(key string, value testUser) testUserFullName {
 			return testUserFullName(value.FirstName + " " + value.LastName)
 		},
-		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int {
+			return value.Age
+		},
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -155,12 +159,15 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
+	tel := telemetry.NewForTest(t)
 	mirror := SetupMirrorMap[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(key string, value testUser) testUserFullName {
 			return testUserFullName(value.FirstName + " " + value.LastName)
 		},
-		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int {
+			return value.Age
+		},
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
@@ -169,7 +176,7 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 			updateCh <- update
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -246,12 +253,15 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 	// Setup mirroring of the etcd prefix tree to the memory, with custom key and value mapping.
 	// The result are in-memory KV pairs "<first name> <last name>" => <age>.
 	logger := log.NewDebugLogger()
+	tel := telemetry.NewForTest(t)
 	mirror := SetupMirrorMap[testUser](
 		pfx.GetAllAndWatch(ctx, client, etcd.WithPrevKV()),
 		func(key string, value testUser) testUserFullName {
 			return testUserFullName(value.FirstName + " " + value.LastName)
 		},
-		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int { return value.Age },
+		func(key string, value testUser, rawValue *op.KeyValue, oldValue *int) int {
+			return value.Age
+		},
 	).
 		WithFilter(func(event WatchEvent[testUser]) bool {
 			return !strings.Contains(event.Kv.String(), "/ignore")
@@ -260,7 +270,7 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 			changesCh <- changes
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header

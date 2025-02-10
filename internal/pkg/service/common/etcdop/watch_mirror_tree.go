@@ -3,14 +3,19 @@ package etcdop
 import (
 	"context"
 	"sync"
+	"time"
+	"unsafe"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/memory"
 )
 
 // MirrorTree [T,V] is an in memory AtomicTree filled via the etcd Watch API from a RestartableWatchStream[T].
@@ -85,8 +90,13 @@ func (s MirrorTreeSetup[T, V]) BuildMirror() *MirrorTree[T, V] {
 	}
 }
 
-func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
+func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry) (initErr <-chan error) {
 	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", m.stream.WatchedPrefix()))
+
+	wg.Add(1)
+	// Launching a goroutine to start collecting telemetry data for the MirrorTree.
+	// This allows asynchronous monitoring of metrics related to the tree's performance and usage.
+	go m.startTelemetryCollection(ctx, wg, tel, logger)
 
 	consumer := newConsumerSetup(m.stream).
 		WithForEach(func(events []WatchEvent[T], header *Header, restart bool) {
@@ -160,6 +170,9 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 				m.updated = make(chan struct{})
 				m.updatedLock.Unlock()
 			})
+
+			m.recordTelemetry(ctx, tel)
+			m.recordMemoryTelemetry(ctx, tel)
 
 			// Call callbacks
 			for _, fn := range m.onUpdate {
@@ -269,4 +282,65 @@ func (m *MirrorTree[T, V]) WalkAll(fn func(key string, value V) (stop bool)) {
 
 func (m *MirrorTree[T, V]) ToMap() map[string]V {
 	return m.tree.ToMap()
+}
+
+// recordTelemetry captures and reports the number of keys in the MirrorTree using the provided telemetry system.
+func (m *MirrorTree[T, V]) recordTelemetry(ctx context.Context, tel telemetry.Telemetry) {
+	tel.Meter().
+		IntCounter(
+			"keboola.go.mirror.tree.num.keys",
+			"Number of keys in the mirror tree.",
+			"count",
+		).
+		Add(
+			ctx,
+			int64(m.tree.Len()),
+			metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())))
+}
+
+func (m *MirrorTree[T, V]) recordMemoryTelemetry(ctx context.Context, tel telemetry.Telemetry) {
+	// Initialize a variable to track memory allocated for the tree
+	var memoryConsumed int64
+
+	// Measure base memory usage of the tree structure
+	memoryConsumed += int64(unsafe.Sizeof(*m))
+
+	// Measure size of the tree nodes and their elements
+	m.tree.AtomicReadOnly(func(t prefixtree.TreeReadOnly[V]) {
+		t.WalkAll(func(key string, value V) (stop bool) {
+			memoryConsumed += int64(len(key))           // Account for key size
+			memoryConsumed += int64(memory.Size(value)) // Account for value size
+			return false
+		})
+	})
+
+	// Emit telemetry
+	meter := tel.Meter()
+
+	// Gauge for tree memory consumption
+	meter.IntCounter(
+		"keboola.go.mirror_tree.memory.usage.bytes",
+		"Memory consumed by the MirrorTree, including keys and values.",
+		"bytes",
+	).Add(ctx, memoryConsumed, metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())))
+}
+
+// startTelemetryCollection begins periodic telemetry reporting for the MirrorTree, including memory usage and key count.
+// It runs until the given context is canceled and ensures the provided wait group is marked as done upon completion.
+func (m *MirrorTree[T, V]) startTelemetryCollection(ctx context.Context, wg *sync.WaitGroup, tel telemetry.Telemetry, log log.Logger) {
+	defer wg.Done()
+
+	ticker := time.NewTicker(30 * time.Second) // Emit telemetry every 30 seconds
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			m.recordTelemetry(ctx, tel)
+			m.recordMemoryTelemetry(ctx, tel)
+		case <-ctx.Done():
+			log.Debugf(ctx, "Telemetry collection for tree stopped: %v", ctx.Err())
+			return
+		}
+	}
 }

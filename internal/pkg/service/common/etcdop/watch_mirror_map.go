@@ -4,13 +4,18 @@ import (
 	"context"
 	"maps"
 	"sync"
+	"time"
+	"unsafe"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/memory"
 )
 
 // MirrorMap [T,K, V] is an in memory Go map filled via the etcd Watch API from a RestartableWatchStream[T].
@@ -71,8 +76,16 @@ func (s MirrorMapSetup[T, K, V]) BuildMirror() *MirrorMap[T, K, V] {
 	}
 }
 
-func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger) (initErr <-chan error) {
+// StartMirroring initializes the mirroring process for the MirrorMap by starting a watcher and processing events.
+// It locks and updates the internal map on event changes, captures telemetry, and invokes registered callbacks.
+// Returns a channel of initialization errors if the consumer fails to start.
+func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry) (initErr <-chan error) {
 	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", m.stream.WatchedPrefix()))
+
+	// Start telemetry collection in a separate goroutine.
+	// This routine collects metrics about the memory usage and the state of the MirrorMap.
+	wg.Add(1)
+	go m.startTelemetryCollection(ctx, wg, logger, tel)
 
 	consumer := newConsumerSetup(m.stream).
 		WithForEach(func(events []WatchEvent[T], header *Header, restart bool) {
@@ -244,6 +257,66 @@ func (m *MirrorMap[T, K, V]) ForEach(fn func(K, V) (stop bool)) {
 	defer m.mapLock.RUnlock()
 	for k, v := range m.mapData {
 		if fn(k, v) {
+			return
+		}
+	}
+}
+
+func (m *MirrorMap[T, K, V]) recordTelemetry(ctx context.Context, tel telemetry.Telemetry) {
+	tel.Meter().
+		IntCounter(
+			"keboola.go.mirror.map.num.keys",
+			"Number of keys in the mirror map.",
+			"count",
+		).
+		Add(
+			ctx,
+			int64(len(m.mapData)),
+			metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())),
+		)
+}
+
+func (m *MirrorMap[T, K, V]) recordMemoryTelemetry(ctx context.Context, tel telemetry.Telemetry) {
+	// Variable to track memory consumed
+	var memoryConsumed int64
+
+	// Measure base memory usage of the map structure
+	memoryConsumed += int64(unsafe.Sizeof(*m))
+
+	// Lock the map to measure memory usage of its elements
+	for k, v := range m.mapData {
+		memoryConsumed += int64(unsafe.Sizeof(k)) // Add key size
+		memoryConsumed += int64(memory.Size(v))   // Add value size
+	}
+
+	// Emit metrics for the current map memory
+	meter := tel.Meter()
+
+	// Track memory consumed by the map itself
+	meter.IntCounter(
+		"keboola.go.mirror.map.memory.usage.bytes",
+		"Memory consumed by the MirrorMap, including keys and values.",
+		"bytes",
+	).Add(ctx, memoryConsumed, metric.WithAttributes(attribute.String("prefix", m.stream.WatchedPrefix())))
+}
+
+// Function for periodic telemetry collection (runs as a goroutine).
+func (m *MirrorMap[T, K, V]) startTelemetryCollection(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry) {
+	defer wg.Done()
+
+	ticker := time.NewTicker(30 * time.Second) // Emit telemetry every 5 minutes
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// Emit telemetry metrics
+			m.mapLock.RLock()
+			m.recordTelemetry(ctx, tel)
+			m.recordMemoryTelemetry(ctx, tel)
+			m.mapLock.RUnlock()
+		case <-ctx.Done():
+			logger.Debugf(ctx, "Telemetry collection stopped: %v", ctx.Err())
 			return
 		}
 	}
