@@ -24,8 +24,8 @@ func ReadInputValues(ctx context.Context, tmpl *template.Template, test *templat
 	inputValues := make(template.InputsValues, 0)
 	err = tmpl.Inputs().ToExtended().VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
 		var inputValue template.InputValue
-		if v, found := inputsFile[inputDef.ID]; found {
-			inputValue, err = template.ParseInputValue(ctx, v, inputDef, true)
+		if value, found := inputsFile[inputDef.ID]; found {
+			inputValue, err = template.ParseInputValue(ctx, value, inputDef, true)
 			if err != nil {
 				return errors.NewNestedError(err, errors.New("please fix the value in the inputs JSON file"))
 			}

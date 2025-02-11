@@ -106,7 +106,7 @@ func validateInputs(ctx context.Context, backends []string, groups template.Step
 		}
 
 		// Check if required number of steps is configured
-		if err := group.ValidateStepsCount(stepsCount, configuredSteps); err != nil {
+		if err := group.ValidateStepsCount(stepsCount, configuredSteps, false); err != nil {
 			msg := strhelper.AsSentence(err.Error())
 			outGroup.Error = &msg
 			outGroup.Valid = false

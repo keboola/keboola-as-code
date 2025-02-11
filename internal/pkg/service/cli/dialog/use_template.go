@@ -61,7 +61,7 @@ func (d *useTmplInputsDialog) ask(ctx context.Context, isForTest bool, inputsFil
 	err := d.groups.VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
 		// Print info about group and select steps
 		if !group.Announced {
-			if err := d.announceGroup(group); err != nil {
+			if err := d.announceGroup(group, isForTest); err != nil {
 				return err
 			}
 		}
@@ -116,7 +116,7 @@ func (d *useTmplInputsDialog) ask(ctx context.Context, isForTest bool, inputsFil
 	return d.out, warnings, err
 }
 
-func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
+func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt, isForTest bool) error {
 	// Only once
 	if group.Announced {
 		return nil
@@ -164,7 +164,7 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 				for i, v := range answers {
 					values[i] = v.Value
 				}
-				return group.ValidateStepsCount(len(group.Steps), len(values))
+				return group.ValidateStepsCount(len(group.Steps), len(values), isForTest)
 			},
 		}
 
@@ -173,7 +173,7 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 	}
 
 	// Validate steps count
-	if err := group.ValidateStepsCount(len(group.Steps), len(selectedSteps)); err != nil {
+	if err := group.ValidateStepsCount(len(group.Steps), len(selectedSteps), isForTest); err != nil {
 		details := errors.NewMultiError()
 		details.Append(err)
 		details.Append(errors.Errorf("number of selected steps (%d) is incorrect", len(selectedSteps)))

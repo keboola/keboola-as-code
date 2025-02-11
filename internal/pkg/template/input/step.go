@@ -206,14 +206,14 @@ func (g StepsGroup) AreStepsSelectable() bool {
 		(len(g.Steps) > 1 || (g.Required != RequiredAtLeastOne && g.Required != RequiredExactlyOne))
 }
 
-func (g StepsGroup) ValidateStepsCount(all, selected int) error {
+func (g StepsGroup) ValidateStepsCount(all, selected int, isTest bool) error {
 	if g.Required == RequiredAll && selected < all {
 		return errors.Errorf(requiredAllDescription, all)
 	}
 	if g.Required == RequiredAtLeastOne && selected < 1 {
 		return errors.New(requiredAtLeastOneDescription)
 	}
-	if g.Required == RequiredExactlyOne && selected != 1 {
+	if g.Required == RequiredExactlyOne && selected != 1 && !isTest {
 		return errors.New(requiredExactlyOneDescription)
 	}
 	if g.Required == RequiredZeroOrOne && selected > 1 {
