@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -24,6 +26,7 @@ type dependencies interface {
 	Plugins() *plugin.Plugins
 	DefinitionRepository() *definitionRepo.Repository
 	Telemetry() telemetry.Telemetry
+	WatchTelemetryInterval() time.Duration
 }
 
 // Repository provides database operations with the storage entities.

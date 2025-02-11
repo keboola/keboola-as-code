@@ -2,6 +2,7 @@ package config
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
@@ -17,23 +18,26 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+const DefaultWatchInterval = time.Minute * 5
+
 // Config of the Stream services.
 type Config struct {
-	DebugLog        bool                `configKey:"debugLog"  configUsage:"Enable logging at DEBUG level."`
-	DebugHTTPClient bool                `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
-	NodeID          string              `configKey:"nodeID" configUsage:"Unique ID of the node in the cluster." validate:"required"`
-	Hostname        string              `configKey:"hostname" configUsage:"Hostname for communication between nodes." validate:"required"`
-	StorageAPIHost  string              `configKey:"storageApiHost" configUsage:"Storage API host." validate:"required,hostname"`
-	PProf           pprof.Config        `configKey:"pprof"`
-	Datadog         datadog.Config      `configKey:"datadog"`
-	Etcd            etcdclient.Config   `configKey:"etcd"`
-	Metrics         prometheus.Config   `configKey:"metrics"`
-	API             API                 `configKey:"api"`
-	Distribution    distribution.Config `configKey:"distribution"`
-	Source          source.Config       `configKey:"source"`
-	Sink            sink.Config         `configKey:"sink"`
-	Storage         storage.Config      `configKey:"storage"`
-	Encryption      encryption.Config   `configKey:"encryption"`
+	DebugLog               bool                `configKey:"debugLog"  configUsage:"Enable logging at DEBUG level."`
+	DebugHTTPClient        bool                `configKey:"debugHTTPClient" configUsage:"Log HTTP client requests and responses as debug messages."`
+	NodeID                 string              `configKey:"nodeID" configUsage:"Unique ID of the node in the cluster." validate:"required"`
+	WatchTelemetryInterval time.Duration       `configKey:"watchTelemetryInterval" configUsage:"Interval for sending telemetry data."`
+	Hostname               string              `configKey:"hostname" configUsage:"Hostname for communication between nodes." validate:"required"`
+	StorageAPIHost         string              `configKey:"storageApiHost" configUsage:"Storage API host." validate:"required,hostname"`
+	PProf                  pprof.Config        `configKey:"pprof"`
+	Datadog                datadog.Config      `configKey:"datadog"`
+	Etcd                   etcdclient.Config   `configKey:"etcd"`
+	Metrics                prometheus.Config   `configKey:"metrics"`
+	API                    API                 `configKey:"api"`
+	Distribution           distribution.Config `configKey:"distribution"`
+	Source                 source.Config       `configKey:"source"`
+	Sink                   sink.Config         `configKey:"sink"`
+	Storage                storage.Config      `configKey:"storage"`
+	Encryption             encryption.Config   `configKey:"encryption"`
 }
 
 type Patch struct {
@@ -63,11 +67,12 @@ func New() Config {
 			PublicURL: &url.URL{Scheme: "http", Host: "localhost:8000"},
 			Task:      task.NewNodeConfig(),
 		},
-		Distribution: distribution.NewConfig(),
-		Source:       source.NewConfig(),
-		Sink:         sink.NewConfig(),
-		Storage:      storage.NewConfig(),
-		Encryption:   encryption.NewConfig(),
+		Distribution:           distribution.NewConfig(),
+		Source:                 source.NewConfig(),
+		Sink:                   sink.NewConfig(),
+		Storage:                storage.NewConfig(),
+		Encryption:             encryption.NewConfig(),
+		WatchTelemetryInterval: DefaultWatchInterval,
 	}
 }
 

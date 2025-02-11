@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -49,6 +50,7 @@ type serviceScope struct {
 	aggregationRepository       *aggregationRepo.Repository
 	keboolaBridge               *keboolaSinkBridge.Bridge
 	keboolaBridgeRepository     *keboolaBridgeRepo.Repository
+	watchTelemetryInterval      time.Duration
 }
 
 type parentScopes struct {
@@ -58,6 +60,7 @@ type parentScopes struct {
 	dependencies.EncryptionScope
 	dependencies.DistributionScope
 	dependencies.DistributedLockScope
+	WatchTelemetryInterval time.Duration
 }
 
 func NewServiceScope(
@@ -202,6 +205,8 @@ func newServiceScope(
 
 	d.EncryptionScope = encryptionScp
 
+	d.watchTelemetryInterval = cfg.WatchTelemetryInterval
+
 	d.logger = baseScp.Logger().With(attribute.String("nodeId", cfg.NodeID))
 
 	d.plugins = plugin.New(d.Logger())
@@ -269,4 +274,8 @@ func (v *serviceScope) StatisticsRepository() *statsRepo.Repository {
 
 func (v *serviceScope) AggregationRepository() *aggregationRepo.Repository {
 	return v.aggregationRepository
+}
+
+func (v *serviceScope) WatchTelemetryInterval() time.Duration {
+	return v.watchTelemetryInterval
 }

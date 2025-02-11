@@ -35,6 +35,7 @@ type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Telemetry() telemetry.Telemetry
+	WatchTelemetryInterval() time.Duration
 }
 
 func NewRepository(d dependencies) (*Repository, error) {
@@ -63,7 +64,7 @@ func (r *Repository) watchVolumes(d dependencies) error {
 	})
 
 	r.volumes = etcdop.SetupFullMirrorTree(r.schema.WriterVolumes().GetAllAndWatch(ctx, r.client)).BuildMirror()
-	return <-r.volumes.StartMirroring(ctx, wg, r.logger, d.Telemetry())
+	return <-r.volumes.StartMirroring(ctx, wg, r.logger, d.Telemetry(), d.WatchTelemetryInterval())
 }
 
 // AssignVolumes assigns volumes to a new file.

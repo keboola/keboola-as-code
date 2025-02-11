@@ -77,6 +77,7 @@ type dependencies interface {
 	DistributedLockProvider() *distlock.Provider
 	Encryptor() cloudencrypt.Encryptor
 	Telemetry() telemetry.Telemetry
+	WatchTelemetryInterval() time.Duration
 }
 
 func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*Bridge, error) {
@@ -159,7 +160,7 @@ func (b *Bridge) MirrorJobs(ctx context.Context, d dependencies) error {
 			}
 		},
 	).BuildMirror()
-	if err := <-b.jobs.StartMirroring(ctx, wg, b.logger, d.Telemetry()); err != nil {
+	if err := <-b.jobs.StartMirroring(ctx, wg, b.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {
 		b.logger.Errorf(ctx, "cannot start mirroring jobs: %s", err)
 		return err
 	}

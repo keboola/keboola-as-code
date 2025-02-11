@@ -65,7 +65,7 @@ func NewCoordinatorNode(d dependencies) (*CoordinatorNode, error) {
 				n.invokeListeners()
 			}).
 			BuildMirror()
-		if err := <-n.revisions.StartMirroring(ctx, wg, n.logger, d.Telemetry()); err != nil {
+		if err := <-n.revisions.StartMirroring(ctx, wg, n.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {
 			return nil, err
 		}
 	}

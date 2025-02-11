@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/yamux"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -57,6 +58,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 	StorageRepository() *storageRepo.Repository
 	Telemetry() telemetry.Telemetry
+	WatchTelemetryInterval() time.Duration
 }
 
 func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, error) {
@@ -116,7 +118,7 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 				m.updateConnections(ctx)
 			}).
 			BuildMirror()
-		if err := <-m.volumes.StartMirroring(ctx, wg, m.logger, d.Telemetry()); err != nil {
+		if err := <-m.volumes.StartMirroring(ctx, wg, m.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {
 			return nil, err
 		}
 	}

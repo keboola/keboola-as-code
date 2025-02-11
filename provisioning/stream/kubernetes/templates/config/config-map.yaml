@@ -24,6 +24,8 @@ data:
     #nodeID: ""
     # Hostname for communication between nodes. Validation rules: required
     #hostname: ""
+    # Telemetry interval defines how often telemetry data is sent.
+    watchTelemetryInterval: 5m0s
     # Storage API host. Validation rules: required,hostname
     storageApiHost: "connection.$HOSTNAME_SUFFIX"
     pprof:

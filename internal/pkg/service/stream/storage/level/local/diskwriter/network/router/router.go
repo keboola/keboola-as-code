@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/exp/maps"
@@ -57,6 +58,7 @@ type dependencies interface {
 	StorageRepository() *storageRepo.Repository
 	ConnectionManager() *connection.Manager
 	EncodingManager() *encoding.Manager
+	WatchTelemetryInterval() time.Duration
 }
 
 func New(d dependencies, sourceNodeID, sourceType string, config network.Config) (r *Router, err error) {
@@ -148,7 +150,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 				}
 			}).
 			BuildMirror()
-		if err := <-r.slices.StartMirroring(ctx, wg, r.logger, d.Telemetry()); err != nil {
+		if err := <-r.slices.StartMirroring(ctx, wg, r.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {
 			return nil, err
 		}
 	}

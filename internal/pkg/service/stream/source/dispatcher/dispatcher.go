@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -45,6 +46,7 @@ type dependencies interface {
 	DefinitionRepository() *definitionRepo.Repository
 	SinkRouter() *sinkRouter.Router
 	Telemetry() telemetry.Telemetry
+	WatchTelemetryInterval() time.Duration
 }
 
 func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
@@ -77,7 +79,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 				return event.Value.Type == definition.SourceTypeHTTP
 			}).
 			BuildMirror()
-		if err := <-dp.sources.StartMirroring(ctx, &dp.wg, dp.logger, d.Telemetry()); err != nil {
+		if err := <-dp.sources.StartMirroring(ctx, &dp.wg, dp.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {
 			return nil, err
 		}
 	}

@@ -81,6 +81,7 @@ type dependencies interface {
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
 	Telemetry() telemetry.Telemetry
+	WatchTelemetryInterval() time.Duration
 }
 
 func Start(d dependencies, config stagingConfig.OperatorConfig) error {
@@ -158,7 +159,7 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 				return o.distribution.MustCheckIsOwner(event.Value.SourceKey.String())
 			}).
 			BuildMirror()
-		if err = <-o.slices.StartMirroring(ctx, wg, o.logger, d.Telemetry()); err != nil {
+		if err = <-o.slices.StartMirroring(ctx, wg, o.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {
 			return err
 		}
 	}

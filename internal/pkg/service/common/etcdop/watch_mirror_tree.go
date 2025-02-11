@@ -90,13 +90,13 @@ func (s MirrorTreeSetup[T, V]) BuildMirror() *MirrorTree[T, V] {
 	}
 }
 
-func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry) (initErr <-chan error) {
+func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry, watchTelemetryInterval time.Duration) (initErr <-chan error) {
 	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", m.stream.WatchedPrefix()))
 
 	wg.Add(1)
 	// Launching a goroutine to start collecting telemetry data for the MirrorTree.
 	// This allows asynchronous monitoring of metrics related to the tree's performance and usage.
-	go m.startTelemetryCollection(ctx, wg, tel, logger)
+	go m.startTelemetryCollection(ctx, wg, tel, logger, watchTelemetryInterval)
 
 	consumer := newConsumerSetup(m.stream).
 		WithForEach(func(events []WatchEvent[T], header *Header, restart bool) {
@@ -327,10 +327,10 @@ func (m *MirrorTree[T, V]) recordMemoryTelemetry(ctx context.Context, tel teleme
 
 // startTelemetryCollection begins periodic telemetry reporting for the MirrorTree, including memory usage and key count.
 // It runs until the given context is canceled and ensures the provided wait group is marked as done upon completion.
-func (m *MirrorTree[T, V]) startTelemetryCollection(ctx context.Context, wg *sync.WaitGroup, tel telemetry.Telemetry, log log.Logger) {
+func (m *MirrorTree[T, V]) startTelemetryCollection(ctx context.Context, wg *sync.WaitGroup, tel telemetry.Telemetry, log log.Logger, watchTelemetryInterval time.Duration) (initErr <-chan error) {
 	defer wg.Done()
 
-	ticker := time.NewTicker(30 * time.Second) // Emit telemetry every 30 seconds
+	ticker := time.NewTicker(watchTelemetryInterval)
 	defer ticker.Stop()
 
 	for {
