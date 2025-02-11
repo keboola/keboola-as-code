@@ -546,7 +546,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 		writerSyncHelper: helper,
 		Ctx:              ctx,
 		Logger:           mock.DebugLogger(),
-		Clock:            clockwork.NewFakeClock(),
+		Clock:            clk,
 		Events:           events.New[encoding.Pipeline](),
 		Output:           newDummyOutput(),
 		Slice:            slice,
