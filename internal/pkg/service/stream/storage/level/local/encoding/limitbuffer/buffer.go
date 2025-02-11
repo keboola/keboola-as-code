@@ -26,19 +26,21 @@ func (b *Buffer) Write(p []byte) (n int, err error) {
 	b.lock.Lock()
 
 	// Flush, if there is no space or payload is too big
+	largeChunk := n > b.maxSize/2
 	l := len(b.buffer)
-	if l+n > b.maxSize || n > b.maxSize/2 {
-		// Skip buffer if the payload is too big and the buffer is empty
-		if l == 0 {
-			b.lock.Unlock()
-			return b.out.Write(p)
-		}
-
+	if l > 0 && (largeChunk || l+n > b.maxSize) {
 		// Flush buffer, if the payload is too big and the buffer is NOT empty
 		if err = b.flush(); err != nil {
 			b.lock.Unlock()
 			return 0, err
 		}
+	}
+
+	// Skip buffer if the payload is too big
+	// The buffer is always empty at this point
+	if largeChunk {
+		b.lock.Unlock()
+		return b.out.Write(p)
 	}
 
 	b.buffer = append(b.buffer, p...)
@@ -49,9 +51,8 @@ func (b *Buffer) Write(p []byte) (n int, err error) {
 
 func (b *Buffer) Flush() error {
 	b.lock.Lock()
-	err := b.flush()
-	b.lock.Unlock()
-	return err
+	defer b.lock.Unlock()
+	return b.flush()
 }
 
 func (b *Buffer) flush() error {
