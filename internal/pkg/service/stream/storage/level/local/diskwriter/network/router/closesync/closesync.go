@@ -3,6 +3,8 @@
 package closesync
 
 import (
+	"time"
+
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -18,6 +20,7 @@ type dependencies interface {
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Telemetry() telemetry.Telemetry
+	WatchTelemetryInterval() time.Duration
 }
 
 type schema struct {

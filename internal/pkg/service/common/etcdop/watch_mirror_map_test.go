@@ -51,7 +51,7 @@ func TestMirrorMap(t *testing.T) {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel, 5*time.Minute)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -176,7 +176,7 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 			updateCh <- update
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel, 5*time.Minute)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -270,7 +270,7 @@ func TestMirrorMap_WithOnChanges(t *testing.T) {
 			changesCh <- changes
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel, 5*time.Minute)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header

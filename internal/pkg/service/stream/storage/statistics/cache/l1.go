@@ -56,7 +56,7 @@ func NewL1Cache(d dependencies) (*L1, error) {
 		return stats
 	}
 	mirror := etcdop.SetupMirrorTree[statistics.Value](stream, mapKey, mapValue).BuildMirror()
-	if err := <-mirror.StartMirroring(ctx, wg, c.logger, d.Telemetry()); err == nil {
+	if err := <-mirror.StartMirroring(ctx, wg, c.logger, d.Telemetry(), d.WatchTelemetryInterval()); err == nil {
 		c.cache = mirror
 	} else {
 		return nil, err

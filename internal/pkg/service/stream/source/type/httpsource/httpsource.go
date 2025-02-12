@@ -48,6 +48,7 @@ type dependencies interface {
 	DefinitionRepository() *definitionRepo.Repository
 	SinkRouter() *sinkRouter.Router
 	Telemetry() telemetry.Telemetry
+	WatchTelemetryInterval() time.Duration
 }
 
 func Start(ctx context.Context, d dependencies, cfg Config) error {

@@ -42,6 +42,7 @@ package dependencies
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	aggregationRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/aggregation/repository"
@@ -88,6 +89,7 @@ type ServiceScope interface {
 	AggregationRepository() *aggregationRepo.Repository
 	KeboolaSinkBridge() *keboolaSinkBridge.Bridge
 	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
+	WatchTelemetryInterval() time.Duration
 }
 
 type APIScope interface {

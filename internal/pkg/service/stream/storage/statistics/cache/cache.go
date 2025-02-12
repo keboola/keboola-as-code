@@ -7,6 +7,8 @@
 package cache
 
 import (
+	"time"
+
 	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -21,4 +23,5 @@ type dependencies interface {
 	Process() *servicectx.Process
 	StatisticsRepository() *statsRepo.Repository
 	Telemetry() telemetry.Telemetry
+	WatchTelemetryInterval() time.Duration
 }

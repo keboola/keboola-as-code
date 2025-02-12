@@ -37,6 +37,8 @@ debugLog: false
 debugHTTPClient: false
 # Unique ID of the node in the cluster. Validation rules: required
 nodeID: ""
+# Interval for sending telemetry data.
+watchTelemetryInterval: 5m0s
 # Hostname for communication between nodes. Validation rules: required
 hostname: ""
 # Storage API host. Validation rules: required,hostname

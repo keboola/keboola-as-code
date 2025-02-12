@@ -55,7 +55,7 @@ func TestMirrorTree(t *testing.T) {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel, 5*time.Minute)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -176,7 +176,7 @@ func TestMirrorTree_WithOnUpdate(t *testing.T) {
 			updateCh <- update
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel, 5*time.Minute)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -266,7 +266,7 @@ func TestMirrorTree_WithOnChanges(t *testing.T) {
 			changesCh <- changes
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel, 5*time.Minute)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header
@@ -382,7 +382,7 @@ func TestFullMirrorTree(t *testing.T) {
 			return !strings.Contains(event.Kv.String(), "/ignore")
 		}).
 		BuildMirror()
-	errCh := mirror.StartMirroring(ctx, wg, logger, tel)
+	errCh := mirror.StartMirroring(ctx, wg, logger, tel, 5*time.Minute)
 
 	// waitForSync:  it waits until the memory mirror is synchronized with the revision of the last change
 	var header *op.Header

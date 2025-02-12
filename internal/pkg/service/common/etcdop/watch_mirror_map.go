@@ -79,13 +79,13 @@ func (s MirrorMapSetup[T, K, V]) BuildMirror() *MirrorMap[T, K, V] {
 // StartMirroring initializes the mirroring process for the MirrorMap by starting a watcher and processing events.
 // It locks and updates the internal map on event changes, captures telemetry, and invokes registered callbacks.
 // Returns a channel of initialization errors if the consumer fails to start.
-func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry) (initErr <-chan error) {
+func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry, watchTelemetryInterval time.Duration) (initErr <-chan error) {
 	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", m.stream.WatchedPrefix()))
 
 	// Start telemetry collection in a separate goroutine.
 	// This routine collects metrics about the memory usage and the state of the MirrorMap.
 	wg.Add(1)
-	go m.startTelemetryCollection(ctx, wg, logger, tel)
+	go m.startTelemetryCollection(ctx, wg, logger, tel, watchTelemetryInterval)
 
 	consumer := newConsumerSetup(m.stream).
 		WithForEach(func(events []WatchEvent[T], header *Header, restart bool) {
@@ -301,10 +301,10 @@ func (m *MirrorMap[T, K, V]) recordMemoryTelemetry(ctx context.Context, tel tele
 }
 
 // Function for periodic telemetry collection (runs as a goroutine).
-func (m *MirrorMap[T, K, V]) startTelemetryCollection(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry) {
+func (m *MirrorMap[T, K, V]) startTelemetryCollection(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, tel telemetry.Telemetry, watchTelemetryInterval time.Duration) {
 	defer wg.Done()
 
-	ticker := time.NewTicker(30 * time.Second) // Emit telemetry every 5 minutes
+	ticker := time.NewTicker(watchTelemetryInterval)
 	defer ticker.Stop()
 
 	for {
