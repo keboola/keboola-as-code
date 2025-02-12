@@ -140,7 +140,7 @@ const payloads = new SharedArray('payloads', function() {
 
 const api = new Api(API_HOST, API_TOKEN)
 
-const fastHttpClient = new Client()
+const fastHttpClient = new Client({ write_timeout: 1 })
 
 export function setup() {
   // Create source
