@@ -36,7 +36,6 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 
 	queue := &JobQueue{
 		async:          o.Async,
-		hasQueueV2:     d.ProjectFeatures().Has("queuev2"),
 		ctx:            timeoutCtx,
 		api:            d.KeboolaProjectAPI(),
 		logger:         d.Logger(),
@@ -76,8 +75,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 }
 
 type JobQueue struct {
-	async      bool
-	hasQueueV2 bool
+	async bool
 
 	ctx    context.Context
 	api    *keboola.AuthorizedAPI
@@ -145,7 +143,7 @@ func (q *JobQueue) dispatch(job *Job) {
 	go func() {
 		defer q.wg.Done()
 
-		if err := job.Start(q.ctx, q.api, q.async, q.hasQueueV2); err != nil {
+		if err := job.Start(q.ctx, q.api); err != nil {
 			q.err.Append(errors.Errorf("job \"%s\" failed to start: %s", job.Key(), err))
 			return
 		}
@@ -196,47 +194,25 @@ func (o *Job) Key() string {
 	return out
 }
 
-func (o *Job) Start(ctx context.Context, api *keboola.AuthorizedAPI, async bool, hasQueueV2 bool) error {
-	if hasQueueV2 {
-		job, err := api.NewCreateJobRequest(o.ComponentID).
-			WithConfig(o.ConfigID).
-			WithBranch(o.BranchID).
-			WithTag(o.Tag).
-			Send(ctx)
-		if err != nil {
-			return err
-		}
-
-		o.id = job.ID
-		o.wait = func() error {
-			err := api.WaitForQueueJob(ctx, job.ID)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	} else {
-		// nolint: staticcheck
-		job, err := api.CreateOldQueueJobRequest(
-			o.ComponentID,
-			o.ConfigID,
-			keboola.WithBranchID(o.BranchID),
-			keboola.WithImageTag(o.Tag),
-		).Send(ctx)
-		if err != nil {
-			return err
-		}
-
-		o.id = job.ID
-		o.wait = func() error {
-			// nolint: staticcheck
-			err := api.WaitForOldQueueJob(ctx, job.ID)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
+func (o *Job) Start(ctx context.Context, api *keboola.AuthorizedAPI) error {
+	job, err := api.NewCreateJobRequest(o.ComponentID).
+		WithConfig(o.ConfigID).
+		WithBranch(o.BranchID).
+		WithTag(o.Tag).
+		Send(ctx)
+	if err != nil {
+		return err
 	}
+
+	o.id = job.ID
+	o.wait = func() error {
+		err := api.WaitForQueueJob(ctx, job.ID)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	return nil
 }
 
