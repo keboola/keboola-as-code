@@ -1,6 +1,6 @@
 module github.com/keboola/keboola-as-code
 
-go 1.23.5
+go 1.23.6
 
 replace github.com/google/go-jsonnet => github.com/keboola/go-jsonnet v0.20.1-0.20240430105602-71646d8d4fa9
 
@@ -9,7 +9,7 @@ replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
 require (
-	ariga.io/atlas v0.30.0
+	ariga.io/atlas v0.31.0
 	entgo.io/ent v0.14.1
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -31,7 +31,7 @@ require (
 	github.com/go-playground/validator/v10 v10.24.0
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/gofrs/flock v0.12.1
-	github.com/gofrs/uuid/v5 v5.3.0
+	github.com/gofrs/uuid/v5 v5.3.1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-jsonnet v0.20.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -91,10 +91,10 @@ require (
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.19.1
 	goa.design/plugins/v3 v3.19.1
-	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c
-	golang.org/x/sync v0.10.0
+	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac
+	golang.org/x/sync v0.11.0
 	google.golang.org/grpc v1.70.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.71.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.71.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.21
 )
@@ -131,16 +131,16 @@ require (
 	github.com/tinylib/msgp v1.2.1 // indirect
 	go.uber.org/atomic v1.11.0
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.32.0
-	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/net v0.34.0
-	golang.org/x/sys v0.29.0
-	golang.org/x/term v0.28.0
-	golang.org/x/text v0.21.0
+	golang.org/x/crypto v0.33.0
+	golang.org/x/mod v0.23.0 // indirect
+	golang.org/x/net v0.35.0
+	golang.org/x/sys v0.30.0
+	golang.org/x/term v0.29.0
+	golang.org/x/text v0.22.0
 	golang.org/x/time v0.9.0 // indirect
-	golang.org/x/tools v0.29.0
+	golang.org/x/tools v0.30.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.5
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -317,6 +317,7 @@ require (
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zclconf/go-cty v1.14.4 // indirect
+	github.com/zclconf/go-cty-yaml v1.1.0 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.18 // indirect
 	go.etcd.io/etcd/client/v2 v2.305.18 // indirect
