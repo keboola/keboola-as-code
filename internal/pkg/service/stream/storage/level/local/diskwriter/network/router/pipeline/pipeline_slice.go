@@ -14,7 +14,6 @@ import (
 	pipelinePkg "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router/balancer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	encodingCfg "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
@@ -51,7 +50,16 @@ type SliceData struct {
 	LocalStorage localModel.Slice
 }
 
-func NewSlicePipeline(ctx context.Context, logger log.Logger, telemetry telemetry.Telemetry, connections *connection.Manager, encoding *encoding.Manager, ready *readyNotifier, slice *SliceData, onClose func(ctx context.Context, cause string)) *SlicePipeline {
+func NewSlicePipeline(
+	ctx context.Context,
+	logger log.Logger,
+	telemetry telemetry.Telemetry,
+	connections *connection.Manager,
+	encoding *encoding.Manager,
+	ready *readyNotifier,
+	slice *SliceData,
+	onClose func(ctx context.Context, cause string),
+) *SlicePipeline {
 	p := &SlicePipeline{
 		logger:      logger.With(slice.SliceKey.Telemetry()...),
 		telemetry:   telemetry,
@@ -159,17 +167,19 @@ func (p *SlicePipeline) tryOpen() error {
 
 	ctx := p.ctx
 
-	// Open remote RPC file
-	// The disk writer node can notify us of its termination. In that case, we have to gracefully close the pipeline, see Close method.
-	remoteFile, err := rpc.OpenNetworkFile(ctx, p.logger, p.telemetry, p.connections, p.slice.SliceKey, p.slice.LocalStorage, p.Close)
-	if err != nil {
-		return errors.PrefixErrorf(err, "cannot open network file for new slice pipeline")
-	}
-
 	// Open pipeline
-	p.pipeline, err = p.encoding.OpenPipeline(ctx, p.slice.SliceKey, p.slice.Mapping, p.slice.Encoding, remoteFile)
+	var err error
+	p.pipeline, err = p.encoding.OpenPipeline(
+		ctx,
+		p.slice.SliceKey,
+		p.telemetry,
+		p.connections,
+		p.slice.Mapping,
+		p.slice.Encoding,
+		p.slice.LocalStorage,
+		p.Close,
+	)
 	if err != nil {
-		_ = remoteFile.Close(ctx)
 		return errors.PrefixErrorf(err, "cannot open slice pipeline")
 	}
 

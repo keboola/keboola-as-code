@@ -10,9 +10,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -80,7 +83,16 @@ func (m *Manager) Pipelines() (out []Pipeline) {
 	return out
 }
 
-func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, mappingCfg table.Mapping, encodingCfg encoding.Config, out NetworkOutput) (w Pipeline, err error) {
+func (m *Manager) OpenPipeline(
+	ctx context.Context,
+	sliceKey model.SliceKey,
+	telemetry telemetry.Telemetry,
+	connections *connection.Manager,
+	mappingCfg table.Mapping,
+	encodingCfg encoding.Config,
+	localStorage localModel.Slice,
+	closeFunc func(ctx context.Context, cause string),
+) (w Pipeline, err error) {
 	// Check if the pipeline already exists, if not, register an empty reference to unlock immediately
 	ref, exists := m.addPipeline(sliceKey)
 	if exists {
@@ -88,7 +100,19 @@ func (m *Manager) OpenPipeline(ctx context.Context, sliceKey model.SliceKey, map
 	}
 
 	// Create pipeline
-	ref.Pipeline, err = newPipeline(ctx, m.logger, m.clock, sliceKey, mappingCfg, encodingCfg, out, m.events)
+	ref.Pipeline, err = newPipeline(
+		ctx,
+		m.logger,
+		m.clock,
+		sliceKey,
+		telemetry,
+		connections,
+		mappingCfg,
+		encodingCfg,
+		localStorage,
+		m.events,
+		closeFunc,
+	)
 	if err != nil {
 		return nil, err
 	}
