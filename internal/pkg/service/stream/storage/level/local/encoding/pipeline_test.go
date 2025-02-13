@@ -571,6 +571,18 @@ func TestEncodingPipeline_TemporaryError(t *testing.T) {
 	tc.Output.WriteError = nil
 	tc.Clock.Advance(1 * time.Second)
 
+	// Another write
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		n, err := w.WriteRecord(tc.TestRecord("foo3"))
+		require.NoError(t, err)
+		assert.Equal(t, 5, n)
+		tc.Logger.Infof(ctx, "TEST: write unblocked")
+	}()
+	tc.ExpectWritesCount(t, 1)
+	tc.TriggerSync(t)
+
 	// Wait for goroutines
 	wg.Wait()
 
@@ -582,6 +594,7 @@ func TestEncodingPipeline_TemporaryError(t *testing.T) {
 foo1
 foo1
 foo2
+foo3
 `), strings.TrimSpace(tc.Output.String()))
 
 	// Check logs
@@ -602,7 +615,15 @@ foo2
 {"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
 {"level":"debug","message":"writers flushed"}
 {"level":"warn","message":"chunks write failed: some error, waiting %s, chunks count = 1"}
+{"level":"debug","message":"chunk written, size \"5B\""}
 {"level":"debug","message":"sync to disk done"}
+{"level":"info","message":"TEST: write unblocked"}
+{"level":"debug","message":"notifier obtained"}
+{"level":"debug","message":"starting sync to disk"}
+{"level":"debug","message":"flushing writers"}
+{"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
+{"level":"debug","message":"writers flushed"}
+{"level":"debug","message":"chunk written, size \"5B\""}
 {"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"closing encoding pipeline"}
 {"level":"debug","message":"stopping syncer"}
