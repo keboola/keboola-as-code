@@ -114,6 +114,7 @@ func (m *Manager) OpenPipeline(
 		closeFunc,
 	)
 	if err != nil {
+		m.removePipeline(sliceKey)
 		return nil, err
 	}
 
