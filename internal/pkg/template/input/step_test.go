@@ -74,8 +74,8 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 		Description: "description",
 		Required:    RequiredAtLeastOne,
 	}
-	require.NoError(t, g.ValidateStepsCount(10, 2))
-	err := g.ValidateStepsCount(10, 0)
+	require.NoError(t, g.ValidateStepsCount(10, 2, false))
+	err := g.ValidateStepsCount(10, 0, false)
 	require.Error(t, err)
 	assert.Equal(t, "at least one step must be selected", err.Error())
 
@@ -83,9 +83,9 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 		Description: "description",
 		Required:    RequiredZeroOrOne,
 	}
-	require.NoError(t, g.ValidateStepsCount(10, 0))
-	require.NoError(t, g.ValidateStepsCount(10, 1))
-	err = g.ValidateStepsCount(10, 2)
+	require.NoError(t, g.ValidateStepsCount(10, 0, false))
+	require.NoError(t, g.ValidateStepsCount(10, 1, false))
+	err = g.ValidateStepsCount(10, 2, false)
 	require.Error(t, err)
 	assert.Equal(t, "zero or one step must be selected", err.Error())
 
@@ -93,11 +93,31 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 		Description: "description",
 		Required:    RequiredExactlyOne,
 	}
-	require.NoError(t, g.ValidateStepsCount(10, 1))
-	err = g.ValidateStepsCount(10, 0)
+	require.NoError(t, g.ValidateStepsCount(10, 1, false))
+	err = g.ValidateStepsCount(10, 0, false)
 	require.Error(t, err)
 	assert.Equal(t, "exactly one step must be selected", err.Error())
-	err = g.ValidateStepsCount(10, 2)
+	err = g.ValidateStepsCount(10, 2, false)
+	require.Error(t, err)
+	assert.Equal(t, "exactly one step must be selected", err.Error())
+
+	g = StepsGroup{
+		Description: "description",
+		Required:    RequiredExactlyOne,
+	}
+	require.NoError(t, g.ValidateStepsCount(10, 1, false))
+	err = g.ValidateStepsCount(10, 0, false)
+	require.Error(t, err)
+	assert.Equal(t, "exactly one step must be selected", err.Error())
+
+	// Template test
+	require.NoError(t, g.ValidateStepsCount(10, 1, true))
+	require.NoError(t, g.ValidateStepsCount(10, 3, true))
+	require.NoError(t, g.ValidateStepsCount(10, 0, true))
+	require.Error(t, err)
+	assert.Equal(t, "exactly one step must be selected", err.Error())
+
+	err = g.ValidateStepsCount(10, 2, false)
 	require.Error(t, err)
 	assert.Equal(t, "exactly one step must be selected", err.Error())
 
@@ -105,8 +125,8 @@ func TestStepsGroup_ValidateSelectedSteps(t *testing.T) {
 		Description: "description",
 		Required:    RequiredAll,
 	}
-	require.NoError(t, g.ValidateStepsCount(10, 10))
-	err = g.ValidateStepsCount(10, 9)
+	require.NoError(t, g.ValidateStepsCount(10, 10, false))
+	err = g.ValidateStepsCount(10, 9, false)
 	require.Error(t, err)
 	assert.Equal(t, "all steps (10) must be selected", err.Error())
 }
