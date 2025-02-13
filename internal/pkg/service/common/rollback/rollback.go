@@ -33,7 +33,7 @@ type Container struct {
 }
 
 // container is a sub-container with a defined strategy.
-// Invoke method returns a error.
+// Invoke method returns an error.
 type container struct {
 	strategy strategy
 
@@ -46,7 +46,7 @@ type strategy string
 type callback func(ctx context.Context) error
 
 // New creates top-level container with LIFO strategy.
-// Errors are logged as an warning.
+// Errors are logged as a warning.
 func New(logger log.Logger) *Container {
 	return &Container{
 		logger:    logger,

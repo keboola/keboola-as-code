@@ -144,7 +144,7 @@ func (s *Syncer) Notifier(ctx context.Context) *notify.Notifier {
 
 // TriggerSync initiates synchronization.
 // If force=true, it waits for a running synchronization, if there is one, and then starts a new one.
-// If force=false, is doesn't wait, a notifier for the running synchronization returns.
+// If force=false, it doesn't wait, a notifier for the running synchronization returns.
 // In both cases, the method doesn't wait for the synchronization to complete,
 // you can use the Wait() method of the returned *notify.Notifier for waiting.
 func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
