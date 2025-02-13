@@ -147,9 +147,8 @@ func (m *Manager) ConnectionsCount() int {
 }
 
 func (m *Manager) updateConnections(ctx context.Context) {
-	m.logger.Infof(ctx, `the list of volumes has changed, updating connections`)
-
 	activeNodes := m.writerNodes()
+	m.logger.Infof(ctx, `the list of volumes has changed, updating connections: %v`, activeNodes)
 
 	// Detect new nodes - to open connection
 	var toOpen []*nodeData
