@@ -16,6 +16,6 @@ func NewConfig() Config {
 		Interval:               30 * time.Second,
 		Concurrency:            50,
 		ActiveFileExpiration:   7 * 24 * time.Hour, // 7 days
-		ArchivedFileExpiration: 6 * time.Hour,
+		ArchivedFileExpiration: 1 * time.Hour,
 	}
 }
