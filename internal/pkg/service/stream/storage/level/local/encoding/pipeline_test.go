@@ -101,7 +101,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 		slice.Encoding,
 		slice.LocalStorage,
 		func(ctx context.Context, cause string) {},
-		nil,
+		newDummyOutput(),
 	)
 	require.NoError(t, err)
 	// Test Close method
@@ -133,7 +133,7 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 		slice.Encoding,
 		slice.LocalStorage,
 		func(ctx context.Context, cause string) {},
-		nil,
+		newDummyOutput(),
 	)
 	require.NoError(t, err)
 

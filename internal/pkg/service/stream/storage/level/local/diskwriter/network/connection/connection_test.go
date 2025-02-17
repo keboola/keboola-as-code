@@ -41,7 +41,7 @@ func TestConnectionManager(t *testing.T) {
 	// Start source node
 	connManager, s := startSourceNode(t, ctx, etcdCfg, "s1")
 	sourceLogger := s.DebugLogger()
-	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
+	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections: \"%s\" - \"%s\"","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w1\" - \"l%s\"","component":"storage.router.connections.client.transport"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w2\" - \"l%s\"","component":"storage.router.connections.client.transport"}`)
 	waitForLog(t, w1.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.rpc.transport"}`)
@@ -58,7 +58,7 @@ func TestConnectionManager(t *testing.T) {
 	// Start another 2 writer nodes
 	w3 := startWriterNode(t, ctx, etcdCfg, "w3")
 	w4 := startWriterNode(t, ctx, etcdCfg, "w4")
-	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
+	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections: \"%s\" - \"%s\"","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w3\" - \"l%s\"","component":"storage.router.connections.client.transport"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client connected from \"%s\" to \"w4\" - \"l%s\"","component":"storage.router.connections.client.transport"}`)
 	waitForLog(t, w3.DebugLogger(), `{"level":"info","message":"accepted connection from \"%s\" to \"%s\"","component":"storage.node.writer.rpc.transport"}`)
@@ -83,7 +83,7 @@ func TestConnectionManager(t *testing.T) {
 	w1.Process().WaitForShutdown()
 	w3.Process().Shutdown(ctx, errors.New("bye bye writer 3"))
 	w3.Process().WaitForShutdown()
-	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
+	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections: \"%s\" - \"%s\"","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w1\" - \"localhost:%s\": %s","component":"storage.router.connections.client.transport"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w3\" - \"localhost:%s\": %s","component":"storage.router.connections.client.transport"}`)
 	sourceLogger.Truncate()
