@@ -1,0 +1,8 @@
+{
+  "parameters": {
+    "db": {
+      "#password": "##KBC_SECRET_PASSWORD##",
+      "host": "host"
+    }
+  }
+}

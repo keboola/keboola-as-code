@@ -1,0 +1,1 @@
+template test create my-template 0.0.1 --test-name one --inputs-file ./inputs.json --test-projects-file ./projects.json
