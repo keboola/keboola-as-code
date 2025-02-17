@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -175,6 +176,10 @@ type testWriter struct {
 	LastRowAtValue        utctime.UTCTime
 	CompressedSizeValue   datasize.ByteSize
 	UncompressedSizeValue datasize.ByteSize
+}
+
+func (w *testWriter) NetworkOutput() rpc.NetworkOutput {
+	return nil
 }
 
 func (w *testWriter) SliceKey() model.SliceKey {

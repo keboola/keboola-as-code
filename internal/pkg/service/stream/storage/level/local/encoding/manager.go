@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
 	encoding "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
@@ -92,6 +93,7 @@ func (m *Manager) OpenPipeline(
 	encodingCfg encoding.Config,
 	localStorage localModel.Slice,
 	closeFunc func(ctx context.Context, cause string),
+	network rpc.NetworkOutput,
 ) (w Pipeline, err error) {
 	// Check if the pipeline already exists, if not, register an empty reference to unlock immediately
 	ref, exists := m.addPipeline(sliceKey)
@@ -112,6 +114,7 @@ func (m *Manager) OpenPipeline(
 		localStorage,
 		m.events,
 		closeFunc,
+		network,
 	)
 	if err != nil {
 		m.removePipeline(sliceKey)

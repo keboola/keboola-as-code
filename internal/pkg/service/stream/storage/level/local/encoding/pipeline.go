@@ -45,6 +45,8 @@ type Pipeline interface {
 
 	// IsReady is used for load balancing, to detect health pipelines.
 	IsReady() bool
+	// NetworkOutput returns the network output of the pipeline.
+	NetworkOutput() rpc.NetworkOutput
 	// WriteRecord blocks until the record is written and synced to the local storage, if the wait is enabled.
 	WriteRecord(record recordctx.Context) (int, error)
 	// Events provides listening to the writer lifecycle.
@@ -116,6 +118,7 @@ func newPipeline(
 	localStorage localModel.Slice,
 	events *events.Events[Pipeline],
 	closeFunc func(ctx context.Context, cause string),
+	network rpc.NetworkOutput,
 ) (out Pipeline, err error) {
 	p := &pipeline{
 		logger:       logger.WithComponent("encoding.pipeline"),
@@ -131,9 +134,12 @@ func newPipeline(
 
 	// Open remote RPC file
 	// The disk writer node can notify us of its termination. In that case, we have to gracefully close the pipeline, see Close method.
-	p.network, err = rpc.OpenNetworkFile(ctx, p.logger, p.telemetry, p.connections, p.sliceKey, localStorage, p.closeFunc)
-	if err != nil {
-		return nil, errors.PrefixErrorf(err, "cannot open network file for new slice pipeline")
+	p.network = network
+	if network == nil {
+		p.network, err = rpc.OpenNetworkFile(ctx, p.logger, p.telemetry, p.connections, p.sliceKey, p.localStorage, p.closeFunc)
+		if err != nil {
+			return nil, errors.PrefixErrorf(err, "cannot open network file for new slice pipeline")
+		}
 	}
 
 	ctx = context.WithoutCancel(ctx)
@@ -280,6 +286,10 @@ func (p *pipeline) IsReady() bool {
 	p.readyLock.RLock()
 	defer p.readyLock.RUnlock()
 	return p.ready
+}
+
+func (p *pipeline) NetworkOutput() rpc.NetworkOutput {
+	return p.network
 }
 
 func (p *pipeline) WriteRecord(record recordctx.Context) (int, error) {

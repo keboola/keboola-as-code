@@ -178,6 +178,7 @@ func (p *SlicePipeline) tryOpen() error {
 		p.slice.Encoding,
 		p.slice.LocalStorage,
 		p.Close,
+		nil, // Do not override network output
 	)
 	if err != nil {
 		return errors.PrefixErrorf(err, "cannot open slice pipeline")
