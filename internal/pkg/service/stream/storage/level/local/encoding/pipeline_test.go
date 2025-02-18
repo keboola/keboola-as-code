@@ -551,7 +551,6 @@ func TestEncodingPipeline_TemporaryError(t *testing.T) {
 		n, err := w.WriteRecord(tc.TestRecord("foo2"))
 		require.NoError(t, err)
 		assert.Equal(t, 5, n)
-		tc.Logger.Infof(ctx, "TEST: write unblocked")
 	}()
 	tc.ExpectWritesCount(t, 1)
 	wg.Add(1)
@@ -617,7 +616,6 @@ foo3
 {"level":"warn","message":"chunks write failed: some error, waiting %s, chunks count = 1"}
 {"level":"debug","message":"chunk written, size \"5B\""}
 {"level":"debug","message":"sync to disk done"}
-{"level":"info","message":"TEST: write unblocked"}
 {"level":"debug","message":"notifier obtained"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"flushing writers"}
