@@ -176,6 +176,7 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 
 type compressionTestCase struct {
 	Name               string
+	UseBackupReader    bool
 	LocalCompression   compression.Config
 	StagingCompression compression.Config
 	DisableValidation  bool
@@ -207,6 +208,7 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
+	rtc.Config.UseBackupReader = tc.UseBackupReader
 	rtc.SliceData = localData.Bytes()
 	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
@@ -262,6 +264,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
+	rtc.Config.UseBackupReader = tc.UseBackupReader
 	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
@@ -273,14 +276,20 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 		return f, nil
 	})
 
-	// Create reader
+	// Create reader, which inspects the file when compressed
+	// Make sure that the file is compressed correctly
 	r, err := rtc.NewReader(tc.DisableValidation)
+	if rtc.Config.UseBackupReader && err != nil {
+		require.Contains(t, err.Error(), readError.Error())
+		return
+	}
+
 	require.NoError(t, err)
 
 	// Read all
 	var buf bytes.Buffer
 	if _, err = r.WriteTo(&buf); assert.Error(t, err) {
-		assert.Equal(t, "some read error", err.Error())
+		assert.Contains(t, err.Error(), readError.Error())
 	}
 
 	// Close
@@ -313,6 +322,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
+	rtc.Config.UseBackupReader = tc.UseBackupReader
 	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
@@ -324,8 +334,14 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 		return f, nil
 	})
 
-	// Create reader
+	// Create reader, which inspects the file when compressed
+	// Make sure that the file is compressed correctly
 	r, err := rtc.NewReader(tc.DisableValidation)
+	if rtc.Config.UseBackupReader && err != nil {
+		require.Contains(t, err.Error(), closeError.Error())
+		return
+	}
+
 	require.NoError(t, err)
 
 	// Read all
@@ -385,7 +401,11 @@ func (tc *readerTestCase) NewReader(disableValidation bool) (diskreader.Reader, 
 	// Write slice data
 	require.NoError(tc.TB, os.MkdirAll(tc.Slice.LocalStorage.DirName(tc.VolumePath), 0o750))
 	for _, file := range tc.Files {
-		require.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, file), tc.SliceData, 0o640))
+		if tc.Config.UseBackupReader {
+			require.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileNameWithBackup(tc.VolumePath, file), tc.SliceData, 0o640))
+		} else {
+			require.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, file), tc.SliceData, 0o640))
+		}
 	}
 
 	r, err := tc.Volume.OpenReader(tc.Slice.SliceKey, tc.Slice.LocalStorage, tc.Slice.Encoding.Compression, tc.Slice.StagingStorage.Compression)

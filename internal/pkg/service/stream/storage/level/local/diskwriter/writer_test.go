@@ -290,6 +290,29 @@ func TestWriter_AllocateSpace_Disabled(t *testing.T) {
 `)
 }
 
+func TestWriter_WithBackup(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	tc := newWriterTestCase(t)
+	tc.Config.UseBackupWriter = true
+	w, err := tc.OpenWriter()
+	require.NoError(t, err)
+
+	// Close writer
+	require.NoError(t, w.Close(ctx))
+
+	require.FileExists(t, tc.FilePath())
+	require.True(t, strings.HasSuffix(tc.FilePath(), ".slice-source-node-id.csv"))
+	// Check logs
+	tc.AssertLogs(`
+{"level":"info","message":"opening volume"}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"debug","message":"disk space allocation is not supported"}
+`)
+}
+
 // writerTestCase is a helper to open disk writer in tests.
 type writerTestCase struct {
 	*volumeTestCase
@@ -341,5 +364,9 @@ func (tc *writerTestCase) OpenWriter() (diskwriter.Writer, error) {
 }
 
 func (tc *writerTestCase) FilePath() string {
+	if tc.Config.UseBackupWriter {
+		return tc.Slice.LocalStorage.FileNameWithBackup(tc.VolumePath, tc.SourceNodeID)
+	}
+
 	return tc.Slice.LocalStorage.FileName(tc.VolumePath, tc.SourceNodeID)
 }
