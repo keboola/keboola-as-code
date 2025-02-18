@@ -159,7 +159,7 @@ storage:
         # Expiration interval of a file that has not yet been imported. Validation rules: required,minDuration=1h,maxDuration=720h,gtefield=ArchivedFileExpiration
         activeFileExpiration: 168h0m0s
         # Expiration interval of a file that has already been imported. Validation rules: required,minDuration=15m,maxDuration=720h
-        archivedFileExpiration: 6h0m0s
+        archivedFileExpiration: 1h0m0s
     diskCleanup:
         # Enable local storage disks cleanup.
         enabled: true
