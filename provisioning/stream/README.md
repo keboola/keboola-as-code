@@ -89,7 +89,7 @@ minikube service -n stream --all
 It copies both API and HTTP source ports as we use it within the configuration.
 Go to lens configuration and check the values of source.http.publicUrl and api.publicUrl.
 
-It restarts both deployments, so the new configuration is applied
+It restarts both deployments, so the new configuration is applied.
 
 ```sh
 To interact with the MiniKube profile run:

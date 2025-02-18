@@ -114,4 +114,4 @@ echo
 echo "To clear the MiniKube:"
 echo "MINIKUBE_PROFILE=${MINIKUBE_PROFILE} minikube delete --purge"
 echo
-echo "Run rollout-stream.sh to access services on loadbalancers:"
+echo "Run rollout-stream.sh to access services on loadbalancers."
