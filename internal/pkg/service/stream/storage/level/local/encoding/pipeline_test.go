@@ -54,6 +54,7 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 		func(ctx context.Context, cause string) {},
 		output,
 	)
+
 	require.NoError(t, err)
 	// Test getters
 	assert.Equal(t, slice.SliceKey, w.SliceKey())
@@ -103,6 +104,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 		func(ctx context.Context, cause string) {},
 		newDummyOutput(),
 	)
+
 	require.NoError(t, err)
 	// Test Close method
 	err = w.Close(ctx)
