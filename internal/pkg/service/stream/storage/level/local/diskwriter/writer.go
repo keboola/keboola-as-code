@@ -163,7 +163,6 @@ func (w *writer) Close(ctx context.Context) error {
 	w.logger.Debug(ctx, "closing disk writer")
 
 	// Close only once
-	errs := errors.NewMultiError()
 	if w.isClosed() {
 		return errors.New(`writer is already closed`)
 	}
@@ -172,6 +171,7 @@ func (w *writer) Close(ctx context.Context) error {
 	close(w.closed)
 	w.wg.Wait()
 
+	errs := errors.NewMultiError()
 	if w.writen != w.aligned {
 		w.logger.Warnf(ctx, `file is not aligned, truncating`)
 		seeked, err := w.file.Seek(w.aligned-w.writen, io.SeekCurrent)
