@@ -13,7 +13,7 @@ const (
 // File contains all *os.File methods used by this package.
 // This makes it possible to use a custom file implementation in the tests, see FileOpener.
 type File interface {
-	io.ReadCloser
+	io.ReadSeekCloser
 }
 
 // FileOpener opens the File for reading.
