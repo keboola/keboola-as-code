@@ -43,7 +43,7 @@ dev bash -c "go run ./cmd/stream/main.go -- $STREAM_COMPONENTS | jl"
 
 - Minimal `STREAM_COMPONENTS`: `api http-source storage-writer`
 - All `STREAM_COMPONENTS`: `api http-source storage-writer storage-reader storage-coordinator`
-- Use `jl -format logfmt` to show all log fields.
+- Use `go tool jl -format logfmt` to show all log fields.
 - Monitor also system resource, for example via `htop`, use
   - `F5` to enable tree view
   - `F4` to filter the list
