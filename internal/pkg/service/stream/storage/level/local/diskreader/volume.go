@@ -168,8 +168,12 @@ func (v *Volume) OpenReader(sliceKey model.SliceKey, slice localModel.Slice, enc
 		opener = v.config.OverrideFileOpener
 	}
 
-	// <volumePath>/FilenamePrefix * FilenameExtension
+	// <volumePath>/.FilenamePrefix * FilenameExtension
+	// Works for both hidden and visible files.
 	path := slice.FileGlob(v.Path())
+	if v.config.UseBackupReader {
+		path = slice.FileGlobWithBackup(v.Path())
+	}
 
 	// Init reader and chain
 	r, err = newReader(

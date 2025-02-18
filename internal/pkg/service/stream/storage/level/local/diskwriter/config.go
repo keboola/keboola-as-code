@@ -17,6 +17,9 @@ type Config struct {
 	// OverrideFileOpener overrides file opening.
 	// A custom implementation can be useful for tests.
 	OverrideFileOpener FileOpener
+	// UseBackupWriter determines whether to use temporary file during write operations.
+	// When enabled, data is written to a temporary file first and moved to the final location on close.
+	UseBackupWriter bool `configKey:"useBackupWriter"`
 }
 
 func NewConfig() Config {
