@@ -1,5 +1,7 @@
 # Development
 
+This guide covers Docker-based development setup. For development directly on your local machine without Docker, see [Local Development Guide](local_development.md).
+
 ## Quick Start
 
 ### Clone

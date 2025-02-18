@@ -2,6 +2,7 @@ package encoding
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -407,6 +408,7 @@ func (p *pipeline) Close(ctx context.Context) error {
 	p.chunksWg.Wait()
 
 	// Close remote network file
+	fmt.Println("closing remote network file using pipeline", p.sliceKey.String())
 	if err := p.network.Close(ctx); err != nil {
 		errs.Append(err)
 	}
@@ -434,6 +436,10 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 
 		// Write all chunks to the network output
 		err := p.chunks.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
+			if !p.network.IsReady() {
+				return errors.New("network is not ready")
+			}
+
 			length, err := safecast.ToUint64(chunk.Len())
 			if err != nil {
 				return err

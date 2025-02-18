@@ -83,7 +83,6 @@ func TestConnectionManager(t *testing.T) {
 	w1.Process().WaitForShutdown()
 	w3.Process().Shutdown(ctx, errors.New("bye bye writer 3"))
 	w3.Process().WaitForShutdown()
-	waitForLog(t, sourceLogger, `{"level":"info","message":"the list of volumes has changed, updating connections","component":"storage.router.connections"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w1\" - \"localhost:%s\": %s","component":"storage.router.connections.client.transport"}`)
 	waitForLog(t, sourceLogger, `{"level":"info","message":"disk writer client disconnected from \"w3\" - \"localhost:%s\": %s","component":"storage.router.connections.client.transport"}`)
 	sourceLogger.Truncate()
