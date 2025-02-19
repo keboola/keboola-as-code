@@ -42,7 +42,17 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	slice := test.NewSlice()
 	slice.Encoding.Encoder.Type = encoder.TypeCSV
 
-	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, discardOutput{})
+	w, err := d.EncodingManager().OpenPipeline(
+		ctx,
+		slice.SliceKey,
+		d.Telemetry(),
+		d.ConnectionManager(),
+		slice.Mapping,
+		slice.Encoding,
+		slice.LocalStorage,
+		func(ctx context.Context, cause string) {},
+		discardOutput{},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, w)
 }
@@ -57,7 +67,17 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	slice := test.NewSlice()
 	slice.Encoding.Encoder.Type = "invalid"
 
-	_, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, discardOutput{})
+	_, err := d.EncodingManager().OpenPipeline(
+		ctx,
+		slice.SliceKey,
+		d.Telemetry(),
+		d.ConnectionManager(),
+		slice.Mapping,
+		slice.Encoding,
+		slice.LocalStorage,
+		func(ctx context.Context, cause string) {},
+		discardOutput{},
+	)
 	if assert.Error(t, err) {
 		assert.Equal(t, `unexpected encoder type "invalid"`, err.Error())
 	}

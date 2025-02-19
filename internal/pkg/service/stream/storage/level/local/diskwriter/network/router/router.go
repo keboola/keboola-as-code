@@ -194,7 +194,8 @@ func (r *Router) onSlicesModification(ctx context.Context, modifiedSinks []key.S
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				if err := p.UpdateSlicePipelines(ctx, r.assignSinkSlices(sinkKey)); err != nil {
+				slices := r.assignSinkSlices(sinkKey)
+				if err := p.UpdateSlicePipelines(ctx, slices); err != nil {
 					r.logger.Errorf(ctx, `cannot update sink slices pipelines: %s, sink %q`, err, sinkKey)
 				}
 			}()

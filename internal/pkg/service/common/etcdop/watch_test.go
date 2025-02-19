@@ -618,3 +618,95 @@ func assertDone(t *testing.T, blockingOp func(), msgAndArgs ...any) {
 		assert.Fail(t, "asertDone timeout", msgAndArgs...)
 	}
 }
+
+// nolint:paralleltest // etcd integration tests cannot run in parallel, see integration.BeforeTestExternal
+func TestPrefix_Watch_ClusterDowntime(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf(`etcd cluster tests are tested only on Linux`)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+
+	// Create etcd cluster for test
+	integration.BeforeTestExternal(t)
+	cluster := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3, UseBridge: true})
+	defer cluster.Terminate(t)
+	cluster.WaitLeader(t)
+	testClient := cluster.Client(1)
+	watchMember := cluster.Members[2]
+	watchClient := cluster.Client(2)
+
+	// Create watcher
+	pfx := prefixForTest()
+	stream := pfx.Watch(ctx, watchClient)
+	ch := stream.Channel()
+	receive := func(expectedLen int) WatchResponseRaw {
+		resp, ok := <-ch
+		assert.True(t, ok)
+		assert.False(t, resp.Created)
+		assert.False(t, resp.Restarted)
+		require.NoError(t, resp.InitErr)
+		require.NoError(t, resp.Err)
+		assert.Len(t, resp.Events, expectedLen)
+		return resp
+	}
+
+	// Expect "created" event, there is no record for GetAll phase, transition to the Watch phase
+	resp := <-ch
+	assert.True(t, resp.Created)
+
+	// Add initial key
+	value := "value"
+	require.NoError(t, pfx.Key("key01").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key02").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key03").Put(testClient, value).Do(ctx).Err())
+
+	// Read initial key
+	resp = receive(1)
+	assert.Equal(t, []byte("my/prefix/key01"), resp.Events[0].Kv.Key)
+	resp = receive(1)
+	assert.Equal(t, []byte("my/prefix/key02"), resp.Events[0].Kv.Key)
+	resp = receive(1)
+	assert.Equal(t, []byte("my/prefix/key03"), resp.Events[0].Kv.Key)
+
+	// Close watcher connection and block a new one for 60 seconds
+	watchMember.Bridge().PauseConnections()
+	watchMember.Bridge().DropConnections()
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, connectivity.Connecting, watchClient.ActiveConnection().GetState())
+	}, 5*time.Second, 100*time.Millisecond)
+
+	// Add delete and create some keys during the downtime
+	require.NoError(t, pfx.Key("key02").Delete(testClient).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key03").Delete(testClient).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key02").Put(testClient, value).Do(ctx).Err())
+	require.NoError(t, pfx.Key("key03").Put(testClient, value).Do(ctx).Err())
+
+	// Wait for 30 seconds to simulate extended downtime
+
+	// Unblock dialer, watcher will be reconnected
+	watchMember.Bridge().UnpauseConnections()
+
+	// Should receive the old keys
+	recv := receive(4)
+	assert.Equal(t, []byte("my/prefix/key02"), recv.Events[0].Kv.Key)
+	assert.Equal(t, DeleteEvent, recv.Events[0].Type)
+	assert.Equal(t, []byte("my/prefix/key03"), recv.Events[1].Kv.Key)
+	assert.Equal(t, DeleteEvent, recv.Events[1].Type)
+	assert.Equal(t, []byte("my/prefix/key02"), recv.Events[2].Kv.Key)
+	assert.Equal(t, CreateEvent, recv.Events[2].Type)
+	assert.Equal(t, []byte("my/prefix/key03"), recv.Events[3].Kv.Key)
+	assert.Equal(t, CreateEvent, recv.Events[3].Type)
+
+	// Add another key after reconnection
+	require.NoError(t, pfx.Key("key05").Put(testClient, value).Do(ctx).Err())
+
+	// Should receive the new key
+	assert.Equal(t, []byte("my/prefix/key05"), receive(1).Events[0].Kv.Key)
+
+	// Channel should be closed by the context
+	cancel()
+	resp, ok := <-ch
+	assert.False(t, ok, spew.Sdump(resp))
+}

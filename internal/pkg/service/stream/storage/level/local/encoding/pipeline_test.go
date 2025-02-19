@@ -18,6 +18,7 @@ import (
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder/result"
@@ -26,6 +27,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -41,9 +43,19 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 
 	output := newDummyOutput()
 
-	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, output)
-	require.NoError(t, err)
+	w, err := d.EncodingManager().OpenPipeline(
+		ctx,
+		slice.SliceKey,
+		d.Telemetry(),
+		d.ConnectionManager(),
+		slice.Mapping,
+		slice.Encoding,
+		slice.LocalStorage,
+		func(ctx context.Context, cause string) {},
+		output,
+	)
 
+	require.NoError(t, err)
 	// Test getters
 	assert.Equal(t, slice.SliceKey, w.SliceKey())
 
@@ -81,9 +93,19 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 		return w, nil
 	})
 
-	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, newDummyOutput())
-	require.NoError(t, err)
+	w, err := d.EncodingManager().OpenPipeline(
+		ctx,
+		slice.SliceKey,
+		d.Telemetry(),
+		d.ConnectionManager(),
+		slice.Mapping,
+		slice.Encoding,
+		slice.LocalStorage,
+		func(ctx context.Context, cause string) {},
+		newDummyOutput(),
+	)
 
+	require.NoError(t, err)
 	// Test Close method
 	err = w.Close(ctx)
 	if assert.Error(t, err) {
@@ -104,7 +126,17 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 		return w, nil
 	})
 
-	w, err := d.EncodingManager().OpenPipeline(ctx, slice.SliceKey, slice.Mapping, slice.Encoding, newDummyOutput())
+	w, err := d.EncodingManager().OpenPipeline(
+		ctx,
+		slice.SliceKey,
+		d.Telemetry(),
+		d.ConnectionManager(),
+		slice.Mapping,
+		slice.Encoding,
+		slice.LocalStorage,
+		func(ctx context.Context, cause string) {},
+		newDummyOutput(),
+	)
 	require.NoError(t, err)
 
 	// Test Close method
@@ -639,14 +671,16 @@ foo3
 // encodingTestCase is a helper to open encoding pipeline in tests.
 type encodingTestCase struct {
 	*writerSyncHelper
-	T       *testing.T
-	Ctx     context.Context
-	Logger  log.DebugLogger
-	Clock   *clockwork.FakeClock
-	Events  *events.Events[encoding.Pipeline]
-	Output  *dummyOutput
-	Manager *encoding.Manager
-	Slice   *model.Slice
+	T                 *testing.T
+	Ctx               context.Context
+	Logger            log.DebugLogger
+	Clock             *clockwork.FakeClock
+	Telemetry         telemetry.Telemetry
+	ConnectionManager *connection.Manager
+	Output            *dummyOutput
+	Events            *events.Events[encoding.Pipeline]
+	Manager           *encoding.Manager
+	Slice             *model.Slice
 }
 
 type writerSyncHelper struct {
@@ -673,15 +707,17 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 	slice.Encoding.Sync.OverrideSyncerFactory = helper
 
 	tc := &encodingTestCase{
-		T:                t,
-		writerSyncHelper: helper,
-		Ctx:              ctx,
-		Logger:           mock.DebugLogger(),
-		Clock:            clk,
-		Events:           events.New[encoding.Pipeline](),
-		Output:           newDummyOutput(),
-		Slice:            slice,
-		Manager:          d.EncodingManager(),
+		T:                 t,
+		writerSyncHelper:  helper,
+		Ctx:               ctx,
+		Logger:            mock.DebugLogger(),
+		Clock:             clk,
+		Telemetry:         d.Telemetry(),
+		ConnectionManager: d.ConnectionManager(),
+		Output:            newDummyOutput(),
+		Events:            events.New[encoding.Pipeline](),
+		Manager:           d.EncodingManager(),
+		Slice:             slice,
 	}
 	return tc
 }
@@ -691,7 +727,17 @@ func (tc *encodingTestCase) OpenPipeline() (encoding.Pipeline, error) {
 	val := validator.New()
 	require.NoError(tc.T, val.Validate(context.Background(), tc.Slice))
 
-	w, err := tc.Manager.OpenPipeline(tc.Ctx, tc.Slice.SliceKey, tc.Slice.Mapping, tc.Slice.Encoding, tc.Output)
+	w, err := tc.Manager.OpenPipeline(
+		tc.Ctx,
+		tc.Slice.SliceKey,
+		tc.Telemetry,
+		tc.ConnectionManager,
+		tc.Slice.Mapping,
+		tc.Slice.Encoding,
+		tc.Slice.LocalStorage,
+		func(ctx context.Context, cause string) {},
+		tc.Output,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -93,9 +93,13 @@ func (p *SinkPipeline) ReopenOnSinkModification() bool {
 }
 
 func (p *SinkPipeline) WriteRecord(c recordctx.Context) (pipelinePkg.WriteResult, error) {
+	// Make a local copy of pipelines while holding the read lock
 	p.writeLock.RLock()
-	defer p.writeLock.RUnlock()
-	return p.balancer.WriteRecord(c, p.pipelines)
+	pipelines := make([]balancer.SlicePipeline, len(p.pipelines))
+	copy(pipelines, p.pipelines)
+	p.writeLock.RUnlock()
+
+	return p.balancer.WriteRecord(c, pipelines)
 }
 
 // UpdateSlicePipelines reacts on slices changes - closes old pipelines and open new pipelines.

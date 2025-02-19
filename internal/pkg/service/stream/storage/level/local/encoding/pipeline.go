@@ -3,6 +3,8 @@ package encoding
 import (
 	"context"
 	"io"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +18,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/chunk"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	compressionWriter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression/writer"
@@ -27,7 +31,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writechain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/events"
+	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -39,6 +45,8 @@ type Pipeline interface {
 
 	// IsReady is used for load balancing, to detect health pipelines.
 	IsReady() bool
+	// NetworkOutput returns the network output of the pipeline.
+	NetworkOutput() rpc.NetworkOutput
 	// WriteRecord blocks until the record is written and synced to the local storage, if the wait is enabled.
 	WriteRecord(record recordctx.Context) (int, error)
 	// Events provides listening to the writer lifecycle.
@@ -62,20 +70,6 @@ type StatisticsProvider interface {
 	UncompressedSize() datasize.ByteSize
 }
 
-// NetworkOutput represent a file on a disk writer node, connected via network.
-type NetworkOutput interface {
-	// IsReady returns true if the underlying network is working.
-	IsReady() bool
-	// Write bytes to a file in disk writer node.
-	// When write is aligned, it commits that already writen bytes are safely stored.
-	// The operation is used on Flush of the encoding pipeline.
-	Write(ctx context.Context, aligned bool, p []byte) (n int, err error)
-	// Sync OS disk cache to the physical disk.
-	Sync(ctx context.Context) error
-	// Close the underlying OS file and network connection.
-	Close(ctx context.Context) error
-}
-
 // pipeline implements Pipeline interface, it wraps common logic for all file types.
 // For conversion between record values and bytes, the encoder.Encoder is used.
 type pipeline struct {
@@ -84,11 +78,15 @@ type pipeline struct {
 	events    *events.Events[Pipeline]
 	flushLock sync.RWMutex
 
-	encoder encoder.Encoder
-	chain   *writechain.Chain
-	syncer  *writesync.Syncer
-	chunks  *chunk.Writer
-	network NetworkOutput
+	encoder      encoder.Encoder
+	chain        *writechain.Chain
+	syncer       *writesync.Syncer
+	chunks       *chunk.Writer
+	connections  *connection.Manager
+	telemetry    telemetry.Telemetry
+	localStorage localModel.Slice
+	network      rpc.NetworkOutput
+	closeFunc    func(ctx context.Context, cause string)
 
 	readyLock sync.RWMutex
 	ready     bool
@@ -113,18 +111,35 @@ func newPipeline(
 	logger log.Logger,
 	clk clockwork.Clock,
 	sliceKey model.SliceKey,
+	telemetry telemetry.Telemetry,
+	connections *connection.Manager,
 	mappingCfg table.Mapping,
 	encodingCfg encoding.Config,
-	network NetworkOutput,
+	localStorage localModel.Slice,
 	events *events.Events[Pipeline],
+	closeFunc func(ctx context.Context, cause string),
+	network rpc.NetworkOutput,
 ) (out Pipeline, err error) {
 	p := &pipeline{
-		logger:   logger.WithComponent("encoding.pipeline"),
-		sliceKey: sliceKey,
-		network:  network,
-		events:   events.Clone(), // clone passed events, so additional pipeline specific listeners can be added
-		ready:    true,
-		closed:   make(chan struct{}),
+		logger:       logger.WithComponent("encoding.pipeline"),
+		telemetry:    telemetry,
+		connections:  connections,
+		sliceKey:     sliceKey,
+		events:       events.Clone(), // clone passed events, so additional pipeline specific listeners can be added
+		ready:        true,
+		closeFunc:    closeFunc,
+		localStorage: localStorage,
+		closed:       make(chan struct{}),
+	}
+
+	// Open remote RPC file
+	// The disk writer node can notify us of its termination. In that case, we have to gracefully close the pipeline, see Close method.
+	p.network = network
+	if network == nil {
+		p.network, err = rpc.OpenNetworkFile(ctx, p.logger, p.telemetry, p.connections, p.sliceKey, p.localStorage, p.closeFunc)
+		if err != nil {
+			return nil, errors.PrefixErrorf(err, "cannot open network file for new slice pipeline")
+		}
 	}
 
 	ctx = context.WithoutCancel(ctx)
@@ -139,6 +154,9 @@ func newPipeline(
 			}
 			if p.chain != nil {
 				_ = p.chain.Close(ctx)
+			}
+			if p.network != nil {
+				_ = p.network.Close(ctx)
 			}
 		}
 	}()
@@ -268,6 +286,10 @@ func (p *pipeline) IsReady() bool {
 	p.readyLock.RLock()
 	defer p.readyLock.RUnlock()
 	return p.ready
+}
+
+func (p *pipeline) NetworkOutput() rpc.NetworkOutput {
+	return p.network
 }
 
 func (p *pipeline) WriteRecord(record recordctx.Context) (int, error) {
@@ -434,12 +456,32 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 
 		// Write all chunks to the network output
 		err := p.chunks.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
+			if !p.network.IsReady() {
+				return errors.New("network is not ready")
+			}
+
 			length, err := safecast.ToUint64(chunk.Len())
 			if err != nil {
 				return err
 			}
 			l := datasize.ByteSize(length)
 			if _, err := p.network.Write(ctx, chunk.Aligned(), chunk.Bytes()); err != nil {
+				if strings.HasSuffix(err.Error(), os.ErrClosed.Error()) {
+					// Open remote RPC file
+					p.network, err = rpc.OpenNetworkFile(
+						ctx,
+						p.logger,
+						p.telemetry,
+						p.connections,
+						p.sliceKey,
+						p.localStorage,
+						p.closeFunc,
+					)
+					if err != nil {
+						return errors.PrefixErrorf(err, "cannot open network file for new slice pipeline")
+					}
+				}
+
 				p.logger.Debugf(ctx, "chunk write failed, size %q: %s", l.String(), err)
 				return err
 			}

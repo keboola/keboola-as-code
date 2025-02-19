@@ -18,7 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -115,7 +114,14 @@ func startDiskWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.C
 	return m
 }
 
-func openNetworkFile(t *testing.T, ctx context.Context, etcdCfg etcdclient.Config, sourceNodeID string, sliceKey model.SliceKey, slice localModel.Slice) (encoding.NetworkOutput, dependencies.Mocked) {
+func openNetworkFile(
+	t *testing.T,
+	ctx context.Context,
+	etcdCfg etcdclient.Config,
+	sourceNodeID string,
+	sliceKey model.SliceKey,
+	slice localModel.Slice,
+) (rpc.NetworkOutput, dependencies.Mocked) {
 	t.Helper()
 
 	d, m := dependencies.NewMockedSourceScopeWithConfig(
@@ -127,13 +133,9 @@ func openNetworkFile(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 		commonDeps.WithEtcdConfig(etcdCfg),
 	)
 
-	// Obtain connection to the disk writer node
-	conn, found := d.ConnectionManager().ConnectionToVolume(sliceKey.VolumeID)
-	require.True(t, found)
-
 	// Open network file
 	onServerTermination := func(ctx context.Context, cause string) {}
-	file, err := rpc.OpenNetworkFile(ctx, d.Logger(), d.Telemetry(), sourceNodeID, conn, sliceKey, slice, onServerTermination)
+	file, err := rpc.OpenNetworkFile(ctx, d.Logger(), d.Telemetry(), d.ConnectionManager(), sliceKey, slice, onServerTermination)
 	require.NoError(t, err)
 
 	return file, m

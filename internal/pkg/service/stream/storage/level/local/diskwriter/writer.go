@@ -146,6 +146,10 @@ func (w *writer) Write(ctx context.Context, aligned bool, p []byte) (n int, err 
 }
 
 func (w *writer) Sync(ctx context.Context) error {
+	if w.isClosed() {
+		return nil
+	}
+
 	w.wg.Add(1)
 	defer w.wg.Done()
 	return w.file.Sync()
@@ -162,13 +166,12 @@ func (w *writer) Close(ctx context.Context) error {
 	if w.isClosed() {
 		return errors.New(`writer is already closed`)
 	}
-	close(w.closed)
-
-	errs := errors.NewMultiError()
 
 	// Wait for running writes
+	close(w.closed)
 	w.wg.Wait()
 
+	errs := errors.NewMultiError()
 	if w.writen != w.aligned {
 		w.logger.Warnf(ctx, `file is not aligned, truncating`)
 		seeked, err := w.file.Seek(w.aligned-w.writen, io.SeekCurrent)
@@ -183,7 +186,7 @@ func (w *writer) Close(ctx context.Context) error {
 	}
 
 	// Sync file
-	if err := w.Sync(ctx); err != nil {
+	if err := w.file.Sync(); err != nil {
 		errs.Append(errors.Errorf(`cannot sync file: %w`, err))
 	}
 
