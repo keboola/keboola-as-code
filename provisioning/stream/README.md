@@ -54,23 +54,6 @@ Included files (they are not called directly):
 
 ## Local Deployment
 
-In case you would like to test it using minikube, run the 
-```
-deploy_local.sh
-```
-Once it is set up, there is need to check service loadbalancer in minikube
-```
-export MINIKUBE_PROFILE=stream
-minikube service -n stream --all
-```
-
-Make sure to copy both API and HTTP source ports as we use it within the configuration.
-Go to lens configuration and change both
-source.http.publicUrl configuration to `http://localhost:{http-source-port-loadbalancer}`
-AND
-api.publicUrl: `http://localhost:{api-port-loadbalancer}`
-Restart both deployments, so the new configuration is applied
-
 ### Docker
 
 In most cases, it is enough to run the service locally via Docker.
@@ -89,6 +72,25 @@ If you need to debug or test something in a Kubernetes cluster, you can use loca
 ```
 
 At the end of the script, the URL of the service is printed.
+
+## Testing Stream Service using k6/bash
+
+In case you would like to test stream service using minikube, run the
+```sh
+./provisioning/stream/rollout-stream.sh
+```
+
+It sets up the service config map loadbalancer. You can check service loadbalancer in minikube
+```sh
+export MINIKUBE_PROFILE=stream
+minikube service -n stream --all
+```
+
+It copies both API and HTTP source ports as we use it within the configuration.
+Go to lens configuration and check the values of source.http.publicUrl and api.publicUrl.
+
+It restarts both deployments, so the new configuration is applied
+
 ```sh
 To interact with the MiniKube profile run:
 export MINIKUBE_PROFILE=stream

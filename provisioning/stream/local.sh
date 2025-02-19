@@ -114,10 +114,4 @@ echo
 echo "To clear the MiniKube:"
 echo "MINIKUBE_PROFILE=${MINIKUBE_PROFILE} minikube delete --purge"
 echo
-echo "Run port-forwarding to access services:"
-echo "API:"
-echo "  kubectl port-forward --address 0.0.0.0 --namespace $NAMESPACE service/stream-api :80"
-echo "  OR "
-echo "HTTP source:"
-echo "  kubectl port-forward --address 0.0.0.0 --namespace $NAMESPACE service/stream-http-source :80"
-echo "  OR "
+echo "Run rollout-stream.sh to access services on loadbalancers:"
