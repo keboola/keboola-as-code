@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -125,6 +126,9 @@ func TestVolume_NewReaderFor_MultipleFilesSingleVolume(t *testing.T) {
 // TestVolume_NewBackupReader_NoIssue tests that a new reader works with backup reader.
 func TestVolume_NewBackupReader_NoIssue(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("hidden files work different on Windows")
+	}
 
 	// Prepare writer
 	localData := bytes.NewBuffer(nil)
@@ -162,6 +166,9 @@ func TestVolume_NewBackupReader_NoIssue(t *testing.T) {
 // TestVolume_NewReader_CompressionIssue tests that a new reader with wrong compression works with backup reader.
 func TestVolume_NewBackupReader_CompressionIssue(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("hidden files work different on Windows")
+	}
 
 	// Prepare writer
 	localData := bytes.NewBuffer(nil)
