@@ -12,7 +12,7 @@ func TestProcessPathReference(t *testing.T) {
 	t.Parallel()
 
 	resp := orderedmap.New()
-	resp.Set("url", "https://buffer.keboola.local/v1/receivers/my-receiver/tasks/receiver.create/2023-02-14T12:49:07.026Z_M6C_a")
+	resp.Set("url", "https://stream.keboola.local/v1/sources/my-source/tasks/source.create/2023-02-14T12:49:07.026Z_M6C_a")
 	requests := map[string]*APIRequest{
 		"req1": {
 			Definition: APIRequestDef{},
@@ -28,7 +28,7 @@ func TestProcessPathReference(t *testing.T) {
 	// Correct reference
 	res, err = processPathReference("<<req1:response.url>>", requests)
 	require.NoError(t, err)
-	assert.Equal(t, "/v1/receivers/my-receiver/tasks/receiver.create/2023-02-14T12:49:07.026Z_M6C_a", res)
+	assert.Equal(t, "/v1/sources/my-source/tasks/source.create/2023-02-14T12:49:07.026Z_M6C_a", res)
 
 	// Incorrect referenced request name
 	_, err = processPathReference("<<req2:response.url>>", requests)
