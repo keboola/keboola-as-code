@@ -89,7 +89,7 @@ minikube service -n stream --all
 It copies both API and HTTP source ports as we use it within the configuration.
 Go to lens configuration and check the values of source.http.publicUrl and api.publicUrl.
 
-It restarts both deployments, so the new configuration is applied
+It restarts both deployments, so the new configuration is applied.
 
 ```sh
 To interact with the MiniKube profile run:
@@ -97,9 +97,73 @@ export MINIKUBE_PROFILE=stream
 
 To clear the MiniKube:
 MINIKUBE_PROFILE=stream minikube delete --purge
+```
 
-Load balancer of the service is accessible at:
-http://172.17.0.2:32183
+### API
+
+To access the API you need a token from Keboola. By default, connection.keboola.com stack is used.
+Then you need the urls of the local Stream API and HTTP source, both are in the output of `rollout-stream.sh`.
+```sh
+export KEBOOLA_TOKEN=<token>
+export KEBOOLA_STREAM_API_URL=<url>
+export KEBOOLA_STREAM_SOURCE_URL=<url>
+```
+
+Then you can create a source:
+```sh
+curl --request POST \
+     --header "Content-Type: application/json" \
+     --header "X-StorageApi-Token: $KEBOOLA_TOKEN" \
+     --data-binary '{
+       "sourceId": "test-source-1",
+       "type": "http",
+       "name": "Test Source 1"
+     }' \
+"$KEBOOLA_STREAM_API_URL/v1/branches/default/sources"
+```
+
+And a sink:
+```sh
+curl --request POST \
+     --header "Content-Type: application/json" \
+     --header "X-StorageApi-Token: $KEBOOLA_TOKEN" \
+     --data-binary '{
+       "sinkId": "test-sink-1",
+       "type": "table",
+       "name": "Raw Data Sink",
+       "description": "The sink stores records to a table.",
+       "table": {
+         "type": "keboola",
+         "tableId": "in.c-bucket.table",
+         "mapping": {
+           "columns": [
+             {
+               "type": "uuid",
+               "name": "id"
+             },
+             {
+               "type": "path",
+               "name": "data",
+               "path": "data"
+             }
+           ]
+         }
+       }
+     }' \
+"$KEBOOLA_STREAM_API_URL/v1/branches/default/sources/test-source-1/sinks"
+```
+
+The curl command to create a source returns a task URL which you can use to get the source url. And from that url you can obtain the url where the stream accepts data.
+
+Then you can send data to the stream:
+
+```sh
+curl --request POST \
+     --header "Content-Type: application/json"
+     --data-binary '{
+       "data": "Example data body"
+     }' \
+<stream_url>
 ```
 
 ### etcd
@@ -117,7 +181,7 @@ export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "stream" stream-etcd 
 
 kubectl run --tty --stdin --rm --restart=Never stream-etcd-client \
   --namespace stream \
-  --image docker.io/bitnami/etcd:3.5.5-debian-11-r16 \
+  --image docker.io/bitnami/etcd:3.5-debian-12 \
   --labels="stream-etcd-client=true" \
   --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
   --env="ETCDCTL_ENDPOINTS=stream-etcd:2379" \
