@@ -361,8 +361,15 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 
 	// Skip filerotation if target provider is throttled
 	if !o.plugins.CanAcceptNewFile(ctx, file.Provider, file.FileKey.SinkKey) {
-		o.logger.Warnf(ctx, "skipping file rotation: sink is throttled")
-		return
+		if result.result == expirationThreshold {
+			// The file credentials are near expiration but the sink is throttled
+			// This case indicates that job status tracking is not working properly and throttling is false-positive
+			// In this case we log an error to know about this case but let it continue
+			o.logger.Error(ctx, "file rotation: sink is throttled but file is near expiration")
+		} else {
+			o.logger.Warn(ctx, "skipping file rotation: sink is throttled")
+			return
+		}
 	}
 
 	// Log cause
