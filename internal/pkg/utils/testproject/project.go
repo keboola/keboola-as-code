@@ -75,12 +75,12 @@ func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (
 		return nil, nil, err
 	}
 
-	ctx, cancelFn := context.WithCancel(context.Background()) // nolint: contextcheck
+	ctx, cancelFn := context.WithCancelCause(context.Background()) // nolint: contextcheck
 	p := &Project{Project: project, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
 	p.logf("□ Initializing project...")
 
 	cleanupFn := func() {
-		cancelFn()
+		cancelFn(errors.New("test project cleanup"))
 		unlockFn()
 	}
 
@@ -255,8 +255,8 @@ func (p *Project) SetState(stateFilePath string) error {
 }
 
 func (p *Project) createBranches(branches []*fixtures.BranchState) error {
-	ctx, cancelFn := context.WithCancel(context.Background())
-	defer cancelFn()
+	ctx, cancelFn := context.WithCancelCause(context.Background())
+	defer cancelFn(errors.New("branches creation cancelled"))
 
 	// Only one create branch request can run simultaneously.
 	// Branch deletion is performed via Storage Job, which uses locks.
@@ -278,8 +278,8 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) error {
 }
 
 func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
-	ctx, cancelFn := context.WithCancel(context.Background())
-	defer cancelFn()
+	ctx, cancelFn := context.WithCancelCause(context.Background())
+	defer cancelFn(errors.New("buckets tables creation cancelled"))
 
 	// Create buckets and tables
 	grp := request.NewWaitGroup(ctx)
@@ -538,8 +538,8 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 }
 
 func (p *Project) createConfigsInDefaultBranch(configs []string) error {
-	ctx, cancelFn := context.WithCancel(p.ctx)
-	defer cancelFn()
+	ctx, cancelFn := context.WithCancelCause(p.ctx)
+	defer cancelFn(errors.New("configs creation in default branch cancelled"))
 
 	tickets := keboola.NewTicketProvider(ctx, p.keboolaProjectAPI)
 	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
@@ -563,8 +563,8 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 }
 
 func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs map[string]string) error {
-	ctx, cancelFn := context.WithCancel(p.ctx)
-	defer cancelFn()
+	ctx, cancelFn := context.WithCancelCause(p.ctx)
+	defer cancelFn(errors.New("configs creation cancelled"))
 
 	tickets := keboola.NewTicketProvider(ctx, p.keboolaProjectAPI)
 	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests

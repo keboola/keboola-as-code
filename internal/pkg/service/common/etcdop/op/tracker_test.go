@@ -8,14 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 func TestTracker(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	tracker := NewTracker(client)
