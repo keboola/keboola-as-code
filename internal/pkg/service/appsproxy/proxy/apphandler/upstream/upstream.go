@@ -53,7 +53,7 @@ type AppUpstream struct {
 	target    *url.URL
 	handler   *chain.Chain
 	wsHandler *chain.Chain
-	cancelWs  context.CancelFunc
+	cancelWs  context.CancelCauseFunc
 }
 
 type dependencies interface {
@@ -150,7 +150,7 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
 
-			ctx, c := context.WithCancel(ctx)
+			ctx, c := context.WithCancelCause(ctx)
 			u.cancelWs = c
 
 			proxy.ServeHTTP(w, req.WithContext(ctx))
@@ -221,8 +221,8 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 	}()
 }
 
-func (u *AppUpstream) Cancel() {
+func (u *AppUpstream) Cancel(err error) {
 	if u.cancelWs != nil {
-		u.cancelWs()
+		u.cancelWs(err)
 	}
 }
