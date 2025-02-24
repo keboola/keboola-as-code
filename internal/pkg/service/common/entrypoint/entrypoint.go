@@ -70,8 +70,8 @@ func runOrErr[C any](runFn func(ctx context.Context, config C, posArgs []string)
 	}
 
 	// Run
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("entrypoint stopped"))
 
 	return runFn(ctx, appConfig, posArgs)
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Dispatcher decides whether the request is to be accepted and dispatches it to all sinks that belong to the given Source entity.
@@ -28,7 +29,7 @@ type Dispatcher struct {
 	// sources field contains in-memory snapshot of all active HTTP sources. Only necessary data is saved.
 	sources *etcdop.MirrorTree[definition.Source, *sourceData]
 	// cancelMirror on shutdown
-	cancelMirror context.CancelFunc
+	cancelMirror context.CancelCauseFunc
 	// closed channel block new writer during shutdown
 	closed chan struct{}
 	// wg waits for all writes/goroutines
@@ -59,7 +60,7 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 	// Start sources mirroring, only necessary data is saved
 	{
 		var ctx context.Context
-		ctx, dp.cancelMirror = context.WithCancel(context.Background())
+		ctx, dp.cancelMirror = context.WithCancelCause(context.Background())
 
 		dp.sources = etcdop.
 			SetupMirrorTree[definition.Source](
@@ -129,7 +130,7 @@ func (d *Dispatcher) Close(ctx context.Context) error {
 	close(d.closed)
 
 	// Stop mirroring
-	d.cancelMirror()
+	d.cancelMirror(errors.New("source dispatcher closed"))
 
 	// Wait for in-flight requests/goroutines
 	done := make(chan struct{})

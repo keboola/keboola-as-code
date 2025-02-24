@@ -167,12 +167,12 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 
 	// Calling the server shutdown concurrently with the starting the server causes a deadlock.
 	// We have to wait for a successful/unsuccessful start of the server.
-	startCtx, startDone := context.WithCancel(ctx)
+	startCtx, startDone := context.WithCancelCause(ctx)
 	go func() {
 		for {
 			<-time.After(time.Millisecond)
 			if srv.GetOpenConnectionsCount() != -1 {
-				startDone()
+				startDone(errors.New("HTTP source server started"))
 				return
 			}
 		}
@@ -191,7 +191,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		logger.Infof(ctx, "started HTTP source on %q", cfg.Listen)
 		serverErr := srv.Serve(conn) // blocks while the server is running
 		// Server finished
-		startDone()
+		startDone(errors.New("server finished"))
 		shutdown(context.WithoutCancel(ctx), serverErr)
 	})
 
