@@ -29,6 +29,7 @@ import (
 	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Router struct {
@@ -81,12 +82,12 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(ctx context.Context) {
 		r.logger.Info(ctx, "closing storage router")
 
 		// Stop mirroring
-		cancel()
+		cancel(errors.New("shutting down: storage router"))
 		wg.Wait()
 
 		// Close sink pipelines

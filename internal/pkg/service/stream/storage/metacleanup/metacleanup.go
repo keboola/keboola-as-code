@@ -82,11 +82,11 @@ func Start(d dependencies, cfg Config) error {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancelCause(ctx)
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		n.logger.Info(ctx, "received shutdown request")
-		cancel()
+		cancel(errors.New("shutting down: metacleanup"))
 		wg.Wait()
 		n.logger.Info(ctx, "shutdown done")
 	})

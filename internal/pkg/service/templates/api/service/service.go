@@ -70,11 +70,11 @@ func New(ctx context.Context, d dependencies.APIScope) (Service, error) {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
+	ctx, cancel := context.WithCancelCause(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		d.Logger().Info(ctx, "received shutdown request")
-		cancel()
+		cancel(errors.New("shutting down: templates service"))
 		d.Logger().Info(ctx, "waiting for orchestrators")
 		wg.Wait()
 		d.Logger().Info(ctx, "shutdown done")

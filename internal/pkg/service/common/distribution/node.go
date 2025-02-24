@@ -95,14 +95,14 @@ func newGroupMember(nodeID, groupID string, cfg Config, d dependencies) (*GroupN
 	}
 
 	// Graceful shutdown
-	watchCtx, watchCancel := context.WithCancel(ctx)
-	sessionCtx, sessionCancel := context.WithCancel(ctx)
+	watchCtx, watchCancel := context.WithCancelCause(ctx)
+	sessionCtx, sessionCancel := context.WithCancelCause(ctx)
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		g.logger.Info(ctx, "received shutdown request")
-		watchCancel()
+		watchCancel(errors.New("shutting down: node watch"))
 		g.unregister(ctx, cfg.ShutdownTimeout)
-		sessionCancel()
+		sessionCancel(errors.New("shutting down: session"))
 		wg.Wait()
 		g.logger.Info(ctx, "shutdown done")
 	})

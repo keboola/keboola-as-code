@@ -78,12 +78,12 @@ func NewManager(d dependencies, cfg network.Config, nodeID string) (*Manager, er
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		m.logger.Info(ctx, "closing connections")
 
 		// Stop mirroring
-		cancel()
+		cancel(errors.New("shutting down: connection manager"))
 		wg.Wait()
 
 		// Close connections

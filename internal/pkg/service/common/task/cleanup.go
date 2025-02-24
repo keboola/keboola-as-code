@@ -59,11 +59,11 @@ func StartCleaner(d cleanerDeps, interval time.Duration) error {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background()) // nolint: contextcheck
+	ctx, cancel := context.WithCancelCause(context.Background()) // nolint: contextcheck
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		c.logger.Info(ctx, "received shutdown request")
-		cancel()
+		cancel(errors.New("shutting down: task cleanup"))
 		wg.Wait()
 		c.logger.Info(ctx, "shutdown done")
 	})

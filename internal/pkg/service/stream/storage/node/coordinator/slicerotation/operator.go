@@ -115,12 +115,12 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		o.logger.Info(ctx, "closing slice rotation operator")
 
 		// Stop mirroring
-		cancel()
+		cancel(errors.New("shutting down: slice rotation operator"))
 		wg.Wait()
 
 		o.logger.Info(ctx, "closed slice rotation operator")

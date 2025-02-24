@@ -122,12 +122,12 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		o.logger.Info(ctx, "closing file rotation operator")
 
 		// Stop mirroring
-		cancel()
+		cancel(errors.New("shutting down: file rotation operator"))
 		wg.Wait()
 
 		o.logger.Info(ctx, "closed file rotation operator")

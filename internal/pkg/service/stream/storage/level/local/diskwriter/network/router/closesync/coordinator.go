@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -46,10 +47,10 @@ func NewCoordinatorNode(d dependencies) (*CoordinatorNode, error) {
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		n.logger.Infof(ctx, "closing close-sync coordinator node")
-		cancel()
+		cancel(errors.New("shutting down: close-sync coordinator node"))
 		wg.Wait()
 		n.logger.Infof(ctx, "closed close-sync coordinator node")
 	})

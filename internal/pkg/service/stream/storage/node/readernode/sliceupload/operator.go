@@ -103,12 +103,12 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		o.logger.Info(ctx, "closing slice upload operator")
 
 		// Stop mirroring
-		cancel()
+		cancel(errors.New("shutting down: slice upload operator"))
 		wg.Wait()
 		o.logger.Info(ctx, "closed slice upload operator")
 	})

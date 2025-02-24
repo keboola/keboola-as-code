@@ -65,9 +65,9 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(ctx context.Context) {
-		cancel()
+		cancel(errors.New("shutting down: storage statistics collector"))
 		c.logger.Info(ctx, "stopping storage statistics collector")
 		c.wg.Wait()
 		c.logger.Info(ctx, "storage statistics stopped")
