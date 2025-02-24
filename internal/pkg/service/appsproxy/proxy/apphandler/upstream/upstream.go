@@ -128,7 +128,7 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, false))
-			ctx, cancel := context.WithTimeout(ctx, timeout)
+			ctx, cancel := context.WithTimeoutCause(ctx, timeout, errors.New("upstream request timeout"))
 			defer cancel()
 			proxy.ServeHTTP(w, req.WithContext(ctx))
 			return nil
@@ -147,7 +147,7 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, true))
-			ctx, cancel := context.WithTimeout(ctx, timeout)
+			ctx, cancel := context.WithTimeoutCause(ctx, timeout, errors.New("upstream websocket request timeout"))
 			defer cancel()
 
 			ctx, c := context.WithCancelCause(ctx)
@@ -190,7 +190,7 @@ func (u *AppUpstream) notify(ctx context.Context) {
 	go func() {
 		defer u.manager.wg.Done()
 
-		notificationCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), notifyRequestTimeout)
+		notificationCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), notifyRequestTimeout, errors.New("upstream notification timeout"))
 		defer cancel()
 
 		_, span := u.manager.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.notify")
@@ -208,7 +208,7 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 	go func() {
 		defer u.manager.wg.Done()
 
-		wakeupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), wakeupRequestTimeout)
+		wakeupCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), wakeupRequestTimeout, errors.New("upstream wakeup timeout"))
 		defer cancel()
 
 		_, span := u.manager.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.wakeup")
