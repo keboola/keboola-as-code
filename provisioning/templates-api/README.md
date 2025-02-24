@@ -72,7 +72,7 @@ export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "templates-api" templ
 
 kubectl run --tty --stdin --rm --restart=Never templates-api-etcd-client \
   --namespace templates-api \
-  --image docker.io/bitnami/etcd:3.5.5-debian-11-r16 \
+  --image docker.io/bitnami/etcd:3.5-debian-12 \
   --labels="templates-api-etcd-client=true" \
   --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
   --env="ETCDCTL_ENDPOINTS=templates-api-etcd:2379" \
