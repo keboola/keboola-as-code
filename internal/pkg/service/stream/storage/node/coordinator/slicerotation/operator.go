@@ -265,7 +265,7 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.slicerotation.rotateSlice")
 	defer span.End(&err)
 
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceRotationTimeout.Duration())
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), o.config.SliceRotationTimeout.Duration(), errors.New("slice rotation timeout"))
 	defer cancel()
 
 	// Get slice statistics from cache
@@ -300,7 +300,7 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 	if err != nil {
 		var stateErr sliceRepo.UnexpectedFileSliceStatesError
 		// Update the entity, the ctx may be cancelled
-		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+		dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("retry increment timeout"))
 		defer dbCancel()
 		if errors.As(err, &stateErr) && stateErr.FileState != model.FileWriting {
 			o.logger.Info(dbCtx, "skipped slice rotation, file is already closed")
@@ -358,14 +358,14 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.slicerotation.closeSlice")
 	defer span.End(&err)
 
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration())
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), o.config.SliceCloseTimeout.Duration(), errors.New("slice close timeout"))
 	defer cancel()
 
 	// Wait for all slices upload, get statistics
 	stats, err := o.waitForSliceClosing(ctx, slice)
 
 	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+	dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("switch to uploading timeout"))
 	defer dbCancel()
 
 	// Switch slice to the uploading state

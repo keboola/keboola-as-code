@@ -167,7 +167,7 @@ func (s *NetworkFileServer) KeepAliveStream(req *pb.KeepAliveStreamRequest, stre
 			return nil
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeoutCause(context.Background(), 30*time.Second, errors.New("writer close timout"))
 		defer cancel()
 		return w.Close(ctx)
 	}
@@ -260,7 +260,7 @@ func (s *NetworkFileServer) terminate(ctx context.Context) {
 }
 
 func (s *NetworkFileServer) waitForWritersClosing(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeoutCause(ctx, 30*time.Second, errors.New("writers closing timeout"))
 	defer cancel()
 	for {
 		select {

@@ -148,7 +148,7 @@ func (p *SlicePipeline) Close(ctx context.Context, cause string) {
 	p.wg.Wait()
 
 	// Close underlying encoding pipeline
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("slice pipeline close timeout"))
 	defer cancel()
 	if err := p.pipeline.Close(ctx); err != nil {
 		p.logger.Errorf(ctx, "cannot close slice pipeline: %s", err)

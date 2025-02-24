@@ -150,7 +150,7 @@ func (c *Collector) sync(filter *model.SliceKey) error {
 	c.syncLock.Lock()
 	defer c.syncLock.Unlock()
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.config.SyncTimeout.Duration())
+	ctx, cancel := context.WithTimeoutCause(context.Background(), c.config.SyncTimeout.Duration(), errors.New("collector sync timeout"))
 	defer cancel()
 
 	// Collect statistics

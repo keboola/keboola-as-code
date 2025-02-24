@@ -19,6 +19,7 @@ import (
 	keboolasink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -192,7 +193,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 
 	// Error when sending the event is not a fatal error
 	defer func() {
-		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
+		ctx, cancel := context.WithTimeoutCause(ctx, b.config.EventSendTimeout, errors.New("file import event timeout"))
 		// We do not want to return err when send import event fails
 		iErr := b.SendFileImportEvent(ctx, api, time.Since(start), &err, file.FileKey, stats)
 		cancel()

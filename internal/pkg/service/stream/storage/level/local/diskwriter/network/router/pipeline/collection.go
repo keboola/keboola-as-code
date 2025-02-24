@@ -8,6 +8,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Collection for SinkPipeline and SlicePipeline types.
@@ -113,7 +114,7 @@ func (c *Collection[K, P]) Swap(ctx context.Context, replace []P) (old []P) {
 
 // Close all pipelines in parallel.
 func (c *Collection[K, P]) Close(ctx context.Context, cause string) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeoutCause(ctx, 30*time.Second, errors.New("connection close timeout"))
 	defer cancel()
 
 	wg := &sync.WaitGroup{}

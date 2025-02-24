@@ -201,7 +201,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		logger.Infof(ctx, "shutting down HTTP source at %q", cfg.Listen)
 
 		// Shutdown gracefully with a timeout.
-		ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
+		ctx, cancel := context.WithTimeoutCause(ctx, gracefulShutdownTimeout, errors.New("graceful shutdown timeout"))
 		defer cancel()
 
 		// Shutdown HTTP server

@@ -342,7 +342,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.filerotation.rotateFile")
 	defer span.End(&err)
 
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration())
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), o.config.FileRotationTimeout.Duration(), errors.New("file rotation timeout"))
 	defer cancel()
 
 	// Get file statistics from cache
@@ -385,7 +385,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 	// Handle error
 	if err != nil {
 		// Update the entity, the ctx may be cancelled
-		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+		dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("retry increment timeout"))
 		defer dbCancel()
 
 		rb.InvokeIfErr(dbCtx, &err)
@@ -441,14 +441,14 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.filerotation.closeFile")
 	defer span.End(&err)
 
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration())
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration(), errors.New("file close timeout"))
 	defer cancel()
 
 	// Wait for all slices upload, get statistics
 	stats, err := o.waitForFileClosing(ctx, file)
 
 	// Update the entity, the ctx may be cancelled
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+	dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("switch to importing timeout"))
 	defer dbCancel()
 
 	// Lock all file operations
