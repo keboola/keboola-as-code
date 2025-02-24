@@ -71,6 +71,9 @@ linters-settings:
       # No "gonanoid" package, use "internal/pkg/idgenerator" package instead
       - p: ^gonanoid\..*$
         msg: Use "internal/pkg/idgenerator" package instead.
+      # No context.WithCancel(), context.WithTimeout() or context.WithDeadline(), use the cause variants instead
+      - p: ^context\.(WithCancel|WithTimeout|WithDeadline)$
+        msg: Use context.WithCancelCause, context.WithTimeoutCause or context.WithDeadlineCause instead.
   depguard:
     rules:
       errors:
@@ -242,6 +245,10 @@ issues:
         - contextcheck
     - path: _test\.go
       text: "use of `os.Std(out|err)` forbidden"
+      linters:
+        - forbidigo
+    - path: _test\.go
+      text: "use of `context.WithTimeout` forbidden"
       linters:
         - forbidigo
     - path: internal/pkg/utils/errors/.*
