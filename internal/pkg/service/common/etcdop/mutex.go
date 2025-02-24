@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
@@ -42,10 +43,12 @@ type activeMutex struct {
 	teardown   chan struct{}
 }
 
-type AlreadyLockedError struct{}
+type AlreadyLockedError struct {
+	reason string
+}
 
 func (e AlreadyLockedError) Error() string {
-	return "already locked"
+	return fmt.Sprintf("already locked: %s", e.reason)
 }
 
 func (e AlreadyLockedError) Unwrap() error {
@@ -136,10 +139,10 @@ func (l *Mutex) Lock(ctx context.Context) error {
 //
 // You cannot use etcd as a naive locking system:
 // carefully couple a fencing token, read more: https://github.com/etcd-io/etcd/issues/11457
-func (l *Mutex) TryLock(ctx context.Context) error {
+func (l *Mutex) TryLock(ctx context.Context, reason string) error {
 	mtx, err := l.store.lock(ctx, l.name, func(mtx *activeMutex) error {
 		// Try to acquire the local lock
-		if err := mtx.localTryLock(ctx); err != nil {
+		if err := mtx.localTryLock(ctx, reason); err != nil {
 			return err
 		}
 
@@ -279,14 +282,14 @@ func (m *activeMutex) localLock(ctx context.Context) (err error) {
 	}
 }
 
-func (m *activeMutex) localTryLock(ctx context.Context) (err error) {
+func (m *activeMutex) localTryLock(ctx context.Context, reason string) (err error) {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	case m.localMutex <- struct{}{}: // write token == locked
 		return nil
 	default:
-		return AlreadyLockedError{}
+		return AlreadyLockedError{reason: reason}
 	}
 }
 

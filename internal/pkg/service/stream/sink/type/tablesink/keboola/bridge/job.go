@@ -32,7 +32,7 @@ func (b *Bridge) createJob(ctx context.Context, file plugin.File, storageJob *ke
 	}
 	defer func() {
 		if err := lock.Unlock(ctx); err != nil {
-			b.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), err)
+			b.logger.Warnf(ctx, "cannot unlock create job lock %q: %s", lock.Key(), err)
 		}
 	}()
 
@@ -109,12 +109,14 @@ func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, delete
 
 	// Acquire lock
 	mutex := b.locks.NewMutex(fmt.Sprintf("api.source.sink.jobs.%s", job.SinkKey))
-	if err = mutex.TryLock(ctx); err != nil {
+	b.logger.Infof(ctx, "locking mutex %q", job.SinkKey)
+	if err = mutex.TryLock(ctx, fmt.Sprintf("Cleaning job on sink %s", job.SinkKey)); err != nil {
 		return err, false
 	}
 	defer func() {
+		b.logger.Infof(ctx, "unlocking mutex %q", job.SinkKey)
 		if err := mutex.Unlock(ctx); err != nil {
-			b.logger.Errorf(ctx, "cannot unlock the lock: %s", err)
+			b.logger.Errorf(ctx, "cannot unlock clean job lock: %s", err)
 		}
 	}()
 
