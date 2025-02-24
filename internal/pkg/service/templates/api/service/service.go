@@ -198,7 +198,7 @@ func (s *service) Preview(ctx context.Context, d dependencies.ProjectRequestScop
 		Type: TemplatePreviewTaskType,
 		Key:  tKey,
 		Context: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.Background(), 5*time.Minute)
+			return context.WithTimeoutCause(context.Background(), 5*time.Minute, errors.New("task timeout"))
 		},
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Create virtual fs, after refactoring it will be removed
@@ -304,7 +304,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 		Type: TemplateUseTaskType,
 		Key:  tKey,
 		Context: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.Background(), 5*time.Minute)
+			return context.WithTimeoutCause(context.Background(), 5*time.Minute, errors.New("task timeout"))
 		},
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Create virtual fs, after refactoring it will be removed
@@ -480,7 +480,7 @@ func (s *service) DeleteInstance(ctx context.Context, d dependencies.ProjectRequ
 		Type: TemplateDeleteTaskType,
 		Key:  taskKey,
 		Context: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.Background(), time.Minute*5)
+			return context.WithTimeoutCause(context.Background(), 5*time.Minute, errors.New("task timeout"))
 		},
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			err = deleteTemplate.Run(ctx, prjState, deleteOpts, d)
@@ -552,7 +552,7 @@ func (s *service) UpgradeInstance(ctx context.Context, d dependencies.ProjectReq
 		Type: TemplateUpgradeTaskType,
 		Key:  tKey,
 		Context: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.Background(), 5*time.Minute)
+			return context.WithTimeoutCause(context.Background(), 5*time.Minute, errors.New("task timeout"))
 		},
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Upgrade template instance

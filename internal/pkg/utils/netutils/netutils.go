@@ -12,6 +12,8 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func FreePortForTest(tb testing.TB) int {
@@ -43,7 +45,7 @@ func FreePortForTest(tb testing.TB) int {
 }
 
 func WaitForTCP(addr string, timeout time.Duration) (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeoutCause(context.Background(), timeout, errors.New("TCP timeout"))
 	defer cancel()
 
 	var conn net.Conn
@@ -65,7 +67,7 @@ func WaitForTCP(addr string, timeout time.Duration) (err error) {
 }
 
 func WaitForHTTP(url string, timeout time.Duration) (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeoutCause(context.Background(), timeout, errors.New("HTTP timeout"))
 	defer cancel()
 
 	for {

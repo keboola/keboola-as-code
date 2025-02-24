@@ -265,7 +265,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		return err
 	}
 
-	timeoutCtx, cancelFn := context.WithTimeout(ctx, time.Minute*10)
+	timeoutCtx, cancelFn := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("queue job timeout"))
 	defer cancelFn()
 	return api.WaitForQueueJob(timeoutCtx, job.ID)
 }

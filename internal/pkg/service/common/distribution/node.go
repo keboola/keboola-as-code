@@ -149,7 +149,7 @@ func (n *GroupNode) CloneAssigner() *Assigner {
 // register node in the etcd prefix,
 // Un-registration is ensured double: by OnShutdown callback and by the lease.
 func (n *GroupNode) register(session *concurrency.Session) error {
-	ctx, cancel := context.WithTimeout(session.Client().Ctx(), n.config.StartupTimeout)
+	ctx, cancel := context.WithTimeoutCause(session.Client().Ctx(), n.config.StartupTimeout, errors.New("node register timeout"))
 	defer cancel()
 
 	ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
@@ -167,7 +167,7 @@ func (n *GroupNode) register(session *concurrency.Session) error {
 }
 
 func (n *GroupNode) unregister(ctx context.Context, timeout time.Duration) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeoutCause(ctx, timeout, errors.New("node unregister timeout"))
 	defer cancel()
 
 	startTime := time.Now()

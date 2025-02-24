@@ -161,7 +161,7 @@ func (p *Project) ProjectAPI() *keboola.AuthorizedAPI {
 func (p *Project) Clean() error {
 	p.logf("□ Cleaning project...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(context.Background(), 5*time.Minute, errors.New("project clean timeout"))
 	defer cancel()
 
 	// Clean whole project - configs, buckets, schedules, sandbox instances, etc.
@@ -361,7 +361,7 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 }
 
 func (p *Project) createFiles(files []*fixtures.File) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(context.Background(), 5*time.Minute, errors.New("files creation timeout"))
 	defer cancel()
 
 	wg := &sync.WaitGroup{}
@@ -423,7 +423,7 @@ func (p *Project) createFiles(files []*fixtures.File) error {
 }
 
 func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []*fixtures.Sandbox) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(context.Background(), 5*time.Minute, errors.New("sandboxes creation timeout"))
 	defer cancel()
 
 	wg := &sync.WaitGroup{}

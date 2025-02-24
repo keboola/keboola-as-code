@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -81,7 +82,7 @@ func (h *HTTPServer) Start(ctx context.Context) error {
 	// Register graceful shutdown
 	h.proc.OnShutdown(func(ctx context.Context) {
 		// Shutdown gracefully with a timeout.
-		ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
+		ctx, cancel := context.WithTimeoutCause(ctx, gracefulShutdownTimeout, errors.New("graceful shutdown timeout"))
 		defer cancel()
 
 		h.logger.Infof(ctx, "shutting down HTTP server at %q", h.listenAddress)
