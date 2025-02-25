@@ -126,7 +126,7 @@ func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity ta
 
 	// Columns
 	for _, columnPayload := range payload.Columns {
-		columnEntity, err := column.MakeColumn(columnPayload.Type, columnPayload.Name, false)
+		columnEntity, err := column.MakeColumn(columnPayload.Type, columnPayload.Name, columnPayload.PrimaryKey)
 		if err != nil {
 			return table.Mapping{}, err
 		}
