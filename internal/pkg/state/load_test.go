@@ -32,7 +32,9 @@ func TestLoadState(t *testing.T) {
 	ctx := context.Background()
 
 	testProject := testproject.GetTestProjectForTest(t, "")
-	err := testProject.SetState("minimal.json")
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filesystem.Dir(testFile)
+	err := testProject.SetState(testDir, "minimal.json")
 	require.NoError(t, err)
 	envs := testProject.Env()
 

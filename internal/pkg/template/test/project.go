@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/jonboulle/clockwork"
@@ -58,42 +61,41 @@ func PrepareProject(
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
+	// Ensure unlockFn is called on error
+	defer func() {
+		if err != nil {
+			unlockFn()
+		}
+	}()
 
 	testDeps, err := newTestDependencies(ctx, logger, tel, stdout, stderr, proc, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
+	// Handle remote project setup if needed
 	if remote {
-		// Clear project
-		err = testPrj.SetState("empty.json")
+		err = setupRemoteProject(ctx, testPrj)
 		if err != nil {
-			unlockFn()
 			return nil, nil, nil, nil, err
 		}
 	}
 
-	if branchID == 0 {
-		// Get default branch
-		defBranch, err := testPrj.DefaultBranch()
-		if err != nil {
-			unlockFn()
-			return nil, nil, nil, nil, err
-		}
-		branchID = int(defBranch.ID)
+	// Resolve branch ID if not provided
+	branchID, err = resolveBranchID(testPrj, branchID)
+	if err != nil {
+		return nil, nil, nil, nil, err
 	}
 
 	// Load fixture with minimal project
 	prjFS, err := createEmptyBranch(ctx, testPrj, branchID)
 	if err != nil {
-		unlockFn()
 		return nil, nil, nil, nil, err
 	}
 
 	// Load project state
 	prj, err := project.New(ctx, log.NewNopLogger(), prjFS, env.Empty(), true)
 	if err != nil {
-		unlockFn()
 		return nil, nil, nil, nil, err
 	}
 
@@ -106,11 +108,84 @@ func PrepareProject(
 
 	prjState, err := prj.LoadState(loadOptions, testDeps)
 	if err != nil {
-		unlockFn()
 		return nil, nil, nil, nil, err
 	}
 
 	return prjState, testPrj, testDeps, unlockFn, nil
+}
+
+// setupRemoteProject prepares a remote project by creating necessary files and setting the project state.
+// It returns an error if any operation fails.
+func setupRemoteProject(ctx context.Context, testPrj *testproject.Project) error {
+	// Load desired state from file
+	// nolint: dogsled
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filesystem.Dir(testFile)
+	emptyFilePath := "empty.json"
+	if !filepath.IsAbs(emptyFilePath) {
+		emptyFilePath = filesystem.Join(testDir, "..", "..", "fixtures", "remote", "empty.json")
+	}
+
+	_, err := os.Stat(emptyFilePath)
+	if os.IsNotExist(err) {
+		// Create empty.json in a temporary directory if it doesn't exist
+		emptyFilePath, err = createEmptyJsonInTempDir()
+		if err != nil {
+			return err
+		}
+	}
+
+	// Clear project
+	return testPrj.SetState(testDir, emptyFilePath)
+}
+
+// createEmptyJsonInTempDir creates a temporary directory and writes the empty.json file in it.
+// It returns the path to the created file and an error if any operation fails.
+func createEmptyJsonInTempDir() (string, error) {
+	tempDir, err := os.MkdirTemp("", "fixtures")
+	if err != nil {
+		return "", err
+	}
+
+	emptyFilePath := filesystem.Join(tempDir, "remote", "empty.json")
+	err = os.MkdirAll(filepath.Dir(emptyFilePath), 0755)
+	if err != nil {
+		return "", err
+	}
+
+	// Write the empty.json file with a minimal project structure
+	err = os.WriteFile(emptyFilePath, []byte(`
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      }
+    }
+  ]
+}`), 0644)
+	if err != nil {
+		return "", err
+	}
+
+	return emptyFilePath, nil
+}
+
+// resolveBranchID returns the provided branchID if it's not zero, otherwise it returns the default branch ID.
+// It returns an error if fetching the default branch fails.
+func resolveBranchID(testPrj *testproject.Project, branchID int) (int, error) {
+	if branchID != 0 {
+		return branchID, nil
+	}
+
+	// Get default branch
+	defBranch, err := testPrj.DefaultBranch()
+	if err != nil {
+		return 0, err
+	}
+	return int(defBranch.ID), nil
 }
 
 func newTestDependencies(
@@ -152,6 +227,22 @@ func newTestDependencies(
 func createEmptyBranch(ctx context.Context, prj *testproject.Project, branchID int) (filesystem.Fs, error) {
 	prjFS := aferofs.NewMemoryFs()
 	err := prjFS.WriteFile(ctx, filesystem.NewRawFile(".keboola/manifest.json", getManifest(prj, branchID)))
+	if err != nil {
+		return nil, err
+	}
+
+	err = prjFS.WriteFile(ctx, filesystem.NewRawFile("/tmp/fixtures/remote/empty.json", `
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      }
+    }
+  ]
+}`))
 	if err != nil {
 		return nil, err
 	}

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -217,7 +218,9 @@ func (t *Test) copyInToWorkingDir() {
 
 func (t *Test) initProjectState() {
 	if t.testDirFS.IsFile(t.ctx, initialStateFileName) {
-		err := t.project.SetState(filesystem.Join(t.testDir, initialStateFileName))
+		_, testFile, _, _ := runtime.Caller(0)
+		testDir := filesystem.Dir(testFile)
+		err := t.project.SetState(testDir, filesystem.Join(t.testDir, initialStateFileName))
 		require.NoError(t.t, err)
 	}
 }
