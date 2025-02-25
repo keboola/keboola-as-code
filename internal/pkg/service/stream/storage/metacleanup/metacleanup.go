@@ -230,7 +230,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 
 	// Acquire lock
 	mutex := n.locks.NewMutex(file.FileKey.String())
-	if err = mutex.TryLock(ctx); err != nil {
+	if err = mutex.TryLock(ctx, "CleanFile"); err != nil {
 		return err, false
 	}
 	defer func() {

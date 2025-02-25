@@ -51,15 +51,15 @@ func TestMutex_LockUnlock(t *testing.T) {
 	}
 
 	// Lock twice - fail
-	require.NoError(t, lock1.TryLock(ctx))
-	err := lock1.TryLock(ctx)
+	require.NoError(t, lock1.TryLock(ctx, "test"))
+	err := lock1.TryLock(ctx, "test")
 	if assert.Error(t, err) {
 		assert.ErrorAs(t, err, &AlreadyLockedError{})
 		assert.ErrorIs(t, err, concurrency.ErrLocked)
 	}
 
 	// Lock - different session - fail
-	err = lock2.TryLock(ctx)
+	err = lock2.TryLock(ctx, "test")
 	require.Error(t, err)
 	require.True(t, errors.Is(err, concurrency.ErrLocked))
 
@@ -67,8 +67,8 @@ func TestMutex_LockUnlock(t *testing.T) {
 	require.NoError(t, lock1.Unlock(ctx))
 
 	// Lock twice - fail
-	require.NoError(t, lock2.TryLock(ctx))
-	err = lock2.TryLock(ctx)
+	require.NoError(t, lock2.TryLock(ctx, "test"))
+	err = lock2.TryLock(ctx, "test")
 	if assert.Error(t, err) {
 		assert.ErrorAs(t, err, &AlreadyLockedError{})
 		assert.ErrorIs(t, err, concurrency.ErrLocked)
@@ -76,7 +76,7 @@ func TestMutex_LockUnlock(t *testing.T) {
 	require.NoError(t, lock2.Unlock(ctx))
 
 	// Unlock with cancelled context
-	require.NoError(t, lock1.TryLock(ctx))
+	require.NoError(t, lock1.TryLock(ctx, "test"))
 	if err = lock1.Unlock(cancelledContext); assert.Error(t, err) {
 		assert.ErrorIs(t, err, context.Canceled)
 	}
@@ -84,8 +84,8 @@ func TestMutex_LockUnlock(t *testing.T) {
 	// Close session
 	cancel()
 	wg.Wait()
-	require.ErrorIs(t, lock1.TryLock(ctx), context.Canceled)
-	require.ErrorIs(t, lock2.TryLock(ctx), context.Canceled)
+	require.ErrorIs(t, lock1.TryLock(ctx, "test"), context.Canceled)
+	require.ErrorIs(t, lock2.TryLock(ctx, "test"), context.Canceled)
 }
 
 func TestMutex_ParallelWork(t *testing.T) {
