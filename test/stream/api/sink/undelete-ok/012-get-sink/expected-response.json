@@ -12,10 +12,12 @@
     "mapping": {
       "columns": [
         {
+          "primaryKey": false,
           "type": "uuid",
           "name": "id"
         },
         {
+          "primaryKey": false,
           "type": "body",
           "name": "body"
         }
