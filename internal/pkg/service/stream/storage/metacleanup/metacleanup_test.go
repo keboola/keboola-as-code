@@ -2,6 +2,7 @@ package metacleanup_test
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -238,9 +239,8 @@ func TestMetadataCleanup(t *testing.T) {
 	jobCleanupAttempt := 0
 	{
 		logger.Truncate()
-		startTime := clk.Now()
 		jobCleanupAttempt++
-		clk.Advance(startTime.Add(time.Duration(jobCleanupAttempt) * cleanupInterval).Sub(clk.Now()))
+		clk.Advance(time.Duration(jobCleanupAttempt) * cleanupInterval)
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			logger.AssertJSONMessages(c, `{"level":"info","message":"deleted \"%d\" jobs"}`)
 		}, 2*time.Second, 100*time.Millisecond)
@@ -332,9 +332,8 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 	jobCleanupAttempt := 0
 	{
 		logger.Truncate()
-		startTime := clk.Now()
 		jobCleanupAttempt++
-		clk.Advance(startTime.Add(time.Duration(jobCleanupAttempt) * cleanupInterval).Sub(clk.Now()))
+		clk.Advance(time.Duration(jobCleanupAttempt) * cleanupInterval)
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			logger.AssertJSONMessages(c, `{"level":"info","message":"deleted \"%d\" jobs"}`)
 		}, 2*time.Second, 100*time.Millisecond)
@@ -352,6 +351,7 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 			[]string{
 				"storage/keboola/job/123/456/my-source/my-sink/321",
 			},
-			ignoredEtcdKeys)
+			ignoredEtcdKeys,
+		)
 	}
 }
