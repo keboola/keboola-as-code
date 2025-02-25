@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -183,7 +182,7 @@ func (p *Project) Clean() error {
 	return nil
 }
 
-func (p *Project) SetState(stateFilePath string) error {
+func (p *Project) SetState(testDir string, stateFilePath string) error {
 	if p.stateFilePath != "" {
 		return errors.New("SetState method can be called only once after the Clean method")
 	}
@@ -195,10 +194,6 @@ func (p *Project) SetState(stateFilePath string) error {
 	// Log ENVs at the end
 	defer p.logEnvs()
 
-	// Load desired state from file
-	// nolint: dogsled
-	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filesystem.Dir(testFile)
 	// nolint: forbidigo
 	if !filepath.IsAbs(stateFilePath) {
 		stateFilePath = filesystem.Join(testDir, "..", "..", "fixtures", "remote", stateFilePath)
