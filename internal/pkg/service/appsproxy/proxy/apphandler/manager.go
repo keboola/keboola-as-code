@@ -31,7 +31,7 @@ type Manager struct {
 type appHandlerWrapper struct {
 	lock    *sync.Mutex
 	handler http.Handler
-	cancel  context.CancelFunc
+	cancel  context.CancelCauseFunc
 }
 
 type dependencies interface {
@@ -73,7 +73,7 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 	// Create a new handler, if needed
 	if wrapper.handler == nil || result.Modified {
 		if wrapper.cancel != nil {
-			wrapper.cancel()
+			wrapper.cancel(errors.New("configuration changed"))
 		}
 		wrapper.handler, wrapper.cancel = m.newHandler(ctx, result.AppConfig)
 	}
@@ -81,7 +81,7 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 	return wrapper.handler
 }
 
-func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) (http.Handler, context.CancelFunc) {
+func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) (http.Handler, context.CancelCauseFunc) {
 	// Create upstream reverse proxy without authentication
 	appUpstream, err := m.upstreamManager.NewUpstream(ctx, app)
 	if err != nil {

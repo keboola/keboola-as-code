@@ -86,7 +86,7 @@ func New(d dependencies, sourceType string) (*Router, error) {
 		},
 	}
 
-	ctx, cancelStream := context.WithCancel(context.Background())
+	ctx, cancelStream := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(ctx context.Context) {
 		r.logger.Infof(ctx, "closing sink router")
 
@@ -94,7 +94,7 @@ func New(d dependencies, sourceType string) (*Router, error) {
 		close(r.closed)
 
 		// Stop watch stream
-		cancelStream()
+		cancelStream(errors.New("shutting down: sink router"))
 
 		// Wait for in-flight writes
 		r.wg.Wait()

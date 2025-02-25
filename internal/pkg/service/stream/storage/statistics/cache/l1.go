@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/aggregate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type provider = repository.Provider
@@ -41,9 +42,9 @@ func NewL1Cache(d dependencies) (*L1, error) {
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(ctx context.Context) {
-		cancel()
+		cancel(errors.New("shutting down: L1 statistics cache"))
 		c.logger.Info(ctx, "stopping L1 statistics cache")
 		wg.Wait()
 		c.logger.Info(ctx, "stopped L1 statistics cache")

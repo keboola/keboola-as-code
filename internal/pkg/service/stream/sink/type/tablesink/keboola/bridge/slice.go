@@ -49,7 +49,7 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 
 	// Error when sending the event is not a fatal error
 	defer func() {
-		ctx, cancel := context.WithTimeout(ctx, b.config.EventSendTimeout)
+		ctx, cancel := context.WithTimeoutCause(ctx, b.config.EventSendTimeout, errors.New("slice upload event timeout"))
 		// We do not want to return err when send upload slice fails
 		uErr := b.SendSliceUploadEvent(ctx, b.publicAPI.NewAuthorizedAPI(token.Token, 1*time.Minute), time.Since(start), &err, slice.SliceKey, stats)
 		cancel()
@@ -115,7 +115,7 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	go func() {
 		<-ctx.Done()
 
-		unlockCtx, unlockCancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+		unlockCtx, unlockCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 10*time.Second, errors.New("manifest unlock timeout"))
 		defer unlockCancel()
 
 		if err := manifestLock.Unlock(unlockCtx); err != nil {

@@ -29,7 +29,7 @@ func LockFile(ctx context.Context, locks *distlock.Provider, logger log.Logger, 
 	logger.Infof(ctx, "acquired lock")
 
 	unlock = func() {
-		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+		ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 10*time.Second, errors.New("clusterlock unlock timeout"))
 		defer cancel()
 		if err := lock.Unlock(ctx); err != nil {
 			logger.Warnf(ctx, "cannot release lock: %s", err)

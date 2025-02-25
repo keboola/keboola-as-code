@@ -23,7 +23,7 @@ type Syncer struct {
 	config   Config
 	pipeline Pipeline
 
-	cancel    context.CancelFunc
+	cancel    context.CancelCauseFunc
 	cancelled <-chan struct{}
 	wg        *sync.WaitGroup
 
@@ -111,7 +111,7 @@ func NewSyncer(
 	}
 
 	// Syncer must be stopped by the Stop method
-	ctx, s.cancel = context.WithCancel(ctx)
+	ctx, s.cancel = context.WithCancelCause(ctx)
 	s.cancelled = ctx.Done()
 
 	s.logger.Debugf(
@@ -209,7 +209,7 @@ func (s *Syncer) Stop(ctx context.Context) error {
 	if s.isCancelled() {
 		return errors.New(`syncer is already stopped`)
 	}
-	s.cancel()
+	s.cancel(errors.New("syncer stopped"))
 
 	// Run the last sync
 	err := s.TriggerSync(true).Wait(ctx)

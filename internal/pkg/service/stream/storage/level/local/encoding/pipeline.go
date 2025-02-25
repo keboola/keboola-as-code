@@ -371,7 +371,7 @@ func (p *pipeline) Flush(ctx context.Context) error {
 	p.flushLock.Lock()
 	defer p.flushLock.Unlock()
 
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeoutCause(ctx, 30*time.Second, errors.New("pipeline flush timeout"))
 	defer cancel()
 
 	// Flush internal buffers, the active chunk is completed.

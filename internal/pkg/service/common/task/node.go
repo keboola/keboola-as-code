@@ -109,7 +109,7 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, cfg NodeCo
 	bgContext := ctxattr.ContextWith(context.Background(), attribute.String("node", n.nodeID)) // nolint: contextcheck
 	n.tasksWg = &sync.WaitGroup{}
 	sessionWg := &sync.WaitGroup{}
-	sessionCtx, cancelSession := context.WithCancel(bgContext)
+	sessionCtx, cancelSession := context.WithCancelCause(bgContext)
 	proc.OnShutdown(func(ctx context.Context) {
 		ctx = ctxattr.ContextWith(ctx, attribute.String("node", n.nodeID))
 		n.logger.Info(ctx, "received shutdown request")
@@ -117,7 +117,7 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, cfg NodeCo
 			n.logger.Infof(ctx, `waiting for "%d" tasks to be finished`, c)
 		}
 		n.tasksWg.Wait()
-		cancelSession()
+		cancelSession(errors.New("shutting down: task node"))
 		sessionWg.Wait()
 		n.logger.Info(ctx, "shutdown done")
 	})
@@ -363,7 +363,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 
 	// Create context for task finalization, the original context could have timed out.
 	// If release of the lock takes longer than the ttl, lease is expired anyway.
-	finalizationCtx, finalizationCancel := context.WithTimeout(context.Background(), time.Duration(n.config.TTLSeconds)*time.Second)
+	finalizationCtx, finalizationCancel := context.WithTimeoutCause(context.Background(), time.Duration(n.config.TTLSeconds)*time.Second, errors.New("task finalization timeout"))
 	defer finalizationCancel()
 
 	// Update telemetry

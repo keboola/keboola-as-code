@@ -9,21 +9,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/quota"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 func TestQuota_Check(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("test cancelled"))
 
 	// Fixtures
 	now := time.Now()
@@ -82,7 +83,7 @@ func TestQuota_Check(t *testing.T) {
 	err := quoteChecker.Check(ctx, sinkKey, quotaValue)
 	if assert.Error(t, err) {
 		assert.Equal(t, expectedErr, err.Error())
-		errValue, ok := err.(errors.WithErrorLogEnabled)
+		errValue, ok := err.(svcerrors.WithErrorLogEnabled)
 		assert.True(t, ok)
 
 		// Error is logged only once per quote.MinErrorLogInterval
@@ -93,7 +94,7 @@ func TestQuota_Check(t *testing.T) {
 	err = quoteChecker.Check(ctx, sinkKey, quotaValue)
 	if assert.Error(t, err) {
 		assert.Equal(t, expectedErr, err.Error())
-		errValue, ok := err.(errors.WithErrorLogEnabled)
+		errValue, ok := err.(svcerrors.WithErrorLogEnabled)
 		assert.True(t, ok)
 		assert.False(t, errValue.ErrorLogEnabled())
 	}

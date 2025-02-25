@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
 
@@ -34,7 +35,7 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 		c, err := websocket.Accept(w, r, nil)
 		require.NoError(t, err)
 
-		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+		ctx, cancel := context.WithTimeoutCause(r.Context(), time.Second*10, errors.New("websocket server timeout"))
 		defer cancel()
 
 		err = wsjson.Write(ctx, c, "Hello websocket")
@@ -47,7 +48,7 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 		c, err := websocket.Accept(w, r, nil)
 		require.NoError(t, err)
 
-		ctx, cancel := context.WithTimeout(r.Context(), time.Second*15)
+		ctx, cancel := context.WithTimeoutCause(r.Context(), time.Second*15, errors.New("websocket server timeout"))
 		defer cancel()
 
 		ticker := time.NewTicker(5 * time.Second)

@@ -18,7 +18,7 @@ func TestProcess_Add(t *testing.T) {
 	proc := New(WithLogger(logger))
 
 	// OpCtx simulates long running operations
-	opCtx, opCancel := context.WithCancel(context.Background())
+	opCtx, opCancel := context.WithCancelCause(context.Background())
 
 	// There are some parallel operations
 	opWg := &sync.WaitGroup{}
@@ -65,7 +65,7 @@ func TestProcess_Add(t *testing.T) {
 
 	// Cancel operations from the shutdown callback
 	proc.OnShutdown(func(ctx context.Context) {
-		opCancel() // STEP 3, LIFO
+		opCancel(errors.New("shutdown")) // STEP 3, LIFO
 	})
 
 	// Trigger shutdown from the operation above
@@ -103,7 +103,7 @@ func TestProcess_Shutdown(t *testing.T) {
 	proc := New(WithLogger(logger))
 
 	// OpCtx simulates long running operations
-	opCtx, opCancel := context.WithCancel(context.Background())
+	opCtx, opCancel := context.WithCancelCause(context.Background())
 
 	// There are some parallel operations
 	opWg1 := &sync.WaitGroup{}
@@ -144,7 +144,7 @@ func TestProcess_Shutdown(t *testing.T) {
 
 	// Cancel operations above from the shutdown callback
 	proc.OnShutdown(func(ctx context.Context) {
-		opCancel() // STEP 2
+		opCancel(errors.New("shutdown")) // STEP 2
 	})
 
 	// Trigger shutdown directly

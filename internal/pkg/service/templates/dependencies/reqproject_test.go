@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
@@ -51,8 +52,8 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 		return newProjectRequestScope(NewPublicRequestScope(apiScp, req), mock)
 	}
 	// Get repository for request 1
-	req1Ctx, req1CancelFn := context.WithCancel(ctx)
-	defer req1CancelFn()
+	req1Ctx, req1CancelFn := context.WithCancelCause(ctx)
+	defer req1CancelFn(errors.New("test cancelled"))
 	repo1, err := reqScpFactory().TemplateRepository(req1Ctx, repoDef)
 
 	// FS contains template1, but doesn't contain template2
@@ -67,8 +68,8 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	mock.DebugLogger().Truncate()
 
 	// Get repository for request 2 -> no changes
-	req2Ctx, req2CancelFn := context.WithCancel(ctx)
-	defer req2CancelFn()
+	req2Ctx, req2CancelFn := context.WithCancelCause(ctx)
+	defer req2CancelFn(errors.New("test cancelled"))
 	repo2, err := reqScpFactory().TemplateRepository(req2Ctx, repoDef)
 	require.NoError(t, err)
 
@@ -88,8 +89,8 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	mock.DebugLogger().Truncate()
 
 	// Get repository for request 3 -> change occurred
-	req3Ctx, req3CancelFn := context.WithCancel(ctx)
-	defer req3CancelFn()
+	req3Ctx, req3CancelFn := context.WithCancelCause(ctx)
+	defer req3CancelFn(errors.New("test cancelled"))
 	repo3, err := reqScpFactory().TemplateRepository(req3Ctx, repoDef)
 	require.NoError(t, err)
 
@@ -104,14 +105,14 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	assert.True(t, repo3.Fs().Exists(ctx, "template2"))
 
 	// Request 1 finished -> old FS is still available for request 2
-	req1CancelFn()
+	req1CancelFn(errors.New("request 1 finished"))
 	time.Sleep(200 * time.Millisecond)
 	assert.DirExists(t, repo2.Fs().BasePath())
 	assert.True(t, repo2.Fs().Exists(ctx, "template1"))
 	assert.False(t, repo2.Fs().Exists(ctx, "template2"))
 
 	// Request 2 finished -> old FS is deleted (nobody uses it)
-	req2CancelFn()
+	req2CancelFn(errors.New("request 2 finished"))
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		// NoDirExists
 		_, err := os.Stat(repo2.Fs().BasePath()) // nolint: forbidigo
@@ -120,7 +121,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	assert.DirExists(t, repo3.Fs().BasePath())
 
 	// Request 3 finished -> the latest FS state is kept for next requests
-	req3CancelFn()
+	req3CancelFn(errors.New("request 3 finished"))
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		// NoDirExists
 		_, err := os.Stat(repo1.Fs().BasePath()) // nolint: forbidigo
@@ -171,15 +172,15 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	}
 
 	// Get template for request 1
-	req1Ctx, req1CancelFn := context.WithCancel(ctx)
-	defer req1CancelFn()
+	req1Ctx, req1CancelFn := context.WithCancelCause(ctx)
+	defer req1CancelFn(errors.New("test cancelled"))
 	tmpl1Req1, err := reqScopeFactory().Template(req1Ctx, tmplDef)
 	require.NoError(t, err)
 	assert.Equal(t, "Readme version 3 ...\n", tmpl1Req1.Readme())
 
 	// Get template for request 2
-	req2Ctx, req2CancelFn := context.WithCancel(ctx)
-	defer req2CancelFn()
+	req2Ctx, req2CancelFn := context.WithCancelCause(ctx)
+	defer req2CancelFn(errors.New("test cancelled"))
 	tmpl1Req2, err := reqScopeFactory().Template(req2Ctx, tmplDef)
 	require.NoError(t, err)
 	assert.Equal(t, "Readme version 3 ...\n", tmpl1Req2.Readme())
@@ -197,15 +198,15 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	mock.DebugLogger().Truncate()
 
 	// Get template for request 3
-	req3Ctx, req3CancelFn := context.WithCancel(ctx)
-	defer req3CancelFn()
+	req3Ctx, req3CancelFn := context.WithCancelCause(ctx)
+	defer req3CancelFn(errors.New("test cancelled"))
 	tmpl1Req3, err := reqScopeFactory().Template(req3Ctx, tmplDef)
 	require.NoError(t, err)
 	assert.Equal(t, "Readme version 1 ...\n", tmpl1Req3.Readme())
 
 	// Get template for request 4
-	req4Ctx, req4CancelFn := context.WithCancel(ctx)
-	defer req4CancelFn()
+	req4Ctx, req4CancelFn := context.WithCancelCause(ctx)
+	defer req4CancelFn(errors.New("test cancelled"))
 	tmpl1Req4, err := reqScopeFactory().Template(req4Ctx, tmplDef)
 	require.NoError(t, err)
 	assert.Equal(t, "Readme version 1 ...\n", tmpl1Req4.Readme())

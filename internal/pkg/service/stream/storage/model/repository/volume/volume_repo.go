@@ -17,6 +17,7 @@ import (
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/volume/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Repository provides database operations with the storage.Metadata entity.
@@ -54,11 +55,11 @@ func NewRepository(d dependencies) (*Repository, error) {
 }
 
 func (r *Repository) watchVolumes(d dependencies) error {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	wg := &sync.WaitGroup{}
 	r.process.OnShutdown(func(ctx context.Context) {
 		r.logger.Info(ctx, "closing volumes stream")
-		cancel()
+		cancel(errors.New("shutting down: volumes stream"))
 		wg.Wait()
 		r.logger.Info(ctx, "closed volumes stream")
 	})

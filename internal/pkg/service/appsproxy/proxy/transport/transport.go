@@ -15,6 +15,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // TLSHandshakeTimeout specifies the default timeout of TLS handshake.
@@ -92,7 +93,7 @@ func NewWithDNSServer(d dependencies, dnsServerAddress string) (http.RoundTrippe
 
 		// Create context for DNS resolving
 		// It separates the events/tracing of the connection to the DNS server, from the connection to the target server.
-		resolveCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), DNSResolveTimeout)
+		resolveCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), DNSResolveTimeout, errors.New("DNS resolve timeout"))
 		defer cancel()
 
 		// We are using custom DNS resolving to detect if the target host - data app, is running.

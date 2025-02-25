@@ -391,8 +391,8 @@ func (tc atomicOpTestCase) createClient(t *testing.T) (etcd.KV, *bytes.Buffer) {
 func TestAtomicUpdate(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
@@ -543,8 +543,8 @@ atomic operation succeeded: ok
 func TestAtomicOp_AddFrom(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 

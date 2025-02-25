@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const Timeout = 30 * time.Second
@@ -23,7 +24,7 @@ func Run(ctx context.Context, repo *git.RemoteRepository, d dependencies) (resul
 	defer span.End(&err)
 
 	// Context with timeout
-	ctx, cancel := context.WithTimeout(ctx, Timeout)
+	ctx, cancel := context.WithTimeoutCause(ctx, Timeout, errors.New("pull timeout"))
 	defer cancel()
 
 	// Pull
