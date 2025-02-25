@@ -56,6 +56,8 @@ type Node struct {
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 }
 
+const maxErrors = 10
+
 func Start(d dependencies, cfg Config) error {
 	n := &Node{
 		config:                  cfg,
@@ -145,6 +147,9 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.SetLimit(n.config.Concurrency)
 
+	// Error counter, we suppress the first few errors to not cancel all goroutines if just one fails.
+	var errCount atomic.Uint64
+
 	// Iterate all files
 	err = n.storageRepository.
 		File().
@@ -155,7 +160,11 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 				if deleted {
 					fileCounter.Add(1)
 				}
-				return err
+
+				if err != nil && errCount.Inc() > maxErrors {
+					return err
+				}
+				return nil
 			})
 			return nil
 		}).
@@ -191,7 +200,11 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 				}
 
 				span.End(&err)
-				return err
+
+				if err != nil && errCount.Inc() > maxErrors {
+					return err
+				}
+				return nil
 			})
 
 			return nil
