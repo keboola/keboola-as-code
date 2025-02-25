@@ -355,3 +355,94 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 		)
 	}
 }
+
+func TestMetadataProcessingJobCleanupErrorTolerance(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
+	by := test.ByUser()
+
+	// Fixtures
+	projectID := keboola.ProjectID(123)
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
+
+	// Get services
+	d, mocked := dependencies.NewMockedCoordinatorScope(t, ctx, commonDeps.WithClock(clk))
+
+	logger := mocked.DebugLogger()
+	client := mocked.TestEtcdClient()
+	defRepo := d.DefinitionRepository()
+	storageRepo := d.StorageRepository()
+	volumeRepo := storageRepo.Volume()
+
+	// Setup cleanup interval
+	cleanupInterval := 12 * time.Hour
+	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
+	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
+	cfg := metacleanup.NewConfig()
+	cfg.Concurrency = 2
+	cfg.ErrorTolerance = 3
+	cfg.Interval = cleanupInterval
+	cfg.ActiveFileExpiration = activeFileExpiration
+	cfg.ArchivedFileExpiration = importedFileExpiration
+
+	// Register routes for receiving information about jobs
+	transport := mocked.MockedHTTPTransport()
+	{
+		bridgeTest.MockProcessingJobStorageAPICalls(t, transport)
+	}
+
+	// Start metadata cleanup node
+	// -----------------------------------------------------------------------------------------------------------------
+	require.NoError(t, metacleanup.Start(d, cfg))
+
+	// Register active volumes
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
+
+	// Create parent branch, source, sink, token
+	// -----------------------------------------------------------------------------------------------------------------
+	{
+		branch := test.NewBranch(branchKey)
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
+		source := test.NewSource(sourceKey)
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
+		sink := dummy.NewSinkWithLocalStorage(sinkKey)
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+		token := keboolaSink.Token{SinkKey: sinkKey, Token: &keboola.Token{ID: "secret"}}
+		require.NoError(t, forToken(d.EtcdSerde()).ForSink(sinkKey).Put(client, token).Do(ctx).Err())
+	}
+
+	// Create jobs. IDs are intentionally invalid to trigger an error in cleanup
+	for i := 0; i < 20; i++ {
+		job := bridgeEntity.NewJob(keboolaModel.JobKey{SinkKey: sinkKey, JobID: keboolaModel.JobID("job" + strconv.Itoa(i))})
+		require.NoError(t, d.KeboolaBridgeRepository().Job().Create(&job).Do(ctx).Err())
+	}
+
+	// Cleanup
+	{
+		logger.Truncate()
+		clk.Advance(cleanupInterval)
+
+		// With Concurrency = 2 and ErrorTolerance = 3, we expect 6 jobs to be attempted
+		assert.EventuallyWithT(t, func(c *assert.CollectT) {
+			logger.AssertJSONMessages(c, `
+{"level":"error","message":"cannot get keboola storage job \"123/456/my-source/my-sink/job%s\":\n- strconv.ParseInt: parsing \"job%s\": invalid syntax"}
+{"level":"error","message":"cannot get keboola storage job \"123/456/my-source/my-sink/job%s\":\n- strconv.ParseInt: parsing \"job%s\": invalid syntax"}
+{"level":"error","message":"cannot get keboola storage job \"123/456/my-source/my-sink/job%s\":\n- strconv.ParseInt: parsing \"job%s\": invalid syntax"}
+{"level":"error","message":"cannot get keboola storage job \"123/456/my-source/my-sink/job%s\":\n- strconv.ParseInt: parsing \"job%s\": invalid syntax"}
+{"level":"error","message":"cannot get keboola storage job \"123/456/my-source/my-sink/job%s\":\n- strconv.ParseInt: parsing \"job%s\": invalid syntax"}
+{"level":"error","message":"cannot get keboola storage job \"123/456/my-source/my-sink/job%s\":\n- strconv.ParseInt: parsing \"job%s\": invalid syntax"}
+`)
+		}, 2*time.Second, 100*time.Millisecond)
+	}
+}
