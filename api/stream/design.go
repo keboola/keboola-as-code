@@ -1381,6 +1381,11 @@ var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
 
 var TableColumn = Type("TableColumn", func() {
 	Description("An output mapping defined by a template.")
+	Attribute("primaryKey", Boolean, func() {
+		Description("Sets this column as a part of the primary key of the destination table.")
+		Default(false)
+		Example(false)
+	})
 	Attribute("type", String, func() {
 		Meta("struct:field:type", "column.Type", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column")
 		Description("Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).")
