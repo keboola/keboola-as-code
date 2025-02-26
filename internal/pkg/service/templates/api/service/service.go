@@ -833,7 +833,7 @@ func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (un
 
 	mutex := d.DistributedLockProvider().NewMutex(fmt.Sprintf("project/%d", d.ProjectID()))
 
-	err = mutex.TryLock(ctx)
+	err = mutex.TryLock(ctx, "tryLockProject")
 	if errors.As(err, &etcdop.AlreadyLockedError{}) {
 		err = &ProjectLockedError{
 			StatusCode: http.StatusServiceUnavailable,

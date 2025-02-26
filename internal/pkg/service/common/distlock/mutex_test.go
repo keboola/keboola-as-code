@@ -29,7 +29,7 @@ func TestProvider_NewMutex(t *testing.T) {
 	etcdhelper.AssertKVsString(t, client, ``)
 
 	require.NoError(t, mtx.Lock(ctx))
-	require.ErrorAs(t, mtx.TryLock(ctx), &etcdop.AlreadyLockedError{})
+	require.ErrorAs(t, mtx.TryLock(ctx, "test"), &etcdop.AlreadyLockedError{})
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 lock/foo/bar/%s (lease)
