@@ -31,7 +31,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.job.run")
 	defer span.End(&err)
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, o.Timeout)
+	timeoutCtx, cancel := context.WithTimeoutCause(ctx, o.Timeout, errors.New("remote job timeout"))
 	defer cancel()
 
 	queue := &JobQueue{

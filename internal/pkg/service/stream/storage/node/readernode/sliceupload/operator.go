@@ -103,12 +103,12 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		o.logger.Info(ctx, "closing slice upload operator")
 
 		// Stop mirroring
-		cancel()
+		cancel(errors.New("shutting down: slice upload operator"))
 		wg.Wait()
 		o.logger.Info(ctx, "closed slice upload operator")
 	})
@@ -253,7 +253,7 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.sliceupload.uploadSlice")
 	defer span.End(&err)
 
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration())
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), o.config.SliceUploadTimeout.Duration(), errors.New("slice upload timeout"))
 	defer cancel()
 
 	o.logger.Info(ctx, "uploading slice")
@@ -271,7 +271,7 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 		o.logger.Error(ctx, err.Error())
 
 		// Update the entity, the ctx may be cancelled
-		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+		dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("retry increment timeout"))
 		defer dbCancel()
 
 		// If there is an error, increment retry delay
@@ -334,7 +334,7 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 	}
 
 	// New context for database operation, we may be running out of time
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+	dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("switch to uploaded timeout"))
 	defer dbCancel()
 
 	// Switch slice to the uploaded state

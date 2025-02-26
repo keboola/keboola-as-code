@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -139,12 +140,12 @@ func (b *Bridge) isKeboolaStagingFile(file *model.File) bool {
 func (b *Bridge) MirrorJobs(ctx context.Context, d dependencies) error {
 	// Mirror jobs
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancelCause(ctx)
 	d.Process().OnShutdown(func(_ context.Context) {
 		b.logger.Info(ctx, "closing bridge job mirror")
 
 		// Stop mirroring
-		cancel()
+		cancel(errors.New("shutting down: bridge job mirror"))
 		wg.Wait()
 
 		b.logger.Info(ctx, "closed bridge job mirror")

@@ -113,12 +113,12 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		o.logger.Info(ctx, "closing file import operator")
 
 		// Stop mirroring
-		cancel()
+		cancel(errors.New("shutting down: file import operator"))
 		wg.Wait()
 
 		o.logger.Info(ctx, "closed file import operator")
@@ -284,7 +284,7 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	ctx, span := o.telemetry.Tracer().Start(ctx, "keboola.go.stream.operator.fileimport.importFile")
 	defer span.End(&err)
 
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration())
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), o.config.FileImportTimeout.Duration(), errors.New("file import timeout"))
 	defer cancel()
 
 	o.logger.Info(ctx, "importing file")
@@ -303,7 +303,7 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 		o.logger.Error(ctx, err.Error())
 
 		// Update the entity, the ctx may be cancelled
-		dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+		dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("retry increment timeout"))
 		defer dbCancel()
 
 		// If there is an error, increment retry delay
@@ -366,7 +366,7 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	}
 
 	// New context for database operation, we may be running out of time
-	dbCtx, dbCancel := context.WithTimeout(context.WithoutCancel(ctx), dbOperationTimeout)
+	dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("switch to imported timeout"))
 	defer dbCancel()
 
 	// Switch file to the imported state

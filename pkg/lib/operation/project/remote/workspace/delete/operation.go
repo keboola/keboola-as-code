@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type dependencies interface {
@@ -22,7 +23,7 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 
 	logger := d.Logger()
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("workspace deletion timeout"))
 	defer cancel()
 
 	logger.Infof(ctx, `Deleting the workspace "%s" (%s), please wait.`, workspace.Config.Name, workspace.Config.ID)

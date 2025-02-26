@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // L2 implements the repository.Provider interface.
@@ -25,7 +26,7 @@ type L2 struct {
 	logger  log.Logger
 	l1Cache *L1
 
-	cancel context.CancelFunc
+	cancel context.CancelCauseFunc
 	wg     *sync.WaitGroup
 
 	enabled   bool
@@ -48,7 +49,7 @@ func NewL2Cache(d dependencies, l1Cache *L1, config statistics.L2CacheConfig) (*
 
 	// Setup context for graceful shutdown
 	var ctx context.Context
-	ctx, c.cancel = context.WithCancel(context.Background())
+	ctx, c.cancel = context.WithCancelCause(context.Background())
 
 	// Periodically invalidates the cache.
 	if c.enabled {
@@ -75,7 +76,7 @@ func NewL2Cache(d dependencies, l1Cache *L1, config statistics.L2CacheConfig) (*
 }
 
 func (c *L2) Stop() {
-	c.cancel()
+	c.cancel(errors.New("L2 cache stopped"))
 	c.wg.Wait()
 }
 

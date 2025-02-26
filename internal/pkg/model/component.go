@@ -49,7 +49,7 @@ func (p *ComponentsProvider) UpdateAsync(ctx context.Context) {
 func (p *ComponentsProvider) Update(ctx context.Context) error {
 	startTime := time.Now()
 	p.logger.Infof(ctx, "components update started")
-	ctx, cancel := context.WithTimeout(ctx, ComponentsUpdateTimeout)
+	ctx, cancel := context.WithTimeoutCause(ctx, ComponentsUpdateTimeout, errors.New("components update timeout"))
 	defer cancel()
 
 	// Get index

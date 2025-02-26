@@ -97,8 +97,8 @@ func (v *cmdInputOutput) StderrString() string {
 }
 
 func (v *cmdInputOutput) InteractAndWait(ctx context.Context, cmd *exec.Cmd, handleErr errorHandler) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(errors.New("interaction completed"))
 
 	// Wait for the command to finish then close interaction
 	var cmdErr error
@@ -120,7 +120,7 @@ func (v *cmdInputOutput) InteractAndWait(ctx context.Context, cmd *exec.Cmd, han
 		}
 
 		// Cancel interaction context
-		cancel()
+		cancel(errors.New("command finished"))
 	}()
 
 	// Skip interaction if it is disabled

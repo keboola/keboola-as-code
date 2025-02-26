@@ -43,7 +43,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("dbt init timeout"))
 	defer cancel()
 
 	// Create workspace

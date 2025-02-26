@@ -31,7 +31,7 @@ type networkFile struct {
 	sliceKey model.SliceKey
 	fileID   uint64
 
-	cancel context.CancelFunc
+	cancel context.CancelCauseFunc
 	closed <-chan struct{}
 }
 
@@ -126,7 +126,7 @@ func OpenNetworkFile(
 		return nil, err
 	}
 
-	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	ctx, cancel := context.WithCancelCause(context.WithoutCancel(ctx))
 	f := &networkFile{
 		conn:     clientConn,
 		rpc:      pb.NewNetworkFileClient(clientConn),
@@ -240,7 +240,7 @@ func (f *networkFile) Close(ctx context.Context) error {
 	}
 
 	// Close KeepAliveStream stream
-	f.cancel()
+	f.cancel(errors.New("network file closed"))
 
 	// Close remote network file
 	if _, err := f.rpc.Close(ctx, &pb.CloseRequest{FileId: f.fileID}); err != nil {

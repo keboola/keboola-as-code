@@ -59,7 +59,7 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	)
 
 	// Create connect context
-	connectCtx, connectCancel := context.WithTimeout(ctx, cfg.ConnectTimeout)
+	connectCtx, connectCancel := context.WithTimeoutCause(ctx, cfg.ConnectTimeout, errors.New("etcd connect timeout"))
 	defer connectCancel()
 	connectCtx = ctxattr.ContextWith(
 		connectCtx,

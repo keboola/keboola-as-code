@@ -33,7 +33,7 @@ type Volume struct {
 	spec volume.Spec
 
 	ctx    context.Context
-	cancel context.CancelFunc
+	cancel context.CancelCauseFunc
 
 	config       Config
 	logger       log.Logger
@@ -66,7 +66,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clockwork.Clock, c
 		readers:      make(map[string]*readerRef),
 	}
 
-	v.ctx, v.cancel = context.WithCancel(context.WithoutCancel(ctx))
+	v.ctx, v.cancel = context.WithCancelCause(context.WithoutCancel(ctx))
 
 	v.logger.With(attribute.String("volume.path", spec.Path)).Infof(ctx, `opening volume`)
 
@@ -218,7 +218,7 @@ func (v *Volume) Close(ctx context.Context) error {
 	v.logger.Infof(ctx, "closing volume")
 
 	// Block OpenReader method
-	v.cancel()
+	v.cancel(errors.New("diskreader volume closed"))
 
 	// Close all slice readers
 	wg := &sync.WaitGroup{}

@@ -34,7 +34,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("workspace creation timeout"))
 	defer cancel()
 
 	opts := make([]keboola.CreateWorkspaceOption, 0)

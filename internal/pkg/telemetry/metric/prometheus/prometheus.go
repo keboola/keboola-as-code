@@ -83,7 +83,7 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 	})
 	proc.OnShutdown(func(ctx context.Context) {
 		// Shutdown gracefully with a 30s timeout.
-		ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
+		ctx, cancel := context.WithTimeoutCause(ctx, shutdownTimeout, errors.New("shutdown timeout"))
 		defer cancel()
 
 		logger.Infof(ctx, `shutting down HTTP server at %q`, cfg.Listen)

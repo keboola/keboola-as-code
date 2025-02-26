@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
@@ -56,10 +57,10 @@ func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Config 
 	}
 
 	t.Cleanup(func() {
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancelCause(context.Background())
 		client := clientForTest(t, ctx, cfg)
 		_, err := client.Delete(ctx, "", etcd.WithFromKey())
-		cancel()
+		cancel(errors.Wrap(err, "cannot clear etcd after test"))
 		if err != nil {
 			t.Fatalf(`cannot clear etcd after test: %s`, err)
 		}
@@ -69,9 +70,9 @@ func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Config 
 }
 
 func ClientForTest(t testOrBenchmark, cfg etcdclient.Config, dialOpts ...grpc.DialOption) *etcd.Client {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	t.Cleanup(func() {
-		cancel()
+		cancel(errors.New("test cleanup"))
 	})
 	return clientForTest(t, ctx, cfg, dialOpts...)
 }

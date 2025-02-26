@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
@@ -24,8 +25,8 @@ func TestAtomicFromCtx_Misuse1(t *testing.T) {
 func TestAtomicFromCtx_Misuse2(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	atomicOp := op.Atomic(client, &op.NoResult{}).
@@ -46,8 +47,8 @@ func TestAtomicFromCtx_Misuse2(t *testing.T) {
 func TestAtomicFromCtx_Complex(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("test cancelled"))
 
 	// Log etcd operations
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
