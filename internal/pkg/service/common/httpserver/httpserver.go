@@ -49,7 +49,7 @@ func New(ctx context.Context, d dependencies, cfg Config) *HTTPServer {
 	tel := d.Telemetry()
 	handler := middleware.Wrap(
 		com.Muxer,
-		middleware.ContextTimout(requestTimeout),
+		middleware.ContextTimeout(requestTimeout),
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
 		middleware.Logger(server.logger),
