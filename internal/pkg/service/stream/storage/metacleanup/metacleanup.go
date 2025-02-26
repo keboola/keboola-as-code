@@ -145,6 +145,9 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.SetLimit(n.config.Concurrency)
 
+	// Error counter, we suppress the first few errors to not cancel all goroutines if just one fails.
+	var errCount atomic.Uint32
+
 	// Iterate all files
 	err = n.storageRepository.
 		File().
@@ -155,7 +158,11 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 				if deleted {
 					fileCounter.Add(1)
 				}
-				return err
+
+				if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
+					return err
+				}
+				return nil
 			})
 			return nil
 		}).
@@ -191,7 +198,11 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 				}
 
 				span.End(&err)
-				return err
+
+				if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
+					return err
+				}
+				return nil
 			})
 
 			return nil
