@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -444,9 +445,63 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	testProject := testproject.GetTestProjectForTest(t, "")
 	fs, err := aferofs.NewLocalFs(t.TempDir())
 	require.NoError(t, err)
-	err = testProject.SetState(context.Background(), fs, projectStateFile)
-	require.NoError(t, err)
+	switch projectStateFile {
+	case "empty.json":
+		err := fs.WriteFile(context.Background(), filesystem.NewRawFile(filesystem.Join(fs.WorkingDir(), projectStateFile), `
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      }
+    }
+  ]
+}`))
+		require.NoError(t, err)
 
+	case "complex.json":
+		err := fs.WriteFile(context.Background(), filesystem.NewRawFile(filesystem.Join(fs.WorkingDir(), projectStateFile), `
+{
+  "allBranchesConfigs": [
+    "empty"
+  ],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "Main branch",
+        "isDefault": true
+      }
+    },
+    {
+      "branch": {
+        "name": "Foo",
+        "description": "Foo branch",
+        "isDefault": false
+      },
+      "configs": [
+        "with-rows"
+      ]
+    },
+    {
+      "branch": {
+        "name": "Bar",
+        "description": "Bar branch",
+        "isDefault": false
+      },
+      "configs": [
+        "without-rows"
+      ]
+    }
+  ]
+}`))
+		require.NoError(t, err)
+
+	}
+
+	err = testProject.SetState(context.Background(), fs, projectStateFile)
 	d := dependencies.NewMocked(t, context.Background(), dependencies.WithTestProject(testProject))
 	state, err := New(context.Background(), project.NewWithManifest(context.Background(), aferofs.NewMemoryFs(), m), d)
 	require.NoError(t, err)
