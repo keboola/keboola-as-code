@@ -64,7 +64,7 @@ tests-verbose:
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./... bash ./scripts/tests.sh
 
 tests-unit:
-	TEST_PACKAGE=./internal/pkg/... bash ./scripts/tests.sh
+	TEST_PACKAGE=./internal/pkg/diff/... bash ./scripts/tests.sh
 
 tests-unit-verbose:
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./internal/pkg... bash ./scripts/tests.sh

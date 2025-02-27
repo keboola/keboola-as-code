@@ -16,6 +16,7 @@ env:
   TEST_PARALLELISM: 12
   TEST_PARALLELISM_PKG: 6
   TEST_COVERAGE: ${{ inputs.without-cache == true }}
+  TEST_DETECT_RACE: ${{ inputs.without-cache == true }}
 
 # Required for aws-actions/configure-aws-credentials using OIDC, assume role
 permissions:
@@ -41,8 +42,10 @@ jobs:
         run: git config --global core.autocrlf false
 
       - name: Change default TEST_COVERAGE when on main branch
-        if: github.ref == 'refs/heads/main'
-        run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "TEST_COVERAGE=true" >> $GITHUB_ENV
+          echo "TEST_DETECT_RACE=true" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -132,6 +135,7 @@ jobs:
             TEST_PARALLELISM="$TEST_PARALLELISM" \
             TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
             TEST_COVERAGE="$TEST_COVERAGE" \
+            TEST_DETECT_RACE="$TEST_DETECT_RACE" \
             TEST_CREATE_OUT_DIR="false" \
             TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
             TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
@@ -144,6 +148,22 @@ jobs:
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
           UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
+
+      - name: Upload test cache
+        uses: actions/upload-artifact@v4
+        with:
+          name: gotestcache-${{ runner.os }}
+          path: ${{ github.workspace }}/cache.out
+
+      - name: Set env variable
+        run: |
+          echo "GOCACHE=`go env GOCACHE`" >> $GITHUB_ENV
+
+      - name: Uploade test cache folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: gotestcachef-${{ runner.os }}
+          path: ${{ env.GOCACHE }}
 
       - name: Check how much space is left after unit test
         if: matrix.name == 'linux'
