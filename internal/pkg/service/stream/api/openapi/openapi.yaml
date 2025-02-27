@@ -4177,11 +4177,6 @@ definitions:
                 type: string
                 description: Path to the value.
                 example: foo.bar[0]
-            primaryKey:
-                type: boolean
-                description: Sets this column as a part of the primary key of the destination table.
-                default: false
-                example: false
             rawString:
                 type: boolean
                 description: Set to true if path value should use raw string instead of json-encoded value.
@@ -4202,7 +4197,6 @@ definitions:
                     - template
         description: An output mapping defined by a template.
         example:
-            primaryKey: false
             type: body
             name: id-col
             path: foo.bar[0]
