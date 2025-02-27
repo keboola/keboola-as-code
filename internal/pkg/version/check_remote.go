@@ -22,7 +22,7 @@ type checker struct {
 
 func NewGitHubChecker(parentCtx context.Context, logger log.Logger, skip bool) *checker {
 	// Timeout 3 seconds
-	ctx, cancel := context.WithTimeout(parentCtx, 3*time.Second)
+	ctx, cancel := context.WithTimeoutCause(parentCtx, 3*time.Second, errors.New("github check timeout"))
 
 	// Create client
 	c := client.New().WithBaseURL("https://api.github.com")

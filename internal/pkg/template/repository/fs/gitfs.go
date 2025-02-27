@@ -19,7 +19,7 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.declarative.templates.repository.fs.gitFsFor")
 	defer span.End(&err)
 
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeoutCause(ctx, 30*time.Second, errors.New("git FS timeout"))
 	defer cancel()
 
 	// Apply options

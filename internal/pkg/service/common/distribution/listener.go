@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Listener listens for distribution changes, when a node is added or removed.
@@ -15,7 +16,7 @@ type Listener struct {
 	C      <-chan Events
 	c      chan Events
 	ctx    context.Context
-	cancel context.CancelFunc
+	cancel context.CancelCauseFunc
 	wg     *sync.WaitGroup
 	all    *listeners
 	id     listenerID
@@ -70,7 +71,7 @@ func newListeners(ctx context.Context, wg *sync.WaitGroup, cfg Config, logger lo
 
 				// Stop all listeners
 				for _, l := range v.listeners {
-					l.cancel()
+					l.cancel(errors.New("listener: context done"))
 					l.wg.Wait()
 				}
 
@@ -114,7 +115,7 @@ func (v *listeners) Notify(events Events) {
 func (v *listeners) add() *Listener {
 	c := make(chan Events)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	out := &Listener{
 		ctx:    ctx,
 		cancel: cancel,
@@ -152,7 +153,7 @@ func (l *Listener) Stop() {
 	l.all.lock.Lock()
 	defer l.all.lock.Unlock()
 
-	l.cancel()
+	l.cancel(errors.New("listener: stop"))
 	l.wg.Wait()
 	delete(l.all.listeners, l.id)
 }

@@ -75,11 +75,11 @@ func Start(d dependencies, cfg Config) error {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancelCause(ctx)
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		n.logger.Info(ctx, "received shutdown request")
-		cancel()
+		cancel(errors.New("shutting down: diskcleanup"))
 		wg.Wait()
 		n.logger.Info(ctx, "shutdown done")
 	})
@@ -111,7 +111,7 @@ func Start(d dependencies, cfg Config) error {
 
 // cleanDisk iterates directories in the local storage, and delete those without a File record in DB.
 func (n *Node) cleanDisk(ctx context.Context) (err error) {
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("clean disk timeout"))
 	defer cancel()
 
 	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.disk.cleanDisk")

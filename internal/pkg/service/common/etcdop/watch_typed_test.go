@@ -11,6 +11,7 @@ import (
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -18,8 +19,8 @@ func TestPrefixT_Watch(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	pfx := typedPrefixForTest()
@@ -109,7 +110,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	wg.Wait()
 
 	// Channel should be closed by the context
-	cancel()
+	cancel(errors.New("test finishing"))
 	resp, ok := <-ch
 	assert.False(t, ok, spew.Sdump(resp))
 }
@@ -118,8 +119,8 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	pfx := typedPrefixForTest()
@@ -240,7 +241,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	wg.Wait()
 
 	// Channel should be closed by the context
-	cancel()
+	cancel(errors.New("test finishing"))
 	resp, ok := <-ch
 	assert.False(t, ok, spew.Sdump(resp))
 }

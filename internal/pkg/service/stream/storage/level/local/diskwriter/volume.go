@@ -45,7 +45,7 @@ type Volume struct {
 	allocator    diskalloc.Allocator
 
 	ctx    context.Context
-	cancel context.CancelFunc
+	cancel context.CancelCauseFunc
 	wg     *sync.WaitGroup
 
 	fsLock *flock.Flock
@@ -90,7 +90,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clockwork.Clock, c
 		v.allocator = config.Allocation.OverrideAllocator
 	}
 
-	v.ctx, v.cancel = context.WithCancel(context.WithoutCancel(ctx))
+	v.ctx, v.cancel = context.WithCancelCause(context.WithoutCancel(ctx))
 
 	v.logger = v.logger.WithComponent("volume").With(attribute.String("volume.path", spec.Path))
 	v.logger.Infof(ctx, `opening volume`)
@@ -259,7 +259,7 @@ func (v *Volume) Close(ctx context.Context) error {
 	v.logger.Info(ctx, "closing volume")
 
 	// Block OpenWriter method, stop FS notifier
-	v.cancel()
+	v.cancel(errors.New("diskwriter volume closed"))
 
 	// Close all slice writers
 	for _, w := range v.Writers() {

@@ -71,7 +71,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("storage job timeout"))
 	defer cancel()
 
 	err = d.KeboolaProjectAPI().WaitForStorageJob(ctx, job)

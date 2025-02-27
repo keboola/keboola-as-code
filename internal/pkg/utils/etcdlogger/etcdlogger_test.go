@@ -12,6 +12,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
@@ -106,8 +107,8 @@ func TestKVLogWrapper_MinimalConfig(t *testing.T) {
 func runEtcdOperations(t *testing.T, out io.Writer, opts ...etcdlogger.Option) {
 	t.Helper()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(errors.New("operations cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	kv := etcdlogger.KVLogWrapper(client, out, opts...)

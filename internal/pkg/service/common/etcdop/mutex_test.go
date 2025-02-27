@@ -26,8 +26,8 @@ func TestMutex_LockUnlock(t *testing.T) {
 	wg := &sync.WaitGroup{}
 
 	// Create cancelled context
-	cancelledContext, cancelFn := context.WithCancel(context.Background())
-	cancelFn()
+	cancelledContext, cancelFn := context.WithCancelCause(context.Background())
+	cancelFn(errors.New("cancelled context"))
 
 	// Setup client
 	logger := log.NewDebugLogger()

@@ -31,11 +31,11 @@ func RegisterVolumes[V volume.Volume](cfg Config, d dependencies, nodeID string,
 	client := d.EtcdClient()
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(ctx context.Context) {
 		logger.Info(ctx, "stopping volumes registration")
-		cancel()
+		cancel(errors.New("shutting down: volumes registration"))
 		wg.Wait()
 		logger.Info(ctx, "stopped volumes registration")
 	})

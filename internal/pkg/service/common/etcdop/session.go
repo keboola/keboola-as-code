@@ -241,7 +241,7 @@ func (s *Session) newSession(ctx context.Context) (_ *concurrency.Session, err e
 
 	// Obtain the LeaseID
 	// The concurrency.NewSession bellow can do it by itself, but we need a separate context with a timeout here.
-	grantCtx, grantCancel := context.WithTimeout(ctx, s.sessionBuilder.grantTimeout)
+	grantCtx, grantCancel := context.WithTimeoutCause(ctx, s.sessionBuilder.grantTimeout, errors.New("session grant timeout"))
 	defer grantCancel()
 	grantResp, err := s.lessor.Grant(grantCtx, int64(s.sessionBuilder.ttlSeconds))
 	if err != nil {

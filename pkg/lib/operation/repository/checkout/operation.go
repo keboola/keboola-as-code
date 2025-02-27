@@ -25,7 +25,7 @@ func Run(ctx context.Context, def model.TemplateRepository, d dependencies) (rep
 	defer span.End(&err)
 
 	// Create context with timeout
-	ctx, cancel := context.WithTimeout(ctx, Timeout)
+	ctx, cancel := context.WithTimeoutCause(ctx, Timeout, errors.New("checkout timeout"))
 	defer cancel()
 
 	// Checkout

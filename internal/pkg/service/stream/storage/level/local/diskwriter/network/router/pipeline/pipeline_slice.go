@@ -33,7 +33,7 @@ type SlicePipeline struct {
 	onClose     func(ctx context.Context, cause string)
 
 	ctx    context.Context
-	cancel context.CancelFunc
+	cancel context.CancelCauseFunc
 	wg     sync.WaitGroup
 
 	lock     sync.RWMutex
@@ -70,7 +70,7 @@ func NewSlicePipeline(
 	}
 
 	ctx = ctxattr.ContextWith(ctx, slice.SliceKey.Telemetry()...)
-	p.ctx, p.cancel = context.WithCancel(context.WithoutCancel(ctx))
+	p.ctx, p.cancel = context.WithCancelCause(context.WithoutCancel(ctx))
 
 	// Try to open pipeline in background, see IsReady method
 	p.wg.Add(1)
@@ -144,11 +144,11 @@ func (p *SlicePipeline) Close(ctx context.Context, cause string) {
 	p.logger.Debugf(ctx, "closing slice pipeline: %s", cause)
 
 	// Cancel open loop, if running
-	p.cancel()
+	p.cancel(errors.New("slice pipeline closed"))
 	p.wg.Wait()
 
 	// Close underlying encoding pipeline
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Minute)
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("slice pipeline close timeout"))
 	defer cancel()
 	if err := p.pipeline.Close(ctx); err != nil {
 		p.logger.Errorf(ctx, "cannot close slice pipeline: %s", err)

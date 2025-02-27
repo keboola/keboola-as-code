@@ -50,7 +50,7 @@ func (s *service) startTask(ctx context.Context, cfg taskConfig) (task.Task, err
 		Key:  task.Key{ProjectID: cfg.ProjectID, TaskID: taskID},
 		Lock: cfg.ObjectKey.String(),
 		Context: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.WithoutCancel(ctx), cfg.Timeout)
+			return context.WithTimeoutCause(context.WithoutCancel(ctx), cfg.Timeout, errors.New("task timeout exceeded"))
 		},
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			rb := rollback.New(logger)

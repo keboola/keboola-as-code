@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
 
@@ -24,9 +25,9 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	configsMap := make(map[keboola.ConfigKey]*fixtures.Config)
 	configsMetadataMap := make(map[keboola.ConfigKey]keboola.Metadata)
 
-	ctx, cancelFn := context.WithCancel(p.ctx)
+	ctx, cancelFn := context.WithCancelCause(p.ctx)
 	grp, ctx := errgroup.WithContext(ctx)
-	defer cancelFn()
+	defer cancelFn(errors.New("snapshot creation cancelled"))
 
 	// Branches
 	grp.Go(func() error {

@@ -23,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 
@@ -98,7 +99,7 @@ func StartServer(ctx context.Context, d dependencies.ServiceScope) error {
 	// Register graceful shutdown
 	proc.OnShutdown(func(ctx context.Context) {
 		// Shutdown gracefully with a timeout.
-		ctx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
+		ctx, cancel := context.WithTimeoutCause(ctx, gracefulShutdownTimeout, errors.New("graceful shutdown timeout"))
 		defer cancel()
 
 		logger.Infof(ctx, "shutting down HTTP server at %q", cfg.API.Listen)

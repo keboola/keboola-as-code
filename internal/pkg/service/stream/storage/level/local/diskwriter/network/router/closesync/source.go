@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type SourceNode struct {
@@ -28,10 +29,10 @@ func NewSourceNode(d dependencies, nodeID string) (*SourceNode, error) {
 
 	// Graceful shutdown
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(_ context.Context) {
 		n.logger.Infof(ctx, "closing close-sync source node")
-		cancel()
+		cancel(errors.New("shutting down: close-sync source node"))
 		wg.Wait()
 		n.logger.Infof(ctx, "closed close-sync source node")
 	})

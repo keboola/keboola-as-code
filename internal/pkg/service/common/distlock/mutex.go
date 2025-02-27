@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const lockEtcdPrefix = "lock"
@@ -44,11 +45,11 @@ func NewProvider(ctx context.Context, cfg Config, d dependencies) (*Provider, er
 	p := &Provider{}
 	p.logger = d.Logger().WithComponent("distribution.mutex.provider")
 
-	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	ctx, cancel := context.WithCancelCause(context.WithoutCancel(ctx))
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func(_ context.Context) {
 		p.logger.Info(ctx, "received shutdown request")
-		cancel()
+		cancel(errors.New("shutting down: distlock mutex provider"))
 		wg.Wait()
 		p.logger.Info(ctx, "shutdown done")
 	})
