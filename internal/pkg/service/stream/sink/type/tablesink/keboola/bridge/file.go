@@ -205,7 +205,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 	// Check if job already exists
 	var job *keboola.StorageJob
 	if keboolaFile.StorageJobID != nil {
-		b.logger.With(attribute.String("job.id", keboolaFile.StorageJobID.String())).Infof(ctx, "storage job for file already exists")
+		b.logger.With(attribute.String("job.id", keboolaFile.StorageJobID.String())).Info(ctx, "storage job for file already exists")
 
 		job, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: *keboolaFile.StorageJobID}).Send(ctx)
 		if err != nil {
@@ -213,6 +213,7 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 		}
 
 		if job.Status == keboola.StorageJobStatusSuccess {
+			b.logger.With(attribute.String("job.id", keboolaFile.StorageJobID.String())).Info(ctx, "skipping file import, job already succeeded")
 			return nil
 		}
 	}
