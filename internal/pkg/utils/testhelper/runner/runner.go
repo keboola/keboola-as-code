@@ -74,7 +74,7 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 	state := &fixtures.StateFile{}
 
 	if testDirFS.IsFile(context.Background(), initialStateFileName) {
-		state, err = fixtures.LoadStateFile(testDir + "/" + initialStateFileName)
+		state, err = fixtures.LoadStateFile(testDirFS, initialStateFileName)
 		require.NoError(t, err)
 	}
 

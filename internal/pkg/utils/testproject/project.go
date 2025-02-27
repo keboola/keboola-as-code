@@ -5,9 +5,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -183,11 +181,11 @@ func (p *Project) Clean() error {
 	return nil
 }
 
-func (p *Project) SetState(stateFilePath string) error {
+func (p *Project) SetState(ctx context.Context, fs filesystem.Fs, projectStateFile string) error {
 	if p.stateFilePath != "" {
 		return errors.New("SetState method can be called only once after the Clean method")
 	}
-	p.stateFilePath = stateFilePath
+	p.stateFilePath = filesystem.Join(fs.WorkingDir(), projectStateFile)
 
 	// Set new state
 	p.logf("□ Setting project state ...")
@@ -195,17 +193,27 @@ func (p *Project) SetState(stateFilePath string) error {
 	// Log ENVs at the end
 	defer p.logEnvs()
 
-	// Load desired state from file
-	// nolint: dogsled
-	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filesystem.Dir(testFile)
-	// nolint: forbidigo
-	if !filepath.IsAbs(stateFilePath) {
-		stateFilePath = filesystem.Join(testDir, "..", "..", "fixtures", "remote", stateFilePath)
+	if !fs.Exists(ctx, p.stateFilePath) {
+		err := fs.WriteFile(ctx, filesystem.NewRawFile(p.stateFilePath, `
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      }
+    }
+  ]
+}`))
+		if err != nil {
+			return err
+		}
+
 	}
 
 	// Load state file
-	stateFile, err := fixtures.LoadStateFile(stateFilePath)
+	stateFile, err := fixtures.LoadStateFile(fs, p.stateFilePath)
 	if err != nil {
 		return err
 	}

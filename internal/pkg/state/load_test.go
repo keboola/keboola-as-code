@@ -32,7 +32,9 @@ func TestLoadState(t *testing.T) {
 	ctx := context.Background()
 
 	testProject := testproject.GetTestProjectForTest(t, "")
-	err := testProject.SetState("minimal.json")
+	fs, err := aferofs.NewLocalFs(t.TempDir())
+	require.NoError(t, err)
+	err = testProject.SetState(ctx, fs, "minimal.json")
 	require.NoError(t, err)
 	envs := testProject.Env()
 
