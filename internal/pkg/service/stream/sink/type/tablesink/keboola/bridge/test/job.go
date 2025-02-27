@@ -75,3 +75,18 @@ func MockSuccessJobStorageAPICalls(tb testing.TB, transport *httpmock.MockTransp
 		},
 	)
 }
+
+func MockNotFoundJobStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) {
+	tb.Helper()
+
+	jobID := atomic.NewInt32(321)
+	jobStr := strconv.FormatInt(int64(jobID.Load()), 10)
+	// Mocked file prepare resource endpoint
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/jobs/`+jobStr,
+		func(request *http.Request) (*http.Response, error) {
+			return httpmock.NewJsonResponse(http.StatusNotFound, nil)
+		},
+	)
+}
