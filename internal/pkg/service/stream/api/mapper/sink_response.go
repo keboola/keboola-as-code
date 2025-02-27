@@ -110,9 +110,8 @@ func (m *Mapper) newTableMappingResponse(entity table.Mapping) (out api.TableMap
 	out.Columns = make(api.TableColumns, 0, len(entity.Columns))
 	for _, input := range entity.Columns {
 		output := &api.TableColumn{
-			Type:       input.ColumnType(),
-			Name:       input.ColumnName(),
-			PrimaryKey: input.IsPrimaryKey(),
+			Type: input.ColumnType(),
+			Name: input.ColumnName(),
 		}
 
 		if v, ok := input.(column.Path); ok {

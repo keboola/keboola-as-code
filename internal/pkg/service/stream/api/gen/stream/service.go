@@ -716,8 +716,6 @@ type SourcesList struct {
 
 // An output mapping defined by a template.
 type TableColumn struct {
-	// Sets this column as a part of the primary key of the destination table.
-	PrimaryKey bool
 	// Column mapping type. This represents a static mapping (e.g. `body` or
 	// `headers`), or a custom mapping using a template language (`template`).
 	Type column.Type
