@@ -460,7 +460,6 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
   ]
 }`))
 		require.NoError(t, err)
-
 	case "complex.json":
 		err := fs.WriteFile(context.Background(), filesystem.NewRawFile(filesystem.Join(fs.WorkingDir(), projectStateFile), `
 {
@@ -498,10 +497,10 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
   ]
 }`))
 		require.NoError(t, err)
-
 	}
 
 	err = testProject.SetState(context.Background(), fs, projectStateFile)
+	require.NoError(t, err)
 	d := dependencies.NewMocked(t, context.Background(), dependencies.WithTestProject(testProject))
 	state, err := New(context.Background(), project.NewWithManifest(context.Background(), aferofs.NewMemoryFs(), m), d)
 	require.NoError(t, err)

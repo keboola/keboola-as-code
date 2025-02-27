@@ -209,7 +209,6 @@ func (p *Project) SetState(ctx context.Context, fs filesystem.Fs, projectStateFi
 		if err != nil {
 			return err
 		}
-
 	}
 
 	// Load state file
@@ -554,7 +553,6 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
 	// Prepare configs
-	fmt.Println("configs", configs)
 	envPrefix := "TEST_BRANCH_ALL_CONFIG"
 	p.prepareConfigs(ctx, grp, sendReady, tickets, envPrefix, configs, p.defaultBranch)
 
