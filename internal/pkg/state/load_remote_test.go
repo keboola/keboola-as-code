@@ -448,7 +448,7 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	projectDir := filesystem.Join(testDir, "..", "fixtures", "remote")
 	fs, err := aferofs.NewLocalFs(projectDir)
 	require.NoError(t, err)
-	err = testProject.SetState(context.Background(), fs, projectStateFile)
+	err = testProject.SetState(t.Context(), fs, projectStateFile)
 	require.NoError(t, err)
 	d := dependencies.NewMocked(t, t.Context(), dependencies.WithTestProject(testProject))
 	state, err := New(t.Context(), project.NewWithManifest(t.Context(), aferofs.NewMemoryFs(), m), d)
