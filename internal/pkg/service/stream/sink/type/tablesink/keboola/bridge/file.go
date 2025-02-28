@@ -79,7 +79,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedA
 	ctx = ctxattr.ContextWith(ctx, attributes...)
 
 	// Create staging file
-	b.logger.Info(ctx, `creating staging file`)
+	b.logger.Debug(ctx, `creating staging file`)
 	stagingFile, err := api.CreateFileResourceRequest(
 		file.BranchID,
 		name,
@@ -125,7 +125,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedA
 		return b.schema.File().ForFile(file.FileKey).Put(b.client, keboolaFile)
 	})
 
-	b.logger.Info(ctx, "created staging file")
+	b.logger.Debug(ctx, "created staging file")
 	return keboolaFile, nil
 }
 
