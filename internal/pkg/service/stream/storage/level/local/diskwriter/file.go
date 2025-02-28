@@ -3,30 +3,12 @@ package diskwriter
 import (
 	"io"
 	"os"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 )
 
 const (
 	sliceFileFlags = os.O_CREATE | os.O_WRONLY
 	sliceFilePerm  = 0o640
 )
-
-func NewFileWithBackupFile(
-	slice model.Slice,
-	volumePath string,
-	sourceNodeID string,
-) string {
-	backupPath := slice.FileNameWithBackup(volumePath, sourceNodeID)
-	backupFile, err := os.OpenFile(backupPath, os.O_CREATE|os.O_RDWR, 0o640)
-	if err == nil {
-		backupFile.Close()
-		return backupPath
-	}
-
-	filePath := slice.FileName(volumePath, sourceNodeID)
-	return filePath
-}
 
 // File contains all *os.File methods used by this package.
 // This makes it possible to use a custom file implementation in the tests, see FileOpener.

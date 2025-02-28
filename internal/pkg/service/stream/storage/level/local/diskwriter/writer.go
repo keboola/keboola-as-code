@@ -84,11 +84,13 @@ func newWriter(
 
 	filePath := slice.FileName(volumePath, w.writerKey.SourceNodeID)
 	if withBackup {
-		filePath = NewFileWithBackupFile(
-			slice,
-			volumePath,
-			w.writerKey.SourceNodeID,
-		)
+		// Create backup file if it does not exist
+		backupPath := slice.FileNameWithBackup(volumePath, w.writerKey.SourceNodeID)
+		backupFile, err := os.OpenFile(backupPath, os.O_CREATE|os.O_RDWR, 0o640)
+		if err == nil {
+			backupFile.Close()
+			filePath = backupPath
+		}
 	}
 
 	logger = logger.With(attribute.String("file.path", filePath))
