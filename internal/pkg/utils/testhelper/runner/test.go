@@ -217,7 +217,9 @@ func (t *Test) copyInToWorkingDir() {
 
 func (t *Test) initProjectState() {
 	if t.testDirFS.IsFile(t.ctx, initialStateFileName) {
-		err := t.project.SetState(filesystem.Join(t.testDir, initialStateFileName))
+		fs, err := aferofs.NewLocalFs(t.testDir)
+		require.NoError(t.t, err)
+		err = t.project.SetState(t.ctx, fs, initialStateFileName)
 		require.NoError(t.t, err)
 	}
 }

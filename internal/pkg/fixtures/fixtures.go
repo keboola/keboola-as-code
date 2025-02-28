@@ -214,14 +214,14 @@ func MinimalProjectFs(t *testing.T) filesystem.Fs {
 	return fs
 }
 
-func LoadStateFile(path string) (*StateFile, error) {
-	data, err := os.ReadFile(path) // nolint: forbidigo
+func LoadStateFile(fs filesystem.Fs, path string) (*StateFile, error) {
+	data, err := fs.ReadFile(context.Background(), filesystem.NewFileDef(path))
 	if err != nil {
 		return nil, errors.Errorf(`cannot load test project state file "%s": %w`, path, err)
 	}
 
 	stateFile := &StateFile{}
-	if err := json.Unmarshal(data, stateFile); err != nil {
+	if err := json.Unmarshal([]byte(data.Content), stateFile); err != nil {
 		return nil, errors.Errorf("cannot parse test project state file \"%s\": %w", path, err)
 	}
 

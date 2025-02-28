@@ -64,9 +64,10 @@ func PrepareProject(
 		return nil, nil, nil, nil, err
 	}
 
+	prjFS := aferofs.NewMemoryFs()
 	if remote {
 		// Clear project
-		err = testPrj.SetState("empty.json")
+		err = testPrj.SetState(ctx, prjFS, "empty.json")
 		if err != nil {
 			unlockFn()
 			return nil, nil, nil, nil, err
@@ -84,7 +85,7 @@ func PrepareProject(
 	}
 
 	// Load fixture with minimal project
-	prjFS, err := createEmptyBranch(ctx, testPrj, branchID)
+	err = createEmptyBranch(ctx, testPrj, branchID, prjFS)
 	if err != nil {
 		unlockFn()
 		return nil, nil, nil, nil, err
@@ -149,23 +150,23 @@ func newTestDependencies(
 // .keboola/manifest.json
 // main/description
 // main/meta.json.
-func createEmptyBranch(ctx context.Context, prj *testproject.Project, branchID int) (filesystem.Fs, error) {
-	prjFS := aferofs.NewMemoryFs()
+func createEmptyBranch(ctx context.Context, prj *testproject.Project, branchID int, prjFS filesystem.Fs) error {
 	err := prjFS.WriteFile(ctx, filesystem.NewRawFile(".keboola/manifest.json", getManifest(prj, branchID)))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = prjFS.WriteFile(ctx, filesystem.NewRawFile("main/meta.json", `{"name": "Main","isDefault": true}`))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = prjFS.WriteFile(ctx, filesystem.NewRawFile("main/description.md", ""))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return prjFS, nil
+
+	return nil
 }
 
 func getManifest(prj *testproject.Project, branchID int) string {

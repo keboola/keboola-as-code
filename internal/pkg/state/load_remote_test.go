@@ -2,6 +2,7 @@ package state_test
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -442,9 +444,13 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	t.Helper()
 
 	testProject := testproject.GetTestProjectForTest(t, "")
-	err := testProject.SetState(projectStateFile)
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filesystem.Dir(testFile)
+	projectDir := filesystem.Join(testDir, "..", "fixtures", "remote")
+	fs, err := aferofs.NewLocalFs(projectDir)
 	require.NoError(t, err)
-
+	err = testProject.SetState(context.Background(), fs, projectStateFile)
+	require.NoError(t, err)
 	d := dependencies.NewMocked(t, context.Background(), dependencies.WithTestProject(testProject))
 	state, err := New(context.Background(), project.NewWithManifest(context.Background(), aferofs.NewMemoryFs(), m), d)
 	require.NoError(t, err)
