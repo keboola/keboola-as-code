@@ -2,6 +2,7 @@ package state_test
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -443,62 +444,11 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	t.Helper()
 
 	testProject := testproject.GetTestProjectForTest(t, "")
-	fs, err := aferofs.NewLocalFs(t.TempDir())
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filesystem.Dir(testFile)
+	projectDir := filesystem.Join(testDir, "..", "fixtures", "remote")
+	fs, err := aferofs.NewLocalFs(projectDir)
 	require.NoError(t, err)
-	switch projectStateFile {
-	case "empty.json":
-		err := fs.WriteFile(context.Background(), filesystem.NewRawFile(filesystem.Join(fs.WorkingDir(), projectStateFile), `
-{
-  "allBranchesConfigs": [],
-  "branches": [
-    {
-      "branch": {
-        "name": "Main",
-        "isDefault": true
-      }
-    }
-  ]
-}`))
-		require.NoError(t, err)
-	case "complex.json":
-		err := fs.WriteFile(context.Background(), filesystem.NewRawFile(filesystem.Join(fs.WorkingDir(), projectStateFile), `
-{
-  "allBranchesConfigs": [
-    "empty"
-  ],
-  "branches": [
-    {
-      "branch": {
-        "name": "Main",
-        "description": "Main branch",
-        "isDefault": true
-      }
-    },
-    {
-      "branch": {
-        "name": "Foo",
-        "description": "Foo branch",
-        "isDefault": false
-      },
-      "configs": [
-        "with-rows"
-      ]
-    },
-    {
-      "branch": {
-        "name": "Bar",
-        "description": "Bar branch",
-        "isDefault": false
-      },
-      "configs": [
-        "without-rows"
-      ]
-    }
-  ]
-}`))
-		require.NoError(t, err)
-	}
-
 	err = testProject.SetState(context.Background(), fs, projectStateFile)
 	require.NoError(t, err)
 	d := dependencies.NewMocked(t, context.Background(), dependencies.WithTestProject(testProject))

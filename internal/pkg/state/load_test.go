@@ -32,23 +32,10 @@ func TestLoadState(t *testing.T) {
 	ctx := context.Background()
 
 	testProject := testproject.GetTestProjectForTest(t, "")
-	fs, err := aferofs.NewLocalFs(t.TempDir())
-	require.NoError(t, err)
-	err = fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(fs.WorkingDir(), "minimal.json"), `
-{
-  "allBranchesConfigs": [
-    "empty"
-  ],
-  "branches": [
-    {
-      "branch": {
-        "name": "Main",
-        "description": "Main branch",
-        "isDefault": true
-      }
-    }
-  ]
-}`))
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filesystem.Dir(testFile)
+	projectDir := filesystem.Join(testDir, "..", "fixtures", "remote")
+	fs, err := aferofs.NewLocalFs(projectDir)
 	require.NoError(t, err)
 	err = testProject.SetState(ctx, fs, "minimal.json")
 	require.NoError(t, err)
