@@ -26,7 +26,7 @@ func LockFile(ctx context.Context, locks *distlock.Provider, logger log.Logger, 
 		return nil, nil, errors.PrefixErrorf(err, "cannot acquire lock %q:", lock.Key())
 	}
 
-	logger.Infof(ctx, "acquired lock")
+	logger.Debug(ctx, "acquired lock")
 
 	unlock = func() {
 		ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 10*time.Second, errors.New("clusterlock unlock timeout"))
@@ -37,7 +37,7 @@ func LockFile(ctx context.Context, locks *distlock.Provider, logger log.Logger, 
 			return
 		}
 
-		logger.Infof(ctx, "released lock")
+		logger.Debug(ctx, "released lock")
 	}
 
 	return lock, unlock, nil

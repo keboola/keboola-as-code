@@ -143,8 +143,8 @@ func TestBridge_MigrateTokens(t *testing.T) {
 {"level":"info","message":"created token","token.bucketID":"in.c-bucket","token.name":"[_internal] Stream Sink my-source/my-sink"}
 {"level":"info","message":"creating table","table.key":"456/in.c-bucket.my-table"}
 {"level":"info","message":"created table","table.key":"456/in.c-bucket.my-table"}
-{"level":"info","message":"creating staging file","token.ID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
-{"level":"info","message":"created staging file","token.ID":"1001","file.resourceID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
+{"level":"debug","message":"creating staging file","token.ID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
+{"level":"debug","message":"created staging file","token.ID":"1001","file.resourceID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
 `)
 		mocked.DebugLogger().Truncate()
 	}
@@ -373,8 +373,8 @@ func TestBridge_EncryptDecryptTokens(t *testing.T) {
 {"level":"info","message":"created token","token.bucketID":"in.c-bucket","token.name":"[_internal] Stream Sink my-source/my-sink"}
 {"level":"info","message":"creating table","table.key":"456/in.c-bucket.my-table"}
 {"level":"info","message":"created table","table.key":"456/in.c-bucket.my-table"}
-{"level":"info","message":"creating staging file","token.ID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
-{"level":"info","message":"created staging file","token.ID":"1001","file.resourceID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
+{"level":"debug","message":"creating staging file","token.ID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
+{"level":"debug","message":"created staging file","token.ID":"1001","file.resourceID":"1001","file.name":"my-source_my-sink_20000101010000","file.id":"2000-01-01T01:00:00.000Z"}
 `)
 		mocked.DebugLogger().Truncate()
 	}
