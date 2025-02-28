@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -94,17 +95,23 @@ func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, delete
 	id := int(id64)
 	api := b.publicAPI.NewAuthorizedAPI(token.Token, 1*time.Minute)
 	var jobStatus *keboola.StorageJob
-	if jobStatus, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: keboola.StorageJobID(id)}).Send(ctx); err != nil {
-		b.logger.Warnf(ctx, "cannot get information about storage job, probably already deleted: %s", err.Error())
-		return nil, false
-	}
-
-	attr := attribute.String("job.state", jobStatus.Status)
-	ctx = ctxattr.ContextWith(ctx, attr)
-	// Check status of storage job
-	if jobStatus.Status == keboola.StorageJobStatusProcessing || jobStatus.Status == keboola.StorageJobStatusWaiting {
-		b.logger.Debugf(ctx, "cannot remove storage job, job status: %s", jobStatus.Status)
-		return nil, false
+	jobStatus, err = api.GetStorageJobRequest(keboola.StorageJobKey{ID: keboola.StorageJobID(id)}).Send(ctx)
+	if err != nil {
+		var storageErr *keboola.StorageError
+		if !errors.As(err, &storageErr) || storageErr.StatusCode() != http.StatusNotFound {
+			b.logger.Warnf(ctx, "cannot get information about storage job: %s", err.Error())
+			return nil, false
+		}
+		// Job not found, remove it from bridge repository
+	} else {
+		attr := attribute.String("job.state", jobStatus.Status)
+		ctx = ctxattr.ContextWith(ctx, attr)
+		// Check status of storage job
+		if jobStatus.Status == keboola.StorageJobStatusProcessing || jobStatus.Status == keboola.StorageJobStatusWaiting {
+			b.logger.Debugf(ctx, "cannot remove storage job, job status: %s", jobStatus.Status)
+			return nil, false
+		}
+		// Job is finished, remove it from bridge repository
 	}
 
 	// Acquire lock
