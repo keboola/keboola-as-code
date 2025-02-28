@@ -49,11 +49,11 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 
 	// Create temporary working dir
 	workingDir := t.TempDir()
-	require.NoError(t, os.Chdir(workingDir))
+	require.NoError(t, os.Chdir(workingDir)) //nolint:usetesting
 
 	// Chdir after the test, without it, the deletion of the temp dir is not possible on Windows
 	t.Cleanup(func() {
-		require.NoError(t, os.Chdir(testDir))
+		require.NoError(t, os.Chdir(testDir)) //nolint:usetesting
 	})
 
 	// Keep working dir for debugging
