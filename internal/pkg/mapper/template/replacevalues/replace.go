@@ -175,8 +175,9 @@ func (s SubString) replace(full, replacement string) (string, bool) {
 	// nolint: govet
 	re := regexpcache.MustCompile(fmt.Sprintf(
 		`(^|[^a-zA-Z0-9])(` + // $1: start OR not alphanum
-			regexp.QuoteMeta(string(s)) + // $2: searched sub-string
+			`%s` + // $2: searched sub-string
 			`)($|[^a-zA-Z0-9])`, // $3: end OR not alphanum
+		regexp.QuoteMeta(string(s)),
 	))
 	if re.MatchString(full) {
 		replacement = strings.ReplaceAll(replacement, `$`, `$$`)
