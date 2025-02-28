@@ -43,13 +43,13 @@ jobs:
         # Ignored:
         #    - github.com/eliukblau/pixterm, license detection failed (Reciprocal - MPL-2.0)
         run: |
-          go tool go-licenses check ./... --disallowed_types forbidden,restricted,unknown \
+          go-licenses check ./... --disallowed_types forbidden,restricted,unknown \
             --ignore github.com/eliukblau/pixterm
         shell: bash
 
       - name: Save licenses report
         if: always()
-        run: mkdir -p /tmp/go-licenses; go tool go-licenses csv > /tmp/go-licenses/go-licenses.csv ./...
+        run: mkdir -p /tmp/go-licenses; go-licenses csv > /tmp/go-licenses/go-licenses.csv ./...
         shell: bash
 
       - name: Upload artifacts
