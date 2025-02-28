@@ -115,7 +115,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check target configs relation
@@ -315,7 +315,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 
 	// Warnings
 	expectedWarnings := `
@@ -437,7 +437,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object
@@ -618,7 +618,7 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 
 	// Warnings
 	expectedWarnings := `

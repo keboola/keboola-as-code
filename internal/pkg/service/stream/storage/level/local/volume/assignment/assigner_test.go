@@ -330,7 +330,7 @@ func TestVolumes_VolumesFor(t *testing.T) {
 			}
 
 			// Config must be valid
-			require.NoError(t, validator.New().Validate(context.Background(), cfg))
+			require.NoError(t, validator.New().Validate(t.Context(), cfg))
 
 			// Assign volumes
 			result := assignment.VolumesFor(volumes, cfg, tc.FileOpenedAt.Time().UnixNano())

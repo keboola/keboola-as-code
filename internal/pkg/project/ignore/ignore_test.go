@@ -15,7 +15,7 @@ import (
 func TestFile_IgnoreConfigsOrRows(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	registry := newTestRegistry(t)
 	fs := aferofs.NewMemoryFs()
 

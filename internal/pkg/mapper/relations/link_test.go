@@ -56,7 +56,7 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 	// Call AfterLocalOperation
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(object1)
-	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(t.Context(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Other side relation has been created
@@ -92,7 +92,7 @@ func TestRelationsMapperOtherSideMissing(t *testing.T) {
 	// Call AfterLocalOperation
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(object1)
-	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(t.Context(), changes))
 
 	// Warning is logged
 	expected := `

@@ -63,14 +63,14 @@ func TestMapAfterLocalLoad(t *testing.T) {
 			),
 	}
 	for _, file := range files {
-		require.NoError(t, fs.WriteFile(context.Background(), file))
+		require.NoError(t, fs.WriteFile(t.Context(), file))
 	}
 	logger.Truncate()
 
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(t.Context(), changes))
 
 	// Logs
 	expectedLogs := `
@@ -235,7 +235,7 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	logger := d.DebugLogger()
 	fs := state.ObjectsRoot()
 	orchestratorConfigState := createLocalLoadFixtures(t, state)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Local files
 	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
@@ -268,7 +268,7 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
+	err := state.Mapper().AfterLocalOperation(t.Context(), changes)
 	require.Error(t, err)
 
 	// Assert error
@@ -292,7 +292,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	logger := d.DebugLogger()
 	fs := state.ObjectsRoot()
 	orchestratorConfigState := createLocalLoadFixtures(t, state)
-	ctx := context.Background()
+	ctx := t.Context()
 	createTargetConfigs(t, state)
 
 	// Local files
@@ -331,7 +331,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
+	err := state.Mapper().AfterLocalOperation(t.Context(), changes)
 	require.Error(t, err)
 
 	// Assert error

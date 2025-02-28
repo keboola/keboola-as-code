@@ -16,15 +16,15 @@ func TestDumpAll(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	_, err := client.Put(context.Background(), "key1", "value1")
+	_, err := client.Put(t.Context(), "key1", "value1")
 	require.NoError(t, err)
-	_, err = client.Put(context.Background(), "key2", "value2")
+	_, err = client.Put(t.Context(), "key2", "value2")
 	require.NoError(t, err)
-	_, err = client.Put(context.Background(), "key3/key4", `{"foo1": "bar1", "foo2": ["bar2", "bar3"]}`)
+	_, err = client.Put(t.Context(), "key3/key4", `{"foo1": "bar1", "foo2": ["bar2", "bar3"]}`)
 	require.NoError(t, err)
 
 	// Dump
-	dump, err := etcdhelper.DumpAllToString(context.Background(), client)
+	dump, err := etcdhelper.DumpAllToString(t.Context(), client)
 	require.NoError(t, err)
 
 	expected := `
@@ -60,15 +60,15 @@ func TestDumpAllKeys(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	_, err := client.Put(context.Background(), "key1", "value1")
+	_, err := client.Put(t.Context(), "key1", "value1")
 	require.NoError(t, err)
-	_, err = client.Put(context.Background(), "key2", "value2")
+	_, err = client.Put(t.Context(), "key2", "value2")
 	require.NoError(t, err)
-	_, err = client.Put(context.Background(), "key3/key4", `{"foo1": "bar1", "foo2": ["bar2", "bar3"]}`)
+	_, err = client.Put(t.Context(), "key3/key4", `{"foo1": "bar1", "foo2": ["bar2", "bar3"]}`)
 	require.NoError(t, err)
 
 	// Dump
-	dump, err := etcdhelper.DumpAllKeys(context.Background(), client)
+	dump, err := etcdhelper.DumpAllKeys(t.Context(), client)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"key1", "key2", "key3/key4"}, dump)
 }

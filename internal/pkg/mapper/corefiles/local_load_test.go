@@ -20,7 +20,7 @@ func TestLoadCoreFiles(t *testing.T) {
 	t.Parallel()
 	state := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	metaFile := `{
   "myKey": "3",
@@ -40,7 +40,7 @@ func TestLoadCoreFiles(t *testing.T) {
 
 	// Call mapper
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), manifest, object)
-	require.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterLocalLoad(t.Context(), recipe))
 
 	// Values are loaded and set
 	assert.Equal(t, &fixtures.MockedObject{
@@ -63,7 +63,7 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	fs := state.ObjectsRoot()
 	manager := state.LocalManager()
 	manifest := manager.Manifest().(*fixtures.Manifest)
-	uow := manager.NewUnitOfWork(context.Background())
+	uow := manager.NewUnitOfWork(t.Context())
 
 	// Init dir
 	_, testFile, _, _ := runtime.Caller(0)

@@ -24,7 +24,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
 	deps.MockedHTTPTransport().RegisterResponder(
@@ -66,7 +66,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := AskInitOptions(context.Background(), d, deps, DefaultFlags())
+	opts, err := AskInitOptions(t.Context(), d, deps, DefaultFlags())
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -93,7 +93,7 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
 	deps.MockedHTTPTransport().RegisterResponder(
@@ -106,7 +106,7 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 	f.CI = configmap.NewValueWithOrigin(false, configmap.SetByFlag)
 
 	// Run
-	opts, err := AskInitOptions(context.Background(), d, deps, f)
+	opts, err := AskInitOptions(t.Context(), d, deps, f)
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	require.NoError(t, console.Close())

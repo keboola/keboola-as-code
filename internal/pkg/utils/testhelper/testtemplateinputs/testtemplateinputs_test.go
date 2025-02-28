@@ -16,7 +16,7 @@ func TestNewUserErrorWithCode(t *testing.T) {
 	require.NoError(t, os.Setenv("KBC_SECRET_VAR2", "val2")) //nolint:forbidigo, tenv
 	require.NoError(t, os.Setenv("KBC_SECRET_VAR3", "val3")) //nolint:forbidigo, tenv
 
-	provider, err := CreateTestInputsEnvProvider(context.Background())
+	provider, err := CreateTestInputsEnvProvider(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "val1", provider.MustGet("CUSTOM_ENV"))
 	assert.Equal(t, "val2", provider.MustGet("KBC_SECRET_VAR2"))

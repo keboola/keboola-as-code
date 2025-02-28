@@ -37,7 +37,7 @@ func TestSaveCoreFiles(t *testing.T) {
 	assert.Empty(t, recipe.Files.All())
 
 	// Call mapper
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 
 	// Files are generated
 	expectedFiles := model.NewFilesToSave()

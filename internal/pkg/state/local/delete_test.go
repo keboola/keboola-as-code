@@ -16,7 +16,7 @@ func TestLocalDeleteModel(t *testing.T) {
 	t.Parallel()
 	manager := newTestLocalManager(t, nil)
 	fs := manager.fs
-	ctx := context.Background()
+	ctx := t.Context()
 
 	record := &fixtures.MockedManifest{}
 	require.NoError(t, manager.manifest.PersistRecord(record))
@@ -58,7 +58,7 @@ func TestLocalDeleteModel(t *testing.T) {
 func TestDeleteEmptyDirectories(t *testing.T) {
 	t.Parallel()
 	fs := aferofs.NewMemoryFs()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Structure:
 	// D .hidden

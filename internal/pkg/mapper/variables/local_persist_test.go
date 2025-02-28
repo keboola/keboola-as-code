@@ -35,7 +35,7 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, configManifest.Relations)
-	require.NoError(t, state.Mapper().MapBeforePersist(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforePersist(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Relation has been created
@@ -84,7 +84,7 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddPersisted(state.All()...)
-	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(t.Context(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Row 2 has relation -> contains default variables values, because it has "default" in the name
@@ -132,7 +132,7 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddPersisted(state.All()...)
-	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(t.Context(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Row1 has relation -> contains default variables values, because it is first

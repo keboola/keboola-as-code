@@ -24,7 +24,7 @@ import (
 func TestFileRepository_CloseFileOnSourceDeactivation(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 
@@ -91,7 +91,7 @@ func TestFileRepository_CloseFileOnSourceDeactivation(t *testing.T) {
 func TestFileRepository_CloseFileOnSinkDeactivation(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
 	by := test.ByUser()
 

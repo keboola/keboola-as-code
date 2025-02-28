@@ -30,7 +30,7 @@ func TestPublicRequestScope_Components_Cached(t *testing.T) {
 	assert.NotEqual(t, components1, components2)
 
 	// Mocked API scope
-	ctx := context.Background()
+	ctx := t.Context()
 	apiScp, mock := NewMockedAPIScope(t, ctx, config.New(), dependencies.WithMockedComponents(components1))
 
 	// Request 1 gets "components1"
@@ -46,7 +46,7 @@ func TestPublicRequestScope_Components_Cached(t *testing.T) {
 			Components: components2,
 		}).Once(),
 	)
-	require.NoError(t, mock.ComponentsProvider().Update(context.Background()))
+	require.NoError(t, mock.ComponentsProvider().Update(t.Context()))
 
 	// Request 1 still gets "components1"
 	assert.Equal(t, components1, req1Scp.Components().All())

@@ -38,7 +38,7 @@ func TestGit_Checkout(t *testing.T) {
 	gitRepo := fmt.Sprintf("file://%s", tmpDir)
 
 	// Ctx
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	// Checkout fail from a missing repo
@@ -108,7 +108,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	gitRepo := fmt.Sprintf("file://%s", tmpDir)
 
 	// Ctx
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	// Checkout fail from a missing repo

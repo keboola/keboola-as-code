@@ -101,7 +101,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 	// Invoke
 	object := deepcopy.Copy(configState2.Local).(*model.Config)
 	recipe := model.NewLocalSaveRecipe(configState2.ConfigManifest, object, model.NewChangedFields())
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
@@ -195,7 +195,7 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 	object := deepcopy.Copy(rowState.Local).(*model.ConfigRow)
 	recipe := model.NewLocalSaveRecipe(rowState.ConfigRowManifest, object, model.NewChangedFields())
 	object.Content = content
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `

@@ -23,7 +23,7 @@ func TestMountFs_Rename(t *testing.T) {
 	t.Parallel()
 
 	// Create FS
-	ctx := context.Background()
+	ctx := t.Context()
 	root := aferofs.NewMemoryFs()
 	dir1 := aferofs.NewMemoryFs()
 	dir2 := aferofs.NewMemoryFs()

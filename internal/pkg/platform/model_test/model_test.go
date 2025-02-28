@@ -21,7 +21,7 @@ import (
 // TestModelDump dumps the model in Ariga Atlas format.
 func TestModelDump(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create connection
 	db, err := sql.Open("sqlite3", "file:model_test?mode=memory&_fk=1")

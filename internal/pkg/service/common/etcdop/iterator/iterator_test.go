@@ -497,7 +497,7 @@ func TestIterator(t *testing.T) {
 
 	for _, tc := range cases {
 		var logs strings.Builder
-		ctx := context.Background()
+		ctx := t.Context()
 		client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 		loggerOpts := []etcdlogger.Option{etcdlogger.WithoutRequestNumber(), etcdlogger.WithNewLineSeparator(false), etcdlogger.WithoutDuration()}
 		client.KV = etcdlogger.KVLogWrapper(client.KV, &logs, loggerOpts...)
@@ -565,7 +565,7 @@ func TestIterator_AllKeys(t *testing.T) {
 	t.Parallel()
 
 	var logs strings.Builder
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	loggerOpts := []etcdlogger.Option{etcdlogger.WithoutRequestNumber(), etcdlogger.WithNewLineSeparator(false), etcdlogger.WithoutDuration()}
 	client.KV = etcdlogger.KVLogWrapper(client.KV, &logs, loggerOpts...)
@@ -604,7 +604,7 @@ func TestIterator_AllKeys(t *testing.T) {
 
 func TestIterator_Revision(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := etcdop.NewPrefix("some/prefix")
@@ -645,7 +645,7 @@ func TestIterator_Revision(t *testing.T) {
 
 func TestIterator_End(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := etcdop.NewPrefix("some/prefix")
@@ -679,7 +679,7 @@ func TestIterator_End(t *testing.T) {
 
 func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	prefix := generateKVs(t, 3, ctx, client)
 
@@ -691,7 +691,7 @@ func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 
 func TestIterator_ForEach(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	out := ioutil.NewAtomicWriter()
 	prefix := generateKVs(t, 5, ctx, client)

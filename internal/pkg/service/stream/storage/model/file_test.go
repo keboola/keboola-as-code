@@ -29,7 +29,7 @@ import (
 func TestFileID_Validation(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 
 	// Valid
@@ -57,7 +57,7 @@ func TestFileID_String(t *testing.T) {
 func TestFileKey_Validation(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 
 	// Valid
@@ -261,7 +261,7 @@ func TestFile_Validation(t *testing.T) {
 	}
 
 	// Run test cases
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 	for _, tc := range cases {
 		err := val.Validate(ctx, tc.Value)

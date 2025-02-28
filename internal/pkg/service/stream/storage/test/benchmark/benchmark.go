@@ -63,7 +63,7 @@ type WriterBenchmark struct {
 func (wb *WriterBenchmark) Run(b *testing.B) {
 	b.Helper()
 
-	ctx, cancel := context.WithTimeoutCause(context.Background(), 30*time.Second, errors.New("benchmark timeout"))
+	ctx, cancel := context.WithTimeoutCause(b.Context(), 30*time.Second, errors.New("benchmark timeout"))
 	defer cancel()
 
 	// Create debug logger

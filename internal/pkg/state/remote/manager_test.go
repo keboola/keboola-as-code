@@ -474,13 +474,13 @@ func newTestRemoteUOW(t *testing.T, mappers ...any) (*remote.UnitOfWork, *httpmo
 		}`),
 	)
 
-	api, err := keboola.NewAuthorizedAPI(context.Background(), "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
+	api, err := keboola.NewAuthorizedAPI(t.Context(), "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
 	require.NoError(t, err)
 	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
 
 	remoteManager := remote.NewManager(localManager, api, projectState, mapperInst)
-	return remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, projectState
+	return remoteManager.NewUnitOfWork(t.Context(), `change desc`), httpTransport, projectState
 }
 
 func newTestLocalManager(t *testing.T, mappers []any) (*local.Manager, *state.Registry) {
@@ -491,7 +491,7 @@ func newTestLocalManager(t *testing.T, mappers []any) (*local.Manager, *state.Re
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 
 	m := manifest.New(1, "foo.bar")
-	projectState := state.NewRegistry(knownpaths.NewNop(context.Background()), naming.NewRegistry(), testapi.MockedComponentsMap(), model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(t.Context()), naming.NewRegistry(), testapi.MockedComponentsMap(), model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()

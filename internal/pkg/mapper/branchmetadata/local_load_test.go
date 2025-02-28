@@ -15,7 +15,7 @@ import (
 
 func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	logger := d.DebugLogger()
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(branchmetadata.NewMapper(mockedState, d))
@@ -36,7 +36,7 @@ func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 	}
 
 	recipe := model.NewLocalLoadRecipe(mockedState.FileLoader(), state.Manifest(), state.Local)
-	require.NoError(t, mockedState.Mapper().MapAfterLocalLoad(context.Background(), recipe))
+	require.NoError(t, mockedState.Mapper().MapAfterLocalLoad(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	branch := recipe.Object.(*model.Branch)

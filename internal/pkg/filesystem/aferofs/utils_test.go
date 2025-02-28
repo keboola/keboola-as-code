@@ -12,7 +12,7 @@ import (
 
 func TestCopyFs2FsRootToRoot_LocalToMemory(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	localFs, err := NewLocalFs(tempDir)
 	require.NoError(t, err)
@@ -36,7 +36,7 @@ func TestCopyFs2FsRootToRoot_LocalToMemory(t *testing.T) {
 
 func TestCopyFs2FsRootToRoot_LocalToLocal(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir1 := t.TempDir()
 	localFs1, err := NewLocalFs(tempDir1)
 	require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestCopyFs2FsRootToRoot_LocalToLocal(t *testing.T) {
 func TestCopyFs2FsRootToRoot_BaseToBase(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir1 := t.TempDir()
 	localFs1, err := NewLocalFs(tempDir1)
 	require.NoError(t, err)
@@ -99,7 +99,7 @@ func TestCopyFs2FsRootToRoot_BaseToBase(t *testing.T) {
 func TestCopyFs2FsRootToRoot_MemoryToLocal(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	memoryFs := NewMemoryFs()
 	tempDir := t.TempDir()
 	localFs, err := NewLocalFs(tempDir)
@@ -124,7 +124,7 @@ func TestCopyFs2FsRootToRoot_MemoryToLocal(t *testing.T) {
 func TestCopyFs2FsRootToRoot_MemoryToMemory(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	memoryFs1 := NewMemoryFs()
 	memoryFs2 := NewMemoryFs()
 
@@ -147,7 +147,7 @@ func TestCopyFs2FsRootToRoot_MemoryToMemory(t *testing.T) {
 func TestCopyFs2FsDirToDir(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	localFs, err := NewLocalFs(tempDir)
 	require.NoError(t, err)

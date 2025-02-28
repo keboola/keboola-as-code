@@ -26,7 +26,7 @@ import (
 
 func TestBridge_SendSliceUploadEvent_OkEvent(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
@@ -60,7 +60,7 @@ func TestBridge_SendSliceUploadEvent_OkEvent(t *testing.T) {
 
 func TestBridge_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
@@ -93,7 +93,7 @@ func TestBridge_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
 
 func TestBridge_SendSliceUploadEvent_HTTPError(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
@@ -116,7 +116,7 @@ func TestBridge_SendSliceUploadEvent_HTTPError(t *testing.T) {
 
 func TestBridge_SendFileImportEvent_OkEvent(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
@@ -150,7 +150,7 @@ func TestBridge_SendFileImportEvent_OkEvent(t *testing.T) {
 
 func TestBridge_SendFileImportEvent_ErrorEvent(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 
@@ -183,7 +183,7 @@ func TestBridge_SendFileImportEvent_ErrorEvent(t *testing.T) {
 
 func TestBridge_SendFileImportEvent_HTTPError(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	api := d.KeboolaPublicAPI().NewAuthorizedAPI("my-token", 1*time.Minute)
 

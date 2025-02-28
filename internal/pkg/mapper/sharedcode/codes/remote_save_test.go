@@ -21,13 +21,13 @@ func TestSharedCodeRemoteSave(t *testing.T) {
 
 	// Map config
 	configRecipe := model.NewRemoteSaveRecipe(configState.Manifest(), configState.Remote, model.NewChangedFields(`configuration`))
-	err := state.Mapper().MapBeforeRemoteSave(context.Background(), configRecipe)
+	err := state.Mapper().MapBeforeRemoteSave(t.Context(), configRecipe)
 	require.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Map row
 	rowRecipe := model.NewRemoteSaveRecipe(rowState.Manifest(), rowState.Remote, model.NewChangedFields(`configuration`))
-	err = state.Mapper().MapBeforeRemoteSave(context.Background(), rowRecipe)
+	err = state.Mapper().MapBeforeRemoteSave(t.Context(), rowRecipe)
 	require.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 

@@ -40,7 +40,7 @@ func TestContext(t *testing.T) {
 			"features": []
 		}`),
 	)
-	ctx := context.Background()
+	ctx := t.Context()
 	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
 	require.NoError(t, err)
 	tickets := keboola.NewTicketProvider(ctx, api)
@@ -90,7 +90,7 @@ func TestContext(t *testing.T) {
 	fileDef := filesystem.NewFileDef("foo.bar")
 	fileDef.AddMetadata(filesystem.ObjectKeyMetadata, objectKey)
 	fileDef.AddTag(model.FileKindObjectConfig)
-	ctxWithVal := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
+	ctxWithVal := context.WithValue(t.Context(), jsonnetfiles.FileDefCtxKey, fileDef)
 
 	// Create template use context
 	d := dependenciesPkg.NewMocked(t, ctx)
@@ -195,13 +195,13 @@ func TestComponentsFunctions(t *testing.T) {
 			"features": []
 		}`),
 	)
-	ctx := context.Background()
+	ctx := t.Context()
 	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
 	require.NoError(t, err)
 
 	d := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
 	projectState := d.MockedState()
-	tickets := keboola.NewTicketProvider(context.Background(), api)
+	tickets := keboola.NewTicketProvider(t.Context(), api)
 	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{}
@@ -310,7 +310,7 @@ func TestHasBackendFunction(t *testing.T) {
 			"features": []
 		}`),
 	)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	d := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
 
@@ -318,7 +318,7 @@ func TestHasBackendFunction(t *testing.T) {
 	require.NoError(t, err)
 
 	projectState := d.MockedState()
-	tickets := keboola.NewTicketProvider(context.Background(), api)
+	tickets := keboola.NewTicketProvider(t.Context(), api)
 	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{}

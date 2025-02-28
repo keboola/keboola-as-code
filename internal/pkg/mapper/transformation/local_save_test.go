@@ -18,7 +18,7 @@ import (
 
 func TestLocalSaveTransformationEmpty(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	state := d.MockedState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))
@@ -29,10 +29,10 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 	recipe := model.NewLocalSaveRecipe(configState.Manifest(), object, model.NewChangedFields())
 
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
-	require.NoError(t, fs.Mkdir(context.Background(), blocksDir))
+	require.NoError(t, fs.Mkdir(t.Context(), blocksDir))
 
 	// Save
-	err := state.Mapper().MapBeforeLocalSave(context.Background(), recipe)
+	err := state.Mapper().MapBeforeLocalSave(t.Context(), recipe)
 	require.NoError(t, err)
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"foo":"bar"}`, json.MustEncodeString(object.Content, false))
@@ -40,7 +40,7 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 
 func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	state := d.MockedState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))
@@ -53,7 +53,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 
 	configDir := filesystem.Join(`branch`, `config`)
 	blocksDir := filesystem.Join(configDir, `blocks`)
-	require.NoError(t, fs.Mkdir(context.Background(), blocksDir))
+	require.NoError(t, fs.Mkdir(t.Context(), blocksDir))
 
 	// Prepare
 	object.Content.Set(`foo`, `bar`)
@@ -145,7 +145,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Save
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Minify JSON + remove file description

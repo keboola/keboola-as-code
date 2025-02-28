@@ -288,7 +288,7 @@ func TestAtomicOp(t *testing.T) {
 
 func (tc atomicOpTestCase) RunOk(t *testing.T) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := tc.createClient(t)
 
 	// Prepare
@@ -321,7 +321,7 @@ func (tc atomicOpTestCase) RunOk(t *testing.T) {
 
 func (tc atomicOpTestCase) RunBreakingChange(t *testing.T) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	client, logs := tc.createClient(t)
 
 	// Prepare
@@ -391,7 +391,7 @@ func (tc atomicOpTestCase) createClient(t *testing.T) (etcd.KV, *bytes.Buffer) {
 func TestAtomicUpdate(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancelCause(context.Background())
+	ctx, cancel := context.WithCancelCause(t.Context())
 	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -543,7 +543,7 @@ atomic operation succeeded: ok
 func TestAtomicOp_AddFrom(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancelCause(context.Background())
+	ctx, cancel := context.WithCancelCause(t.Context())
 	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -633,7 +633,7 @@ key4
 func TestAtomicOp_RequireLock(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	wg := &sync.WaitGroup{}
 

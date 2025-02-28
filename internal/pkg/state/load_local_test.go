@@ -251,7 +251,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (d
 	t.Helper()
 
 	// Mocked API response
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]any{
 		"id":                     "ex-generic-v2",
 		"type":                   "extractor",
@@ -273,10 +273,10 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (d
 
 	// Load state
 	require.NoError(t, err)
-	state, err := New(context.Background(), project.NewWithManifest(context.Background(), fs, m), d)
+	state, err := New(t.Context(), project.NewWithManifest(t.Context(), fs, m), d)
 	require.NoError(t, err)
 	filter := m.Filter()
-	_, localErr, remoteErr := state.Load(context.Background(), LoadOptions{LocalFilter: filter, LoadLocalState: true})
+	_, localErr, remoteErr := state.Load(t.Context(), LoadOptions{LocalFilter: filter, LoadLocalState: true})
 	require.NoError(t, remoteErr)
 	return d, state, localErr
 }
@@ -292,7 +292,7 @@ func loadManifest(t *testing.T, projectDirName string) (*manifest.Manifest, file
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	envs.Set("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
-	m, fs, err := fixtures.LoadManifest(context.Background(), projectDirName, envs)
+	m, fs, err := fixtures.LoadManifest(t.Context(), projectDirName, envs)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}

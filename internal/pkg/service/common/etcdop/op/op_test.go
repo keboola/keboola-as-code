@@ -76,7 +76,7 @@ func (tc opTestCase[R]) Run(t *testing.T, ctx context.Context, client etcd.KV, l
 // TestOpForType_WithProcessorMethods_ScalarType tests all With* methods with a scalar (string) value.
 func TestOpForType_WithProcessorMethods_ScalarType(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	factory := func(ctx context.Context) (etcd.Op, error) {
@@ -202,7 +202,7 @@ func TestOpForType_WithProcessorMethods_ScalarType(t *testing.T) {
 // TestOpForType_WithProcessorMethods_Pointer tests all With* methods with a scalar (*testData) value.
 func TestOpForType_WithProcessorMethods_Pointer(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	factory := func(ctx context.Context) (etcd.Op, error) {

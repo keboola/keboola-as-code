@@ -41,7 +41,7 @@ func TestNewSyncWriter_ModeInvalid(t *testing.T) {
 func TestSyncWriter_StopStoppedSyncer(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	syncerWriter := tc.NewSyncerWriter()
 
@@ -59,7 +59,7 @@ func TestSyncWriter_StopStoppedSyncer(t *testing.T) {
 func TestSyncWriter_Write_Wait(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = true
@@ -115,7 +115,7 @@ func TestSyncWriter_Write_Wait(t *testing.T) {
 func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = false
@@ -163,7 +163,7 @@ func TestSyncWriter_DoWithNotify_NoWait(t *testing.T) {
 func TestSyncWriter_SkipEmptySync(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
@@ -199,7 +199,7 @@ func TestSyncWriter_SkipEmptySync(t *testing.T) {
 func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = true
@@ -288,7 +288,7 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = true
@@ -354,7 +354,7 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = false
@@ -404,7 +404,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Ok(t *testing.T) {
 func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = false
@@ -461,7 +461,7 @@ func TestSyncWriter_SyncToDisk_NoWait_Error(t *testing.T) {
 func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeCache
 	tc.Config.Wait = true
@@ -550,7 +550,7 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeCache
 	tc.Config.Wait = true
@@ -616,7 +616,7 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeCache
 	tc.Config.Wait = false
@@ -666,7 +666,7 @@ func TestSyncWriter_SyncToCache_NoWait_Ok(t *testing.T) {
 func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeCache
 	tc.Config.Wait = false
@@ -722,7 +722,7 @@ func TestSyncWriter_SyncToCache_NoWait_Err(t *testing.T) {
 func TestSyncWriter_WriteDuringSync(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Mode = ModeDisk
 	tc.Config.Wait = true
@@ -803,7 +803,7 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
@@ -868,7 +868,7 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 func TestSyncWriter_CountTrigger(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
@@ -926,7 +926,7 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 func TestSyncWriter_IntervalTrigger(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
@@ -983,7 +983,7 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 func TestSyncWriter_BytesTrigger(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Wait = true
 
@@ -1115,7 +1115,7 @@ func (c *testChain) Sync(ctx context.Context) error {
 func newWriterTestCase(tb testing.TB) *writerTestCase {
 	tb.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(tb.Context(), 10*time.Second)
 	tb.Cleanup(func() {
 		cancel()
 	})

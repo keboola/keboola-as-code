@@ -28,7 +28,7 @@ func TestChain_Empty(t *testing.T) {
 	}
 
 	// Close the chain
-	require.NoError(t, tc.Chain.Close(context.Background()))
+	require.NoError(t, tc.Chain.Close(t.Context()))
 }
 
 // TestChain_SetupMethods tests all setup methods.
@@ -154,19 +154,19 @@ func TestChain_ReadAndCloseOk(t *testing.T) {
 		return &testReadCloser{inner: r, Logger: tc.Logger, Name: "RC2"}
 	})
 	tc.Chain.PrependCloseFn("FN1", func() error {
-		tc.Logger.Info(context.Background(), `TEST: close "FN1"`)
+		tc.Logger.Info(t.Context(), `TEST: close "FN1"`)
 		return nil
 	})
 	tc.Chain.PrependCloseFn("FN2", func() error {
-		tc.Logger.Info(context.Background(), `TEST: close "FN2"`)
+		tc.Logger.Info(t.Context(), `TEST: close "FN2"`)
 		return nil
 	})
 	tc.Chain.AppendCloseFn("FN3", func() error {
-		tc.Logger.Info(context.Background(), `TEST: close "FN3"`)
+		tc.Logger.Info(t.Context(), `TEST: close "FN3"`)
 		return nil
 	})
 	tc.Chain.AppendCloseFn("FN4", func() error {
-		tc.Logger.Info(context.Background(), `TEST: close "FN4"`)
+		tc.Logger.Info(t.Context(), `TEST: close "FN4"`)
 		return nil
 	})
 
@@ -177,7 +177,7 @@ func TestChain_ReadAndCloseOk(t *testing.T) {
 	}
 
 	// Close the chain
-	require.NoError(t, tc.Chain.Close(context.Background()))
+	require.NoError(t, tc.Chain.Close(t.Context()))
 
 	// 1st read is the content, 2nd is EOF error
 	tc.AssertLogs(`
@@ -242,7 +242,7 @@ func TestChain_CloseError(t *testing.T) {
 	}
 
 	// Read all from the Chain
-	if err = tc.Chain.Close(context.Background()); assert.Error(tc.TB, err) {
+	if err = tc.Chain.Close(t.Context()); assert.Error(tc.TB, err) {
 		assert.Equal(tc.TB, "chain close error: cannot close \"RC2\": some error", err.Error())
 	}
 

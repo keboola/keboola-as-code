@@ -16,7 +16,7 @@ import (
 
 func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
 	t.Helper()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(links.NewMapper(mockedState))
 	return mockedState, d

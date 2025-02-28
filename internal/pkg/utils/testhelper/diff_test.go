@@ -31,7 +31,7 @@ func TestAssertDirectoryFileOnlyInExpected(t *testing.T) {
 	actualFs := aferofs.NewMemoryFs()
 
 	// Create file
-	require.NoError(t, expectedFs.WriteFile(context.Background(), filesystem.NewRawFile("file.txt", "foo\n")))
+	require.NoError(t, expectedFs.WriteFile(t.Context(), filesystem.NewRawFile("file.txt", "foo\n")))
 
 	// Assert
 	test := newMockedT()
@@ -45,7 +45,7 @@ func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
 	actualFs := aferofs.NewMemoryFs()
 
 	// Create directory
-	require.NoError(t, expectedFs.Mkdir(context.Background(), `myDir`))
+	require.NoError(t, expectedFs.Mkdir(t.Context(), `myDir`))
 
 	// Assert
 	test := newMockedT()
@@ -59,7 +59,7 @@ func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
 	actualFs := aferofs.NewMemoryFs()
 
 	// Create file
-	require.NoError(t, actualFs.WriteFile(context.Background(), filesystem.NewRawFile("file.txt", "foo\n")))
+	require.NoError(t, actualFs.WriteFile(t.Context(), filesystem.NewRawFile("file.txt", "foo\n")))
 
 	// Assert
 	test := newMockedT()
@@ -73,7 +73,7 @@ func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
 	actualFs := aferofs.NewMemoryFs()
 
 	// Create directory
-	require.NoError(t, actualFs.Mkdir(context.Background(), `myDir`))
+	require.NoError(t, actualFs.Mkdir(t.Context(), `myDir`))
 
 	// Assert
 	test := newMockedT()
@@ -87,10 +87,10 @@ func TestAssertDirectoryFileDifferentType1(t *testing.T) {
 	actualFs := aferofs.NewMemoryFs()
 
 	// Create file in actual
-	require.NoError(t, actualFs.WriteFile(context.Background(), filesystem.NewRawFile("myNode", "foo\n")))
+	require.NoError(t, actualFs.WriteFile(t.Context(), filesystem.NewRawFile("myNode", "foo\n")))
 
 	// Create directory in expected
-	require.NoError(t, expectedFs.Mkdir(context.Background(), `myNode`))
+	require.NoError(t, expectedFs.Mkdir(t.Context(), `myNode`))
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
@@ -103,10 +103,10 @@ func TestAssertDirectoryFileDifferentType2(t *testing.T) {
 	actualFs := aferofs.NewMemoryFs()
 
 	// Create file in expected
-	require.NoError(t, expectedFs.WriteFile(context.Background(), filesystem.NewRawFile("myNode", "foo\n")))
+	require.NoError(t, expectedFs.WriteFile(t.Context(), filesystem.NewRawFile("myNode", "foo\n")))
 
 	// Create directory in actual
-	require.NoError(t, actualFs.Mkdir(context.Background(), `myNode`))
+	require.NoError(t, actualFs.Mkdir(t.Context(), `myNode`))
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
@@ -119,10 +119,10 @@ func TestAssertDirectoryDifferentContent(t *testing.T) {
 	actualFs := aferofs.NewMemoryFs()
 
 	// File in expected
-	require.NoError(t, expectedFs.WriteFile(context.Background(), filesystem.NewRawFile("file.txt", "foo\n")))
+	require.NoError(t, expectedFs.WriteFile(t.Context(), filesystem.NewRawFile("file.txt", "foo\n")))
 
 	// File in actual - different content
-	require.NoError(t, actualFs.WriteFile(context.Background(), filesystem.NewRawFile("file.txt", "bar\n")))
+	require.NoError(t, actualFs.WriteFile(t.Context(), filesystem.NewRawFile("file.txt", "bar\n")))
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
@@ -136,11 +136,11 @@ func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
 
 	// File in expected
 	expected := "%c%c%c%c\n" // 4 chars
-	require.NoError(t, expectedFs.WriteFile(context.Background(), filesystem.NewRawFile("file.txt", expected)))
+	require.NoError(t, expectedFs.WriteFile(t.Context(), filesystem.NewRawFile("file.txt", expected)))
 
 	// File in actual - different content
 	actual := "foo\n" // 3 chars
-	require.NoError(t, actualFs.WriteFile(context.Background(), filesystem.NewRawFile("file.txt", actual)))
+	require.NoError(t, actualFs.WriteFile(t.Context(), filesystem.NewRawFile("file.txt", actual)))
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
@@ -163,10 +163,10 @@ func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
 
 	// File in expected
 	hiddenFilePath := filesystem.Join("myDir", ".hidden")
-	require.NoError(t, expectedFs.WriteFile(context.Background(), filesystem.NewRawFile(hiddenFilePath, "foo\n")))
+	require.NoError(t, expectedFs.WriteFile(t.Context(), filesystem.NewRawFile(hiddenFilePath, "foo\n")))
 
 	// File in actual
-	require.NoError(t, actualFs.WriteFile(context.Background(), filesystem.NewRawFile(hiddenFilePath, "bar\n")))
+	require.NoError(t, actualFs.WriteFile(t.Context(), filesystem.NewRawFile(hiddenFilePath, "bar\n")))
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
@@ -180,10 +180,10 @@ func TestAssertDirectorySame(t *testing.T) {
 
 	// File in expected
 	filePath := filesystem.Join("myDir", "file.txt")
-	require.NoError(t, expectedFs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, "foo\n")))
+	require.NoError(t, expectedFs.WriteFile(t.Context(), filesystem.NewRawFile(filePath, "foo\n")))
 
 	// File in actual
-	require.NoError(t, actualFs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, "foo\n")))
+	require.NoError(t, actualFs.WriteFile(t.Context(), filesystem.NewRawFile(filePath, "foo\n")))
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
@@ -197,10 +197,10 @@ func TestAssertDirectorySameWildcards(t *testing.T) {
 
 	// File in expected
 	filePath := filesystem.Join("myDir", "file.txt")
-	require.NoError(t, expectedFs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, "%c%c%c\n")))
+	require.NoError(t, expectedFs.WriteFile(t.Context(), filesystem.NewRawFile(filePath, "%c%c%c\n")))
 
 	// File in actual
-	require.NoError(t, actualFs.WriteFile(context.Background(), filesystem.NewRawFile(filePath, "foo\n")))
+	require.NoError(t, actualFs.WriteFile(t.Context(), filesystem.NewRawFile(filePath, "foo\n")))
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)

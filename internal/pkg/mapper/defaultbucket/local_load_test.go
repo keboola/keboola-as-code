@@ -112,7 +112,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(configState2)
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState2.ConfigManifest, configState2.Local)
-	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(t.Context(), changes))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
@@ -216,7 +216,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(rowState)
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), rowState.ConfigRowManifest, rowState.Local)
-	require.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterLocalOperation(t.Context(), changes))
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `

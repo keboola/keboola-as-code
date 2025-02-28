@@ -35,7 +35,7 @@ func TestContextAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add some common context attribute, it should appear in span and log record
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = ctxattr.ContextWith(ctx, attribute.String("foo", "bar"))
 
 	// Create span

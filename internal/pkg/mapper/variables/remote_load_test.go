@@ -27,7 +27,7 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, object.Relations)
-	require.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterRemoteLoad(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object has new relation + content without variables ID

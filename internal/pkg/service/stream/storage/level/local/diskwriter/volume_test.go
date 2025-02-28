@@ -43,7 +43,7 @@ func TestSpace(t *testing.T) {
 	assert.Less(t, used, total)
 
 	// Lock is release by Close method
-	assert.NoError(t, vol.Close(context.Background()))
+	assert.NoError(t, vol.Close(t.Context()))
 }
 
 func TestOpen_NonExistentPath(t *testing.T) {
@@ -122,7 +122,7 @@ func TestOpen_GenerateVolumeID(t *testing.T) {
 	require.NoError(t, err)
 
 	// Lock is release by Close method
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -170,7 +170,7 @@ func TestOpen_LoadVolumeID(t *testing.T) {
 	require.NoError(t, err)
 
 	// Lock is release by Close method
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -202,7 +202,7 @@ func TestOpen_VolumeLock(t *testing.T) {
 	}
 
 	// Close volume
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 }
 
 func TestVolume_Close_Errors(t *testing.T) {
@@ -228,7 +228,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
-	err = vol.Close(context.Background())
+	err = vol.Close(t.Context())
 	if assert.Error(t, err) {
 		// Order of the errors is random, writers are closed in parallel
 		wildcards.Assert(t, strings.TrimSpace(`
@@ -258,7 +258,7 @@ type volumeTestCase struct {
 
 func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	tb.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(tb.Context(), 10*time.Second)
 	tb.Cleanup(func() {
 		cancel()
 	})

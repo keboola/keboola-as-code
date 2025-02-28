@@ -451,11 +451,11 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	require.NoError(t, err)
 	err = testProject.SetState(context.Background(), fs, projectStateFile)
 	require.NoError(t, err)
-	d := dependencies.NewMocked(t, context.Background(), dependencies.WithTestProject(testProject))
-	state, err := New(context.Background(), project.NewWithManifest(context.Background(), aferofs.NewMemoryFs(), m), d)
+	d := dependencies.NewMocked(t, t.Context(), dependencies.WithTestProject(testProject))
+	state, err := New(t.Context(), project.NewWithManifest(t.Context(), aferofs.NewMemoryFs(), m), d)
 	require.NoError(t, err)
 	filter := m.Filter()
-	_, localErr, remoteErr := state.Load(context.Background(), LoadOptions{RemoteFilter: filter, LoadRemoteState: true})
+	_, localErr, remoteErr := state.Load(t.Context(), LoadOptions{RemoteFilter: filter, LoadRemoteState: true})
 	require.NoError(t, localErr)
 	return state, testProject.Env(), remoteErr
 }

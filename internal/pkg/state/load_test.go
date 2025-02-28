@@ -29,7 +29,7 @@ import (
 func TestLoadState(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testProject := testproject.GetTestProjectForTest(t, "")
 	_, testFile, _, _ := runtime.Caller(0)
@@ -56,9 +56,9 @@ func TestLoadState(t *testing.T) {
 		LoadLocalState:  true,
 		LoadRemoteState: true,
 	}
-	state, err := New(context.Background(), project.NewWithManifest(context.Background(), fs, m), d)
+	state, err := New(t.Context(), project.NewWithManifest(t.Context(), fs, m), d)
 	require.NoError(t, err)
-	ok, localErr, remoteErr := state.Load(context.Background(), options)
+	ok, localErr, remoteErr := state.Load(t.Context(), options)
 
 	// Check errors
 	assert.True(t, ok)
@@ -174,11 +174,11 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectM
 
 	// Create Fs
 	fs := aferofs.NewMemoryFsFrom(stateDir)
-	err := testhelper.ReplaceEnvsDir(context.Background(), fs, `/`, envs)
+	err := testhelper.ReplaceEnvsDir(t.Context(), fs, `/`, envs)
 	require.NoError(t, err)
 
 	// Load manifest
-	m, err := projectManifest.Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
+	m, err := projectManifest.Load(t.Context(), log.NewNopLogger(), fs, env.Empty(), false)
 	require.NoError(t, err)
 
 	return m, fs

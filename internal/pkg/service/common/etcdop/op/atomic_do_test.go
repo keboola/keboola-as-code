@@ -18,14 +18,14 @@ import (
 func TestAtomicFromCtx_Misuse1(t *testing.T) {
 	t.Parallel()
 	assert.PanicsWithError(t, "no atomic operation found in the context", func() {
-		op.AtomicOpCtxFrom(context.Background())
+		op.AtomicOpCtxFrom(t.Context())
 	})
 }
 
 func TestAtomicFromCtx_Misuse2(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancelCause(context.Background())
+	ctx, cancel := context.WithCancelCause(t.Context())
 	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -47,7 +47,7 @@ func TestAtomicFromCtx_Misuse2(t *testing.T) {
 func TestAtomicFromCtx_Complex(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancelCause(context.Background())
+	ctx, cancel := context.WithCancelCause(t.Context())
 	defer cancel(errors.New("test cancelled"))
 
 	// Log etcd operations

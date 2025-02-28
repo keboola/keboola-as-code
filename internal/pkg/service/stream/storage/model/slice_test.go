@@ -28,7 +28,7 @@ const (
 func TestVolumeKey_Validation(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 
 	// Valid
@@ -67,7 +67,7 @@ func TestFileVolumeKey_String(t *testing.T) {
 func TestSliceID_Validation(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 
 	// Valid
@@ -99,7 +99,7 @@ func TestSliceID_String(t *testing.T) {
 func TestSliceKey_Validation(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 
 	// Valid
@@ -318,7 +318,7 @@ func TestSlice_Validation(t *testing.T) {
 	}
 
 	// Run test cases
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 	for _, tc := range cases {
 		err := val.Validate(ctx, tc.Value)

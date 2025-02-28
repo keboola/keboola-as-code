@@ -16,7 +16,7 @@ import (
 
 func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	logger := d.DebugLogger()
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(configmetadata.NewMapper(mockedState, d))
@@ -39,7 +39,7 @@ func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	recipe := model.NewLocalSaveRecipe(configState.Manifest(), configState.Local, model.NewChangedFields())
-	require.NoError(t, mockedState.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, mockedState.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	configManifest := recipe.ObjectManifest.(*model.ConfigManifest)

@@ -17,7 +17,7 @@ import (
 
 func Test_loadFile(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	projectState := newTestRegistry(t)
 
@@ -33,7 +33,7 @@ func Test_loadFile(t *testing.T) {
 func newTestRegistry(t *testing.T) *registry.Registry {
 	t.Helper()
 
-	r := registry.New(knownpaths.NewNop(context.Background()), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
+	r := registry.New(knownpaths.NewNop(t.Context()), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
 	// Branch 1
 	branch1Key := model.BranchKey{ID: 123}
 	branch1 := &model.BranchState{

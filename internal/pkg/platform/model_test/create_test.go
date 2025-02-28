@@ -162,7 +162,7 @@ func txForTest(t *testing.T) (context.Context, *model.Client, *model.Tx) {
 func clientForTest(t *testing.T) (context.Context, *model.Client) {
 	t.Helper()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	client := enttest.Open(t, "sqlite3", "file:model_test?mode=memory&_fk=1")
 	t.Cleanup(func() {
 		require.NoError(t, client.Close())

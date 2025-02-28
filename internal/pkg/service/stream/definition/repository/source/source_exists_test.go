@@ -19,7 +19,7 @@ import (
 func TestSourceRepository_ExistsOrErr(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
@@ -74,7 +74,7 @@ func TestSourceRepository_ExistsOrErr(t *testing.T) {
 func TestSourceRepository_MustNotExist(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 

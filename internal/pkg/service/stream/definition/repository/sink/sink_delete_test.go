@@ -23,7 +23,7 @@ import (
 func TestSinkRepository_SoftDelete(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
@@ -91,7 +91,7 @@ func TestSinkRepository_SoftDelete(t *testing.T) {
 func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
@@ -168,7 +168,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 

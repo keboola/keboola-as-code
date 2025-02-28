@@ -35,10 +35,10 @@ func TestCliLogger_File(t *testing.T) {
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, file, LogFormatConsole, false)
 
-	logger.Debug(context.Background(), "Debug msg")
-	logger.Info(context.Background(), "Info msg")
-	logger.Warn(context.Background(), "Warn msg")
-	logger.Error(context.Background(), "Error msg")
+	logger.Debug(t.Context(), "Debug msg")
+	logger.Info(t.Context(), "Info msg")
+	logger.Warn(t.Context(), "Warn msg")
+	logger.Error(t.Context(), "Error msg")
 	require.NoError(t, file.File().Close())
 
 	// Assert, all levels logged with the level prefix
@@ -60,7 +60,7 @@ func TestCliLogger_VerboseFalse(t *testing.T) {
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatConsole, false)
 	// Check that context attributes don't appear in stdout/stderr.
-	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"))
+	ctx := ctxattr.ContextWith(t.Context(), attribute.String("extra", "value"))
 
 	logger.Debug(ctx, "Debug msg")
 	logger.Info(ctx, "Info msg")
@@ -82,7 +82,7 @@ func TestCliLogger_VerboseTrue(t *testing.T) {
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatConsole, true)
 	// Check that context attributes don't appear in stdout/stderr.
-	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"))
+	ctx := ctxattr.ContextWith(t.Context(), attribute.String("extra", "value"))
 
 	logger.Debug(ctx, "Debug msg")
 	logger.Info(ctx, "Info msg")
@@ -103,7 +103,7 @@ func TestCliLogger_JSONVerboseFalse(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatJSON, false)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	logger.Debug(ctx, "Debug msg")
 	logger.Info(ctx, "Info msg")
@@ -130,7 +130,7 @@ func TestCliLogger_JSONVerboseTrue(t *testing.T) {
 	stdout := ioutil.NewAtomicWriter()
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, LogFormatJSON, true)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	logger.Debug(ctx, "Debug msg")
 	logger.Info(ctx, "Info msg")
@@ -165,7 +165,7 @@ func TestCliLogger_AttributeReplace(t *testing.T) {
 	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, file, LogFormatConsole, true)
 
-	ctx := ctxattr.ContextWith(context.Background(), attribute.String("extra", "value"), attribute.Int("count", 4))
+	ctx := ctxattr.ContextWith(t.Context(), attribute.String("extra", "value"), attribute.Int("count", 4))
 
 	logger.Debug(ctx, "Debug msg <extra> (<count>)")
 	logger.Info(ctx, "Info msg <extra> (<count>)")
@@ -213,7 +213,7 @@ func TestCliLogger_WithComponent(t *testing.T) {
 
 	logger = logger.WithComponent("component").WithComponent("subcomponent")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	logger.Debug(ctx, "Debug msg")
 	logger.Info(ctx, "Info msg")

@@ -25,7 +25,7 @@ func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
 		t.Skip("unstable on windows - random timeouts")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d := dependenciesLib.NewMocked(t, ctx)
 
 	// Copy the git repository to temp
@@ -33,7 +33,7 @@ func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
 	require.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
 	require.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	// Checkout fail due to non-existing template in the branch

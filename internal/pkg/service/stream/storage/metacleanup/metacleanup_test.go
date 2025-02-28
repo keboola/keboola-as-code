@@ -48,7 +48,7 @@ func (v testToken) ForSink(k key.SinkKey) etcdop.KeyT[keboolaSink.Token] {
 func TestMetadataCleanup(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	by := test.ByUser()
@@ -260,7 +260,7 @@ func TestMetadataCleanup(t *testing.T) {
 func TestMetadataProcessingJobCleanup(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	by := test.ByUser()

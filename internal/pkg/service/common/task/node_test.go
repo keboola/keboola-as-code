@@ -33,7 +33,7 @@ import (
 func TestSuccessfulTask(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
@@ -331,7 +331,7 @@ task/123/my-receiver/my-export/some.task/%s
 func TestFailedTask(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
@@ -672,7 +672,7 @@ task/123/my-receiver/my-export/some.task/%s
 func TestTaskTimeout(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
@@ -847,7 +847,7 @@ task/123/my-receiver/my-export/some.task/%s
 func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	etcdCfg := etcdhelper.TmpNamespace(t)

@@ -19,16 +19,16 @@ func TestInput_ValidateUserInput(t *testing.T) {
 		Kind:        "input",
 		Rules:       "gte=5,lte=10",
 	}
-	err := input.ValidateUserInput(context.Background(), 1)
+	err := input.ValidateUserInput(t.Context(), 1)
 	require.Error(t, err)
 	assert.Equal(t, "my input must be 5 or greater", err.Error())
 
-	err = input.ValidateUserInput(context.Background(), "1")
+	err = input.ValidateUserInput(t.Context(), "1")
 	require.Error(t, err)
 	assert.Equal(t, "my input should be int, got string", err.Error())
 
 	require.Error(t, err)
-	require.NoError(t, input.ValidateUserInput(context.Background(), 7))
+	require.NoError(t, input.ValidateUserInput(t.Context(), 7))
 
 	input = Input{
 		ID:          "input.id",
@@ -37,10 +37,10 @@ func TestInput_ValidateUserInput(t *testing.T) {
 		Type:        "bool",
 		Kind:        "confirm",
 	}
-	err = input.ValidateUserInput(context.Background(), 1)
+	err = input.ValidateUserInput(t.Context(), 1)
 	require.Error(t, err)
 	assert.Equal(t, "input should be bool, got int", err.Error())
-	require.NoError(t, input.ValidateUserInput(context.Background(), true))
+	require.NoError(t, input.ValidateUserInput(t.Context(), true))
 }
 
 func TestInput_ValidateUserInputOAuth(t *testing.T) {
@@ -54,11 +54,11 @@ func TestInput_ValidateUserInputOAuth(t *testing.T) {
 		Kind:        "oauth",
 		ComponentID: "foo.bar",
 	}
-	err := input.ValidateUserInput(context.Background(), []string{"one", "two"})
+	err := input.ValidateUserInput(t.Context(), []string{"one", "two"})
 	require.Error(t, err)
 	assert.Equal(t, "oauth should be object, got slice", err.Error())
 
-	err = input.ValidateUserInput(context.Background(), map[string]any{"a": "b"})
+	err = input.ValidateUserInput(t.Context(), map[string]any{"a": "b"})
 	require.NoError(t, err)
 }
 

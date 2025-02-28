@@ -17,7 +17,7 @@ func TestImporter(t *testing.T) {
 	t.Parallel()
 
 	// Create context
-	ctx := context.Background()
+	ctx := t.Context()
 	fs := aferofs.NewMemoryFs()
 	jsonnetCtx := jsonnet.NewContext().WithImporter(fsimporter.New(fs))
 

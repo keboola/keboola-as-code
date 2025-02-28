@@ -17,7 +17,7 @@ func TestLoadDotEnv(t *testing.T) {
 	// Memory fs
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Write envs to file
 	osEnvs := Empty()
@@ -28,7 +28,7 @@ func TestLoadDotEnv(t *testing.T) {
 
 	// Load envs
 	logger.Truncate()
-	envs := LoadDotEnv(context.Background(), logger, osEnvs, fs, []string{"."})
+	envs := LoadDotEnv(t.Context(), logger, osEnvs, fs, []string{"."})
 
 	// Assert
 	assert.Equal(t, map[string]string{
@@ -54,11 +54,11 @@ func TestLoadDotEnv_Invalid(t *testing.T) {
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 
 	// Write envs to file
-	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(".env.local", "invalid")))
+	require.NoError(t, fs.WriteFile(t.Context(), filesystem.NewRawFile(".env.local", "invalid")))
 
 	// Load envs
 	logger.Truncate()
-	envs := LoadDotEnv(context.Background(), logger, Empty(), fs, []string{"."})
+	envs := LoadDotEnv(t.Context(), logger, Empty(), fs, []string{"."})
 
 	// Assert
 	assert.Equal(t, map[string]string{}, envs.ToMap())

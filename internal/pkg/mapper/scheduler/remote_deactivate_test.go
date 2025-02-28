@@ -75,7 +75,7 @@ func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddDeleted(schedulerConfigState)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check API request

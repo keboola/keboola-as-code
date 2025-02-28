@@ -64,7 +64,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
 	recipe := model.NewRemoteSaveRecipe(configState.Manifest(), object, model.NewChangedFields("transformation"))
 
 	// Save
-	require.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeRemoteSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Blocks are stored in API object content

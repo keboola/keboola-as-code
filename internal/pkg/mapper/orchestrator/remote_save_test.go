@@ -130,7 +130,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	recipe := model.NewRemoteSaveRecipe(manifest, object, model.NewChangedFields("orchestration"))
 
 	// Save
-	require.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeRemoteSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Orchestration is stored in API object content

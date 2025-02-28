@@ -18,7 +18,7 @@ type fooType string
 func TestKeyOperations(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	k := Key("foo")
@@ -106,7 +106,7 @@ func TestKeyOperations(t *testing.T) {
 func TestTypedKeyOperations(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	k := typedKeyForTest()
@@ -253,7 +253,7 @@ func TestKeyT_ReplacePrefix(t *testing.T) {
 }
 
 func BenchmarkKey_Exists(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := Key("foo")
@@ -272,7 +272,7 @@ func BenchmarkKey_Exists(b *testing.B) {
 }
 
 func BenchmarkKey_Get(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := Key("foo")
@@ -291,7 +291,7 @@ func BenchmarkKey_Get(b *testing.B) {
 }
 
 func BenchmarkKey_Delete(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := Key("foo")
@@ -310,7 +310,7 @@ func BenchmarkKey_Delete(b *testing.B) {
 }
 
 func BenchmarkKey_Put(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := Key("foo")
@@ -326,7 +326,7 @@ func BenchmarkKey_Put(b *testing.B) {
 }
 
 func BenchmarkKey_PutIfNotExists(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := Key("foo")
@@ -342,7 +342,7 @@ func BenchmarkKey_PutIfNotExists(b *testing.B) {
 }
 
 func BenchmarkKeyT_Exists(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := typedKeyForTest()
@@ -361,7 +361,7 @@ func BenchmarkKeyT_Exists(b *testing.B) {
 }
 
 func BenchmarkKeyT_GetKV(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := typedKeyForTest()
@@ -380,7 +380,7 @@ func BenchmarkKeyT_GetKV(b *testing.B) {
 }
 
 func BenchmarkKeyT_Delete(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := typedKeyForTest()
@@ -399,7 +399,7 @@ func BenchmarkKeyT_Delete(b *testing.B) {
 }
 
 func BenchmarkKeyT_Put(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := typedKeyForTest()
@@ -415,7 +415,7 @@ func BenchmarkKeyT_Put(b *testing.B) {
 }
 
 func BenchmarkKeyT_PutIfNotExists(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	k := typedKeyForTest()

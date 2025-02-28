@@ -259,7 +259,7 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 func ExpectModificationInPrefix(t *testing.T, client *etcd.Client, pfx string, operation func()) *etcdserverpb.ResponseHeader {
 	t.Helper()
 
-	ctx, cancel := context.WithCancelCause(context.Background())
+	ctx, cancel := context.WithCancelCause(t.Context())
 	defer cancel(errors.New("expectation cancelled"))
 
 	ch := client.Watch(ctx, pfx, etcd.WithPrefix(), etcd.WithCreatedNotify())

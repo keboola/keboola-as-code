@@ -184,7 +184,7 @@ func (v *forTest) Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStub
 
 func (v *forTest) Metrics(t *testing.T, opts ...TestMeterOption) []metricdata.Metrics {
 	t.Helper()
-	return getActualMetrics(t, context.Background(), v.metricExporter, opts...)
+	return getActualMetrics(t, t.Context(), v.metricExporter, opts...)
 }
 
 func (v *forTest) MetricsJSONString(t *testing.T, opts ...TestMeterOption) string {

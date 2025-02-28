@@ -29,7 +29,7 @@ func TestInputsDetailDialog_Parse_DefaultValue(t *testing.T) {
 
 	// Parse
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs(), testStepsGroups())
-	stepGroups, err := d.parse(context.Background(), inputsDetailDialogDefaultValue)
+	stepGroups, err := d.parse(t.Context(), inputsDetailDialogDefaultValue)
 	require.NoError(t, err)
 	assert.Equal(t, testInputs().All(), d.inputs.All())
 
@@ -140,7 +140,7 @@ options: {"value1":"Label 1","value2":"Label 2","value3":123}  <!-- invalid opti
 
 	// Parse
 	d := newInputsDetailsDialog(nopPrompt.New(), testInputs(), testStepsGroups())
-	_, err := d.parse(context.Background(), result)
+	_, err := d.parse(t.Context(), result)
 	require.Error(t, err)
 	assert.Equal(t, strings.Trim(expected, "\n"), err.Error())
 }

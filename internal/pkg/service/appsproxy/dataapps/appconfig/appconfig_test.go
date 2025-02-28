@@ -226,7 +226,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			clk := clockwork.NewFakeClock()
 			d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
@@ -265,7 +265,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 func TestLoader_LoadConfig_Race(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	clk := clockwork.NewFakeClock()

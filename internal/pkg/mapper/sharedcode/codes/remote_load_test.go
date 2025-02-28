@@ -27,7 +27,7 @@ func TestSharedCodeRemoteLoad(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check config
@@ -62,7 +62,7 @@ func TestSharedCodeRemoteLoad_Legacy(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check config
@@ -97,7 +97,7 @@ func TestSharedCodeRemoteLoad_UnexpectedTypeInConfig(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 
 	// Check logs
 	expectedLogs := `
@@ -125,7 +125,7 @@ func TestSharedCodeRemoteLoad_UnexpectedTypeInRow(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 
 	// Check logs
 	expectedLogs := `

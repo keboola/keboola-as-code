@@ -41,7 +41,7 @@ func cases() []test {
 
 func TestLoadMinimalManifestFile(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, c := range cases() {
 		if c.name != "minimal" {
 			continue
@@ -59,7 +59,7 @@ func TestLoadMinimalManifestFile(t *testing.T) {
 		require.NoError(t, err)
 
 		// Evaluate
-		manifest, err := manifestFile.EvaluateAlwaysWithRecords(context.Background(), nil)
+		manifest, err := manifestFile.EvaluateAlwaysWithRecords(t.Context(), nil)
 		assert.NotNil(t, manifest)
 		require.NoError(t, err)
 
@@ -71,7 +71,7 @@ func TestLoadMinimalManifestFile(t *testing.T) {
 
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, c := range cases() {
 		if c.name == "minimal" {
 			continue
@@ -89,7 +89,7 @@ func TestLoadManifestFile(t *testing.T) {
 		require.NoError(t, err)
 
 		// Evaluate
-		manifest, err := manifestFile.Evaluate(context.Background(), nil)
+		manifest, err := manifestFile.Evaluate(t.Context(), nil)
 		assert.NotNil(t, manifest)
 		require.NoError(t, err)
 
@@ -101,7 +101,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 

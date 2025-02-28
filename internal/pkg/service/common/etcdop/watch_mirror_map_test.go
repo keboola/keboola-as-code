@@ -22,7 +22,7 @@ import (
 func TestMirrorMap(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	wg := &sync.WaitGroup{}
@@ -131,7 +131,7 @@ func TestMirrorMap(t *testing.T) {
 func TestMirror_WithOnUpdate(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	wg := &sync.WaitGroup{}
@@ -225,7 +225,7 @@ func TestMirror_WithOnUpdate(t *testing.T) {
 func TestMirrorMap_WithOnChanges(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	wg := &sync.WaitGroup{}

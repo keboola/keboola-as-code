@@ -126,7 +126,7 @@ func (*testCases) TestBasePath(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 }
 
 func (*testCases) TestWorkingDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.Equal(t, "my/dir", fs.WorkingDir())
 	require.NoError(t, fs.Mkdir(ctx, "some/dir"))
 	fs.SetWorkingDir(ctx, "some/dir")
@@ -136,7 +136,7 @@ func (*testCases) TestWorkingDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogg
 }
 
 func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("sub/dir1/dir2/file.txt", "foo\n")))
 	assert.True(t, fs.IsFile(ctx, `sub/dir1/dir2/file.txt`))
 
@@ -205,7 +205,7 @@ func (*testCases) TestSetLogger(t *testing.T, fs filesystem.Fs, _ log.DebugLogge
 }
 
 func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "sub/dir1/dir2/dir3"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("sub/dir2/file.txt", "foo\n")))
 
@@ -233,7 +233,7 @@ func (*testCases) TestWalk(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 }
 
 func (*testCases) TestGlob(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir2/file.txt", "foo\n")))
 
@@ -255,7 +255,7 @@ func (*testCases) TestGlob(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 }
 
 func (*testCases) TestStat(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir/file.txt", "foo\n")))
 	s, err := fs.Stat(ctx, `my/dir/file.txt`)
 	require.NoError(t, err)
@@ -263,7 +263,7 @@ func (*testCases) TestStat(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 }
 
 func (*testCases) TestReadDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir/subdir"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir/file.txt", "foo\n")))
 
@@ -273,7 +273,7 @@ func (*testCases) TestReadDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger)
 }
 
 func (*testCases) TestExists(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// Create file
 	filePath := "file.txt"
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filePath, "foo\n")))
@@ -286,7 +286,7 @@ func (*testCases) TestExists(t *testing.T, fs filesystem.Fs, logger log.DebugLog
 }
 
 func (*testCases) TestIsFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir/file.txt", "foo\n")))
 
@@ -297,7 +297,7 @@ func (*testCases) TestIsFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) 
 }
 
 func (*testCases) TestIsDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir/file.txt", "foo\n")))
 
@@ -308,7 +308,7 @@ func (*testCases) TestIsDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 }
 
 func (*testCases) TestCreate(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	fd, err := fs.Create(ctx, `file.txt`)
 	require.NoError(t, err)
 
@@ -323,7 +323,7 @@ func (*testCases) TestCreate(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) 
 }
 
 func (*testCases) TestOpen(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`file.txt`, "foo\n")))
 
 	fd, err := fs.Open(ctx, `file.txt`)
@@ -336,7 +336,7 @@ func (*testCases) TestOpen(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 }
 
 func (*testCases) TestOpenFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`file.txt`, "foo\n")))
 
 	fd, err := fs.OpenFile(ctx, `file.txt`, os.O_RDONLY, 0o600)
@@ -349,7 +349,7 @@ func (*testCases) TestOpenFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 }
 
 func (*testCases) TestMkdir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.False(t, fs.Exists(ctx, "my/dir"))
 	require.NoError(t, fs.Mkdir(ctx, "my/dir"))
 	assert.True(t, fs.Exists(ctx, "my/dir"))
@@ -358,7 +358,7 @@ func (*testCases) TestMkdir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 }
 
 func (*testCases) TestCopyFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.Mkdir(ctx, "my/dir2"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
@@ -373,7 +373,7 @@ func (*testCases) TestCopyFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 }
 
 func (*testCases) TestCopyFileExists(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.Mkdir(ctx, "my/dir2"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
@@ -387,7 +387,7 @@ func (*testCases) TestCopyFileExists(t *testing.T, fs filesystem.Fs, _ log.Debug
 }
 
 func (*testCases) TestCopyForce(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.Mkdir(ctx, "my/dir2"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
@@ -405,7 +405,7 @@ func (*testCases) TestCopyForce(t *testing.T, fs filesystem.Fs, _ log.DebugLogge
 }
 
 func (*testCases) TestCopyDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
 
@@ -419,7 +419,7 @@ func (*testCases) TestCopyDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger)
 }
 
 func (*testCases) TestCopyDirExists(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
 	require.NoError(t, fs.Mkdir(ctx, "my/dir2"))
@@ -431,7 +431,7 @@ func (*testCases) TestCopyDirExists(t *testing.T, fs filesystem.Fs, _ log.DebugL
 }
 
 func (*testCases) TestMoveFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.Mkdir(ctx, "my/dir2"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
@@ -446,7 +446,7 @@ func (*testCases) TestMoveFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 }
 
 func (*testCases) TestMoveFileExists(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.Mkdir(ctx, "my/dir2"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
@@ -460,7 +460,7 @@ func (*testCases) TestMoveFileExists(t *testing.T, fs filesystem.Fs, _ log.Debug
 }
 
 func (*testCases) TestMoveForce(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.Mkdir(ctx, "my/dir2"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
@@ -478,7 +478,7 @@ func (*testCases) TestMoveForce(t *testing.T, fs filesystem.Fs, _ log.DebugLogge
 }
 
 func (*testCases) TestMoveDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
 
@@ -492,7 +492,7 @@ func (*testCases) TestMoveDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger)
 }
 
 func (*testCases) TestMoveDirExists(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
 	require.NoError(t, fs.Mkdir(ctx, "my/dir2"))
@@ -504,7 +504,7 @@ func (*testCases) TestMoveDirExists(t *testing.T, fs filesystem.Fs, _ log.DebugL
 }
 
 func (*testCases) TestRemoveFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
 
@@ -514,7 +514,7 @@ func (*testCases) TestRemoveFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogg
 }
 
 func (*testCases) TestRemoveDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Mkdir(ctx, "my/dir1"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("my/dir1/file.txt", "foo\n")))
 
@@ -524,12 +524,12 @@ func (*testCases) TestRemoveDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogge
 }
 
 func (*testCases) TestRemoveNotExist(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, fs.Remove(ctx, "my/dir1/file.txt"))
 }
 
 func (*testCases) TestReadFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// Create file
 	filePath := "file.txt"
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filePath, "foo\n")))
@@ -544,7 +544,7 @@ func (*testCases) TestReadFile(t *testing.T, fs filesystem.Fs, logger log.DebugL
 }
 
 func (*testCases) TestReadFileNotFound(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	filePath := "file.txt"
 	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(filePath))
 	require.Error(t, err)
@@ -554,7 +554,7 @@ func (*testCases) TestReadFileNotFound(t *testing.T, fs filesystem.Fs, logger lo
 }
 
 func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	filePath := "file.txt"
 
 	// Write
@@ -569,7 +569,7 @@ func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, logger log.Debug
 }
 
 func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	filePath := "my/dir/file.txt"
 
 	// Write
@@ -588,7 +588,7 @@ func (*testCases) TestWriteFileDirNotFound(t *testing.T, fs filesystem.Fs, logge
 }
 
 func (*testCases) TestWriteFile_JsonFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	filePath := "file.json"
 
 	// Write
@@ -605,7 +605,7 @@ func (*testCases) TestWriteFile_JsonFile(t *testing.T, fs filesystem.Fs, logger 
 }
 
 func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	ctx := context.Background()
+	ctx := t.Context()
 	filePath := "file.txt"
 
 	// Create empty file

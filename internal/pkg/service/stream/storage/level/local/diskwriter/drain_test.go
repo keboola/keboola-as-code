@@ -41,7 +41,7 @@ func TestOpen_DrainFile_TrueFalse(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 
 	// Close volume
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 }
 
 // TestOpen_DrainFile_FalseTrue tests that the volume can be blocked for writing by a drain file.
@@ -68,5 +68,5 @@ func TestOpen_DrainFile_FalseTrue(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 
 	// Close volume
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 }

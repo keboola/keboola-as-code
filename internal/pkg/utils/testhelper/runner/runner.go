@@ -73,7 +73,7 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 
 	state := &fixtures.StateFile{}
 
-	if testDirFS.IsFile(context.Background(), initialStateFileName) {
+	if testDirFS.IsFile(t.Context(), initialStateFileName) {
 		state, err = fixtures.LoadStateFile(testDirFS, initialStateFileName)
 		require.NoError(t, err)
 	}
@@ -91,7 +91,7 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 	project := testproject.GetTestProjectForTest(t, "", backendOptions...)
 	// Create context with timeout.
 	// Acquiring a test project and setting it up is not part of the timeout.
-	ctx, cancelFn := context.WithTimeout(context.Background(), testTimeout)
+	ctx, cancelFn := context.WithTimeout(t.Context(), testTimeout)
 
 	// Create ENV provider
 	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.ProjectAPI(), project.Env())

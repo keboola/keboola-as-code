@@ -24,7 +24,7 @@ import (
 func TestNodesDiscovery(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewRealClock() // use real clock
 
 	etcdCfg := etcdhelper.TmpNamespace(t)
@@ -103,7 +103,7 @@ node3
 `)
 
 	// Shutdown node1
-	processes[0].Shutdown(context.Background(), errors.New("bye bye 1"))
+	processes[0].Shutdown(t.Context(), errors.New("bye bye 1"))
 	processes[0].WaitForShutdown()
 	assert.Eventually(t, func() bool {
 		return reflect.DeepEqual([]string{"node2", "node3"}, nodes[1].Nodes())
@@ -140,7 +140,7 @@ node3
 	assert.False(t, nodes[2].MustCheckIsOwner("foo1"))
 
 	// Shutdown node2
-	processes[1].Shutdown(context.Background(), errors.New("bye bye 2"))
+	processes[1].Shutdown(t.Context(), errors.New("bye bye 2"))
 	processes[1].WaitForShutdown()
 	assert.Eventually(t, func() bool {
 		return reflect.DeepEqual([]string{"node3"}, nodes[2].Nodes())
@@ -166,7 +166,7 @@ node3
 	assert.True(t, nodes[2].MustCheckIsOwner("foo4"))
 
 	// Shutdown node3
-	processes[2].Shutdown(context.Background(), errors.New("bye bye 3"))
+	processes[2].Shutdown(t.Context(), errors.New("bye bye 3"))
 	processes[2].WaitForShutdown()
 	etcdhelper.AssertKVsString(t, client, "")
 
@@ -257,7 +257,7 @@ node4
 >>>>>
 `)
 	// Shutdown node 4
-	process4.Shutdown(context.Background(), errors.New("bye bye 4"))
+	process4.Shutdown(t.Context(), errors.New("bye bye 4"))
 	process4.WaitForShutdown()
 	etcdhelper.AssertKVsString(t, client, "")
 

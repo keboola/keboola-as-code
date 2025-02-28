@@ -23,18 +23,18 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 
 	// Write file
 	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(rowState.ConfigRowManifest.Path(), targetComponentID))
-	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(codeFilePath, `foo bar`)))
+	require.NoError(t, fs.WriteFile(t.Context(), filesystem.NewRawFile(codeFilePath, `foo bar`)))
 	logger.Truncate()
 
 	// Load config
 	configRecipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
-	err := state.Mapper().MapAfterLocalLoad(context.Background(), configRecipe)
+	err := state.Mapper().MapAfterLocalLoad(t.Context(), configRecipe)
 	require.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Load row
 	rowRecipe := model.NewLocalLoadRecipe(state.FileLoader(), rowState.Manifest(), rowState.Local)
-	err = state.Mapper().MapAfterLocalLoad(context.Background(), rowRecipe)
+	err = state.Mapper().MapAfterLocalLoad(t.Context(), rowRecipe)
 	require.NoError(t, err)
 	logger.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"branch/config/row/code.py\""}`)
 
@@ -64,13 +64,13 @@ func TestSharedCodeLocalLoad_MissingCodeFile(t *testing.T) {
 
 	// Load config
 	configRecipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
-	err := state.Mapper().MapAfterLocalLoad(context.Background(), configRecipe)
+	err := state.Mapper().MapAfterLocalLoad(t.Context(), configRecipe)
 	require.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Load row
 	rowRecipe := model.NewLocalLoadRecipe(state.FileLoader(), rowState.Manifest(), rowState.Local)
-	err = state.Mapper().MapAfterLocalLoad(context.Background(), rowRecipe)
+	err = state.Mapper().MapAfterLocalLoad(t.Context(), rowRecipe)
 	require.Error(t, err)
 	assert.Equal(t, `missing shared code file "branch/config/row/code.py"`, err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())

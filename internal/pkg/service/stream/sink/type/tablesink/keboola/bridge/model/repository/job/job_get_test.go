@@ -23,7 +23,7 @@ func TestJobRepository_Get(t *testing.T) {
 	t.Parallel()
 
 	by := test.ByUser()
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 
 	d, mocked := dependencies.NewMockedServiceScope(t, ctx)

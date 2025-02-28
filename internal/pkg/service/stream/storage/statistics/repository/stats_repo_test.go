@@ -14,7 +14,7 @@ import (
 func TestRepository_ObjectPrefix(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d, _ := dependencies.NewMockedStorageScope(t, ctx)
 	repo := d.StatisticsRepository()
 

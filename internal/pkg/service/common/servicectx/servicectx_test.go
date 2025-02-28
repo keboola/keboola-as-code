@@ -18,7 +18,7 @@ func TestProcess_Add(t *testing.T) {
 	proc := New(WithLogger(logger))
 
 	// OpCtx simulates long running operations
-	opCtx, opCancel := context.WithCancelCause(context.Background())
+	opCtx, opCancel := context.WithCancelCause(t.Context())
 
 	// There are some parallel operations
 	opWg := &sync.WaitGroup{}
@@ -103,7 +103,7 @@ func TestProcess_Shutdown(t *testing.T) {
 	proc := New(WithLogger(logger))
 
 	// OpCtx simulates long running operations
-	opCtx, opCancel := context.WithCancelCause(context.Background())
+	opCtx, opCancel := context.WithCancelCause(t.Context())
 
 	// There are some parallel operations
 	opWg1 := &sync.WaitGroup{}

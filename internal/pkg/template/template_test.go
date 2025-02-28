@@ -42,7 +42,7 @@ func TestTemplate_TestsDir(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, fs.Mkdir(ctx, "tests/one"))
 	require.NoError(t, fs.Mkdir(ctx, "tests/two"))
@@ -60,7 +60,7 @@ func TestTemplate_Test(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, fs.Mkdir(ctx, "tests/one"))
 	require.NoError(t, fs.Mkdir(ctx, "tests/one/sub1"))
@@ -79,7 +79,7 @@ func TestTemplate_Tests(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, fs.Mkdir(ctx, "tests/one"))
 	require.NoError(t, fs.Mkdir(ctx, "tests/two"))
@@ -102,7 +102,7 @@ func TestTemplate_TestInputs(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, fs.Mkdir(ctx, "tests/one"))
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("tests/one/inputs.json", `{"foo":"bar"}`)))

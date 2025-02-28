@@ -31,7 +31,7 @@ import (
 func TestDiskCleanup(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time())
 	by := test.ByUser()
 

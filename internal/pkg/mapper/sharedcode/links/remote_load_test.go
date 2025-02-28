@@ -26,7 +26,7 @@ func TestRemoteLoadTranWithSharedCode(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(transformation)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Values from content are converted to struct
@@ -54,7 +54,7 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeId(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(transformation)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	expectedLogs := `
 WARN  Warning:
 - Missing shared code config "branch:123/component:keboola.shared-code/config:missing":
@@ -87,7 +87,7 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeRowId(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(transformation)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	expectedLogs := `
 WARN  Warning:
 - Missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":

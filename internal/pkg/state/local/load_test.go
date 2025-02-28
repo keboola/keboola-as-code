@@ -19,7 +19,7 @@ func TestLocalLoadModelNotFound(t *testing.T) {
 	record := &fixtures.MockedManifest{}
 
 	// Load
-	found, err := manager.loadObject(context.Background(), record, target)
+	found, err := manager.loadObject(t.Context(), record, target)
 	assert.False(t, found)
 	require.Error(t, err)
 	assert.Equal(t, "kind \"test\" not found", err.Error())

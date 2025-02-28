@@ -45,7 +45,7 @@ func TestManifestFileNotFound(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(context.Background(), fs)
+	manifest, err := Load(t.Context(), fs)
 	assert.Nil(t, manifest)
 	require.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/repository.json" not found`, err.Error())
@@ -53,7 +53,7 @@ func TestManifestFileNotFound(t *testing.T) {
 
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
@@ -73,7 +73,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
@@ -91,7 +91,7 @@ func TestSaveManifestFile(t *testing.T) {
 func TestManifestContentValidateEmpty(t *testing.T) {
 	t.Parallel()
 	c := &file{}
-	err := c.validate(context.Background())
+	err := c.validate(t.Context())
 	require.Error(t, err)
 	expected := "repository manifest is not valid:\n- \"version\" is a required field\n- \"author.name\" is a required field\n- \"author.url\" is a required field"
 	assert.Equal(t, expected, err.Error())
@@ -99,19 +99,19 @@ func TestManifestContentValidateEmpty(t *testing.T) {
 
 func TestManifestContentValidateMinimal(t *testing.T) {
 	t.Parallel()
-	require.NoError(t, minimalStruct().validate(context.Background()))
+	require.NoError(t, minimalStruct().validate(t.Context()))
 }
 
 func TestManifestContentValidateFull(t *testing.T) {
 	t.Parallel()
-	require.NoError(t, fullStruct().validate(context.Background()))
+	require.NoError(t, fullStruct().validate(t.Context()))
 }
 
 func TestManifestContentValidateBadVersion(t *testing.T) {
 	t.Parallel()
 	manifestContent := minimalStruct()
 	manifestContent.Version = 123
-	err := manifestContent.validate(context.Background())
+	err := manifestContent.validate(t.Context())
 	require.Error(t, err)
 	expected := `
 repository manifest is not valid:
@@ -153,7 +153,7 @@ func TestManifestContentValidateRequiredTemplatePath(t *testing.T) {
 			},
 		},
 	}
-	err := manifestContent.validate(context.Background())
+	err := manifestContent.validate(t.Context())
 	require.Error(t, err)
 	expected := `
 repository manifest is not valid:
@@ -196,7 +196,7 @@ func TestManifestContentValidateExcludedTemplatePath(t *testing.T) {
 			},
 		},
 	}
-	err := manifestContent.validate(context.Background())
+	err := manifestContent.validate(t.Context())
 	require.Error(t, err)
 	expected := `
 repository manifest is not valid:
@@ -208,7 +208,7 @@ repository manifest is not valid:
 
 func TestManifestBadRecordSemanticVersion(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	fs := aferofs.NewMemoryFs()
 
 	fileContent := `

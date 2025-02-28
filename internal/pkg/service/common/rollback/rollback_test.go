@@ -65,7 +65,7 @@ func TestRollback(t *testing.T) {
 		return nil
 	})
 
-	main.Invoke(context.Background())
+	main.Invoke(t.Context())
 
 	expected := `
 {"level":"debug","message":"main 4"}

@@ -22,7 +22,7 @@ func TestJobRepository_List(t *testing.T) {
 	t.Parallel()
 
 	by := test.ByUser()
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 
 	d, mocked := dependencies.NewMockedServiceScope(t, ctx)
@@ -94,7 +94,7 @@ func TestJobRepository_List(t *testing.T) {
 func TestJobRepository_ListDeleted(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 

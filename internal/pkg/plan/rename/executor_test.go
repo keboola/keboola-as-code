@@ -27,7 +27,7 @@ func TestRename(t *testing.T) {
 	validator := validatorPkg.New()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	manifest := projectManifest.New(1, "foo")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Dir structure
 	require.NoError(t, fs.Mkdir(ctx, `foo1/sub`))
@@ -56,7 +56,7 @@ func TestRename(t *testing.T) {
 	// NewPlan
 	projectState := state.NewRegistry(knownpaths.NewNop(ctx), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
-	executor := newRenameExecutor(context.Background(), localManager, plan)
+	executor := newRenameExecutor(t.Context(), localManager, plan)
 	require.NoError(t, executor.invoke())
 	logsStr := logger.AllMessages()
 	assert.NotContains(t, logsStr, `warn`)
@@ -84,7 +84,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	validator := validatorPkg.New()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	manifest := projectManifest.New(1, "foo")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Dir structure
 	require.NoError(t, fs.Mkdir(ctx, `foo1/sub`))
@@ -126,7 +126,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	// NewPlan
 	projectState := state.NewRegistry(knownpaths.NewNop(ctx), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
-	executor := newRenameExecutor(context.Background(), localManager, plan)
+	executor := newRenameExecutor(t.Context(), localManager, plan)
 	err := executor.invoke()
 	require.Error(t, err)
 	logsStr := logger.AllMessages()

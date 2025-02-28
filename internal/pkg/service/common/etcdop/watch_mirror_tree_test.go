@@ -30,7 +30,7 @@ type testUserFullName string
 func TestMirrorTree(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	wg := &sync.WaitGroup{}
@@ -135,7 +135,7 @@ func TestMirrorTree(t *testing.T) {
 func TestMirrorTree_WithOnUpdate(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	wg := &sync.WaitGroup{}
@@ -225,7 +225,7 @@ func TestMirrorTree_WithOnUpdate(t *testing.T) {
 func TestMirrorTree_WithOnChanges(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	wg := &sync.WaitGroup{}
@@ -361,7 +361,7 @@ func TestMirrorTree_WithOnChanges(t *testing.T) {
 func TestFullMirrorTree(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	wg := &sync.WaitGroup{}

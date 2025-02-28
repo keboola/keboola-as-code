@@ -41,7 +41,7 @@ func (p portManager) GetFreePort() int {
 func TestAppProxyHandler(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Start app
 	pm := newZeroPortManager()

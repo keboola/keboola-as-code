@@ -333,7 +333,7 @@ func TestValidationRules(t *testing.T) {
 	// Test all cases
 	for _, c := range cases {
 		stepsGroups[0].Steps[0].Inputs = c.inputs
-		err := stepsGroups.ValidateDefinitions(context.Background())
+		err := stepsGroups.ValidateDefinitions(t.Context())
 		if c.error == "" {
 			// Expected nil errors.MultiError
 			require.NoError(t, err)

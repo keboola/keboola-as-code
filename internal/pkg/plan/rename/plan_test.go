@@ -23,7 +23,7 @@ func TestRenameAllPlan(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	fs := testFs(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 
 	// Mocked API response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]any{
@@ -94,7 +94,7 @@ func testFs(t *testing.T, inputDir string) filesystem.Fs {
 	envs := env.Empty()
 	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
-	err := testhelper.ReplaceEnvsDir(context.Background(), fs, `/`, envs)
+	err := testhelper.ReplaceEnvsDir(t.Context(), fs, `/`, envs)
 	require.NoError(t, err)
 
 	return fs

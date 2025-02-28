@@ -26,7 +26,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 
 	// Invoke
 	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// path to shared code is part of the Content
@@ -81,7 +81,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 
 	// Invoke
 	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	expectedLogs := `
 WARN  Warning:
 - Missing shared code config "branch:123/component:keboola.shared-code/config:missing":
@@ -146,7 +146,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 
 	// Invoke
 	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	expectedLogs := `
 WARN  Warning:
 - Missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
