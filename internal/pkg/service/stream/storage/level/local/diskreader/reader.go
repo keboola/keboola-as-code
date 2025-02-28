@@ -306,7 +306,10 @@ func openFileAndWrite(
 	}
 }
 
-func checkGZIP(
+// verifyFileCompression checks if a file can be properly read with the configured compression.
+// It attempts to read the file using the provided compression settings to validate its format.
+// Works with both compressed and uncompressed files based on configuration.
+func verifyFileCompression(
 	localCompression compression.Config,
 	file File,
 	filePath string,
