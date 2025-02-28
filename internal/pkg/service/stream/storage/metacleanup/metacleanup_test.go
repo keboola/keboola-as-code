@@ -429,14 +429,22 @@ func TestMetadataProcessingJobCleanupErrorTolerance(t *testing.T) {
 		require.NoError(t, d.KeboolaBridgeRepository().Job().Create(&job).Do(ctx).Err())
 	}
 
+	// One job with valid id, this one should fail with "context canceled"
+	job := bridgeEntity.NewJob(keboolaModel.JobKey{SinkKey: sinkKey, JobID: keboolaModel.JobID(strconv.Itoa(1))})
+	require.NoError(t, d.KeboolaBridgeRepository().Job().Create(&job).Do(ctx).Err())
+
 	// Cleanup
 	{
 		logger.Truncate()
 		clk.Advance(cleanupInterval)
 
+		time.Sleep(1 * time.Second)
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
-			actual := strings.Count(logger.AllMessages(), `{"level":"error","message":"cannot get keboola storage job \"123/456/my-source/my-sink/job`)
+			messages := logger.AllMessages()
+			assert.Contains(c, messages, `context canceled`)
+			actual := strings.Count(messages, `"message":"cannot get keboola storage job \"123/456/my-source/my-sink/job`)
 			assert.GreaterOrEqual(c, actual, 5)
+			assert.LessOrEqual(c, actual, 6)
 		}, 2*time.Second, 100*time.Millisecond)
 	}
 }
