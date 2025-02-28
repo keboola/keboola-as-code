@@ -2,7 +2,6 @@ package etcdhelper_test
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"strings"
 	"testing"

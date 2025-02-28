@@ -1,7 +1,6 @@
 package dialog_test
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"

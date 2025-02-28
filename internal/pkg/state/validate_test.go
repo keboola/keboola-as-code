@@ -1,7 +1,6 @@
 package state_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 

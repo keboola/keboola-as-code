@@ -1,7 +1,6 @@
 package dialog
 
 import (
-	"context"
 	"strings"
 	"testing"
 

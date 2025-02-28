@@ -1,7 +1,6 @@
 package input
 
 import (
-	"context"
 	"strings"
 	"testing"
 

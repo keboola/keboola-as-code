@@ -2,7 +2,6 @@ package file_test
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"testing"
 	"time"

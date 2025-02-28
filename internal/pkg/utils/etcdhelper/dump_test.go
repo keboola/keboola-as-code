@@ -1,7 +1,6 @@
 package etcdhelper_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 

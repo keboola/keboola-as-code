@@ -1,7 +1,6 @@
 package fsimporter_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

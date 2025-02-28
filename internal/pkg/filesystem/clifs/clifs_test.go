@@ -2,7 +2,6 @@
 package clifs
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"

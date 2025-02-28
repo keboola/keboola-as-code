@@ -1,7 +1,6 @@
 package etcdop
 
 import (
-	"context"
 	"fmt"
 	"testing"
 

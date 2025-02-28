@@ -2,7 +2,6 @@ package size
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"os"
 	"path/filepath"

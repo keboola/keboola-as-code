@@ -1,7 +1,6 @@
 package upgrade
 
 import (
-	"context"
 	"fmt"
 	"testing"
 

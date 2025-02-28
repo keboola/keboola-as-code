@@ -1,7 +1,6 @@
 package rename
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"

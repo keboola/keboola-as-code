@@ -1,7 +1,6 @@
 package diskcleanup_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"

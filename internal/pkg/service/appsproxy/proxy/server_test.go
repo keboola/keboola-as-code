@@ -1,7 +1,6 @@
 package proxy_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"

@@ -2,7 +2,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"runtime"

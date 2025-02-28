@@ -1,7 +1,6 @@
 package manifest
 
 import (
-	"context"
 	"strings"
 	"testing"
 

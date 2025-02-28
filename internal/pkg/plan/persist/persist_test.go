@@ -1,7 +1,6 @@
 package persist
 
 import (
-	"context"
 	"net/http"
 	"runtime"
 	"testing"

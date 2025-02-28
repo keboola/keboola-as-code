@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"testing"

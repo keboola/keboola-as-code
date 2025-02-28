@@ -3,7 +3,6 @@
 package diskwriter_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/c2h5oh/datasize"

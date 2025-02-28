@@ -1,7 +1,6 @@
 package init
 
 import (
-	"context"
 	"sync"
 	"testing"
 

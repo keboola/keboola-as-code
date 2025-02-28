@@ -1,7 +1,6 @@
 package version
 
 import (
-	"context"
 	"testing"
 
 	"github.com/jarcoal/httpmock"

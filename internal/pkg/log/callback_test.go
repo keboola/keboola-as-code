@@ -2,7 +2,6 @@
 package log
 
 import (
-	"context"
 	"testing"
 	"time"
 

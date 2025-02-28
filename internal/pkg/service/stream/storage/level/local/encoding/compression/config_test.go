@@ -1,7 +1,6 @@
 package compression
 
 import (
-	"context"
 	"strings"
 	"testing"
 

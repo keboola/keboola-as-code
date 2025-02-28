@@ -1,7 +1,6 @@
 package corefiles_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"

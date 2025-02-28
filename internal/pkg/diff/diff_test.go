@@ -1,7 +1,6 @@
 package diff
 
 import (
-	"context"
 	"strings"
 	"testing"
 

@@ -1,7 +1,6 @@
 package dependencies
 
 import (
-	"context"
 	"net/http"
 	"testing"
 

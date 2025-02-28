@@ -1,7 +1,6 @@
 package volume_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/jonboulle/clockwork"

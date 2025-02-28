@@ -1,7 +1,6 @@
 package schema_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 

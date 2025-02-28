@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"strings"
 	"testing"
 

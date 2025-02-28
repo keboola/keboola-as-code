@@ -1,7 +1,6 @@
 package corefiles_test
 
 import (
-	"context"
 	"runtime"
 	"strings"
 	"testing"

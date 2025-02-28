@@ -1,7 +1,6 @@
 package encryption
 
 import (
-	"context"
 	"strings"
 	"testing"
 

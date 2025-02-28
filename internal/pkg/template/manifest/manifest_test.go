@@ -1,7 +1,6 @@
 package manifest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/wildcards"

@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
-
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/umisama/go-regexpcache"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
-	"github.com/umisama/go-regexpcache"
 )
 
 type createTmplDialogDeps interface {

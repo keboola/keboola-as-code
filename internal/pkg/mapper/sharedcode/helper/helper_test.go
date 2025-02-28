@@ -1,7 +1,6 @@
 package helper_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"

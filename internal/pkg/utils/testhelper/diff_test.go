@@ -3,7 +3,6 @@ package testhelper_test
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"testing"
 

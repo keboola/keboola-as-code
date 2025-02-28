@@ -1,7 +1,6 @@
 package use
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"

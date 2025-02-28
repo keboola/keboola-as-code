@@ -1,7 +1,6 @@
 package diskwriter_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"

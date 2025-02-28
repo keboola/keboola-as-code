@@ -1,7 +1,6 @@
 package readernode_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"

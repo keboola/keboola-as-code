@@ -1,7 +1,6 @@
 package defaultbucket_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 

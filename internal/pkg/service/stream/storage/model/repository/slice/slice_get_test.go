@@ -2,7 +2,6 @@ package slice_test
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
 	"github.com/jonboulle/clockwork"

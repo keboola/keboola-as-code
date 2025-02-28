@@ -1,7 +1,6 @@
 package metacleanup_test
 
 import (
-	"context"
 	"strconv"
 	"strings"
 	"testing"

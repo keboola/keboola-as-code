@@ -1,7 +1,6 @@
 package scheduler_test
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"testing"

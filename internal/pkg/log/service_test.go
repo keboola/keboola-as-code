@@ -1,7 +1,6 @@
 package log
 
 import (
-	"context"
 	"strings"
 	"testing"
 )

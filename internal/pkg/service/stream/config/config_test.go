@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"context"
 	"net/url"
 	"strings"
 	"testing"

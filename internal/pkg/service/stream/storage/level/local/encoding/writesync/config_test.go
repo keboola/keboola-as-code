@@ -1,7 +1,6 @@
 package writesync
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"

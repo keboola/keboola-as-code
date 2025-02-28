@@ -1,7 +1,6 @@
 package telemetry_test
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/otel/codes"

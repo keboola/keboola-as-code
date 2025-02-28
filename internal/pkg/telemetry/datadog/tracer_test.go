@@ -1,7 +1,6 @@
 package datadog_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 

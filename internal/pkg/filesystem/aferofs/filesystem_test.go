@@ -1,7 +1,6 @@
 package aferofs_test
 
 import (
-	"context"
 	"io"
 	iofs "io/fs"
 	"os"

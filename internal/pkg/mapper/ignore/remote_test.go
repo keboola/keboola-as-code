@@ -1,7 +1,6 @@
 package ignore_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"

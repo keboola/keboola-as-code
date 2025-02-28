@@ -1,7 +1,6 @@
 package variables_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/variables"

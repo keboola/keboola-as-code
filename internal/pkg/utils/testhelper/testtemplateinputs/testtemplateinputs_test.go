@@ -1,7 +1,6 @@
 package testtemplateinputs
 
 import (
-	"context"
 	"os"
 	"testing"
 

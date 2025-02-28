@@ -1,7 +1,6 @@
 package codes_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 

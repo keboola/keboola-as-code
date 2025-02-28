@@ -1,7 +1,6 @@
 package rename
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
