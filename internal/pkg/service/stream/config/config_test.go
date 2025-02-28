@@ -156,6 +156,8 @@ storage:
         interval: 30s
         # How many files are deleted in parallel. Validation rules: required,min=1,max=500
         concurrency: 50
+        # How many errors are tolerated before failing. Validation rules: required,min=0,max=100
+        errorTolerance: 10
         # Expiration interval of a file that has not yet been imported. Validation rules: required,minDuration=1h,maxDuration=720h,gtefield=ArchivedFileExpiration
         activeFileExpiration: 168h0m0s
         # Expiration interval of a file that has already been imported. Validation rules: required,minDuration=15m,maxDuration=720h
