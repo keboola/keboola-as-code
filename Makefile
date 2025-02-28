@@ -119,3 +119,7 @@ godoc:
 
 check-licenses:
 	go tool go-licenses check ./... --disallowed_types forbidden,restricted
+
+update:
+	go tool go-mod-upgrade
+	go mod tidy
