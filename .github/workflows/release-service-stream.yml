@@ -3,8 +3,7 @@ name: 'Release: Stream Service'
 on:
   push:
     tags:
-      - 'production-stream-v**'
-      - 'dev-stream-v**'
+      - '**'
 
 env:
   # DockerHub login
@@ -50,7 +49,7 @@ jobs:
     name: "Build & Push Image"
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
+      id-token: none
     needs:
       - test-lint
       - test-unit
@@ -85,43 +84,43 @@ jobs:
           context: .
           file: provisioning/stream/docker/service/race/Dockerfile
 
-      - name: Push Service image to Amazon ECR, Azure ACR and GCP GAR
-        uses: ./.github/actions/push-image-aws-azure-gcp
-        with:
-          imageName: ${{ env.IMAGE_NAME }}
-          imageTag: ${{ env.IMAGE_TAG }}
-          ecrRegion: ${{ env.ECR_REGION }}
-          ecrRepository: ${{ env.ECR_REPOSITORY }}
-          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
-          gcpRegistry: ${{ env.GCP_REGISTRY }}
-          gcpRepository: ${{ env.GCP_REPOSITORY }}
-          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
-          gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
-          acrRegistry: ${{ env.ACR_REGISTRY }}
-          acrRepository: ${{ env.ACR_REPOSITORY }}
-          acrUsername: ${{ env.ACR_USERNAME }}
-          acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
-
-      - name: Push Service image with race detector to Amazon ECR, Azure ACR and GCP GAR
-        uses: ./.github/actions/push-image-aws-azure-gcp
-        with:
-          imageName: ${{ env.IMAGE_NAME }}
-          imageTag: ${{ env.IMAGE_TAG }}-race
-          ecrRegion: ${{ env.ECR_REGION }}
-          ecrRepository: ${{ env.ECR_REPOSITORY }}
-          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
-          gcpRegistry: ${{ env.GCP_REGISTRY }}
-          gcpRepository: ${{ env.GCP_REPOSITORY }}
-          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
-          gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
-          acrRegistry: ${{ env.ACR_REGISTRY }}
-          acrRepository: ${{ env.ACR_REPOSITORY }}
-          acrUsername: ${{ env.ACR_USERNAME }}
-          acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
-
-      - name: Trigger image tag update
-        uses: ./.github/actions/trigger-image-tag-update
-        with:
-          helm-chart: "stream"
-          image-tag: ${{ env.IMAGE_TAG }}
-          github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}
+          #      - name: Push Service image to Amazon ECR, Azure ACR and GCP GAR
+          #        uses: ./.github/actions/push-image-aws-azure-gcp
+          #        with:
+          #          imageName: ${{ env.IMAGE_NAME }}
+          #          imageTag: ${{ env.IMAGE_TAG }}
+          #          ecrRegion: ${{ env.ECR_REGION }}
+          #          ecrRepository: ${{ env.ECR_REPOSITORY }}
+          #          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
+          #          gcpRegistry: ${{ env.GCP_REGISTRY }}
+          #          gcpRepository: ${{ env.GCP_REPOSITORY }}
+          #          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+          #          gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
+          #          acrRegistry: ${{ env.ACR_REGISTRY }}
+          #          acrRepository: ${{ env.ACR_REPOSITORY }}
+          #          acrUsername: ${{ env.ACR_USERNAME }}
+          #          acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
+          #
+          #      - name: Push Service image with race detector to Amazon ECR, Azure ACR and GCP GAR
+          #        uses: ./.github/actions/push-image-aws-azure-gcp
+          #        with:
+          #          imageName: ${{ env.IMAGE_NAME }}
+          #          imageTag: ${{ env.IMAGE_TAG }}-race
+          #          ecrRegion: ${{ env.ECR_REGION }}
+          #          ecrRepository: ${{ env.ECR_REPOSITORY }}
+          #          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
+          #          gcpRegistry: ${{ env.GCP_REGISTRY }}
+          #          gcpRepository: ${{ env.GCP_REPOSITORY }}
+          #          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+          #          gcpServiceAccount: ${{ env.GCP_ACCOUNT }}
+          #          acrRegistry: ${{ env.ACR_REGISTRY }}
+          #          acrRepository: ${{ env.ACR_REPOSITORY }}
+          #          acrUsername: ${{ env.ACR_USERNAME }}
+          #          acrPassword: ${{ secrets.STREAM_ACR_PASSWORD }}
+          #
+          #      - name: Trigger image tag update
+          #        uses: ./.github/actions/trigger-image-tag-update
+          #        with:
+          #          helm-chart: "stream"
+          #          image-tag: ${{ env.IMAGE_TAG }}
+          #          github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}
