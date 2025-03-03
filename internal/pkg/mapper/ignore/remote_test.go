@@ -1,7 +1,6 @@
 package ignore_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -53,7 +52,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	changes.AddLoaded(targetConfig)
 	changes.AddLoaded(targetVars)
 	changes.AddLoaded(unattachedVars)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	logger.AssertJSONMessages(t, `{"level":"debug","message":"Ignored unattached variables config \"branch:1/component:keboola.variables/config:3\""}`)
 
 	// Unattached variables are removed
@@ -114,7 +113,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	changes.AddLoaded(targetConfig)
 	changes.AddLoaded(ignoredScheduler)
 	changes.AddLoaded(validScheduler)
-	require.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
 	logger.AssertJSONMessages(t, `{"level":"debug","message":"Ignored scheduler config \"branch:1/component:keboola.scheduler/config:3\", target config \"branch:1/component:keboola.foo-bar/config:789\" not found"}`)
 
 	// Unattached variables are removed

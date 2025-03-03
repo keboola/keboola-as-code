@@ -26,7 +26,7 @@ import (
 func TestGuestUserWorkflow(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Second)
 	defer cancel()
 
 	secretKey := make([]byte, 32)

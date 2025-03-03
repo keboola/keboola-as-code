@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"context"
 	"net/url"
 	"strings"
 	"testing"
@@ -337,7 +336,7 @@ encryption:
 	cfg.Encryption.Provider = encryption.ProviderAES
 	cfg.Encryption.AES.SecretKey = []byte("12345678901234567890123456789012")
 	cfg.Encryption.Normalize()
-	require.NoError(t, validator.New().Validate(context.Background(), cfg))
+	require.NoError(t, validator.New().Validate(t.Context(), cfg))
 }
 
 func TestTableSinkConfigPatch_ToKVs(t *testing.T) {

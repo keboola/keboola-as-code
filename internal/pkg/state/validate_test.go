@@ -1,7 +1,6 @@
 package state_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -17,7 +16,7 @@ import (
 func TestValidateState(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create state
 	envs := env.Empty()
@@ -70,7 +69,7 @@ func TestValidateState(t *testing.T) {
 	require.NoError(t, state.Set(configState))
 
 	// Validate
-	localErr, remoteErr := state.Validate(context.Background())
+	localErr, remoteErr := state.Validate(t.Context())
 	expectedLocalError := `
 local branch "branch" is not valid:
 - "name" is a required field

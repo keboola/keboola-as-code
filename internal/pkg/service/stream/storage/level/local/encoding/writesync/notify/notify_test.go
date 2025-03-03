@@ -23,7 +23,7 @@ func TestNotifier_Nil(t *testing.T) {
 	var n *Notifier
 
 	// Notifier can be used as a nil value, Wait ends immediately, without error
-	assert.NoError(t, n.Wait(context.Background()))
+	assert.NoError(t, n.Wait(t.Context()))
 	assert.NoError(t, n.WaitWithTimeout(testWaitTimeout))
 
 	// But call of the Done fails
@@ -35,7 +35,7 @@ func TestNotifier_Nil(t *testing.T) {
 func TestNotifier_ContextTimeout(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Millisecond)
 	defer cancel()
 
 	err := New().Wait(ctx)
@@ -56,7 +56,7 @@ func TestNotifier_WaitWithTimeout(t *testing.T) {
 func TestNotifier_Success(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	log := ioutil.NewAtomicWriter()

@@ -1,7 +1,6 @@
 package upgrade_test
 
 import (
-	"context"
 	"net/http"
 	"strings"
 	"testing"
@@ -28,7 +27,7 @@ import (
 func TestContext(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Mocked ticket provider
 	c, httpTransport := client.NewMockedClient()
@@ -38,9 +37,9 @@ func TestContext(t *testing.T) {
 			"features": []
 		}`),
 	)
-	api, err := keboola.NewAuthorizedAPI(context.Background(), "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
+	api, err := keboola.NewAuthorizedAPI(t.Context(), "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
 	require.NoError(t, err)
-	tickets := keboola.NewTicketProvider(context.Background(), api)
+	tickets := keboola.NewTicketProvider(t.Context(), api)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response
@@ -101,7 +100,7 @@ func TestContext(t *testing.T) {
 
 	// Create context
 	fs := aferofs.NewMemoryFs()
-	tmplContext := NewContext(context.Background(), templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
+	tmplContext := NewContext(t.Context(), templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
 
 	// Check Jsonnet functions
 	code := `

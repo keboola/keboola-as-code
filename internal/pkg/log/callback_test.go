@@ -2,7 +2,6 @@
 package log
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -21,8 +20,8 @@ func TestCallbackLogger(t *testing.T) {
 	logger := NewCallbackLogger(func(entry zapcore.Entry, fields []zapcore.Field) {
 		records = append(records, record{entry: entry, fields: fields})
 	})
-	logger.Debug(context.Background(), `Debug message.`)
-	logger.Info(context.Background(), `Info message.`)
+	logger.Debug(t.Context(), `Debug message.`)
+	logger.Info(t.Context(), `Info message.`)
 
 	// Clear time
 	for i, r := range records {

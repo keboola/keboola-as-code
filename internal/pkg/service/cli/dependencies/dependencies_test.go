@@ -1,7 +1,6 @@
 package dependencies
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"testing"
@@ -32,7 +31,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	// Create manifest
 	fs := aferofs.NewMemoryFs()
 	manifestContent := `{"version": 2, "project": {"id": 789, "apiHost": "mocked.transport.http"}}`
-	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(projectManifest.Path(), manifestContent)))
+	require.NoError(t, fs.WriteFile(t.Context(), filesystem.NewRawFile(projectManifest.Path(), manifestContent)))
 
 	f := flag.DefaultGlobalFlags()
 
@@ -71,7 +70,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	)
 
 	// Assert
-	ctx := context.Background()
+	ctx := t.Context()
 	proc := servicectx.NewForTest(t)
 	baseScp := newBaseScope(ctx, logger, os.Stdout, os.Stderr, proc, httpClient, fs, dialog.New(nopPrompt.New()), f, env.Empty())
 	localScp, err := newLocalCommandScope(ctx, baseScp, configmap.NewValueWithOrigin("mocked.transport.http", configmap.SetByFlag))

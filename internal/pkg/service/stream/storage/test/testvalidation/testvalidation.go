@@ -1,7 +1,6 @@
 package testvalidation
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -20,7 +19,7 @@ type TestCases[T any] []TestCase[T]
 
 func (v TestCases[T]) Run(t *testing.T) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 	for _, tc := range v {
 		err := val.Validate(ctx, tc.Value)

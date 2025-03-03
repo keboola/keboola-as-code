@@ -1,7 +1,6 @@
 package coordinator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,7 +13,7 @@ import (
 func TestStart_Ok(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedCoordinatorScope(t, ctx)
 
 	// Start

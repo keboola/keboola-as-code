@@ -1,7 +1,6 @@
 package configmetadata_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -16,7 +15,7 @@ import (
 
 func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	logger := d.DebugLogger()
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(configmetadata.NewMapper(mockedState, d))
@@ -42,7 +41,7 @@ func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 	}
 
 	recipe := model.NewLocalLoadRecipe(mockedState.FileLoader(), configState.Manifest(), configState.Local)
-	require.NoError(t, mockedState.Mapper().MapAfterLocalLoad(context.Background(), recipe))
+	require.NoError(t, mockedState.Mapper().MapAfterLocalLoad(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	config := recipe.Object.(*model.Config)

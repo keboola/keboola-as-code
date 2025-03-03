@@ -33,7 +33,7 @@ import (
 func TestRepository_RollupStatisticsOnFileDelete_LevelLocalStaging(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
@@ -174,7 +174,7 @@ func TestRepository_RollupStatisticsOnFileDelete_LevelLocalStaging(t *testing.T)
 func TestRepository_RollupStatisticsOnFileDelete_LevelTarget(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
@@ -413,7 +413,7 @@ func TestRepository_RollupStatisticsOnFileDelete_NearTxnLimit(t *testing.T) {
 	// How many files and slices to create
 	const limit = 50
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
@@ -552,7 +552,7 @@ func TestRepository_RollupStatisticsOnFileDelete_AboveTxnLimit(t *testing.T) {
 	// How many files and slices to create
 	const limit = 100
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())

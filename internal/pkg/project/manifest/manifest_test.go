@@ -1,7 +1,6 @@
 package manifest
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -61,7 +60,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 
 	// Load
-	manifest, err := Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
+	manifest, err := Load(t.Context(), log.NewNopLogger(), fs, env.Empty(), false)
 	assert.Nil(t, manifest)
 	require.Error(t, err)
 	assert.Equal(t, `manifest ".keboola/manifest.json" not found`, err.Error())
@@ -69,7 +68,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
@@ -92,7 +91,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, c := range cases() {
 		fs := aferofs.NewMemoryFs()
 
@@ -114,7 +113,7 @@ func TestSaveManifestFile(t *testing.T) {
 func TestManifestValidateEmpty(t *testing.T) {
 	t.Parallel()
 	content := &file{}
-	err := content.validate(context.Background())
+	err := content.validate(t.Context())
 	require.Error(t, err)
 	expected := `manifest is not valid:
 - "version" is a required field
@@ -129,14 +128,14 @@ func TestManifestValidateMinimal(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
-	require.NoError(t, content.validate(context.Background()))
+	require.NoError(t, content.validate(t.Context()))
 }
 
 func TestManifestValidateFull(t *testing.T) {
 	t.Parallel()
 	content := newFile(12345, "foo.bar")
 	content.setRecords(fullRecords())
-	require.NoError(t, content.validate(context.Background()))
+	require.NoError(t, content.validate(t.Context()))
 }
 
 func TestManifestValidateBadVersion(t *testing.T) {
@@ -144,7 +143,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
 	content.Version = 123
-	err := content.validate(context.Background())
+	err := content.validate(t.Context())
 	require.Error(t, err)
 	expected := `manifest is not valid: "version" must be 2 or less`
 	assert.Equal(t, expected, err.Error())
@@ -163,7 +162,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 			),
 		},
 	})
-	err := content.validate(context.Background())
+	err := content.validate(t.Context())
 	require.Error(t, err)
 	expected := `manifest is not valid: "branches[0].id" is a required field`
 	assert.Equal(t, expected, err.Error())
@@ -172,7 +171,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 func TestManifestCyclicDependency(t *testing.T) {
 	t.Parallel()
 	fs := aferofs.NewMemoryFs()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
@@ -188,7 +187,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 func TestManifest_AllowTargetENV(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	envs := env.Empty()
 
 	// Write file

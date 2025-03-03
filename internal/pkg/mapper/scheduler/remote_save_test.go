@@ -1,7 +1,6 @@
 package scheduler_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -29,7 +28,7 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 
 	// Invoke
 	assert.NotEmpty(t, object.Relations)
-	require.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeRemoteSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// All relations have been mapped

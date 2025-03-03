@@ -20,7 +20,7 @@ import (
 func TestVolumes(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	d, mock := dependencies.NewMockedStorageScope(t, ctx)

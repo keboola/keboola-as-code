@@ -1,7 +1,6 @@
 package links_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	// Invoke
 	object := transformation.Local
 	recipe := model.NewRemoteSaveRecipe(transformation.Manifest(), object, model.NewChangedFields())
-	require.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeRemoteSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Config ID and rows ID are set in Content

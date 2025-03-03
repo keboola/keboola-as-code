@@ -20,7 +20,7 @@ import (
 func TestEventWriter(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	d, mock := dependencies.NewMockedStorageScope(t, ctx)
@@ -152,7 +152,7 @@ func TestEventWriter(t *testing.T) {
 func TestWriterEvents_OpenError(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	d, mock := dependencies.NewMockedStorageScope(t, ctx)
@@ -194,7 +194,7 @@ func TestWriterEvents_OpenError(t *testing.T) {
 func TestEventWriter_CloseError(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	d, mock := dependencies.NewMockedStorageScope(t, ctx)

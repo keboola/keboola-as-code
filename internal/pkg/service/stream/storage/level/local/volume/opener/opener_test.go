@@ -127,7 +127,7 @@ func TestOpenAndCloseVolumes(t *testing.T) {
 	}, volumes.All())
 
 	// Close - no error
-	require.NoError(t, volumes.Close(context.Background()))
+	require.NoError(t, volumes.Close(t.Context()))
 }
 
 func TestOpenVolumes_CloseError(t *testing.T) {
@@ -149,7 +149,7 @@ func TestOpenVolumes_CloseError(t *testing.T) {
 	assert.Len(t, volumes.All(), 5)
 
 	// Close - all volumes are closed in parallel, errors are aggregated
-	err = volumes.Close(context.Background())
+	err = volumes.Close(t.Context())
 	if assert.Error(t, err) {
 		assert.Equal(t, strings.Repeat("- some close error\n", 5), err.Error()+"\n")
 	}

@@ -1,7 +1,6 @@
 package jsonnetfiles_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -31,7 +30,7 @@ func TestJsonnetMapper_MapBeforeLocalSave(t *testing.T) {
 		AddTag(model.FileTypeMarkdown)
 
 	// Run mapper
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 
 	// Json file is converted to Jsonnet
 	expectedAst, err := jsonnet.ToAst("{\n  \"key\": \"value\"\n}\n", "foo.jsonnet")

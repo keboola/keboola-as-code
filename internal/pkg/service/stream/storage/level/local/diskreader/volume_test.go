@@ -83,7 +83,7 @@ func TestOpenVolume_Ok(t *testing.T) {
 	require.NoError(t, err)
 
 	// Lock is release by Close method
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -145,7 +145,7 @@ func TestOpenVolume_WaitForVolumeIDFile_Ok(t *testing.T) {
 	require.NoError(t, err)
 
 	// Lock is release by Close method
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 	assert.NoFileExists(t, lock.Path())
 	locked, err = lock.TryLock()
 	assert.True(t, locked)
@@ -229,7 +229,7 @@ func TestOpenVolume_VolumeLock(t *testing.T) {
 	}
 
 	// Close volume
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 }
 
 // TestVolume_Close_Errors tests propagation of readers close errors on Volume.Close().
@@ -262,7 +262,7 @@ func TestVolume_Close_Errors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
 		tc.Logger.AssertJSONMessages(collect, `
 {"level":"error","message":"cannot copy to writer %sslice-my-node.csv\": io: read/write on closed pipe","volume.id":"abcdef","volume.id":"my-volume"}
@@ -288,7 +288,7 @@ type volumeTestCase struct {
 func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 	tb.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(tb.Context(), 10*time.Second)
 	tb.Cleanup(func() {
 		cancel()
 	})

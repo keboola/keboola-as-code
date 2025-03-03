@@ -1,7 +1,6 @@
 package transformation_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -65,7 +64,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 	}
 	json.MustDecodeString(configInAPI, object.Content)
 	recipe := model.NewRemoteLoadRecipe(configState.ConfigManifest, object)
-	require.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterRemoteLoad(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal representation

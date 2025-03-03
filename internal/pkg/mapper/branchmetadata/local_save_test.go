@@ -1,7 +1,6 @@
 package branchmetadata_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -15,7 +14,7 @@ import (
 
 func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	logger := d.DebugLogger()
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(branchmetadata.NewMapper(mockedState, d))
@@ -33,7 +32,7 @@ func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	recipe := model.NewLocalSaveRecipe(state.Manifest(), state.Local, model.NewChangedFields())
-	require.NoError(t, mockedState.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, mockedState.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	branchManifest := recipe.ObjectManifest.(*model.BranchManifest)

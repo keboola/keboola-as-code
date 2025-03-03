@@ -477,7 +477,7 @@ func TestIteratorT(t *testing.T) {
 
 	for _, tc := range cases {
 		var logs strings.Builder
-		ctx := context.Background()
+		ctx := t.Context()
 		client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 		loggerOpts := []etcdlogger.Option{etcdlogger.WithoutRequestNumber(), etcdlogger.WithNewLineSeparator(false), etcdlogger.WithoutDuration()}
 		client.KV = etcdlogger.KVLogWrapper(client.KV, &logs, loggerOpts...)
@@ -566,7 +566,7 @@ func TestIteratorT(t *testing.T) {
 
 func TestIteratorT_Revision(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	serialization := serde.NewJSON(serde.NoValidation)
@@ -608,7 +608,7 @@ func TestIteratorT_Revision(t *testing.T) {
 
 func TestIteratorT_Value_UsedIncorrectly(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	prefix := generateKVsT(t, 3, ctx, client)
 
@@ -620,7 +620,7 @@ func TestIteratorT_Value_UsedIncorrectly(t *testing.T) {
 
 func TestIteratorT_ForEach(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	out := ioutil.NewAtomicWriter()
 	prefix := generateKVsT(t, 5, ctx, client)
@@ -674,7 +674,7 @@ value: bar005
 
 func TestIteratorT_WithAllTo(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := generateKVsT(t, 5, ctx, client)
@@ -692,7 +692,7 @@ func TestIteratorT_WithAllTo(t *testing.T) {
 
 func TestIteratorT_WithAllKVsTo(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := generateKVsT(t, 5, ctx, client)
@@ -704,7 +704,7 @@ func TestIteratorT_WithAllKVsTo(t *testing.T) {
 
 func TestIteratorT_AllTo(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := generateKVsT(t, 5, ctx, client)
@@ -722,7 +722,7 @@ func TestIteratorT_AllTo(t *testing.T) {
 
 func TestIteratorT_AllKVsTo(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := generateKVsT(t, 5, ctx, client)
@@ -734,7 +734,7 @@ func TestIteratorT_AllKVsTo(t *testing.T) {
 
 func TestIteratorT_All(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := generateKVsT(t, 5, ctx, client)
@@ -752,7 +752,7 @@ func TestIteratorT_All(t *testing.T) {
 
 func TestIteratorT_AllKVs(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := generateKVsT(t, 5, ctx, client)
@@ -764,7 +764,7 @@ func TestIteratorT_AllKVs(t *testing.T) {
 
 func TestIteratorT_WithKVFilter(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	prefix := generateKVsT(t, 5, ctx, client)
 
@@ -791,7 +791,7 @@ func TestIteratorT_WithKVFilter(t *testing.T) {
 
 func TestIteratorT_WithFilter(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	prefix := generateKVsT(t, 5, ctx, client)
 

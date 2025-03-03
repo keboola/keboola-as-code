@@ -2,7 +2,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -32,7 +31,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 	}
 
 	binaryPath := testhelper.CompileBinary(t, "templates-api", "build-templates-api")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	runner.
 		NewRunner(t).

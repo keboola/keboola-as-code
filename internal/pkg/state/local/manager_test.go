@@ -74,7 +74,7 @@ func TestLocalSaveMapper(t *testing.T) {
 	t.Parallel()
 	projectState := newEmptyState(t)
 	fs := projectState.ObjectsRoot()
-	uow := projectState.LocalManager().NewUnitOfWork(context.Background())
+	uow := projectState.LocalManager().NewUnitOfWork(t.Context())
 
 	// Add test mapper
 	testMapperInst := &testMapper{}
@@ -103,7 +103,7 @@ func TestLocalSaveMapper(t *testing.T) {
 	require.NoError(t, uow.Invoke())
 
 	// File content has been mapped
-	configFile, err := fs.ReadFile(context.Background(), filesystem.NewFileDef(filesystem.Join(`branch`, `config`, naming.ConfigFile)).SetDescription(`config file`))
+	configFile, err := fs.ReadFile(t.Context(), filesystem.NewFileDef(filesystem.Join(`branch`, `config`, naming.ConfigFile)).SetDescription(`config file`))
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"key": "overwritten","new": "value"}`, strings.TrimSpace(configFile.Content))
 
@@ -118,7 +118,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	t.Parallel()
 	projectState := newEmptyState(t)
 	fs := projectState.ObjectsRoot()
-	uow := projectState.LocalManager().NewUnitOfWork(context.Background())
+	uow := projectState.LocalManager().NewUnitOfWork(t.Context())
 
 	// Add test mapper
 	testMapperInst := &testMapper{}
@@ -136,11 +136,11 @@ func TestLocalLoadMapper(t *testing.T) {
 	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
-	err := testhelper.ReplaceEnvsDir(context.Background(), fs, `/`, envs)
+	err := testhelper.ReplaceEnvsDir(t.Context(), fs, `/`, envs)
 	require.NoError(t, err)
 
 	// Load objects
-	m, err := projectManifest.Load(context.Background(), log.NewNopLogger(), fs, env.Empty(), false)
+	m, err := projectManifest.Load(t.Context(), log.NewNopLogger(), fs, env.Empty(), false)
 	require.NoError(t, err)
 	uow.LoadAll(m, *m.Filter())
 	require.NoError(t, uow.Invoke())
@@ -158,7 +158,7 @@ func TestLocalLoadMapper(t *testing.T) {
 
 func newEmptyState(t *testing.T) *state.State {
 	t.Helper()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(corefiles.NewMapper(mockedState))
 	return mockedState

@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -325,7 +324,7 @@ func TestValidateInputs(t *testing.T) {
 	// Test
 	for i, c := range cases {
 		desc := fmt.Sprintf("Case %d - %s", i+1, c.name)
-		result, values, err := validateInputs(context.Background(), []string{project.BackendSnowflake}, c.groups, c.payload)
+		result, values, err := validateInputs(t.Context(), []string{project.BackendSnowflake}, c.groups, c.payload)
 		if c.err == "" {
 			require.NoError(t, err)
 			assert.Equal(t, c.result, result, desc)

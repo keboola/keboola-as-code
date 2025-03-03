@@ -1,17 +1,16 @@
 package log
 
 import (
-	"context"
 	"testing"
 )
 
 func TestNewDebugLogger_All(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.Debug(context.Background(), "debug")
-	logger.Info(context.Background(), "info")
-	logger.Warn(context.Background(), "warn")
-	logger.Error(context.Background(), "error")
+	logger.Debug(t.Context(), "debug")
+	logger.Info(t.Context(), "info")
+	logger.Warn(t.Context(), "warn")
+	logger.Error(t.Context(), "error")
 
 	expected := `
 {"level":"debug","message":"debug"}
@@ -25,10 +24,10 @@ func TestNewDebugLogger_All(t *testing.T) {
 func TestNewDebugLogger_Debug(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.Debug(context.Background(), "debug")
-	logger.Info(context.Background(), "info")
-	logger.Warn(context.Background(), "warn")
-	logger.Errorf(context.Background(), "error")
+	logger.Debug(t.Context(), "debug")
+	logger.Info(t.Context(), "info")
+	logger.Warn(t.Context(), "warn")
+	logger.Errorf(t.Context(), "error")
 
 	expected := `{"level":"debug","message":"debug"}`
 	AssertJSONMessages(t, expected, logger.DebugMessages())
@@ -37,10 +36,10 @@ func TestNewDebugLogger_Debug(t *testing.T) {
 func TestNewDebugLogger_Info(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.Debug(context.Background(), "debug")
-	logger.Info(context.Background(), "info")
-	logger.Warn(context.Background(), "warn")
-	logger.Errorf(context.Background(), "error")
+	logger.Debug(t.Context(), "debug")
+	logger.Info(t.Context(), "info")
+	logger.Warn(t.Context(), "warn")
+	logger.Errorf(t.Context(), "error")
 
 	expected := `{"level":"info","message":"info"}`
 	AssertJSONMessages(t, expected, logger.InfoMessages())
@@ -49,10 +48,10 @@ func TestNewDebugLogger_Info(t *testing.T) {
 func TestNewDebugLogger_Warn(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.Debug(context.Background(), "debug")
-	logger.Info(context.Background(), "info")
-	logger.Warn(context.Background(), "warn")
-	logger.Errorf(context.Background(), "error")
+	logger.Debug(t.Context(), "debug")
+	logger.Info(t.Context(), "info")
+	logger.Warn(t.Context(), "warn")
+	logger.Errorf(t.Context(), "error")
 
 	expected := `{"level":"warn","message":"warn"}`
 	AssertJSONMessages(t, expected, logger.WarnMessages())
@@ -61,10 +60,10 @@ func TestNewDebugLogger_Warn(t *testing.T) {
 func TestNewDebugLogger_WarnOrError(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.Debug(context.Background(), "debug")
-	logger.Info(context.Background(), "info")
-	logger.Warn(context.Background(), "warn")
-	logger.Error(context.Background(), "error")
+	logger.Debug(t.Context(), "debug")
+	logger.Info(t.Context(), "info")
+	logger.Warn(t.Context(), "warn")
+	logger.Error(t.Context(), "error")
 
 	expected := `
 {"level":"warn","message":"warn"}
@@ -76,10 +75,10 @@ func TestNewDebugLogger_WarnOrError(t *testing.T) {
 func TestNewDebugLogger_Error(t *testing.T) {
 	t.Parallel()
 	logger := NewDebugLogger()
-	logger.Debug(context.Background(), "debug")
-	logger.Info(context.Background(), "info")
-	logger.Warn(context.Background(), "warn")
-	logger.Errorf(context.Background(), "error")
+	logger.Debug(t.Context(), "debug")
+	logger.Info(t.Context(), "info")
+	logger.Warn(t.Context(), "warn")
+	logger.Errorf(t.Context(), "error")
 
 	expected := `{"level":"error","message":"error"}`
 	AssertJSONMessages(t, expected, logger.ErrorMessages())

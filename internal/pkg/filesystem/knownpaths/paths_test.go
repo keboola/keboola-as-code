@@ -320,7 +320,7 @@ func TestKnownPathsUntrackedDirs(t *testing.T) {
 		"main/extractor",
 		"main/extractor/ex-generic-v2",
 		"main/extractor/ex-generic-v2/456-todos",
-	}, paths.UntrackedDirs(context.Background()))
+	}, paths.UntrackedDirs(t.Context()))
 }
 
 func TestKnownPathsUntrackedDirsFrom(t *testing.T) {
@@ -332,7 +332,7 @@ func TestKnownPathsUntrackedDirsFrom(t *testing.T) {
 	assert.Equal(t, []string{
 		"main/extractor/ex-generic-v2",
 		"main/extractor/ex-generic-v2/456-todos",
-	}, paths.UntrackedDirsFrom(context.Background(), `main/extractor`))
+	}, paths.UntrackedDirsFrom(t.Context(), `main/extractor`))
 }
 
 func loadKnownPaths(t *testing.T, fixture string, options ...Option) (*Paths, error) {
@@ -342,5 +342,5 @@ func loadKnownPaths(t *testing.T, fixture string, options ...Option) (*Paths, er
 	projectDir := filesystem.Join(testDir, "..", "..", "fixtures", "local", fixture)
 	fs, err := aferofs.NewLocalFs(projectDir)
 	require.NoError(t, err)
-	return New(context.Background(), fs, options...)
+	return New(t.Context(), fs, options...)
 }

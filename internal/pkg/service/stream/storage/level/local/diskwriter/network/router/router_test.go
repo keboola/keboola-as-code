@@ -33,7 +33,7 @@ import (
 func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	logger := log.NewDebugLogger()
@@ -129,7 +129,7 @@ func TestRouter_UpdatePipelinesOnSlicesChange(t *testing.T) {
 func TestRouter_ShutdownDiskWriterNodeFirst(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	logger := log.NewDebugLogger()
@@ -221,7 +221,7 @@ func TestRouter_ShutdownDiskWriterNodeFirst(t *testing.T) {
 func TestRouter_ShutdownSourceNodeFirst(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	logger := log.NewDebugLogger()

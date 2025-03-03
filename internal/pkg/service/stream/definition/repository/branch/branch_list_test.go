@@ -1,7 +1,6 @@
 package branch_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -18,7 +17,7 @@ import (
 func TestBranchRepository_List(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 
@@ -64,7 +63,7 @@ func TestBranchRepository_List(t *testing.T) {
 func TestBranchRepository_ListDeleted(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
 	by := test.ByUser()
 

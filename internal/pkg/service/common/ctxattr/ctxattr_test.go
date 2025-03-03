@@ -1,7 +1,6 @@
 package ctxattr
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +11,7 @@ import (
 func TestContextAttributes(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	set := Attributes(ctx)
 	assert.Equal(t, 0, set.Len())

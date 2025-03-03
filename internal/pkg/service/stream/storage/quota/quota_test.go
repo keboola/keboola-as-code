@@ -23,7 +23,7 @@ import (
 func TestQuota_Check(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancelCause(context.Background())
+	ctx, cancel := context.WithCancelCause(t.Context())
 	defer cancel(errors.New("test cancelled"))
 
 	// Fixtures

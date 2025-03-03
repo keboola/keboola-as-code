@@ -1,7 +1,6 @@
 package upgrade
 
 import (
-	"context"
 	"sync"
 	"testing"
 
@@ -30,7 +29,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	projectState := deps.MockedState()
 
 	// Project state
@@ -187,7 +186,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		require.NoError(t, console.ExpectEOF())
 	}()
 
-	output, err := AskUpgradeTemplateOptions(context.Background(), d, deps, projectState, branchKey, instance, stepsGroups, configmap.NewValue("input4"))
+	output, err := AskUpgradeTemplateOptions(t.Context(), d, deps, projectState, branchKey, instance, stepsGroups, configmap.NewValue("input4"))
 	require.NoError(t, err)
 
 	require.NoError(t, console.Tty().Close())

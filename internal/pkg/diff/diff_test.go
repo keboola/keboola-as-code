@@ -1,7 +1,6 @@
 package diff
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -805,6 +804,6 @@ func TestResults_Format(t *testing.T) {
 
 func newProjectState(t *testing.T) *state.State {
 	t.Helper()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	return d.MockedState()
 }

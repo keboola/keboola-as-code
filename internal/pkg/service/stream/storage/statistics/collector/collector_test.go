@@ -34,7 +34,7 @@ import (
 func TestCollector(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	// Fixtures
@@ -149,7 +149,7 @@ func TestCollector(t *testing.T) {
 	w2.LastRowAtValue = utctime.MustParse("2000-01-01T01:35:00.000Z")
 	w2.CompressedSizeValue = 30
 	w2.UncompressedSizeValue = 300
-	d.Process().Shutdown(context.Background(), errors.New("bye bye"))
+	d.Process().Shutdown(t.Context(), errors.New("bye bye"))
 	d.Process().WaitForShutdown()
 	etcdhelper.AssertKVsFromFile(t, client, "fixtures/stats_collector_snapshot_005.txt", ignoredEtcdKeys)
 }

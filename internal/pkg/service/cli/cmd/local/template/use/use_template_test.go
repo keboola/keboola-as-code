@@ -1,7 +1,6 @@
 package use
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +30,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
@@ -196,7 +195,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		InstanceName: configmap.NewValue("My Instance"),
 	}
 
-	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
+	output, err := AskUseTemplateOptions(t.Context(), d, projectState, stepsGroups, f)
 	require.NoError(t, err)
 
 	require.NoError(t, console.Tty().Close())
@@ -224,7 +223,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
@@ -323,7 +322,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 		InputsFile:   configmap.Value[string]{},
 	}
 
-	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
+	output, err := AskUseTemplateOptions(t.Context(), d, projectState, stepsGroups, f)
 	require.NoError(t, err)
 
 	require.NoError(t, console.Tty().Close())
@@ -350,7 +349,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
@@ -476,7 +475,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		InputsFile:   configmap.Value[string]{},
 	}
 
-	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
+	output, err := AskUseTemplateOptions(t.Context(), d, projectState, stepsGroups, f)
 	require.NoError(t, err)
 
 	require.NoError(t, console.Tty().Close())
@@ -513,7 +512,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 		InputsFile:   configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
 	}
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
@@ -577,7 +576,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 		},
 	}
 
-	output, err := AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
+	output, err := AskUseTemplateOptions(t.Context(), d, projectState, stepsGroups, f)
 	require.NoError(t, err)
 
 	// Assert
@@ -609,7 +608,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 		InstanceName: configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByFlag},
 		InputsFile:   configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
 	}
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
@@ -673,7 +672,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 		},
 	}
 
-	_, err = AskUseTemplateOptions(context.Background(), d, projectState, stepsGroups, f)
+	_, err = AskUseTemplateOptions(t.Context(), d, projectState, stepsGroups, f)
 	expectedErr := `
 steps group 1 "Please select which steps you want to fill." is invalid:
 - all steps (3) must be selected

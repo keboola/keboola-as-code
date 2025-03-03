@@ -1,7 +1,6 @@
 package etcdhelper_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,29 +46,29 @@ key3/key4
 `
 
 	// PUT
-	err := etcdhelper.PutAllFromSnapshot(context.Background(), client, snapshot)
+	err := etcdhelper.PutAllFromSnapshot(t.Context(), client, snapshot)
 	require.NoError(t, err)
 
 	// Put keys
-	res, err := client.Get(context.Background(), "key1")
+	res, err := client.Get(t.Context(), "key1")
 	require.NoError(t, err)
 	assert.Len(t, res.Kvs, 1)
 	assert.Equal(t, "value1", string(res.Kvs[0].Value))
 	assert.Equal(t, int64(0), res.Kvs[0].Lease)
 
-	res, err = client.Get(context.Background(), "key2")
+	res, err = client.Get(t.Context(), "key2")
 	require.NoError(t, err)
 	assert.Len(t, res.Kvs, 1)
 	assert.Equal(t, "value2", string(res.Kvs[0].Value))
 	assert.Positive(t, res.Kvs[0].Lease, int64(0))
 
-	res, err = client.Get(context.Background(), "key3")
+	res, err = client.Get(t.Context(), "key3")
 	require.NoError(t, err)
 	assert.Len(t, res.Kvs, 1)
 	assert.Equal(t, "value3", string(res.Kvs[0].Value))
 	assert.Equal(t, int64(0), res.Kvs[0].Lease)
 
-	res, err = client.Get(context.Background(), "key3/key4")
+	res, err = client.Get(t.Context(), "key3/key4")
 	require.NoError(t, err)
 	assert.Len(t, res.Kvs, 1)
 	assert.JSONEq(t, `{"foo1": "bar1","foo2": ["bar2","bar3"]}`, string(res.Kvs[0].Value))

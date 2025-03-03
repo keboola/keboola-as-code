@@ -15,7 +15,7 @@ import (
 func TestTracker(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancelCause(context.Background())
+	ctx, cancel := context.WithCancelCause(t.Context())
 	defer cancel(errors.New("test cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))

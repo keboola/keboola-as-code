@@ -1,7 +1,6 @@
 package init
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
@@ -24,7 +23,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -37,7 +36,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 	}
 
 	// No interaction expected
-	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, f)
+	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, f)
 	require.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{"foo", "bar"}, allowedBranches)
 	require.NoError(t, console.Tty().Close())
@@ -50,7 +49,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 
 	d, _ := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
@@ -62,7 +61,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	}
 
 	// No interaction expected
-	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, f)
+	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, f)
 	require.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{model.AllBranchesDef}, allowedBranches)
 }
@@ -74,7 +73,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -90,7 +89,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
+	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -107,7 +106,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -123,7 +122,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
+	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -140,7 +139,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{
@@ -177,7 +176,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
+	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -194,7 +193,7 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	registerMockedBranchesResponse(
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{
@@ -219,7 +218,7 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := AskAllowedBranches(context.Background(), deps, d, Flags{})
+	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()

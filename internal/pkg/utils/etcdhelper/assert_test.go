@@ -2,7 +2,6 @@ package etcdhelper_test
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -28,7 +27,7 @@ func TestAssertKVsString_Equal(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
@@ -55,7 +54,7 @@ func TestAssertKVsString_Equal_WithIgnoredKeyPattern(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 	_, err = client.Put(ctx, "foo123", "bar")
@@ -76,7 +75,7 @@ func TestAssertKVsString_Difference(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
@@ -144,7 +143,7 @@ func TestAssertKVsString_OnlyInActual(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
@@ -172,7 +171,7 @@ func TestAssertKVsString_OnlyInExpected(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 
@@ -204,7 +203,7 @@ func TestAssertKVsFromFile_Difference(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
@@ -264,7 +263,7 @@ func TestAssertKeys_Equal(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
@@ -279,7 +278,7 @@ func TestAssertKeys_Equal_WithIgnoredKeyPattern(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 	_, err = client.Put(ctx, "foo123", "bar")
@@ -294,7 +293,7 @@ func TestAssertKeys_Difference(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")
@@ -320,7 +319,7 @@ func TestAssertKeys_Wildcard(t *testing.T) {
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := client.Put(ctx, "key1", "value1")
 	require.NoError(t, err)
 	_, err = client.Put(ctx, "key2", "value2")

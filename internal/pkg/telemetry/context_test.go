@@ -1,7 +1,6 @@
 package telemetry_test
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/otel/codes"
@@ -17,16 +16,16 @@ func TestContextWithSpan(t *testing.T) {
 	tel := telemetry.NewForTest(t)
 
 	// Start span
-	_, span1 := tel.Tracer().Start(context.Background(), "my.span")
+	_, span1 := tel.Tracer().Start(t.Context(), "my.span")
 
 	// Test ContextWithSpan
-	ctx2 := context.Background()
+	ctx2 := t.Context()
 	ctx2 = telemetry.ContextWithSpan(ctx2, span1)
 	ctx2, span2 := tel.Tracer().Start(ctx2, "my.sub.span")
 
 	// Test SpanFromContext
 	span2Copy := telemetry.SpanFromContext(ctx2)
-	ctx3 := context.Background()
+	ctx3 := t.Context()
 	ctx3 = telemetry.ContextWithSpan(ctx3, span2Copy)
 	_, span3 := tel.Tracer().Start(ctx3, "my.sub.sub.span")
 

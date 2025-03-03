@@ -1,7 +1,6 @@
 package transformation_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -18,8 +17,8 @@ import (
 func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	d := dependencies.NewMocked(t, context.Background())
+	ctx := t.Context()
+	d := dependencies.NewMocked(t, t.Context())
 	state := d.MockedState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))
@@ -93,7 +92,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
@@ -105,7 +104,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	require.NoError(t, fs.Mkdir(ctx, block1))
 
 	// Load, assert
-	err := state.Mapper().MapAfterLocalLoad(context.Background(), recipe)
+	err := state.Mapper().MapAfterLocalLoad(t.Context(), recipe)
 	require.Error(t, err)
 	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())
@@ -116,7 +115,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
@@ -131,7 +130,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	require.NoError(t, fs.Mkdir(ctx, block1Code1))
 
 	// Load, assert
-	err := state.Mapper().MapAfterLocalLoad(context.Background(), recipe)
+	err := state.Mapper().MapAfterLocalLoad(t.Context(), recipe)
 	require.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
 		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
@@ -145,7 +144,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
@@ -176,7 +175,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	require.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterLocalLoad(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert
@@ -289,7 +288,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	configState := createTestFixtures(t, `keboola.python-transformation-v2`)
 	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
@@ -320,7 +319,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	require.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterLocalLoad(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert

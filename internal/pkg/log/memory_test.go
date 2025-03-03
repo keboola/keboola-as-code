@@ -2,7 +2,6 @@
 package log
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -15,8 +14,8 @@ func TestMemoryLogger(t *testing.T) {
 	t.Parallel()
 
 	mem := NewMemoryLogger()
-	mem.Debug(context.Background(), `Debug message.`)
-	mem.Info(context.Background(), `Info message.`)
+	mem.Debug(t.Context(), `Debug message.`)
+	mem.Info(t.Context(), `Info message.`)
 
 	memWithAttrs := mem.
 		WithComponent("c1").
@@ -25,7 +24,7 @@ func TestMemoryLogger(t *testing.T) {
 		With(attribute.String("key3", "value3")).
 		WithDuration(123 * time.Second)
 
-	ctx := ctxattr.ContextWith(context.Background(), attribute.String("key4", "value4"))
+	ctx := ctxattr.ContextWith(t.Context(), attribute.String("key4", "value4"))
 	memWithAttrs.Debug(ctx, `Debug message - <key1> <key2> <key3> <key4>`)
 	memWithAttrs.Info(ctx, `Info message - <key1> <key2> <key3> <key4>`)
 

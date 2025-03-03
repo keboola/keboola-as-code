@@ -23,7 +23,7 @@ func TestWatchConsumer_NotTyped(t *testing.T) {
 		t.Skipf(`etcd compact tests are tested only on Linux`)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	wg := &sync.WaitGroup{}
 	logger := log.NewDebugLogger()
@@ -159,7 +159,7 @@ func TestWatchConsumer_Typed(t *testing.T) {
 		t.Skipf(`etcd compact tests are tested only on Linux`)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	wg := &sync.WaitGroup{}
 	logger := log.NewDebugLogger()

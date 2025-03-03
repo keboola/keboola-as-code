@@ -1,7 +1,6 @@
 package writernode_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,7 +20,7 @@ import (
 func TestStart_NoVolumeFound(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 
 	err := stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentStorageWriter)
@@ -32,7 +31,7 @@ func TestStart_NoVolumeFound(t *testing.T) {
 func TestStart_Ok(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 	client := mock.TestEtcdClient()
 

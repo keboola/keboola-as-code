@@ -1,7 +1,6 @@
 package codes_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -24,10 +23,10 @@ func TestSharedCodeLocalSave(t *testing.T) {
 	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentID))
 
 	// Create dir
-	require.NoError(t, state.ObjectsRoot().Mkdir(context.Background(), filesystem.Dir(codeFilePath)))
+	require.NoError(t, state.ObjectsRoot().Mkdir(t.Context(), filesystem.Dir(codeFilePath)))
 
 	// Save to file
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert

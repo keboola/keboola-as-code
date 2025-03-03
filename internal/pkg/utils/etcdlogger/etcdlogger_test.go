@@ -107,7 +107,7 @@ func TestKVLogWrapper_MinimalConfig(t *testing.T) {
 func runEtcdOperations(t *testing.T, out io.Writer, opts ...etcdlogger.Option) {
 	t.Helper()
 
-	ctx, cancel := context.WithCancelCause(context.Background())
+	ctx, cancel := context.WithCancelCause(t.Context())
 	defer cancel(errors.New("operations cancelled"))
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))

@@ -13,7 +13,7 @@ import (
 
 func TestCountOp(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	factoryFn := func(ctx context.Context) (etcd.Op, error) {

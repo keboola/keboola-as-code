@@ -1,7 +1,6 @@
 package input
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
@@ -19,10 +18,10 @@ func TestLoadInputsFile(t *testing.T) {
 
 	// Write file
 	path := Path()
-	require.NoError(t, fs.WriteFile(context.Background(), filesystem.NewRawFile(path, inputsJsonnet)))
+	require.NoError(t, fs.WriteFile(t.Context(), filesystem.NewRawFile(path, inputsJsonnet)))
 
 	// Load
-	inputs, err := Load(context.Background(), fs, jsonnet.NewContext())
+	inputs, err := Load(t.Context(), fs, jsonnet.NewContext())
 	require.NoError(t, err)
 	assert.Equal(t, testInputs(), inputs)
 }
@@ -30,7 +29,7 @@ func TestLoadInputsFile(t *testing.T) {
 func TestSaveInputsFile(t *testing.T) {
 	t.Parallel()
 	fs := aferofs.NewMemoryFs()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Save
 	require.NoError(t, testInputs().Save(ctx, fs))

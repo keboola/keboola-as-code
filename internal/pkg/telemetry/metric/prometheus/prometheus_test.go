@@ -22,7 +22,7 @@ import (
 func TestServeMetrics(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	d := dependencies.NewMocked(t, ctx)
@@ -54,7 +54,7 @@ target_info{service_name="my-service"} 1
 `, getBody(t, ctx, endpointURL))
 
 	// Add some value
-	counter.Add(context.Background(), 5, metric.WithAttributes(
+	counter.Add(t.Context(), 5, metric.WithAttributes(
 		attribute.Key("A").String("B"),
 		attribute.Key("C").String("D"),
 	))

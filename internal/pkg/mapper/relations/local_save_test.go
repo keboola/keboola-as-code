@@ -1,7 +1,6 @@
 package relations_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ func TestRelationsMapperSaveLocal(t *testing.T) {
 
 	assert.Empty(t, objectManifest.Relations)
 	assert.NotEmpty(t, object.Relations)
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// ManifestSide relations copied from object.Relations -> manifest.Relations

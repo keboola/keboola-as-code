@@ -2,7 +2,6 @@
 package api
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -32,7 +31,7 @@ func TestStreamApiE2E(t *testing.T) {
 	}
 
 	binaryPath := testhelper.CompileBinary(t, "stream-service", "build-stream-service")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	runner.
 		NewRunner(t).
@@ -50,7 +49,7 @@ func TestStreamApiE2E(t *testing.T) {
 			etcdStateFile := "initial-etcd-kvs.txt"
 			if test.TestDirFS().IsFile(ctx, etcdStateFile) {
 				etcdStateFileContentStr := test.ReadFileFromTestDir(etcdStateFile)
-				err := etcdhelper.PutAllFromSnapshot(context.Background(), etcdClient, etcdStateFileContentStr)
+				err := etcdhelper.PutAllFromSnapshot(t.Context(), etcdClient, etcdStateFileContentStr)
 				assert.NoError(test.T(), err)
 			}
 

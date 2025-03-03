@@ -168,7 +168,6 @@ linters:
     - stylecheck
     - tagliatelle
     - testifylint
-    - tenv
     - thelper
     - tparallel
     - paralleltest
@@ -176,6 +175,7 @@ linters:
     - unconvert
     - unparam
     - unused
+    - usetesting
     - wastedassign
     - whitespace
     # DISABLED

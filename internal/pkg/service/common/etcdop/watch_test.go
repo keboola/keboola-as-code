@@ -24,7 +24,7 @@ func TestPrefix_Watch(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -150,7 +150,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
@@ -303,7 +303,7 @@ func TestPrefix_Watch_ErrCompacted(t *testing.T) {
 		t.Skipf(`etcd compact tests are tested only on Linux`)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	// Create etcd cluster for test
@@ -421,7 +421,7 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 		t.Skipf(`etcd compact tests are tested only on Linux`)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 
 	// Create etcd cluster for test
@@ -625,7 +625,7 @@ func TestPrefix_Watch_ClusterDowntime(t *testing.T) {
 		t.Skipf(`etcd cluster tests are tested only on Linux`)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 90*time.Second)
 	defer cancel()
 
 	// Create etcd cluster for test

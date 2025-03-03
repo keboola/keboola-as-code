@@ -1,7 +1,6 @@
 package log
 
 import (
-	"context"
 	"strings"
 	"testing"
 )
@@ -13,17 +12,17 @@ func TestServiceLogger_VerboseFalse(t *testing.T) {
 	logger := NewServiceLogger(&out, false).WithComponent("component1")
 
 	// Log messages
-	logger.Debug(context.Background(), "Debug msg")
-	logger.Info(context.Background(), "Info msg")
-	logger.Warn(context.Background(), "Warn msg")
-	logger.Error(context.Background(), "Error msg")
+	logger.Debug(t.Context(), "Debug msg")
+	logger.Info(t.Context(), "Info msg")
+	logger.Warn(t.Context(), "Warn msg")
+	logger.Error(t.Context(), "Error msg")
 
 	// Log messages with a different component
 	logger = logger.WithComponent("component2")
-	logger.Debug(context.Background(), "Debug msg")
-	logger.Info(context.Background(), "Info msg")
-	logger.Warn(context.Background(), "Warn msg")
-	logger.Error(context.Background(), "Error msg")
+	logger.Debug(t.Context(), "Debug msg")
+	logger.Info(t.Context(), "Info msg")
+	logger.Warn(t.Context(), "Warn msg")
+	logger.Error(t.Context(), "Error msg")
 
 	// Assert
 	expected := `
@@ -44,17 +43,17 @@ func TestServiceLogger_VerboseTrue(t *testing.T) {
 	logger := NewServiceLogger(&out, true).WithComponent("component1")
 
 	// Log messages
-	logger.Debug(context.Background(), "Debug msg")
-	logger.Info(context.Background(), "Info msg")
-	logger.Warn(context.Background(), "Warn msg")
-	logger.Error(context.Background(), "Error msg")
+	logger.Debug(t.Context(), "Debug msg")
+	logger.Info(t.Context(), "Info msg")
+	logger.Warn(t.Context(), "Warn msg")
+	logger.Error(t.Context(), "Error msg")
 
 	// Log messages with a different component
 	logger = logger.WithComponent("component2")
-	logger.Debug(context.Background(), "Debug msg")
-	logger.Info(context.Background(), "Info msg")
-	logger.Warn(context.Background(), "Warn msg")
-	logger.Error(context.Background(), "Error msg")
+	logger.Debug(t.Context(), "Debug msg")
+	logger.Info(t.Context(), "Info msg")
+	logger.Warn(t.Context(), "Warn msg")
+	logger.Error(t.Context(), "Error msg")
 
 	// Assert
 	expected := `

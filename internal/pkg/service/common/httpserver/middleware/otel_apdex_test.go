@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -26,7 +25,7 @@ type testCase struct {
 
 func TestApdex(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cases := []testCase{
 		{

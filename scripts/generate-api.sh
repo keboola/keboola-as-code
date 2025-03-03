@@ -16,7 +16,7 @@ API_PKG=internal/pkg/service/$SERVICE_NAME/api
 
 generate() {
   # Generate code by goa.design lib
-  out=`goa gen "$DESIGN_PKG" --output ./$API_PKG 2>&1`
+  out=`go tool goa gen "$DESIGN_PKG" --output ./$API_PKG 2>&1`
   status="$?"
 
   # Always run finalize

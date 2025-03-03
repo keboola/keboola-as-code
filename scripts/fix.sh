@@ -28,13 +28,13 @@ go mod vendor
 # Format code, gofumpt and gci partially overlap, it is needed to run them separately
 # https://github.com/golangci/golangci-lint/issues/1490
 echo "Running gofumpt ..."
-gofumpt -w ./cmd ./internal ./pkg ./test
+go tool gofumpt -w ./cmd ./internal ./pkg ./test
 echo "Running gci ..."
-gci write --skip-generated -s standard -s default -s "prefix(github.com/keboola/keboola-as-code)" ./cmd ./internal ./pkg ./test
+go tool gci write --skip-generated -s standard -s default -s "prefix(github.com/keboola/keboola-as-code)" ./cmd ./internal ./pkg ./test
 
 # Fix linters
 echo "Running golangci-lint ..."
-if golangci-lint run --fix -c "./build/ci/golangci.yml"; then
+if go tool golangci-lint run --fix -c "./build/ci/golangci.yml"; then
     echo "Ok. The code looks good."
     echo
 else

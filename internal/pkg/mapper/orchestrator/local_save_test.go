@@ -1,7 +1,6 @@
 package orchestrator_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -23,7 +22,7 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
 
 	// Save
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Minify JSON + remove file description
@@ -122,7 +121,7 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
 
 	// Save
-	require.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
 	expectedWarnings := `
 WARN  Warning:
 - Cannot save orchestrator config "branch/other/orchestrator":

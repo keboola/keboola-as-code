@@ -35,7 +35,7 @@ func (discardOutput) Close(context.Context) error {
 func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
@@ -61,7 +61,7 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 	slice := test.NewSlice()

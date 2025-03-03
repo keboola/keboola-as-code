@@ -1,7 +1,6 @@
 package description_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -18,6 +17,6 @@ func TestDescriptionMapAfterRemoteLoad(t *testing.T) {
 	object := &model.Config{Description: "foo\nbar\n\r\t ", Content: orderedmap.New()}
 	recipe := model.NewRemoteLoadRecipe(&model.ConfigManifest{}, object)
 
-	require.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterRemoteLoad(t.Context(), recipe))
 	assert.Equal(t, "foo\nbar", object.Description)
 }

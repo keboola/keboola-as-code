@@ -1,7 +1,6 @@
 package variables_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -28,7 +27,7 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, object.Relations)
-	require.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapAfterRemoteLoad(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Object has new relation + content without variables ID

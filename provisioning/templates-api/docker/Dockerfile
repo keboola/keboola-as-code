@@ -1,5 +1,5 @@
 # Build container
-FROM golang:1.23.6-alpine3.21 AS buildContainer
+FROM golang:1.24.0-alpine3.21 AS buildContainer
 RUN apk add -U --no-cache bash make curl
 WORKDIR /app
 

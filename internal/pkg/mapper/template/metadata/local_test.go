@@ -1,7 +1,6 @@
 package metadata_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -61,7 +60,7 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	require.NoError(t, mockedState.Mapper().AfterLocalOperation(context.Background(), changes))
+	require.NoError(t, mockedState.Mapper().AfterLocalOperation(t.Context(), changes))
 
 	config := configState.Local
 	assert.NotEmpty(t, config.Metadata)

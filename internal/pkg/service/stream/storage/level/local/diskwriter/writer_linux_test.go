@@ -3,7 +3,6 @@
 package diskwriter_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/c2h5oh/datasize"
@@ -16,7 +15,7 @@ import (
 func TestWriter_AllocateSpace_Enabled(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Config.Allocation.OverrideAllocator = nil // reset test case allocator, use default allocator
 

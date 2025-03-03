@@ -42,7 +42,7 @@ func TestVolume_NewReaderFor_Ok(t *testing.T) {
 `)
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, r.Close(context.Background()))
+	require.NoError(t, r.Close(t.Context()))
 	assert.Empty(t, tc.Volume.Readers())
 
 	// Check logs
@@ -72,7 +72,7 @@ func TestVolume_NewReaderFor_Duplicate(t *testing.T) {
 		assert.Equal(t, `reader for slice "123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/my-volume/2000-01-01T20:00:00.000Z" already exists`, err.Error())
 	}
 	assert.Len(t, tc.Volume.Readers(), 1)
-	require.NoError(t, w.Close(context.Background()))
+	require.NoError(t, w.Close(t.Context()))
 	assert.Empty(t, tc.Volume.Readers())
 }
 
@@ -86,7 +86,7 @@ func TestVolume_NewReaderFor_ClosedVolume(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close the volume
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 
 	// Try crate a reader
 	_, err = tc.NewReader(false)
@@ -108,7 +108,7 @@ func TestVolume_NewReaderFor_MultipleFilesSingleVolume(t *testing.T) {
 
 	assert.Equal(t, tc.Slice.SliceKey, r.SliceKey())
 
-	require.NoError(t, r.Close(context.Background()))
+	require.NoError(t, r.Close(t.Context()))
 	assert.Empty(t, tc.Volume.Readers())
 
 	// Check logs
@@ -233,7 +233,7 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 	assert.Equal(t, []byte("foo bar"), content)
 
 	// Close
-	require.NoError(t, r.Close(context.Background()))
+	require.NoError(t, r.Close(t.Context()))
 }
 
 // TestReadError tests propagation of the file read error through read chain.
@@ -284,7 +284,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 	}
 
 	// Close
-	require.NoError(t, r.Close(context.Background()))
+	require.NoError(t, r.Close(t.Context()))
 }
 
 // TestCloseError tests propagation of the file close error through read chain.

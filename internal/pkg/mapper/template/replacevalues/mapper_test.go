@@ -1,7 +1,6 @@
 package replacevalues_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -68,7 +67,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	// Run mapper
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(config, row)
-	require.NoError(t, s.Mapper().AfterRemoteOperation(context.Background(), changes))
+	require.NoError(t, s.Mapper().AfterRemoteOperation(t.Context(), changes))
 
 	// Check result state
 	assert.Equal(t, []model.ObjectState{
@@ -121,7 +120,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 
 func createStateWithMapper(t *testing.T, replacements *replacevalues.Values) *state.State {
 	t.Helper()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(replacevalues.NewMapper(mockedState, replacements))
 	return mockedState

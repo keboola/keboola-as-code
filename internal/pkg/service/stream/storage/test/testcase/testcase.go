@@ -67,7 +67,7 @@ type RecordsBatch struct {
 func (tc *WriterTestCase) Run(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeoutCause(context.Background(), 30*time.Second, errors.New("test timeout"))
+	ctx, cancel := context.WithTimeoutCause(t.Context(), 30*time.Second, errors.New("test timeout"))
 	defer cancel()
 
 	tc.logger = log.NewDebugLogger()

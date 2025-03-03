@@ -1,24 +1,23 @@
 package create
 
 import (
-	"context"
 	"sync"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog/templatehelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
+	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 )
 
 func TestTemplateIdsDialog_DefaultValue(t *testing.T) {
@@ -96,7 +95,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	// Set fake file editor
@@ -170,7 +169,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := AskCreateTemplateOpts(context.Background(), d, deps, Flags{})
+	opts, err := AskCreateTemplateOpts(t.Context(), d, deps, Flags{})
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -247,7 +246,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 
 	d, _ := dialog.NewForTest(t, false)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	// Flags
@@ -262,7 +261,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	}
 
 	// Run
-	opts, err := AskCreateTemplateOpts(context.Background(), d, deps, f)
+	opts, err := AskCreateTemplateOpts(t.Context(), d, deps, f)
 	require.NoError(t, err)
 
 	// Assert
@@ -358,7 +357,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 
 	d, _ := dialog.NewForTest(t, false)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
 	f := Flags{
@@ -372,7 +371,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	}
 
 	// Run
-	opts, err := AskCreateTemplateOpts(context.Background(), d, deps, f)
+	opts, err := AskCreateTemplateOpts(t.Context(), d, deps, f)
 	require.NoError(t, err)
 
 	// Assert

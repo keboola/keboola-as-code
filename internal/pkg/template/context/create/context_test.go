@@ -1,7 +1,6 @@
 package create
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -45,7 +44,7 @@ func TestCreateContext(t *testing.T) {
 			},
 		},
 	}
-	ctx := NewContext(context.Background(), sourceBranch, configs)
+	ctx := NewContext(t.Context(), sourceBranch, configs)
 
 	// Check remote filter
 	expectedFilter := model.NoFilter()

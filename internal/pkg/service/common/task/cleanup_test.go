@@ -27,7 +27,7 @@ type testDependencies struct {
 func TestCleanup(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
 	defer cancel()
 
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2020-01-01T01:00:00.000Z").Time())

@@ -40,7 +40,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 
 	runGitCommand(t, tmpDir, "reset", "--hard", "68656d1287af0ddb5b849f816f73bf89b6f722a4")
 	// Mocked API scope
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	apiScp, mock := NewMockedAPIScope(t, ctx, config.New(), dependencies.WithMultipleTokenVerification(true))
@@ -160,7 +160,7 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	tmplDef := model.NewTemplateRef(repoDef, "template1", "1.0.3")
 
 	// Mocked API scope
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	apiScp, mock := NewMockedAPIScope(t, ctx, config.New(), dependencies.WithMultipleTokenVerification(true))
 	manager := apiScp.RepositoryManager()

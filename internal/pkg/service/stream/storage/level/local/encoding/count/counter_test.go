@@ -2,7 +2,6 @@ package count
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -49,7 +48,7 @@ func TestCounter(t *testing.T) {
 func TestCounterWithBackup_SyncBackupManually(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClock()
 	logger := log.NewDebugLogger()
 	backupInterval := time.Second
@@ -120,7 +119,7 @@ func TestCounterWithBackup_SyncBackupManually(t *testing.T) {
 func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClock()
 	logger := log.NewDebugLogger()
 	backupInterval := time.Second
@@ -194,7 +193,7 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 func TestCounterWithBackup_OpenError_Missing(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
@@ -207,7 +206,7 @@ func TestCounterWithBackup_OpenError_Missing(t *testing.T) {
 func TestCounterWithBackup_OpenError_Invalid(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
@@ -253,7 +252,7 @@ func TestCounterWithBackup_OpenError_Invalid(t *testing.T) {
 func TestCounterWithBackup_ReadError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
@@ -270,7 +269,7 @@ func TestCounterWithBackup_ReadError(t *testing.T) {
 func TestCounterWithBackup_FlushError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second
@@ -298,7 +297,7 @@ func TestCounterWithBackup_FlushError(t *testing.T) {
 func TestCounterWithBackup_CloseError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClock()
 	logger := log.NewNopLogger()
 	backupInterval := time.Second

@@ -24,7 +24,7 @@ import (
 func testTransportSmallData(t *testing.T, transportFactory func(cfg network.Config) transport.Protocol) {
 	t.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	cfg := network.NewConfig()
@@ -113,7 +113,7 @@ func testTransportSmallData(t *testing.T, transportFactory func(cfg network.Conf
 func testTransportBiggerData(t *testing.T, transportFactory func(cfg network.Config) transport.Protocol) {
 	t.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	cfg := network.NewConfig()

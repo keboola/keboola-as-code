@@ -1,7 +1,6 @@
 package variables_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/variables"
@@ -11,7 +10,7 @@ import (
 
 func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
 	t.Helper()
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(variables.NewMapper(mockedState))
 	return mockedState, d

@@ -1,7 +1,6 @@
 package etcdop
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -16,7 +15,7 @@ import (
 func TestPrefix(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	root := Prefix("my")
@@ -115,7 +114,7 @@ func TestPrefix(t *testing.T) {
 func TestTypedPrefix(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	pfx := typedPrefixForTest()
@@ -221,7 +220,7 @@ func TestTypedPrefix(t *testing.T) {
 }
 
 func BenchmarkPrefix_AtLestOneExists(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	pfx := Prefix("my/prefix/")
@@ -246,7 +245,7 @@ func BenchmarkPrefix_AtLestOneExists(b *testing.B) {
 }
 
 func BenchmarkPrefix_Count(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	pfx := Prefix("my/prefix/")
@@ -271,7 +270,7 @@ func BenchmarkPrefix_Count(b *testing.B) {
 }
 
 func BenchmarkPrefix_GetAll(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	pfx := Prefix("my/prefix/")
@@ -296,7 +295,7 @@ func BenchmarkPrefix_GetAll(b *testing.B) {
 }
 
 func BenchmarkPrefix_DeleteAll(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	pfx := Prefix("my/prefix/")
@@ -321,7 +320,7 @@ func BenchmarkPrefix_DeleteAll(b *testing.B) {
 }
 
 func BenchmarkPrefixT_AtLestOneExists(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	pfx := typedPrefixForTest()
@@ -346,7 +345,7 @@ func BenchmarkPrefixT_AtLestOneExists(b *testing.B) {
 }
 
 func BenchmarkPrefixT_Count(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	pfx := typedPrefixForTest()
@@ -371,7 +370,7 @@ func BenchmarkPrefixT_Count(b *testing.B) {
 }
 
 func BenchmarkPrefixT_GetAll(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	pfx := typedPrefixForTest()
@@ -396,7 +395,7 @@ func BenchmarkPrefixT_GetAll(b *testing.B) {
 }
 
 func BenchmarkPrefixT_DeleteAll(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	client := etcdhelper.ClientForTest(b, etcdhelper.TmpNamespace(b))
 
 	pfx := typedPrefixForTest()

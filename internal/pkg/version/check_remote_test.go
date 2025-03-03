@@ -1,7 +1,6 @@
 package version
 
 import (
-	"context"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -17,7 +16,7 @@ import (
 func TestCheckIfLatestVersionDev(t *testing.T) {
 	t.Parallel()
 	c, _ := createMockedChecker(t)
-	err := c.CheckIfLatest(context.Background(), build.DevVersionValue)
+	err := c.CheckIfLatest(t.Context(), build.DevVersionValue)
 	require.Error(t, err)
 	assert.Equal(t, `skipped, found dev build`, err.Error())
 }
@@ -25,7 +24,7 @@ func TestCheckIfLatestVersionDev(t *testing.T) {
 func TestCheckIfLatestVersionEqual(t *testing.T) {
 	t.Parallel()
 	c, logs := createMockedChecker(t)
-	err := c.CheckIfLatest(context.Background(), `v1.2.3`)
+	err := c.CheckIfLatest(t.Context(), `v1.2.3`)
 	require.NoError(t, err)
 	assert.NotContains(t, logs.AllMessages(), `warn`)
 }
@@ -33,7 +32,7 @@ func TestCheckIfLatestVersionEqual(t *testing.T) {
 func TestCheckIfLatestVersionGreater(t *testing.T) {
 	t.Parallel()
 	c, logs := createMockedChecker(t)
-	err := c.CheckIfLatest(context.Background(), `v1.2.5`)
+	err := c.CheckIfLatest(t.Context(), `v1.2.5`)
 	require.NoError(t, err)
 	assert.NotContains(t, logs.AllMessages(), `warn`)
 }
@@ -41,7 +40,7 @@ func TestCheckIfLatestVersionGreater(t *testing.T) {
 func TestCheckIfLatestVersionLess(t *testing.T) {
 	t.Parallel()
 	c, logs := createMockedChecker(t)
-	err := c.CheckIfLatest(context.Background(), `v1.2.2`)
+	err := c.CheckIfLatest(t.Context(), `v1.2.2`)
 	require.NoError(t, err)
 	expected := `
 {"level":"warn","message":"*******************************************************"}
@@ -82,7 +81,7 @@ func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
 
 	// Client with mocked http transport
 	logger := log.NewDebugLogger()
-	c := NewGitHubChecker(context.Background(), logger, false)
+	c := NewGitHubChecker(t.Context(), logger, false)
 	c.client = c.client.WithTransport(httpTransport).WithRetry(client.TestingRetry())
 	return c, logger
 }

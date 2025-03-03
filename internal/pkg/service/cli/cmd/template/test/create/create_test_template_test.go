@@ -1,7 +1,6 @@
 package create
 
 import (
-	"context"
 	"sync"
 	"testing"
 
@@ -28,7 +27,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 
 	d, console := dialog.NewForTest(t, true)
 
-	deps := dependencies.NewMocked(t, context.Background())
+	deps := dependencies.NewMocked(t, t.Context())
 
 	templatehelper.AddMockedObjectsResponses(deps.MockedHTTPTransport())
 
@@ -36,7 +35,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 	// Prepare the template
-	fs, err := fixtures.LoadFS(context.Background(), "template-simple", env.Empty())
+	fs, err := fixtures.LoadFS(t.Context(), "template-simple", env.Empty())
 	require.NoError(t, err)
 	version, err := model.NewSemVersion("v0.0.1")
 	require.NoError(t, err)
@@ -56,7 +55,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		Versions:    []repository.VersionRecord{versionRec},
 	}
 
-	tmpl, err := template.New(context.Background(), tmplRef, tmplRec, versionRec, fs, fs, "", testapi.MockedComponentsMap())
+	tmpl, err := template.New(t.Context(), tmplRef, tmplRec, versionRec, fs, fs, "", testapi.MockedComponentsMap())
 	require.NoError(t, err)
 
 	// Interaction
@@ -90,7 +89,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	f := Flags{
 		TestName: configmap.NewValueWithOrigin("one", configmap.SetByFlag),
 	}
-	opts, warnings, err := AskCreateTemplateTestOptions(context.Background(), d, tmpl, f)
+	opts, warnings, err := AskCreateTemplateTestOptions(t.Context(), d, tmpl, f)
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()

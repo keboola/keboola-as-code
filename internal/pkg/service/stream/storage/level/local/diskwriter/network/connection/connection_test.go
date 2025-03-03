@@ -27,7 +27,7 @@ import (
 func TestConnectionManager(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
 	defer cancel()
 
 	etcdCfg := etcdhelper.TmpNamespace(t)

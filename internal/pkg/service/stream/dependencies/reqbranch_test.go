@@ -18,7 +18,7 @@ import (
 func TestBranchRequestScope_DefaultBranch_String(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	d, mock := NewMockedProjectRequestScope(t, ctx)
 	client := mock.EtcdClient()
@@ -107,7 +107,7 @@ definition/branch/active/12345/456
 func TestBranchRequestScope_DefaultBranch_Int(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	d, mock := NewMockedProjectRequestScope(t, ctx)
 	client := mock.EtcdClient()
@@ -194,7 +194,7 @@ definition/branch/active/12345/456
 func TestBranchRequestScope_NotDefaultBranch(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	d, mock := NewMockedProjectRequestScope(t, ctx)
 

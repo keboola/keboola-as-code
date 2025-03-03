@@ -35,7 +35,7 @@ import (
 func TestEncodingPipeline_Basic(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
@@ -83,7 +83,7 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 func TestEncodingPipeline_FlushError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
@@ -116,7 +116,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 func TestEncodingPipeline_CloseError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d, _ := dependencies.NewMockedSourceScope(t, ctx)
 
 	slice := test.NewSlice()
@@ -154,7 +154,7 @@ func TestEncodingPipeline_Open_Ok(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, tc.Manager.Pipelines(), 1)
 
-	require.NoError(t, w.Close(context.Background()))
+	require.NoError(t, w.Close(t.Context()))
 	assert.Empty(t, tc.Manager.Pipelines())
 }
 
@@ -174,14 +174,14 @@ func TestEncodingPipeline_Open_Duplicate(t *testing.T) {
 	}
 	assert.Len(t, tc.Manager.Pipelines(), 1)
 
-	require.NoError(t, w.Close(context.Background()))
+	require.NoError(t, w.Close(t.Context()))
 	assert.Empty(t, tc.Manager.Pipelines())
 }
 
 func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newEncodingTestCase(t)
 	tc.Slice.Encoding.Sync.Mode = writesync.ModeDisk
 	tc.Slice.Encoding.Sync.Wait = true
@@ -287,7 +287,7 @@ foo3
 func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newEncodingTestCase(t)
 	tc.Slice.Encoding.Sync.Mode = writesync.ModeCache
 	tc.Slice.Encoding.Sync.Wait = true
@@ -388,7 +388,7 @@ foo3
 func TestEncodingPipeline_Sync_NoWait_ToDisk(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newEncodingTestCase(t)
 	tc.Slice.Encoding.Sync.Mode = writesync.ModeDisk
 	tc.Slice.Encoding.Sync.Wait = false
@@ -464,7 +464,7 @@ foo4
 func TestEncodingPipeline_Sync_NoWait_ToDiskCache(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newEncodingTestCase(t)
 	tc.Slice.Encoding.Sync.Mode = writesync.ModeCache
 	tc.Slice.Encoding.Sync.Wait = false
@@ -540,7 +540,7 @@ foo4
 func TestEncodingPipeline_TemporaryError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newEncodingTestCase(t)
 	tc.Slice.Encoding.Sync.Mode = writesync.ModeDisk
 	tc.Slice.Encoding.Sync.Wait = true
@@ -690,7 +690,7 @@ type writerSyncHelper struct {
 
 func newEncodingTestCase(t *testing.T) *encodingTestCase {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	t.Cleanup(func() {
 		cancel()
 	})
@@ -791,7 +791,7 @@ func (h *writerSyncHelper) TriggerSync(tb testing.TB) {
 		go func() {
 			defer wg.Done()
 			notifier := s.TriggerSync(true)
-			assert.NoError(tb, notifier.Wait(context.Background()))
+			assert.NoError(tb, notifier.Wait(tb.Context()))
 		}()
 	}
 	wg.Wait()

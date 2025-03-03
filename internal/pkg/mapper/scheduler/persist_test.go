@@ -1,7 +1,6 @@
 package scheduler_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -35,7 +34,7 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, configManifest.Relations)
-	require.NoError(t, state.Mapper().MapBeforePersist(context.Background(), recipe))
+	require.NoError(t, state.Mapper().MapBeforePersist(t.Context(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Relation has been created

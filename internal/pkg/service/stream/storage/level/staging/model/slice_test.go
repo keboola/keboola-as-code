@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -45,7 +44,7 @@ func TestSlice_Validation(t *testing.T) {
 	}
 
 	// Run test cases
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 	for _, tc := range cases {
 		err := val.Validate(ctx, tc.Value)

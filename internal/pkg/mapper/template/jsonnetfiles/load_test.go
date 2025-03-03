@@ -1,7 +1,6 @@
 package jsonnetfiles_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -19,7 +18,7 @@ func TestJsonnetMapper_LoadLocalFile(t *testing.T) {
 	// Variables
 	jsonnetCtx := jsonnet.NewContext()
 	jsonnetCtx.ExtVar("myKey", "bar")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create state
 	state := createStateWithMapper(t, jsonnetCtx)

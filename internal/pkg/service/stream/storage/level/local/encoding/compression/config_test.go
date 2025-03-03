@@ -1,7 +1,6 @@
 package compression
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -195,7 +194,7 @@ func TestConfig_Validation(t *testing.T) {
 	}
 
 	// Run test cases
-	ctx := context.Background()
+	ctx := t.Context()
 	val := validator.New()
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {

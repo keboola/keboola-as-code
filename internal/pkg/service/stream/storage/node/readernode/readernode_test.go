@@ -1,7 +1,6 @@
 package readernode_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,7 +16,7 @@ import (
 func TestStart_NoVolumeFound(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 
 	// Start
@@ -29,7 +28,7 @@ func TestStart_NoVolumeFound(t *testing.T) {
 func TestStart_Ok(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx)
 
 	// Create some volumes in volumes temp dir

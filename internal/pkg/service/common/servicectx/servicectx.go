@@ -139,7 +139,7 @@ func NewForTest(tb testing.TB, opts ...Option) *Process {
 
 	proc := New(opts...)
 	tb.Cleanup(func() {
-		proc.Shutdown(context.Background(), errors.New("test cleanup"))
+		proc.Shutdown(tb.Context(), errors.New("test cleanup"))
 		proc.WaitForShutdown()
 	})
 

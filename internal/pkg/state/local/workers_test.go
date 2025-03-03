@@ -15,7 +15,7 @@ import (
 
 func TestWorkers(t *testing.T) {
 	t.Parallel()
-	w := NewWorkers(context.Background())
+	w := NewWorkers(t.Context())
 
 	counter := atomic.NewInt64(0)
 	w.AddWorker(func(ctx context.Context) error {
@@ -43,7 +43,7 @@ func TestWorkers(t *testing.T) {
 
 func TestWorkersErrors(t *testing.T) {
 	t.Parallel()
-	w := NewWorkers(context.Background())
+	w := NewWorkers(t.Context())
 
 	w.AddWorker(func(ctx context.Context) error {
 		return errors.New(`first`)
@@ -70,7 +70,7 @@ func TestWorkersErrors(t *testing.T) {
 func TestLocalUnitOfWork_workersFor(t *testing.T) {
 	t.Parallel()
 	manager := newTestLocalManager(t, nil)
-	uow := manager.NewUnitOfWork(context.Background())
+	uow := manager.NewUnitOfWork(t.Context())
 
 	lock := &sync.Mutex{}
 	var order []int

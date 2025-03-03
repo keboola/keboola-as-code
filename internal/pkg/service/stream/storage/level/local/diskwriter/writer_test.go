@@ -24,7 +24,7 @@ import (
 func TestWriter_Basic(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	w, err := tc.OpenWriter()
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestWriter_Basic(t *testing.T) {
 func TestWriter_NotAligned(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	// Create path to file which already exists to test not aligned append write
 	require.NoError(t, os.MkdirAll(
@@ -108,7 +108,7 @@ func TestOpenWriter_ClosedVolume(t *testing.T) {
 	vol, err := tc.OpenVolume()
 	require.NoError(t, err)
 
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 
 	slice := test.NewSlice()
 	_, err = vol.OpenWriter(tc.SourceNodeID, slice.SliceKey, slice.LocalStorage)
@@ -125,7 +125,7 @@ func TestOpenWriter_Ok(t *testing.T) {
 	require.NoError(t, err)
 	assert.FileExists(t, tc.FilePath())
 
-	require.NoError(t, w.Close(context.Background()))
+	require.NoError(t, w.Close(t.Context()))
 	assert.FileExists(t, tc.FilePath())
 }
 
@@ -154,7 +154,7 @@ func TestOpenWriter_SameSliceDifferentSourceNodeID(t *testing.T) {
 
 	// Close volume after the test
 	tc.TB.Cleanup(func() {
-		require.NoError(tc.TB, vol.Close(context.Background()))
+		require.NoError(tc.TB, vol.Close(t.Context()))
 	})
 
 	// Source node 1
@@ -193,7 +193,7 @@ func TestWriter_OpenFile_MkdirError(t *testing.T) {
 	require.NoError(t, os.Chmod(tc.VolumePath, 0o750))
 
 	// Close volume
-	require.NoError(t, vol.Close(context.Background()))
+	require.NoError(t, vol.Close(t.Context()))
 }
 
 func TestWriter_OpenFile_FileError(t *testing.T) {
@@ -217,7 +217,7 @@ func TestWriter_OpenFile_FileError(t *testing.T) {
 func TestWriter_AllocateSpace_Error(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Allocator.Error = errors.New("some space allocation error")
 
@@ -242,7 +242,7 @@ func TestWriter_AllocateSpace_Error(t *testing.T) {
 func TestWriter_AllocateSpace_NotSupported(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Allocator.Ok = false
 
@@ -267,7 +267,7 @@ func TestWriter_AllocateSpace_NotSupported(t *testing.T) {
 func TestWriter_AllocateSpace_Disabled(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Slice.LocalStorage.AllocatedDiskSpace = 0
 	w, err := tc.OpenWriter()

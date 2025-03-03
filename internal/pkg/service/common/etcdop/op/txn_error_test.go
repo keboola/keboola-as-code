@@ -16,7 +16,7 @@ import (
 func TestTxnOp_FirstErrorOnly(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	newOpWithErr := func(i int) op.Op {

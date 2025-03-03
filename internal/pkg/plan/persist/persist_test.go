@@ -1,7 +1,6 @@
 package persist
 
 import (
-	"context"
 	"net/http"
 	"runtime"
 	"testing"
@@ -911,7 +910,7 @@ func TestPersistScheduler(t *testing.T) {
 func (tc *testCase) run(t *testing.T) {
 	t.Helper()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Init project dir
 	_, testFile, _, _ := runtime.Caller(0)
@@ -926,7 +925,7 @@ func (tc *testCase) run(t *testing.T) {
 	require.NoError(t, err)
 
 	// Container
-	d := dependencies.NewMocked(t, context.Background())
+	d := dependencies.NewMocked(t, t.Context())
 
 	// Register new IDs API responses
 	var ticketResponses []*http.Response

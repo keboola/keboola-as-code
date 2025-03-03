@@ -1,7 +1,6 @@
 package dependencies
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -17,12 +16,12 @@ import (
 
 func TestNewPublicDeps_LazyLoadComponents(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	httpClient := httpclient.New()
 	baseDeps := newBaseScope(ctx, log.NewNopLogger(), telemetry.NewNop(), os.Stdout, os.Stderr, clockwork.NewRealClock(), servicectx.NewForTest(t), httpClient)
 
 	// Create public deps without loading components.
-	deps, err := newPublicScope(context.Background(), baseDeps, "https://connection.keboola.com")
+	deps, err := newPublicScope(t.Context(), baseDeps, "https://connection.keboola.com")
 	require.NoError(t, err)
 
 	// Check the components are loaded lazily.

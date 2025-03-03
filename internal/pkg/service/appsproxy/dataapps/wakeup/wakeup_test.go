@@ -24,7 +24,7 @@ import (
 func TestManager_Wakeup(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClock()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
@@ -60,7 +60,7 @@ func TestManager_Wakeup(t *testing.T) {
 func TestManager_Wakeup_Race(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	clk := clockwork.NewFakeClock()
 	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
 
@@ -75,7 +75,7 @@ func TestManager_Wakeup_Race(t *testing.T) {
 
 	manager := d.WakeupManager()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	wg := sync.WaitGroup{}

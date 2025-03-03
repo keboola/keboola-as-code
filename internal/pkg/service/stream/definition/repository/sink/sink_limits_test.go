@@ -1,7 +1,6 @@
 package sink_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"testing"
@@ -29,7 +28,7 @@ import (
 func TestSinkLimits_SinksPerBranch(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	by := test.ByUser()
 
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())
@@ -87,7 +86,7 @@ func TestSinkLimits_SinksPerBranch(t *testing.T) {
 func TestSinkLimits_VersionsPerSink(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	by := test.ByUser()
 
 	clk := clockwork.NewFakeClockAt(utctime.MustParse("2006-01-02T15:04:05.123Z").Time())

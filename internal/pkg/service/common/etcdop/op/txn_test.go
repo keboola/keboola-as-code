@@ -49,7 +49,7 @@ func (tc txnTestCase) Run(t *testing.T, ctx context.Context, client *etcd.Client
 
 func TestTxnOp_Empty(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	txn := Txn(client)
@@ -76,7 +76,7 @@ func TestTxnOp_Empty(t *testing.T) {
 
 func TestTxnOp_OpError_Create(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Create operation failing on create
@@ -109,7 +109,7 @@ func TestTxnOp_OpError_Create(t *testing.T) {
 
 func TestTxnOp_OpError_MapResult_IfBranch(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Create operation failing on MapResponse
@@ -144,7 +144,7 @@ func TestTxnOp_OpError_MapResult_IfBranch(t *testing.T) {
 
 func TestTxnOp_OpError_MapResult_ElseBranch(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Create operation failing on MapResponse
@@ -177,7 +177,7 @@ func TestTxnOp_OpError_MapResult_ElseBranch(t *testing.T) {
 
 func TestTxnOp_ServerError(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	txn := Txn(client).
@@ -191,7 +191,7 @@ func TestTxnOp_ServerError(t *testing.T) {
 
 func TestTxnOp_IfThenElse(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Helpers to test processor callbacks
@@ -338,7 +338,7 @@ func TestTxnOp_Then_CalledWithTxn_1(t *testing.T) {
 
 	client := etcd.KV(nil)
 	assert.PanicsWithError(t, `invalid operation[0]: op is a transaction, use Merge or ThenTxn, not Then`, func() {
-		Txn(client).Then(Txn(client)).Op(context.Background())
+		Txn(client).Then(Txn(client)).Op(t.Context())
 	})
 }
 
@@ -360,7 +360,7 @@ func TestTxnOp_Then_CalledWithTxn_2(t *testing.T) {
 		},
 	)
 
-	_, err := Txn(client).Then(txnOp).Op(context.Background())
+	_, err := Txn(client).Then(txnOp).Op(t.Context())
 	if assert.Error(t, err) {
 		assert.Equal(t, "cannot create operation [then][0]:\n- operation is a transaction, use Merge or ThenTxn, not Then", err.Error())
 	}
@@ -370,7 +370,7 @@ func TestTxnOp_ThenTxn_CalledWithoutTxn(t *testing.T) {
 	t.Parallel()
 
 	client := etcd.KV(nil)
-	_, err := Txn(client).ThenTxn(etcdop.Key("foo").Put(client, "bar")).Op(context.Background())
+	_, err := Txn(client).ThenTxn(etcdop.Key("foo").Put(client, "bar")).Op(t.Context())
 	if assert.Error(t, err) {
 		assert.Equal(t, "cannot create operation [thenTxn][0]:\n- operation is not a transaction, use Then, not ThenTxn", err.Error())
 	}
@@ -378,7 +378,7 @@ func TestTxnOp_ThenTxn_CalledWithoutTxn(t *testing.T) {
 
 func TestTxnOp_Then_Simple(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Collect processors output
@@ -465,7 +465,7 @@ root transaction succeeded
 
 func TestTxnOp_Merge_Simple(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Collect processors output
@@ -530,7 +530,7 @@ root transaction succeeded
 
 func TestTxnOp_Then_Simple_Ifs(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Collect processors output
@@ -652,7 +652,7 @@ root transaction succeeded
 
 func TestTxnOp_Merge_Simple_Ifs(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Collect processors output
@@ -768,7 +768,7 @@ root transaction failed
 
 func TestTxnOp_Merge_RealExample(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Collect processors output
@@ -958,7 +958,7 @@ txn succeeded: true
 
 func TestTxnOp_Merge_Complex(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Helpers to test processor callbacks
@@ -1234,7 +1234,7 @@ txn succeeded: true
 
 func TestTxnOp_Merge_Nested(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	var logs bytes.Buffer
@@ -1305,7 +1305,7 @@ func TestTxnOp_Merge_Nested(t *testing.T) {
 
 func TestTxnOp_Merge_Nested_ServerError(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	var logs bytes.Buffer

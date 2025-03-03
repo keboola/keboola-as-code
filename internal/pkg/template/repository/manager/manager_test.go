@@ -44,7 +44,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Create manager
-	ctx := context.Background()
+	ctx := t.Context()
 	d := dependencies.NewMocked(t, ctx)
 	m, err := manager.New(ctx, d, nil)
 	require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestNew(t *testing.T) {
 	repo, unlockFn, err := m.Repository(ctx, ref)
 	if assert.NoError(t, err) {
 		defer unlockFn()
-		assert.True(t, repo.Fs().Exists(context.Background(), "template1"))
+		assert.True(t, repo.Fs().Exists(t.Context(), "template1"))
 	}
 }
 
@@ -74,7 +74,7 @@ func TestRepository(t *testing.T) {
 	}
 
 	// Create manager
-	ctx := context.Background()
+	ctx := t.Context()
 	d := dependencies.NewMocked(t, ctx)
 	m, err := manager.New(ctx, d, nil)
 	require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestRepositoryUpdate(t *testing.T) {
 		t.Skip("unstable on windows - random timeouts")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	// Copy the git repository to temp
@@ -256,7 +256,7 @@ func TestDefaultRepositories(t *testing.T) {
 	}
 
 	// Create manager
-	ctx := context.Background()
+	ctx := t.Context()
 	d := dependencies.NewMocked(t, ctx)
 	m, err := manager.New(ctx, d, defaultRepositories)
 	require.NoError(t, err)

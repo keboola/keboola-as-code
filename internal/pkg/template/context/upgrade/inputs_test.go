@@ -1,7 +1,6 @@
 package upgrade
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -362,7 +361,7 @@ func TestExportInputsValues(t *testing.T) {
 func (tc testCase) run(t *testing.T) {
 	t.Helper()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create objects
 	d := dependencies.NewMocked(t, ctx)
@@ -413,7 +412,7 @@ func (tc testCase) run(t *testing.T) {
 	}))
 
 	// Assert inputs
-	actual := ExportInputsValues(context.Background(), log.NewNopLogger().Debugf, state, branchKey, instanceID, tc.templateInputs)
+	actual := ExportInputsValues(t.Context(), log.NewNopLogger().Debugf, state, branchKey, instanceID, tc.templateInputs)
 	assert.Equal(t, tc.expected, actual.ToValue())
 
 	// Assert steps state

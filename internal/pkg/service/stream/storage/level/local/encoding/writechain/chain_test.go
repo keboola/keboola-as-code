@@ -142,7 +142,7 @@ func TestChain_PrependWriterOrErr_Error(t *testing.T) {
 func TestChain_Complex_Ok(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newChainTestCase(t)
 	tc.SetupComplexChain()
 
@@ -210,7 +210,7 @@ func TestChain_Complex_Ok(t *testing.T) {
 func TestChain_FlushError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newChainTestCase(t)
 
 	writers := tc.SetupSimpleChain()
@@ -250,7 +250,7 @@ chain flush error:
 func TestChain_CloseError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newChainTestCase(t)
 
 	writers := tc.SetupSimpleChain()
@@ -284,7 +284,7 @@ chain close error:
 func TestChain_FileCloseError(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newChainTestCase(t)
 
 	tc.File.CloseError = errors.New("file close error")

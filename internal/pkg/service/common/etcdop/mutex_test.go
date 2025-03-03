@@ -20,13 +20,13 @@ import (
 func TestMutex_LockUnlock(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	wg := &sync.WaitGroup{}
 
 	// Create cancelled context
-	cancelledContext, cancelFn := context.WithCancelCause(context.Background())
+	cancelledContext, cancelFn := context.WithCancelCause(t.Context())
 	cancelFn(errors.New("cancelled context"))
 
 	// Setup client
@@ -141,7 +141,7 @@ func TestMutex_ParallelWork(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
 			defer cancel()
 
 			logger := log.NewDebugLogger()
