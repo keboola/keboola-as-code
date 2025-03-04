@@ -221,8 +221,8 @@ func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice 
 		v.removeWriter(key)
 	}()
 
-	// Create writer
-	w, err = newWriter(v.ctx, logger, v.Path(), v.fileOpener, v.allocator, key, slice, v.writerEvents)
+	// Create writer based on config
+	w, err = newWriter(v.ctx, logger, v.Path(), v.fileOpener, v.allocator, key, slice, v.writerEvents, v.config.UseBackupWriter)
 	if err != nil {
 		return nil, err
 	}
