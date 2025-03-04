@@ -311,17 +311,14 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).
 		WithFilter(func(v model.File) bool {
-			if lastReset.ResetAt == nil {
-				return true
-			}
-			// Exclude files newer than last reset.
-			return v.OpenedAt().After(*lastReset.ResetAt)
-		}, func(v model.File) bool {
-			// Exclude files based on their state and retry attempts.
-			// If `NotImportedFiles` is true, only include files that
-			// are not in the `FileImported` state and have at least one retry attempt.
-			if payload.FailedFiles {
-				return v.State != model.FileImported && v.RetryAttempt > 0
+			// Filter logic to include files based on reset and failure state
+			// The filtering ensures only files meeting the appropriate criteria are processed:
+			// - If there's no reset or a file is opened after the last reset, consider it.
+			// - If 'FailedFiles' is enabled in the payload, include files with retry attempts
+			//   and in a non-imported state.
+			// - Otherwise, include all files that meet the reset criteria.
+			if lastReset.ResetAt == nil || v.OpenedAt().After(*lastReset.ResetAt) {
+				return payload.FailedFiles && (v.State != model.FileImported && v.RetryAttempt > 0) || !payload.FailedFiles
 			}
 			return false
 		}).
