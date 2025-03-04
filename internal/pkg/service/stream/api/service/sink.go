@@ -352,7 +352,24 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	// Sort files response by OpenedAt timestamp
 	files := maps.Values(filesMap)
+
+	// Sorts the list of files by their "OpenedAt" timestamp, prioritizing specific conditions:
+	// - Files with a defined RetryReason are prioritized above those without.
+	// - Files in the "Writing" state are prioritized above others.
+	// - Within the same priority group, files are sorted lexicographically by the "OpenedAt" timestamp.
 	slices.SortStableFunc(files, func(a, b *api.SinkFile) int {
+		if a.RetryReason != nil && b.RetryReason == nil {
+			return -1
+		}
+		if a.RetryReason == nil && b.RetryReason != nil {
+			return 1
+		}
+		if a.State == model.FileWriting && b.State != model.FileWriting {
+			return -1
+		}
+		if a.State != model.FileWriting && b.State == model.FileWriting {
+			return 1
+		}
 		return strings.Compare(a.OpenedAt, b.OpenedAt)
 	})
 
