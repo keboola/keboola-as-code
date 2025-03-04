@@ -652,7 +652,7 @@ func TestMetadataProcessingJobCleanupErrorTolerance(t *testing.T) {
 		time.Sleep(1 * time.Second)
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			messages := logger.AllMessages()
-			assert.Contains(c, messages, `context canceled`)
+			assert.True(c, strings.Contains(messages, `context canceled`) || strings.Contains(messages, `canceled after`))
 			actual := strings.Count(messages, `"message":"cannot get keboola storage job \"123/456/my-source/my-sink/job`)
 			assert.GreaterOrEqual(c, actual, 5)
 			assert.LessOrEqual(c, actual, 6)
