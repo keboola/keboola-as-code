@@ -39,12 +39,13 @@ spec:
             }
           }
     spec:
+      serviceAccountName: stream-identity
       terminationGracePeriodSeconds: 60
       containers:
         - name: stream-http-source
           image: $STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG
-          command: [ "/app/service" ]
-          args: [ "--config-file", "/stream/config/config.yaml", "http-source" ] # run HTTP source component
+          command: ["/app/service"]
+          args: ["--config-file", "/stream/config/config.yaml", "http-source"] # run HTTP source component
           resources:
             requests:
               cpu: "$STREAM_HTTP_SOURCE_CPU_SOFT_LIMIT"
@@ -58,6 +59,9 @@ spec:
             - name: config
               mountPath: /stream/config
               readOnly: true
+          envFrom:
+            - secretRef:
+                name: stream-infra-secrets
           env:
             - name: GOMEMLIMIT
               value: "${STREAM_HTTP_SOURCE_MEMORY_SOFT_LIMIT}B"
