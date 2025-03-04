@@ -1,0 +1,228 @@
+<<<<<
+storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/2000-01-01T02:00:00.000Z
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "fileOpenedAt": "2000-01-01T02:00:00.000Z",
+  "type": "csv",
+  "state": "closing",
+  "retryAttempt": 2,
+  "retryReason": "some reason 2",
+  "firstFailedAt": "2000-01-01T06:00:00.000Z",
+  "lastFailedAt": "2000-01-01T07:00:00.000Z",
+  "retryAfter": "2000-01-01T07:08:00.000Z",
+  "closingAt": "2000-01-01T05:00:00.000Z",
+  "importingAt": "2000-01-01T12:00:00.000Z",
+  "importedAt": "2000-01-01T13:00:00.000Z",
+  "mapping": {
+    "columns": [
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
+  "encoding": {
+    "encoder": {
+      "type": "csv",
+      "concurrency": 0
+    },
+    "inputBuffer": "1MB",
+    "maxChunkSize": "512KB",
+    "failedChunksThreshold": 3,
+    "compression": {
+      "type": "gzip",
+      "gzip": {
+        "level": 1,
+        "implementation": "parallel",
+        "blockSize": "256KB",
+        "concurrency": 0
+      },
+      "zstd": {
+        "level": 2,
+        "windowSize": "4MB",
+        "concurrency": 0
+      }
+    },
+    "sync": {
+      "mode": "disk",
+      "wait": true,
+      "checkInterval": "5ms",
+      "countTrigger": 10000,
+      "uncompressedBytesTrigger": "1MB",
+      "compressedBytesTrigger": "256KB",
+      "intervalTrigger": "50ms"
+    }
+  },
+  "local": {
+    "dir": "123/456/my-source/my-sink/2000-01-01T02-00-00-000Z",
+    "assignment": {
+      "config": {
+        "count": 1,
+        "preferredTypes": [
+          "default"
+        ]
+      },
+      "volumes": [
+        "my-volume-1"
+      ]
+    },
+    "allocation": {
+      "enabled": true,
+      "static": "100MB",
+      "relative": 110
+    }
+  },
+  "staging": {
+    "provider": "test",
+    "compression": {
+      "type": "gzip",
+      "gzip": {
+        "level": 1,
+        "implementation": "parallel",
+        "blockSize": "256KB",
+        "concurrency": 0
+      },
+      "zstd": {
+        "level": 2,
+        "windowSize": "4MB",
+        "concurrency": 0
+      }
+    },
+    "expiration": "2000-01-02T02:00:00.000Z",
+    "upload": {
+      "minInterval": "5s",
+      "trigger": {
+        "count": 10000,
+        "size": "1MB",
+        "interval": "1m0s"
+      }
+    }
+  },
+  "target": {
+    "provider": "keboola",
+    "import": {
+      "minInterval": "1m0s",
+      "trigger": {
+        "count": 50000,
+        "size": "5MB",
+        "interval": "5m0s"
+      }
+    }
+  }
+}
+>>>>>
+
+<<<<<
+storage/file/level/local/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-sink/2000-01-01T02:00:00.000Z
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "sinkId": "my-sink",
+  "fileOpenedAt": "2000-01-01T02:00:00.000Z",
+  "state": "closing",
+  "retryAttempt": 2,
+  "retryReason": "some reason 2",
+  "firstFailedAt": "2000-01-01T06:00:00.000Z",
+  "lastFailedAt": "2000-01-01T07:00:00.000Z",
+  "retryAfter": "2000-01-01T07:08:00.000Z",
+  "mapping": {
+    "columns": [
+      {
+        "type": "uuid",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
+  "encoding": {
+    "encoder": {
+      "type": "csv",
+      "concurrency": 0,
+      "rowSizeLimit": "1536KB"
+    },
+    "inputBuffer": "2MB",
+    "maxChunkSize": "512KB",
+    "failedChunksThreshold": 3,
+    "compression": {
+      "type": "gzip",
+      "gzip": {
+        "level": 1,
+        "implementation": "parallel",
+        "blockSize": "256KB",
+        "concurrency": 0
+      }
+    },
+    "sync": {
+      "mode": "disk",
+      "wait": true,
+      "checkInterval": "5ms",
+      "countTrigger": 10000,
+      "uncompressedBytesTrigger": "1MB",
+      "compressedBytesTrigger": "256KB",
+      "intervalTrigger": "50ms"
+    }
+  },
+  "local": {
+    "dir": "648/112013/my-source/my-sink/2025-03-03T14-35-59-843Z",
+    "assignment": {
+      "config": {
+        "count": 1,
+        "preferredTypes": [
+          "default"
+        ]
+      },
+      "volumes": [
+        "my-volume"
+      ]
+    },
+    "allocation": {
+      "enabled": true,
+      "static": "100MB",
+      "relative": 110
+    }
+  },
+  "staging": {
+    "provider": "keboola",
+    "compression": {
+      "type": "gzip",
+      "gzip": {
+        "level": 1,
+        "implementation": "parallel",
+        "blockSize": "256KB",
+        "concurrency": 0
+      }
+    },
+    "expiration": "2025-03-03T15:36:02.000Z",
+    "upload": {
+      "minInterval": "10s",
+      "trigger": {
+        "count": 10000,
+        "size": "5MB",
+        "interval": "30s"
+      }
+    }
+  },
+  "target": {
+    "provider": "keboola",
+    "import": {
+      "minInterval": "1m0s",
+      "trigger": {
+        "count": 50000,
+        "size": "50MB",
+        "interval": "1m0s",
+        "slicesCount": 100,
+        "expiration": "30m0s"
+      }
+    }
+  }
+}
+>>>>>

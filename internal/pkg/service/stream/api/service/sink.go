@@ -297,9 +297,8 @@ func (s *service) SinkStatisticsTotal(ctx context.Context, d dependencies.SinkRe
 	return s.mapper.NewSinkStatisticsTotalResponse(stats), nil
 }
 
-func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRequestScope, payload *stream.SinkStatisticsFilesPayload) (res *stream.SinkStatisticsFilesResult, err error) {
-	err = s.definition.Sink().ExistsOrErr(d.SinkKey()).Do(ctx).Err()
-	if err != nil {
+func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRequestScope, payload *stream.SinkStatisticsFilesPayload) (*stream.SinkStatisticsFilesResult, error) {
+	if err := s.definition.Sink().ExistsOrErr(d.SinkKey()).Do(ctx).Err(); err != nil {
 		return nil, err
 	}
 
@@ -312,14 +311,19 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).
 		WithFilter(func(v model.File) bool {
-			if lastReset.ResetAt == nil {
-				return true
+			// Filter logic to include files based on reset and failure state
+			// The filtering ensures only files meeting the appropriate criteria are processed:
+			// - If there's no reset or a file is opened after the last reset, consider it.
+			// - If 'FailedFiles' is enabled in the payload, include files with retry attempts
+			//   and in a non-imported state.
+			// - Otherwise, include all files that meet the reset criteria.
+			if lastReset.ResetAt == nil || v.OpenedAt().After(*lastReset.ResetAt) {
+				return payload.FailedFiles && (v.State != model.FileImported && v.RetryAttempt > 0) || !payload.FailedFiles
 			}
-			// Exclude files newer than last reset.
-			return v.OpenedAt().After(*lastReset.ResetAt)
+			return false
 		}).
 		Do(ctx).
-		ForEachValue(func(value model.File, header *iterator.Header) error {
+		ForEachValue(func(value model.File, _ *iterator.Header) error {
 			filesMap[value.FileID] = s.mapper.NewSinkFile(value)
 			return nil
 		})
@@ -340,7 +344,9 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 		}
 
 		for key, aggregated := range statisticsMap {
-			filesMap[key].Statistics = s.mapper.NewSinkFileStatistics(aggregated)
+			if file, exists := filesMap[key]; exists {
+				file.Statistics = s.mapper.NewSinkFileStatistics(aggregated)
+			}
 		}
 	}
 
