@@ -966,7 +966,7 @@ paths:
             description: Get files statistics of the sink.
             operationId: SinkStatisticsFiles
             parameters:
-                - name: notImportedFiles
+                - name: failedFiles
                   in: query
                   description: Filter for not imported files. If set to true, only not imported files will be included.
                   required: false

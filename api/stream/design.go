@@ -536,11 +536,11 @@ var _ = Service("stream", func() {
 		Meta("openapi:summary", "Sink files statistics")
 		Description("Get files statistics of the sink.")
 		Result(SinkStatisticsFilesResult)
-		Payload(StatisticSinkRequest)
+		Payload(SinkStatisticsRequest)
 		HTTP(func() {
 			GET("/branches/{branchId}/sources/{sourceId}/sinks/{sinkId}/statistics/files")
 			Meta("openapi:tag:configuration")
-			Param("notImportedFiles")
+			Param("failedFiles")
 			Response(StatusOK)
 			SourceNotFoundError()
 			SinkNotFoundError()
@@ -1144,9 +1144,9 @@ var GetSinkRequest = Type("GetSinkRequest", func() {
 	SinkKeyRequest()
 })
 
-var StatisticSinkRequest = Type("StatisticSinkRequest", func() {
+var SinkStatisticsRequest = Type("SinkStatisticsRequest", func() {
 	SinkKeyRequest()
-	Attribute("notImportedFiles", Boolean, func() {
+	Attribute("failedFiles", Boolean, func() {
 		Description("Filter for not imported files. If set to true, only not imported files will be included.")
 		Default(false)
 	})

@@ -1841,7 +1841,7 @@ paths:
             description: Get files statistics of the sink.
             operationId: SinkStatisticsFiles
             parameters:
-                - name: notImportedFiles
+                - name: failedFiles
                   in: query
                   description: Filter for not imported files. If set to true, only not imported files will be included.
                   allowEmptyValue: true
@@ -5302,6 +5302,39 @@ components:
                                 uncompressedSize: 1
             required:
                 - files
+        SinkStatisticsRequest:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                failedFiles:
+                    type: boolean
+                    description: Filter for not imported files. If set to true, only not imported files will be included.
+                    default: false
+                    example: false
+                sinkId:
+                    type: string
+                    description: Unique ID of the sink.
+                    example: github-pr-table-sink
+                    minLength: 1
+                    maxLength: 48
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                sinkId: github-pr-table-sink
+                failedFiles: false
+            required:
+                - branchId
+                - sourceId
+                - sinkId
         SinkStatisticsTotalResult:
             type: object
             properties:
@@ -5839,39 +5872,6 @@ components:
                 - branchId
                 - page
                 - sources
-        StatisticSinkRequest:
-            type: object
-            properties:
-                branchId:
-                    type: string
-                    description: ID of the branch or "default".
-                    example: default
-                notImportedFiles:
-                    type: boolean
-                    description: Filter for not imported files. If set to true, only not imported files will be included.
-                    default: false
-                    example: false
-                sinkId:
-                    type: string
-                    description: Unique ID of the sink.
-                    example: github-pr-table-sink
-                    minLength: 1
-                    maxLength: 48
-                sourceId:
-                    type: string
-                    description: Unique ID of the source.
-                    example: github-webhook-source
-                    minLength: 1
-                    maxLength: 48
-            example:
-                branchId: default
-                sourceId: github-webhook-source
-                sinkId: github-pr-table-sink
-                notImportedFiles: false
-            required:
-                - branchId
-                - sourceId
-                - sinkId
         TableColumn:
             type: object
             properties:

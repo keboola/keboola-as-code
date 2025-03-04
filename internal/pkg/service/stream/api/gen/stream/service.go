@@ -615,7 +615,7 @@ type SinkStatisticsFilesPayload struct {
 	SinkID          SinkID
 	// Filter for not imported files. If set to true, only not imported files will
 	// be included.
-	NotImportedFiles bool
+	FailedFiles bool
 }
 
 // SinkStatisticsFilesResult is the result type of the stream service

@@ -320,7 +320,7 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 			// Exclude files based on their state and retry attempts.
 			// If `NotImportedFiles` is true, only include files that
 			// are not in the `FileImported` state and have at least one retry attempt.
-			if payload.NotImportedFiles {
+			if payload.FailedFiles {
 				return v.State != model.FileImported && v.RetryAttempt > 0
 			}
 			return false
