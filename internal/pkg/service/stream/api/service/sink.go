@@ -309,17 +309,21 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 		return nil, err
 	}
 
-	err = d.StorageRepository().File().ListRecentIn(d.SinkKey()).
-		WithFilter(func(v model.File) bool {
-			if lastReset.ResetAt == nil || v.OpenedAt().After(*lastReset.ResetAt) {
-				return true
-			}
-			return false
-		}, func(v model.File) bool {
-			// Filter failed files if requested by the payload
+	def := d.StorageRepository().File().ListRecentIn(d.SinkKey())
+	if lastReset.ResetAt != nil {
+		def = def.WithFilter(func(v model.File) bool {
+			// Exclude files newer than last reset.
+			return v.OpenedAt().After(*lastReset.ResetAt)
+		})
+	}
+	if payload.FailedFiles {
+		def = def.WithFilter(func(v model.File) bool {
 			// Files are considered failed if they are not imported and have at least one retry attempt
-			return !payload.FailedFiles || (v.State != model.FileImported && v.RetryAttempt > 0)
-		}).
+			return v.State != model.FileImported && v.RetryAttempt > 0
+		})
+	}
+
+	err = def.
 		Do(ctx).
 		ForEachValue(func(value model.File, _ *iterator.Header) error {
 			filesMap[value.FileID] = s.mapper.NewSinkFile(value)
