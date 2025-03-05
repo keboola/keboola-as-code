@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router/balancer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/rpc"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	encodingCfg "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/config"
 	localModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/model"
 	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -174,7 +175,17 @@ func (p *SlicePipeline) tryOpen() error {
 
 	// Open remote RPC file
 	// The disk writer node can notify us of its termination. In that case, we have to gracefully close the pipeline, see Close method.
-	remoteFile, err := rpc.OpenNetworkFile(ctx, p.logger, p.telemetry, p.connections.NodeID(), conn, p.slice.SliceKey, p.slice.LocalStorage, p.Close)
+	remoteFile, err := rpc.OpenNetworkFile(
+		ctx,
+		p.logger,
+		p.telemetry,
+		p.connections.NodeID(),
+		conn,
+		p.slice.SliceKey,
+		p.slice.LocalStorage,
+		p.slice.Encoding.Compression.Type == compression.TypeNone,
+		p.Close,
+	)
 	if err != nil {
 		return errors.PrefixErrorf(err, "cannot open network file for new slice pipeline")
 	}

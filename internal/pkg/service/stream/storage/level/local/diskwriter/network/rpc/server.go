@@ -138,7 +138,7 @@ func (s *NetworkFileServer) Open(ctx context.Context, req *pb.OpenRequest) (*pb.
 	}
 
 	// Open writer
-	w, err := vol.OpenWriter(req.SourceNodeId, data.SliceKey, data.LocalStorage)
+	w, err := vol.OpenWriter(req.SourceNodeId, data.SliceKey, data.LocalStorage, data.WithBackup)
 	if err != nil {
 		return nil, err
 	}

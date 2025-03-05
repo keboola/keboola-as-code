@@ -33,7 +33,17 @@ type networkFile struct {
 	closed <-chan struct{}
 }
 
-func OpenNetworkFile(ctx context.Context, logger log.Logger, telemetry telemetry.Telemetry, sourceNodeID string, conn *transport.ClientConnection, sliceKey model.SliceKey, slice localModel.Slice, onServerTermination func(ctx context.Context, cause string)) (encoding.NetworkOutput, error) {
+func OpenNetworkFile(
+	ctx context.Context,
+	logger log.Logger,
+	telemetry telemetry.Telemetry,
+	sourceNodeID string,
+	conn *transport.ClientConnection,
+	sliceKey model.SliceKey,
+	slice localModel.Slice,
+	withBackup bool,
+	onServerTermination func(ctx context.Context, cause string),
+) (encoding.NetworkOutput, error) {
 	logger = logger.WithComponent("rpc")
 
 	// Use transport layer with multiplexer for connection
@@ -100,7 +110,7 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, telemetry telemetry
 	}
 
 	// Try to open remote file
-	if err := f.open(ctx, sourceNodeID, slice); err != nil {
+	if err := f.open(ctx, sourceNodeID, slice, withBackup); err != nil {
 		_ = clientConn.Close()
 		return nil, err
 	}
@@ -137,8 +147,8 @@ func OpenNetworkFile(ctx context.Context, logger log.Logger, telemetry telemetry
 	return f, nil
 }
 
-func (f *networkFile) open(ctx context.Context, sourceNodeID string, slice localModel.Slice) error {
-	sliceJSON, err := json.Encode(sliceData{SliceKey: f.sliceKey, LocalStorage: slice}, false)
+func (f *networkFile) open(ctx context.Context, sourceNodeID string, slice localModel.Slice, withBackup bool) error {
+	sliceJSON, err := json.Encode(sliceData{SliceKey: f.sliceKey, LocalStorage: slice, WithBackup: withBackup}, false)
 	if err != nil {
 		return err
 	}
