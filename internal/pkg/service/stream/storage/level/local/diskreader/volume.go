@@ -171,7 +171,7 @@ func (v *Volume) OpenReader(sliceKey model.SliceKey, slice localModel.Slice, enc
 	// <volumePath>/.FilenamePrefix * FilenameExtension
 	// Works for both hidden and visible files.
 	path := slice.FileGlob(v.Path())
-	if v.config.UseBackupReader {
+	if encodingCompression.Type != compression.TypeNone {
 		path = slice.FileGlobWithBackup(v.Path())
 	}
 

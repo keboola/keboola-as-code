@@ -186,7 +186,7 @@ func (v *Volume) Telemetry() []attribute.KeyValue {
 	}
 }
 
-func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice localModel.Slice) (w Writer, err error) {
+func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice localModel.Slice, withBackup bool) (w Writer, err error) {
 	// Check context
 	if err := v.ctx.Err(); err != nil {
 		return nil, errors.PrefixErrorf(err, `disk writer cannot be created: volume "%s" is closed`, sliceKey.VolumeID)
@@ -222,7 +222,7 @@ func (v *Volume) OpenWriter(sourceNodeID string, sliceKey model.SliceKey, slice 
 	}()
 
 	// Create writer based on config
-	w, err = newWriter(v.ctx, logger, v.Path(), v.fileOpener, v.allocator, key, slice, v.writerEvents, v.config.UseBackupWriter)
+	w, err = newWriter(v.ctx, logger, v.Path(), v.fileOpener, v.allocator, key, slice, v.writerEvents, withBackup)
 	if err != nil {
 		return nil, err
 	}

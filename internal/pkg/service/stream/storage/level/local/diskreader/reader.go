@@ -236,11 +236,14 @@ func openFileAndWrite(
 
 	// Check if the file is hidden (has "." prefix)
 	if strings.HasPrefix(path.Base(filePath), ".") {
-		file, filePath, err = processHiddenFile(ctx, logger, localCompression, opener, file, filePath)
+		var hiddenFile File
+		hiddenFile, filePath, err = processHiddenFile(ctx, logger, localCompression, opener, file, filePath)
 		if err != nil {
 			closeWithError(logger, ctx, writer, err)
 			return
 		}
+
+		file = hiddenFile
 	}
 
 	logger = logger.With(attribute.String("file.path", filePath))

@@ -92,6 +92,7 @@ func (m *Manager) OpenPipeline(
 	mappingCfg table.Mapping,
 	encodingCfg encoding.Config,
 	localStorage localModel.Slice,
+	withBackup bool,
 	closeFunc func(ctx context.Context, cause string),
 	network rpc.NetworkOutput,
 ) (w Pipeline, err error) {
@@ -113,6 +114,7 @@ func (m *Manager) OpenPipeline(
 		encodingCfg,
 		localStorage,
 		m.events,
+		withBackup,
 		closeFunc,
 		network,
 	)

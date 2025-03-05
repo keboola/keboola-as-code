@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -134,13 +135,16 @@ func TestVolume_NewBackupReader_NoIssue(t *testing.T) {
 	localData := bytes.NewBuffer(nil)
 	var localWriter io.Writer = localData
 
-	// Write data
-	_, err := localWriter.Write([]byte("foo bar"))
+	// Create GZIP writer
+	gzipWriter := gzip.NewWriter(localWriter)
+	_, err := gzipWriter.Write([]byte("foo bar"))
 	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
 
 	tc := newReaderTestCase(t)
+	tc.Slice.Encoding.Compression = compression.NewGZIPConfig()
 	tc.SliceData = localData.Bytes()
-	tc.Config.UseBackupReader = true
+	tc.WithBackup = true
 
 	r, err := tc.NewReader(false)
 	require.NoError(t, err)
@@ -186,7 +190,7 @@ func TestVolume_NewBackupReader_CompressionIssue(t *testing.T) {
 	tc.SliceData = localData.Bytes()
 	tc.Slice.Encoding.Compression = compression.NewGZIPConfig()
 	tc.Slice.StagingStorage.Compression = compression.NewNoneConfig()
-	tc.Config.UseBackupReader = true
+	tc.WithBackup = true
 
 	_, err = tc.NewReader(false)
 	require.Error(t, err)
@@ -227,29 +231,20 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 			Name:               "GZIP_To_None",
 			LocalCompression:   compression.NewGZIPConfig(),
 			StagingCompression: compression.NewNoneConfig(),
+			UseBackupReader:    true,
 		},
 		{
 			Name:               "ZSTD_To_None",
 			LocalCompression:   compression.NewZSTDConfig(),
 			StagingCompression: compression.NewNoneConfig(),
 			DisableValidation:  true, // zstd is not currently considered valid
+			UseBackupReader:    true,
 		},
 		{
 			Name:               "ZSTD_To_GZIP",
 			LocalCompression:   compression.NewZSTDConfig(),
 			StagingCompression: compression.NewGZIPConfig(),
 			DisableValidation:  true, // zstd is not currently considered valid
-		},
-		{
-			Name:               "None_To_None_Backup",
-			LocalCompression:   compression.NewNoneConfig(),
-			StagingCompression: compression.NewNoneConfig(),
-			UseBackupReader:    true,
-		},
-		{
-			Name:               "None_To_GZIP_Backup",
-			LocalCompression:   compression.NewNoneConfig(),
-			StagingCompression: compression.NewGZIPConfig(),
 			UseBackupReader:    true,
 		},
 		{
@@ -305,7 +300,7 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
-	rtc.Config.UseBackupReader = tc.UseBackupReader
+	rtc.WithBackup = tc.UseBackupReader
 	rtc.SliceData = localData.Bytes()
 	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
@@ -361,7 +356,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
-	rtc.Config.UseBackupReader = tc.UseBackupReader
+	rtc.WithBackup = tc.UseBackupReader
 	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
@@ -376,7 +371,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 	// Create reader, which inspects the file when compressed
 	// Make sure that the file is compressed correctly
 	r, err := rtc.NewReader(tc.DisableValidation)
-	if rtc.Config.UseBackupReader && err != nil {
+	if rtc.WithBackup && err != nil {
 		require.Contains(t, err.Error(), readError.Error())
 		return
 	}
@@ -419,7 +414,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
-	rtc.Config.UseBackupReader = tc.UseBackupReader
+	rtc.WithBackup = tc.UseBackupReader
 	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
@@ -434,7 +429,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 	// Create reader, which inspects the file when compressed
 	// Make sure that the file is compressed correctly
 	r, err := rtc.NewReader(tc.DisableValidation)
-	if rtc.Config.UseBackupReader && err != nil {
+	if rtc.WithBackup && err != nil {
 		require.Contains(t, err.Error(), closeError.Error())
 		return
 	}
@@ -498,7 +493,7 @@ func (tc *readerTestCase) NewReader(disableValidation bool) (diskreader.Reader, 
 	// Write slice data
 	require.NoError(tc.TB, os.MkdirAll(tc.Slice.LocalStorage.DirName(tc.VolumePath), 0o750))
 	for _, file := range tc.Files {
-		if tc.Config.UseBackupReader {
+		if tc.WithBackup {
 			require.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileNameWithBackup(tc.VolumePath, file), tc.SliceData, 0o640))
 		} else {
 			require.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, file), tc.SliceData, 0o640))

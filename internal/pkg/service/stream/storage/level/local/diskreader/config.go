@@ -11,9 +11,6 @@ type Config struct {
 	// OverrideFileOpener overrides file opening.
 	// A custom implementation can be useful for tests.
 	OverrideFileOpener FileOpener
-	// UseBackupReader determines whether to use temporary file during read operations.
-	// When enabled, data is read from a temporary file first and moved to the final location.
-	UseBackupReader bool `configKey:"useBackupReader"`
 }
 
 func NewConfig() Config {

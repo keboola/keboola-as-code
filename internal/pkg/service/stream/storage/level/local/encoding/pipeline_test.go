@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder/result"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/writesync"
@@ -51,6 +52,7 @@ func TestEncodingPipeline_Basic(t *testing.T) {
 		slice.Mapping,
 		slice.Encoding,
 		slice.LocalStorage,
+		false,
 		func(ctx context.Context, cause string) {},
 		output,
 	)
@@ -101,6 +103,7 @@ func TestEncodingPipeline_FlushError(t *testing.T) {
 		slice.Mapping,
 		slice.Encoding,
 		slice.LocalStorage,
+		false,
 		func(ctx context.Context, cause string) {},
 		newDummyOutput(),
 	)
@@ -134,6 +137,7 @@ func TestEncodingPipeline_CloseError(t *testing.T) {
 		slice.Mapping,
 		slice.Encoding,
 		slice.LocalStorage,
+		false,
 		func(ctx context.Context, cause string) {},
 		newDummyOutput(),
 	)
@@ -735,6 +739,7 @@ func (tc *encodingTestCase) OpenPipeline() (encoding.Pipeline, error) {
 		tc.Slice.Mapping,
 		tc.Slice.Encoding,
 		tc.Slice.LocalStorage,
+		tc.Slice.Encoding.Compression.Type != compression.TypeNone,
 		func(ctx context.Context, cause string) {},
 		tc.Output,
 	)

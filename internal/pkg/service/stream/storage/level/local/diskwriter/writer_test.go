@@ -15,6 +15,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -112,7 +113,7 @@ func TestOpenWriter_ClosedVolume(t *testing.T) {
 	require.NoError(t, vol.Close(t.Context()))
 
 	slice := test.NewSlice()
-	_, err = vol.OpenWriter(tc.SourceNodeID, slice.SliceKey, slice.LocalStorage)
+	_, err = vol.OpenWriter(tc.SourceNodeID, slice.SliceKey, slice.LocalStorage, false)
 	if assert.Error(t, err) {
 		wildcards.Assert(t, "disk writer cannot be created: volume \"my-volume\" is closed:\n- context canceled", err.Error())
 	}
@@ -159,12 +160,12 @@ func TestOpenWriter_SameSliceDifferentSourceNodeID(t *testing.T) {
 	})
 
 	// Source node 1
-	_, err = vol.OpenWriter("source-node-1", tc.Slice.SliceKey, tc.Slice.LocalStorage)
+	_, err = vol.OpenWriter("source-node-1", tc.Slice.SliceKey, tc.Slice.LocalStorage, false)
 	require.NoError(t, err)
 	assert.FileExists(t, tc.Slice.LocalStorage.FileName(vol.Path(), "source-node-1"))
 
 	// Source node 2
-	_, err = vol.OpenWriter("source-node-2", tc.Slice.SliceKey, tc.Slice.LocalStorage)
+	_, err = vol.OpenWriter("source-node-2", tc.Slice.SliceKey, tc.Slice.LocalStorage, false)
 	require.NoError(t, err)
 	assert.FileExists(t, tc.Slice.LocalStorage.FileName(vol.Path(), "source-node-2"))
 }
@@ -296,7 +297,7 @@ func TestWriter_WithBackup(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	tc.Config.UseBackupWriter = true
+	tc.WithBackup = true
 	w, err := tc.OpenWriter()
 	require.NoError(t, err)
 
@@ -356,7 +357,7 @@ func (tc *writerTestCase) OpenWriter() (diskwriter.Writer, error) {
 	val := validator.New()
 	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
 
-	w, err := tc.Volume.OpenWriter(tc.SourceNodeID, tc.Slice.SliceKey, tc.Slice.LocalStorage)
+	w, err := tc.Volume.OpenWriter(tc.SourceNodeID, tc.Slice.SliceKey, tc.Slice.LocalStorage, false)
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +366,7 @@ func (tc *writerTestCase) OpenWriter() (diskwriter.Writer, error) {
 }
 
 func (tc *writerTestCase) FilePath() string {
-	if tc.Config.UseBackupWriter {
+	if tc.Slice.Encoding.Compression.Type != compression.TypeNone {
 		return tc.Slice.LocalStorage.FileNameWithBackup(tc.VolumePath, tc.SourceNodeID)
 	}
 
