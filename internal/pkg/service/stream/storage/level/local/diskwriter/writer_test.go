@@ -297,7 +297,7 @@ func TestWriter_WithBackup(t *testing.T) {
 
 	ctx := context.Background()
 	tc := newWriterTestCase(t)
-	tc.WithBackup = true
+	tc.Slice.Encoding.Compression = compression.NewGZIPConfig()
 	w, err := tc.OpenWriter()
 	require.NoError(t, err)
 
@@ -356,8 +356,7 @@ func (tc *writerTestCase) OpenWriter() (diskwriter.Writer, error) {
 	// Slice definition must be valid
 	val := validator.New()
 	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
-
-	w, err := tc.Volume.OpenWriter(tc.SourceNodeID, tc.Slice.SliceKey, tc.Slice.LocalStorage, false)
+	w, err := tc.Volume.OpenWriter(tc.SourceNodeID, tc.Slice.SliceKey, tc.Slice.LocalStorage, tc.Slice.Encoding.Compression.Type != compression.TypeNone)
 	if err != nil {
 		return nil, err
 	}
