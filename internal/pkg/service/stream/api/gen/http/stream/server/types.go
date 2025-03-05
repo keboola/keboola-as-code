@@ -3322,11 +3322,12 @@ func NewSinkStatisticsTotalPayload(branchID string, sourceID string, sinkID stri
 
 // NewSinkStatisticsFilesPayload builds a stream service SinkStatisticsFiles
 // endpoint payload.
-func NewSinkStatisticsFilesPayload(branchID string, sourceID string, sinkID string, storageAPIToken string) *stream.SinkStatisticsFilesPayload {
+func NewSinkStatisticsFilesPayload(branchID string, sourceID string, sinkID string, failedFiles bool, storageAPIToken string) *stream.SinkStatisticsFilesPayload {
 	v := &stream.SinkStatisticsFilesPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.SinkID = stream.SinkID(sinkID)
+	v.FailedFiles = failedFiles
 	v.StorageAPIToken = storageAPIToken
 
 	return v

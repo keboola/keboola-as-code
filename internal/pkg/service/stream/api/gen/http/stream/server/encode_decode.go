@@ -2488,6 +2488,7 @@ func DecodeSinkStatisticsFilesRequest(mux goahttp.Muxer, decoder func(*http.Requ
 			branchID        string
 			sourceID        string
 			sinkID          string
+			failedFiles     bool
 			storageAPIToken string
 			err             error
 
@@ -2508,6 +2509,16 @@ func DecodeSinkStatisticsFilesRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if utf8.RuneCountInString(sinkID) > 48 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("sinkId", sinkID, utf8.RuneCountInString(sinkID), 48, false))
 		}
+		{
+			failedFilesRaw := r.URL.Query().Get("failedFiles")
+			if failedFilesRaw != "" {
+				v, err2 := strconv.ParseBool(failedFilesRaw)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("failedFiles", failedFilesRaw, "boolean"))
+				}
+				failedFiles = v
+			}
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -2515,7 +2526,7 @@ func DecodeSinkStatisticsFilesRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if err != nil {
 			return nil, err
 		}
-		payload := NewSinkStatisticsFilesPayload(branchID, sourceID, sinkID, storageAPIToken)
+		payload := NewSinkStatisticsFilesPayload(branchID, sourceID, sinkID, failedFiles, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
