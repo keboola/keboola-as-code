@@ -151,8 +151,6 @@ storage:
     metadataCleanup:
         # Enable local storage metadata cleanup.
         enabled: true
-        # Cleanup interval. Validation rules: required,minDuration=30s,maxDuration=24h
-        interval: 30s
         # How many files are deleted in parallel. Validation rules: required,min=1,max=500
         concurrency: 50
         # How many errors are tolerated before failing. Validation rules: required,min=0,max=100
@@ -161,6 +159,10 @@ storage:
         activeFileExpiration: 168h0m0s
         # Expiration interval of a file that has already been imported. Validation rules: required,minDuration=15m,maxDuration=720h
         archivedFileExpiration: 1h0m0s
+        # Cleanup interval of a file. Validation rules: required,minDuration=30s,maxDuration=24h
+        fileCleanupInterval: 30s
+        # Cleanup interval of a job that has already completed. Validation rules: required,minDuration=30s,maxDuration=24h
+        jobCleanupInterval: 30s
     diskCleanup:
         # Enable local storage disks cleanup.
         enabled: true
