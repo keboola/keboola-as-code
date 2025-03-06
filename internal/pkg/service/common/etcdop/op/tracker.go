@@ -63,6 +63,10 @@ func (v *TrackerKV) Do(ctx context.Context, op etcd.Op) (etcd.OpResponse, error)
 	}
 
 	resp, err := v.kv.Do(ctx, op)
+	if err != nil {
+		return etcd.OpResponse{}, err
+	}
+
 	v.trackOp(op, resp)
 	return resp, err
 }
