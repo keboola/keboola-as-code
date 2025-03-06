@@ -79,7 +79,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
 		}
 
 		// Cleanup should be perfomed more frequently to remove already finished storage jobs
-		cfg.Storage.MetadataCleanup.Interval = 10 * time.Second
+		cfg.Storage.MetadataCleanup.FileCleanupInterval = 10 * time.Second
 	}
 
 	ts := setup(t)
@@ -366,7 +366,7 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: parallelt
 		}
 
 		// Cleanup should be perfomed more frequently to remove already finished storage jobs
-		cfg.Storage.MetadataCleanup.Interval = 10 * time.Second
+		cfg.Storage.MetadataCleanup.FileCleanupInterval = 10 * time.Second
 	}
 
 	ts := setup(t)
