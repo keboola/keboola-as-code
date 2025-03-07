@@ -39,12 +39,17 @@ spec:
             }
           }
     spec:
+      serviceAccountName: stream-identity
       terminationGracePeriodSeconds: 60
       containers:
         - name: stream-storage-coordinator
           image: $STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG
-          command: [ "/app/service" ]
-          args: [ "--config-file", "/stream/config/config.yaml", "storage-coordinator" ] # run storage coordinator component
+          command: ["/app/service"]
+          args: [
+              "--config-file",
+              "/stream/config/config.yaml",
+              "storage-coordinator",
+            ] # run storage coordinator component
           resources:
             requests:
               cpu: "$STREAM_STORAGE_COORDINATOR_CPU_SOFT_LIMIT"
@@ -57,6 +62,9 @@ spec:
             - name: config
               mountPath: /stream/config
               readOnly: true
+          envFrom:
+            - secretRef:
+                name: stream-infra-secrets
           env:
             - name: GOMEMLIMIT
               value: "${STREAM_STORAGE_COORDINATOR_MEMORY_SOFT_LIMIT}B"

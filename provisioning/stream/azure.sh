@@ -32,6 +32,8 @@ export STREAM_ENCRYPTION_PROVIDER="none"
 kubectl apply -f ./kubernetes/deploy/cloud/azure/service-api.yaml
 kubectl apply -f ./kubernetes/deploy/cloud/azure/service-http-source.yaml
 kubectl apply -f ./kubernetes/deploy/cloud/azure/sc-stream-api.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/azure/secret-infra.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/azure/serviceaccount.yaml
 
 # Wait for the rollout
 . ./wait.sh
