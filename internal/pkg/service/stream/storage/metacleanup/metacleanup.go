@@ -60,6 +60,7 @@ type Node struct {
 type cleanupTask struct {
 	name        string
 	interval    time.Duration
+	enabled     bool
 	cleanupFunc func(context.Context) error
 	logger      log.Logger
 }
@@ -84,10 +85,6 @@ func Start(d dependencies, cfg Config) error {
 	}
 
 	ctx := context.Background()
-	if !n.config.Enabled {
-		n.logger.Info(ctx, "local storage metadata cleanup is disabled")
-		return nil
-	}
 
 	// Graceful shutdown
 	ctx, cancel := context.WithCancelCause(ctx)
@@ -114,6 +111,11 @@ func Start(d dependencies, cfg Config) error {
 // runCleanupTask runs a cleanup task periodically.
 func (n *Node) runCleanupTask(ctx context.Context, wg *sync.WaitGroup, clock clockwork.Clock, task cleanupTask) {
 	defer wg.Done()
+
+	if !task.enabled {
+		task.logger.Infof(ctx, "local storage metadata %s cleanup is disabled", task.name)
+		return
+	}
 
 	ticker := clock.NewTicker(task.interval)
 	defer ticker.Stop()
@@ -309,12 +311,14 @@ func (n *Node) cleanupTasks() []cleanupTask {
 		{
 			name:        "file",
 			interval:    n.config.FileCleanupInterval,
+			enabled:     n.config.EnableFileCleanup,
 			cleanupFunc: n.cleanMetadataFiles,
 			logger:      n.logger,
 		},
 		{
 			name:        "job",
 			interval:    n.config.JobCleanupInterval,
+			enabled:     n.config.EnableJobCleanup,
 			cleanupFunc: n.cleanMetadataJobs,
 			logger:      n.logger,
 		},

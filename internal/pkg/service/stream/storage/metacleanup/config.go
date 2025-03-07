@@ -3,7 +3,8 @@ package metacleanup
 import "time"
 
 type Config struct {
-	Enabled                bool          `configKey:"enabled"  configUsage:"Enable local storage metadata cleanup."`
+	EnableJobCleanup       bool          `configKey:"enableJobCleanup"  configUsage:"Enable local storage metadata cleanup for jobs."`
+	EnableFileCleanup      bool          `configKey:"enableFileCleanup"  configUsage:"Enable local storage metadata cleanup for files."`
 	Concurrency            int           `configKey:"concurrency"  configUsage:"How many files are deleted in parallel." validate:"required,min=1,max=500"`
 	ErrorTolerance         int           `configKey:"errorTolerance"  configUsage:"How many errors are tolerated before failing." validate:"required,min=0,max=100"`
 	ActiveFileExpiration   time.Duration `configKey:"activeFileExpiration"  configUsage:"Expiration interval of a file that has not yet been imported." validate:"required,minDuration=1h,maxDuration=720h,gtefield=ArchivedFileExpiration"` // maxDuration=30 days
@@ -14,7 +15,8 @@ type Config struct {
 
 func NewConfig() Config {
 	return Config{
-		Enabled:                true,
+		EnableFileCleanup:      true,
+		EnableJobCleanup:       true,
 		Concurrency:            50,
 		ErrorTolerance:         10,
 		ActiveFileExpiration:   7 * 24 * time.Hour, // 7 days

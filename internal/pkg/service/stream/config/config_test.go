@@ -149,8 +149,10 @@ storage:
                 # Statistics L2 in-memory cache invalidation interval. Validation rules: required,minDuration=100ms,maxDuration=5s
                 interval: 1s
     metadataCleanup:
-        # Enable local storage metadata cleanup.
-        enabled: true
+        # Enable local storage metadata cleanup for jobs.
+        enableJobCleanup: true
+        # Enable local storage metadata cleanup for files.
+        enableFileCleanup: true
         # How many files are deleted in parallel. Validation rules: required,min=1,max=500
         concurrency: 50
         # How many errors are tolerated before failing. Validation rules: required,min=0,max=100

@@ -45,7 +45,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
 		cfg.Encryption.Provider = encryption.ProviderAES
 		cfg.Encryption.AES.SecretKey = secretKey
 		// Enable metadata cleanup for removing storage jobs
-		cfg.Storage.MetadataCleanup.Enabled = true
+		cfg.Storage.MetadataCleanup.EnableJobCleanup = true
 		// Disable unrelated workers
 		cfg.Storage.DiskCleanup.Enabled = false
 		cfg.API.Task.CleanupEnabled = false
@@ -332,7 +332,7 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: parallelt
 		cfg.Encryption.Provider = encryption.ProviderAES
 		cfg.Encryption.AES.SecretKey = secretKey
 		// Enable metadata cleanup for removing storage jobs
-		cfg.Storage.MetadataCleanup.Enabled = true
+		cfg.Storage.MetadataCleanup.EnableJobCleanup = true
 		// Disable unrelated workers
 		cfg.Storage.DiskCleanup.Enabled = false
 		cfg.API.Task.CleanupEnabled = false
