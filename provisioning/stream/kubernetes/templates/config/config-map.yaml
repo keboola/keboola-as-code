@@ -205,8 +205,6 @@ data:
               compressedBytesTrigger: 256KB
               # Interval from the last sync to trigger sync. Validation rules: required,minDuration=10ms,maxDuration=30s
               intervalTrigger: 50ms
-          reader:
-            useBackupReader: false
           writer:
             network:
               # Listen address of the configuration HTTP API. Validation rules: required,hostname_port
@@ -242,7 +240,6 @@ data:
               static: 100MB
               # Allocate disk space as % from the previous slice size. Validation rules: min=100,max=500
               relative: 110
-            useBackupWriter: false
         staging:
           operator:
             # Upload triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s
