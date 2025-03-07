@@ -163,7 +163,7 @@ storage:
         archivedFileExpiration: 1h0m0s
         # Cleanup interval of a file. Validation rules: required,minDuration=30s,maxDuration=24h
         fileCleanupInterval: 10m0s
-        # Cleanup interval of a job that has already completed. Validation rules: required,minDuration=30s,maxDuration=24h
+        # Cleanup interval of a job that has already completed. Validation rules: required,minDuration=5s,maxDuration=10m
         jobCleanupInterval: 30s
     diskCleanup:
         # Enable local storage disks cleanup.
