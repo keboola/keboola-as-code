@@ -162,7 +162,7 @@ func TestVolume_NewBackupReader_NoIssue(t *testing.T) {
 	`)
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, r.Close(context.Background()))
+	require.NoError(t, r.Close(t.Context()))
 
 	assert.Empty(t, tc.Volume.Readers())
 }

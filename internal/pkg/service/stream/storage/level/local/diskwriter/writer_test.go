@@ -295,7 +295,7 @@ func TestWriter_AllocateSpace_Disabled(t *testing.T) {
 func TestWriter_WithBackup(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tc := newWriterTestCase(t)
 	tc.Slice.Encoding.Compression = compression.NewGZIPConfig()
 	w, err := tc.OpenWriter()

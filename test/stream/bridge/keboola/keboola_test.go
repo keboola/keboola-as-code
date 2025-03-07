@@ -9,7 +9,6 @@ import (
 	mrand "math/rand"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
@@ -560,7 +560,7 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: parallelt
 }
 
 func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Second)
 	defer cancel()
 
 	secretKey := make([]byte, 32)
@@ -644,13 +644,13 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 	}, 20*time.Second, 100*time.Millisecond)
 	slices, err := ts.coordinatorScp1.StorageRepository().Slice().ListInState(ts.sinkKey, model.SliceWriting).Do(ctx).All()
 	require.NoError(t, err)
-	path1 := filepath.Join(
+	path1 := filesystem.Join(
 		ts.volumesPath1,
 		strings.NewReplacer(":", "-", ".", "-").Replace(slices[0].SliceKey.FileKey.String()),
 		strings.NewReplacer(":", "-", ".", "-").Replace(slices[0].SliceKey.SliceID.String()),
 		".slice-source1.csv.gz",
 	)
-	path2 := filepath.Join(
+	path2 := filesystem.Join(
 		ts.volumesPath1,
 		strings.NewReplacer(":", "-", ".", "-").Replace(slices[1].SliceKey.FileKey.String()),
 		strings.NewReplacer(":", "-", ".", "-").Replace(slices[1].SliceKey.SliceID.String()),
