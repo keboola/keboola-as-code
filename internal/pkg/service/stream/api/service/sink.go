@@ -354,9 +354,9 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 
 	// Sort files response by OpenedAt timestamp
 	files := maps.Values(filesMap)
-	slices.SortStableFunc(files, func(a, b *api.SinkFile) int {
-		return strings.Compare(a.OpenedAt, b.OpenedAt)
-	})
+
+	// Sort files by specific conditions:
+	slices.SortStableFunc(files, compareSinkFiles)
 
 	return &stream.SinkStatisticsFilesResult{Files: files}, nil
 }
@@ -562,4 +562,32 @@ func (s *service) sinkVersionMustExist(ctx context.Context, k key.SinkKey, numbe
 
 func (s *service) sinkMustBeDeleted(ctx context.Context, k key.SinkKey) error {
 	return s.definition.Sink().GetDeleted(k).Do(ctx).Err()
+}
+
+// compareSinkFiles compares two SinkFile instances by prioritizing State,
+// presence of RetryReason, and OpenedAt timestamp. Returns a positive, negative,
+// or zero value to indicate their order.
+func compareSinkFiles(a, b *api.SinkFile) int {
+	if a.State == model.FileImported && b.State != model.FileImported {
+		return -1
+	}
+	if b.State == model.FileImported && a.State != model.FileImported {
+		return 1
+	}
+
+	if a.RetryReason == nil && b.RetryReason != nil {
+		return -1
+	}
+	if b.RetryReason == nil && a.RetryReason != nil {
+		return 1
+	}
+
+	if a.OpenedAt != b.OpenedAt {
+		if a.OpenedAt < b.OpenedAt {
+			return -1
+		}
+		return 1
+	}
+
+	return 0
 }
