@@ -157,6 +157,7 @@ func TestFile_Validation(t *testing.T) {
 - "staging.upload.trigger.size" is a required field
 - "staging.upload.trigger.interval" is a required field
 - "target.provider" is a required field
+- "target.import.maxSlices" is a required field
 - "target.import.minInterval" is a required field
 - "target.import.trigger.count" is a required field
 - "target.import.trigger.size" is a required field

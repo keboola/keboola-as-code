@@ -33,6 +33,7 @@ func TestConfig_Validation(t *testing.T) {
 - "operator.fileCloseTimeout" is a required field
 - "operator.fileImportCheckInterval" is a required field
 - "operator.fileImportTimeout" is a required field
+- "import.maxSlices" is a required field
 - "import.minInterval" is a required field
 - "import.trigger.count" is a required field
 - "import.trigger.size" is a required field

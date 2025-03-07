@@ -220,11 +220,11 @@ func (s *service) DeleteSink(ctx context.Context, d dependencies.SinkRequestScop
 }
 
 func (s *service) GetSinkSettings(ctx context.Context, d dependencies.SinkRequestScope, _ *api.GetSinkSettingsPayload) (*api.SettingsResult, error) {
-	source, err := s.definition.Sink().Get(d.SinkKey()).Do(ctx).ResultOrErr()
+	sink, err := s.definition.Sink().Get(d.SinkKey()).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
 	}
-	return s.mapper.NewSettingsResponse(source.Config)
+	return s.mapper.NewSettingsResponse(sink.Config)
 }
 
 func (s *service) UpdateSinkSettings(ctx context.Context, d dependencies.SinkRequestScope, payload *api.UpdateSinkSettingsPayload) (*api.Task, error) {
