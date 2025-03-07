@@ -367,7 +367,7 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 			// This case indicates that job status tracking is not working properly and throttling is false-positive
 			// In this case we log an error to know about this case but let file rotation continue
 			o.logger.Error(ctx, "file rotation: sink is throttled but file is near expiration")
-		case sliceCountThreshold:
+		case maxSlices:
 			// The sink is throttled but the file has too many slices
 			// Allowing the file to get even more slices could lead to "too many operations in txn request" error
 			// To prevent this we log an error to know about this case but let file rotation continue

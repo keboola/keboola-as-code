@@ -25,6 +25,7 @@ func TestShouldImport(t *testing.T) {
 
 	// Defaults
 	cfg := targetConfig.ImportConfig{
+		MaxSlices:   1000,
 		MinInterval: duration.From(60 * time.Second),
 		Trigger: targetConfig.ImportTrigger{
 			Count:       10000,
@@ -35,8 +36,17 @@ func TestShouldImport(t *testing.T) {
 		},
 	}
 
+	// Max slices exceeded
+	result := shouldImport(cfg, now, openedBefore30Sec, expirationIn60min, statistics.Value{
+		SlicesCount:  1000,
+		RecordsCount: 0,
+	})
+	assert.Equal(t, maxSlices, result.result)
+	assert.True(t, result.ShouldImport())
+	assert.Equal(t, "max slices exceeded, slices count: 1000, threshold: 1000", result.Cause())
+
 	// Min interval
-	result := shouldImport(cfg, now, openedBefore30Sec, expirationIn60min, statistics.Value{})
+	result = shouldImport(cfg, now, openedBefore30Sec, expirationIn60min, statistics.Value{})
 	assert.Equal(t, noConditionMet, result.result)
 	assert.False(t, result.ShouldImport())
 	assert.Equal(t, "min interval between imports is not met", result.Cause())
