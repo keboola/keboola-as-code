@@ -76,7 +76,7 @@ func TestMetadataCleanup(t *testing.T) {
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
 	cfg := metacleanup.NewConfig()
-	cfg.Interval = cleanupInterval
+	cfg.FileCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
 
@@ -286,7 +286,7 @@ func TestMetadataProcessingJobCleanup(t *testing.T) {
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
 	cfg := metacleanup.NewConfig()
-	cfg.Interval = cleanupInterval
+	cfg.JobCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
 
@@ -388,7 +388,7 @@ func TestMetadataNotFoundJobCleanup(t *testing.T) {
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
 	cfg := metacleanup.NewConfig()
-	cfg.Interval = cleanupInterval
+	cfg.JobCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
 
@@ -598,7 +598,7 @@ func TestMetadataProcessingJobCleanupErrorTolerance(t *testing.T) {
 	cfg := metacleanup.NewConfig()
 	cfg.Concurrency = 2
 	cfg.ErrorTolerance = 3
-	cfg.Interval = cleanupInterval
+	cfg.JobCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
 
