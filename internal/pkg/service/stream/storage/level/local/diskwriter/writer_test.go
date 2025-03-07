@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/c2h5oh/datasize"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/diskalloc"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	volumeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
@@ -111,7 +113,7 @@ func TestOpenWriter_ClosedVolume(t *testing.T) {
 	require.NoError(t, vol.Close(t.Context()))
 
 	slice := test.NewSlice()
-	_, err = vol.OpenWriter(tc.SourceNodeID, slice.SliceKey, slice.LocalStorage)
+	_, err = vol.OpenWriter(tc.SourceNodeID, slice.SliceKey, slice.LocalStorage, false)
 	if assert.Error(t, err) {
 		wildcards.Assert(t, "disk writer cannot be created: volume \"my-volume\" is closed:\n- context canceled", err.Error())
 	}
@@ -158,12 +160,12 @@ func TestOpenWriter_SameSliceDifferentSourceNodeID(t *testing.T) {
 	})
 
 	// Source node 1
-	_, err = vol.OpenWriter("source-node-1", tc.Slice.SliceKey, tc.Slice.LocalStorage)
+	_, err = vol.OpenWriter("source-node-1", tc.Slice.SliceKey, tc.Slice.LocalStorage, false)
 	require.NoError(t, err)
 	assert.FileExists(t, tc.Slice.LocalStorage.FileName(vol.Path(), "source-node-1"))
 
 	// Source node 2
-	_, err = vol.OpenWriter("source-node-2", tc.Slice.SliceKey, tc.Slice.LocalStorage)
+	_, err = vol.OpenWriter("source-node-2", tc.Slice.SliceKey, tc.Slice.LocalStorage, false)
 	require.NoError(t, err)
 	assert.FileExists(t, tc.Slice.LocalStorage.FileName(vol.Path(), "source-node-2"))
 }
@@ -290,6 +292,29 @@ func TestWriter_AllocateSpace_Disabled(t *testing.T) {
 `)
 }
 
+func TestWriter_WithBackup(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	tc := newWriterTestCase(t)
+	tc.Slice.Encoding.Compression = compression.NewGZIPConfig()
+	w, err := tc.OpenWriter()
+	require.NoError(t, err)
+
+	// Close writer
+	require.NoError(t, w.Close(ctx))
+
+	require.FileExists(t, tc.FilePath())
+	require.True(t, strings.HasSuffix(tc.FilePath(), ".slice-source-node-id.csv"))
+	// Check logs
+	tc.AssertLogs(`
+{"level":"info","message":"opening volume"}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"opened file"}
+{"level":"debug","message":"disk space allocation is not supported"}
+`)
+}
+
 // writerTestCase is a helper to open disk writer in tests.
 type writerTestCase struct {
 	*volumeTestCase
@@ -331,8 +356,7 @@ func (tc *writerTestCase) OpenWriter() (diskwriter.Writer, error) {
 	// Slice definition must be valid
 	val := validator.New()
 	require.NoError(tc.TB, val.Validate(context.Background(), tc.Slice))
-
-	w, err := tc.Volume.OpenWriter(tc.SourceNodeID, tc.Slice.SliceKey, tc.Slice.LocalStorage)
+	w, err := tc.Volume.OpenWriter(tc.SourceNodeID, tc.Slice.SliceKey, tc.Slice.LocalStorage, tc.Slice.Encoding.Compression.Type != compression.TypeNone)
 	if err != nil {
 		return nil, err
 	}
@@ -341,5 +365,9 @@ func (tc *writerTestCase) OpenWriter() (diskwriter.Writer, error) {
 }
 
 func (tc *writerTestCase) FilePath() string {
+	if tc.Slice.Encoding.Compression.Type != compression.TypeNone {
+		return tc.Slice.LocalStorage.FileNameWithBackup(tc.VolumePath, tc.SourceNodeID)
+	}
+
 	return tc.Slice.LocalStorage.FileName(tc.VolumePath, tc.SourceNodeID)
 }

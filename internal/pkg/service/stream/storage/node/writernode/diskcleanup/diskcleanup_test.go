@@ -121,7 +121,7 @@ func TestDiskCleanup(t *testing.T) {
 	// Write data to slice
 	// -----------------------------------------------------------------------------------------------------------------
 	{
-		writer, err := vol.OpenWriter("my-source", slice.SliceKey, slice.LocalStorage)
+		writer, err := vol.OpenWriter("my-source", slice.SliceKey, slice.LocalStorage, false)
 		require.NoError(t, err)
 		_, err = writer.Write(ctx, true, []byte("foo\n"))
 		require.NoError(t, err)

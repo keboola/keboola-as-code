@@ -99,6 +99,9 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	vol, err := tc.writerNode.Volumes().Collection().Volume("my-volume-001")
 	require.NoError(t, err)
 	filePath := slice.LocalStorage.FileName(vol.Path(), tc.sourceNodeMock.TestConfig().NodeID)
+	if tc.Compression.Type != compression.TypeNone {
+		filePath = slice.LocalStorage.FileNameWithBackup(vol.Path(), tc.sourceNodeMock.TestConfig().NodeID)
+	}
 
 	// Wait for pipeline initialization
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {

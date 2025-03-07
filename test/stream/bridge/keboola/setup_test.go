@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
@@ -62,6 +63,8 @@ type testState struct {
 	sourceURL2       string
 	sourceScp2       dependencies.SourceScope
 	sourceMock2      dependencies.Mocked
+	volumesPath1     string
+	volumesPath2     string
 	writerPort1      int
 	writerScp1       dependencies.StorageWriterScope
 	writerMock1      dependencies.Mocked
@@ -174,6 +177,8 @@ func (ts *testState) startNodes(t *testing.T, ctx context.Context, modifyConfig 
 	volumesPath2 := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath1, "hdd", "1"), 0o750)) //nolint: forbidigo
 	require.NoError(t, os.MkdirAll(filepath.Join(volumesPath2, "hdd", "1"), 0o750)) //nolint: forbidigo
+	ts.volumesPath1 = filesystem.Join(volumesPath1, "hdd", "1")
+	ts.volumesPath2 = filesystem.Join(volumesPath2, "hdd", "1")
 	// if you want static volume ID: require.NoError(t, os.WriteFile(filepath.Join(volumesPath, "hdd", "3", model.IDFile), []byte("HDD_3"), 0o640))
 	ts.writerPort1 = netutils.FreePortForTest(t)
 	ts.writerPort2 = netutils.FreePortForTest(t)

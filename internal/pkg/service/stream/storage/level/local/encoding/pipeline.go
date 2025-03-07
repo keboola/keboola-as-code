@@ -86,6 +86,7 @@ type pipeline struct {
 	telemetry    telemetry.Telemetry
 	localStorage localModel.Slice
 	network      rpc.NetworkOutput
+	withBackup   bool
 	closeFunc    func(ctx context.Context, cause string)
 
 	readyLock sync.RWMutex
@@ -117,6 +118,7 @@ func newPipeline(
 	encodingCfg encoding.Config,
 	localStorage localModel.Slice,
 	events *events.Events[Pipeline],
+	withBackup bool,
 	closeFunc func(ctx context.Context, cause string),
 	network rpc.NetworkOutput,
 ) (out Pipeline, err error) {
@@ -129,6 +131,7 @@ func newPipeline(
 		ready:        true,
 		closeFunc:    closeFunc,
 		localStorage: localStorage,
+		withBackup:   withBackup,
 		closed:       make(chan struct{}),
 	}
 
@@ -136,7 +139,16 @@ func newPipeline(
 	// The disk writer node can notify us of its termination. In that case, we have to gracefully close the pipeline, see Close method.
 	p.network = network
 	if network == nil {
-		p.network, err = rpc.OpenNetworkFile(ctx, p.logger, p.telemetry, p.connections, p.sliceKey, p.localStorage, p.closeFunc)
+		p.network, err = rpc.OpenNetworkFile(
+			ctx,
+			p.logger,
+			p.telemetry,
+			p.connections,
+			p.sliceKey,
+			p.localStorage,
+			p.withBackup,
+			p.closeFunc,
+		)
 		if err != nil {
 			return nil, errors.PrefixErrorf(err, "cannot open network file for new slice pipeline")
 		}
@@ -475,6 +487,7 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 						p.connections,
 						p.sliceKey,
 						p.localStorage,
+						p.withBackup,
 						p.closeFunc,
 					)
 					if err != nil {

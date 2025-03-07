@@ -56,6 +56,7 @@ func OpenNetworkFile(
 	connections *connection.Manager,
 	sliceKey model.SliceKey,
 	slice localModel.Slice,
+	withBackup bool,
 	onServerTermination func(ctx context.Context, cause string),
 ) (NetworkOutput, error) {
 	logger = logger.WithComponent("rpc")
@@ -136,7 +137,7 @@ func OpenNetworkFile(
 	}
 
 	// Try to open remote file
-	if err := f.open(ctx, connections.NodeID(), slice); err != nil {
+	if err := f.open(ctx, connections.NodeID(), slice, withBackup); err != nil {
 		_ = clientConn.Close()
 		return nil, err
 	}
@@ -179,8 +180,8 @@ func OpenNetworkFile(
 	return f, nil
 }
 
-func (f *networkFile) open(ctx context.Context, sourceNodeID string, slice localModel.Slice) error {
-	sliceJSON, err := json.Encode(sliceData{SliceKey: f.sliceKey, LocalStorage: slice}, false)
+func (f *networkFile) open(ctx context.Context, sourceNodeID string, slice localModel.Slice, withBackup bool) error {
+	sliceJSON, err := json.Encode(sliceData{SliceKey: f.sliceKey, LocalStorage: slice, WithBackup: withBackup}, false)
 	if err != nil {
 		return err
 	}
