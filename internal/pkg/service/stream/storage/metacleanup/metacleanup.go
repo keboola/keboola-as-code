@@ -56,8 +56,8 @@ type Node struct {
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 }
 
-// cleanupTask represents a periodic cleanup task.
-type cleanupTask struct {
+// cleanupEntity represents a periodic cleanup task.
+type cleanupEntity struct {
 	name        string
 	interval    time.Duration
 	enabled     bool
@@ -96,11 +96,11 @@ func Start(d dependencies, cfg Config) error {
 		n.logger.Info(ctx, "shutdown done")
 	})
 
-	// Define cleanup tasks
-	tasks := n.cleanupTasks()
+	// Define cleanup entities
+	entities := n.cleanupEntities()
 
-	// Start cleanup tasks
-	for _, task := range tasks {
+	// Start cleanup entities
+	for _, task := range entities {
 		wg.Add(1)
 		go n.runCleanupTask(ctx, wg, d.Clock(), task)
 	}
@@ -109,20 +109,20 @@ func Start(d dependencies, cfg Config) error {
 }
 
 // runCleanupTask runs a cleanup task periodically.
-func (n *Node) runCleanupTask(ctx context.Context, wg *sync.WaitGroup, clock clockwork.Clock, task cleanupTask) {
+func (n *Node) runCleanupTask(ctx context.Context, wg *sync.WaitGroup, clock clockwork.Clock, entity cleanupEntity) {
 	defer wg.Done()
 
-	if !task.enabled {
-		task.logger.Infof(ctx, "local storage metadata %s cleanup is disabled", task.name)
+	if !entity.enabled {
+		entity.logger.Infof(ctx, "local storage metadata %s cleanup is disabled", entity.name)
 		return
 	}
 
-	ticker := clock.NewTicker(task.interval)
+	ticker := clock.NewTicker(entity.interval)
 	defer ticker.Stop()
 
 	for {
-		if err := task.cleanupFunc(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			task.logger.Errorf(ctx, `local storage metadata %s cleanup failed: %s`, task.name, err)
+		if err := entity.cleanupFunc(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			entity.logger.Errorf(ctx, `local storage metadata %s cleanup failed: %s`, entity.name, err)
 		}
 
 		select {
@@ -306,8 +306,8 @@ func (n *Node) isFileExpired(file model.File, age time.Duration) bool {
 	return age >= n.config.ActiveFileExpiration
 }
 
-func (n *Node) cleanupTasks() []cleanupTask {
-	return []cleanupTask{
+func (n *Node) cleanupEntities() []cleanupEntity {
+	return []cleanupEntity{
 		{
 			name:        "file",
 			interval:    n.config.FileCleanupInterval,

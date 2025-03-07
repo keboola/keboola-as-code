@@ -21,7 +21,7 @@ func NewConfig() Config {
 		ErrorTolerance:         10,
 		ActiveFileExpiration:   7 * 24 * time.Hour, // 7 days
 		ArchivedFileExpiration: 1 * time.Hour,
-		FileCleanupInterval:    30 * time.Second,
+		FileCleanupInterval:    10 * time.Minute,
 		JobCleanupInterval:     30 * time.Second,
 	}
 }

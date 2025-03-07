@@ -162,7 +162,7 @@ storage:
         # Expiration interval of a file that has already been imported. Validation rules: required,minDuration=15m,maxDuration=720h
         archivedFileExpiration: 1h0m0s
         # Cleanup interval of a file. Validation rules: required,minDuration=30s,maxDuration=24h
-        fileCleanupInterval: 30s
+        fileCleanupInterval: 10m0s
         # Cleanup interval of a job that has already completed. Validation rules: required,minDuration=30s,maxDuration=24h
         jobCleanupInterval: 30s
     diskCleanup:
