@@ -56,6 +56,14 @@ type Node struct {
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 }
 
+// cleanupTask represents a periodic cleanup task.
+type cleanupTask struct {
+	name        string
+	interval    time.Duration
+	cleanupFunc func(context.Context) error
+	logger      log.Logger
+}
+
 func Start(d dependencies, cfg Config) error {
 	n := &Node{
 		config:                  cfg,
@@ -91,37 +99,45 @@ func Start(d dependencies, cfg Config) error {
 		n.logger.Info(ctx, "shutdown done")
 	})
 
-	// Start timer
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	// Define cleanup tasks
+	tasks := n.cleanupTasks()
 
-		ticker := d.Clock().NewTicker(n.config.Interval)
-		defer ticker.Stop()
-
-		for {
-			if err := n.cleanMetadata(ctx); err != nil && !errors.Is(err, context.Canceled) {
-				n.logger.Errorf(ctx, `local storage metadata cleanup failed: %s`, err)
-			}
-
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.Chan():
-				continue
-			}
-		}
-	}()
+	// Start cleanup tasks
+	for _, task := range tasks {
+		wg.Add(1)
+		go n.runCleanupTask(ctx, wg, d.Clock(), task)
+	}
 
 	return nil
 }
 
+// runCleanupTask runs a cleanup task periodically.
+func (n *Node) runCleanupTask(ctx context.Context, wg *sync.WaitGroup, clock clockwork.Clock, task cleanupTask) {
+	defer wg.Done()
+
+	ticker := clock.NewTicker(task.interval)
+	defer ticker.Stop()
+
+	for {
+		if err := task.cleanupFunc(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			task.logger.Errorf(ctx, `local storage metadata %s cleanup failed: %s`, task.name, err)
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.Chan():
+			continue
+		}
+	}
+}
+
 // cleanMetadata iterates all files and deletes the expired ones.
-func (n *Node) cleanMetadata(ctx context.Context) (err error) {
-	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("clean metadata timeout"))
+func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("clean metadata files timeout"))
 	defer cancel()
 
-	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanMetadata")
+	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanMetadataFiles")
 	defer span.End(&err)
 
 	// Measure count of deleted files
@@ -132,15 +148,6 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 		n.logger.With(attribute.Int64("deletedFilesCount", count)).Info(ctx, `deleted "<deletedFilesCount>" files`)
 	}()
 
-	// Measure count of deleted storage jobs
-	jobCounter := atomic.NewInt64(0)
-	defer func() {
-		count := jobCounter.Load()
-		span.SetAttributes(attribute.Int64("deletedJobsCount", count))
-		n.logger.With(attribute.Int64("deletedJobsCount", count)).Info(ctx, `deleted "<deletedJobsCount>" jobs`)
-	}()
-
-	// Delete files in parallel, but with limit
 	n.logger.Info(ctx, `deleting metadata of expired files`)
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.SetLimit(n.config.Concurrency)
@@ -173,7 +180,30 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 		return err
 	}
 
+	return grp.Wait()
+}
+
+func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
+	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("clean metadata jobs timeout"))
+	defer cancel()
+
+	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanMetadataJobs")
+	defer span.End(&err)
+
+	// Measure count of deleted storage jobs
+	jobCounter := atomic.NewInt64(0)
+	defer func() {
+		count := jobCounter.Load()
+		span.SetAttributes(attribute.Int64("deletedJobsCount", count))
+		n.logger.With(attribute.Int64("deletedJobsCount", count)).Info(ctx, `deleted "<deletedJobsCount>" jobs`)
+	}()
+
 	n.logger.Info(ctx, `deleting metadata of success jobs`)
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.SetLimit(n.config.Concurrency)
+
+	var errCount atomic.Uint32
+
 	// Iterate all storage jobs
 	err = n.keboolaBridgeRepository.
 		Job().
@@ -272,4 +302,21 @@ func (n *Node) isFileExpired(file model.File, age time.Duration) bool {
 
 	// Other files have a longer expiration so there is time for retries.
 	return age >= n.config.ActiveFileExpiration
+}
+
+func (n *Node) cleanupTasks() []cleanupTask {
+	return []cleanupTask{
+		{
+			name:        "file",
+			interval:    n.config.FileCleanupInterval,
+			cleanupFunc: n.cleanMetadataFiles,
+			logger:      n.logger,
+		},
+		{
+			name:        "job",
+			interval:    n.config.JobCleanupInterval,
+			cleanupFunc: n.cleanMetadataJobs,
+			logger:      n.logger,
+		},
+	}
 }
