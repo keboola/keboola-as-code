@@ -355,7 +355,6 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: parallelt
 		// In the test, we trigger the file import only when sink limit is not reached.
 		cfg.Sink.Table.Keboola.JobLimit = 1
 
-		// In the test, we trigger the file import via the records count, the other values are intentionally high.
 		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
 			MinInterval: duration.From(30 * time.Second), // minimum
 			Trigger: targetConfig.ImportTrigger{
@@ -595,6 +594,12 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 		cfg.Sink.Table.Keboola.JobLimit = 1
 
 		// In the test, we trigger the file import via the records count, the other values are intentionally high.
+		cfg.Storage.Level.Staging.Operator.SliceRotationCheckInterval = duration.From(2 * time.Second)
+		cfg.Storage.Level.Staging.Operator.SliceCloseTimeout = duration.From(2 * time.Minute)
+		cfg.Storage.Level.Staging.Operator.SliceUploadCheckInterval = duration.From(60 * time.Second)
+		cfg.Storage.Level.Staging.Operator.SliceUploadTimeout = duration.From(4 * time.Minute)
+
+		// In the test, we trigger the file import via the records count, the other values are intentionally high.
 		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
 			MinInterval: duration.From(30 * time.Second), // minimum
 			Trigger: targetConfig.ImportTrigger{
@@ -688,18 +693,19 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 		ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"rotated slice","component":"storage.node.operator.slice.rotation"}
 {"level":"info","message":"rotated slice","component":"storage.node.operator.slice.rotation"}
-		`)
+	`)
 		ts.logger.AssertJSONMessages(c, `
 {"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
 {"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
-		`)
+	`)
 	}, 20*time.Second, 10*time.Millisecond)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `
 {"level":"error", "message":"check of hidden file \"%s\" failed: cannot create reader for compressed file \"%s\": cannot create parallel gzip reader: gzip: invalid header","component":"storage.node.reader.volumes"}
 {"level":"error", "message":"check of hidden file \"%s\" failed: cannot create reader for compressed file \"%s\": cannot create parallel gzip reader: gzip: invalid header","component":"storage.node.reader.volumes"}
-		`)
-	}, 20*time.Second, 10*time.Millisecond)
+{"level":"error", "message":"slice upload failed:\n- check of hidden file \"%s\" failed: cannot create reader for compressed file \"%s\": cannot create parallel gzip reader: gzip: invalid header","component":"storage.node.operator.slice.upload"}
+	`)
+	}, 60*time.Second, 1*time.Second)
 
 	ts.logSection(t, "teardown")
 	nodes := []withProcess{
