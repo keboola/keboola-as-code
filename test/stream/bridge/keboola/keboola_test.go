@@ -31,7 +31,9 @@ import (
 )
 
 // To see details run: TEST_VERBOSE=true go test ./test/stream/bridge/... -v.
-func TestKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
+func TestKeboolaBridgeWorkflow(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Second)
 	defer cancel()
 
@@ -41,6 +43,9 @@ func TestKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
 
 	// Update configuration to make the cluster testable
 	configFn := func(cfg *config.Config) {
+		// Listen on random port
+		cfg.API.Listen = "0.0.0.0:0"
+
 		// Setup encryption
 		cfg.Encryption.Provider = encryption.ProviderAES
 		cfg.Encryption.AES.SecretKey = secretKey
@@ -314,7 +319,9 @@ func TestKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
 	ts.checkKeboolaTable(t, ctx, 1, 129)
 }
 
-func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
+func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
+	t.Parallel()
+
 	metrics := toxiproxy.NewMetricsContainer(nil)
 	server := toxiproxy.NewServer(metrics, zerolog.New(os.Stderr))
 	go server.Listen("localhost:8474")
@@ -328,6 +335,9 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: parallelt
 
 	// Update configuration to make the cluster testable
 	configFn := func(cfg *config.Config) {
+		// Listen on random port
+		cfg.API.Listen = "0.0.0.0:0"
+
 		// Setup encryption
 		cfg.Encryption.Provider = encryption.ProviderAES
 		cfg.Encryption.AES.SecretKey = secretKey
