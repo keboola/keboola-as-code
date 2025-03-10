@@ -93,7 +93,7 @@ jobs:
             TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
             TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-          make tests-stream-service
+          make tests-stream-service-verbose
         env:
           TEST_BINARY_STREAM_SERVICE: "${{ runner.temp }}/test-build-stream-service"
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}

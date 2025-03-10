@@ -278,6 +278,7 @@ type volumeTestCase struct {
 	Logger            log.DebugLogger
 	Clock             *clockwork.FakeClock
 	Config            diskreader.Config
+	WithBackup        bool
 	VolumeNodeID      string
 	VolumeNodeAddress volumeModel.RemoteAddr
 	VolumePath        string
@@ -303,6 +304,7 @@ func newVolumeTestCase(tb testing.TB) *volumeTestCase {
 		Logger:            logger,
 		Clock:             clockwork.NewFakeClock(),
 		Config:            diskreader.NewConfig(),
+		WithBackup:        false,
 		VolumeNodeID:      "my-node",
 		VolumeNodeAddress: "localhost:1234",
 		VolumePath:        tmpDir,

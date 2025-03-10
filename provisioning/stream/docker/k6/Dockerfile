@@ -1,10 +1,10 @@
-FROM grafana/xk6:latest AS build
+FROM grafana/xk6:master AS build
 
 RUN xk6 build \
     --with github.com/LeonAdato/xk6-output-statsd@latest \
     --with github.com/domsolutions/xk6-fasthttp@latest
 
-FROM alpine:3.20
+FROM golang:1.24-alpine
 
 RUN apk add --no-cache bash
 

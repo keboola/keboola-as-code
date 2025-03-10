@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/encoder"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 )
@@ -50,6 +51,7 @@ func TestDefaultFactory_FileTypeCSV(t *testing.T) {
 		slice.Mapping,
 		slice.Encoding,
 		slice.LocalStorage,
+		slice.Encoding.Compression.Type != compression.TypeNone,
 		func(ctx context.Context, cause string) {},
 		discardOutput{},
 	)
@@ -75,6 +77,7 @@ func TestDefaultFactory_FileTypeInvalid(t *testing.T) {
 		slice.Mapping,
 		slice.Encoding,
 		slice.LocalStorage,
+		slice.Encoding.Compression.Type != compression.TypeNone,
 		func(ctx context.Context, cause string) {},
 		discardOutput{},
 	)

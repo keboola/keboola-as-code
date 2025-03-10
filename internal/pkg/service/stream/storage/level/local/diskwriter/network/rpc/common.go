@@ -8,4 +8,5 @@ import (
 type sliceData struct {
 	SliceKey     model.SliceKey   `json:"sliceKey"`
 	LocalStorage localModel.Slice `json:"localStorage"`
+	WithBackup   bool             `json:"withBackup"`
 }

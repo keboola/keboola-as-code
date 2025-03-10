@@ -62,6 +62,7 @@ func newWriter(
 	key writerKey,
 	slice localModel.Slice,
 	events *events.Events[Writer],
+	withBackup bool,
 ) (out Writer, err error) {
 	w := &writer{
 		logger:    logger,
@@ -80,7 +81,18 @@ func newWriter(
 	}
 
 	// Open file
+
 	filePath := slice.FileName(volumePath, w.writerKey.SourceNodeID)
+	if withBackup {
+		// Create backup file if it does not exist
+		backupPath := slice.FileNameWithBackup(volumePath, w.writerKey.SourceNodeID)
+		backupFile, err := os.OpenFile(backupPath, os.O_CREATE|os.O_RDWR, 0o640)
+		if err == nil {
+			backupFile.Close()
+			filePath = backupPath
+		}
+	}
+
 	logger = logger.With(attribute.String("file.path", filePath))
 	w.file, err = opener.OpenFile(filePath)
 	if err == nil {
