@@ -100,7 +100,7 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my
   "target": {
     "provider": "keboola",
     "import": {
-      "maxSlices": 1000,
+      "maxSlices": 200,
       "minInterval": "1m0s",
       "trigger": {
         "count": 50000,

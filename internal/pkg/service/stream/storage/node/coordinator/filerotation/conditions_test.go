@@ -25,7 +25,7 @@ func TestShouldImport(t *testing.T) {
 
 	// Defaults
 	cfg := targetConfig.ImportConfig{
-		MaxSlices:   1000,
+		MaxSlices:   200,
 		MinInterval: duration.From(60 * time.Second),
 		Trigger: targetConfig.ImportTrigger{
 			Count:       10000,

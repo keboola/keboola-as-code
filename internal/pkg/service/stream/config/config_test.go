@@ -291,8 +291,8 @@ storage:
                 # Timeout of the file import operation. Validation rules: required,minDuration=30s,maxDuration=60m
                 fileImportTimeout: 15m0s
             import:
-                # Max number of slices in a file before an import is triggered, takes precedence over other settings. Validation rules: required,min=100,max=1000
-                maxSlices: 1000
+                # Max number of slices in a file before an import is triggered, takes precedence over other settings. Validation rules: required,min=100,max=200
+                maxSlices: 200
                 # Min duration from the last import to trigger the next, takes precedence over other settings. Validation rules: required,minDuration=30s,maxDuration=24h
                 minInterval: 1m0s
                 trigger:
