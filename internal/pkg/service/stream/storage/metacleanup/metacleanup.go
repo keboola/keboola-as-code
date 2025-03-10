@@ -173,10 +173,15 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 		// Process each sink key in its own goroutine
 		grp.Go(func() error {
 			// Process files for this sink key
+			counter := 0
 			return n.storageRepository.File().ListRecentIn(sinkKey).ForEach(
 				func(file model.File, _ *iterator.Header) error {
+					// Get current position and increment counter for next file
+					currentPosition := counter
+					counter++
+
 					grp.Go(func() error {
-						err, deleted := n.cleanFile(ctx, file)
+						err, deleted := n.cleanFile(ctx, file, currentPosition)
 						if deleted {
 							fileCounter.Add(1)
 						}
@@ -259,7 +264,7 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 	return grp.Wait()
 }
 
-func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, deleted bool) {
+func (n *Node) cleanFile(ctx context.Context, file model.File, fileIndex int) (err error, deleted bool) {
 	// There can be several cleanup nodes, each node processes an own part.
 	if !n.dist.MustCheckIsOwner(file.ProjectID.String()) {
 		return nil, false
@@ -277,7 +282,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 
 	// Check if the file is expired
 	age := n.clock.Since(file.LastStateChange().Time())
-	if !n.isFileExpired(file, age) {
+	if !n.isFileExpired(file, age, fileIndex) {
 		return nil, false
 	}
 
@@ -306,10 +311,10 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 }
 
 // isFileExpired returns true, if the file is expired and should be deleted.
-func (n *Node) isFileExpired(file model.File, age time.Duration) bool {
+func (n *Node) isFileExpired(file model.File, age time.Duration, fileIndex int) bool {
 	// Imported files are completed, so they expire sooner
 	if file.State == model.FileImported {
-		return age >= n.config.ArchivedFileExpiration
+		return age >= n.config.ArchivedFileExpiration && fileIndex > n.config.ArchivedFileRetentionPerSink
 	}
 
 	// Other files have a longer expiration so there is time for retries.
