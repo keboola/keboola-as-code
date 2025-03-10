@@ -38,12 +38,12 @@ func TestShouldImport(t *testing.T) {
 
 	// Max slices exceeded
 	result := shouldImport(cfg, now, openedBefore30Sec, expirationIn60min, statistics.Value{
-		SlicesCount:  1000,
+		SlicesCount:  200,
 		RecordsCount: 0,
 	})
 	assert.Equal(t, maxSlices, result.result)
 	assert.True(t, result.ShouldImport())
-	assert.Equal(t, "max slices exceeded, slices count: 1000, threshold: 1000", result.Cause())
+	assert.Equal(t, "max slices exceeded, slices count: 200, threshold: 200", result.Cause())
 
 	// Min interval
 	result = shouldImport(cfg, now, openedBefore30Sec, expirationIn60min, statistics.Value{})
