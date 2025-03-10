@@ -91,7 +91,7 @@ func setup(t *testing.T, options ...utilsproject.Option) testState {
 
 	ts := testState{}
 	ts.logger = log.NewDebugLogger()
-	ts.logger.ConnectInfoTo(testhelper.VerboseStdout())
+	ts.logger.ConnectTo(testhelper.VerboseStdout())
 	ts.httpClient = &http.Client{}
 
 	ts.logSection(t, "setup")

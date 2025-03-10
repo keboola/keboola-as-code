@@ -686,7 +686,7 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 		// Slices are uploaded independently, so we have to use multiple asserts
 		rotatingMsg := fmt.Sprintf(`{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}`, 10)
 		ts.logger.AssertJSONMessages(c, fmt.Sprintf("%s\n%s\n", rotatingMsg, rotatingMsg))
-	}, 20*time.Second, 10*time.Millisecond)
+	}, 20*time.Second, 3*time.Millisecond)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `
@@ -697,14 +697,14 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 {"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
 {"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
 	`)
-	}, 20*time.Second, 10*time.Millisecond)
+	}, 20*time.Second, 3*time.Millisecond)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `
 {"level":"error", "message":"check of hidden file \"%s\" failed: cannot create reader for compressed file \"%s\": cannot create parallel gzip reader: gzip: invalid header","component":"storage.node.reader.volumes"}
 {"level":"error", "message":"check of hidden file \"%s\" failed: cannot create reader for compressed file \"%s\": cannot create parallel gzip reader: gzip: invalid header","component":"storage.node.reader.volumes"}
 {"level":"error", "message":"slice upload failed:\n- check of hidden file \"%s\" failed: cannot create reader for compressed file \"%s\": cannot create parallel gzip reader: gzip: invalid header","component":"storage.node.operator.slice.upload"}
 	`)
-	}, 20*time.Second, 100*time.Millisecond)
+	}, 20*time.Second, 10*time.Millisecond)
 
 	ts.logSection(t, "teardown")
 	nodes := []withProcess{

@@ -85,7 +85,7 @@ tests-stream-service:
 	TEST_PACKAGE=./test/stream/... bash ./scripts/tests.sh
 
 tests-stream-service-verbose:
-	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/stream/... bash ./scripts/tests.sh
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/stream/... bash ./scripts/tests.sh -run TestKeboolaBridgeCompressionIssues
 
 tests-stream-api:
 	TEST_PACKAGE=./test/stream/api/... bash ./scripts/tests.sh
