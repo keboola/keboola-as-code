@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
@@ -157,31 +158,45 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 	// Error counter, we suppress the first few errors to not cancel all goroutines if just one fails.
 	var errCount atomic.Uint32
 
-	// Iterate all files
-	err = n.storageRepository.
-		File().
-		ListAll().
-		ForEach(func(file model.File, _ *iterator.Header) error {
-			grp.Go(func() error {
-				err, deleted := n.cleanFile(ctx, file)
-				if deleted {
-					fileCounter.Add(1)
-				}
-
-				if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
-					return err
-				}
-				return nil
-			})
+	// Collect all sink keys
+	var sinkKeys []key.SinkKey
+	if err := n.storageRepository.File().ListAll().ForEach(
+		func(file model.File, _ *iterator.Header) error {
+			sinkKeys = append(sinkKeys, file.SinkKey)
 			return nil
-		}).
-		Do(ctx).
-		Err()
-		// Handle iterator error
-	if err != nil {
+		}).Do(ctx).Err(); err != nil {
 		return err
 	}
 
+	// Process all sink keys
+	for _, sinkKey := range sinkKeys {
+		// Process each sink key in its own goroutine
+		grp.Go(func() error {
+			// Process files for this sink key
+			counter := 0
+			return n.storageRepository.File().ListRecentIn(sinkKey).ForEach(
+				func(file model.File, _ *iterator.Header) error {
+					// Get current position and increment counter for next file
+					currentPosition := counter
+					counter++
+
+					grp.Go(func() error {
+						err, deleted := n.cleanFile(ctx, file, currentPosition)
+						if deleted {
+							fileCounter.Add(1)
+						}
+
+						if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
+							return err
+						}
+						return nil
+					})
+					return nil
+				}).Do(ctx).Err()
+		})
+	}
+
+	// Wait for all processing to complete
 	return grp.Wait()
 }
 
@@ -249,7 +264,7 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 	return grp.Wait()
 }
 
-func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, deleted bool) {
+func (n *Node) cleanFile(ctx context.Context, file model.File, fileIndex int) (err error, deleted bool) {
 	// There can be several cleanup nodes, each node processes an own part.
 	if !n.dist.MustCheckIsOwner(file.ProjectID.String()) {
 		return nil, false
@@ -267,7 +282,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 
 	// Check if the file is expired
 	age := n.clock.Since(file.LastStateChange().Time())
-	if !n.isFileExpired(file, age) {
+	if !n.isFileExpired(file, age, fileIndex) {
 		return nil, false
 	}
 
@@ -296,10 +311,10 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 }
 
 // isFileExpired returns true, if the file is expired and should be deleted.
-func (n *Node) isFileExpired(file model.File, age time.Duration) bool {
+func (n *Node) isFileExpired(file model.File, age time.Duration, fileIndex int) bool {
 	// Imported files are completed, so they expire sooner
 	if file.State == model.FileImported {
-		return age >= n.config.ArchivedFileExpiration
+		return age >= n.config.ArchivedFileExpiration && fileIndex > n.config.ArchivedFileRetentionPerSink
 	}
 
 	// Other files have a longer expiration so there is time for retries.
