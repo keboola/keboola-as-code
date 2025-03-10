@@ -24,16 +24,13 @@ az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP"
 # Common part of the deploy
 export ETCD_STORAGE_CLASS_NAME=
 # This will be replaced with Azure encryptor provider
-export STREAM_ENCRYPTION_PROVIDER="none"
-#export STREAM_ENCRYPTION_PROVIDER="azure"
+export STREAM_ENCRYPTION_PROVIDER="azure"
 . ./common.sh
 
 # Azure specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/cloud/azure/service-api.yaml
 kubectl apply -f ./kubernetes/deploy/cloud/azure/service-http-source.yaml
 kubectl apply -f ./kubernetes/deploy/cloud/azure/sc-stream-api.yaml
-kubectl apply -f ./kubernetes/deploy/cloud/azure/secret-infra.yaml
-kubectl apply -f ./kubernetes/deploy/cloud/azure/serviceaccount.yaml
 
 # Wait for the rollout
 . ./wait.sh
