@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
@@ -157,31 +158,40 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 	// Error counter, we suppress the first few errors to not cancel all goroutines if just one fails.
 	var errCount atomic.Uint32
 
-	// Iterate all files
-	err = n.storageRepository.
-		File().
-		ListAll().
-		ForEach(func(file model.File, _ *iterator.Header) error {
-			grp.Go(func() error {
-				err, deleted := n.cleanFile(ctx, file)
-				if deleted {
-					fileCounter.Add(1)
-				}
-
-				if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
-					return err
-				}
-				return nil
-			})
+	// Collect all sink keys
+	var sinkKeys []key.SinkKey
+	if err := n.storageRepository.File().ListAll().ForEach(
+		func(file model.File, _ *iterator.Header) error {
+			sinkKeys = append(sinkKeys, file.SinkKey)
 			return nil
-		}).
-		Do(ctx).
-		Err()
-		// Handle iterator error
-	if err != nil {
+		}).Do(ctx).Err(); err != nil {
 		return err
 	}
 
+	// Process all sink keys
+	for _, sinkKey := range sinkKeys {
+		// Process each sink key in its own goroutine
+		grp.Go(func() error {
+			// Process files for this sink key
+			return n.storageRepository.File().ListRecentIn(sinkKey).ForEach(
+				func(file model.File, _ *iterator.Header) error {
+					grp.Go(func() error {
+						err, deleted := n.cleanFile(ctx, file)
+						if deleted {
+							fileCounter.Add(1)
+						}
+
+						if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
+							return err
+						}
+						return nil
+					})
+					return nil
+				}).Do(ctx).Err()
+		})
+	}
+
+	// Wait for all processing to complete
 	return grp.Wait()
 }
 
