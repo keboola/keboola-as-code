@@ -79,30 +79,8 @@ runs:
         echo "GOLANGCI_LINT_CACHE=$GODIRS/lintcache" >> $GITHUB_ENV 
         echo "$GODIRS/bin" >> $GITHUB_PATH
 
-    # Load compiled tools from cache to skip installation
-    - name: Load Go tools cache
-      id: go-cache-tools
-      if: inputs.without-cache != 'true'
-      uses: runs-on/cache@v4 # replacement for actions/cache@v4
-      with:
-        path: |
-          ${{ env.GODIRS }}/bin
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/tools.sh') }}
-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
-
-    # Install missing tools
-    - name: Install tools
-      shell: bash
-      run: |
-        echo "Installing tools ..."
-        ./scripts/tools.sh
-        
-        echo "Installed tools:"
-        ls -alh "$GODIRS/bin"
-        
-        go clean -cache -modcache
 
     # Load dependencies - Go modules to skip download
     - name: Load Go modules cache

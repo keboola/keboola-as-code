@@ -6,7 +6,6 @@ WORKDIR /app
 
 COPY Makefile Makefile
 COPY scripts scripts
-RUN make tools
 
 COPY go.mod go.mod
 COPY go.sum go.sum

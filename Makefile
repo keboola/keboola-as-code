@@ -1,9 +1,5 @@
 .PHONY: build
 
-tools:
-	bash ./scripts/tools.sh
-
-
 generate-model:
 	./scripts/generate-model.sh
 
@@ -118,7 +114,7 @@ godoc:
 	go tool godoc -http=0.0.0.0:6060
 
 check-licenses:
-	go-licenses check ./... --disallowed_types forbidden,restricted
+	go tool go-licenses check ./... --disallowed_types forbidden,restricted
 
 update:
 	go tool go-mod-upgrade
