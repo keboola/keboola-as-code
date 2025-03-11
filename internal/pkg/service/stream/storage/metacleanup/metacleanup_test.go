@@ -79,6 +79,7 @@ func TestMetadataCleanup(t *testing.T) {
 	cfg.FileCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
+	cfg.ArchivedFileRetentionPerSink = 0
 
 	// Register routes for receiving information about jobs
 	transport := mocked.MockedHTTPTransport()
