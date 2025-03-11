@@ -97,9 +97,9 @@ func TestEventWriter(t *testing.T) {
 	// Register "OnClose" event on the "writer" level
 	slice1 := test.NewSliceOpenedAt("2001-01-01T00:00:00.000Z")
 	slice2 := test.NewSliceOpenedAt("2002-01-01T00:00:00.000Z")
-	writer1, err := vol1.OpenWriter("my-source-node", slice1.SliceKey, slice1.LocalStorage)
+	writer1, err := vol1.OpenWriter("my-source-node", slice1.SliceKey, slice1.LocalStorage, false)
 	require.NoError(t, err)
-	writer2, err := vol2.OpenWriter("my-source-node", slice2.SliceKey, slice2.LocalStorage)
+	writer2, err := vol2.OpenWriter("my-source-node", slice2.SliceKey, slice2.LocalStorage, false)
 	require.NoError(t, err)
 	writer1.Events().OnClose(func(w diskwriter.Writer, _ error) error {
 		logger.Infof(ctx, `EVENT: slice: "%s", event: CLOSE (5), level: writer1`, w.SliceKey().OpenedAt())
@@ -181,7 +181,7 @@ func TestWriterEvents_OpenError(t *testing.T) {
 
 	// Check error
 	slice := test.NewSlice()
-	_, err = vol.OpenWriter("my-source-node", slice.SliceKey, slice.LocalStorage)
+	_, err = vol.OpenWriter("my-source-node", slice.SliceKey, slice.LocalStorage, false)
 	if assert.Error(t, err) {
 		assert.Equal(t, "- error (2)\n- error (1)", err.Error())
 	}
@@ -223,7 +223,7 @@ func TestEventWriter_CloseError(t *testing.T) {
 
 	// Create writer
 	slice := test.NewSlice()
-	w, err := vol.OpenWriter("my-source-node", slice.SliceKey, slice.LocalStorage)
+	w, err := vol.OpenWriter("my-source-node", slice.SliceKey, slice.LocalStorage, false)
 	require.NoError(t, err)
 
 	// Register "OnClose" event on the "writer" level

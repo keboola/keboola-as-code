@@ -81,6 +81,10 @@ func (v *noErrorCloser) Read(p []byte) (n int, err error) {
 	return v.reader.Read(p)
 }
 
+func (v *noErrorCloser) Seek(offset int64, whence int) (int64, error) {
+	return 0, nil
+}
+
 func (v *noErrorCloser) Close() error {
 	v.reader.Close()
 	return nil

@@ -135,7 +135,7 @@ func openNetworkFile(
 
 	// Open network file
 	onServerTermination := func(ctx context.Context, cause string) {}
-	file, err := rpc.OpenNetworkFile(ctx, d.Logger(), d.Telemetry(), d.ConnectionManager(), sliceKey, slice, onServerTermination)
+	file, err := rpc.OpenNetworkFile(ctx, d.Logger(), d.Telemetry(), d.ConnectionManager(), sliceKey, slice, false, onServerTermination)
 	require.NoError(t, err)
 
 	return file, m

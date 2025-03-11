@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	mrand "math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
@@ -106,7 +108,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) { // nolint: paralleltest
 		},
 	})
 
-	// First upload
+	// First successful upload
 	ts.logSection(t, "testing first upload")
 	ts.testSlicesUpload(t, ctx, sliceUpload{
 		records: records{
@@ -353,7 +355,6 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: parallelt
 		// In the test, we trigger the file import only when sink limit is not reached.
 		cfg.Sink.Table.Keboola.JobLimit = 1
 
-		// In the test, we trigger the file import via the records count, the other values are intentionally high.
 		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
 			MinInterval: duration.From(30 * time.Second), // minimum
 			Trigger: targetConfig.ImportTrigger{
@@ -555,6 +556,175 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) { // nolint: parallelt
 		`)
 	}, 60*time.Second, 100*time.Millisecond)
 	ts.checkKeboolaTable(t, ctx, 1, 129)
+}
+
+func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
+	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Second)
+	defer cancel()
+
+	secretKey := make([]byte, 32)
+	_, err := rand.Read(secretKey)
+	require.NoError(t, err)
+
+	// Update configuration to make the cluster testable
+	configFn := func(cfg *config.Config) {
+		// Setup encryption
+		cfg.Encryption.Provider = encryption.ProviderAES
+		cfg.Encryption.AES.SecretKey = secretKey
+		// Enable metadata cleanup for removing storage jobs
+		cfg.Storage.MetadataCleanup.Enabled = true
+		// Disable unrelated workers
+		cfg.Storage.DiskCleanup.Enabled = false
+		cfg.API.Task.CleanupEnabled = false
+
+		// Use deterministic load balancer
+		cfg.Storage.Level.Local.Writer.Network.PipelineBalancer = network.RoundRobinBalancerType
+
+		// In the test, we trigger the slice upload via the records count, the other values are intentionally high.
+		cfg.Storage.Level.Staging.Upload = stagingConfig.UploadConfig{
+			MinInterval: duration.From(1 * time.Second), // minimum
+			Trigger: stagingConfig.UploadTrigger{
+				Count:    10,
+				Size:     1000 * datasize.MB,
+				Interval: duration.From(30 * time.Minute),
+			},
+		}
+
+		// In the test, we trigger the file import only when sink limit is not reached.
+		cfg.Sink.Table.Keboola.JobLimit = 1
+
+		// In the test, we trigger the file import via the records count, the other values are intentionally high.
+		cfg.Storage.Level.Staging.Operator.SliceRotationCheckInterval = duration.From(2 * time.Second)
+		cfg.Storage.Level.Staging.Operator.SliceCloseTimeout = duration.From(2 * time.Minute)
+		cfg.Storage.Level.Staging.Operator.SliceUploadCheckInterval = duration.From(60 * time.Second)
+		cfg.Storage.Level.Staging.Operator.SliceUploadTimeout = duration.From(4 * time.Minute)
+
+		// In the test, we trigger the file import via the records count, the other values are intentionally high.
+		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
+			MinInterval: duration.From(30 * time.Second), // minimum
+			Trigger: targetConfig.ImportTrigger{
+				Count:       30,
+				Size:        1000 * datasize.MB,
+				Interval:    duration.From(30 * time.Minute),
+				SlicesCount: 100,
+				Expiration:  duration.From(30 * time.Minute),
+			},
+		}
+
+		// Cleanup should be perfomed more frequently to remove already finished storage jobs
+		cfg.Storage.MetadataCleanup.Interval = 10 * time.Second
+	}
+
+	ts := setup(t)
+	ts.startNodes(t, ctx, configFn)
+	ts.setupSink(t, ctx)
+
+	// Check initial state
+	ts.checkState(t, ctx, []file{
+		{
+			state: model.FileWriting,
+			volumes: []volume{
+				{
+					slices: []model.SliceState{
+						model.SliceWriting,
+					},
+				},
+				{
+					slices: []model.SliceState{
+						model.SliceWriting,
+					},
+				},
+			},
+		},
+	})
+
+	// Test corrupted slice upload
+	ts.logSection(t, "testing corrupted slice upload")
+	ts.sendRecords(t, ctx, 1, 18)
+	// Corrupt the slice by writing invalid data
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `
+{"level":"info","message":"opened slice pipeline","component":"storage.router"}
+		`)
+	}, 20*time.Second, 100*time.Millisecond)
+	slices, err := ts.coordinatorScp1.StorageRepository().Slice().ListInState(ts.sinkKey, model.SliceWriting).Do(ctx).All()
+	require.NoError(t, err)
+	path1 := filesystem.Join(
+		ts.volumesPath1,
+		strings.NewReplacer(":", "-", ".", "-").Replace(slices[0].SliceKey.FileKey.String()),
+		strings.NewReplacer(":", "-", ".", "-").Replace(slices[0].SliceKey.SliceID.String()),
+		".slice-source1.csv.gz",
+	)
+	path2 := filesystem.Join(
+		ts.volumesPath1,
+		strings.NewReplacer(":", "-", ".", "-").Replace(slices[1].SliceKey.FileKey.String()),
+		strings.NewReplacer(":", "-", ".", "-").Replace(slices[1].SliceKey.SliceID.String()),
+		".slice-source2.csv.gz",
+	)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `
+{"level":"debug","message":"opened file","sourceNode.id":"source1","component":"storage.node.writer.volumes.volume"}
+		`)
+	}, 20*time.Second, 10*time.Millisecond)
+
+	// Corrupt the slice by writing invalid data
+	require.NoError(t,
+		os.WriteFile(path1,
+			[]byte("CORRUPTED_DATA"),
+			0o640,
+		),
+	)
+	require.NoError(t,
+		os.WriteFile(path2,
+			[]byte("CORRUPTED_DATA"),
+			0o640,
+		),
+	)
+	ts.sendRecords(t, ctx, 19, 2)
+	// Expect slice rotation
+	ts.logSection(t, "expecting slices rotation (1s+)")
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		// Slices are uploaded independently, so we have to use multiple asserts
+		rotatingMsg := fmt.Sprintf(`{"level":"info","message":"rotating slice, upload conditions met: count threshold met, records count: %d, threshold: 10","component":"storage.node.operator.slice.rotation"}`, 10)
+		ts.logger.AssertJSONMessages(c, fmt.Sprintf("%s\n%s\n", rotatingMsg, rotatingMsg))
+	}, 20*time.Second, 10*time.Millisecond)
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `
+{"level":"info","message":"rotated slice","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"rotated slice","component":"storage.node.operator.slice.rotation"}
+	`)
+		ts.logger.AssertJSONMessages(c, `
+{"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
+{"level":"info","message":"closed slice","component":"storage.node.operator.slice.rotation"}
+	`)
+	}, 20*time.Second, 10*time.Millisecond)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `
+{"level":"error", "message":"check of hidden file \"%s\" failed: cannot create reader for compressed file \"%s\": cannot create parallel gzip reader: gzip: invalid header","component":"storage.node.reader.volumes"}
+{"level":"error", "message":"check of hidden file \"%s\" failed: cannot create reader for compressed file \"%s\": cannot create parallel gzip reader: gzip: invalid header","component":"storage.node.reader.volumes"}
+{"level":"error", "message":"slice upload failed:\n- check of hidden file \"%s\" failed: cannot create reader for compressed file \"%s\": cannot create parallel gzip reader: gzip: invalid header","component":"storage.node.operator.slice.upload"}
+	`)
+	}, 60*time.Second, 1*time.Second)
+
+	ts.logSection(t, "teardown")
+	nodes := []withProcess{
+		ts.apiScp,
+		ts.writerScp1,
+		ts.writerScp2,
+		ts.readerScp1,
+		ts.readerScp2,
+		ts.coordinatorScp1,
+		ts.coordinatorScp2,
+		ts.sourceScp1,
+		ts.sourceScp2,
+	}
+
+	// Shutdown must work always, in random other
+	mrand.Shuffle(len(nodes), func(i, j int) {
+		nodes[i], nodes[j] = nodes[j], nodes[i]
+	})
+	ts.shutdown(t, ctx, nodes)
 }
 
 func (ts *testState) testSlicesUpload(t *testing.T, ctx context.Context, expectations sliceUpload) {

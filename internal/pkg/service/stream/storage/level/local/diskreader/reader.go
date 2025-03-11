@@ -8,7 +8,10 @@ package diskreader
 import (
 	"context"
 	"io"
+	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -82,7 +85,7 @@ func newReader(
 	reader, writer := io.Pipe()
 	go func() {
 		for _, filePath := range matched {
-			openFileAndWrite(ctx, r.logger, opener, filePath, writer)
+			openFileAndWrite(ctx, r.logger, localCompression, opener, filePath, writer)
 		}
 
 		writer.Close()
@@ -210,32 +213,140 @@ func (r *reader) isClosed() bool {
 	}
 }
 
-func openFileAndWrite(ctx context.Context, logger log.Logger, opener FileOpener, filePath string, writer *io.PipeWriter) {
-	logger = logger.With(attribute.String("file.path", filePath))
+func openFileAndWrite(
+	ctx context.Context,
+	logger log.Logger,
+	localCompression compression.Config,
+	opener FileOpener,
+	filePath string,
+	writer *io.PipeWriter,
+) {
 	file, err := opener.OpenFile(filePath)
 	defer func() {
-		err = file.Close()
-		if err != nil {
-			writer.CloseWithError(err)
+		if file != nil {
+			err = file.Close()
+			if err != nil {
+				writer.CloseWithError(err)
+			}
 		}
 	}()
 	if err != nil {
 		logger.Errorf(ctx, `cannot open file "%s": %s`, filePath, err)
-		err = writer.CloseWithError(err)
-		if err != nil {
-			logger.Errorf(ctx, `%s`, err)
-		}
-
+		closeWithError(logger, ctx, writer, err)
 		return
 	}
 
+	// Check if the file is hidden (has "." prefix)
+	if strings.HasPrefix(path.Base(filePath), ".") {
+		visiblePath, err := processHiddenFile(ctx, logger, localCompression, file, filePath)
+		if err != nil {
+			closeWithError(logger, ctx, writer, err)
+			return
+		}
+
+		// Reopen file with new path
+		logger.Debugf(ctx, `moved hidden file "%s" to "%s"`, filePath, visiblePath)
+		newFile, err := opener.OpenFile(visiblePath)
+		if err != nil {
+			logger.Errorf(ctx, `cannot open file "%s": %s`, visiblePath, err)
+			closeWithError(logger, ctx, writer, err)
+			return
+		}
+
+		file = newFile
+		filePath = visiblePath
+	}
+
+	logger = logger.With(attribute.String("file.path", filePath))
 	logger.Debug(ctx, "opened file")
 	_, err = io.Copy(writer, file)
 	if err != nil {
 		logger.Errorf(ctx, `cannot copy to writer "%s": %s`, filePath, err)
-		err = writer.CloseWithError(err)
-		if err != nil {
-			logger.Errorf(ctx, `%s`, err)
-		}
+		closeWithError(logger, ctx, writer, err)
 	}
+}
+
+// processHiddenFile handles all the processing steps for a hidden file:
+// - Validates it can be decompressed with the configured compression
+// - Moves it from hidden (.prefixed) to visible state
+// - Closes the original file handle
+// Returns the visible file path or error if any step fails.
+func processHiddenFile(
+	ctx context.Context,
+	logger log.Logger,
+	localCompression compression.Config,
+	file File,
+	filePath string,
+) (string, error) {
+	// Check if file can be decompressed
+	if err := verifyFileCompression(localCompression, file, filePath); err != nil {
+		logger.Errorf(ctx, `check of hidden file "%s" failed: %s`, filePath, err)
+		return "", errors.Errorf(`check of hidden file "%s" failed: %w`, filePath, err)
+	}
+
+	// Reset file position
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		logger.Errorf(ctx, `cannot seek to start of hidden compressed file "%s": %s`, filePath, err)
+		return "", errors.Errorf(`cannot seek to start of hidden compressed file "%s": %w`, filePath, err)
+	}
+
+	// Close file before moving
+	if err := file.Close(); err != nil {
+		return "", err
+	}
+
+	// Move file from hidden to visible
+	visiblePath, err := moveHiddenToVisible(ctx, logger, filePath)
+	if err != nil {
+		return "", err
+	}
+
+	// Log success
+	logger.Debugf(ctx, `moved hidden file "%s" to "%s"`, filePath, visiblePath)
+
+	return visiblePath, nil
+}
+
+// moveHiddenToVisible converts a hidden file path (with . prefix) to a visible one by removing the dot prefix.
+// It renames the file on disk and returns the new path. Does not work on Windows.
+func moveHiddenToVisible(ctx context.Context, logger log.Logger, filePath string) (string, error) {
+	visiblePath := filepath.Join(filepath.Dir(filePath), strings.TrimPrefix(filepath.Base(filePath), "."))
+	if err := os.Rename(filePath, visiblePath); err != nil {
+		logger.Errorf(ctx, `cannot move hidden file "%s" to "%s": %s`, filePath, visiblePath, err)
+		return "", errors.Errorf(`cannot move hidden file "%s" to "%s": %w`, filePath, visiblePath, err)
+	}
+
+	return visiblePath, nil
+}
+
+// closeWithError is a helper function that logs and propagates errors when closing a writer.
+func closeWithError(logger log.Logger, ctx context.Context, writer *io.PipeWriter, err error) {
+	closeErr := writer.CloseWithError(err)
+	if closeErr != nil {
+		logger.Errorf(ctx, `%s`, closeErr)
+	}
+}
+
+// verifyFileCompression checks if a file can be properly read with the configured compression.
+// It attempts to read the file using the provided compression settings to validate its format.
+// Works with both compressed and uncompressed files based on configuration.
+func verifyFileCompression(
+	localCompression compression.Config,
+	file File,
+	filePath string,
+) (err error) {
+	// Try to decompress with local compression
+	reader, err := compressionReader.New(file, localCompression)
+	if err != nil {
+		return errors.Errorf(`cannot create reader for compressed file "%s": %w`, filePath, err)
+	}
+
+	defer reader.Close()
+	// Try to read the entire file to verify it's a valid with local compression
+	_, err = io.ReadAll(reader)
+	if err != nil {
+		return errors.Errorf(`cannot read hidden compressed file "%s": %w`, filePath, err)
+	}
+
+	return nil
 }

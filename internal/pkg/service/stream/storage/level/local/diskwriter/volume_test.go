@@ -222,9 +222,9 @@ func TestVolume_Close_Errors(t *testing.T) {
 	// Open two writers
 	slice1 := test.NewSliceOpenedAt("2000-01-01T20:00:00.000Z")
 	slice2 := test.NewSliceOpenedAt("2000-01-01T21:00:00.000Z")
-	_, err = vol.OpenWriter("my-source-node", slice1.SliceKey, slice1.LocalStorage)
+	_, err = vol.OpenWriter("my-source-node", slice1.SliceKey, slice1.LocalStorage, false)
 	require.NoError(t, err)
-	_, err = vol.OpenWriter("my-source-node", slice2.SliceKey, slice2.LocalStorage)
+	_, err = vol.OpenWriter("my-source-node", slice2.SliceKey, slice2.LocalStorage, false)
 	require.NoError(t, err)
 
 	// Close volume, expect close errors from the writers
@@ -249,6 +249,7 @@ type volumeTestCase struct {
 	Events            *events.Events[diskwriter.Writer]
 	Allocator         *allocator
 	Config            diskwriter.Config
+	WithBackup        bool
 	VolumeNodeID      string
 	VolumeNodeAddress volumeModel.RemoteAddr
 	VolumePath        string

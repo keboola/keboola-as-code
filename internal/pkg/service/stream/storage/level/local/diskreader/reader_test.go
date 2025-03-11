@@ -6,10 +6,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -122,6 +124,87 @@ func TestVolume_NewReaderFor_MultipleFilesSingleVolume(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
+// TestVolume_NewBackupReader_NoIssue tests that a new reader works with backup reader.
+func TestVolume_NewBackupReader_NoIssue(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("hidden files work different on Windows")
+	}
+
+	// Prepare writer
+	localData := bytes.NewBuffer(nil)
+	var localWriter io.Writer = localData
+
+	// Create GZIP writer
+	gzipWriter := gzip.NewWriter(localWriter)
+	_, err := gzipWriter.Write([]byte("foo bar"))
+	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
+
+	tc := newReaderTestCase(t)
+	tc.Slice.Encoding.Compression = compression.NewGZIPConfig()
+	tc.SliceData = localData.Bytes()
+	tc.WithBackup = true
+
+	r, err := tc.NewReader(false)
+	require.NoError(t, err)
+	assert.Len(t, tc.Volume.Readers(), 1)
+
+	assert.Equal(t, tc.Slice.SliceKey, r.SliceKey())
+
+	// Check logs
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(collect, `
+{"level":"info","message":"opening volume"}
+{"level":"info","message":"opened volume"}
+{"level":"debug","message":"moved hidden file \"%s.slice-my-node.csv\" to \"%s\"","volume.id":"my-volume","project.id":"123","branch.id":"456","source.id":"my-source","sink.id":"my-sink","file.id":"2000-01-01T19:00:00.000Z","slice.id":"2000-01-01T20:00:00.000Z"}
+{"level":"debug","message":"opened file","volume.id":"my-volume","file.path":"%sslice-my-node.csv","project.id":"123","branch.id":"456","source.id":"my-source","sink.id":"my-sink","file.id":"2000-01-01T19:00:00.000Z","slice.id":"2000-01-01T20:00:00.000Z"}
+	`)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	require.NoError(t, r.Close(t.Context()))
+
+	assert.Empty(t, tc.Volume.Readers())
+}
+
+// TestVolume_NewReader_CompressionIssue tests that a new reader with wrong compression works with backup reader.
+func TestVolume_NewBackupReader_CompressionIssue(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("hidden files work different on Windows")
+	}
+
+	// Prepare writer
+	localData := bytes.NewBuffer(nil)
+	var localWriter io.Writer = localData
+
+	// Write corrupted data
+	// Add GZIP header: magic numbers + method + flags + mtime + xfl + os
+	gzipHeader := []byte{0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	_, err := localWriter.Write(gzipHeader)
+	require.NoError(t, err)
+	_, err = localWriter.Write([]byte("foo bar"))
+	require.NoError(t, err)
+
+	tc := newReaderTestCase(t)
+	tc.SliceData = localData.Bytes()
+	tc.Slice.Encoding.Compression = compression.NewGZIPConfig()
+	tc.Slice.StagingStorage.Compression = compression.NewNoneConfig()
+	tc.WithBackup = true
+
+	_, err = tc.NewReader(false)
+	require.Error(t, err)
+
+	// Check logs
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(collect, `
+{"level":"info","message":"opening volume"}
+{"level":"info","message":"opened volume"}
+{"level":"error","message":"check of hidden file \"%s\" failed: cannot read hidden compressed file \"%s\": flate: corrupt input before offset 1"}
+`)
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
 // TestVolume_NewReaderFor_Compression tests multiple local and staging compression combinations.
 func TestVolume_NewReaderFor_Compression(t *testing.T) {
 	t.Parallel()
@@ -148,18 +231,27 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 			Name:               "GZIP_To_None",
 			LocalCompression:   compression.NewGZIPConfig(),
 			StagingCompression: compression.NewNoneConfig(),
+			UseBackupReader:    true,
 		},
 		{
 			Name:               "ZSTD_To_None",
 			LocalCompression:   compression.NewZSTDConfig(),
 			StagingCompression: compression.NewNoneConfig(),
 			DisableValidation:  true, // zstd is not currently considered valid
+			UseBackupReader:    true,
 		},
 		{
 			Name:               "ZSTD_To_GZIP",
 			LocalCompression:   compression.NewZSTDConfig(),
 			StagingCompression: compression.NewGZIPConfig(),
 			DisableValidation:  true, // zstd is not currently considered valid
+			UseBackupReader:    true,
+		},
+		{
+			Name:               "GZIP_To_None_Backup",
+			LocalCompression:   compression.NewGZIPConfig(),
+			StagingCompression: compression.NewNoneConfig(),
+			UseBackupReader:    true,
 		},
 	}
 
@@ -176,6 +268,7 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 
 type compressionTestCase struct {
 	Name               string
+	UseBackupReader    bool
 	LocalCompression   compression.Config
 	StagingCompression compression.Config
 	DisableValidation  bool
@@ -207,6 +300,7 @@ func (tc *compressionTestCase) TestOk(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
+	rtc.WithBackup = tc.UseBackupReader
 	rtc.SliceData = localData.Bytes()
 	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
@@ -262,6 +356,7 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
+	rtc.WithBackup = tc.UseBackupReader
 	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
@@ -273,14 +368,20 @@ func (tc *compressionTestCase) TestReadError(t *testing.T) {
 		return f, nil
 	})
 
-	// Create reader
+	// Create reader, which inspects the file when compressed
+	// Make sure that the file is compressed correctly
 	r, err := rtc.NewReader(tc.DisableValidation)
+	if rtc.WithBackup && err != nil {
+		require.Contains(t, err.Error(), readError.Error())
+		return
+	}
+
 	require.NoError(t, err)
 
 	// Read all
 	var buf bytes.Buffer
 	if _, err = r.WriteTo(&buf); assert.Error(t, err) {
-		assert.Equal(t, "some read error", err.Error())
+		assert.Contains(t, err.Error(), readError.Error())
 	}
 
 	// Close
@@ -313,6 +414,7 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 
 	// Setup slice
 	rtc := newReaderTestCase(t)
+	rtc.WithBackup = tc.UseBackupReader
 	rtc.Slice.Encoding.Compression = tc.LocalCompression
 	rtc.Slice.StagingStorage.Compression = tc.StagingCompression
 
@@ -324,8 +426,14 @@ func (tc *compressionTestCase) TestCloseError(t *testing.T) {
 		return f, nil
 	})
 
-	// Create reader
+	// Create reader, which inspects the file when compressed
+	// Make sure that the file is compressed correctly
 	r, err := rtc.NewReader(tc.DisableValidation)
+	if rtc.WithBackup && err != nil {
+		require.Contains(t, err.Error(), closeError.Error())
+		return
+	}
+
 	require.NoError(t, err)
 
 	// Read all
@@ -385,7 +493,11 @@ func (tc *readerTestCase) NewReader(disableValidation bool) (diskreader.Reader, 
 	// Write slice data
 	require.NoError(tc.TB, os.MkdirAll(tc.Slice.LocalStorage.DirName(tc.VolumePath), 0o750))
 	for _, file := range tc.Files {
-		require.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, file), tc.SliceData, 0o640))
+		if tc.WithBackup {
+			require.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileNameWithBackup(tc.VolumePath, file), tc.SliceData, 0o640))
+		} else {
+			require.NoError(tc.TB, os.WriteFile(tc.Slice.LocalStorage.FileName(tc.VolumePath, file), tc.SliceData, 0o640))
+		}
 	}
 
 	r, err := tc.Volume.OpenReader(tc.Slice.SliceKey, tc.Slice.LocalStorage, tc.Slice.Encoding.Compression, tc.Slice.StagingStorage.Compression)
@@ -399,6 +511,7 @@ func (tc *readerTestCase) NewReader(disableValidation bool) (diskreader.Reader, 
 // testFile provides implementation of the File interface for tests.
 type testFile struct {
 	reader     io.Reader
+	SeekError  error
 	ReadError  error
 	CloseError error
 }
@@ -413,6 +526,14 @@ func (r *testFile) Read(p []byte) (n int, err error) {
 		return 0, r.ReadError
 	}
 	return n, err
+}
+
+func (r *testFile) Seek(offset int64, whence int) (int64, error) {
+	if r.SeekError != nil {
+		return 0, r.SeekError
+	}
+
+	return 0, nil
 }
 
 func (r *testFile) Close() error {
