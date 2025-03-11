@@ -1,5 +1,5 @@
 # Build container
-FROM golang:1.24.0-alpine3.21 AS buildContainer
+FROM golang:1.24.1-alpine3.21 AS buildContainer
 # gcc and g++ are needed for CGO_ENABLED racer
 RUN apk add --update --no-cache bash make curl gcc g++ binutils-gold
 WORKDIR /app
