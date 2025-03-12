@@ -71,7 +71,6 @@ The `disasterRecovery` section of etcd helm chart needs nfs-provisioner:
 ```sh
 helm repo add stable https://charts.helm.sh/stable
 helm repo update
-helm install nfs-provisioner stable/nfs-server-provisioner
 ```
 
 If you need to debug or test something in a Kubernetes cluster, you can use local deployment using [MiniKube](https://minikube.sigs.k8s.io/docs/start/).

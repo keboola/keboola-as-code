@@ -64,6 +64,10 @@ if ! minikube status > /dev/null; then
   ./../common/scripts/minikube/start.sh
 fi
 
+# Enable nfs storage class, needed for etcd disasterRecovery
+# Ignore failure since it may already exist
+helm install nfs-provisioner stable/nfs-server-provisioner || true
+
 # Build Docker image in the local Docker, so it is cached, if Minikube is destroyed
 SERVICE_IMAGE="$STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG"
 echo
