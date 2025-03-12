@@ -135,6 +135,14 @@ defragmentation:
         memory: "64Mi"
       limits:
         memory: "64Mi"
+
+disasterRecovery:
+  enabled: true
+  pvc:
+    existingClaim: ""
+    size: 2Gi
+    storageClassName: nfs
+
 extraDeploy:
   # Defragmentation cron job definition
   - |-
