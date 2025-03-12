@@ -138,6 +138,8 @@ defragmentation:
 
 disasterRecovery:
   enabled: true
+  cronjob:
+    schedule: "*/3 * * * *"
   pvc:
     existingClaim: ""
     size: 2Gi
