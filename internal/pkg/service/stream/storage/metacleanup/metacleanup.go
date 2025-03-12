@@ -177,11 +177,11 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 			return n.storageRepository.File().ListRecentIn(sinkKey).ForEach(
 				func(file model.File, _ *iterator.Header) error {
 					// Get current position and increment counter for next file
-					currentPosition := counter
+					fileCount := counter
 					counter++
 
 					grp.Go(func() error {
-						err, deleted := n.cleanFile(ctx, file, currentPosition)
+						err, deleted := n.cleanFile(ctx, file, fileCount)
 						if deleted {
 							fileCounter.Add(1)
 						}
@@ -264,7 +264,7 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 	return grp.Wait()
 }
 
-func (n *Node) cleanFile(ctx context.Context, file model.File, fileIndex int) (err error, deleted bool) {
+func (n *Node) cleanFile(ctx context.Context, file model.File, fileCount int) (err error, deleted bool) {
 	// There can be several cleanup nodes, each node processes an own part.
 	if !n.dist.MustCheckIsOwner(file.ProjectID.String()) {
 		return nil, false
@@ -282,7 +282,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File, fileIndex int) (e
 
 	// Check if the file is expired
 	age := n.clock.Since(file.LastStateChange().Time())
-	if !n.isFileExpired(file, age, fileIndex) {
+	if !n.isFileExpired(file, age, fileCount) {
 		return nil, false
 	}
 
@@ -311,10 +311,10 @@ func (n *Node) cleanFile(ctx context.Context, file model.File, fileIndex int) (e
 }
 
 // isFileExpired returns true, if the file is expired and should be deleted.
-func (n *Node) isFileExpired(file model.File, age time.Duration, fileIndex int) bool {
+func (n *Node) isFileExpired(file model.File, age time.Duration, fileCount int) bool {
 	// Imported files are completed, so they expire sooner
 	if file.State == model.FileImported {
-		return age >= n.config.ArchivedFileExpiration && fileIndex > n.config.ArchivedFileRetentionPerSink
+		return age >= n.config.ArchivedFileExpiration && fileCount > n.config.ArchivedFileRetentionPerSink
 	}
 
 	// Other files have a longer expiration so there is time for retries.
