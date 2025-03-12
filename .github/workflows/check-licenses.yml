@@ -42,14 +42,18 @@ jobs:
       - name: Run license checker
         # Ignored:
         #    - github.com/eliukblau/pixterm, license detection failed (Reciprocal - MPL-2.0)
+        #    - github.com/bsm/redislock, license detection failed (Notice - Apache-2.0)
+        #    - github.com/jmespath/go-jmespath, license detection failed (Notice - Apache-2.0)
         run: |
-          go-licenses check ./... --disallowed_types forbidden,restricted,unknown \
-            --ignore github.com/eliukblau/pixterm
+          go tool go-licenses check ./... --disallowed_types forbidden,restricted,unknown \
+            --ignore github.com/eliukblau/pixterm \
+            --ignore github.com/bsm/redislock \
+            --ignore github.com/jmespath/go-jmespath
         shell: bash
 
       - name: Save licenses report
         if: always()
-        run: mkdir -p /tmp/go-licenses; go-licenses csv > /tmp/go-licenses/go-licenses.csv ./...
+        run: mkdir -p /tmp/go-licenses; go tool go-licenses csv > /tmp/go-licenses/go-licenses.csv ./...
         shell: bash
 
       - name: Upload artifacts

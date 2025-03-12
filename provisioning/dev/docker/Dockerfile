@@ -1,4 +1,4 @@
-FROM golang:1.24.0
+FROM golang:1.24.1
 
 ENV HOME=/my-home
 ENV GOCACHE=/tmp/cache/go
@@ -25,7 +25,6 @@ RUN chmod +x /usr/local/bin/toxiproxy-server
 RUN mkdir -p /tmp/build
 COPY Makefile /tmp/build/Makefile
 COPY scripts  /tmp/build/scripts
-RUN cd /tmp/build && make tools && cd / && rm -rf /tmp/build && go clean -cache -modcache
 
 # Install envsubstr and helm
 RUN curl -L https://github.com/a8m/envsubst/releases/download/v1.2.0/envsubst-$(uname -s)-$(uname -m) -o /usr/local/bin/envsubst && \

@@ -572,7 +572,7 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 		cfg.Encryption.Provider = encryption.ProviderAES
 		cfg.Encryption.AES.SecretKey = secretKey
 		// Enable metadata cleanup for removing storage jobs
-		cfg.Storage.MetadataCleanup.Enabled = true
+		cfg.Storage.MetadataCleanup.EnableJobCleanup = true
 		// Disable unrelated workers
 		cfg.Storage.DiskCleanup.Enabled = false
 		cfg.API.Task.CleanupEnabled = false
@@ -612,7 +612,7 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 		}
 
 		// Cleanup should be perfomed more frequently to remove already finished storage jobs
-		cfg.Storage.MetadataCleanup.Interval = 10 * time.Second
+		cfg.Storage.MetadataCleanup.JobCleanupInterval = 10 * time.Second
 	}
 
 	ts := setup(t)
