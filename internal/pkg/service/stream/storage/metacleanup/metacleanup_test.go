@@ -770,9 +770,9 @@ func TestMetadataCleanupRetainsOneArchivedFile(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, slices, 3)
 
-		// Process first two files (file1 and file2), set them to FileImported state
-		// The third file (file3) remains in FileWriting state
-		for i := range 2 {
+		// Process each file and corresponding slice, ensuring proper state transitions,
+		// except for the last file, which remains in the `FileWriting` state.
+		for i := range len(files) - 1 {
 			file := files[i]
 			slice := slices[i]
 			require.Equal(t, file.FileKey, slice.FileKey)
@@ -795,20 +795,7 @@ func TestMetadataCleanupRetainsOneArchivedFile(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, model.FileImported, file.State)
 		}
-	}
-	{
-		// Check database state
-		etcdhelper.AssertKeys(t, client, []string{
-			"storage/file/level/local/123/456/my-source/my-sink/2000-01-01T02:00:00.000Z",
-
-			"storage/file/level/target/123/456/my-source/my-sink/2000-01-01T00:00:00.000Z",
-			"storage/file/level/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z",
-
-			"storage/slice/level/local/123/456/my-source/my-sink/2000-01-01T02:00:00.000Z/my-volume-1/2000-01-01T02:00:00.000Z",
-
-			"storage/slice/level/target/123/456/my-source/my-sink/2000-01-01T00:00:00.000Z/my-volume-1/2000-01-01T00:00:00.000Z",
-			"storage/slice/level/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z",
-		}, ignoredEtcdKeys)
+		etcdhelper.AssertKeys(t, client, getExpectedKeys(files, slices), ignoredEtcdKeys)
 	}
 
 	// Delete imported files, they have shorten expiration
@@ -853,4 +840,36 @@ func TestMetadataCleanupRetainsOneArchivedFile(t *testing.T) {
 			"storage/slice/level/target/123/456/my-source/my-sink/2000-01-01T01:00:00.000Z/my-volume-1/2000-01-01T01:00:00.000Z",
 		}, ignoredEtcdKeys)
 	}
+}
+
+func getExpectedKeys(allFiles []model.File, allSlices []model.Slice) []string {
+	var expectedLocalFileKeys []string
+	var expectedTargetFileKeys []string
+	var expectedLocalSliceKeys []string
+	var expectedTargetSliceKeys []string
+
+	for i, file := range allFiles {
+		slice := allSlices[i]
+
+		if file.State == model.FileWriting {
+			expectedLocalFileKeys = append(expectedLocalFileKeys,
+				"storage/file/level/local/123/456/my-source/my-sink/"+file.FileKey.FileID.String())
+			expectedLocalSliceKeys = append(expectedLocalSliceKeys,
+				"storage/slice/level/local/123/456/my-source/my-sink/"+file.FileKey.FileID.String()+"/my-volume-1/"+slice.SliceKey.SliceID.String())
+		} else {
+			expectedTargetFileKeys = append(expectedTargetFileKeys,
+				"storage/file/level/target/123/456/my-source/my-sink/"+file.FileKey.FileID.String())
+			expectedTargetSliceKeys = append(expectedTargetSliceKeys,
+				"storage/slice/level/target/123/456/my-source/my-sink/"+file.FileKey.FileID.String()+"/my-volume-1/"+slice.SliceKey.SliceID.String())
+		}
+	}
+
+	var expectedKeys []string
+
+	expectedKeys = append(expectedKeys, expectedLocalFileKeys...)
+	expectedKeys = append(expectedKeys, expectedTargetFileKeys...)
+	expectedKeys = append(expectedKeys, expectedLocalSliceKeys...)
+	expectedKeys = append(expectedKeys, expectedTargetSliceKeys...)
+
+	return expectedKeys
 }

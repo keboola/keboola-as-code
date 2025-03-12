@@ -38,5 +38,5 @@ func (r *Repository) ListInState(parentKey fmt.Stringer, state model.FileState) 
 // ListRecentIn files in all storage levels in descending order.
 func (r *Repository) ListRecentIn(parentKey fmt.Stringer) iterator.DefinitionT[model.File] {
 	return r.schema.AllLevels().InObject(parentKey).
-		GetAll(r.client, iterator.WithSort(etcd.SortDescend), iterator.WithLimit(RecentFilesLimit))
+		GetAll(r.client, iterator.WithSort(etcd.SortDescend))
 }

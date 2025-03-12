@@ -18,7 +18,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
@@ -42,6 +44,7 @@ type dependencies interface {
 	DistributedLockProvider() *distlock.Provider
 	StorageRepository() *storageRepo.Repository
 	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
+	WatchTelemetryInterval() time.Duration
 }
 
 type Node struct {
@@ -55,6 +58,8 @@ type Node struct {
 	locks                   *distlock.Provider
 	storageRepository       *storageRepo.Repository
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
+	sinks                   *etcdop.MirrorMap[model.File, key.SinkKey, *sinkData]
+	watchTelemetryInterval  time.Duration
 }
 
 // cleanupEntity represents a periodic cleanup task.
@@ -64,6 +69,10 @@ type cleanupEntity struct {
 	enabled     bool
 	cleanupFunc func(context.Context) error
 	logger      log.Logger
+}
+
+type sinkData struct {
+	sinkKey key.SinkKey
 }
 
 func Start(d dependencies, cfg Config) error {
@@ -77,6 +86,7 @@ func Start(d dependencies, cfg Config) error {
 		publicAPI:               d.KeboolaPublicAPI(),
 		storageRepository:       d.StorageRepository(),
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
+		watchTelemetryInterval:  d.WatchTelemetryInterval(),
 	}
 
 	if dist, err := d.DistributionNode().Group("storage.metadata.cleanup"); err == nil {
@@ -97,6 +107,21 @@ func Start(d dependencies, cfg Config) error {
 		n.logger.Info(ctx, "shutdown done")
 	})
 
+	n.sinks = etcdop.SetupMirrorMap[model.File, key.SinkKey, *sinkData](
+		n.storageRepository.File().WatchAllFiles(ctx),
+		func(_ string, file model.File) key.SinkKey {
+			return file.FileKey.SinkKey
+		},
+		func(_ string, file model.File, rawValue *op.KeyValue, oldValue **sinkData) *sinkData {
+			return &sinkData{
+				file.SinkKey,
+			}
+		},
+	).BuildMirror()
+	if err := <-n.sinks.StartMirroring(ctx, wg, n.logger, n.telemetry, n.watchTelemetryInterval); err != nil {
+		n.logger.Errorf(ctx, "cannot start mirroring jobs: %s", err)
+		return err
+	}
 	// Define cleanup entities
 	entities := n.cleanupEntities()
 
@@ -158,19 +183,8 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 	// Error counter, we suppress the first few errors to not cancel all goroutines if just one fails.
 	var errCount atomic.Uint32
 
-	// Collect all sink keys
-	var sinkKeys []key.SinkKey
-	if err := n.storageRepository.File().ListAll().ForEach(
-		func(file model.File, _ *iterator.Header) error {
-			sinkKeys = append(sinkKeys, file.SinkKey)
-			return nil
-		}).Do(ctx).Err(); err != nil {
-		return err
-	}
-
 	// Process all sink keys
-	for _, sinkKey := range sinkKeys {
-		// Process each sink key in its own goroutine
+	n.sinks.ForEach(func(sinkKey key.SinkKey, _ *sinkData) (stop bool) {
 		grp.Go(func() error {
 			// Process files for this sink key
 			counter := 0
@@ -194,7 +208,8 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 					return nil
 				}).Do(ctx).Err()
 		})
-	}
+		return false
+	})
 
 	// Wait for all processing to complete
 	return grp.Wait()
