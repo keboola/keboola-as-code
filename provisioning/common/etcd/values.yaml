@@ -140,6 +140,8 @@ disasterRecovery:
   enabled: true
   cronjob:
     schedule: "*/3 * * * *"
+    podLabels:
+      stream-etcd-client: "true"
   pvc:
     existingClaim: ""
     size: 2Gi
