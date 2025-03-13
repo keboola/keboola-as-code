@@ -127,7 +127,7 @@ func (r *Repository) addStatisticsToAggregationResponse(ctx context.Context, res
 				}
 			}))
 
-			txn.Merge(r.storage.File().ListRecentIn(sinkKey).ForEach(func(value model.File, header *iterator.Header) error {
+			txn.Merge(r.storage.File().ListIn(sinkKey, iterator.WithSort(etcd.SortDescend)).ForEach(func(value model.File, header *iterator.Header) error {
 				sink.Statistics.Files = append(sink.Statistics.Files, &FileWithStatistics{
 					File: ptr.Ptr(value),
 				})
