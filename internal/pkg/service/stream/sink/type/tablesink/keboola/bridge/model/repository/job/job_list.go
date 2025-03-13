@@ -6,8 +6,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository/job/schema"
 )
 
-func (r *Repository) ListAll() iterator.DefinitionT[model.Job] {
-	return r.schema.GetAll(r.client)
+func (r *Repository) ListAll(opts ...iterator.Option) iterator.DefinitionT[model.Job] {
+	return r.schema.GetAll(r.client, opts...)
 }
 
 func (r *Repository) List(parentKey any, opts ...iterator.Option) iterator.DefinitionT[model.Job] {
