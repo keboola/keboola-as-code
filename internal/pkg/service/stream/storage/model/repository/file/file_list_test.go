@@ -156,7 +156,7 @@ func TestFileRepository_List(t *testing.T) {
 	}
 }
 
-func TestFileRepository_ListRecent(t *testing.T) {
+func TestFileRepository_ListIn(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
 
@@ -223,7 +223,7 @@ func TestFileRepository_ListRecent(t *testing.T) {
 		require.NoError(t, defRepo.Sink().Create(&sink2, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 
-	// ListRecentIn
+	// ListIn
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// List
