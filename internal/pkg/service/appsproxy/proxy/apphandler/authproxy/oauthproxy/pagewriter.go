@@ -95,7 +95,7 @@ func (pw *pageWriter) WriteErrorPage(w http.ResponseWriter, req *http.Request, o
 	// Log warning
 	pw.logger.Warn(req.Context(), strings.Join(messages, "\n")) //nolint:contextcheck // false positive
 
-	pw.pageWriter.WriteErrorPage(w, req, &pw.app, opts.Status, joinedMessage+opts.AppError, exceptionID)
+	pw.pageWriter.WriteErrorPage(w, req, &pw.app, opts.Status, joinedMessage+"\n"+opts.AppError, exceptionID)
 }
 
 func (pw *pageWriter) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, err error) {

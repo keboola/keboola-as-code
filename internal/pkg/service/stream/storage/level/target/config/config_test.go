@@ -33,6 +33,7 @@ func TestConfig_Validation(t *testing.T) {
 - "operator.fileCloseTimeout" is a required field
 - "operator.fileImportCheckInterval" is a required field
 - "operator.fileImportTimeout" is a required field
+- "import.maxSlices" is a required field
 - "import.minInterval" is a required field
 - "import.trigger.count" is a required field
 - "import.trigger.size" is a required field
@@ -48,7 +49,7 @@ func TestConfig_Validation(t *testing.T) {
 - "import.trigger.count" must be 10,000,000 or less
 - "import.trigger.size" must be 500MB or less
 - "import.trigger.interval" must be 24h0m0s or less
-- "import.trigger.slicesCount" must be 1,000 or less
+- "import.trigger.slicesCount" must be 200 or less
 - "import.trigger.expiration" must be 45m0s or less
 `,
 			Value: overMaximumCfg,

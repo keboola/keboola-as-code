@@ -295,6 +295,8 @@ storage:
                 # Timeout of the file import operation. Validation rules: required,minDuration=30s,maxDuration=60m
                 fileImportTimeout: 15m0s
             import:
+                # Max number of slices in a file before an import is triggered, takes precedence over other settings. Validation rules: required,min=100,max=200
+                maxSlices: 200
                 # Min duration from the last import to trigger the next, takes precedence over other settings. Validation rules: required,minDuration=30s,maxDuration=24h
                 minInterval: 1m0s
                 trigger:
@@ -304,7 +306,7 @@ storage:
                     size: 50MB
                     # Duration from the last import to trigger the next import. Validation rules: required,minDuration=30s,maxDuration=24h
                     interval: 1m0s
-                    # Number of slices in the file to trigger file import. Validation rules: required,min=1,max=1000
+                    # Number of slices in the file to trigger file import. Validation rules: required,min=1,max=200
                     slicesCount: 100
                     # Min remaining expiration to trigger file import. Validation rules: required,minDuration=5m,maxDuration=45m
                     expiration: 30m0s
@@ -635,7 +637,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "defaultValue": 100,
     "overwritten": false,
     "protected": true,
-    "validation": "required,min=1,max=1000"
+    "validation": "required,min=1,max=200"
   }
 ]
 `), strings.TrimSpace(json.MustEncodeString(kvs, true)))

@@ -30,6 +30,7 @@ func NewConfig() Config {
 			FileImportTimeout:         duration.From(15 * time.Minute),
 		},
 		Import: ImportConfig{
+			MaxSlices:   200,
 			MinInterval: duration.From(60 * time.Second),
 			Trigger: ImportTrigger{
 				Count:       50000,
@@ -52,6 +53,7 @@ type OperatorConfig struct {
 
 // ImportConfig configures the file import.
 type ImportConfig struct {
+	MaxSlices   uint64            `json:"maxSlices" configKey:"maxSlices" configUsage:"Max number of slices in a file before an import is triggered, takes precedence over other settings." validate:"required,min=100,max=200"`
 	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Min duration from the last import to trigger the next, takes precedence over other settings." validate:"required,minDuration=30s,maxDuration=24h"`
 	Trigger     ImportTrigger     `json:"trigger" configKey:"trigger"`
 }
@@ -67,7 +69,7 @@ type ImportTrigger struct {
 	Count       uint64            `json:"count" configKey:"count" configUsage:"Records count to trigger file import." modAllowed:"true" validate:"required,min=1,max=10000000"`
 	Size        datasize.ByteSize `json:"size" configKey:"size" configUsage:"Records size to trigger file import." modAllowed:"true" validate:"required,minBytes=100B,maxBytes=500MB"`
 	Interval    duration.Duration `json:"interval" configKey:"interval" configUsage:"Duration from the last import to trigger the next import." modAllowed:"true" validate:"required,minDuration=30s,maxDuration=24h"`
-	SlicesCount uint64            `json:"slicesCount" configKey:"slicesCount" configUsage:"Number of slices in the file to trigger file import." validate:"required,min=1,max=1000"`
+	SlicesCount uint64            `json:"slicesCount" configKey:"slicesCount" configUsage:"Number of slices in the file to trigger file import." validate:"required,min=1,max=200"`
 	Expiration  duration.Duration `json:"expiration" configKey:"expiration" configUsage:"Min remaining expiration to trigger file import." validate:"required,minDuration=5m,maxDuration=45m"`
 }
 

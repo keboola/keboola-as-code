@@ -21,6 +21,7 @@ const (
 	recordCountThreshold
 	sizeThreshold
 	timeThreshold
+	maxSlices
 )
 
 func newConditionResult(result int, message string) fileRotationConditionResult {
@@ -52,12 +53,20 @@ func (c fileRotationConditionResult) String() string {
 		return "size"
 	case timeThreshold:
 		return "time"
+	case maxSlices:
+		return "maxSlices"
 	default:
 		return "unknown"
 	}
 }
 
 func shouldImport(cfg targetConfig.ImportConfig, now, openedAt, expiration time.Time, stats statistics.Value) fileRotationConditionResult {
+	if threshold := cfg.MaxSlices; stats.SlicesCount >= threshold {
+		// Max slices take precedence over other settings.
+		// It is necessary in order to prevent issues with etcd txn operation limit.
+		return newConditionResult(maxSlices, fmt.Sprintf("max slices exceeded, slices count: %d, threshold: %d", stats.SlicesCount, threshold))
+	}
+
 	sinceOpened := now.Sub(openedAt).Truncate(time.Second)
 	if threshold := cfg.MinInterval.Duration(); sinceOpened < threshold {
 		// Min interval settings take precedence over other settings.
