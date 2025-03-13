@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -309,7 +310,7 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 		return nil, err
 	}
 
-	def := d.StorageRepository().File().ListRecentIn(d.SinkKey())
+	def := d.StorageRepository().File().ListIn(d.SinkKey(), iterator.WithSort(etcd.SortDescend))
 	if lastReset.ResetAt != nil {
 		def = def.WithFilter(func(v model.File) bool {
 			// Exclude files newer than last reset.

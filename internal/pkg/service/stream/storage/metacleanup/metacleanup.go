@@ -188,7 +188,7 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 		grp.Go(func() error {
 			// Process files for this sink key
 			counter := 0
-			return n.storageRepository.File().ListRecentIn(sinkKey).ForEach(
+			return n.storageRepository.File().ListIn(sinkKey, iterator.WithSort(etcd.SortDescend)).ForEach(
 				func(file model.File, _ *iterator.Header) error {
 					// Get current position and increment counter for next file
 					fileCount := counter
