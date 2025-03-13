@@ -92,7 +92,9 @@ helm upgrade \
   --set "resources.limits.memory=$STREAM_ETCD_MEMORY_HARD_LIMIT" \
   --set "resources.requests.cpu=$STREAM_ETCD_CPU_SOFT_LIMIT" \
   --set "extraEnvVars[3].name=GOMEMLIMIT" \
-  --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY_SOFT_LIMIT}B"
+  --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY_SOFT_LIMIT}B" \
+  --set "startFromSnapshot.enabled=$(if [ -z "${STREAM_ETCD_FROM_SNAPSHOT:-}" ]; then echo "false"; else echo "true"; fi)" \
+  --set "startFromSnapshot.snapshotFilename=${STREAM_ETCD_FROM_SNAPSHOT:-}"
 
 # Config
 kubectl apply -f ./kubernetes/deploy/config/config-map.yaml
