@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"sort"
@@ -86,9 +87,15 @@ func (m Mapper) TaskPayload(model task.Task) (r *Task, err error) {
 			}
 		}
 
-		if v, ok := model.Outputs["configId"].(string); ok {
+		// Handle configId from preserved JSON number
+		if configIDNum, ok := model.Outputs["configId"].(json.Number); ok {
+			configID, err := configIDNum.Int64()
+			if err != nil {
+				return nil, errors.Errorf("invalid configId value: %w", err)
+			}
+			configIDUint := uint64(configID)
 			out.Outputs = &TaskOutputs{
-				ConfigID: &v,
+				ConfigID: &configIDUint,
 			}
 		}
 	}

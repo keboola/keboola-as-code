@@ -2154,7 +2154,7 @@ func marshalTemplatesTaskOutputsToTaskOutputsResponseBody(v *templates.TaskOutpu
 		res.InstanceID = &instanceID
 	}
 	if v.ConfigID != nil {
-		configID := string(*v.ConfigID)
+		configID := uint64(*v.ConfigID)
 		res.ConfigID = &configID
 	}
 

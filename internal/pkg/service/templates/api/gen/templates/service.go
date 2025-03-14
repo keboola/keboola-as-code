@@ -114,7 +114,7 @@ type Config struct {
 }
 
 // Config ID of the configuration created by preview.
-type ConfigID = string
+type ConfigID = uint64
 
 // DeleteInstancePayload is the payload type of the templates service
 // DeleteInstance method.
