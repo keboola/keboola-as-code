@@ -22,6 +22,9 @@ func (m *Mapper) NewSinkEntity(parent key.SourceKey, payload *api.CreateSinkPayl
 	} else {
 		entity.SinkID = key.SinkID(strhelper.NormalizeName(string(*payload.SinkID)))
 	}
+	if entity.SinkID == "" {
+		return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`"sinkId" must not be empty`))
+	}
 
 	// Name
 	entity.Name = payload.Name

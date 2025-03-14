@@ -20,6 +20,9 @@ func (m *Mapper) NewSourceEntity(parent key.BranchKey, payload *api.CreateSource
 	} else {
 		entity.SourceID = key.SourceID(strhelper.NormalizeName(string(*payload.SourceID)))
 	}
+	if entity.SourceID == "" {
+		return definition.Source{}, svcerrors.NewBadRequestError(errors.Errorf(`"sourceId" must not be empty`))
+	}
 
 	// Name
 	entity.Name = payload.Name
