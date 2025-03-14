@@ -42,7 +42,7 @@ func NewJSON(validate ValidateFn) *Serde {
 			return json.EncodeString(value, false)
 		},
 		func(ctx context.Context, data []byte, target any) error {
-			return json.Decode(data, target)
+			return json.DecodePreserveNumber(data, target)
 		},
 		validate,
 	)

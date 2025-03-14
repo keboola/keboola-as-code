@@ -68,6 +68,16 @@ func MustDecodeString(data string, m any) {
 	}
 }
 
+// DecodePreserveNumber decodes JSON data while preserving number types instead of converting all numbers to float64
+func DecodePreserveNumber(data []byte, m any) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	if err := decoder.Decode(m); err != nil {
+		return processJSONDecodeError(data, err)
+	}
+	return nil
+}
+
 func ConvertByJSON(input, target any) error {
 	data, err := Encode(input, false)
 	if err != nil {
