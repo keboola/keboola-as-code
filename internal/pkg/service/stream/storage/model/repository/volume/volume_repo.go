@@ -74,13 +74,13 @@ func (r *Repository) AssignVolumes(cfg assignment.Config, fileOpenedAt time.Time
 }
 
 // ListWriterVolumes lists volumes opened by writers.
-func (r *Repository) ListWriterVolumes() iterator.DefinitionT[volume.Metadata] {
-	return r.schema.WriterVolumes().GetAll(r.client)
+func (r *Repository) ListWriterVolumes(opts ...iterator.Option) iterator.DefinitionT[volume.Metadata] {
+	return r.schema.WriterVolumes().GetAll(r.client, opts...)
 }
 
 // ListReaderVolumes lists volumes opened by readers.
-func (r *Repository) ListReaderVolumes() iterator.DefinitionT[volume.Metadata] {
-	return r.schema.ReaderVolumes().GetAll(r.client)
+func (r *Repository) ListReaderVolumes(opts ...iterator.Option) iterator.DefinitionT[volume.Metadata] {
+	return r.schema.ReaderVolumes().GetAll(r.client, opts...)
 }
 
 // RegisterWriterVolume registers an active volume on a writer node, lease ensures automatic un-registration in case of node failure.

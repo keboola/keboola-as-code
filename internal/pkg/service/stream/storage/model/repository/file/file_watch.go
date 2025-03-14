@@ -12,3 +12,7 @@ import (
 func (r *Repository) GetAllInLevelAndWatch(ctx context.Context, level storage.Level, opts ...etcd.OpOption) *etcdop.RestartableWatchStreamT[storage.File] {
 	return r.schema.InLevel(level).GetAllAndWatch(ctx, r.client, opts...)
 }
+
+func (r *Repository) WatchAllFiles(ctx context.Context, opts ...etcd.OpOption) *etcdop.RestartableWatchStreamT[storage.File] {
+	return r.schema.AllLevels().GetAllAndWatch(ctx, r.client, opts...)
+}

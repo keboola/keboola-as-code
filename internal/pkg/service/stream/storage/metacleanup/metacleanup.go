@@ -18,8 +18,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
@@ -41,6 +44,7 @@ type dependencies interface {
 	DistributedLockProvider() *distlock.Provider
 	StorageRepository() *storageRepo.Repository
 	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
+	WatchTelemetryInterval() time.Duration
 }
 
 type Node struct {
@@ -54,6 +58,8 @@ type Node struct {
 	locks                   *distlock.Provider
 	storageRepository       *storageRepo.Repository
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
+	sinks                   *etcdop.MirrorMap[model.File, key.SinkKey, *sinkData]
+	watchTelemetryInterval  time.Duration
 }
 
 // cleanupEntity represents a periodic cleanup task.
@@ -63,6 +69,10 @@ type cleanupEntity struct {
 	enabled     bool
 	cleanupFunc func(context.Context) error
 	logger      log.Logger
+}
+
+type sinkData struct {
+	sinkKey key.SinkKey
 }
 
 func Start(d dependencies, cfg Config) error {
@@ -76,6 +86,7 @@ func Start(d dependencies, cfg Config) error {
 		publicAPI:               d.KeboolaPublicAPI(),
 		storageRepository:       d.StorageRepository(),
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
+		watchTelemetryInterval:  d.WatchTelemetryInterval(),
 	}
 
 	if dist, err := d.DistributionNode().Group("storage.metadata.cleanup"); err == nil {
@@ -96,6 +107,21 @@ func Start(d dependencies, cfg Config) error {
 		n.logger.Info(ctx, "shutdown done")
 	})
 
+	n.sinks = etcdop.SetupMirrorMap[model.File, key.SinkKey, *sinkData](
+		n.storageRepository.File().WatchAllFiles(ctx),
+		func(_ string, file model.File) key.SinkKey {
+			return file.FileKey.SinkKey
+		},
+		func(_ string, file model.File, rawValue *op.KeyValue, oldValue **sinkData) *sinkData {
+			return &sinkData{
+				file.SinkKey,
+			}
+		},
+	).BuildMirror()
+	if err := <-n.sinks.StartMirroring(ctx, wg, n.logger, n.telemetry, n.watchTelemetryInterval); err != nil {
+		n.logger.Errorf(ctx, "cannot start mirroring jobs: %s", err)
+		return err
+	}
 	// Define cleanup entities
 	entities := n.cleanupEntities()
 
@@ -157,31 +183,35 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 	// Error counter, we suppress the first few errors to not cancel all goroutines if just one fails.
 	var errCount atomic.Uint32
 
-	// Iterate all files
-	err = n.storageRepository.
-		File().
-		ListAll().
-		ForEach(func(file model.File, _ *iterator.Header) error {
-			grp.Go(func() error {
-				err, deleted := n.cleanFile(ctx, file)
-				if deleted {
-					fileCounter.Add(1)
-				}
+	// Process all sink keys
+	n.sinks.ForEach(func(sinkKey key.SinkKey, _ *sinkData) (stop bool) {
+		grp.Go(func() error {
+			// Process files for this sink key
+			counter := 0
+			return n.storageRepository.File().ListIn(sinkKey, iterator.WithSort(etcd.SortDescend)).ForEach(
+				func(file model.File, _ *iterator.Header) error {
+					// Get current position and increment counter for next file
+					fileCount := counter
+					counter++
 
-				if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
-					return err
-				}
-				return nil
-			})
-			return nil
-		}).
-		Do(ctx).
-		Err()
-		// Handle iterator error
-	if err != nil {
-		return err
-	}
+					grp.Go(func() error {
+						err, deleted := n.cleanFile(ctx, file, fileCount)
+						if deleted {
+							fileCounter.Add(1)
+						}
 
+						if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
+							return err
+						}
+						return nil
+					})
+					return nil
+				}).Do(ctx).Err()
+		})
+		return false
+	})
+
+	// Wait for all processing to complete
 	return grp.Wait()
 }
 
@@ -249,7 +279,7 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 	return grp.Wait()
 }
 
-func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, deleted bool) {
+func (n *Node) cleanFile(ctx context.Context, file model.File, fileCount int) (err error, deleted bool) {
 	// There can be several cleanup nodes, each node processes an own part.
 	if !n.dist.MustCheckIsOwner(file.ProjectID.String()) {
 		return nil, false
@@ -267,7 +297,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 
 	// Check if the file is expired
 	age := n.clock.Since(file.LastStateChange().Time())
-	if !n.isFileExpired(file, age) {
+	if !n.isFileExpired(file, age, fileCount) {
 		return nil, false
 	}
 
@@ -296,10 +326,10 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 }
 
 // isFileExpired returns true, if the file is expired and should be deleted.
-func (n *Node) isFileExpired(file model.File, age time.Duration) bool {
+func (n *Node) isFileExpired(file model.File, age time.Duration, fileCount int) bool {
 	// Imported files are completed, so they expire sooner
 	if file.State == model.FileImported {
-		return age >= n.config.ArchivedFileExpiration
+		return age >= n.config.ArchivedFileExpiration && fileCount > n.config.ArchivedFileRetentionPerSink
 	}
 
 	// Other files have a longer expiration so there is time for retries.

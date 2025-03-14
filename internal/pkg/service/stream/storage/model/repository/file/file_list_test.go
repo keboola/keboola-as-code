@@ -10,10 +10,12 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
@@ -154,7 +156,7 @@ func TestFileRepository_List(t *testing.T) {
 	}
 }
 
-func TestFileRepository_ListRecent(t *testing.T) {
+func TestFileRepository_ListIn(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
 
@@ -193,10 +195,10 @@ func TestFileRepository_ListRecent(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// List - empty
-		files, err := fileRepo.ListRecentIn(projectID).Do(ctx).AllKVs()
+		files, err := fileRepo.ListIn(projectID, iterator.WithSort(etcd.SortDescend)).Do(ctx).AllKVs()
 		require.NoError(t, err)
 		assert.Empty(t, files)
-		files, err = fileRepo.ListRecentIn(sinkKey1).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sinkKey1, iterator.WithSort(etcd.SortDescend)).Do(ctx).AllKVs()
 		require.NoError(t, err)
 		assert.Empty(t, files)
 	}
@@ -221,23 +223,23 @@ func TestFileRepository_ListRecent(t *testing.T) {
 		require.NoError(t, defRepo.Sink().Create(&sink2, clk.Now(), by, "Create sink").Do(ctx).Err())
 	}
 
-	// ListRecentIn
+	// ListIn
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		// List
-		files, err := fileRepo.ListRecentIn(projectID).Do(ctx).AllKVs()
+		files, err := fileRepo.ListIn(projectID, iterator.WithSort(etcd.SortDescend)).Do(ctx).AllKVs()
 		require.NoError(t, err)
 		assert.Len(t, files, 2)
-		files, err = fileRepo.ListRecentIn(branchKey).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(branchKey, iterator.WithSort(etcd.SortDescend)).Do(ctx).AllKVs()
 		require.NoError(t, err)
 		assert.Len(t, files, 2)
-		files, err = fileRepo.ListRecentIn(sourceKey).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sourceKey, iterator.WithSort(etcd.SortDescend)).Do(ctx).AllKVs()
 		require.NoError(t, err)
 		assert.Len(t, files, 2)
-		files, err = fileRepo.ListRecentIn(sinkKey1).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sinkKey1, iterator.WithSort(etcd.SortDescend)).Do(ctx).AllKVs()
 		require.NoError(t, err)
 		assert.Len(t, files, 1)
-		files, err = fileRepo.ListRecentIn(sinkKey2).Do(ctx).AllKVs()
+		files, err = fileRepo.ListIn(sinkKey2, iterator.WithSort(etcd.SortDescend)).Do(ctx).AllKVs()
 		require.NoError(t, err)
 		assert.Len(t, files, 1)
 	}
