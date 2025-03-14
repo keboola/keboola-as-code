@@ -102,6 +102,8 @@ echo "--------------------------"
 # Local specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/cloud/local/service-api.yaml
 kubectl apply -f ./kubernetes/deploy/cloud/local/service-http-source.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/local/secret-infra.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/local/serviceaccount.yaml
 
 # Wait for the deployment
 . ./wait.sh

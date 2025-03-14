@@ -80,4 +80,6 @@ elif [[ "$CLOUD_PROVIDER" == "local" ]]; then
   mkdir deploy/cloud/local
   envsubst < templates/cloud/local/service-api.yaml > deploy/cloud/local/service-api.yaml
   envsubst < templates/cloud/local/service-http-source.yaml > deploy/cloud/local/service-http-source.yaml
+  envsubst < templates/cloud/local/secret-infra.yaml > deploy/cloud/local/secret-infra.yaml
+  envsubst < templates/cloud/local/serviceaccount.yaml > deploy/cloud/local/serviceaccount.yaml
 fi
