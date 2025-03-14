@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -118,7 +119,7 @@ type TemplatePlan struct {
 
 type Result struct {
 	InstanceID string
-	ConfigID   string
+	ConfigID   uint64
 	Warnings   []string
 }
 
@@ -217,7 +218,12 @@ func PrepareTemplate(ctx context.Context, d dependencies, o ExtendedOptions) (pl
 			}
 
 			// Save config ID
-			configID := objectState.ObjectID()
+			strConfigID := objectState.ObjectID()
+			configID, err := strconv.ParseUint(strConfigID, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
 			if plan.result == nil {
 				plan.result = &Result{ConfigID: configID}
 			}
