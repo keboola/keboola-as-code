@@ -4,6 +4,7 @@ package metacleanup
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -213,8 +214,9 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 		ForEach(func(job keboolaBridgeModel.Job, _ *iterator.Header) error {
 			grp.Go(func() error {
 				// There can be several cleanup nodes, each node processes an own part.
-				if !n.dist.MustCheckIsOwner(job.ProjectID.String()) {
-					return nil
+				if _, err := n.dist.IsOwner(job.ProjectID.String()); err != nil {
+					fmt.Println("not owner job cleanup", job.ProjectID.String(), err)
+					return err
 				}
 
 				// Log/trace job details
@@ -251,8 +253,9 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 
 func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, deleted bool) {
 	// There can be several cleanup nodes, each node processes an own part.
-	if !n.dist.MustCheckIsOwner(file.ProjectID.String()) {
-		return nil, false
+	if _, err := n.dist.IsOwner(file.ProjectID.String()); err != nil {
+		fmt.Println("not owner file", file.ProjectID.String(), err)
+		return err, false
 	}
 
 	// Log/trace file details
@@ -274,6 +277,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, delet
 	// Acquire lock
 	mutex := n.locks.NewMutex(file.FileKey.String())
 	if err = mutex.TryLock(ctx, "CleanFile"); err != nil {
+		n.logger.Errorf(ctx, "cannot lock the file: %s", err)
 		return err, false
 	}
 	defer func() {

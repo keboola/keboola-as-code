@@ -715,7 +715,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 		writerSyncHelper:  helper,
 		Ctx:               ctx,
 		Logger:            mock.DebugLogger(),
-		Clock:             clk,
+		Clock:             clockwork.NewFakeClock(),
 		Telemetry:         d.Telemetry(),
 		ConnectionManager: d.ConnectionManager(),
 		Output:            newDummyOutput(),
