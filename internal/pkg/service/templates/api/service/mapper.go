@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ccoveille/go-safecast"
 	"github.com/spf13/cast"
 
 	templatesDesign "github.com/keboola/keboola-as-code/api/templates"
@@ -93,7 +94,12 @@ func (m Mapper) TaskPayload(model task.Task) (r *Task, err error) {
 			if err != nil {
 				return nil, errors.Errorf("invalid configId value: %w", err)
 			}
-			configIDUint := uint64(configID)
+
+			configIDUint, err := safecast.ToUint64(configID)
+			if err != nil {
+				return nil, errors.Errorf("invalid configId value: %w", err)
+			}
+
 			out.Outputs = &TaskOutputs{
 				ConfigID: &configIDUint,
 			}
