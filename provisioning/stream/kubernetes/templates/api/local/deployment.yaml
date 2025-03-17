@@ -43,8 +43,8 @@ spec:
       containers:
         - name: stream-api
           image: $STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG
-          command: [ "/app/service" ]
-          args: [ "--config-file", "/stream/config/config.yaml", "api" ] # run API component
+          command: ["/app/service"]
+          args: ["--config-file", "/stream/config/config.yaml", "api"] # run API component
           resources:
             requests:
               cpu: "$STREAM_API_CPU_SOFT_LIMIT"
