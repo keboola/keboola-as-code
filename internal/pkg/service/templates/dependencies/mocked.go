@@ -26,7 +26,7 @@ import (
 func NewMockedAPIScope(tb testing.TB, ctx context.Context, cfg config.Config, opts ...dependencies.MockedOption) (APIScope, dependencies.Mocked) {
 	tb.Helper()
 
-	opts = append(opts, dependencies.WithEnabledEtcdClient())
+	opts = append(opts, dependencies.WithEnabledEtcdClient(), dependencies.WithEtcdSerdeUsingJSONNumbers())
 	mock := dependencies.NewMocked(tb, ctx, opts...)
 
 	var err error
