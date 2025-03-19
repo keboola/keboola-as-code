@@ -95,7 +95,8 @@ jobs:
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
 
-      - name: Validate OpenAPI3 definition
-        uses: swaggerexpert/swagger-editor-validate@v1
-        with:
-          definition-file: internal/pkg/service/templates/api/openapi/openapi3.yaml
+      - name: Install OpenAPI Validator
+        run: npm install -g @apidevtools/swagger-cli
+
+      - name: Validate OpenAPI Definition
+        run: swagger-cli validate internal/pkg/service/templates/api/openapi/openapi3.yaml
