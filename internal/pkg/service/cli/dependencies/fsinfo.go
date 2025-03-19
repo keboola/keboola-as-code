@@ -44,7 +44,7 @@ func (v DirNotFoundError) Found() DirType {
 }
 
 func (v DirNotFoundError) Error() string {
-	return fmt.Sprintf("directory \"%s\" it not %s, found %s", v.path, v.expected, v.found)
+	return fmt.Sprintf("directory \"%s\" is not %s, found %s", v.path, v.expected, v.found)
 }
 
 type DirNotEmptyError struct {
@@ -53,7 +53,7 @@ type DirNotEmptyError struct {
 }
 
 func (v DirNotEmptyError) Error() string {
-	return fmt.Sprintf("directory \"%s\" it not empty", v.path)
+	return fmt.Sprintf("directory \"%s\" is not empty", v.path)
 }
 
 // WriteError print an example of the found files to the output.

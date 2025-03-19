@@ -1,4 +1,4 @@
 Error:
-- Directory "%s" it not empty, found:
+- Directory "%s" is not empty, found:
   - bar
   - foo.txt
