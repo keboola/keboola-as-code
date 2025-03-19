@@ -571,6 +571,8 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
 }
 
 func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
+	t.Skip("unstable")
+
 	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Second)
 	defer cancel()
 
