@@ -362,6 +362,16 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	// Empty file import can be skipped in the import implementation.
 	err = o.plugins.ImportFile(ctx, file.File, stats.Staging)
 	if err != nil {
+		// Record metric for failed file imports
+		if file.Retry.RetryAttempt < 4 {
+			counter := o.metrics.FileImportFailed
+			attrs := append(
+				file.FileKey.SinkKey.Telemetry(),
+				attribute.String("operation", "fileimport"),
+			)
+			counter.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+
 		return stats.Staging, errors.PrefixError(err, "file import failed")
 	}
 
