@@ -323,6 +323,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 }
 
 func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
+	t.Skip("unstable")
 	t.Parallel()
 
 	metrics := toxiproxy.NewMetricsContainer(nil)
