@@ -17,7 +17,7 @@ aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
 # Common part of the deploy
 export ETCD_STORAGE_CLASS_NAME="etcd-gp3"
-export CLOUD_ENCRYPTION_PROVIDER="aws"
+export CLOUD_ENCRYPTION_PROVIDER="none"
 . ./common.sh
 
 # AWS specific part of the deploy
