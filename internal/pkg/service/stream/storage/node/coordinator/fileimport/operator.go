@@ -363,13 +363,12 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	err = o.plugins.ImportFile(ctx, file.File, stats.Staging)
 	if err != nil {
 		// Record metric for failed file imports
-		if file.Retry.RetryAttempt < 4 {
-			attrs := append(
-				file.FileKey.SinkKey.Telemetry(),
-				attribute.String("operation", "fileimport"),
-			)
-			o.metrics.FileImportFailed.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
+		attrs := append(
+			file.FileKey.SinkKey.Telemetry(),
+			attribute.String("operation", "fileimport"),
+		)
+
+		o.metrics.FileImportFailed.Record(ctx, int64(file.Retry.RetryAttempt), metric.WithAttributes(attrs...))
 
 		return stats.Staging, errors.PrefixError(err, "file import failed")
 	}
