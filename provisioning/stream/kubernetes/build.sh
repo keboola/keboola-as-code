@@ -23,25 +23,25 @@ envsubst < templates/config/config-map.yaml       > deploy/config/config-map.yam
 mkdir deploy/api
 envsubst < templates/api/pdb.yaml                 > deploy/api/pdb.yaml
 envsubst < templates/api/network-policy.yaml      > deploy/api/network-policy.yaml
-envsubst < templates/api/deployment.yaml          > deploy/api/deployment.yaml
+envsubst < templates/api/$CLOUD_PROVIDER/deployment.yaml > deploy/api/deployment.yaml
 
 # HTTP source
 mkdir deploy/http-source
 envsubst < templates/http-source/pdb.yaml                 > deploy/http-source/pdb.yaml
 envsubst < templates/http-source/network-policy.yaml      > deploy/http-source/network-policy.yaml
-envsubst < templates/http-source/deployment.yaml          > deploy/http-source/deployment.yaml
+envsubst < templates/http-source/$CLOUD_PROVIDER/deployment.yaml > deploy/http-source/deployment.yaml
 
 # Storage writer/reader
 mkdir deploy/storage-writer-reader
 envsubst < templates/storage-writer-reader/network-policy.yaml  > deploy/storage-writer-reader/network-policy.yaml
-envsubst < templates/storage-writer-reader/statefulset.yaml     > deploy/storage-writer-reader/statefulset.yaml
+envsubst < templates/storage-writer-reader/$CLOUD_PROVIDER/statefulset.yaml > deploy/storage-writer-reader/statefulset.yaml
 envsubst < templates/storage-writer-reader/service.yaml         > deploy/storage-writer-reader/service.yaml
 
 # Storage coordinator
 mkdir deploy/storage-coordinator
 envsubst < templates/storage-coordinator/pdb.yaml                 > deploy/storage-coordinator/pdb.yaml
 envsubst < templates/storage-coordinator/network-policy.yaml      > deploy/storage-coordinator/network-policy.yaml
-envsubst < templates/storage-coordinator/deployment.yaml          > deploy/storage-coordinator/deployment.yaml
+envsubst < templates/storage-coordinator/$CLOUD_PROVIDER/deployment.yaml > deploy/storage-coordinator/deployment.yaml
 
 # Remove resources requests/limits to fit all pods to the CI environment
 REMOVE_RESOURCES_LIMITS="${REMOVE_RESOURCES_LIMITS:=false}"
