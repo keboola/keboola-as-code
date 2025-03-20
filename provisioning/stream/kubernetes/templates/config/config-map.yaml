@@ -298,7 +298,7 @@ data:
               expiration: 30m0s
     encryption:
       # Encryption provider. Validation rules: required,oneof=none aes gcp aws azure
-      provider: "$STREAM_ENCRYPTION_PROVIDER"
+      provider: "$CLOUD_ENCRYPTION_PROVIDER"
       aes:
         # Secret key for local encryption. Do not use in production.
         secretKey: ""
