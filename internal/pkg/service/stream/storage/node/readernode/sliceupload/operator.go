@@ -330,6 +330,13 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 	// Empty slice upload can be skipped in the upload implementation.
 	err = o.plugins.UploadSlice(ctx, volume, slice.Slice, stats.Local)
 	if err != nil {
+		// Record metric for failed slice uploads
+		attrs := append(
+			slice.SliceKey.SinkKey.Telemetry(),
+			attribute.String("operation", "sliceupload"),
+		)
+		o.metrics.SliceUploadFailed.Record(ctx, int64(slice.Retry.RetryAttempt), metric.WithAttributes(attrs...))
+
 		return stats.Local, errors.PrefixError(err, "slice upload failed")
 	}
 
