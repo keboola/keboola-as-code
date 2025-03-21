@@ -379,7 +379,7 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
 			},
 		}
 
-		// Cleanup should be perfomed more frequently to remove already finished storage jobs
+		// Cleanup should be performed more frequently to remove already finished storage jobs
 		cfg.Storage.MetadataCleanup.FileCleanupInterval = 10 * time.Second
 	}
 

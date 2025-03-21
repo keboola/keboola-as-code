@@ -209,6 +209,12 @@ func WithMockedDNSPort(port int) MockedOption {
 	}
 }
 
+func WithEtcdSerdeUsingJSONNumbers() MockedOption {
+	return func(c *MockedConfig) {
+		c.etcdConfig.JSONNumbers = true
+	}
+}
+
 func newMockedConfig(tb testing.TB, opts []MockedOption) *MockedConfig {
 	tb.Helper()
 
