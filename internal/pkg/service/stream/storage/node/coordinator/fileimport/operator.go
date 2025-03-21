@@ -378,8 +378,10 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	defer dbCancel()
 
 	// Switch file to the imported state
-	err = o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx).Err()
+	result := o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx)
+	err = result.Err()
 	if err != nil {
+		o.logger.Infof(ctx, `Switch file "%s" to imported state used %d operations`, file.FileKey.String(), result.MaxOps())
 		return stats.Staging, errors.PrefixError(err, "cannot switch file to the imported state")
 	}
 
