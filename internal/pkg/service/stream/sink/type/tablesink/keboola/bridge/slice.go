@@ -44,6 +44,9 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	token, err := existingToken.DecryptToken(ctx, b.tokenEncryptor, metadata)
 	if err != nil {
 		b.logger.Errorf(ctx, "cannot decrypt token: %s", err)
+		if existingToken.Token == nil {
+			return errors.Wrap(err, "token decryption failed and unencrypted token is missing")
+		}
 		token = *existingToken.Token
 	}
 
