@@ -16,6 +16,7 @@ spec:
     metadata:
       labels:
         app: stream-http-source
+        aadpodidbinding: "$KEBOOLA_STACK-stream-identity"
         releaseId: $RELEASE_ID
         stream-etcd-client: "true"
         tags.datadoghq.com/env: "$KEBOOLA_STACK"
