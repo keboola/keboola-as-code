@@ -475,8 +475,10 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	// Switch file to the importing state, if the waitForFileClosing has been successful
 	if err == nil {
 		isEmpty := stats.Total.RecordsCount == 0
-		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), isEmpty).RequireLock(lock).Do(dbCtx).Err()
+		result := o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), isEmpty).RequireLock(lock).Do(dbCtx)
+		err = result.Err()
 		if err != nil {
+			o.logger.Infof(ctx, `Switch file "%s" to importing state used %d operations`, file.FileKey.String(), result.MaxOps())
 			err = errors.PrefixError(err, "cannot switch file to the importing state")
 		}
 	}
