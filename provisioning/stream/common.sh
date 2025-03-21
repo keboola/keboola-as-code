@@ -76,6 +76,8 @@ kubectl apply -f ./kubernetes/deploy/namespace.yaml
 
 # Get etcd root password, if it is already present
 export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "$NAMESPACE" stream-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
+# Override default txn ops
+export STREAM_ETCD_MAX_TXN_OPS="${STREAM_ETCD_MAX_TXN_OPS:=1024}"
 
 # Deploy etcd cluster
 helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
@@ -92,7 +94,9 @@ helm upgrade \
   --set "resources.limits.memory=$STREAM_ETCD_MEMORY_HARD_LIMIT" \
   --set "resources.requests.cpu=$STREAM_ETCD_CPU_SOFT_LIMIT" \
   --set "extraEnvVars[3].name=GOMEMLIMIT" \
-  --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY_SOFT_LIMIT}B"
+  --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY_SOFT_LIMIT}B" \
+  --set "extraEnvVars[4].name=ETCD_MAX_TXN_OPS" \
+  --set-string "extraEnvVars[4].value=${STREAM_ETCD_MAX_TXN_OPS}"
 
 # Config
 kubectl apply -f ./kubernetes/deploy/config/config-map.yaml
