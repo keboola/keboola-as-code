@@ -20,9 +20,8 @@ func LockFile(ctx context.Context, locks *distlock.Provider, logger log.Logger, 
 	ctx = ctxattr.ContextWith(ctx, attribute.String("lock.key", key))
 
 	lock = locks.NewMutex(key)
+	logger.Infof(ctx, "acquiring lock %q", lock.Key())
 	if err := lock.Lock(ctx); err != nil {
-		logger.Warnf(ctx, "cannot acquire lock: %s", err)
-
 		return nil, nil, errors.PrefixErrorf(err, "cannot acquire lock %q:", lock.Key())
 	}
 

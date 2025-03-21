@@ -94,6 +94,8 @@ spec:
                   fieldPath: metadata.labels['tags.datadoghq.com/version']
             - name: OTEL_METRICS_EXEMPLAR_FILTER
               value: always_off
+            - name: STREAM_SOURCE_HTTP_MAX_BODY_SIZE_REQUEST
+              value: "1MB"
           startupProbe:
             httpGet:
               path: /health-check

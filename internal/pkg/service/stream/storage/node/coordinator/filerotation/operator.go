@@ -3,6 +3,7 @@ package filerotation
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -385,19 +386,6 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 
 	defer unlock()
 
-	// Skip filerotation if target provider is throttled
-	if !o.plugins.CanAcceptNewFile(ctx, file.Provider, file.FileKey.SinkKey) {
-		o.logger.Warnf(ctx, "skipping file rotation: sink is throttled")
-		// Increment retry delay
-		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), "sink is throttled").RequireLock(lock).Do(ctx).Err()
-		if rErr != nil {
-			o.logger.Errorf(ctx, "cannot increment file rotation retry attempt: %s", rErr)
-			return
-		}
-
-		return
-	}
-
 	// Log cause
 	o.logger.Infof(ctx, "rotating file, import conditions met: %s", result.Cause())
 
@@ -469,6 +457,8 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration(), errors.New("file close timeout"))
 	defer cancel()
 
+	d, ok := ctx.Deadline()
+	fmt.Println("context wait", d, ok, ctx.Err())
 	// Wait for all slices upload, get statistics
 	stats, err := o.waitForFileClosing(ctx, file)
 
@@ -476,6 +466,8 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("switch to importing timeout"))
 	defer dbCancel()
 
+	d, ok = ctx.Deadline()
+	fmt.Println("context lockfile wait", d, ok, ctx.Err())
 	// Lock all file operations
 	lock, unlock, lockErr := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
 	if lockErr != nil {
