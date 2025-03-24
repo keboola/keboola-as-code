@@ -3,7 +3,6 @@ package remote
 import (
 	"context"
 	"sort"
-	"sync"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-client/pkg/request"
@@ -17,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type Manager struct {
@@ -29,7 +29,7 @@ type Manager struct {
 type UnitOfWork struct {
 	*Manager
 	ctx               context.Context
-	lock              *sync.Mutex
+	lock              *deadlock.Mutex
 	changeDescription string                 // change description used for all modified configs and rows
 	runGroups         *orderedmap.OrderedMap // separated run group for changes in branches, configs and rows
 	changes           *model.RemoteChanges
@@ -59,7 +59,7 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 	return &UnitOfWork{
 		Manager:           m,
 		ctx:               ctx,
-		lock:              &sync.Mutex{},
+		lock:              &deadlock.Mutex{},
 		changeDescription: changeDescription,
 		runGroups:         orderedmap.New(),
 		changes:           model.NewRemoteChanges(),
@@ -71,9 +71,9 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	branches := make(map[model.BranchKey]*model.Branch)
 	configs := make([]*model.ConfigWithRows, 0)
-	configsLock := &sync.Mutex{}
+	configsLock := &deadlock.Mutex{}
 	configsMetadata := make(map[model.ConfigKey]keboola.Metadata)
-	configsMetadataLock := &sync.Mutex{}
+	configsMetadataLock := &deadlock.Mutex{}
 
 	req := u.keboolaProjectAPI.
 		ListBranchesRequest().

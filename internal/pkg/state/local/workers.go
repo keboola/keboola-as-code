@@ -9,6 +9,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const MaxLocalWorkers = 32
@@ -19,7 +20,7 @@ type Workers struct {
 	semaphore *semaphore.Weighted
 	group     *errgroup.Group
 	workerNum *atomic.Int64
-	lock      *sync.Mutex
+	lock      *deadlock.Mutex
 	errors    map[int64]error
 	invoked   bool
 }
@@ -32,7 +33,7 @@ func NewWorkers(parentCtx context.Context) *Workers {
 		semaphore: semaphore.NewWeighted(MaxLocalWorkers),
 		workerNum: atomic.NewInt64(0),
 		group:     group,
-		lock:      &sync.Mutex{},
+		lock:      &deadlock.Mutex{},
 		errors:    make(map[int64]error),
 	}
 	w.started.Add(1) // block all until Invoke called

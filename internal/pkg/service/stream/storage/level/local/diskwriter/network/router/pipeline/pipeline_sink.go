@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 	"strings"
-	"sync"
+
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // SinkPipeline receives records for the sink and routes them to the nested slice pipelines using the balancer.Balancer.
@@ -30,10 +31,10 @@ type SinkPipeline struct {
 	balancer    balancer.Balancer
 	onClose     func(ctx context.Context, cause string)
 
-	updateLock sync.Mutex
+	updateLock deadlock.Mutex
 	collection *Collection[model.SliceKey, *SlicePipeline]
 
-	writeLock sync.RWMutex
+	writeLock deadlock.RWMutex
 	pipelines []balancer.SlicePipeline
 
 	closed chan struct{}

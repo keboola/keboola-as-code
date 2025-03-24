@@ -36,6 +36,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Pipeline processes record values using the configured Encoder and compression.
@@ -77,7 +78,7 @@ type pipeline struct {
 	logger    log.Logger
 	sliceKey  model.SliceKey
 	events    *events.Events[Pipeline]
-	flushLock sync.RWMutex
+	flushLock deadlock.RWMutex
 
 	encoder      encoder.Encoder
 	chain        *writechain.Chain
@@ -89,7 +90,7 @@ type pipeline struct {
 	network      rpc.NetworkOutput
 	closeFunc    func(ctx context.Context, cause string)
 
-	readyLock sync.RWMutex
+	readyLock deadlock.RWMutex
 	ready     bool
 
 	// closed blocks new writes

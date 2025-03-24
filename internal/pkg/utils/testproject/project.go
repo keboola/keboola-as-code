@@ -26,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type Project struct {
@@ -36,7 +37,7 @@ type Project struct {
 	keboolaProjectAPI *keboola.AuthorizedAPI
 	defaultBranch     *keboola.Branch
 	envs              *env.Map
-	mapsLock          *sync.Mutex
+	mapsLock          *deadlock.Mutex
 	stateFilePath     string
 	branchesByID      map[keboola.BranchID]*keboola.Branch
 	branchesByName    map[string]*keboola.Branch
@@ -74,7 +75,7 @@ func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (
 	}
 
 	ctx, cancelFn := context.WithCancelCause(context.Background()) // nolint: contextcheck
-	p := &Project{Project: project, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
+	p := &Project{Project: project, initStartedAt: time.Now(), ctx: ctx, mapsLock: &deadlock.Mutex{}}
 	p.logf("□ Initializing project...")
 
 	cleanupFn := func() {

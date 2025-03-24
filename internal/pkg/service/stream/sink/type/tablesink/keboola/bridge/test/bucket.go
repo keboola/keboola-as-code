@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
+
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -13,11 +13,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 func MockBucketStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) {
 	tb.Helper()
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 
 	// Get bucket - not found
 	checkedBuckets := make(map[keboola.BucketKey]bool)

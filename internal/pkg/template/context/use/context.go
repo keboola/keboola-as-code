@@ -1,10 +1,11 @@
+package
+
 // Package use represents the process of replacing of values when applying a template.
-package use
+use
 
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	jsonnetLib "github.com/google/go-jsonnet"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -22,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Context represents the process of the replacing values when applying a template.
@@ -59,7 +61,7 @@ type Context struct {
 	ticketsResolved   bool
 	projectBackends   []string
 
-	lock          *sync.Mutex
+	lock          *deadlock.Mutex
 	placeholders  PlaceholdersMap
 	objectIds     metadata.ObjectIdsMap
 	inputsUsage   *metadata.InputsUsage
@@ -107,7 +109,7 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		inputsValues:    make(map[string]template.InputValue),
 		tickets:         tickets,
 		components:      components,
-		lock:            &sync.Mutex{},
+		lock:            &deadlock.Mutex{},
 		placeholders:    make(PlaceholdersMap),
 		objectIds:       make(metadata.ObjectIdsMap),
 		inputsUsage:     metadata.NewInputsUsage(),

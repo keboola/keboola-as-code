@@ -21,6 +21,7 @@ import (
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -53,7 +54,7 @@ type Volume struct {
 	drained       *atomic.Bool
 	drainFilePath string
 
-	writersLock *sync.Mutex
+	writersLock *deadlock.Mutex
 	writers     map[writerKey]*writerRef
 }
 
@@ -78,7 +79,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clockwork.Clock, c
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
 		drainFilePath: filepath.Join(spec.Path, DrainFile),
-		writersLock:   &sync.Mutex{},
+		writersLock:   &deadlock.Mutex{},
 		writers:       make(map[writerKey]*writerRef),
 	}
 

@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -1064,7 +1065,7 @@ type writerTestCase struct {
 type testChain struct {
 	Logger     log.DebugLogger
 	Buffer     bytes.Buffer
-	SyncLock   *sync.Mutex
+	SyncLock   *deadlock.Mutex
 	WriteError error
 	FlushError error
 	SyncError  error
@@ -1141,7 +1142,7 @@ func newWriterTestCase(tb testing.TB) *writerTestCase {
 		Clock:  clockwork.NewFakeClock(),
 		Chain: &testChain{
 			Logger:   logger,
-			SyncLock: &sync.Mutex{},
+			SyncLock: &deadlock.Mutex{},
 		},
 		Config: config,
 	}

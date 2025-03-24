@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/memory"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // MirrorMap [T,K, V] is an in memory Go map filled via the etcd Watch API from a RestartableWatchStream[T].
@@ -33,12 +34,12 @@ type MirrorMap[T any, K comparable, V any] struct {
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[K, V])
 
-	updatedLock sync.RWMutex
+	updatedLock deadlock.RWMutex
 	updated     chan struct{}
 
-	mapLock      sync.RWMutex
+	mapLock      deadlock.RWMutex
 	mapData      map[K]V
-	revisionLock sync.RWMutex
+	revisionLock deadlock.RWMutex
 	revision     int64
 }
 

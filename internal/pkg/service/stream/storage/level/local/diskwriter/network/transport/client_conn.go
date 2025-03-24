@@ -13,6 +13,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type ClientConnection struct {
@@ -24,7 +25,7 @@ type ClientConnection struct {
 	remoteNodeID string
 	remoteAddr   string
 
-	lock      sync.Mutex
+	lock      deadlock.Mutex
 	sess      *yamux.Session
 	lastError error
 	streams   map[uint32]*ClientStream

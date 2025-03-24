@@ -1,5 +1,7 @@
+package
+
 // nolint forbidigo
-package testhelper
+testhelper
 
 import (
 	"bytes"
@@ -10,13 +12,13 @@ import (
 	"path"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/acarl005/stripansi"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type EnvProvider interface {
@@ -113,14 +115,14 @@ func ReplaceEnvsDir(ctx context.Context, fs filesystem.Fs, root string, provider
 
 // stripAnsiWriter strips ANSI characters from
 type stripAnsiWriter struct {
-	lock   *sync.Mutex
+	lock   *deadlock.Mutex
 	buf    *bytes.Buffer
 	writer io.Writer
 }
 
 func newStripAnsiWriter(writer io.Writer) *stripAnsiWriter {
 	return &stripAnsiWriter{
-		lock:   &sync.Mutex{},
+		lock:   &deadlock.Mutex{},
 		buf:    &bytes.Buffer{},
 		writer: writer,
 	}

@@ -2,12 +2,13 @@ package etcdop
 
 import (
 	"context"
-	"sync"
+
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type RestartableWatchStream[T any] interface {
@@ -19,7 +20,7 @@ type RestartableWatchStream[T any] interface {
 // RestartableWatchStreamRaw is restarted on a fatal error, or manually by the Restart method.
 type RestartableWatchStreamRaw struct {
 	WatchStreamE[WatchEvent[[]byte]]
-	lock *sync.Mutex
+	lock *deadlock.Mutex
 	sub  *WatchStreamE[WatchEvent[[]byte]]
 }
 
@@ -46,7 +47,7 @@ func (s *RestartableWatchStreamRaw) SetupConsumer() WatchConsumerSetup[[]byte] {
 func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.Context) *WatchStreamRaw) *RestartableWatchStreamRaw {
 	b := backoff.WithContext(newWatchBackoff(), ctx)
 	ctx, cancel := context.WithCancelCause(ctx)
-	stream := &RestartableWatchStreamRaw{WatchStreamE: WatchStreamRaw{channel: make(chan WatchResponseRaw), cancel: cancel}, lock: &sync.Mutex{}}
+	stream := &RestartableWatchStreamRaw{WatchStreamE: WatchStreamRaw{channel: make(chan WatchResponseRaw), cancel: cancel}, lock: &deadlock.Mutex{}}
 	go func() {
 		defer close(stream.channel)
 		defer cancel(context.Canceled)

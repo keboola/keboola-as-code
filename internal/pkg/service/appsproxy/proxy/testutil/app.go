@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"sync"
+
 	"testing"
 	"time"
 
@@ -17,6 +17,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type AppServer struct {
@@ -27,7 +28,7 @@ type AppServer struct {
 func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 	t.Helper()
 
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 	var requests []*http.Request
 
 	mux := http.NewServeMux()

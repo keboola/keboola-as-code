@@ -20,6 +20,7 @@ import (
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -42,7 +43,7 @@ type Volume struct {
 
 	fsLock *flock.Flock
 
-	readersLock *sync.Mutex
+	readersLock *deadlock.Mutex
 	readers     map[string]*readerRef
 }
 
@@ -62,7 +63,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clockwork.Clock, c
 		logger:       logger,
 		clock:        clock,
 		readerEvents: readerEvents.Clone(), // clone events passed from volumes collection, so volume specific listeners can be added
-		readersLock:  &sync.Mutex{},
+		readersLock:  &deadlock.Mutex{},
 		readers:      make(map[string]*readerRef),
 	}
 

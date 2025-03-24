@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -26,7 +27,7 @@ type CoordinatorNode struct {
 	// revision reported by source nodes
 	revisions *etcdop.MirrorMap[int64, string, int64]
 
-	listenersLock sync.Mutex
+	listenersLock deadlock.Mutex
 	listenerID    int
 	listeners     map[int]*listener
 }

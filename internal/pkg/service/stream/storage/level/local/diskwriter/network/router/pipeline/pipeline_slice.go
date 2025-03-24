@@ -20,6 +20,7 @@ import (
 	storage "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // SlicePipeline is part of the SinkPipeline, it consists from an slice pipeline with a rpc networkFile at the end.
@@ -36,7 +37,7 @@ type SlicePipeline struct {
 	cancel context.CancelCauseFunc
 	wg     sync.WaitGroup
 
-	lock     sync.RWMutex
+	lock     deadlock.RWMutex
 	pipeline encoding.Pipeline
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Listener listens for distribution changes, when a node is added or removed.
@@ -24,7 +25,7 @@ type Listener struct {
 
 type listeners struct {
 	config         Config
-	lock           *sync.Mutex
+	lock           *deadlock.Mutex
 	bufferedEvents Events
 	listeners      map[listenerID]*Listener
 }
@@ -36,7 +37,7 @@ func newListeners(ctx context.Context, wg *sync.WaitGroup, cfg Config, logger lo
 
 	v := &listeners{
 		config:    cfg,
-		lock:      &sync.Mutex{},
+		lock:      &deadlock.Mutex{},
 		listeners: make(map[listenerID]*Listener),
 	}
 

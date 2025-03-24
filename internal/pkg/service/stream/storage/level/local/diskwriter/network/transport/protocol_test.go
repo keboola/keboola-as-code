@@ -7,7 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"sync"
+
 	"testing"
 	"time"
 
@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/transport"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 func testTransportSmallData(t *testing.T, transportFactory func(cfg network.Config) transport.Protocol) {
@@ -46,7 +47,7 @@ func testTransportSmallData(t *testing.T, transportFactory func(cfg network.Conf
 	addr := srv.Addr().String()
 
 	// Stream server handler
-	var receivedLock sync.Mutex
+	var receivedLock deadlock.Mutex
 	var received []string
 	receivedDone := make(chan struct{}, 2)
 	go func() {

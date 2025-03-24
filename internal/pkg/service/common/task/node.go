@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -59,7 +60,7 @@ type Node struct {
 	tasksCount *atomic.Int64
 
 	taskEtcdPrefix etcdop.PrefixT[Task]
-	taskLocksMutex *sync.Mutex
+	taskLocksMutex *deadlock.Mutex
 	taskLocks      map[string]bool
 
 	exceptionIDPrefix string
@@ -100,7 +101,7 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, cfg NodeCo
 		config:            cfg,
 		tasksCount:        atomic.NewInt64(0),
 		taskEtcdPrefix:    newTaskPrefix(d.EtcdSerde()),
-		taskLocksMutex:    &sync.Mutex{},
+		taskLocksMutex:    &deadlock.Mutex{},
 		taskLocks:         make(map[string]bool),
 		exceptionIDPrefix: exceptionIDPrefix,
 	}

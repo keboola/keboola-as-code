@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type Client struct {
@@ -21,7 +22,7 @@ type Client struct {
 
 	closed chan struct{}
 
-	lock        sync.RWMutex
+	lock        deadlock.RWMutex
 	connections map[string]*ClientConnection
 }
 

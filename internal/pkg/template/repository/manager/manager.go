@@ -35,6 +35,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	checkoutOp "github.com/keboola/keboola-as-code/pkg/lib/operation/repository/checkout"
 	loadRepositoryOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/repository/load"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Manager provides CachedRepository and templates for Templates API requests.
@@ -51,7 +52,7 @@ type Manager struct {
 
 	repositories     map[string]*CachedRepository
 	repositoriesInit *singleflight.Group // each template is load only once
-	repositoriesLock *sync.RWMutex       // provides atomic access to the repositories field
+	repositoriesLock *deadlock.RWMutex   // provides atomic access to the repositories field
 }
 
 type dependencies interface {
@@ -70,7 +71,7 @@ func New(ctx context.Context, d dependencies, defaultRepositories []model.Templa
 		defaultRepositories: defaultRepositories,
 		repositories:        make(map[string]*CachedRepository),
 		repositoriesInit:    &singleflight.Group{},
-		repositoriesLock:    &sync.RWMutex{},
+		repositoriesLock:    &deadlock.RWMutex{},
 	}
 
 	// Free all repositories on server shutdown

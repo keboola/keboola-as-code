@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -39,7 +40,7 @@ type Router struct {
 	definitions *definitionRepo.Repository
 	collection  *collection
 
-	lock      sync.RWMutex
+	lock      deadlock.RWMutex
 	pipelines map[key.SinkKey]*pipelineRef
 
 	// closed channel block new writer during shutdown
@@ -170,7 +171,7 @@ func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context)
 	}
 
 	// Write to sinks in parallel
-	var lock sync.Mutex
+	var lock deadlock.Mutex
 	var wg sync.WaitGroup
 	for _, sourceKey := range sources {
 		r.wg.Add(1)
@@ -218,7 +219,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	}
 
 	// Write to sinks in parallel
-	var lock sync.Mutex
+	var lock deadlock.Mutex
 	var wg sync.WaitGroup
 	for _, sink := range source.sinks {
 		if !sink.enabled {

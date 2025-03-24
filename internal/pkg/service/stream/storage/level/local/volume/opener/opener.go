@@ -23,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	volume "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/volume/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Opener opens volume reader or writer instance of the V type on a local node.
@@ -33,7 +34,7 @@ type Opener[V volume.Volume] func(spec volume.Spec) (V, error)
 func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, volumesPath string, opener Opener[V]) (*volume.Collection[V], error) {
 	logger.With(attribute.String("volumes.path", volumesPath)).Infof(ctx, "searching for volumes in volumes path")
 
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 	errs := errors.NewMultiError()
 	wg := &sync.WaitGroup{}
 

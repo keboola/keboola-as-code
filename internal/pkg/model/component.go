@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
+
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -12,12 +12,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const ComponentsUpdateTimeout = 20 * time.Second
 
 type ComponentsProvider struct {
-	updateLock       *sync.RWMutex
+	updateLock       *deadlock.RWMutex
 	logger           log.Logger
 	keboolaPublicAPI *keboola.PublicAPI
 	value            *ComponentsMap
@@ -25,7 +26,7 @@ type ComponentsProvider struct {
 
 func NewComponentsProvider(index *keboola.IndexComponents, logger log.Logger, keboolaPublicAPI *keboola.PublicAPI) *ComponentsProvider {
 	return &ComponentsProvider{
-		updateLock:       &sync.RWMutex{},
+		updateLock:       &deadlock.RWMutex{},
 		logger:           logger,
 		keboolaPublicAPI: keboolaPublicAPI,
 		value:            NewComponentsMap(index.Components),
@@ -77,7 +78,7 @@ type (
 		components                  keboola.Components
 		defaultBucketsByComponentID map[keboola.ComponentID]string
 		defaultBucketsByPrefix      map[string]keboola.ComponentID
-		usedLock                    *sync.Mutex
+		usedLock                    *deadlock.Mutex
 		used                        map[keboola.ComponentID]bool
 	}
 )
@@ -89,7 +90,7 @@ func NewComponentsMap(components keboola.Components) *ComponentsMap {
 		defaultBucketsByComponentID: make(map[keboola.ComponentID]string),
 		defaultBucketsByPrefix:      make(map[string]keboola.ComponentID),
 		used:                        make(map[keboola.ComponentID]bool),
-		usedLock:                    &sync.Mutex{},
+		usedLock:                    &deadlock.Mutex{},
 	}
 
 	// Init aux maps

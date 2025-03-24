@@ -1,10 +1,12 @@
+package
+
 // Package wakeup sends wakeup requests for an app, if the proxy received a request for the app, but the app does not run.
 // The first request is sent immediately, the next after the Interval, otherwise the request is skipped.
-package wakeup
+wakeup
 
 import (
 	"context"
-	"sync"
+
 	"time"
 
 	"github.com/jonboulle/clockwork"
@@ -12,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Interval sets how often the proxy sends wakeup request to sandboxes service.
@@ -29,7 +32,7 @@ type Manager struct {
 }
 
 type state struct {
-	lock             *sync.Mutex
+	lock             *deadlock.Mutex
 	nextRequestAfter time.Time
 }
 
@@ -45,7 +48,7 @@ func NewManager(d dependencies) *Manager {
 		logger: d.Logger(),
 		api:    d.AppsAPI(),
 		stateMap: syncmap.New[api.AppID, state](func(api.AppID) *state {
-			return &state{lock: &sync.Mutex{}}
+			return &state{lock: &deadlock.Mutex{}}
 		}),
 	}
 }

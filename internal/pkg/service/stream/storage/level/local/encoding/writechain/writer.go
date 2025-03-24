@@ -1,8 +1,8 @@
 package writechain
 
 import (
+	"github.com/sasha-s/go-deadlock"
 	"io"
-	"sync"
 )
 
 // safeWriter add locks to an io.Writer.
@@ -10,13 +10,13 @@ import (
 type safeWriter struct {
 	w io.Writer
 	// lock synchronizes calls of the Write and Flush methods.
-	lock *sync.Mutex
+	lock *deadlock.Mutex
 }
 
 func newSafeWriter(w io.Writer) *safeWriter {
 	return &safeWriter{
 		w:    w,
-		lock: &sync.Mutex{},
+		lock: &deadlock.Mutex{},
 	}
 }
 

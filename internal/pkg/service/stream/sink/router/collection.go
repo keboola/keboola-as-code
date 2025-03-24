@@ -1,14 +1,13 @@
 package router
 
 import (
-	"sync"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type collection struct {
-	lock    sync.RWMutex
+	lock    deadlock.RWMutex
 	sources map[key.SourceKey]*sourceData
 }
 

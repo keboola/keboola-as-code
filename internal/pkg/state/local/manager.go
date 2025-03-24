@@ -3,7 +3,6 @@ package local
 import (
 	"context"
 	"sort"
-	"sync"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
@@ -16,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type Manager struct {
@@ -38,7 +38,7 @@ type UnitOfWork struct {
 	changes         *model.LocalChanges
 	invoked         bool
 
-	lock    *sync.Mutex
+	lock    *deadlock.Mutex
 	workers *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
 }
 
@@ -78,7 +78,7 @@ func (m *Manager) NewUnitOfWork(ctx context.Context) *UnitOfWork {
 		errors:       errors.NewMultiError(),
 		localObjects: m.state.LocalObjects(),
 		changes:      model.NewLocalChanges(),
-		lock:         &sync.Mutex{},
+		lock:         &deadlock.Mutex{},
 		workers:      orderedmap.New(),
 	}
 	return u

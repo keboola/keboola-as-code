@@ -1,11 +1,13 @@
+package
+
 // Package appconfig provides application configuration loading with cache and expiration handling.
-package appconfig
+appconfig
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
+
 	"time"
 
 	"github.com/jonboulle/clockwork"
@@ -16,6 +18,7 @@ import (
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // staleCacheFallbackDuration is the maximum duration for which the old configuration of an application is used if loading new configuration is not possible.
@@ -34,7 +37,7 @@ type loader struct {
 }
 
 type cachedAppProxyConfig struct {
-	lock      *sync.Mutex
+	lock      *deadlock.Mutex
 	config    api.AppConfig
 	expiresAt time.Time
 }
@@ -53,7 +56,7 @@ func NewLoader(d dependencies) Loader {
 		api:       d.AppsAPI(),
 		telemetry: d.Telemetry(),
 		cache: syncmap.New[api.AppID, cachedAppProxyConfig](func(api.AppID) *cachedAppProxyConfig {
-			return &cachedAppProxyConfig{lock: &sync.Mutex{}}
+			return &cachedAppProxyConfig{lock: &deadlock.Mutex{}}
 		}),
 	}
 }

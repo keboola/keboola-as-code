@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Manager opens and closes encoding pipelines.
@@ -26,7 +27,7 @@ type Manager struct {
 	clock  clockwork.Clock
 	events *events.Events[Pipeline]
 
-	pipelinesLock *sync.Mutex
+	pipelinesLock *deadlock.Mutex
 	pipelines     map[string]*pipelineRef
 }
 
@@ -45,7 +46,7 @@ func NewManager(d dependencies) *Manager {
 		logger:        d.Logger(),
 		clock:         d.Clock(),
 		events:        events.New[Pipeline](),
-		pipelinesLock: &sync.Mutex{},
+		pipelinesLock: &deadlock.Mutex{},
 		pipelines:     make(map[string]*pipelineRef),
 	}
 

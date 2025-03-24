@@ -2,7 +2,6 @@ package datadog
 
 import (
 	"context"
-	"sync"
 
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/trace"
@@ -11,11 +10,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type wrappedDDTracerProvider struct {
 	*ddotel.TracerProvider
-	lock    *sync.Mutex
+	lock    *deadlock.Mutex
 	tracers map[string]trace.Tracer
 }
 
@@ -24,7 +24,7 @@ func NewTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...ddTr
 	opts = append(opts, ddTracer.WithLogger(NewDDLogger(logger)))
 	tp := &wrappedDDTracerProvider{
 		TracerProvider: ddotel.NewTracerProvider(opts...),
-		lock:           &sync.Mutex{},
+		lock:           &deadlock.Mutex{},
 		tracers:        make(map[string]trace.Tracer),
 	}
 	proc.OnShutdown(func(ctx context.Context) {

@@ -9,12 +9,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Collection for SinkPipeline and SlicePipeline types.
 type Collection[K comparable, P pipeline[K]] struct {
 	logger    log.Logger
-	lock      sync.RWMutex
+	lock      deadlock.RWMutex
 	pipelines map[K]P
 	onUpdate  []func(context.Context, *Collection[K, P])
 	onEmpty   []func(context.Context, *Collection[K, P])

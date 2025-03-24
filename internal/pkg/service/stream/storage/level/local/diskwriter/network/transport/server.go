@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type Server struct {
@@ -28,10 +29,10 @@ type Server struct {
 	listenWg  sync.WaitGroup
 	streamsWg sync.WaitGroup
 
-	closeLock sync.Mutex
+	closeLock deadlock.Mutex
 	closed    chan struct{}
 
-	lock     sync.Mutex
+	lock     deadlock.Mutex
 	sessions map[string]*yamux.Session
 	streams  map[string]*ServerStream
 }

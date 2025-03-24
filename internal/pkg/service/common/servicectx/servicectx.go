@@ -11,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -40,7 +41,7 @@ type Process struct {
 	done chan struct{}
 
 	// lock synchronizes Add, OnShutdown and Shutdown methods, so these methods are atomic.
-	lock *sync.Mutex
+	lock *deadlock.Mutex
 	// onShutdown is a list of shutdown callbacks invoked in LIFO order.
 	onShutdown []OnShutdownFn
 	// terminating is closed by the Shutdown method.
@@ -90,7 +91,7 @@ func New(opts ...Option) *Process {
 		logger:      c.logger,
 		wg:          &sync.WaitGroup{},
 		done:        make(chan struct{}),
-		lock:        &sync.Mutex{},
+		lock:        &deadlock.Mutex{},
 		terminating: make(chan struct{}),
 	}
 

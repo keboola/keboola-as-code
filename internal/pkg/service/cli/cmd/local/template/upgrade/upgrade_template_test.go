@@ -1,7 +1,6 @@
 package upgrade
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -16,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -125,7 +125,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 	// Interaction
-	wg := sync.WaitGroup{}
+	wg := deadlock.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Collector collects writers statistics and saves them to the database.
@@ -26,8 +27,8 @@ type Collector struct {
 	nodeID     string
 	wg         *sync.WaitGroup
 
-	syncLock    *sync.Mutex
-	writersLock *sync.Mutex
+	syncLock    *deadlock.Mutex
+	writersLock *deadlock.Mutex
 	writers     map[model.SliceKey]*writerSnapshot
 }
 
@@ -59,8 +60,8 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 		config:      config,
 		nodeID:      nodeID,
 		wg:          &sync.WaitGroup{},
-		syncLock:    &sync.Mutex{},
-		writersLock: &sync.Mutex{},
+		syncLock:    &deadlock.Mutex{},
+		writersLock: &deadlock.Mutex{},
 		writers:     make(map[model.SliceKey]*writerSnapshot),
 	}
 

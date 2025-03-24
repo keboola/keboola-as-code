@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/memory"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // MirrorTree [T,V] is an in memory AtomicTree filled via the etcd Watch API from a RestartableWatchStream[T].
@@ -35,11 +36,11 @@ type MirrorTree[T any, V any] struct {
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[string, V])
 
-	updatedLock sync.RWMutex
+	updatedLock deadlock.RWMutex
 	updated     chan struct{}
 
 	tree         *prefixtree.AtomicTree[V]
-	revisionLock sync.RWMutex
+	revisionLock deadlock.RWMutex
 	revision     int64
 }
 

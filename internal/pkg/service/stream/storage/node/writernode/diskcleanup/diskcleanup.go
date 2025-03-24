@@ -29,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/slice"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type Node struct {
@@ -160,7 +161,7 @@ func (n *Node) cleanDisk(ctx context.Context) (err error) {
 	}
 
 	// We have to later remove empty parent dirs
-	var parentDirsLock sync.Mutex
+	var parentDirsLock deadlock.Mutex
 	parentDirsMap := make(map[string]bool)
 
 	// Remove dirs present only on the disk, not in DB

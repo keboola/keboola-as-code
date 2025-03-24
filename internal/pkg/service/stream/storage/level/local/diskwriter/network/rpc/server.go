@@ -23,6 +23,7 @@ import (
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type NetworkFileServer struct {
@@ -35,7 +36,7 @@ type NetworkFileServer struct {
 
 	terminating chan struct{}
 
-	lock      sync.Mutex
+	lock      deadlock.Mutex
 	idCounter uint64
 	writers   map[uint64]diskwriter.Writer
 }

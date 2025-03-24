@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type dependencies interface {
@@ -42,7 +43,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 		wg:             &sync.WaitGroup{},
 		err:            errors.NewMultiError(),
 		remaining:      map[string]bool{},
-		remainingMutex: &sync.Mutex{},
+		remainingMutex: &deadlock.Mutex{},
 		done:           make(chan struct{}),
 	}
 
@@ -85,7 +86,7 @@ type JobQueue struct {
 	err errors.MultiError
 
 	remaining      map[string]bool
-	remainingMutex *sync.Mutex
+	remainingMutex *deadlock.Mutex
 
 	done chan struct{}
 }

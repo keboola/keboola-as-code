@@ -1,10 +1,12 @@
+package
+
 // Package notify provides notifications that the app is actively used. This prevents the app from sleeping.
 // The first notification is sent immediately, the next after the interval, otherwise the notification is skipped.
-package notify
+notify
 
 import (
 	"context"
-	"sync"
+
 	"time"
 
 	"github.com/jonboulle/clockwork"
@@ -12,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Interval sets how often the proxy sends notifications to sandboxes service.
@@ -26,7 +29,7 @@ type Manager struct {
 }
 
 type state struct {
-	lock                  *sync.Mutex
+	lock                  *deadlock.Mutex
 	nextNotificationAfter time.Time
 }
 
@@ -42,7 +45,7 @@ func NewManager(d dependencies) *Manager {
 		logger: d.Logger(),
 		api:    d.AppsAPI(),
 		stateMap: syncmap.New[api.AppID, state](func(api.AppID) *state {
-			return &state{lock: &sync.Mutex{}}
+			return &state{lock: &deadlock.Mutex{}}
 		}),
 	}
 }

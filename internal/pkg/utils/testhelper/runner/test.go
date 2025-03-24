@@ -11,7 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
+
 	"syscall"
 	"testing"
 	"time"
@@ -36,6 +36,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -649,11 +650,11 @@ func (t *Test) assertProjectState() {
 // cmdOut is used to prevent race conditions, see https://hackmysql.com/post/reading-os-exec-cmd-output-without-race-conditions/
 type cmdOut struct {
 	buf  *bytes.Buffer
-	lock *sync.Mutex
+	lock *deadlock.Mutex
 }
 
 func newCmdOut() *cmdOut {
-	return &cmdOut{buf: &bytes.Buffer{}, lock: &sync.Mutex{}}
+	return &cmdOut{buf: &bytes.Buffer{}, lock: &deadlock.Mutex{}}
 }
 
 func (o *cmdOut) Write(p []byte) (int, error) {

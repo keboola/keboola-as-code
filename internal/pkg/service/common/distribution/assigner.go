@@ -2,9 +2,9 @@ package distribution
 
 import (
 	"sort"
-	"sync"
 
 	"github.com/lafikl/consistent"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Assigner locally assigns the owner for the key, see NodeFor and IsOwner methods. It is part of the Node.
@@ -13,14 +13,14 @@ import (
 // it is provided by the "consistent" package, see TestConsistentHashLib for more information.
 type Assigner struct {
 	nodeID string
-	mutex  *sync.RWMutex
+	mutex  *deadlock.RWMutex
 	nodes  *consistent.Consistent
 }
 
 func newAssigner(nodeID string) *Assigner {
 	return &Assigner{
 		nodeID: nodeID,
-		mutex:  &sync.RWMutex{},
+		mutex:  &deadlock.RWMutex{},
 		nodes:  consistent.New(),
 	}
 }

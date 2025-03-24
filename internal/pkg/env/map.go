@@ -5,11 +5,11 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/joho/godotenv"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Provider is read-only interface to get ENV value.
@@ -24,13 +24,13 @@ type Provider interface {
 // Keys are represented as uppercase string.
 type Map struct {
 	data map[string]string
-	lock *sync.RWMutex
+	lock *deadlock.RWMutex
 }
 
 func Empty() *Map {
 	return &Map{
 		data: make(map[string]string),
-		lock: &sync.RWMutex{},
+		lock: &deadlock.RWMutex{},
 	}
 }
 

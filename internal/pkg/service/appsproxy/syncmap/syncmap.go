@@ -1,20 +1,20 @@
 package syncmap
 
 import (
-	"sync"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // SyncMap is a map wrapper with RWMutex for safe concurrent access.
 type SyncMap[K comparable, V any] struct {
 	init func(K) *V
-	lock *sync.Mutex
+	lock *deadlock.Mutex
 	kvs  map[K]*V
 }
 
 func New[K comparable, V any](init func(K) *V) *SyncMap[K, V] {
 	return &SyncMap[K, V]{
 		init: init,
-		lock: &sync.Mutex{},
+		lock: &deadlock.Mutex{},
 		kvs:  make(map[K]*V),
 	}
 }

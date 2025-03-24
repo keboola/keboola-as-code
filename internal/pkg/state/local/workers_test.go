@@ -2,7 +2,7 @@ package local
 
 import (
 	"context"
-	"sync"
+
 	"testing"
 	"time"
 
@@ -11,6 +11,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 func TestWorkers(t *testing.T) {
@@ -72,7 +73,7 @@ func TestLocalUnitOfWork_workersFor(t *testing.T) {
 	manager := newTestLocalManager(t, nil)
 	uow := manager.NewUnitOfWork(t.Context())
 
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 	var order []int
 
 	for _, level := range []int{3, 2, 4, 1} {

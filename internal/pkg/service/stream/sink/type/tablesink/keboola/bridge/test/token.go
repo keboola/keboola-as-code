@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"sync"
+
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -12,11 +12,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/sasha-s/go-deadlock"
 )
 
 func MockTokenStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) {
 	tb.Helper()
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 
 	tokenCounter := 1000
 	transport.RegisterResponder(
