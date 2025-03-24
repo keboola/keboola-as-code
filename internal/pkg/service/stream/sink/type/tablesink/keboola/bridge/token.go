@@ -205,7 +205,7 @@ func (b *Bridge) encryptRawTokens(ctx context.Context, tokens []keboolasink.Toke
 	var updated []keboolasink.Token
 	txn := op.TxnWithResult(b.client, &updated)
 	for _, token := range tokens {
-		if token.Token == nil || token.EncryptedToken != "" {
+		if token.Token == nil {
 			continue
 		}
 
@@ -217,13 +217,16 @@ func (b *Bridge) encryptRawTokens(ctx context.Context, tokens []keboolasink.Toke
 }
 
 func (b *Bridge) encryptToken(ctx context.Context, token keboolasink.Token) *op.TxnOp[keboolasink.Token] {
-	metadata := cloudencrypt.Metadata{"sink": token.SinkKey.String()}
-	ciphertext, err := b.tokenEncryptor.Encrypt(ctx, *token.Token, metadata)
-	if err != nil {
-		return op.ErrorTxn[keboolasink.Token](err)
+	if token.EncryptedToken == "" {
+		metadata := cloudencrypt.Metadata{"sink": token.SinkKey.String()}
+		ciphertext, err := b.tokenEncryptor.Encrypt(ctx, *token.Token, metadata)
+		if err != nil {
+			return op.ErrorTxn[keboolasink.Token](err)
+		}
+		token.TokenID = token.Token.ID
+		token.EncryptedToken = string(ciphertext)
 	}
-	token.TokenID = token.Token.ID
-	token.EncryptedToken = string(ciphertext)
+	token.Token = nil
 
 	return b.saveToken(ctx, token)
 }
