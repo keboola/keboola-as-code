@@ -39,6 +39,7 @@ spec:
             }
           }
     spec:
+      serviceAccountName: stream-identity
       terminationGracePeriodSeconds: 60
       containers:
         - name: stream-http-source

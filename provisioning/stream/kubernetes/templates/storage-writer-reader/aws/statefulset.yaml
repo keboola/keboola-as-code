@@ -54,6 +54,7 @@ spec:
             }
           }
     spec:
+      serviceAccountName: stream-identity
       terminationGracePeriodSeconds: 600
       containers:
         - name: stream-storage-writer
