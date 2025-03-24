@@ -26,6 +26,7 @@ import (
 	targetConfig "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -380,8 +381,16 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	// Switch file to the imported state
 	result := o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx)
 	err = result.Err()
+	// Check specifically for invalid state transition errors
+	if errors.Is(err, fileRepo.ErrInvalidStateTransition) {
+		o.logger.Warnf(dbCtx, "skipping file transition to imported state: %s", err)
+		// Mark as processed to avoid retry for known state transition errors
+		file.Processed = true
+		return stats.Staging, nil
+	}
+
 	if err != nil {
-		o.logger.Infof(ctx, `Switch file "%s" to imported state used %d operations`, file.FileKey.String(), result.MaxOps())
+		o.logger.Warnf(ctx, `Not switching file "%s" to imported state used %d operations`, file.FileKey.String(), result.MaxOps())
 		return stats.Staging, errors.PrefixError(err, "cannot switch file to the imported state")
 	}
 
