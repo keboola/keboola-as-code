@@ -1,12 +1,14 @@
 package model
 
-import "sync"
+import (
+	"github.com/sasha-s/go-deadlock"
+)
 
 type ChangesReplaceFunc func(ObjectState) ObjectState
 
 // LocalChanges contains all processed objects in the local.UnitOfWork.
 type LocalChanges struct {
-	lock      *sync.Mutex
+	lock      *deadlock.Mutex
 	loaded    []ObjectState    // list of the objects loaded from the filesystem
 	persisted []ObjectState    // list of the new objects found in the filesystem
 	created   []ObjectState    // list of the created objects (did not exist before)
@@ -18,7 +20,7 @@ type LocalChanges struct {
 
 // RemoteChanges contains all processed objects in the remote.UnitOfWork.
 type RemoteChanges struct {
-	lock    *sync.Mutex
+	lock    *deadlock.Mutex
 	loaded  []ObjectState // list of the objects loaded from the Storage API
 	created []ObjectState // list of the created objects (did not exist before)
 	updated []ObjectState // list of the updated objects (existed before)
@@ -27,11 +29,11 @@ type RemoteChanges struct {
 }
 
 func NewLocalChanges() *LocalChanges {
-	return &LocalChanges{lock: &sync.Mutex{}}
+	return &LocalChanges{lock: &deadlock.Mutex{}}
 }
 
 func NewRemoteChanges() *RemoteChanges {
-	return &RemoteChanges{lock: &sync.Mutex{}}
+	return &RemoteChanges{lock: &deadlock.Mutex{}}
 }
 
 // Empty returns true if there are no changes.

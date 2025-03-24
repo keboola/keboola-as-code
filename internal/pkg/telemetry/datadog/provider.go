@@ -2,8 +2,8 @@ package datadog
 
 import (
 	"context"
-	"sync"
 
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/trace"
 	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
@@ -15,7 +15,7 @@ import (
 
 type wrappedDDTracerProvider struct {
 	*ddotel.TracerProvider
-	lock    *sync.Mutex
+	lock    *deadlock.Mutex
 	tracers map[string]trace.Tracer
 }
 
@@ -24,7 +24,7 @@ func NewTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...ddTr
 	opts = append(opts, ddTracer.WithLogger(NewDDLogger(logger)))
 	tp := &wrappedDDTracerProvider{
 		TracerProvider: ddotel.NewTracerProvider(opts...),
-		lock:           &sync.Mutex{},
+		lock:           &deadlock.Mutex{},
 		tracers:        make(map[string]trace.Tracer),
 	}
 	proc.OnShutdown(func(ctx context.Context) {

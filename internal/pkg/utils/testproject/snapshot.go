@@ -4,13 +4,13 @@ import (
 	"context"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-client/pkg/request"
+	"github.com/sasha-s/go-deadlock"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -20,7 +20,7 @@ import (
 
 // NewSnapshot - to validate final project state in tests.
 func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 	snapshot := &fixtures.ProjectSnapshot{}
 	configsMap := make(map[keboola.ConfigKey]*fixtures.Config)
 	configsMetadataMap := make(map[keboola.ConfigKey]keboola.Metadata)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -42,7 +43,7 @@ type Volume struct {
 
 	fsLock *flock.Flock
 
-	readersLock *sync.Mutex
+	readersLock *deadlock.Mutex
 	readers     map[string]*readerRef
 }
 
@@ -62,7 +63,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clockwork.Clock, c
 		logger:       logger,
 		clock:        clock,
 		readerEvents: readerEvents.Clone(), // clone events passed from volumes collection, so volume specific listeners can be added
-		readersLock:  &sync.Mutex{},
+		readersLock:  &deadlock.Mutex{},
 		readers:      make(map[string]*readerRef),
 	}
 

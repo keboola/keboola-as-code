@@ -3,8 +3,8 @@ package etcdop
 import (
 	"context"
 	"fmt"
-	"sync"
 
+	"github.com/sasha-s/go-deadlock"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -29,7 +29,7 @@ type Mutex struct {
 
 type mutexStore struct {
 	session *Session
-	allLock *sync.Mutex
+	allLock *deadlock.Mutex
 	all     map[string]*activeMutex
 }
 
@@ -64,7 +64,7 @@ func (e NotLockedError) Error() string {
 func newMutexStore(session *Session) *mutexStore {
 	return &mutexStore{
 		session: session,
-		allLock: &sync.Mutex{},
+		allLock: &deadlock.Mutex{},
 		all:     make(map[string]*activeMutex),
 	}
 }

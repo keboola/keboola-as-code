@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -14,7 +15,7 @@ import (
 // Writer splits written data to chunks, see ProcessCompletedChunks method.
 type Writer struct {
 	logger log.Logger
-	lock   sync.Mutex
+	lock   deadlock.Mutex
 	// newChunkNotifier is closed when a chunk has been completed
 	newChunkNotifier chan struct{}
 	// allProcessedNotifier is closed when all chunks have been successfully processed.

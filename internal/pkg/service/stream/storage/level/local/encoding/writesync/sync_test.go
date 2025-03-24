@@ -12,6 +12,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1064,7 +1065,7 @@ type writerTestCase struct {
 type testChain struct {
 	Logger     log.DebugLogger
 	Buffer     bytes.Buffer
-	SyncLock   *sync.Mutex
+	SyncLock   *deadlock.Mutex
 	WriteError error
 	FlushError error
 	SyncError  error
@@ -1141,7 +1142,7 @@ func newWriterTestCase(tb testing.TB) *writerTestCase {
 		Clock:  clockwork.NewFakeClock(),
 		Chain: &testChain{
 			Logger:   logger,
-			SyncLock: &sync.Mutex{},
+			SyncLock: &deadlock.Mutex{},
 		},
 		Config: config,
 	}

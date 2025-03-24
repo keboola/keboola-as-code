@@ -8,6 +8,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -37,10 +38,10 @@ type Syncer struct {
 	lastSyncAt               *atomic.Time
 
 	// syncLock ensures that only one sync runs at a time
-	syncLock *sync.Mutex
+	syncLock *deadlock.Mutex
 
 	// notifierLock protects the notifier field during a swap on sync
-	notifierLock *sync.RWMutex
+	notifierLock *deadlock.RWMutex
 	notifier     *notify.Notifier
 
 	// syncFn is operation triggered on sync
@@ -104,8 +105,8 @@ func NewSyncer(
 		uncompressedSizeSnapshot: atomic.NewUint64(0),
 		compressedSizeSnapshot:   atomic.NewUint64(0),
 		lastSyncAt:               atomic.NewTime(clock.Now()),
-		syncLock:                 &sync.Mutex{},
-		notifierLock:             &sync.RWMutex{},
+		syncLock:                 &deadlock.Mutex{},
+		notifierLock:             &deadlock.RWMutex{},
 		notifier:                 notify.New(),
 		syncFn:                   syncFn,
 	}
