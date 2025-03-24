@@ -23,7 +23,7 @@ az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP"
 
 # Common part of the deploy
 export ETCD_STORAGE_CLASS_NAME=
-export CLOUD_ENCRYPTION_PROVIDER="none"
+export CLOUD_ENCRYPTION_PROVIDER="azure"
 . ./common.sh
 
 # Azure specific part of the deploy
