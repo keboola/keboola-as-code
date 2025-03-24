@@ -2,10 +2,10 @@ package local
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 
+	"github.com/sasha-s/go-deadlock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
@@ -72,7 +72,7 @@ func TestLocalUnitOfWork_workersFor(t *testing.T) {
 	manager := newTestLocalManager(t, nil)
 	uow := manager.NewUnitOfWork(t.Context())
 
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 	var order []int
 
 	for _, level := range []int{3, 2, 4, 1} {

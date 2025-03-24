@@ -1,14 +1,16 @@
+package
+
 // Package quota provides limitation of a sink buffered data in local disks.
 // This prevents one client from wasting all of our disk space in the Stream API cluster.
-package quota
+quota
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 
 	commonErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -27,7 +29,7 @@ type Checker struct {
 	cachedL2Stats *statsCache.L2
 
 	// nextLogAt prevents errors from flooding the log
-	nextLogAtLock *sync.RWMutex
+	nextLogAtLock *deadlock.RWMutex
 	nextLogAt     map[key.SinkKey]time.Time
 }
 
@@ -40,7 +42,7 @@ func New(d dependencies) *Checker {
 	return &Checker{
 		clock:         d.Clock(),
 		cachedL2Stats: d.StatisticsL2Cache(),
-		nextLogAtLock: &sync.RWMutex{},
+		nextLogAtLock: &deadlock.RWMutex{},
 		nextLogAt:     make(map[key.SinkKey]time.Time),
 	}
 }

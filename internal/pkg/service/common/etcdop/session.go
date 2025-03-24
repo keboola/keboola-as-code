@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
+	"github.com/sasha-s/go-deadlock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
@@ -42,7 +43,7 @@ type Session struct {
 
 	mutexStore *mutexStore
 
-	lock    *sync.Mutex
+	lock    *deadlock.Mutex
 	created chan struct{} // see WaitForSession
 	actual  *concurrency.Session
 }
@@ -118,7 +119,7 @@ func (b SessionBuilder) Start(ctx context.Context, wg *sync.WaitGroup, logger lo
 		client:         client,
 		lessor:         etcd.NewLease(client),
 		backoff:        newSessionBackoff(),
-		lock:           &sync.Mutex{},
+		lock:           &deadlock.Mutex{},
 		created:        make(chan struct{}),
 	}
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -42,7 +43,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 		wg:             &sync.WaitGroup{},
 		err:            errors.NewMultiError(),
 		remaining:      map[string]bool{},
-		remainingMutex: &sync.Mutex{},
+		remainingMutex: &deadlock.Mutex{},
 		done:           make(chan struct{}),
 	}
 
@@ -85,7 +86,7 @@ type JobQueue struct {
 	err errors.MultiError
 
 	remaining      map[string]bool
-	remainingMutex *sync.Mutex
+	remainingMutex *deadlock.Mutex
 
 	done chan struct{}
 }

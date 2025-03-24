@@ -6,6 +6,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -35,11 +36,11 @@ type MirrorTree[T any, V any] struct {
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[string, V])
 
-	updatedLock sync.RWMutex
+	updatedLock deadlock.RWMutex
 	updated     chan struct{}
 
 	tree         *prefixtree.AtomicTree[V]
-	revisionLock sync.RWMutex
+	revisionLock deadlock.RWMutex
 	revision     int64
 }
 

@@ -3,17 +3,17 @@ package jsonnet
 import (
 	"bytes"
 	"encoding/json"
-	"sync"
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type VM[T any] struct {
-	lock    sync.Mutex
+	lock    deadlock.Mutex
 	vm      *jsonnet.VM
 	err     error
 	payload T

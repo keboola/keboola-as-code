@@ -3,7 +3,8 @@ package apphandler
 import (
 	"context"
 	"net/http"
-	"sync"
+
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -29,7 +30,7 @@ type Manager struct {
 }
 
 type appHandlerWrapper struct {
-	lock    *sync.Mutex
+	lock    *deadlock.Mutex
 	handler http.Handler
 	cancel  context.CancelCauseFunc
 }
@@ -52,7 +53,7 @@ func NewManager(d dependencies) *Manager {
 		authProxyManager: d.AuthProxyManager(),
 		pageWriter:       d.PageWriter(),
 		handlers: syncmap.New[api.AppID, appHandlerWrapper](func(api.AppID) *appHandlerWrapper {
-			return &appHandlerWrapper{lock: &sync.Mutex{}}
+			return &appHandlerWrapper{lock: &deadlock.Mutex{}}
 		}),
 	}
 }

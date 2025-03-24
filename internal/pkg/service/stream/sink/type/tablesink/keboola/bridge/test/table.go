@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -19,7 +19,7 @@ import (
 
 func MockTableStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) {
 	tb.Helper()
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 
 	// Get table - not found
 	checkedTables := make(map[keboola.TableKey]bool)

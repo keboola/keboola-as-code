@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sasha-s/go-deadlock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -37,7 +39,7 @@ type Container struct {
 type container struct {
 	strategy strategy
 
-	lock      *sync.Mutex
+	lock      *deadlock.Mutex
 	callbacks []callback
 }
 
@@ -57,7 +59,7 @@ func New(logger log.Logger) *Container {
 func newContainer(strategy strategy) *container {
 	return &container{
 		strategy: strategy,
-		lock:     &sync.Mutex{},
+		lock:     &deadlock.Mutex{},
 	}
 }
 

@@ -1,14 +1,16 @@
+package
+
 // Package appconfig provides application configuration loading with cache and expiration handling.
-package appconfig
+appconfig
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -34,7 +36,7 @@ type loader struct {
 }
 
 type cachedAppProxyConfig struct {
-	lock      *sync.Mutex
+	lock      *deadlock.Mutex
 	config    api.AppConfig
 	expiresAt time.Time
 }
@@ -53,7 +55,7 @@ func NewLoader(d dependencies) Loader {
 		api:       d.AppsAPI(),
 		telemetry: d.Telemetry(),
 		cache: syncmap.New[api.AppID, cachedAppProxyConfig](func(api.AppID) *cachedAppProxyConfig {
-			return &cachedAppProxyConfig{lock: &sync.Mutex{}}
+			return &cachedAppProxyConfig{lock: &deadlock.Mutex{}}
 		}),
 	}
 }

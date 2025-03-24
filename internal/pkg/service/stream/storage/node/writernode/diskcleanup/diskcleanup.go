@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
@@ -160,7 +161,7 @@ func (n *Node) cleanDisk(ctx context.Context) (err error) {
 	}
 
 	// We have to later remove empty parent dirs
-	var parentDirsLock sync.Mutex
+	var parentDirsLock deadlock.Mutex
 	parentDirsMap := make(map[string]bool)
 
 	// Remove dirs present only on the disk, not in DB

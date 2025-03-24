@@ -1,7 +1,7 @@
 package errors
 
 import (
-	"sync"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type MultiError interface {
@@ -22,17 +22,17 @@ type multiErrorGetter interface {
 }
 
 type multiError struct {
-	lock   *sync.Mutex
+	lock   *deadlock.Mutex
 	trace  StackTrace
 	errors []error
 }
 
 func NewMultiError() MultiError {
-	return &multiError{lock: &sync.Mutex{}, trace: callers()}
+	return &multiError{lock: &deadlock.Mutex{}, trace: callers()}
 }
 
 func NewMultiErrorNoTrace() MultiError {
-	return &multiError{lock: &sync.Mutex{}}
+	return &multiError{lock: &deadlock.Mutex{}}
 }
 
 func (e *multiError) Error() string {

@@ -1,9 +1,8 @@
 package manifest
 
 import (
-	"sync"
-
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -15,7 +14,7 @@ type Records struct {
 	naming *naming.Registry
 	sortBy string
 
-	lock    *sync.Mutex
+	lock    *deadlock.Mutex
 	all     *orderedmap.OrderedMap // common map for all Records: branches, configs and rows manifests
 	loaded  bool
 	changed bool
@@ -25,7 +24,7 @@ func NewRecords(sortBy string) *Records {
 	return &Records{
 		naming:  naming.NewRegistry(),
 		sortBy:  sortBy,
-		lock:    &sync.Mutex{},
+		lock:    &deadlock.Mutex{},
 		all:     orderedmap.New(),
 		loaded:  true,
 		changed: false,

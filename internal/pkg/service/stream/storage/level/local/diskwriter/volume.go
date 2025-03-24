@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/atomic"
 
@@ -53,7 +54,7 @@ type Volume struct {
 	drained       *atomic.Bool
 	drainFilePath string
 
-	writersLock *sync.Mutex
+	writersLock *deadlock.Mutex
 	writers     map[writerKey]*writerRef
 }
 
@@ -78,7 +79,7 @@ func OpenVolume(ctx context.Context, logger log.Logger, clock clockwork.Clock, c
 		wg:            &sync.WaitGroup{},
 		drained:       atomic.NewBool(false),
 		drainFilePath: filepath.Join(spec.Path, DrainFile),
-		writersLock:   &sync.Mutex{},
+		writersLock:   &deadlock.Mutex{},
 		writers:       make(map[writerKey]*writerRef),
 	}
 

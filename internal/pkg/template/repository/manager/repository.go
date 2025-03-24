@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sasha-s/go-deadlock"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -30,10 +31,10 @@ type CachedRepository struct {
 
 	templates     map[string]*template.Template
 	templatesInit *singleflight.Group // each template is load only once
-	templatesLock *sync.RWMutex       // provides atomic access to the templates field
+	templatesLock *deadlock.RWMutex   // provides atomic access to the templates field
 
 	unlockFn git.RepositoryFsUnlockFn // unlocks underlying FS, called on free()
-	freeLock *sync.RWMutex            // prevents cleanup of the repository while it is in use, see lock and free methods
+	freeLock *deadlock.RWMutex        // prevents cleanup of the repository while it is in use, see lock and free methods
 }
 
 // UnlockFn callback is returned by Manager. It must be called when the Cached Repository is no longer in use.
@@ -47,9 +48,9 @@ func newCachedRepository(ctx context.Context, d dependencies, gitRepo git.Reposi
 		repo:          tmplRepo,
 		templates:     make(map[string]*template.Template),
 		templatesInit: &singleflight.Group{},
-		templatesLock: &sync.RWMutex{},
+		templatesLock: &deadlock.RWMutex{},
 		unlockFn:      unlockFn,
-		freeLock:      &sync.RWMutex{},
+		freeLock:      &deadlock.RWMutex{},
 	}
 
 	// Reload all templates, error in a template is logged

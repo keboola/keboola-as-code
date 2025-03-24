@@ -1,9 +1,8 @@
 package transport
 
 import (
-	"sync"
-
 	"github.com/hashicorp/yamux"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // ClientStream implements net.Conn.
@@ -11,7 +10,7 @@ type ClientStream struct {
 	*yamux.Stream
 	conn *ClientConnection
 
-	closeLock sync.Mutex
+	closeLock deadlock.Mutex
 	closed    bool
 }
 

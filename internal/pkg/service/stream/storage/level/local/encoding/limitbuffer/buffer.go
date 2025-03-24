@@ -1,17 +1,20 @@
+package
+
 // Package limitbuffer provides a bytes buffer with limited maximum size.
 // This prevents over-allocation of memory while waiting for compression or writing to disk.
 // The size of the buffer is always doubled (Go append function) if it is full, up to the maximum size.
-package limitbuffer
+limitbuffer
 
 import (
 	"io"
-	"sync"
+
+	"github.com/sasha-s/go-deadlock"
 )
 
 type Buffer struct {
 	out     io.Writer
 	maxSize int
-	lock    sync.Mutex
+	lock    deadlock.Mutex
 	buffer  []byte
 }
 

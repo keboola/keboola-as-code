@@ -11,6 +11,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/ccoveille/go-safecast"
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -76,7 +77,7 @@ type pipeline struct {
 	logger    log.Logger
 	sliceKey  model.SliceKey
 	events    *events.Events[Pipeline]
-	flushLock sync.RWMutex
+	flushLock deadlock.RWMutex
 
 	encoder      encoder.Encoder
 	chain        *writechain.Chain
@@ -89,7 +90,7 @@ type pipeline struct {
 	withBackup   bool
 	closeFunc    func(ctx context.Context, cause string)
 
-	readyLock sync.RWMutex
+	readyLock deadlock.RWMutex
 	ready     bool
 
 	// closed blocks new writes

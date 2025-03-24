@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -37,7 +38,7 @@ type Project struct {
 	keboolaProjectAPI *keboola.AuthorizedAPI
 	defaultBranch     *keboola.Branch
 	envs              *env.Map
-	mapsLock          *sync.Mutex
+	mapsLock          *deadlock.Mutex
 	stateFilePath     string
 	branchesByID      map[keboola.BranchID]*keboola.Branch
 	branchesByName    map[string]*keboola.Branch
@@ -75,7 +76,7 @@ func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (
 	}
 
 	ctx, cancelFn := context.WithCancelCause(context.Background()) // nolint: contextcheck
-	p := &Project{Project: project, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
+	p := &Project{Project: project, initStartedAt: time.Now(), ctx: ctx, mapsLock: &deadlock.Mutex{}}
 	p.logf("□ Initializing project...")
 
 	cleanupFn := func() {

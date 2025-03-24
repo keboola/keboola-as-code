@@ -24,7 +24,7 @@ type Encoder struct {
 	notifier    func(ctx context.Context) *notify.Notifier
 }
 
-var columnRenderer = column.NewRenderer() //nolint:gochecknoglobals // contains Jsonnet VMs sync.Pool
+var columnRenderer = column.NewRenderer() //nolint:gochecknoglobals // contains Jsonnet VMs deadlock.Pool
 
 // NewEncoder creates CSV writers pool and implements encoder.Encoder
 // The order of the lines is not preserved, because we use the writers pool,

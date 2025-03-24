@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sasha-s/go-deadlock"
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -21,7 +22,7 @@ type Client struct {
 
 	closed chan struct{}
 
-	lock        sync.RWMutex
+	lock        deadlock.RWMutex
 	connections map[string]*ClientConnection
 }
 

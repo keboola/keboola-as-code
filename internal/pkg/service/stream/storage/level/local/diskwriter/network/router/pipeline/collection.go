@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sasha-s/go-deadlock"
 	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -14,7 +15,7 @@ import (
 // Collection for SinkPipeline and SlicePipeline types.
 type Collection[K comparable, P pipeline[K]] struct {
 	logger    log.Logger
-	lock      sync.RWMutex
+	lock      deadlock.RWMutex
 	pipelines map[K]P
 	onUpdate  []func(context.Context, *Collection[K, P])
 	onEmpty   []func(context.Context, *Collection[K, P])

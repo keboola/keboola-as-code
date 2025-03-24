@@ -8,6 +8,7 @@ import (
 
 	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/yamux"
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/maps"
 
@@ -24,7 +25,7 @@ type ClientConnection struct {
 	remoteNodeID string
 	remoteAddr   string
 
-	lock      sync.Mutex
+	lock      deadlock.Mutex
 	sess      *yamux.Session
 	lastError error
 	streams   map[uint32]*ClientStream

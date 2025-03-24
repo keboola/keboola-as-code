@@ -1,10 +1,12 @@
 package pipeline
 
-import "sync"
+import (
+	"github.com/sasha-s/go-deadlock"
+)
 
 // readyNotifier block SinkPipeline opening until at least one SlicePipeline is ready.
 type readyNotifier struct {
-	lock  sync.Mutex
+	lock  deadlock.Mutex
 	ready chan struct{}
 }
 

@@ -7,9 +7,10 @@ import (
 	"path"
 	"slices"
 	"strconv"
-	"sync"
 	"testing"
 	"time"
+
+	"github.com/sasha-s/go-deadlock"
 )
 
 const (
@@ -24,7 +25,7 @@ type PortManager interface {
 type portManager struct {
 	random *rand.Rand
 	ports  map[int]int
-	mu     *sync.Mutex
+	mu     *deadlock.Mutex
 	dir    string
 }
 
@@ -47,7 +48,7 @@ func NewPortManager(t *testing.T, tempDir, subFolder string) (pm *portManager, e
 	pm = &portManager{
 		random: random,
 		ports:  make(map[int]int, numberOfPorts),
-		mu:     &sync.Mutex{},
+		mu:     &deadlock.Mutex{},
 		dir:    p,
 	}
 	pm.GeneratePorts()

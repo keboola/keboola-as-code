@@ -8,6 +8,7 @@ import (
 
 	"github.com/ccoveille/go-safecast"
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -54,7 +55,7 @@ type operator struct {
 	files *etcdop.MirrorMap[model.File, model.FileKey, *fileData]
 	sinks *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
 
-	lock                 sync.RWMutex
+	lock                 deadlock.RWMutex
 	openedSlicesNotifier chan struct{}
 	openedSlicesCount    map[model.FileKey]int
 
@@ -73,7 +74,7 @@ type fileData struct {
 	Attrs        []attribute.KeyValue
 
 	// Lock prevents parallel check of the same file.
-	Lock *sync.Mutex
+	Lock *deadlock.Mutex
 
 	// Processed is true, if the entity has been modified.
 	// It prevents other processing. It takes a while for the watch stream to send updated state back.
@@ -158,7 +159,7 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 				if oldValue != nil {
 					out.Lock = (*oldValue).Lock
 				} else {
-					out.Lock = &sync.Mutex{}
+					out.Lock = &deadlock.Mutex{}
 				}
 
 				return out

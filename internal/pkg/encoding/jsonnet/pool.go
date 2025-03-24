@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/google/go-jsonnet"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type VMPool[T any] struct {
@@ -15,7 +16,7 @@ func NewVMPool[T any](factory func(*VM[T]) *jsonnet.VM) *VMPool[T] {
 		pool: &sync.Pool{
 			New: func() any {
 				vm := &VM[T]{
-					lock: sync.Mutex{},
+					lock: deadlock.Mutex{},
 				}
 
 				vm.vm = factory(vm)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/yamux"
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/maps"
 
@@ -28,10 +29,10 @@ type Server struct {
 	listenWg  sync.WaitGroup
 	streamsWg sync.WaitGroup
 
-	closeLock sync.Mutex
+	closeLock deadlock.Mutex
 	closed    chan struct{}
 
-	lock     sync.Mutex
+	lock     deadlock.Mutex
 	sessions map[string]*yamux.Session
 	streams  map[string]*ServerStream
 }

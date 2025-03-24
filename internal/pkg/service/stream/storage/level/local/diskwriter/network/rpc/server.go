@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sasha-s/go-deadlock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
@@ -35,7 +36,7 @@ type NetworkFileServer struct {
 
 	terminating chan struct{}
 
-	lock      sync.Mutex
+	lock      deadlock.Mutex
 	idCounter uint64
 	writers   map[uint64]diskwriter.Writer
 }

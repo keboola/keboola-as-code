@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -33,7 +34,7 @@ func TestNodesDiscovery(t *testing.T) {
 
 	// Create 3 nodes and (pseudo) processes
 	nodesCount := 3
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 	nodes := make(map[int]*distribution.GroupNode)
 	loggers := make(map[int]log.DebugLogger)
 	processes := make(map[int]*servicectx.Process)

@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"github.com/google/shlex"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -649,11 +649,11 @@ func (t *Test) assertProjectState() {
 // cmdOut is used to prevent race conditions, see https://hackmysql.com/post/reading-os-exec-cmd-output-without-race-conditions/
 type cmdOut struct {
 	buf  *bytes.Buffer
-	lock *sync.Mutex
+	lock *deadlock.Mutex
 }
 
 func newCmdOut() *cmdOut {
-	return &cmdOut{buf: &bytes.Buffer{}, lock: &sync.Mutex{}}
+	return &cmdOut{buf: &bytes.Buffer{}, lock: &deadlock.Mutex{}}
 }
 
 func (o *cmdOut) Write(p []byte) (int, error) {

@@ -2,7 +2,8 @@ package naming
 
 import (
 	"fmt"
-	"sync"
+
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -11,16 +12,16 @@ import (
 )
 
 type Registry struct {
-	lock   *sync.Mutex
-	byPath map[string]model.Key     // path -> object key
-	byKey  map[string]model.AbsPath // object key -> path
+	lock   *deadlock.Mutex
+	byPath map[string]Key     // path -> object key
+	byKey  map[string]AbsPath // object key -> path
 }
 
 func NewRegistry() *Registry {
 	return &Registry{
-		lock:   &sync.Mutex{},
-		byPath: make(map[string]model.Key),
-		byKey:  make(map[string]model.AbsPath),
+		lock:   &deadlock.Mutex{},
+		byPath: make(map[string]Key),
+		byKey:  make(map[string]AbsPath),
 	}
 }
 

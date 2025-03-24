@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sasha-s/go-deadlock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -24,7 +26,7 @@ type Listener struct {
 
 type listeners struct {
 	config         Config
-	lock           *sync.Mutex
+	lock           *deadlock.Mutex
 	bufferedEvents Events
 	listeners      map[listenerID]*Listener
 }
@@ -36,7 +38,7 @@ func newListeners(ctx context.Context, wg *sync.WaitGroup, cfg Config, logger lo
 
 	v := &listeners{
 		config:    cfg,
-		lock:      &sync.Mutex{},
+		lock:      &deadlock.Mutex{},
 		listeners: make(map[listenerID]*Listener),
 	}
 
