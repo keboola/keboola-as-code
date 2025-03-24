@@ -30,6 +30,7 @@ import (
 	targetModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/target/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	fileRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/clusterlock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
@@ -480,7 +481,16 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	if err == nil {
 		isEmpty := stats.Total.RecordsCount == 0
 		err = o.storage.File().SwitchToImporting(file.FileKey, o.clock.Now(), isEmpty).RequireLock(lock).Do(dbCtx).Err()
+
 		if err != nil {
+			// Check specifically for invalid state transition errors
+			if errors.Is(err, fileRepo.ErrInvalidStateTransition) {
+				o.logger.Warnf(dbCtx, "skipping file transition to importing state: %s", err)
+				// Mark as processed to avoid retry for known state transition errors
+				file.Processed = true
+				return
+			}
+
 			err = errors.PrefixError(err, "cannot switch file to the importing state")
 		}
 	}
