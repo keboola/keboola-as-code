@@ -23,7 +23,7 @@ func BenchmarkColumn_Path(b *testing.B) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 	renderer := column.NewRenderer()
 
-	for range b.N {
+	for b.Loop() {
 		// reqCtx needs to be created separately for each request, otherwise the parsed json is cached
 		reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))})
 		val, err := renderer.CSVValue(c, reqCtx)
@@ -42,7 +42,7 @@ func BenchmarkColumn_Template_Jsonnet(b *testing.B) {
 	header := http.Header{"Content-Type": []string{"application/json"}}
 	renderer := column.NewRenderer()
 
-	for range b.N {
+	for b.Loop() {
 		reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{Header: header, Body: io.NopCloser(strings.NewReader(body))})
 		val, err := renderer.CSVValue(c, reqCtx)
 		require.NoError(b, err)
@@ -55,7 +55,7 @@ func BenchmarkColumn_UUID(b *testing.B) {
 
 	renderer := column.NewRenderer()
 
-	for range b.N {
+	for b.Loop() {
 		reqCtx := recordctx.FromHTTP(time.Now(), &http.Request{})
 		val, err := renderer.CSVValue(c, reqCtx)
 		require.NoError(b, err)

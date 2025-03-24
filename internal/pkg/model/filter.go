@@ -1,6 +1,7 @@
 package model
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -217,12 +218,7 @@ func (v ComponentIDs) String() string {
 }
 
 func (v ComponentIDs) Contains(componentID keboola.ComponentID) bool {
-	for _, id := range v {
-		if id == componentID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(v, componentID)
 }
 
 func (v ObjectIsIgnoredError) Reason() IgnoreReason {

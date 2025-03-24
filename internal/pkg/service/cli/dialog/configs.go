@@ -44,7 +44,7 @@ func (p *Dialogs) SelectConfigs(all []*model.ConfigWithRows, label string, confi
 
 		// Parse user input
 		errs := errors.NewMultiError()
-		for _, item := range strings.Split(configs.Value, `,`) {
+		for item := range strings.SplitSeq(configs.Value, `,`) {
 			item = strings.TrimSpace(item)
 			if len(item) == 0 {
 				continue

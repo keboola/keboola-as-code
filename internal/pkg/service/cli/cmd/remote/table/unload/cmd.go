@@ -114,7 +114,7 @@ func ParseUnloadOptions(tableKey keboola.TableKey, f Flags) (unload.Options, err
 
 	whereString := f.Where.Value
 	if len(whereString) > 0 {
-		for _, s := range strings.Split(whereString, ";") {
+		for s := range strings.SplitSeq(whereString, ";") {
 			whereFilter, err := preview.ParseWhereFilter(s)
 			if err != nil {
 				e.Append(err)
@@ -126,7 +126,7 @@ func ParseUnloadOptions(tableKey keboola.TableKey, f Flags) (unload.Options, err
 
 	orderString := f.Order.Value
 	if len(orderString) > 0 {
-		for _, s := range strings.Split(orderString, ",") {
+		for s := range strings.SplitSeq(orderString, ",") {
 			columnOrder, err := preview.ParseColumnOrder(s)
 			if err != nil {
 				e.Append(err)

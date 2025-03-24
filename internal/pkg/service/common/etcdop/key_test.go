@@ -260,9 +260,7 @@ func BenchmarkKey_Exists(b *testing.B) {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		found, err := k.Exists(client).Do(ctx).ResultOrErr()
 		if err != nil || !found {
 			b.Fatalf("unexpected result")
@@ -279,9 +277,7 @@ func BenchmarkKey_Get(b *testing.B) {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		kv, err := k.Get(client).Do(ctx).ResultOrErr()
 		if err != nil || kv == nil {
 			b.Fatalf("unexpected result")
@@ -314,9 +310,7 @@ func BenchmarkKey_Put(b *testing.B) {
 
 	k := Key("foo")
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		err := k.Put(client, "bar").Do(ctx).Err()
 		if err != nil {
 			b.Fatalf("unexpected result")
@@ -349,9 +343,7 @@ func BenchmarkKeyT_Exists(b *testing.B) {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		found, err := k.Exists(client).Do(ctx).ResultOrErr()
 		if err != nil || !found {
 			b.Fatalf("unexpected result")
@@ -368,9 +360,7 @@ func BenchmarkKeyT_GetKV(b *testing.B) {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		kv, err := k.GetKV(client).Do(ctx).ResultOrErr()
 		if err != nil || kv == nil {
 			b.Fatalf("unexpected result")
@@ -403,9 +393,7 @@ func BenchmarkKeyT_Put(b *testing.B) {
 
 	k := typedKeyForTest()
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		err := k.Put(client, "bar").Do(ctx).Err()
 		if err != nil {
 			b.Fatalf("unexpected result")

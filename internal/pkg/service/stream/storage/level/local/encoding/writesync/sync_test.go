@@ -1170,7 +1170,7 @@ func (w *testSyncerWriter) Write(p []byte) (n int, err error) {
 
 func (w *testSyncerWriter) MustWriteTestData(t *testing.T, i int) {
 	t.Helper()
-	n, err := w.Write([]byte(fmt.Sprintf(`data%d`, i)))
+	n, err := w.Write(fmt.Appendf(nil, `data%d`, i))
 	assert.Equal(t, 5, n)
 	assert.NoError(t, err)
 }

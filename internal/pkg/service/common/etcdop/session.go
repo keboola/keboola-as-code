@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -90,7 +91,7 @@ func (b SessionBuilder) WithTTLSeconds(v int) SessionBuilder {
 // The callback must not be blocking.
 // In the work you start in the OnSession callback, you should check <-session.Done().
 func (b SessionBuilder) WithOnSession(fn onSession) SessionBuilder {
-	b.onSession = append([]onSession(nil), b.onSession...)
+	b.onSession = slices.Clone(b.onSession)
 	b.onSession = append(b.onSession, fn)
 	return b
 }

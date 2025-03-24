@@ -424,7 +424,7 @@ type APIRequestDef struct {
 	Method  string            `json:"method" validate:"required,oneof=DELETE GET PATCH POST PUT"`
 	Body    any               `json:"body"`
 	Headers map[string]string `json:"headers"`
-	Repeat  APIRequestRepeat  `json:"repeat,omitempty" validate:"omitempty"`
+	Repeat  APIRequestRepeat  `json:"repeat" validate:"omitempty"`
 }
 
 type APIRequestRepeat struct {

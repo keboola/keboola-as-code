@@ -222,7 +222,7 @@ func (d *branchesDialog) askBranchesList() model.AllowedBranches {
 
 func (d *branchesDialog) parseBranchesList(str, sep string) model.AllowedBranches {
 	branches := model.AllowedBranches{}
-	for _, item := range strings.Split(str, sep) {
+	for item := range strings.SplitSeq(str, sep) {
 		item = strings.TrimSpace(item)
 		if len(item) == 0 {
 			continue
@@ -256,7 +256,7 @@ func branchesToAllowedBranches(branches []*model.Branch) (out model.AllowedBranc
 func SelectBranches(all []*model.Branch, label string, d *dialog.Dialogs, f Flags) (results []*model.Branch, err error) {
 	if f.Branches.IsSet() {
 		errs := errors.NewMultiError()
-		for _, item := range strings.Split(f.Branches.Value, `,`) {
+		for item := range strings.SplitSeq(f.Branches.Value, `,`) {
 			item = strings.TrimSpace(item)
 			if len(item) == 0 {
 				continue

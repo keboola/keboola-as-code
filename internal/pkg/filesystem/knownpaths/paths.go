@@ -3,6 +3,7 @@ package knownpaths
 import (
 	"context"
 	"io/fs"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -88,15 +89,9 @@ func (p *Paths) Clone() *Paths {
 	}
 
 	// Copy all fields
-	for k, v := range p.all {
-		n.all[k] = v
-	}
-	for k, v := range p.tracked {
-		n.tracked[k] = v
-	}
-	for k, v := range p.isFile {
-		n.isFile[k] = v
-	}
+	maps.Copy(n.all, p.all)
+	maps.Copy(n.tracked, p.tracked)
+	maps.Copy(n.isFile, p.isFile)
 	return n
 }
 

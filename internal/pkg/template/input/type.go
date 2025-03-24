@@ -3,6 +3,7 @@ package input
 import (
 	"math"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -43,12 +44,7 @@ func (v Types) Strings() []string {
 }
 
 func (t Type) IsValid() bool {
-	for _, v := range allTypes() {
-		if v == t {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(allTypes(), t)
 }
 
 // EmptyValue returns empty value for the type.
@@ -185,7 +181,7 @@ func (t Type) ParseValue(value any) (any, error) {
 			// Split items by comma, if needed
 			var items []string
 			if v != "" {
-				for _, item := range strings.Split(v, ",") {
+				for item := range strings.SplitSeq(v, ",") {
 					items = append(items, strings.TrimSpace(item))
 				}
 			}

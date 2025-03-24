@@ -387,7 +387,7 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
 	client := toxiproxyClient.NewClient("localhost:8474")
 	proxy, err := client.CreateProxy("source1", ts.sourceURL1[7:len(ts.sourceURL1)-1], ts.sourceURL1[7:])
 	require.NoError(t, err)
-	proxy.AddToxic("latency_down", "latency", "downstream", 1.0, map[string]interface{}{
+	proxy.AddToxic("latency_down", "latency", "downstream", 1.0, map[string]any{
 		"latency": 1000,
 	})
 	t.Cleanup(func() {

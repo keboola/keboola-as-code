@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"slices"
+
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/spf13/cast"
@@ -56,11 +58,8 @@ func getFieldMeta(schema *jsonschema.Schema, path orderedmap.Path) (out FieldMet
 	// Detect required field
 	lastStep, _ := path.Last().(orderedmap.MapStep)
 	if parent != nil {
-		for _, key := range parent.Required {
-			if key == lastStep.Key() {
-				out.Required = true
-				break
-			}
+		if slices.Contains(parent.Required, lastStep.Key()) {
+			out.Required = true
 		}
 	}
 	return out, true

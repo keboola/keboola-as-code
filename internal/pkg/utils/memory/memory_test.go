@@ -10,14 +10,14 @@ func TestCalculateSize(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name     string
-		input    interface{}
+		input    any
 		expected uintptr
 	}{
 		{name: "Nil value", input: nil, expected: 0},
 		{name: "Empty string", input: "", expected: unsafe.Sizeof("")},
 		{name: "Non-empty string", input: "hello", expected: unsafe.Sizeof("") + uintptr(len("hello"))},
 		{name: "Int value", input: 42, expected: unsafe.Sizeof(42)},
-		{name: "Pointer to int", input: func() interface{} { i := 42; return &i }(), expected: unsafe.Sizeof(0) + unsafe.Sizeof(42)},
+		{name: "Pointer to int", input: func() any { i := 42; return &i }(), expected: unsafe.Sizeof(0) + unsafe.Sizeof(42)},
 		{name: "Slice with capacity", input: make([]int, 0, 10), expected: unsafe.Sizeof([]int{}) + uintptr(10)*unsafe.Sizeof(0)},
 		{name: "Struct with fields", input: struct {
 			a int8
@@ -28,7 +28,7 @@ func TestCalculateSize(t *testing.T) {
 		{name: "Map value", input: map[string]int{}, expected: 2 * unsafe.Sizeof(map[string]int{})},
 		{name: "Channel value", input: make(chan int), expected: 2 * unsafe.Sizeof(make(chan int))},
 		{name: "Function value", input: (func())(nil), expected: 2 * unsafe.Sizeof((func())(nil))},
-		{name: "Interface value", input: (interface{})(42), expected: unsafe.Sizeof((*interface{})(nil))},
+		{name: "Interface value", input: (any)(42), expected: unsafe.Sizeof((*any)(nil))},
 	}
 
 	for _, tc := range tests {

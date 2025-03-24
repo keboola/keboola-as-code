@@ -2,6 +2,7 @@ package env
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"sort"
 	"strings"
@@ -78,9 +79,7 @@ func (m *Map) ToSlice() []string {
 
 func (m *Map) ToMap() map[string]string {
 	data := make(map[string]string)
-	for k, v := range m.data {
-		data[k] = v
-	}
+	maps.Copy(data, m.data)
 	return data
 }
 

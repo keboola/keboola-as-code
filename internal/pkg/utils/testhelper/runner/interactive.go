@@ -255,7 +255,7 @@ func (v *cmdInputOutput) handleInteraction(lineNum int, prefix, content string) 
 
 func (v *cmdInputOutput) logf(format string, args ...any) {
 	format = "\n\n" + interactionLogPrefix + format + "\n\n"
-	_, _ = v.debugStdout.Write([]byte(fmt.Sprintf(format, args...)))
+	_, _ = v.debugStdout.Write(fmt.Appendf(nil, format, args...))
 }
 
 func (v *cmdInputOutput) errorf(lineNum int, format string, args ...any) error {

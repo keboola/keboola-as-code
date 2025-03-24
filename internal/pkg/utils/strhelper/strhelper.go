@@ -55,8 +55,8 @@ func ExtractCommonPrefix(a string, b string) (prefix string, ax string, bx strin
 
 func MatchWords(value string, wordsStr string) bool {
 	wordsStr = strings.TrimSpace(strings.ToLower(wordsStr))
-	words := strings.Split(wordsStr, " ")
-	for _, word := range words {
+	words := strings.SplitSeq(wordsStr, " ")
+	for word := range words {
 		word = strings.TrimSpace(word)
 		if len(word) == 0 {
 			continue

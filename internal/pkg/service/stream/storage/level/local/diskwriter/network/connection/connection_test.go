@@ -161,10 +161,10 @@ func startWriterNode(t *testing.T, ctx context.Context, etcdCfg etcdclient.Confi
 	volumesPath := t.TempDir()
 	volumePath1 := filepath.Join(volumesPath, "hdd", "001")
 	require.NoError(t, os.MkdirAll(volumePath1, 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(volumePath1, volume.IDFile), []byte(fmt.Sprintf("%s-1", nodeID)), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(volumePath1, volume.IDFile), fmt.Appendf(nil, "%s-1", nodeID), 0o600))
 	volumePath2 := filepath.Join(volumesPath, "hdd", "002")
 	require.NoError(t, os.MkdirAll(volumePath2, 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(volumePath2, volume.IDFile), []byte(fmt.Sprintf("%s-2", nodeID)), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(volumePath2, volume.IDFile), fmt.Appendf(nil, "%s-2", nodeID), 0o600))
 
 	d, m := dependencies.NewMockedStorageWriterScopeWithConfig(
 		t,

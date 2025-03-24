@@ -14,13 +14,13 @@ import (
 type Config struct {
 	Key1 []string      `json:"foo1" modAllowed:"true"`
 	Key2 int           `json:"foo2" alternative:"baz2" modAllowedAlternative:"true"`
-	Key3 ConfigNested1 `json:"foo3,omitempty" alternative:"baz3" modAllowed:"true"`
+	Key3 ConfigNested1 `json:"foo3" alternative:"baz3" modAllowed:"true"`
 }
 
 type ConfigNested1 struct {
 	Key4 string        `json:"foo4" modAllowed:"true"`
 	Key5 int           `json:"foo5" alternative:"baz5" modAllowed:"true" modAllowedAlternative:"true"`
-	Key6 ConfigNested2 `json:"foo6,omitempty" modAllowed:"true"`
+	Key6 ConfigNested2 `json:"foo6" modAllowed:"true"`
 }
 
 type ConfigNested2 struct {
