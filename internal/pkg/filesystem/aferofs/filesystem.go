@@ -155,7 +155,7 @@ func (f *Fs) Create(ctx context.Context, name string) (afero.File, error) {
 	return f.fs.Create(f.fs.FromSlash(name))
 }
 
-// Open opens a file readon.
+// Open opens a file using readonly mode.
 func (f *Fs) Open(ctx context.Context, name string) (afero.File, error) {
 	return f.fs.Open(f.fs.FromSlash(name))
 }

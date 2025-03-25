@@ -22,6 +22,7 @@ type Config struct {
 	KeepAliveTimeout  time.Duration `configKey:"keepAliveTimeout" configUsage:"Etcd keep alive timeout." validate:"required"`
 	KeepAliveInterval time.Duration `configKey:"keepAliveInterval" configUsage:"Etcd keep alive interval." validate:"required"`
 	DebugLog          bool          `configKey:"debugLog" configUsage:"Etcd operations logging as debug messages."`
+	JSONNumbers       bool          `configKey:"-" configUsage:"Use JSON numbers in serde."`
 }
 
 func NewConfig() Config {

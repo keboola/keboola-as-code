@@ -48,6 +48,21 @@ func NewJSON(validate ValidateFn) *Serde {
 	)
 }
 
+func NewJSONWithNumbers(validate ValidateFn) *Serde {
+	if validate == nil {
+		panic(errors.New("validate fn cannot be nil, use serde.NoValidation"))
+	}
+	return New(
+		func(ctx context.Context, value any) (string, error) {
+			return json.EncodeString(value, false)
+		},
+		func(ctx context.Context, data []byte, target any) error {
+			return json.DecodePreserveNumber(data, target)
+		},
+		validate,
+	)
+}
+
 func (v Serde) Encode(ctx context.Context, value any) (string, error) {
 	if err := v.validate(ctx, value); err != nil {
 		return "", err

@@ -7,14 +7,14 @@ import (
 	etcdPkg "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	etcdserde "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // etcdClientScope implements the EtcdClientScope interface.
 type etcdClientScope struct {
 	client *etcdPkg.Client
-	serde  *serde.Serde
+	serde  *etcdserde.Serde
 }
 
 func NewEtcdClientScope(ctx context.Context, baseScp BaseScope, cfg etcdclient.Config) (EtcdClientScope, error) {
@@ -30,14 +30,23 @@ func newEtcdClientScope(ctx context.Context, baseScp BaseScope, cfg etcdclient.C
 		return nil, err
 	}
 
+	validate := func(ctx context.Context, value any) error {
+		if k := reflect.ValueOf(value).Kind(); k != reflect.Struct && k != reflect.Pointer {
+			return baseScp.Validator().Validate(ctx, value)
+		}
+		return nil
+	}
+
+	var serde *etcdserde.Serde
+	if cfg.JSONNumbers {
+		serde = etcdserde.NewJSONWithNumbers(validate)
+	} else {
+		serde = etcdserde.NewJSON(validate)
+	}
+
 	return &etcdClientScope{
 		client: client,
-		serde: serde.NewJSON(func(ctx context.Context, value any) error {
-			if k := reflect.ValueOf(value).Kind(); k != reflect.Struct && k != reflect.Pointer {
-				return baseScp.Validator().Validate(ctx, value)
-			}
-			return nil
-		}),
+		serde:  serde,
 	}, nil
 }
 
@@ -52,7 +61,7 @@ func (v *etcdClientScope) EtcdClient() *etcdPkg.Client {
 	return v.client
 }
 
-func (v *etcdClientScope) EtcdSerde() *serde.Serde {
+func (v *etcdClientScope) EtcdSerde() *etcdserde.Serde {
 	v.check()
 	return v.serde
 }
