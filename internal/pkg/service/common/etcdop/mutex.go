@@ -307,6 +307,16 @@ func (m *activeMutex) localUnlock() error {
 }
 
 func (m *activeMutex) dbLock(ctx context.Context) (err error) {
+	// Force new session/mutex if previous was invalid
+	if m.dbSession != nil {
+		select {
+		case <-m.dbSession.Done():
+			m.dbSession = nil
+			m.dbMutex = nil // Critical reset
+		default:
+		}
+	}
+
 	// Get session at the first time
 	if m.dbSession == nil {
 		m.dbSession, err = m.store.session.WaitForSession(ctx)
