@@ -315,6 +315,7 @@ func (m *activeMutex) dbLock(ctx context.Context) (err error) {
 	select {
 	case <-m.dbSession.Done():
 		m.dbSession = nil
+		m.dbMutex = nil // Critical reset
 		return concurrency.ErrSessionExpired
 	default:
 		// continue
