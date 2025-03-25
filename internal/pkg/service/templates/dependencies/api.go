@@ -102,8 +102,6 @@ func newParentScopes(
 		return nil, err
 	}
 
-	cfg.Etcd.JSONNumbers = true
-
 	d.EtcdClientScope, err = dependencies.NewEtcdClientScope(ctx, d, cfg.Etcd)
 	if err != nil {
 		return nil, err

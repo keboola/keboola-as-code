@@ -9,6 +9,6 @@
   "duration": %d,
   "result": "template preview created",
   "outputs": {
-    "configId": %d
+    "configId": %s
   }
 }

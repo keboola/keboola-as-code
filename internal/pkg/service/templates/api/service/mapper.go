@@ -2,14 +2,12 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"slices"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/ccoveille/go-safecast"
 	"github.com/spf13/cast"
 
 	templatesDesign "github.com/keboola/keboola-as-code/api/templates"
@@ -89,19 +87,9 @@ func (m Mapper) TaskPayload(model task.Task) (r *Task, err error) {
 		}
 
 		// Handle configId from preserved JSON number
-		if configIDNum, ok := model.Outputs["configId"].(json.Number); ok {
-			configID, err := configIDNum.Int64()
-			if err != nil {
-				return nil, errors.Errorf("invalid configId value: %w", err)
-			}
-
-			configIDUint, err := safecast.ToUint64(configID)
-			if err != nil {
-				return nil, errors.Errorf("invalid configId value: %w", err)
-			}
-
+		if configID, ok := model.Outputs["configId"].(string); ok {
 			out.Outputs = &TaskOutputs{
-				ConfigID: &configIDUint,
+				ConfigID: &configID,
 			}
 		}
 	}
