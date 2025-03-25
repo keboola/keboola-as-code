@@ -1,7 +1,6 @@
 package distribution
 
 import (
-	"slices"
 	"sort"
 	"sync"
 
@@ -85,10 +84,6 @@ func (a *Assigner) MustCheckIsOwner(key string) bool {
 	return is
 }
 
-// HasNode returns true if the nodeID is known.
-func (a *Assigner) HasNode(nodeID string) bool {
-	return slices.Contains(a.Nodes(), nodeID)
-}
 
 func (a *Assigner) clone() *Assigner {
 	clone := newAssigner(a.nodeID)
