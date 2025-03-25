@@ -3,6 +3,7 @@ package input
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,12 +12,12 @@ import (
 
 func TestType_IsValid(t *testing.T) {
 	t.Parallel()
-	assert.True(t, TypeString.IsValid())
-	assert.True(t, TypeInt.IsValid())
-	assert.True(t, TypeDouble.IsValid())
-	assert.True(t, TypeBool.IsValid())
-	assert.True(t, TypeStringArray.IsValid())
-	assert.False(t, Type("foo").IsValid())
+	assert.True(t, slices.Contains(allTypes(), TypeString))
+	assert.True(t, slices.Contains(allTypes(), TypeInt))
+	assert.True(t, slices.Contains(allTypes(), TypeDouble))
+	assert.True(t, slices.Contains(allTypes(), TypeBool))
+	assert.True(t, slices.Contains(allTypes(), TypeStringArray))
+	assert.False(t, slices.Contains(allTypes(), Type("foo")))
 }
 
 func TestType_ValidateValue(t *testing.T) {

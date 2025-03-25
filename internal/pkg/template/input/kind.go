@@ -1,7 +1,6 @@
 package input
 
 import (
-	"slices"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -38,10 +37,6 @@ func (v Kinds) Strings() []string {
 		out[i] = string(item)
 	}
 	return out
-}
-
-func (k Kind) IsValid() bool {
-	return slices.Contains(allKinds(), k)
 }
 
 // ValidateType validates that type is valid for kind.

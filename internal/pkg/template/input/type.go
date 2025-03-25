@@ -3,7 +3,6 @@ package input
 import (
 	"math"
 	"reflect"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -41,10 +40,6 @@ func (v Types) Strings() []string {
 		out[i] = string(item)
 	}
 	return out
-}
-
-func (t Type) IsValid() bool {
-	return slices.Contains(allTypes(), t)
 }
 
 // EmptyValue returns empty value for the type.

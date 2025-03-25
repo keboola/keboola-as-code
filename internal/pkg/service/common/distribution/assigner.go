@@ -84,7 +84,6 @@ func (a *Assigner) MustCheckIsOwner(key string) bool {
 	return is
 }
 
-
 func (a *Assigner) clone() *Assigner {
 	clone := newAssigner(a.nodeID)
 	for _, nodeID := range a.Nodes() {
