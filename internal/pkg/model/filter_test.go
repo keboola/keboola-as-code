@@ -1,6 +1,7 @@
 package model_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -59,9 +60,9 @@ func TestIsBranchAllowed(t *testing.T) {
 func TestComponentsIds(t *testing.T) {
 	t.Parallel()
 	ids := ComponentIDs{"foo", "bar"}
-	assert.True(t, ids.Contains("foo"))
-	assert.True(t, ids.Contains("bar"))
-	assert.False(t, ids.Contains("baz"))
+	assert.True(t, slices.Contains(ids, "foo"))
+	assert.True(t, slices.Contains(ids, "bar"))
+	assert.False(t, slices.Contains(ids, "baz"))
 }
 
 func TestFilterIsObjectIgnored(t *testing.T) {
