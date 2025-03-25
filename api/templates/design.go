@@ -1099,9 +1099,9 @@ var InstanceID = Type("InstanceId", String, func() {
 	Description("ID of the template instance.")
 })
 
-var ConfigID = Type("ConfigId", UInt64, func() {
-	Meta("struct:field:type", "= uint64")
-	Example(123456)
+var ConfigID = Type("ConfigId", String, func() {
+	Meta("struct:field:type", "= string")
+	Example("123456")
 	Description("Config ID of the configuration created by preview.")
 })
 
