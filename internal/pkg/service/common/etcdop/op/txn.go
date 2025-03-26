@@ -234,13 +234,7 @@ func (v *TxnOp[R]) maxOps(op etcd.Op) int {
 	}
 
 	cmps, thenOps, elseOps := op.Txn()
-	maxOps := len(cmps)
-	if len(thenOps) > maxOps {
-		maxOps = len(thenOps)
-	}
-	if len(elseOps) > maxOps {
-		maxOps = len(elseOps)
-	}
+	maxOps := max(len(elseOps), max(len(thenOps), len(cmps)))
 
 	maxTxn := 0
 	for _, subOp := range append(thenOps, elseOps...) {

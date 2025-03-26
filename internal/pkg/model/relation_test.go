@@ -15,7 +15,7 @@ import (
 
 func TestRelationsUnmarshalJSON(t *testing.T) {
 	t.Parallel()
-	data := []byte(fmt.Sprintf(`[{"type": "%s"}]`, VariablesForRelType))
+	data := fmt.Appendf(nil, `[{"type": "%s"}]`, VariablesForRelType)
 	var relations Relations
 	require.NoError(t, json.Unmarshal(data, &relations))
 	assert.Len(t, relations, 1)

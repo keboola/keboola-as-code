@@ -33,7 +33,7 @@ type file struct {
 	Naming            naming.Template                 `json:"naming" validate:"required"`
 	AllowedBranches   model.AllowedBranches           `json:"allowedBranches" validate:"required,min=1"`
 	IgnoredComponents model.ComponentIDs              `json:"ignoredComponents"`
-	Templates         Templates                       `json:"templates,omitempty"`
+	Templates         Templates                       `json:"templates"`
 	Branches          []*model.BranchManifest         `json:"branches" validate:"dive"`
 	Configs           []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }

@@ -32,6 +32,12 @@ go tool gofumpt -w ./cmd ./internal ./pkg ./test
 echo "Running gci ..."
 go tool gci write --skip-generated -s standard -s default -s "prefix(github.com/keboola/keboola-as-code)" ./cmd ./internal ./pkg ./test
 
+
+# Run all analyzers with -fix
+# https://github.com/golang/tools/blob/master/gopls/doc/analyzers.md#modernize-simplify-code-by-using-modern-constructs
+echo "Running modernize..."
+go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -fix -test ./...
+
 # Fix linters
 echo "Running golangci-lint ..."
 if go tool golangci-lint run --fix -c "./build/ci/golangci.yml"; then

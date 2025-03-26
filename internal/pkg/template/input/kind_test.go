@@ -1,6 +1,7 @@
 package input
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,14 +10,14 @@ import (
 
 func TestKind_IsValid(t *testing.T) {
 	t.Parallel()
-	assert.True(t, KindInput.IsValid())
-	assert.True(t, KindHidden.IsValid())
-	assert.True(t, KindTextarea.IsValid())
-	assert.True(t, KindConfirm.IsValid())
-	assert.True(t, KindSelect.IsValid())
-	assert.True(t, KindMultiSelect.IsValid())
-	assert.True(t, KindOAuth.IsValid())
-	assert.False(t, Kind("foo").IsValid())
+	assert.True(t, slices.Contains(allKinds(), KindInput))
+	assert.True(t, slices.Contains(allKinds(), KindHidden))
+	assert.True(t, slices.Contains(allKinds(), KindTextarea))
+	assert.True(t, slices.Contains(allKinds(), KindConfirm))
+	assert.True(t, slices.Contains(allKinds(), KindSelect))
+	assert.True(t, slices.Contains(allKinds(), KindMultiSelect))
+	assert.True(t, slices.Contains(allKinds(), KindOAuth))
+	assert.False(t, slices.Contains(allKinds(), Kind("foo")))
 }
 
 func TestKind_ValidateType(t *testing.T) {

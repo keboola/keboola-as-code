@@ -84,16 +84,6 @@ func (a *Assigner) MustCheckIsOwner(key string) bool {
 	return is
 }
 
-// HasNode returns true if the nodeID is known.
-func (a *Assigner) HasNode(nodeID string) bool {
-	for _, v := range a.Nodes() {
-		if v == nodeID {
-			return true
-		}
-	}
-	return false
-}
-
 func (a *Assigner) clone() *Assigner {
 	clone := newAssigner(a.nodeID)
 	for _, nodeID := range a.Nodes() {

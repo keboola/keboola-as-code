@@ -83,7 +83,7 @@ func (r *Repositories) UnmarshalText(inBytes []byte) error {
 
 	// Definitions are separated by ";"
 	usedNames := make(map[string]bool)
-	for _, definition := range strings.Split(in, ";") {
+	for definition := range strings.SplitSeq(in, ";") {
 		// Definition parts are separated by "|"
 		parts := strings.Split(definition, "|")
 		if len(parts) < 2 {

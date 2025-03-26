@@ -1,6 +1,7 @@
 package model
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -84,21 +85,21 @@ func (f ObjectsFilter) AssertObjectAllowed(object Object) *ObjectIsIgnoredError 
 			return objectIsIgnoredErrorf(IgnoredByAllowedBranches, `%s is ignored`, object.Desc())
 		}
 	case *Config:
-		if f.ignoredComponents.Contains(o.ComponentID) {
+		if slices.Contains(f.ignoredComponents, o.ComponentID) {
 			return objectIsIgnoredErrorf(IgnoredByIgnoredComponents, `%s is ignored`, object.Desc())
 		}
 		if alwaysIgnoredComponents[o.ComponentID.String()] {
 			return objectIsIgnoredErrorf(IgnoredByAlwaysIgnoredComponents, `%s is ignored, the component cannot be configured using a definition`, object.Desc())
 		}
 	case *ConfigWithRows:
-		if f.ignoredComponents.Contains(o.ComponentID) {
+		if slices.Contains(f.ignoredComponents, o.ComponentID) {
 			return objectIsIgnoredErrorf(IgnoredByIgnoredComponents, `%s is ignored`, object.Desc())
 		}
 		if alwaysIgnoredComponents[o.ComponentID.String()] {
 			return objectIsIgnoredErrorf(IgnoredByAlwaysIgnoredComponents, `%s is ignored, the component cannot be configured using a definition`, object.Desc())
 		}
 	case *ConfigRow:
-		if f.ignoredComponents.Contains(o.ComponentID) {
+		if slices.Contains(f.ignoredComponents, o.ComponentID) {
 			return objectIsIgnoredErrorf(IgnoredByIgnoredComponents, `%s is ignored`, object.Desc())
 		}
 		if alwaysIgnoredComponents[o.ComponentID.String()] {
@@ -214,15 +215,6 @@ func (v ComponentIDs) String() string {
 		items = append(items, string(item))
 	}
 	return `"` + strings.Join(items, `", "`) + `"`
-}
-
-func (v ComponentIDs) Contains(componentID keboola.ComponentID) bool {
-	for _, id := range v {
-		if id == componentID {
-			return true
-		}
-	}
-	return false
 }
 
 func (v ObjectIsIgnoredError) Reason() IgnoreReason {

@@ -22,8 +22,8 @@ func (f *File) applyIgnoredPatterns() error {
 
 func (f *File) parseIgnoredPatterns() []string {
 	var ignorePatterns []string
-	lines := strings.Split(f.rawStringPattern, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(f.rawStringPattern, "\n")
+	for line := range lines {
 		trimmedLine := strings.TrimSpace(line)
 		// Skip empty lines and comments
 		if trimmedLine != "" && !strings.HasPrefix(trimmedLine, "#") {

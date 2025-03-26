@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 
 	goValidator "github.com/go-playground/validator/v10"
 	"github.com/umisama/go-regexpcache"
@@ -29,7 +30,7 @@ func inputDefinitionExtraRules(ctx context.Context) []validator.Rule {
 			Func: func(fl goValidator.FieldLevel) bool {
 				typeValue := fl.Parent().FieldByName("Type").Interface().(Type)
 				// Invalid type is validated by other rule
-				return !typeValue.IsValid() || typeValue.ValidateValue(fl.Field()) == nil
+				return !slices.Contains(allTypes(), typeValue) || typeValue.ValidateValue(fl.Field()) == nil
 			},
 			ErrorMsg: "{0} must match the specified type",
 		},
@@ -61,7 +62,7 @@ func inputDefinitionExtraRules(ctx context.Context) []validator.Rule {
 		{
 			Tag: "template-input-kind",
 			Func: func(fl goValidator.FieldLevel) bool {
-				return fl.Parent().FieldByName("Kind").Interface().(Kind).IsValid()
+				return slices.Contains(allKinds(), fl.Parent().FieldByName("Kind").Interface().(Kind))
 			},
 			ErrorMsgFunc: func(fe goValidator.FieldError) string {
 				return fmt.Sprintf("%s %s is not allowed, allowed values: %s", fe.Field(), fe.Value(), allKinds().String())
@@ -70,7 +71,7 @@ func inputDefinitionExtraRules(ctx context.Context) []validator.Rule {
 		{
 			Tag: "template-input-type",
 			Func: func(fl goValidator.FieldLevel) bool {
-				return fl.Parent().FieldByName("Type").Interface().(Type).IsValid()
+				return slices.Contains(allTypes(), fl.Parent().FieldByName("Type").Interface().(Type))
 			},
 			ErrorMsgFunc: func(fe goValidator.FieldError) string {
 				return fmt.Sprintf("%s %s is not allowed, allowed values: %s", fe.Field(), fe.Value(), allTypes().String())
@@ -81,7 +82,7 @@ func inputDefinitionExtraRules(ctx context.Context) []validator.Rule {
 			Func: func(fl goValidator.FieldLevel) bool {
 				typeField := fl.Field().Interface().(Type)
 				kindField := fl.Parent().FieldByName("Kind").Interface().(Kind)
-				if !kindField.IsValid() || !typeField.IsValid() {
+				if !slices.Contains(allKinds(), kindField) || !slices.Contains(allTypes(), typeField) {
 					// invalid kind or type, skip this validation
 					return true
 				}

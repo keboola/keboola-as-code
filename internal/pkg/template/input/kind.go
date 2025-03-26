@@ -39,15 +39,6 @@ func (v Kinds) Strings() []string {
 	return out
 }
 
-func (k Kind) IsValid() bool {
-	for _, v := range allKinds() {
-		if v == k {
-			return true
-		}
-	}
-	return false
-}
-
 // ValidateType validates that type is valid for kind.
 func (k Kind) ValidateType(t Type) error {
 	switch k {

@@ -3,6 +3,7 @@ package distribution
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -199,7 +200,7 @@ func (n *GroupNode) watch(ctx context.Context, wg *sync.WaitGroup) error {
 	}
 
 	// Check self-discovery
-	if !n.assigner.HasNode(n.nodeID) {
+	if !slices.Contains(n.assigner.Nodes(), n.nodeID) {
 		return errors.Errorf(`self-discovery failed: missing "%s" in discovered nodes`, n.nodeID)
 	}
 

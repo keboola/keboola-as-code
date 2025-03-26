@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -319,7 +320,7 @@ func (m BranchMetadata) DeleteTemplateUsage(instanceID string) error {
 
 	for i, u := range instances {
 		if u.InstanceID == instanceID {
-			instances = append(instances[:i], instances[i+1:]...)
+			instances = slices.Delete(instances, i, i+1)
 			return m.saveTemplateUsages(instances)
 		}
 	}

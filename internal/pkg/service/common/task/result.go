@@ -1,6 +1,7 @@
 package task
 
 import (
+	"maps"
 	"reflect"
 	"strings"
 
@@ -68,9 +69,7 @@ func (r Result) WithOutput(k string, v any) Result {
 	// Clone map
 	original := r.Outputs
 	r.Outputs = make(map[string]any)
-	for key, value := range original {
-		r.Outputs[key] = value
-	}
+	maps.Copy(r.Outputs, original)
 
 	// Add new key
 	r.Outputs[k] = v
@@ -82,9 +81,7 @@ func (r Result) WithOutputsFrom(v any) Result {
 	// Clone map
 	original := r.Outputs
 	r.Outputs = make(map[string]any)
-	for key, value := range original {
-		r.Outputs[key] = value
-	}
+	maps.Copy(r.Outputs, original)
 
 	// Convert value to map
 	m := make(map[string]any)

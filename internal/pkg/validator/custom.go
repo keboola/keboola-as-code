@@ -192,7 +192,7 @@ func (v *wrapper) registerCustomRules() {
 
 func (v *wrapper) registerCustomTypes() {
 	// Convert value to string using String method
-	v.validator.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+	v.validator.RegisterCustomTypeFunc(func(field reflect.Value) any {
 		if v, ok := field.Interface().(fmt.Stringer); ok {
 			return v.String()
 		}

@@ -234,9 +234,7 @@ func BenchmarkPrefix_AtLestOneExists(b *testing.B) {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		found, err := pfx.AtLeastOneExists(client).Do(ctx).ResultOrErr()
 		if err != nil || !found {
 			b.Fatalf("unexpected result")
@@ -259,9 +257,7 @@ func BenchmarkPrefix_Count(b *testing.B) {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		count, err := pfx.Count(client).Do(ctx).ResultOrErr()
 		if err != nil || count != int64(2) {
 			b.Fatalf("unexpected result")
@@ -284,9 +280,7 @@ func BenchmarkPrefix_GetAll(b *testing.B) {
 		}
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		kvs, err := pfx.GetAll(client).Do(ctx).All()
 		if err != nil || len(kvs) != 100 {
 			b.Fatalf("unexpected result")
@@ -334,9 +328,7 @@ func BenchmarkPrefixT_AtLestOneExists(b *testing.B) {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		found, err := pfx.AtLeastOneExists(client).Do(ctx).ResultOrErr()
 		if err != nil || !found {
 			b.Fatalf("unexpected result")
@@ -359,9 +351,7 @@ func BenchmarkPrefixT_Count(b *testing.B) {
 		b.Fatalf("cannot create etcd key: %s", err)
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		count, err := pfx.Count(client).Do(ctx).ResultOrErr()
 		if err != nil || count != int64(2) {
 			b.Fatalf("unexpected result")
@@ -384,9 +374,7 @@ func BenchmarkPrefixT_GetAll(b *testing.B) {
 		}
 	}
 
-	b.StartTimer()
-
-	for range b.N {
+	for b.Loop() {
 		kvs, err := pfx.GetAll(client).Do(ctx).AllKVs()
 		if err != nil || len(kvs) != 100 {
 			b.Fatalf("unexpected result")

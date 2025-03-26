@@ -5,7 +5,7 @@ import (
 	"unsafe"
 )
 
-func Size(v interface{}) uintptr {
+func Size(v any) uintptr {
 	return calculateSize(reflect.ValueOf(v), make(map[uintptr]bool))
 }
 
@@ -58,7 +58,7 @@ func calculateSize(v reflect.Value, visited map[uintptr]bool) uintptr {
 
 	case reflect.Interface:
 		// Account for interface type word and data word
-		return calculateSize(v.Elem(), visited) + unsafe.Sizeof((*interface{})(nil))
+		return calculateSize(v.Elem(), visited) + unsafe.Sizeof((*any)(nil))
 
 	default:
 		// Simple types (bool, numbers) - just return base size

@@ -1171,7 +1171,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 
-				var v interface{}
+				var v any
 				err = wsjson.Read(ctx, c, &v)
 				require.NoError(t, err)
 
@@ -1263,7 +1263,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 
-				var v interface{}
+				var v any
 				err = wsjson.Read(ctx, c, &v)
 				require.NoError(t, err)
 
@@ -1387,7 +1387,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 
-				var v interface{}
+				var v any
 				err = wsjson.Read(ctx, c, &v)
 				require.NoError(t, err)
 
