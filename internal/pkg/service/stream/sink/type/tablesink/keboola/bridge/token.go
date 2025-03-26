@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
-	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -181,71 +180,4 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 
 	b.logger.Info(ctx, "created token")
 	return *result, nil
-}
-
-func (b *Bridge) MigrateTokens(ctx context.Context) error {
-	if b.tokenEncryptor == nil {
-		return nil
-	}
-
-	var tokens, updatedTokens []keboolasink.Token
-	return op.Atomic(b.client, &updatedTokens).
-		// Load tokens
-		Read(func(ctx context.Context) op.Op {
-			return b.schema.Token().GetAll(b.client).WithAllTo(&tokens)
-		}).
-		// Encrypt raw tokens
-		Write(func(ctx context.Context) op.Op {
-			return b.encryptRawTokens(ctx, tokens).SetResultTo(&updatedTokens)
-		}).
-		Do(ctx).Err()
-}
-
-func (b *Bridge) encryptRawTokens(ctx context.Context, tokens []keboolasink.Token) *op.TxnOp[[]keboolasink.Token] {
-	var updated []keboolasink.Token
-	txn := op.TxnWithResult(b.client, &updated)
-	for _, token := range tokens {
-		if token.Token == nil {
-			continue
-		}
-
-		txn.Merge(b.encryptToken(ctx, token).OnSucceeded(func(r *op.TxnResult[keboolasink.Token]) {
-			updated = append(updated, r.Result())
-		}))
-	}
-	return txn
-}
-
-func (b *Bridge) encryptToken(ctx context.Context, token keboolasink.Token) *op.TxnOp[keboolasink.Token] {
-	if token.EncryptedToken == "" {
-		metadata := cloudencrypt.Metadata{"sink": token.SinkKey.String()}
-		ciphertext, err := b.tokenEncryptor.Encrypt(ctx, *token.Token, metadata)
-		if err != nil {
-			return op.ErrorTxn[keboolasink.Token](err)
-		}
-		token.TokenID = token.Token.ID
-		token.EncryptedToken = string(ciphertext)
-	}
-	token.Token = nil
-
-	return b.saveToken(ctx, token)
-}
-
-func (b *Bridge) saveToken(_ context.Context, token keboolasink.Token) *op.TxnOp[keboolasink.Token] {
-	opKey := b.schema.Token().ForSink(token.SinkKey)
-
-	saveTxn := op.TxnWithResult(b.client, &token)
-	// Entity should exist
-	saveTxn.Merge(op.Txn(b.client).
-		If(etcd.Compare(etcd.ModRevision(opKey.Key()), "!=", 0)).
-		OnFailed(func(r *op.TxnResult[op.NoResult]) {
-			r.AddErr(serviceError.NewResourceNotFoundError("token", token.SinkKey.String(), "sink"))
-		}),
-	)
-
-	saveTxn.Then(
-		opKey.Put(b.client, token),
-	)
-
-	return saveTxn
 }

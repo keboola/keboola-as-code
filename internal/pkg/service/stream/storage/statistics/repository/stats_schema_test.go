@@ -63,6 +63,10 @@ func TestSchema(t *testing.T) {
 			"storage/stats/local/123/456/my-source/my-sink/_sum",
 		},
 		{
+			s.InLevel(model.LevelLocal).InSink(sliceKey.SinkKey).Reset().Key(),
+			"storage/stats/local/123/456/my-source/my-sink/~reset",
+		},
+		{
 			s.InLevel(model.LevelLocal).InFile(sliceKey.FileKey).Prefix(),
 			"storage/stats/local/123/456/my-source/my-sink/2000-01-01T19:00:00.000Z/",
 		},

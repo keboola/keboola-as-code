@@ -158,10 +158,6 @@ type StorageReaderScope interface {
 	Volumes() *diskreader.Volumes
 }
 
-type MigratorScope interface {
-	ServiceScope
-}
-
 type Mocked interface {
 	dependencies.Mocked
 	TestConfig() config.Config
