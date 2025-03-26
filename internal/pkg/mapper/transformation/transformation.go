@@ -1,6 +1,10 @@
 package transformation
 
 import (
+	"slices"
+
+	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -26,7 +30,7 @@ func (m *transformationMapper) isTransformationConfig(object any) (bool, error) 
 		return false, err
 	}
 
-	return component.IsTransformationWithBlocks(), nil
+	return slices.Contains(component.Flags, keboola.GenericCodeBlocksUIFlag), nil
 }
 
 func (m *transformationMapper) isTransformationConfigState(objectState model.ObjectState) (bool, error) {
@@ -40,5 +44,5 @@ func (m *transformationMapper) isTransformationConfigState(objectState model.Obj
 		return false, err
 	}
 
-	return component.IsTransformationWithBlocks(), nil
+	return slices.Contains(component.Flags, keboola.GenericCodeBlocksUIFlag), nil
 }

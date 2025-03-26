@@ -3,6 +3,7 @@ package local
 import (
 	"slices"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json/schema"
@@ -26,7 +27,7 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 			Name:      name,
 			Content:   content,
 		}
-		if component.IsTransformationWithBlocks() {
+		if slices.Contains(component.Flags, keboola.GenericCodeBlocksUIFlag) {
 			config.Transformation = &model.Transformation{}
 		}
 		if component.IsOrchestrator() {
