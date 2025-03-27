@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -26,8 +27,8 @@ type Collector struct {
 	nodeID     string
 	wg         *sync.WaitGroup
 
-	syncLock    *sync.Mutex
-	writersLock *sync.Mutex
+	syncLock    *deadlock.Mutex
+	writersLock *deadlock.Mutex
 	writers     map[model.SliceKey]*writerSnapshot
 }
 
@@ -59,8 +60,8 @@ func Start(d dependencies, events WriterEvents, config statistics.SyncConfig, no
 		config:      config,
 		nodeID:      nodeID,
 		wg:          &sync.WaitGroup{},
-		syncLock:    &sync.Mutex{},
-		writersLock: &sync.Mutex{},
+		syncLock:    &deadlock.Mutex{},
+		writersLock: &deadlock.Mutex{},
 		writers:     make(map[model.SliceKey]*writerSnapshot),
 	}
 

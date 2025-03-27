@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fastjson"
 
@@ -20,7 +20,7 @@ type fastHTTPContext struct {
 	ctx           context.Context
 	timestamp     time.Time
 	reqCtx        *fasthttp.RequestCtx
-	lock          sync.Mutex
+	lock          deadlock.Mutex
 	clientIP      net.IP
 	headersMap    *orderedmap.OrderedMap
 	headersString *string

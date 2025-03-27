@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/valyala/fastjson"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -20,7 +20,7 @@ import (
 type httpContext struct {
 	timestamp     time.Time
 	req           *http.Request
-	lock          sync.Mutex
+	lock          deadlock.Mutex
 	clientIP      net.IP
 	headersMap    *orderedmap.OrderedMap
 	headersString *string

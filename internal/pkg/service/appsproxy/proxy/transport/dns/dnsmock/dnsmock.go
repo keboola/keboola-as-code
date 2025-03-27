@@ -1,16 +1,18 @@
+package
+
 // Based on https://github.com/kuritka/go-fake-dns
 // License: MIT
 
-package dnsmock
+dnsmock
 
 import (
 	"net"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -27,13 +29,13 @@ func (d DNSRecordError) Error() string {
 type Server struct {
 	server     *dns.Server
 	records    map[uint16][]dns.RR
-	updateLock *sync.Mutex
+	updateLock *deadlock.Mutex
 }
 
 func New(port int) *Server {
 	server := &Server{
 		records:    make(map[uint16][]dns.RR),
-		updateLock: &sync.Mutex{},
+		updateLock: &deadlock.Mutex{},
 	}
 
 	var handler dns.HandlerFunc = server.handleRequest

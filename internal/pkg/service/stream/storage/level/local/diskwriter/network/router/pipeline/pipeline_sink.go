@@ -4,8 +4,9 @@ import (
 	"context"
 	"slices"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -30,10 +31,10 @@ type SinkPipeline struct {
 	balancer    balancer.Balancer
 	onClose     func(ctx context.Context, cause string)
 
-	updateLock sync.Mutex
+	updateLock deadlock.Mutex
 	collection *Collection[model.SliceKey, *SlicePipeline]
 
-	writeLock sync.RWMutex
+	writeLock deadlock.RWMutex
 	pipelines []balancer.SlicePipeline
 
 	closed chan struct{}

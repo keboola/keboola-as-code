@@ -2,9 +2,9 @@ package transport
 
 import (
 	"context"
-	"sync"
 
 	"github.com/hashicorp/yamux"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // ServerStream implements net.Conn.
@@ -12,7 +12,7 @@ type ServerStream struct {
 	*yamux.Stream
 	server *Server
 
-	closeLock sync.Mutex
+	closeLock deadlock.Mutex
 	closed    bool
 }
 

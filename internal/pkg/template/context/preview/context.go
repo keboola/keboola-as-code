@@ -1,14 +1,16 @@
+package
+
 // Package preview represents the process of replacing of values when applying a template.
-package preview
+preview
 
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	jsonnetLib "github.com/google/go-jsonnet"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet/fsimporter"
@@ -35,7 +37,7 @@ type Context struct {
 	ticketsResolved   bool
 	projectBackends   []string
 
-	lock          *sync.Mutex
+	lock          *deadlock.Mutex
 	placeholders  PlaceholdersMap
 	objectIds     metadata.ObjectIdsMap
 	inputsUsage   *metadata.InputsUsage
@@ -88,7 +90,7 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		inputsValues:    make(map[string]template.InputValue),
 		tickets:         tickets,
 		components:      components,
-		lock:            &sync.Mutex{},
+		lock:            &deadlock.Mutex{},
 		placeholders:    make(PlaceholdersMap),
 		objectIds:       make(metadata.ObjectIdsMap),
 		inputsUsage:     metadata.NewInputsUsage(),

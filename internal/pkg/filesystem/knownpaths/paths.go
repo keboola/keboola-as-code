@@ -6,7 +6,8 @@ import (
 	"maps"
 	"sort"
 	"strings"
-	"sync"
+
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -16,7 +17,7 @@ import (
 
 // Paths keeps state of all files/dirs in projectDir.
 type Paths struct {
-	lock    *sync.Mutex
+	lock    *deadlock.Mutex
 	fs      filesystem.Fs
 	filter  IsIgnoredFn
 	all     map[string]bool
@@ -44,7 +45,7 @@ const (
 
 func New(ctx context.Context, fs filesystem.Fs, options ...Option) (*Paths, error) {
 	v := &Paths{
-		lock: &sync.Mutex{},
+		lock: &deadlock.Mutex{},
 		fs:   fs,
 	}
 
@@ -81,7 +82,7 @@ func (p *Paths) Clone() *Paths {
 	defer p.lock.Unlock()
 
 	n := &Paths{
-		lock:    &sync.Mutex{},
+		lock:    &deadlock.Mutex{},
 		fs:      p.fs,
 		all:     make(map[string]bool),
 		tracked: make(map[string]bool),

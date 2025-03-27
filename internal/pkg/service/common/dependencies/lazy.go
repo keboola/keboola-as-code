@@ -1,13 +1,13 @@
 package dependencies
 
 import (
-	"sync"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Lazy helper allows lazy initialization of a value on the first use.
 // Initialization runs only once, other calls wait.
 type Lazy[T any] struct {
-	lock  sync.Mutex
+	lock  deadlock.Mutex
 	value T
 	set   bool
 }
