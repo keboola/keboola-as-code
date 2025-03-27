@@ -16,10 +16,13 @@ package dependencies
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
+	config2 "sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/jonboulle/clockwork"
+	"k8s.io/client-go/dynamic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -78,6 +81,7 @@ type ServiceScope interface {
 	PageWriter() *pagewriter.Writer
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
+	K8sClient() dynamic.Interface
 }
 
 type Mocked interface {
@@ -99,6 +103,7 @@ type serviceScope struct {
 	appConfigLoader   appconfig.Loader
 	notifyManager     *notify.Manager
 	wakeupManager     *wakeup.Manager
+	k8sClient         dynamic.Interface
 }
 
 type parentScopes interface {
@@ -161,6 +166,17 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.parentScopes = parentScp
 	d.config = cfg
 
+	// Initialize K8s client
+	k8sConfig, err := config2.GetConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kubernetes config: %w", err)
+	}
+
+	d.k8sClient, err = dynamic.NewForConfig(k8sConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kubernetes dynamic client: %w", err)
+	}
+
 	d.upstreamTransport, err = transport.New(d, cfg.DNSServer)
 	if err != nil {
 		return nil, err
@@ -220,4 +236,8 @@ func (v *serviceScope) NotifyManager() *notify.Manager {
 
 func (v *serviceScope) WakeupManager() *wakeup.Manager {
 	return v.wakeupManager
+}
+
+func (v *serviceScope) K8sClient() dynamic.Interface {
+	return v.k8sClient
 }
