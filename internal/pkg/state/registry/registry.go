@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
-	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -20,11 +20,11 @@ type Registry struct {
 	sortBy         string
 	lock           *sync.Mutex
 	namingRegistry *naming.Registry
-	components     *ComponentsMap
+	components     *model.ComponentsMap
 	objects        *orderedmap.OrderedMap
 }
 
-func New(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *ComponentsMap, sortBy string) *Registry {
+func New(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *model.ComponentsMap, sortBy string) *Registry {
 	return &Registry{
 		pathsRO:        paths.ReadOnly(),
 		paths:          paths,
@@ -36,7 +36,7 @@ func New(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *C
 	}
 }
 
-func (s *Registry) Components() *ComponentsMap {
+func (s *Registry) Components() *model.ComponentsMap {
 	return s.components
 }
 
@@ -57,7 +57,7 @@ func (s *Registry) ReloadPathsState(ctx context.Context) error {
 	return nil
 }
 
-func (s *Registry) TrackObjectPaths(manifest ObjectManifest) {
+func (s *Registry) TrackObjectPaths(manifest model.ObjectManifest) {
 	if !manifest.State().IsPersisted() {
 		return
 	}
@@ -77,21 +77,21 @@ func (s *Registry) TrackObjectPaths(manifest ObjectManifest) {
 	}
 }
 
-func (s *Registry) All() []ObjectState {
+func (s *Registry) All() []model.ObjectState {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	s.objects.Sort(func(a *orderedmap.Pair, b *orderedmap.Pair) bool {
-		aKey := a.Value.(ObjectState).Manifest().SortKey(s.sortBy)
-		bKey := b.Value.(ObjectState).Manifest().SortKey(s.sortBy)
+		aKey := a.Value.(model.ObjectState).Manifest().SortKey(s.sortBy)
+		bKey := b.Value.(model.ObjectState).Manifest().SortKey(s.sortBy)
 		return aKey < bKey
 	})
 
-	out := make([]ObjectState, 0, len(s.objects.Keys()))
+	out := make([]model.ObjectState, 0, len(s.objects.Keys()))
 	for _, key := range s.objects.Keys() {
 		// Get value
 		v, _ := s.objects.Get(key)
-		object := v.(ObjectState)
+		object := v.(model.ObjectState)
 
 		// Skip deleted
 		if !object.HasLocalState() && !object.HasRemoteState() {
@@ -104,46 +104,46 @@ func (s *Registry) All() []ObjectState {
 	return out
 }
 
-func (s *Registry) ObjectsInState(stateType StateType) Objects {
+func (s *Registry) ObjectsInState(stateType model.StateType) model.Objects {
 	switch stateType {
-	case StateTypeRemote:
+	case model.StateTypeRemote:
 		return s.RemoteObjects()
-	case StateTypeLocal:
+	case model.StateTypeLocal:
 		return s.LocalObjects()
 	default:
 		panic(errors.Errorf(`unexpected StateType "%v"`, stateType))
 	}
 }
 
-func (s *Registry) LocalObjects() Objects {
-	return NewProxy(s, StateTypeLocal)
+func (s *Registry) LocalObjects() model.Objects {
+	return NewProxy(s, model.StateTypeLocal)
 }
 
-func (s *Registry) RemoteObjects() Objects {
-	return NewProxy(s, StateTypeRemote)
+func (s *Registry) RemoteObjects() model.Objects {
+	return NewProxy(s, model.StateTypeRemote)
 }
 
-func (s *Registry) MainBranch() *BranchState {
+func (s *Registry) MainBranch() *model.BranchState {
 	for _, b := range s.Branches() {
-		if b.LocalOrRemoteState().(*Branch).IsDefault {
+		if b.LocalOrRemoteState().(*model.Branch).IsDefault {
 			return b
 		}
 	}
 	panic(errors.New("no default branch found"))
 }
 
-func (s *Registry) Branches() (branches []*BranchState) {
+func (s *Registry) Branches() (branches []*model.BranchState) {
 	for _, object := range s.All() {
-		if v, ok := object.(*BranchState); ok {
+		if v, ok := object.(*model.BranchState); ok {
 			branches = append(branches, v)
 		}
 	}
 	return branches
 }
 
-func (s *Registry) Configs() (configs []*ConfigState) {
+func (s *Registry) Configs() (configs []*model.ConfigState) {
 	for _, object := range s.All() {
-		if v, ok := object.(*ConfigState); ok {
+		if v, ok := object.(*model.ConfigState); ok {
 			configs = append(configs, v)
 		}
 	}
@@ -152,7 +152,7 @@ func (s *Registry) Configs() (configs []*ConfigState) {
 
 func (s *Registry) IgnoreConfig(ignoreID string, componentID string) {
 	for _, object := range s.All() {
-		if v, ok := object.(*ConfigState); ok {
+		if v, ok := object.(*model.ConfigState); ok {
 			if v.ID.String() == ignoreID && v.ComponentID.String() == componentID {
 				// ignore configuration
 				v.Ignore = true
@@ -166,9 +166,9 @@ func (s *Registry) IgnoreConfig(ignoreID string, componentID string) {
 	}
 }
 
-func (s *Registry) IgnoredConfigs() (configs []*ConfigState) {
+func (s *Registry) IgnoredConfigs() (configs []*model.ConfigState) {
 	for _, object := range s.All() {
-		if v, ok := object.(*ConfigState); ok {
+		if v, ok := object.(*model.ConfigState); ok {
 			if v.Ignore {
 				configs = append(configs, v)
 			}
@@ -177,9 +177,9 @@ func (s *Registry) IgnoredConfigs() (configs []*ConfigState) {
 	return configs
 }
 
-func (s *Registry) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
+func (s *Registry) ConfigsFrom(branch model.BranchKey) (configs []*model.ConfigState) {
 	for _, object := range s.All() {
-		if v, ok := object.(*ConfigState); ok {
+		if v, ok := object.(*model.ConfigState); ok {
 			if v.BranchID != branch.ID {
 				continue
 			}
@@ -189,9 +189,9 @@ func (s *Registry) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
 	return configs
 }
 
-func (s *Registry) ConfigRows() (rows []*ConfigRowState) {
+func (s *Registry) ConfigRows() (rows []*model.ConfigRowState) {
 	for _, object := range s.All() {
-		if v, ok := object.(*ConfigRowState); ok {
+		if v, ok := object.(*model.ConfigRowState); ok {
 			rows = append(rows, v)
 		}
 	}
@@ -200,7 +200,7 @@ func (s *Registry) ConfigRows() (rows []*ConfigRowState) {
 
 func (s *Registry) IgnoreConfigRow(configID, rowID string) {
 	for _, object := range s.All() {
-		if v, ok := object.(*ConfigRowState); ok {
+		if v, ok := object.(*model.ConfigRowState); ok {
 			if v.ConfigID.String() == configID && v.ID.String() == rowID {
 				v.Ignore = true
 			}
@@ -208,9 +208,9 @@ func (s *Registry) IgnoreConfigRow(configID, rowID string) {
 	}
 }
 
-func (s *Registry) IgnoredConfigRows() (rows []*ConfigRowState) {
+func (s *Registry) IgnoredConfigRows() (rows []*model.ConfigRowState) {
 	for _, object := range s.All() {
-		if v, ok := object.(*ConfigRowState); ok {
+		if v, ok := object.(*model.ConfigRowState); ok {
 			if v.Ignore {
 				rows = append(rows, v)
 			}
@@ -219,9 +219,9 @@ func (s *Registry) IgnoredConfigRows() (rows []*ConfigRowState) {
 	return rows
 }
 
-func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
+func (s *Registry) ConfigRowsFrom(config model.ConfigKey) (rows []*model.ConfigRowState) {
 	for _, object := range s.All() {
-		if v, ok := object.(*ConfigRowState); ok {
+		if v, ok := object.(*model.ConfigRowState); ok {
 			if v.BranchID != config.BranchID || v.ComponentID != config.ComponentID || v.ConfigID != config.ID {
 				continue
 			}
@@ -231,15 +231,15 @@ func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 	return rows
 }
 
-func (s *Registry) GetPath(key Key) (AbsPath, bool) {
+func (s *Registry) GetPath(key model.Key) (model.AbsPath, bool) {
 	objectState, found := s.Get(key)
 	if !found {
-		return AbsPath{}, false
+		return model.AbsPath{}, false
 	}
 	return objectState.GetAbsPath(), true
 }
 
-func (s *Registry) GetByPath(path string) (ObjectState, bool) {
+func (s *Registry) GetByPath(path string) (model.ObjectState, bool) {
 	key, found := s.namingRegistry.KeyByPath(path)
 	if !found {
 		return nil, false
@@ -247,22 +247,22 @@ func (s *Registry) GetByPath(path string) (ObjectState, bool) {
 	return s.Get(key)
 }
 
-func (s *Registry) Get(key Key) (ObjectState, bool) {
+func (s *Registry) Get(key model.Key) (model.ObjectState, bool) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	if v, ok := s.objects.Get(key.String()); ok {
-		return v.(ObjectState), true
+		return v.(model.ObjectState), true
 	}
 	return nil, false
 }
 
-func (s *Registry) GetOrNil(key Key) ObjectState {
+func (s *Registry) GetOrNil(key model.Key) model.ObjectState {
 	v, _ := s.Get(key)
 	return v
 }
 
-func (s *Registry) MustGet(key Key) ObjectState {
+func (s *Registry) MustGet(key model.Key) model.ObjectState {
 	state, found := s.Get(key)
 	if !found {
 		panic(errors.Errorf(`%s not found`, key.Desc()))
@@ -270,12 +270,12 @@ func (s *Registry) MustGet(key Key) ObjectState {
 	return state
 }
 
-func (s *Registry) CreateFrom(manifest ObjectManifest) (ObjectState, error) {
+func (s *Registry) CreateFrom(manifest model.ObjectManifest) (model.ObjectState, error) {
 	objectState := manifest.NewObjectState()
 	return objectState, s.Set(objectState)
 }
 
-func (s *Registry) Set(objectState ObjectState) error {
+func (s *Registry) Set(objectState model.ObjectState) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -294,14 +294,14 @@ func (s *Registry) Set(objectState ObjectState) error {
 	return nil
 }
 
-func (s *Registry) Remove(key Key) {
+func (s *Registry) Remove(key model.Key) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.objects.Delete(key.String())
 	s.namingRegistry.Detach(key)
 }
 
-func (s *Registry) GetOrCreateFrom(manifest ObjectManifest) (ObjectState, error) {
+func (s *Registry) GetOrCreateFrom(manifest model.ObjectManifest) (model.ObjectState, error) {
 	if objectState, found := s.Get(manifest.Key()); found {
 		objectState.SetManifest(manifest)
 		return objectState, nil

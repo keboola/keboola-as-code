@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"goa.design/goa/v3/codegen"
-	. "goa.design/goa/v3/dsl"
+	"goa.design/goa/v3/dsl"
 	"goa.design/goa/v3/eval"
 	"goa.design/goa/v3/expr"
 	openapiv2 "goa.design/goa/v3/http/codegen/openapi/v2"
@@ -60,8 +60,8 @@ func AddTokenHeaderToPayloads(tokenScheme *expr.SchemeExpr, field, header string
 
 	// Add token header to the service metadata
 	eval.Execute(func() {
-		Meta(MetaKeySchemeName, tokenScheme.SchemeName)
-		Meta(MetaKeyTokenHeader, header)
+		dsl.Meta(MetaKeySchemeName, tokenScheme.SchemeName)
+		dsl.Meta(MetaKeyTokenHeader, header)
 	}, service)
 
 	// Iterate over methods
@@ -86,13 +86,13 @@ func AddTokenHeaderToPayloads(tokenScheme *expr.SchemeExpr, field, header string
 						// Prepare payload definition
 						if method.Payload == nil {
 							// No payload defined -> create an empty.
-							Payload(func() {})
+							dsl.Payload(func() {})
 						}
 						if t, ok := method.Payload.Type.(*expr.UserTypeExpr); ok {
 							// Payload is a user type.
 							// Convert it to an objects that extend the user type,
 							// so the APIKey can be added there.
-							Payload(func() { Extend(t) })
+							dsl.Payload(func() { dsl.Extend(t) })
 						}
 						if method.Payload.Type == expr.Empty {
 							// Payload is the empty type -> convert it to an empty object.
@@ -100,8 +100,8 @@ func AddTokenHeaderToPayloads(tokenScheme *expr.SchemeExpr, field, header string
 						}
 						// Add APIKey field
 						eval.Execute(func() {
-							APIKey(scheme.SchemeName, field, String)
-							Required(field)
+							dsl.APIKey(scheme.SchemeName, field, dsl.String)
+							dsl.Required(field)
 						}, method.Payload)
 
 						// Add header to the HTTP definition
@@ -109,7 +109,7 @@ func AddTokenHeaderToPayloads(tokenScheme *expr.SchemeExpr, field, header string
 						httpFn := endpoint.DSLFunc
 						endpoint.DSLFunc = func() {
 							// Define the payload field by the header
-							Header(field + ":" + header)
+							dsl.Header(field + ":" + header)
 
 							// Invoke original definitions
 							if httpFn != nil {

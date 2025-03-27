@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/spf13/afero"
+	"github.com/spf13/afero"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/abstract"
@@ -20,7 +20,7 @@ type MountFs struct {
 	root     abstract.Backend
 	basePath string
 	mounts   []MountPoint
-	utils    *Afero
+	utils    *afero.Afero
 }
 
 type MountPoint struct {
@@ -30,7 +30,7 @@ type MountPoint struct {
 
 // file wrapper overwrites Readdir and Readdirnames to include mount points.
 type file struct {
-	File
+	afero.File
 	fs   *MountFs
 	path string
 }
@@ -39,7 +39,7 @@ func New(root abstract.Backend, basePath string, mounts ...MountPoint) *MountFs 
 	fs := &MountFs{}
 	fs.root = root
 	fs.basePath = basePath
-	fs.utils = &Afero{Fs: fs}
+	fs.utils = &afero.Afero{Fs: fs}
 	fs.mounts = mounts
 	fs.sortMounts()
 	return fs
@@ -151,7 +151,7 @@ func (v *MountFs) Remove(name string) error {
 	return targetFs.Remove(relPath)
 }
 
-func (v *MountFs) OpenFile(path string, flag int, perm os.FileMode) (File, error) {
+func (v *MountFs) OpenFile(path string, flag int, perm os.FileMode) (afero.File, error) {
 	targetFs, mountDir, relPath := v.fsFor(path)
 	f, err := targetFs.OpenFile(relPath, flag, perm)
 	if err != nil {
@@ -160,7 +160,7 @@ func (v *MountFs) OpenFile(path string, flag int, perm os.FileMode) (File, error
 	return file{File: f, fs: v, path: filesystem.Join(mountDir, v.ToSlash(f.Name()))}, nil
 }
 
-func (v *MountFs) Open(path string) (File, error) {
+func (v *MountFs) Open(path string) (afero.File, error) {
 	targetFs, mountDir, relPath := v.fsFor(path)
 	f, err := targetFs.Open(relPath)
 	if err != nil {
@@ -179,7 +179,7 @@ func (v *MountFs) MkdirAll(path string, p os.FileMode) error {
 	return targetFs.MkdirAll(relPath, p)
 }
 
-func (v *MountFs) Create(name string) (File, error) {
+func (v *MountFs) Create(name string) (afero.File, error) {
 	targetFs, _, relPath := v.fsFor(name)
 	return targetFs.Create(relPath)
 }

@@ -5,27 +5,27 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type Registry struct {
 	lock   *sync.Mutex
-	byPath map[string]Key     // path -> object key
-	byKey  map[string]AbsPath // object key -> path
+	byPath map[string]model.Key     // path -> object key
+	byKey  map[string]model.AbsPath // object key -> path
 }
 
 func NewRegistry() *Registry {
 	return &Registry{
 		lock:   &sync.Mutex{},
-		byPath: make(map[string]Key),
-		byKey:  make(map[string]AbsPath),
+		byPath: make(map[string]model.Key),
+		byKey:  make(map[string]model.AbsPath),
 	}
 }
 
 // Attach object's path to NamingTemplate, it guarantees the path will remain unique and will not be used again.
-func (r Registry) Attach(key Key, path AbsPath) error {
+func (r Registry) Attach(key model.Key, path model.AbsPath) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -53,7 +53,7 @@ func (r Registry) Attach(key Key, path AbsPath) error {
 }
 
 // Detach object's path from NamingTemplate, so it can be used by other object.
-func (r Registry) Detach(key Key) {
+func (r Registry) Detach(key model.Key) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -63,17 +63,17 @@ func (r Registry) Detach(key Key) {
 	}
 }
 
-func (r Registry) PathByKey(key Key) (AbsPath, bool) {
+func (r Registry) PathByKey(key model.Key) (model.AbsPath, bool) {
 	path, found := r.byKey[key.String()]
 	return path, found
 }
 
-func (r Registry) KeyByPath(path string) (Key, bool) {
+func (r Registry) KeyByPath(path string) (model.Key, bool) {
 	key, found := r.byPath[path]
 	return key, found
 }
 
-func (r Registry) ensureUniquePath(key Key, p AbsPath) AbsPath {
+func (r Registry) ensureUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 	p = r.makeUniquePath(key, p)
 	if err := r.Attach(key, p); err != nil {
 		panic(err)
@@ -81,7 +81,7 @@ func (r Registry) ensureUniquePath(key Key, p AbsPath) AbsPath {
 	return p
 }
 
-func (r Registry) makeUniquePath(key Key, p AbsPath) AbsPath {
+func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 

@@ -3,22 +3,24 @@ package schema
 import (
 	"github.com/keboola/go-client/pkg/keboola"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type (
-	Sink           struct{ PrefixT[definition.Sink] }
+	Sink struct {
+		etcdop.PrefixT[definition.Sink]
+	}
 	SinkInState    Sink
 	SinkVersions   Sink
 	SinkVersionsOf Sink
 )
 
 func New(s *serde.Serde) Sink {
-	return Sink{PrefixT: NewTypedPrefix[definition.Sink]("definition/sink", s)}
+	return Sink{PrefixT: etcdop.NewTypedPrefix[definition.Sink]("definition/sink", s)}
 }
 
 // Active prefix contains all not deleted objects.
@@ -36,39 +38,39 @@ func (v Sink) Versions() SinkVersions {
 	return SinkVersions{PrefixT: v.PrefixT.Add("version")}
 }
 
-func (v SinkInState) In(objectKey any) PrefixT[definition.Sink] {
+func (v SinkInState) In(objectKey any) etcdop.PrefixT[definition.Sink] {
 	switch k := objectKey.(type) {
 	case keboola.ProjectID:
 		return v.InProject(k)
-	case BranchKey:
+	case key.BranchKey:
 		return v.InBranch(k)
-	case SourceKey:
+	case key.SourceKey:
 		return v.InSource(k)
 	default:
 		panic(errors.Errorf(`unexpected Sink parent key type "%T"`, objectKey))
 	}
 }
 
-func (v SinkInState) InProject(k keboola.ProjectID) PrefixT[definition.Sink] {
+func (v SinkInState) InProject(k keboola.ProjectID) etcdop.PrefixT[definition.Sink] {
 	return v.PrefixT.Add(k.String())
 }
 
-func (v SinkInState) InBranch(k BranchKey) PrefixT[definition.Sink] {
+func (v SinkInState) InBranch(k key.BranchKey) etcdop.PrefixT[definition.Sink] {
 	return v.PrefixT.Add(k.String())
 }
 
-func (v SinkInState) InSource(k SourceKey) PrefixT[definition.Sink] {
+func (v SinkInState) InSource(k key.SourceKey) etcdop.PrefixT[definition.Sink] {
 	return v.PrefixT.Add(k.String())
 }
 
-func (v SinkInState) ByKey(k SinkKey) KeyT[definition.Sink] {
+func (v SinkInState) ByKey(k key.SinkKey) etcdop.KeyT[definition.Sink] {
 	return v.PrefixT.Key(k.String())
 }
 
-func (v SinkVersions) Of(k SinkKey) SinkVersionsOf {
+func (v SinkVersions) Of(k key.SinkKey) SinkVersionsOf {
 	return SinkVersionsOf{PrefixT: v.PrefixT.Add(k.String())}
 }
 
-func (v SinkVersionsOf) Version(version definition.VersionNumber) KeyT[definition.Sink] {
+func (v SinkVersionsOf) Version(version definition.VersionNumber) etcdop.KeyT[definition.Sink] {
 	return v.PrefixT.Key(version.String())
 }
