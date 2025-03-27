@@ -152,33 +152,7 @@ func (m *Manager) updateConnections(ctx context.Context) {
 		m.logger.Infof(ctx, `the list of volumes has changed, updating connections: %q - %q`, node.ID, node.Address)
 	}
 
-	// Detect new nodes - to open connection
-	var toOpen []*nodeData
-	{
-		for _, node := range activeNodes {
-			if _, found := m.client.Connection(node.ID); !found {
-				m.logger.Debugf(ctx, "new disk writer node %q", node.ID)
-				toOpen = append(toOpen, node)
-			}
-		}
-		slices.SortStableFunc(toOpen, func(a, b *nodeData) int {
-			return strings.Compare(a.ID, b.ID)
-		})
-	}
-
-	// Detect inactive nodes - to close connection
-	var toClose []*transport.ClientConnection
-	{
-		for _, conn := range m.client.Connections() {
-			if _, found := activeNodes[conn.RemoteNodeID()]; !found {
-				m.logger.Debugf(ctx, "disk writer node gone %q ", conn.RemoteNodeID())
-				toClose = append(toClose, conn)
-			}
-		}
-		slices.SortStableFunc(toClose, func(a, b *transport.ClientConnection) int {
-			return strings.Compare(a.RemoteNodeID(), b.RemoteNodeID())
-		})
-	}
+	toOpen, toClose := m.getConnections(ctx, activeNodes)
 
 	// Make changes
 	for _, conn := range toClose {
@@ -192,6 +166,38 @@ func (m *Manager) updateConnections(ctx context.Context) {
 			m.logger.Errorf(ctx, "cannot open connection to %q - %q: %s", node.ID, node.Address, err)
 		}
 	}
+}
+
+func (m *Manager) getConnections(
+	ctx context.Context,
+	activeNodes map[string]*nodeData,
+) (
+	toOpen []*nodeData,
+	toClose []*transport.ClientConnection,
+) {
+	// Detect new nodes - to open connection
+	for _, node := range activeNodes {
+		if _, found := m.client.Connection(node.ID); !found {
+			m.logger.Debugf(ctx, "new disk writer node %q", node.ID)
+			toOpen = append(toOpen, node)
+		}
+	}
+	slices.SortStableFunc(toOpen, func(a, b *nodeData) int {
+		return strings.Compare(a.ID, b.ID)
+	})
+
+	// Detect inactive nodes - to close connection
+	for _, conn := range m.client.Connections() {
+		if _, found := activeNodes[conn.RemoteNodeID()]; !found {
+			m.logger.Debugf(ctx, "disk writer node gone %q ", conn.RemoteNodeID())
+			toClose = append(toClose, conn)
+		}
+	}
+	slices.SortStableFunc(toClose, func(a, b *transport.ClientConnection) int {
+		return strings.Compare(a.RemoteNodeID(), b.RemoteNodeID())
+	})
+
+	return
 }
 
 // writerNodes returns all active writer nodes.

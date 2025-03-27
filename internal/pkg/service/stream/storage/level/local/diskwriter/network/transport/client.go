@@ -89,17 +89,22 @@ func (c *Client) Close() error {
 	}
 
 	ctx := context.Background()
-
 	c.logger.Info(ctx, "closing disk writer client")
+	defer c.logger.Info(ctx, "closed disk writer client")
 
 	// Prevent new connections and streams to be opened
 	close(c.closed)
 
+	// Close all connections
+	c.closeAllConnections(ctx)
+	return nil
+}
+
+func (c *Client) closeAllConnections(ctx context.Context) {
 	c.lock.Lock()
 	connections := maps.Values(c.connections)
 	c.lock.Unlock()
 
-	// Close all connections
 	c.logger.Infof(ctx, "closing %d connections", len(connections))
 	wg := &sync.WaitGroup{}
 	for _, conn := range connections {
@@ -114,8 +119,6 @@ func (c *Client) Close() error {
 		}()
 	}
 	wg.Wait()
-	c.logger.Info(ctx, "closed disk writer client")
-	return nil
 }
 
 func (c *Client) registerConnection(ctx context.Context, conn *ClientConnection) {
