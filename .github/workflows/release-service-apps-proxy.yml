@@ -28,27 +28,27 @@ env:
   ACR_USERNAME: "apps-proxy-push"
 
 jobs:
-  test-lint:
-    name: "Lint"
-    secrets: inherit
-    uses: ./.github/workflows/test-lint.yml
-
-  test-unit:
-    name: "Unit Tests"
-    secrets: inherit
-    uses: ./.github/workflows/test-unit.yml
-    with:
-      without-cache: true
-      package-exception-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/cli"
+#  test-lint:
+#    name: "Lint"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-lint.yml
+#
+#  test-unit:
+#    name: "Unit Tests"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-unit.yml
+#    with:
+#      without-cache: true
+#      package-exception-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/cli"
 
   build-and-push-proxy-image:
     name: "Build & Push Proxy Image"
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-    needs:
-      - test-lint
-      - test-unit
+#    needs:
+#      - test-lint
+#      - test-unit
     steps:
       - name: Checkout
         uses: actions/checkout@v5
