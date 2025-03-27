@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	serviceerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -38,7 +38,7 @@ func NewErrorWriter(logger log.Logger, errorNamePrefix, exceptionIDPrefix string
 }
 
 func (wr *ErrorWriter) WriteWithStatusCode(ctx context.Context, w http.ResponseWriter, err error) {
-	w.WriteHeader(HTTPCodeFrom(err))
+	w.WriteHeader(serviceerrors.HTTPCodeFrom(err))
 	_ = wr.WriteOrErr(ctx, w, err)
 }
 
@@ -54,15 +54,15 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 	}
 
 	// Default values
-	response := &UnexpectedError{
-		StatusCode:  HTTPCodeFrom(err),
+	response := &serviceerrors.UnexpectedError{
+		StatusCode:  serviceerrors.HTTPCodeFrom(err),
 		Name:        DefaultErrorName,
 		Message:     err.Error(),
 		ExceptionID: nil,
 	}
 
 	// Error name
-	var nameProvider WithName
+	var nameProvider serviceerrors.WithName
 	if errors.As(err, &nameProvider) {
 		response.Name = nameProvider.ErrorName()
 	}
@@ -75,7 +75,7 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 
 	// Re-use exception ID from Storage or other API, if possible.
 	// Otherwise, generate custom exception ID.
-	var exceptionIDProvider WithExceptionID
+	var exceptionIDProvider serviceerrors.WithExceptionID
 	if errors.As(err, &exceptionIDProvider) {
 		v := exceptionIDProvider.ErrorExceptionID()
 		response.ExceptionID = &v
@@ -86,7 +86,7 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 
 	// Error message
 	var errForResponse error
-	var messageProvider WithUserMessage
+	var messageProvider serviceerrors.WithUserMessage
 	switch {
 	case errors.As(err, &messageProvider):
 		errForResponse = errors.New(messageProvider.ErrorUserMessage())
@@ -100,11 +100,11 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 	response.Message = errors.Format(errForResponse, errors.FormatAsSentences())
 
 	// Log error
-	var logEnabledProvider WithErrorLogEnabled
+	var logEnabledProvider serviceerrors.WithErrorLogEnabled
 	if !errors.As(err, &logEnabledProvider) || logEnabledProvider.ErrorLogEnabled() {
 		// Log message
 		var logMessage string
-		var logMessageProvider WithLogMessage
+		var logMessageProvider serviceerrors.WithLogMessage
 		if errors.As(err, &logMessageProvider) {
 			logMessage = logMessageProvider.ErrorLogMessage()
 		} else {

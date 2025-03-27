@@ -7,7 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -48,8 +48,8 @@ func (g Generator) DescriptionFilePath(dir string) string {
 	return filesystem.Join(dir, DescriptionFile)
 }
 
-func (g Generator) BranchPath(branch *Branch) AbsPath {
-	p := AbsPath{}
+func (g Generator) BranchPath(branch *model.Branch) model.AbsPath {
+	p := model.AbsPath{}
 	p.SetParentPath("") // branch is top level object
 
 	if branch.IsDefault {
@@ -64,13 +64,13 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 	return g.registry.ensureUniquePath(branch.Key(), p)
 }
 
-func (g Generator) ConfigPath(parentPath string, component *keboola.Component, config *Config) AbsPath {
+func (g Generator) ConfigPath(parentPath string, component *keboola.Component, config *model.Config) model.AbsPath {
 	// Get parent in the local filesystem
 	parentKey, err := config.ParentKey()
 	if err != nil {
 		panic(err)
 	}
-	var parentKind Kind
+	var parentKind model.Kind
 	if parentKey != nil {
 		parentKind = parentKey.Kind()
 	}
@@ -88,7 +88,7 @@ func (g Generator) ConfigPath(parentPath string, component *keboola.Component, c
 			// Shared code
 			template = string(g.template.SharedCodeConfig)
 			if config.SharedCode == nil {
-				p := AbsPath{}
+				p := model.AbsPath{}
 				p.SetParentPath(parentPath)
 				p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]any{
 					"target_component_id": targetComponentID, // for shared code
@@ -113,14 +113,14 @@ func (g Generator) ConfigPath(parentPath string, component *keboola.Component, c
 	case parentKind.IsConfig() && component.IsVariables():
 		// Regular component with variables
 		template = string(g.template.VariablesConfig)
-	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentID == keboola.SharedCodeComponentID:
+	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(model.ConfigRowKey).ComponentID == keboola.SharedCodeComponentID:
 		// Shared code is config row and can have variables
 		template = string(g.template.VariablesConfig)
 	default:
 		panic(errors.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
 	}
 
-	p := AbsPath{}
+	p := model.AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]any{
 		"target_component_id": targetComponentID, // for shared code
@@ -132,7 +132,7 @@ func (g Generator) ConfigPath(parentPath string, component *keboola.Component, c
 	return g.registry.ensureUniquePath(config.Key(), p)
 }
 
-func (g Generator) ConfigRowPath(parentPath string, component *keboola.Component, row *ConfigRow) AbsPath {
+func (g Generator) ConfigRowPath(parentPath string, component *keboola.Component, row *model.ConfigRow) model.AbsPath {
 	if len(parentPath) == 0 {
 		panic(errors.Errorf(`config row "%s" parent path cannot be empty"`, row))
 	}
@@ -155,7 +155,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *keboola.Component
 		template = string(g.template.SharedCodeConfigRow)
 	case component.IsVariables():
 		template = string(g.template.VariablesValuesRow)
-		if row.Relations.Has(VariablesValuesForRelType) {
+		if row.Relations.Has(model.VariablesValuesForRelType) {
 			template = strhelper.ReplacePlaceholders(string(g.template.VariablesValuesRow), map[string]any{
 				"config_row_name": `default`,
 			})
@@ -177,7 +177,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *keboola.Component
 		}
 	}
 
-	p := AbsPath{}
+	p := model.AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]any{
 		"config_row_id":   jsonnet.StripIDPlaceholder(row.ID.String()),
@@ -190,8 +190,8 @@ func (g Generator) BlocksDir(configDir string) string {
 	return filesystem.Join(configDir, blocksDir)
 }
 
-func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
-	p := AbsPath{}
+func (g Generator) BlockPath(parentPath string, block *model.Block) model.AbsPath {
+	p := model.AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(strhelper.ReplacePlaceholders(string(blockNameTemplate), map[string]any{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
@@ -200,8 +200,8 @@ func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
 	return g.registry.ensureUniquePath(block.Key(), p)
 }
 
-func (g Generator) CodePath(parentPath string, code *Code) AbsPath {
-	p := AbsPath{}
+func (g Generator) CodePath(parentPath string, code *model.Code) model.AbsPath {
+	p := model.AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(strhelper.ReplacePlaceholders(string(codeNameTemplate), map[string]any{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
@@ -210,7 +210,7 @@ func (g Generator) CodePath(parentPath string, code *Code) AbsPath {
 	return g.registry.ensureUniquePath(code.Key(), p)
 }
 
-func (g Generator) CodeFilePath(code *Code) string {
+func (g Generator) CodeFilePath(code *model.Code) string {
 	return filesystem.Join(code.Path(), code.CodeFileName)
 }
 
@@ -226,8 +226,8 @@ func (g Generator) PhasesDir(configDir string) string {
 	return filesystem.Join(configDir, phasesDir)
 }
 
-func (g Generator) PhasePath(parentPath string, phase *Phase) AbsPath {
-	p := AbsPath{}
+func (g Generator) PhasePath(parentPath string, phase *model.Phase) model.AbsPath {
+	p := model.AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(strhelper.ReplacePlaceholders(string(phaseNameTemplate), map[string]any{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
@@ -236,12 +236,12 @@ func (g Generator) PhasePath(parentPath string, phase *Phase) AbsPath {
 	return g.registry.ensureUniquePath(phase.Key(), p)
 }
 
-func (g Generator) PhaseFilePath(phase *Phase) string {
+func (g Generator) PhaseFilePath(phase *model.Phase) string {
 	return filesystem.Join(phase.Path(), PhaseFile)
 }
 
-func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
-	p := AbsPath{}
+func (g Generator) TaskPath(parentPath string, task *model.Task) model.AbsPath {
+	p := model.AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(strhelper.ReplacePlaceholders(string(taskNameTemplate), map[string]any{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
@@ -250,6 +250,6 @@ func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
 	return g.registry.ensureUniquePath(task.Key(), p)
 }
 
-func (g Generator) TaskFilePath(task *Task) string {
+func (g Generator) TaskFilePath(task *model.Task) string {
 	return filesystem.Join(task.Path(), TaskFile)
 }

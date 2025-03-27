@@ -3,7 +3,7 @@ package naming
 import (
 	"github.com/keboola/go-client/pkg/keboola"
 
-	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -15,7 +15,7 @@ func NewPathMatcher(template Template) *PathMatcher {
 	return &PathMatcher{template: template}
 }
 
-func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentID keboola.ComponentID, err error) {
+func (m PathMatcher) MatchConfigPath(parentKey model.Key, path model.AbsPath) (componentID keboola.ComponentID, err error) {
 	parent := parentKey.Kind()
 	if parent.IsBranch() {
 		// Shared code
@@ -47,7 +47,7 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentID k
 	}
 
 	// Shared code variables, parent is config row
-	if parent.IsConfigRow() && parentKey.(ConfigRowKey).ComponentID == keboola.SharedCodeComponentID {
+	if parent.IsConfigRow() && parentKey.(model.ConfigRowKey).ComponentID == keboola.SharedCodeComponentID {
 		if matched, _ := m.template.VariablesConfig.MatchPath(path.GetRelativePath()); matched {
 			return keboola.VariablesComponentID, nil
 		}
@@ -56,7 +56,7 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentID k
 	return "", nil
 }
 
-func (m PathMatcher) MatchConfigRowPath(component *keboola.Component, path AbsPath) bool {
+func (m PathMatcher) MatchConfigRowPath(component *keboola.Component, path model.AbsPath) bool {
 	// Shared code
 	if component.IsSharedCode() {
 		matched, _ := m.template.SharedCodeConfigRow.MatchPath(path.GetRelativePath())
