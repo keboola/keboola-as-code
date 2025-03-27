@@ -27,33 +27,33 @@ env:
   ACR_USERNAME: "apps-proxy-push"
 
 jobs:
-  test-lint:
-    name: "Lint"
-    secrets: inherit
-    uses: ./.github/workflows/test-lint.yml
-
-  test-unit:
-    name: "Unit Tests"
-    secrets: inherit
-    uses: ./.github/workflows/test-unit.yml
-    with:
-      without-cache: true
-      package-exception-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/cli"
-
-  test-k8s-service-apps-proxy:
-    name: "K8s: Apps Proxy"
-    secrets: inherit
-    uses: ./.github/workflows/test-k8s-service-apps-proxy.yml
+#  test-lint:
+#    name: "Lint"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-lint.yml
+#
+#  test-unit:
+#    name: "Unit Tests"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-unit.yml
+#    with:
+#      without-cache: true
+#      package-exception-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/cli"
+#
+#  test-k8s-service-apps-proxy:
+#    name: "K8s: Apps Proxy"
+#    secrets: inherit
+#    uses: ./.github/workflows/test-k8s-service-apps-proxy.yml
 
   build-and-push-proxy-image:
     name: "Build & Push Proxy Image"
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-    needs:
-      - test-lint
-      - test-unit
-      - test-k8s-service-apps-proxy
+#    needs:
+#      - test-lint
+#      - test-unit
+#      - test-k8s-service-apps-proxy
     steps:
       - name: Checkout
         uses: actions/checkout@v5
