@@ -43,7 +43,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-client v1.29.3
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250116143358-1ca36e2474e2
-	github.com/keboola/go-utils v1.3.0
+	github.com/keboola/go-utils v1.3.2
 	github.com/klauspost/compress v1.18.0
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0

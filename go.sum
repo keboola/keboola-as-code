@@ -996,8 +996,8 @@ github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6 h1:HcvX1VQkiav
 github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6/go.mod h1:eDjgYHYDJbPLBLsyZ6qRaugP0mX8vePOhZ5id1fdzJw=
 github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20250325124709-f4d482276c37 h1:/KHow6e+UbzQFVuMlp3xpmSkUIXwWv02SRYJhl6KCjI=
 github.com/keboola/go-oauth2-proxy/v7 v7.6.1-0.20250325124709-f4d482276c37/go.mod h1:obobYo1zYAcAt8cjTbsj6o7ZI1x0hhZuQSUPRlzwZ1k=
-github.com/keboola/go-utils v1.3.0 h1:oiNRfUlLFTWjATty4oQlCBWmiMZN80QCCnRHP61Md5Q=
-github.com/keboola/go-utils v1.3.0/go.mod h1:4YVC2/V0QwgHqxtch8JAVDNVI1aINF2arJ7sh6TO1GY=
+github.com/keboola/go-utils v1.3.2 h1:aYs9ikh/Ym2iPl/d45LuqzR539J418M/CdWYypYjG2M=
+github.com/keboola/go-utils v1.3.2/go.mod h1:Z8sxz4EV55gwW5CD/GuZcxhQ8/F1XRX5jL/wwxeuqb4=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/keybase/go-keychain v0.0.0-20231219164618-57a3676c3af6 h1:IsMZxCuZqKuao2vNdfD82fjjgPLfyHLpR41Z88viRWs=

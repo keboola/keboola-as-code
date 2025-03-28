@@ -54,11 +54,9 @@ func DeleteEmptyDirectories(ctx context.Context, fs filesystem.Fs, trackedPaths 
 		}
 
 		// Found file/ignored dir -> all parent dirs are not empty
-		for _, dir := range emptyDirs.Keys() {
-			if filesystem.IsFrom(path, dir) {
-				emptyDirs.Delete(dir)
-			}
-		}
+		emptyDirs.DeleteFunc(func(key string) bool {
+			return filesystem.IsFrom(path, key)
+		})
 
 		// Skip sub-directories
 		if skipDir {
