@@ -3,10 +3,12 @@ package upstream
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -175,6 +177,21 @@ func (u *AppUpstream) trace() chain.Middleware {
 				DNSDone: func(info httptrace.DNSDoneInfo) {
 					if info.Err != nil {
 						u.wakeup(ctx, info.Err)
+					}
+				},
+				ConnectDone: func(network, addr string, err error) {
+					if err != nil {
+						u.manager.logger.Warnf(ctx, "upsream connect done with error: %v", err)
+					}
+
+					var opErr *net.OpError
+					if errors.As(err, &opErr) {
+						var syscallErr *os.SyscallError
+						if errors.As(opErr.Err, &syscallErr) {
+							if syscallErr.Err.Error() == "connection refused" {
+								u.wakeup(ctx, err)
+							}
+						}
 					}
 				},
 			})
