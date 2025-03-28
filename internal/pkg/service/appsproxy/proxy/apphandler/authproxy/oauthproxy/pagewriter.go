@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	proxypw "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/app/pagewriter"
+	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/version"
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
