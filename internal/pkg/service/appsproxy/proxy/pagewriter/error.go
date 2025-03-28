@@ -3,6 +3,7 @@ package pagewriter
 import (
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync/atomic"
 
@@ -46,6 +47,18 @@ func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, ap
 		pw.logger.Info(req.Context(), "app is not running, rendering spinner page")
 		pw.WriteSpinnerPage(w, req, app)
 		return
+	}
+
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		var syscallErr *os.SyscallError
+		if errors.As(opErr.Err, &syscallErr) {
+			if syscallErr.Err.Error() == "connection refused" {
+				pw.logger.Info(req.Context(), "app connection refused, rendering spinner page")
+				pw.WriteSpinnerPage(w, req, app)
+				return
+			}
+		}
 	}
 
 	pw.WriteError(w, req, &app, svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed."))
