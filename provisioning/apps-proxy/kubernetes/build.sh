@@ -12,6 +12,7 @@ envsubst < templates/proxy/config-map.yaml     > deploy/proxy/config-map.yaml
 envsubst < templates/proxy/token.yaml          > deploy/proxy/token.yaml
 envsubst < templates/proxy/pdb.yaml            > deploy/proxy/pdb.yaml
 envsubst < templates/proxy/network-policy.yaml > deploy/proxy/network-policy.yaml
+envsubst < templates/proxy/rbac.yaml           > deploy/proxy/rbac.yaml
 envsubst < templates/proxy/deployment.yaml     > deploy/proxy/deployment.yaml
 
 # Remove resources requests/limits to fit all pods to the CI environment

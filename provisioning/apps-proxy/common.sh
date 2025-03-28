@@ -44,4 +44,5 @@ kubectl apply -f ./kubernetes/deploy/proxy/token.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/config-map.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/pdb.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/network-policy.yaml
+kubectl apply -f ./kubernetes/deploy/proxy/rbac.yaml
 kubectl apply -f ./kubernetes/deploy/proxy/deployment.yaml
