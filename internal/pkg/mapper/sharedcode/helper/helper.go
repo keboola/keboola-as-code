@@ -1,8 +1,6 @@
 package helper
 
 import (
-	"slices"
-
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -59,7 +57,7 @@ func (h *SharedCodeHelper) IsTransformation(key model.Key) (bool, error) {
 
 	// Is shared code?
 	component, err := h.state.Components().GetOrErr(configKey.ComponentID)
-	if err != nil || !slices.Contains(component.Flags, keboola.GenericCodeBlocksUIFlag) {
+	if err != nil || !component.IsTransformationWithBlocks() {
 		return false, err
 	}
 	return true, nil
