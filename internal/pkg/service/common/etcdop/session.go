@@ -2,7 +2,6 @@ package etcdop
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -168,12 +167,9 @@ func (b SessionBuilder) Start(ctx context.Context, wg *sync.WaitGroup, logger lo
 			if err != nil {
 				s.logger.Infof(ctx, "cannot create etcd session: %s", err.Error())
 				if !errors.Is(err, context.Canceled) {
-					fmt.Println("context canceled, removing session:", err.Error())
 					if errors.Is(err, context.DeadlineExceeded) {
-						fmt.Println("context deadline exceeded, removing session:", err.Error())
 						// Do not check error from closeSession, it can be already closed
 						_ = s.closeSession(ctx, "etcd unreachable, remove existing sessions")
-						fmt.Println("context deadline exceeded, removed session")
 					}
 
 					delay := s.backoff.NextBackOff()
@@ -229,12 +225,10 @@ func (s *Session) WaitForSession(ctx context.Context) (*concurrency.Session, err
 			return nil, ctx.Err()
 		case <-session.Done():
 			// wait for the session re-creation
-			fmt.Println("waiting for the session re-creation")
 			<-ready
 			continue
 		default:
 			// ok
-			fmt.Println("session is ready and ok")
 			return session, nil
 		}
 	}

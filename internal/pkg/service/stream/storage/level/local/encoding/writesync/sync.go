@@ -177,6 +177,7 @@ func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
 	// Run sync in the background
 	s.triggerSyncWg.Add(1)
 	go func() {
+		// TODO: rework without reusable mutex
 		defer s.triggerSyncWg.Done()
 		defer s.syncLock.Unlock()
 

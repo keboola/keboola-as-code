@@ -254,7 +254,7 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 func (n *Node) cleanFile(ctx context.Context, file model.File) (err error, deleted bool) {
 	// There can be several cleanup nodes, each node processes an own part.
 	if _, err := n.dist.IsOwner(file.ProjectID.String()); err != nil {
-		fmt.Println("not owner file", file.ProjectID.String(), err)
+		fmt.Println("not owner file", file.ProjectID.String(), file.FileKey.String(), err)
 		return err, false
 	}
 

@@ -224,9 +224,7 @@ func (s *mutexStore) clear(ctx context.Context, mtx *activeMutex) (err error) {
 
 	// Unlock DB if the lock is no more used
 	if unlockDB {
-		fmt.Println("unlocking db during cleanup")
 		if err = mtx.dbMutex.Unlock(ctx); err != nil {
-			fmt.Println("error unlocking db during cleanup, close session, db connection is not working", err)
 			// DB connection is not working, state of the lock is unknown, close session
 			_ = mtx.dbSession.Close()
 		}
@@ -234,7 +232,6 @@ func (s *mutexStore) clear(ctx context.Context, mtx *activeMutex) (err error) {
 
 	// Clear memory
 	if clearMtx {
-		fmt.Println("clearing memory during cleanup")
 		s.allLock.Lock()
 		mtx.dbSession = nil
 		mtx.dbMutex = nil
@@ -258,7 +255,6 @@ func (s *mutexStore) lock(ctx context.Context, name string, lockFn func(mtx *act
 	err = lockFn(mtx)
 	// Revert state on error
 	if err != nil {
-		fmt.Println("error locking mutex, clearing", err)
 		_ = s.clear(ctx, mtx)
 		return nil, err
 	}
@@ -328,7 +324,6 @@ func (m *activeMutex) dbLock(ctx context.Context) (err error) {
 	// Validate session
 	select {
 	case <-m.dbSession.Done():
-		fmt.Println("session expired")
 		m.dbSession = nil
 		return concurrency.ErrSessionExpired
 	default:

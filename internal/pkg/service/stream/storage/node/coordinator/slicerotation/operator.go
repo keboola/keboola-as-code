@@ -3,7 +3,6 @@ package slicerotation
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -147,10 +146,8 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 				// Keep the same lock, to prevent parallel processing of the same slice.
 				// No modification from another code is expected, but just to be sure.
 				if oldValue != nil {
-					fmt.Println("copying lock", slice.SliceKey)
 					out.Lock = (*oldValue).Lock
 				} else {
-					fmt.Println("creating new lock", slice.SliceKey)
 					out.Lock = &sync.Mutex{}
 				}
 
@@ -374,13 +371,11 @@ func (o *operator) closeSlice(ctx context.Context, slice *sliceData) {
 
 	// Switch slice to the uploading state
 	if err == nil {
-		fmt.Println("switching to uploading", slice.SliceKey)
 		isEmpty := stats.Total.RecordsCount == 0
 		err = o.storage.Slice().SwitchToUploading(slice.SliceKey, o.clock.Now(), isEmpty).Do(dbCtx).Err()
 		if err != nil {
 			err = errors.PrefixError(err, "cannot switch slice to the uploading state")
 		}
-		fmt.Println("switched to uploading", slice.SliceKey)
 	}
 
 	// If there is an error, increment retry delay
@@ -414,7 +409,7 @@ func (o *operator) waitForSliceClosing(ctx context.Context, slice *sliceData) (s
 	}
 
 	// Make sure the statistics cache is up-to-date
-	if err := o.statisticsCache.WaitForRevision(ctx, slice.ModRevision); err != nil {
+	if err := o.statisticsCache.WaitForRevisionMap(ctx, slice.ModRevision); err != nil {
 		return statistics.Aggregated{}, errors.PrefixErrorf(err, "error when waiting for statistics cache revision, actual: %v, expected: %v", o.statisticsCache.Revision(), slice.ModRevision)
 	}
 

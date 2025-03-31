@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 	"unsafe"
@@ -162,6 +163,7 @@ func (m *MirrorTree[T, V]) StartMirroring(ctx context.Context, wg *sync.WaitGrou
 				m.revision = header.Revision
 				m.revisionLock.Unlock()
 
+				fmt.Println("revision in mirrortree synced", header.Revision)
 				logger.Debugf(ctx, `watch stream mirror synced to revision %d`, header.Revision)
 
 				// Unblock WaitForRevision loops
@@ -222,6 +224,7 @@ func (m *MirrorTree[T, V]) Revision() int64 {
 func (m *MirrorTree[T, V]) WaitForRevision(ctx context.Context, expected int64) error {
 	for {
 		m.revisionLock.RLock()
+		fmt.Println("waiting for revision in mirrortree", m.revision, expected)
 		actual := m.revision
 		m.revisionLock.RUnlock()
 

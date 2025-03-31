@@ -3,7 +3,6 @@ package filerotation
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -458,8 +457,6 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), o.config.FileCloseTimeout.Duration(), errors.New("file close timeout"))
 	defer cancel()
 
-	d, ok := ctx.Deadline()
-	fmt.Println("context wait", d, ok, ctx.Err())
 	// Wait for all slices upload, get statistics
 	stats, err := o.waitForFileClosing(ctx, file)
 
@@ -467,8 +464,6 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("switch to importing timeout"))
 	defer dbCancel()
 
-	d, ok = ctx.Deadline()
-	fmt.Println("context lockfile wait", d, ok, ctx.Err())
 	// Lock all file operations
 	lock, unlock, lockErr := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
 	if lockErr != nil {

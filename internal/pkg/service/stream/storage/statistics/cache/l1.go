@@ -32,6 +32,7 @@ type L1 struct {
 	logger     log.Logger
 	repository *repository.Repository
 	cache      *etcdop.MirrorTree[statistics.Value, statistics.Value]
+	cacheMap   *etcdop.MirrorMap[statistics.Value, string, statistics.Value]
 }
 
 func NewL1Cache(d dependencies) (*L1, error) {
@@ -63,6 +64,14 @@ func NewL1Cache(d dependencies) (*L1, error) {
 		return nil, err
 	}
 
+	streamMap := c.repository.GetAllAndWatch(ctx)
+	cacheMap := etcdop.SetupMirrorMap[statistics.Value, string, statistics.Value](streamMap, mapKey, mapValue).BuildMirror()
+	if err := <-cacheMap.StartMirroring(ctx, wg, c.logger, d.Telemetry(), d.WatchTelemetryInterval()); err == nil {
+		c.cacheMap = cacheMap
+	} else {
+		return nil, err
+	}
+
 	// Setup Provider interface
 	c.provider = repository.NewProvider(c.aggregate)
 
@@ -75,6 +84,10 @@ func (c *L1) Revision() int64 {
 
 func (c *L1) WaitForRevision(ctx context.Context, expected int64) error {
 	return c.cache.WaitForRevision(ctx, expected)
+}
+
+func (c *L1) WaitForRevisionMap(ctx context.Context, expected int64) error {
+	return c.cacheMap.WaitForRevision(ctx, expected)
 }
 
 func (c *L1) aggregate(ctx context.Context, objectKey fmt.Stringer) (statistics.Aggregated, error) {

@@ -2,7 +2,6 @@ package volume
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -71,9 +70,6 @@ func (r *Repository) watchVolumes(d dependencies) error {
 
 // AssignVolumes assigns volumes to a new file.
 func (r *Repository) AssignVolumes(cfg assignment.Config, fileOpenedAt time.Time) assignment.Assignment {
-	for _, v := range r.volumes.All() {
-		fmt.Println("assign volumes", v.ID, v.NodeID)
-	}
 	return assignment.VolumesFor(r.volumes.All(), cfg, fileOpenedAt.UnixNano())
 }
 

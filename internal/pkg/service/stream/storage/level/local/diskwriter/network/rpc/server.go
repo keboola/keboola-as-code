@@ -197,7 +197,6 @@ func (s *NetworkFileServer) Sync(ctx context.Context, req *pb.SyncRequest) (*pb.
 }
 
 func (s *NetworkFileServer) Close(ctx context.Context, req *pb.CloseRequest) (*pb.CloseResponse, error) {
-	fmt.Println("close called from client")
 	w, err := s.writer(req.FileId)
 	if err != nil {
 		return nil, err

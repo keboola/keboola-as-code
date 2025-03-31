@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -142,6 +143,7 @@ func (c *WatchConsumer[T]) StartConsumer(ctx context.Context, wg *sync.WaitGroup
 				//
 				// It is suspicious if a short time has passed between two errors,
 				// then the error is logged with error log level.
+				fmt.Println("error on stream consumer", resp.Err)
 				if interval := time.Since(lastErrorAt); interval > watchErrorThreshold {
 					logger.Warn(ctx, resp.Err.Error())
 				} else {
@@ -174,11 +176,13 @@ func (c *WatchConsumer[T]) StartConsumer(ctx context.Context, wg *sync.WaitGroup
 				}
 			default:
 				lastError = nil
+				fmt.Println("forEachFn", resp.Header.Revision)
 				c.forEachFn(resp.Events, resp.Header, restart)
 				restart = false
 			}
 		}
 
+		fmt.Println("closing consumer")
 		// Close
 		var closeErr error
 		if lastError != nil {
