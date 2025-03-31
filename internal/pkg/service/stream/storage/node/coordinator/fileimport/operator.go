@@ -382,6 +382,8 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	result := o.storage.File().SwitchToImported(file.FileKey, o.clock.Now()).RequireLock(lock).Do(dbCtx)
 	err = result.Err()
 	// Check specifically for invalid state transition errors
+	// This happens only when ETCD is restarted and the mirror is constructed again from scratch.
+	// The file local lock is empty and therefore the switch to imported state is done > n times.
 	if errors.Is(err, fileRepo.ErrInvalidStateTransition) {
 		o.logger.Warnf(dbCtx, "skipping file transition to imported state: %s", err)
 		// Mark as processed to avoid retry for known state transition errors
