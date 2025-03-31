@@ -1,0 +1,258 @@
+# Code Organization Principles
+- Keep modules under 500 lines (excluding tests)
+- Follow KISS (Keep It Simple, Stupid)
+  - Write clear, straightforward code
+  - Avoid unnecessary complexity
+  - Prefer readability over cleverness
+- Follow DRY (Don't Repeat Yourself)
+  - Extract common functionality into reusable components
+  - Use interfaces for common behavior patterns
+  - Avoid code duplication
+
+# Project Overview
+- Go-based project using ETCD for distributed storage and synchronization
+- Custom ETCD wrapper (`etcdop`) for enhanced functionality
+- Focus on filesystem operations, git integration, and data streaming
+
+# Tech Stack
+- **Language**: Go 1.24+
+- **Storage**: ETCD v3.5.17
+- **Key Libraries**:
+  - `go.etcd.io/etcd/client/v3`: ETCD client
+  - `go.opentelemetry.io/otel`: Telemetry and metrics
+  - `github.com/stretchr/testify`: Testing framework
+  - `github.com/spf13/cobra`: CLI framework
+  - `github.com/go-playground/validator/v10`: Struct validation
+- **Custom Components**:
+  - `etcdop`: ETCD operations wrapper
+  - Custom Go validator tags
+  - Filesystem operations
+  - Git integration
+  - Custom CLI testing suite:
+    - Integration test framework for CLI commands
+    - Snapshot testing for command outputs
+    - Mocked filesystem and ETCD operations
+    - Test fixtures and helpers
+
+# Testing Patterns
+- Unit tests with `*_test.go` suffix
+- Test files located next to implementation
+- Heavy use of ETCD testing utilities
+- Mirror tree and map testing for ETCD operations
+- Use testify/assert for assertions
+- Table-driven tests preferred
+- End-to-End API Testing:
+  - Templates API tests using `/test/` fixtures
+  - Stream API tests using `/test/` fixtures
+  - Integration tests with mocked dependencies
+  - Snapshot testing for API responses
+  - Serves as comprehensive end-to-end test suite
+  - Validates complete request-response cycles
+  - Tests full integration with ETCD and filesystem
+
+# Key Directories
+## API Design
+- `api/`: API definitions and interfaces
+  - `templates/`: Templates API specifications
+  - `stream/`: Stream API specifications
+  - `appsproxy/`: Apps Proxy API specifications
+  - `docs/`: API documentation in Markdown
+
+## Main Entry Points
+- `cmd/`: Main program entry points
+  - `templates-api/`: Templates service executable
+  - `stream-api/`: Stream service executable
+  - `appsproxy-api/`: Apps Proxy service executable
+  - `kbc/`: CLI part of Keboola Connection service
+
+## Internal Implementation
+- `internal/pkg/service/`:
+  - `appsproxy/`: Apps Proxy service implementation
+    - Handles proxy requests to apps
+    - Manages app lifecycle and routing
+    - Implements security and rate limiting
+  - `cli/`: CLI implementation
+    - Command-line interface tools
+    - Service management utilities
+    - Configuration handling
+  - `common/etcdop/`: ETCD operations and wrappers
+    - Custom ETCD client operations
+    - Watch and mirror implementations
+    - Transaction handling
+  - `stream/`: Stream service implementation
+    - Data streaming functionality
+    - Pipeline processing
+    - Event handling and routing
+  - `templates/`: Templates service implementation
+    - Template management
+    - Version control integration
+    - Template rendering and validation
+- `internal/pkg/telemetry/`: OpenTelemetry integration
+  - Metrics collection
+  - Tracing implementation
+  - Performance monitoring
+- `internal/pkg/utils/`: Shared utilities and helpers
+  - Common functions and tools
+  - Shared interfaces
+  - Helper utilities
+
+## Kubernetes Deployment
+- `provisioning/`: Kubernetes deployment and configuration
+  - `stream/`: Stream service deployment
+    - Service configuration
+    - Resource limits and scaling
+    - Network policies
+  - `templates-api/`: Templates API service deployment
+    - API server configuration
+    - Storage settings
+    - Service mesh integration
+  - `apps-proxy/`: Apps Proxy service deployment
+    - Proxy configuration
+    - Load balancing settings
+    - Security policies
+  - `cli-dist/`: CLI distribution configuration
+    - Binary packaging
+    - Distribution settings
+    - Version management
+  - `common/`: Shared deployment resources
+    - Common configurations
+    - Shared secrets
+    - Network policies
+  - `dev/`: Development environment setup
+    - Local development settings
+    - Testing configurations
+    - Debug tools
+
+## Documentation
+- `docs/`: Project documentation in Markdown
+  - Service-specific documentation:
+    - `stream/`: Stream service documentation
+    - `templates/`: Templates service documentation
+    - `apps-proxy/`: Apps Proxy documentation
+    - `cli/`: CLI documentation
+  - Core documentation files:
+    - `development.md`: Development setup and guidelines
+    - `telemetry.md`: Telemetry and metrics documentation
+    - `cli-release.md`: CLI release process
+    - `e2e_tests.md`: End-to-end testing guide
+    - `etcd.md`: ETCD usage and patterns
+    - `README.md`: Project overview
+
+# Common Patterns
+- Watch operations for ETCD (`watch_*.go`)
+- Mirror tree implementations
+- Network connections and disk writers
+- Telemetry integration with OpenTelemetry
+
+# Environment
+- Development uses Docker (see `docker-compose.yml`)
+- Local ETCD instance required for testing
+- Telemetry metrics collection
+
+# Code Style & Linting Rules
+## General
+- Line length: max 120 characters
+- File length: max 500 lines
+- Function length: max 50 lines
+- Package names: lowercase, single word
+
+## Naming Conventions
+- Interfaces: end with 'er' (e.g., `Reader`, `Writer`)
+- Test functions: `Test` prefix (e.g., `TestMyFunction`)
+- Benchmark functions: `Benchmark` prefix
+- Mock implementations: `Mock` prefix
+
+## Error Handling
+- Always handle errors
+- Use wrapped errors with `fmt.Errorf("... %w", err)`
+- Custom error types for domain-specific errors
+- No empty interface (`interface{}`) unless absolutely necessary
+
+## Comments
+- All exported symbols must be documented
+- Use complete sentences with proper punctuation
+- Start with the name of the thing being documented
+- Include examples in package documentation
+
+## Testing
+- Coverage target: 80%
+- Use subtests for table-driven tests
+- Mock external dependencies
+- One assertion per test when possible
+
+## Test Execution
+- Run all tests: `go test ./...`
+- Run tests with coverage: `go test -coverprofile=coverage.out ./...`
+- View coverage report: `go tool cover -func=coverage.out`
+- View HTML coverage report: `go tool cover -html=coverage.out`
+
+## Current Coverage Highlights
+- High coverage (>80%):
+  - `diff`: 91.6%
+  - `json/schema`: 84.5%
+  - `jsonnet/fsimporter`: 100%
+  - `template/replacevalues`: 84.3%
+  - `orchestrator`: 81.1%
+- Medium coverage (60-80%):
+  - Most filesystem operations
+  - Git operations: 74.5%
+  - Mapper components
+  - Environment handling
+- Areas needing improvement (<60%):
+  - Model package: 24.7%
+  - Some platform models
+  - Memory filesystem operations
+
+## Prohibited
+- Global variables (gochecknoglobals)
+- init() functions (gochecknoinits) 
+- Debug print statements (fmt.Print*, print, println) - use logger instead
+- Direct "os" package filesystem operations - use "internal/pkg/filesystem" instead
+- Direct "filepath" package usage - use "internal/pkg/filesystem" instead
+- "httpmock" singleton - use client.Transport = httpmock.NewMockTransport()
+- OS ENVs singleton (os.Setenv, etc.) - use env.Map instead
+- Direct os.Stdout/os.Stderr usage - use dependencies instead
+- fmt.Errorf - use errors.Errorf for stack traces
+- "gonanoid" package - use "internal/pkg/idgenerator" instead
+- Direct "errors" package - use "internal/pkg/utils/errors"
+- Direct "zap" logger - use "internal/pkg/log" package
+- Naked returns
+- Underscores in package names
+
+## Required
+- Context Handling:
+  - Pass context as first parameter
+  - Respect cancellation in long-running operations
+  - Use context timeouts for external calls
+  - Never store context in structs
+
+- Concurrency Patterns:
+  - Fan-out/Fan-in for parallel processing
+  - Worker pools for resource-intensive tasks
+  - Pipeline pattern for data streaming
+  - Use buffered channels appropriately
+  - Graceful shutdown with signal handling
+
+- Error Management:
+  - Use error wrapping with stack traces
+  - Custom error types for domain logic
+  - Error grouping for concurrent operations
+  - Sentinel errors for expected cases
+
+- Dependency Management:
+  - Constructor-based dependency injection
+  - Interface segregation (small interfaces)
+  - Use functional options for config
+  - Mock interfaces for testing
+
+- Performance:
+  - Use sync.Pool for frequent allocations
+  - Minimize allocations in hot paths
+  - Buffer reuse in IO operations
+  - Proper connection pooling
+
+- Observability:
+  - Structured logging with levels
+  - OpenTelemetry integration
+  - Metrics for critical paths
+  - Tracing for distributed operations
