@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"sync"
 	"time"
@@ -155,6 +156,7 @@ func (m *MirrorMap[T, K, V]) StartMirroring(ctx context.Context, wg *sync.WaitGr
 			m.revision = header.Revision
 			m.revisionLock.Unlock()
 
+			fmt.Println("revision in mirrormap synced", header.Revision)
 			logger.Debugf(ctx, `watch stream mirror synced to revision %d`, header.Revision)
 
 			// Unblock WaitForRevision loops
@@ -210,6 +212,7 @@ func (m *MirrorMap[T, K, V]) Revision() int64 {
 
 func (m *MirrorMap[T, K, V]) WaitForRevision(ctx context.Context, expected int64) error {
 	for {
+		fmt.Println("waiting for revision in mirrormap", m.revision, expected)
 		m.revisionLock.RLock()
 		actual := m.revision
 		m.revisionLock.RUnlock()

@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -65,6 +66,7 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 		for {
 			// Is context done?
 			if ctx.Err() != nil {
+				fmt.Println("ctx.Err() != nil", ctx.Err())
 				return
 			}
 
@@ -119,6 +121,7 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 					} else if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 						// Context cancelled event is forwarded only during the initialization.
 						// In other cases, closing the channel is sufficient.
+						fmt.Println("context cancelled during restart", err)
 						continue
 					} else {
 						// Convert initialization error
@@ -137,6 +140,7 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 			// Restart is in progress
 			restart = true
 
+			fmt.Println("restarting stream")
 			// Delay is applied only if the restart is caused by an error, not by the manual restart
 			var delay time.Duration
 			if lastErr != nil {

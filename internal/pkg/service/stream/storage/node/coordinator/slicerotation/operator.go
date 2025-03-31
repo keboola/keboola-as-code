@@ -414,7 +414,7 @@ func (o *operator) waitForSliceClosing(ctx context.Context, slice *sliceData) (s
 	}
 
 	// Make sure the statistics cache is up-to-date
-	if err := o.statisticsCache.WaitForRevision(ctx, slice.ModRevision); err != nil {
+	if err := o.statisticsCache.WaitForRevisionMap(ctx, slice.ModRevision); err != nil {
 		return statistics.Aggregated{}, errors.PrefixErrorf(err, "error when waiting for statistics cache revision, actual: %v, expected: %v", o.statisticsCache.Revision(), slice.ModRevision)
 	}
 
