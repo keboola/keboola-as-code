@@ -243,7 +243,13 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 		ForEach(func(job keboolaBridgeModel.Job, _ *iterator.Header) error {
 			grp.Go(func() error {
 				// There can be several cleanup nodes, each node processes an own part.
-				if !n.dist.MustCheckIsOwner(job.ProjectID.String()) {
+				owner, err := n.dist.IsOwner(job.ProjectID.String())
+				if err != nil {
+					n.logger.Warnf(ctx, "cannot check if the node is owner of the job: %s", err)
+					return err
+				}
+
+				if !owner {
 					return nil
 				}
 
@@ -281,7 +287,13 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 
 func (n *Node) cleanFile(ctx context.Context, file model.File, fileCount int) (err error, deleted bool) {
 	// There can be several cleanup nodes, each node processes an own part.
-	if !n.dist.MustCheckIsOwner(file.ProjectID.String()) {
+	owner, err := n.dist.IsOwner(file.ProjectID.String())
+	if err != nil {
+		n.logger.Warnf(ctx, "cannot check if the node is owner of the file: %s", err)
+		return err, false
+	}
+
+	if !owner {
 		return nil, false
 	}
 

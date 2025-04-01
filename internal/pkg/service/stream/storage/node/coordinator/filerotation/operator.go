@@ -165,7 +165,13 @@ func Start(d dependencies, config targetConfig.OperatorConfig) error {
 		).
 			// Check only files owned by the node
 			WithFilter(func(event etcdop.WatchEvent[model.File]) bool {
-				return o.distribution.MustCheckIsOwner(event.Value.SourceKey.String())
+				owner, err := o.distribution.IsOwner(event.Value.SourceKey.String())
+				if err != nil {
+					o.logger.Warnf(ctx, "cannot check if the node is owner of the files based on source: %s", err)
+					return false
+				}
+
+				return owner
 			}).
 			BuildMirror()
 		if err = <-o.files.StartMirroring(ctx, wg, o.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {

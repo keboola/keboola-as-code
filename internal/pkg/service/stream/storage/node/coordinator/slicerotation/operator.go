@@ -156,7 +156,13 @@ func Start(d dependencies, config stagingConfig.OperatorConfig) error {
 		).
 			// Check only slices owned by the node
 			WithFilter(func(event etcdop.WatchEvent[model.Slice]) bool {
-				return o.distribution.MustCheckIsOwner(event.Value.SourceKey.String())
+				owner, err := o.distribution.IsOwner(event.Value.SourceKey.String())
+				if err != nil {
+					o.logger.Warnf(ctx, "cannot check if the node is owner of the slices based on source: %s", err)
+					return false
+				}
+
+				return owner
 			}).
 			BuildMirror()
 		if err = <-o.slices.StartMirroring(ctx, wg, o.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {

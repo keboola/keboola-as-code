@@ -11,6 +11,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -74,12 +75,24 @@ func TestNodesDiscovery(t *testing.T) {
 		assert.Equal(t, "node3", node.MustGetNodeFor("foo3"))
 		assert.Equal(t, "node1", node.MustGetNodeFor("foo4"))
 	}
-	assert.True(t, nodes[0].MustCheckIsOwner("foo4"))
-	assert.True(t, nodes[1].MustCheckIsOwner("foo1"))
-	assert.True(t, nodes[2].MustCheckIsOwner("foo3"))
-	assert.False(t, nodes[0].MustCheckIsOwner("foo3"))
-	assert.False(t, nodes[1].MustCheckIsOwner("foo2"))
-	assert.False(t, nodes[2].MustCheckIsOwner("foo1"))
+	owner, err := nodes[0].IsOwner("foo4")
+	require.NoError(t, err)
+	assert.True(t, owner)
+	owner, err = nodes[1].IsOwner("foo1")
+	require.NoError(t, err)
+	assert.True(t, owner)
+	owner, err = nodes[2].IsOwner("foo3")
+	require.NoError(t, err)
+	assert.True(t, owner)
+	owner, err = nodes[0].IsOwner("foo3")
+	require.NoError(t, err)
+	assert.False(t, owner)
+	owner, err = nodes[1].IsOwner("foo2")
+	require.NoError(t, err)
+	assert.False(t, owner)
+	owner, err = nodes[2].IsOwner("foo1")
+	require.NoError(t, err)
+	assert.False(t, owner)
 
 	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `
@@ -134,10 +147,18 @@ node3
 		assert.Equal(t, "node3", nodes[i].MustGetNodeFor("foo3"))
 		assert.Equal(t, "node2", nodes[i].MustGetNodeFor("foo4")) // 1 -> 2
 	}
-	assert.True(t, nodes[1].MustCheckIsOwner("foo1"))
-	assert.True(t, nodes[2].MustCheckIsOwner("foo3"))
-	assert.False(t, nodes[1].MustCheckIsOwner("foo2"))
-	assert.False(t, nodes[2].MustCheckIsOwner("foo1"))
+	owner, err = nodes[1].IsOwner("foo1")
+	require.NoError(t, err)
+	assert.True(t, owner)
+	owner, err = nodes[2].IsOwner("foo3")
+	require.NoError(t, err)
+	assert.True(t, owner)
+	owner, err = nodes[1].IsOwner("foo2")
+	require.NoError(t, err)
+	assert.False(t, owner)
+	owner, err = nodes[2].IsOwner("foo1")
+	require.NoError(t, err)
+	assert.False(t, owner)
 
 	// Shutdown node2
 	processes[1].Shutdown(t.Context(), errors.New("bye bye 2"))
@@ -160,10 +181,18 @@ node3
 	assert.Equal(t, "node3", nodes[2].MustGetNodeFor("foo2"))
 	assert.Equal(t, "node3", nodes[2].MustGetNodeFor("foo3"))
 	assert.Equal(t, "node3", nodes[2].MustGetNodeFor("foo4")) // 1 -> 2
-	assert.True(t, nodes[2].MustCheckIsOwner("foo1"))
-	assert.True(t, nodes[2].MustCheckIsOwner("foo2"))
-	assert.True(t, nodes[2].MustCheckIsOwner("foo3"))
-	assert.True(t, nodes[2].MustCheckIsOwner("foo4"))
+	owner, err = nodes[2].IsOwner("foo1")
+	require.NoError(t, err)
+	assert.True(t, owner)
+	owner, err = nodes[2].IsOwner("foo2")
+	require.NoError(t, err)
+	assert.True(t, owner)
+	owner, err = nodes[2].IsOwner("foo3")
+	require.NoError(t, err)
+	assert.True(t, owner)
+	owner, err = nodes[2].IsOwner("foo4")
+	require.NoError(t, err)
+	assert.True(t, owner)
 
 	// Shutdown node3
 	processes[2].Shutdown(t.Context(), errors.New("bye bye 3"))
