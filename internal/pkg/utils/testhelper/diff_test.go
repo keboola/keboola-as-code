@@ -152,7 +152,7 @@ func TestAssertDirectorySameEmpty(t *testing.T) {
 	actualFs := aferofs.NewMemoryFs()
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Equal(t, "", test.buf.String())
+	assert.Empty(t, test.buf.String())
 }
 
 func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
@@ -169,7 +169,7 @@ func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Equal(t, "", test.buf.String())
+	assert.Empty(t, test.buf.String())
 }
 
 func TestAssertDirectorySame(t *testing.T) {
@@ -186,7 +186,7 @@ func TestAssertDirectorySame(t *testing.T) {
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Equal(t, "", test.buf.String())
+	assert.Empty(t, test.buf.String())
 }
 
 func TestAssertDirectorySameWildcards(t *testing.T) {
@@ -203,7 +203,7 @@ func TestAssertDirectorySameWildcards(t *testing.T) {
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Equal(t, "", test.buf.String())
+	assert.Empty(t, test.buf.String())
 }
 
 // newMockedT - mocked version of *testing.T.

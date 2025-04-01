@@ -51,7 +51,7 @@ func TestWatchConsumer_NotTyped(t *testing.T) {
 		}).
 		WithOnError(func(err error) {
 			if !strings.Contains(err.Error(), "mvcc: required revision has been compacted") {
-				assert.Fail(t, "unexpected error", err)
+				assert.Fail(t, "unexpected error", "%+v", err)
 			}
 		}).
 		WithOnClose(func(err error) {
@@ -187,7 +187,7 @@ func TestWatchConsumer_Typed(t *testing.T) {
 		}).
 		WithOnError(func(err error) {
 			if !strings.Contains(err.Error(), "mvcc: required revision has been compacted") {
-				assert.Fail(t, "unexpected error", err)
+				assert.Fail(t, "unexpected error", "%+v", err)
 			}
 		}).
 		WithOnClose(func(err error) {

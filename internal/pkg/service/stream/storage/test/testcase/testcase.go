@@ -209,7 +209,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 
 func (tc *WriterTestCase) assertResult(t *testing.T, result *router.SourceResult) {
 	t.Helper()
-	if assert.Equal(t, "", result.ErrorName, result.Message) {
+	if assert.Empty(t, result.ErrorName, result.Message) {
 		if tc.Sync.Wait {
 			if !assert.Equal(t, http.StatusOK, result.StatusCode) {
 				t.Log(json.MustEncodeString(result, true))

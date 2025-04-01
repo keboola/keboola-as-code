@@ -173,7 +173,7 @@ func TestSyncWriter_SkipEmptySync(t *testing.T) {
 	require.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
 
 	// Check output
-	assert.Equal(t, "", tc.Chain.Buffer.String())
+	assert.Empty(t, tc.Chain.Buffer.String())
 
 	// Close the syncWriter - it triggers the last sync
 	require.NoError(t, syncerWriter.Stop(ctx))

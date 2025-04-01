@@ -234,5 +234,5 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 
 	// Assert
 	assert.True(t, ok)
-	assert.Equal(t, "", result)
+	assert.Empty(t, result)
 }

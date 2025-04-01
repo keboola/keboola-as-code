@@ -35,7 +35,7 @@ func TestEnvMap(t *testing.T) {
 
 	// Missing key
 	assert.Equal(t, []string{`ABC_DEF`}, m.Keys())
-	assert.Equal(t, ``, m.Get(`foo`))
+	assert.Empty(t, m.Get(`foo`))
 	assert.PanicsWithError(t, `missing ENV variable "FOO"`, func() {
 		m.MustGet(`foo`)
 	})
@@ -47,7 +47,7 @@ func TestEnvMap(t *testing.T) {
 	assert.Empty(t, m.Keys())
 	str, err := m.ToString()
 	require.NoError(t, err)
-	assert.Equal(t, ``, str)
+	assert.Empty(t, str)
 
 	// ToString
 	m.Set(`A`, `123`)

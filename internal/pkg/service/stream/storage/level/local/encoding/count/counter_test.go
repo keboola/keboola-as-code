@@ -113,7 +113,7 @@ func TestCounterWithBackup_SyncBackupManually(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "15,2001-01-01T00:00:00.000Z,2004-01-01T00:00:00.000Z", string(content))
 
-	assert.Equal(t, "", logger.AllMessages())
+	assert.Empty(t, logger.AllMessages())
 }
 
 func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
@@ -187,7 +187,7 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "15,2001-01-01T00:00:00.000Z,2004-01-01T00:00:00.000Z", string(content))
 
-	assert.Equal(t, "", logger.AllMessages())
+	assert.Empty(t, logger.AllMessages())
 }
 
 func TestCounterWithBackup_OpenError_Missing(t *testing.T) {

@@ -92,7 +92,7 @@ func TestFirstLower(t *testing.T) {
 
 func TestFirstUpper(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "", FirstUpper(""))
+	assert.Empty(t, FirstUpper(""))
 	assert.Equal(t, " ", FirstUpper(" "))
 	assert.Equal(t, "Foo", FirstUpper("foo"))
 	assert.Equal(t, "FOO", FirstUpper("FOO"))
@@ -146,7 +146,7 @@ func TestTruncate(t *testing.T) {
 
 func TestNamingNormalizeName(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "", NormalizeName(""))
+	assert.Empty(t, NormalizeName(""))
 	assert.Equal(t, "abc", NormalizeName("abc"))
 	assert.Equal(t, "camel-case", NormalizeName("CamelCase"))
 	assert.Equal(t, "space-separated", NormalizeName("   space   separated  "))
@@ -158,11 +158,11 @@ func TestNamingNormalizeName(t *testing.T) {
 
 func TestFirstN(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "", FirstN("", 0))
-	assert.Equal(t, "", FirstN("", 100))
-	assert.Equal(t, "", FirstN("a", 0))
+	assert.Empty(t, FirstN("", 0))
+	assert.Empty(t, FirstN("", 100))
+	assert.Empty(t, FirstN("a", 0))
 	assert.Equal(t, "a", FirstN("a", 100))
-	assert.Equal(t, "", FirstN("abcde", 0))
+	assert.Empty(t, FirstN("abcde", 0))
 	assert.Equal(t, "a", FirstN("abcde", 1))
 	assert.Equal(t, "ab", FirstN("abcde", 2))
 	assert.Equal(t, "abc", FirstN("abcde", 3))

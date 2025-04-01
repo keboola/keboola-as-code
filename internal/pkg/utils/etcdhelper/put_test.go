@@ -60,7 +60,7 @@ key3/key4
 	require.NoError(t, err)
 	assert.Len(t, res.Kvs, 1)
 	assert.Equal(t, "value2", string(res.Kvs[0].Value))
-	assert.Positive(t, res.Kvs[0].Lease, int64(0))
+	assert.Positive(t, res.Kvs[0].Lease, "%+v", int64(0))
 
 	res, err = client.Get(t.Context(), "key3")
 	require.NoError(t, err)

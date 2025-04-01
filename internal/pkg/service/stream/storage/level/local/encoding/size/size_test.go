@@ -135,7 +135,7 @@ func TestMeterWithBackup_SyncBackupManually(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "15", string(content))
 
-	assert.Equal(t, "", logger.AllMessages())
+	assert.Empty(t, logger.AllMessages())
 }
 
 func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
@@ -222,7 +222,7 @@ func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "15", string(content))
 
-	assert.Equal(t, "", logger.AllMessages())
+	assert.Empty(t, logger.AllMessages())
 }
 
 func TestMeterWithBackup_OpenError_Missing(t *testing.T) {
