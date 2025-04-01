@@ -307,6 +307,13 @@ func (o *operator) rotateSlice(ctx context.Context, slice *sliceData) {
 		} else {
 			o.logger.Errorf(dbCtx, "cannot rotate slice: %s", err)
 
+			// Record metric for failed slice rotations
+			attrs := append(
+				slice.SliceKey.SinkKey.Telemetry(),
+				attribute.String("operation", "slicerotation"),
+			)
+			o.metrics.SliceRotationFailed.Record(ctx, int64(slice.Retry.RetryAttempt), metric.WithAttributes(attrs...))
+
 			// Increment retry delay
 			rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).Err()
 			if rErr != nil {

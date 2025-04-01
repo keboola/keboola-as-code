@@ -404,6 +404,13 @@ func (o *operator) rotateFile(ctx context.Context, file *fileData) {
 		rb.InvokeIfErr(dbCtx, &err)
 		o.logger.Errorf(dbCtx, "cannot rotate file: %s", err)
 
+		// Record metric for failed file rotations
+		attrs := append(
+			file.FileKey.SinkKey.Telemetry(),
+			attribute.String("operation", "filerotation"),
+		)
+		o.metrics.FileRotationFailed.Record(ctx, int64(file.Retry.RetryAttempt), metric.WithAttributes(attrs...))
+
 		// Increment retry delay
 		rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).Err()
 		if rErr != nil {
