@@ -1,11 +1,13 @@
+//go:build goexperiment.synctest
+
 package syncmap_test
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
+	"testing/synctest"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 )
@@ -32,21 +34,20 @@ func TestSyncMap_GetOrInit_Race(t *testing.T) {
 		return &testStruct{}
 	})
 
-	wg := sync.WaitGroup{}
 	accessCounter := atomic.NewInt64(0)
-	for range 10 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
 
-			m.GetOrInit("test")
+	synctest.Run(func() {
+		// Launch 10 concurrent goroutines within the bubble
+		for range 10 {
+			go func() {
+				m.GetOrInit("test")
+				accessCounter.Add(1)
+			}()
+		}
 
-			accessCounter.Add(1)
-		}()
-	}
-
-	// Wait for all requests
-	wg.Wait()
+		// Wait for all goroutines to be blocked
+		synctest.Wait()
+	})
 
 	// Check total init count
 	assert.Equal(t, int64(1), initCounter.Load())
