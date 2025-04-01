@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
 
@@ -28,6 +29,7 @@ import (
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -60,6 +62,9 @@ type Node struct {
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 	sinks                   *etcdop.MirrorMap[model.File, key.SinkKey, *sinkData]
 	watchTelemetryInterval  time.Duration
+
+	// OTEL metrics
+	metrics *node.Metrics
 }
 
 // cleanupEntity represents a periodic cleanup task.
@@ -87,6 +92,7 @@ func Start(d dependencies, cfg Config) error {
 		storageRepository:       d.StorageRepository(),
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 		watchTelemetryInterval:  d.WatchTelemetryInterval(),
+		metrics:                 node.NewMetrics(d.Telemetry().Meter()),
 	}
 
 	if dist, err := d.DistributionNode().Group("storage.metadata.cleanup"); err == nil {
@@ -200,6 +206,15 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 							fileCounter.Add(1)
 						}
 
+						if err != nil {
+							// Record metric for failed file cleanups
+							attrs := append(
+								file.FileKey.SinkKey.Telemetry(),
+								attribute.String("operation", "filecleanup"),
+							)
+							n.metrics.FileCleanupFailed.Record(ctx, 1, metric.WithAttributes(attrs...))
+						}
+
 						if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
 							return err
 						}
@@ -260,6 +275,15 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 				}
 
 				span.End(&err)
+
+				if err != nil {
+					// Record metric for failed job cleanups
+					attrs := append(
+						job.JobKey.SinkKey.Telemetry(),
+						attribute.String("operation", "jobcleanup"),
+					)
+					n.metrics.JobCleanupFailed.Record(ctx, 1, metric.WithAttributes(attrs...))
+				}
 
 				if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
 					return err

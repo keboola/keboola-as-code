@@ -12,6 +12,8 @@ type Metrics struct {
 	Uncompressed      metric.Int64Counter
 	FileImportFailed  metric.Int64Histogram
 	SliceUploadFailed metric.Int64Histogram
+	FileCleanupFailed metric.Int64Histogram
+	JobCleanupFailed  metric.Int64Histogram
 }
 
 func NewMetrics(meter telemetry.Meter) *Metrics {
@@ -26,5 +28,7 @@ func NewMetrics(meter telemetry.Meter) *Metrics {
 		Uncompressed:      meter.IntCounter("keboola.go.stream.operation.bytes.uncompressed", "Uncompressed bytes processed by operator.", "B"),
 		FileImportFailed:  meter.IntHistogram("keboola.go.stream.operation.fileimport.failed", "Count of file imports that will be retried", "count"),
 		SliceUploadFailed: meter.IntHistogram("keboola.go.stream.operation.sliceupload.failed", "Count of slices that will be retried", "count"),
+		FileCleanupFailed: meter.IntHistogram("keboola.go.stream.operation.filecleanup.failed", "Count of failed file cleanup tasks", "count"),
+		JobCleanupFailed:  meter.IntHistogram("keboola.go.stream.operation.jobcleanup.failed", "Count of failed job cleanup tasks", "count"),
 	}
 }
