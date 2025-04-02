@@ -40,7 +40,7 @@ go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest
 
 # Fix linters
 echo "Running golangci-lint ..."
-if go tool golangci-lint run --fix -c "./build/ci/golangci.yml"; then
+if golangci-lint run --fix -c "./build/ci/golangci.yml"; then
     echo "Ok. The code looks good."
     echo
 else

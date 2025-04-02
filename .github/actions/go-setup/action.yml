@@ -122,6 +122,15 @@ runs:
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
+    - name: Install golangci-lint v2
+      if: inputs.build-type == 'lint'
+      shell: bash
+      run: |
+        echo "Installing golangci-lint v2.0.2..."
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b "$(go env GOBIN)" v2.0.2
+        
+        golangci-lint --version
+
     - name: Download Go modules
       shell: bash
       run: |

@@ -31,7 +31,7 @@ echo
 
 # Run linters
 echo "Running golangci-lint ..."
-if go tool golangci-lint run -c "./build/ci/golangci.yml" "$@"; then
+if golangci-lint run -c "./build/ci/golangci.yml" "$@"; then
     echo "Ok. The code looks good."
     echo
 else
