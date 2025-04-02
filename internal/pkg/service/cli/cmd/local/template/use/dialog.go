@@ -65,7 +65,7 @@ func (d *useTmplDialog) askInstanceName() (string, error) {
 	}
 
 	// Ask for instance name
-	v, _ := d.Prompt.Ask(&prompt.Question{
+	v, _ := d.Ask(&prompt.Question{
 		Label:       "Instance Name",
 		Description: "Please enter an instance name to differentiate between multiple uses of the template.",
 		Validator:   prompt.ValueRequired,

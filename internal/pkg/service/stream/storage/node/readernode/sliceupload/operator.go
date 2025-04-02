@@ -232,7 +232,7 @@ func (o *operator) checkSlice(ctx context.Context, slice *sliceData) {
 	}
 
 	// Skip slice upload if sink is deleted or disabled
-	sink, ok := o.sinks.Get(slice.SliceKey.SinkKey)
+	sink, ok := o.sinks.Get(slice.SinkKey)
 	if !ok || !sink.Enabled {
 		return
 	}
@@ -259,9 +259,9 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 	o.logger.Info(ctx, "uploading slice")
 
 	// Get volume with the data
-	volume, err := o.volumes.Collection().Volume(slice.SliceKey.VolumeID)
+	volume, err := o.volumes.Collection().Volume(slice.VolumeID)
 	if err != nil {
-		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", slice.SliceKey.VolumeID)
+		o.logger.Errorf(ctx, "unable to upload slice: volume missing for key: %v", slice.VolumeID)
 		return
 	}
 
@@ -296,7 +296,7 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 
 	// Update telemetry
 	attrs := append(
-		slice.SliceKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
+		slice.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
 		attribute.String("error_type", telemetry.ErrorType(err)),
 		attribute.String("operation", "sliceupload"),
 	)
@@ -332,7 +332,7 @@ func (o *operator) doUploadSlice(ctx context.Context, volume *diskreader.Volume,
 	if err != nil {
 		// Record metric for failed slice uploads
 		attrs := append(
-			slice.SliceKey.SinkKey.Telemetry(),
+			slice.SinkKey.Telemetry(),
 			attribute.String("operation", "sliceupload"),
 		)
 		o.metrics.SliceUploadFailed.Record(ctx, int64(slice.Retry.RetryAttempt), metric.WithAttributes(attrs...))

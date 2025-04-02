@@ -161,7 +161,7 @@ func (c *console) SendLeftArrow() error {
 
 func (c *console) ExpectString(s string, opts ...expect.ExpectOpt) error {
 	opts = append(opts, StringWithoutANSI(s))
-	_, err := c.Console.Expect(opts...)
+	_, err := c.Expect(opts...)
 	return err
 }
 
@@ -175,7 +175,7 @@ func (c *console) ExpectEOF(opts ...expect.ExpectOpt) (err error) {
 
 	// Better error message
 	opts = append(opts, expect.EOF, expect.PTSClosed)
-	if _, err := c.Console.Expect(opts...); err != nil {
+	if _, err := c.Expect(opts...); err != nil {
 		return errors.Errorf("error while waiting for EOF: %w", err)
 	} else {
 		return nil

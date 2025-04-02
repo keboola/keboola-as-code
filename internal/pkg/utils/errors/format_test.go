@@ -423,7 +423,7 @@ type customError struct {
 }
 
 func (e customError) WriteError(w Writer, level int, _ StackTrace) {
-	w.WritePrefix(level, fmt.Sprintf("this is a custom error message (%s)", e.error.Error()), nil)
+	w.WritePrefix(level, fmt.Sprintf("this is a custom error message (%s)", e.Error()), nil)
 	w.WriteNewLine()
 
 	w.WriteBullet(level + 1)

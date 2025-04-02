@@ -29,7 +29,7 @@ type persistPlanBuilder struct {
 
 func (b *persistPlanBuilder) build(ctx context.Context) {
 	// Process children of the existing objects
-	paths := b.State.PathsState() // clone paths state
+	paths := b.PathsState() // clone paths state
 	for _, path := range paths.UntrackedDirs(ctx) {
 		if paths.IsTracked(path) {
 			// path is already tracked
@@ -173,7 +173,7 @@ func (b *persistPlanBuilder) addAction(ctx context.Context, action action) {
 
 	// Process children of the new object
 	if parent, ok := action.(model.RecordPaths); ok {
-		paths := b.State.PathsState() // clone paths state
+		paths := b.PathsState() // clone paths state
 		for _, path := range paths.UntrackedDirsFrom(ctx, parent.Path()) {
 			if paths.IsTracked(path) {
 				// path is already tracked

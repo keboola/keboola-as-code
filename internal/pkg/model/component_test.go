@@ -115,5 +115,5 @@ func TestGetDefaultBucket(t *testing.T) {
 
 	defaultBucket, found = m.GetDefaultBucketByComponentID("keboola.ex-google-drive", "123")
 	assert.False(t, found)
-	assert.Equal(t, "", defaultBucket)
+	assert.Empty(t, defaultBucket)
 }

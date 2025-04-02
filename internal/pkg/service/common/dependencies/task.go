@@ -23,7 +23,7 @@ func NewTaskScope(ctx context.Context, nodeID string, exceptionIDPrefix string, 
 }
 
 func newTaskScope(ctx context.Context, nodeID string, exceptionIDPrefix string, baseScp BaseScope, etcdScp EtcdClientScope, distScp DistributionScope, cfg taskPkg.NodeConfig) (v *taskScope, err error) {
-	ctx, span := baseScp.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewTaskScope")
+	_, span := baseScp.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewTaskScope")
 	defer span.End(&err)
 
 	d := taskNodeDeps{BaseScope: baseScp, EtcdClientScope: etcdScp, DistributionScope: distScp}

@@ -155,7 +155,7 @@ func columnsDefinition(d *dialog.Dialogs, f Flags) (columnsDefinitionMethod, err
 	switch {
 	case !f.ColumnsFrom.IsSet() && !f.Columns.IsSet():
 		// Ask for method
-		specifyTypes := d.Prompt.Confirm(&prompt.Confirm{
+		specifyTypes := d.Confirm(&prompt.Confirm{
 			Label:       "Column types",
 			Description: "Want to define column types? Otherwise all columns default to strings.",
 			Default:     true,

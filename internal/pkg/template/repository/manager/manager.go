@@ -207,7 +207,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 
 	// Check if is repository already loaded
 	m.repositoriesLock.RLock()
-	value, found := m.repositories[hash] // nolint: ifshort
+	value, found := m.repositories[hash] // nolint
 	m.repositoriesLock.RUnlock()
 	if found {
 		return value, nil

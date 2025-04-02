@@ -630,7 +630,7 @@ func TestIteratorT_ForEach(t *testing.T) {
 	getAllOp := prefix.
 		GetAll(tracker, iterator.WithPageSize(2)).
 		ForEach(func(value obj, header *iterator.Header) error {
-			_, _ = out.WriteString(fmt.Sprintf("value: %s\n", value.Value))
+			_, _ = fmt.Fprintf(out, "value: %s\n", value.Value)
 			return nil
 		}).
 		AndOnFirstPage(func(response *etcd.GetResponse) error {
@@ -638,7 +638,7 @@ func TestIteratorT_ForEach(t *testing.T) {
 			return nil
 		}).
 		AndOnPage(func(pageIndex int, response *etcd.GetResponse) error {
-			_, _ = out.WriteString(fmt.Sprintf("page index: %d\n", pageIndex))
+			_, _ = fmt.Fprintf(out, "page index: %d\n", pageIndex)
 			return nil
 		})
 

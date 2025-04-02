@@ -135,7 +135,7 @@ func TestMeterWithBackup_SyncBackupManually(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "15", string(content))
 
-	assert.Equal(t, "", logger.AllMessages())
+	assert.Empty(t, logger.AllMessages())
 }
 
 func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
@@ -222,7 +222,7 @@ func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "15", string(content))
 
-	assert.Equal(t, "", logger.AllMessages())
+	assert.Empty(t, logger.AllMessages())
 }
 
 func TestMeterWithBackup_OpenError_Missing(t *testing.T) {
@@ -338,7 +338,7 @@ func (w *testBuffer) Seek(offset int64, whence int) (ret int64, err error) {
 		return 0, w.seekError
 	}
 	if offset == 0 && whence == io.SeekStart {
-		w.Buffer.Reset()
+		w.Reset()
 	} else {
 		panic(errors.New("unexpected seek"))
 	}

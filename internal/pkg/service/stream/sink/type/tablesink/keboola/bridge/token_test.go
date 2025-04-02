@@ -169,7 +169,7 @@ func TestBridge_EncryptDecryptTokens(t *testing.T) {
 		assert.Equal(t, "1001", token.TokenID)
 		assert.NotNil(t, token.EncryptedToken)
 
-		metadata := cloudencrypt.Metadata{"sink": token.SinkKey.String()}
+		metadata := cloudencrypt.Metadata{"sink": token.String()}
 		keboolaToken, err := encryptor.Decrypt(ctx, []byte(token.EncryptedToken), metadata)
 		require.NoError(t, err)
 		assert.Equal(t, "my-token", keboolaToken.Token)

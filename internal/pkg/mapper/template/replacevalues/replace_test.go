@@ -330,7 +330,7 @@ func TestSubString_Replace(t *testing.T) {
 	// Not found
 	s := SubString(`foo123`)
 	out, found := s.replace(`bar`, `replaced`)
-	assert.Equal(t, "", out)
+	assert.Empty(t, out)
 	assert.False(t, found)
 
 	// Full match

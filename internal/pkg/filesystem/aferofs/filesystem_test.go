@@ -131,7 +131,7 @@ func (*testCases) TestWorkingDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogg
 	fs.SetWorkingDir(ctx, "some/dir")
 	assert.Equal(t, "some/dir", fs.WorkingDir())
 	fs.SetWorkingDir(ctx, "some/missing")
-	assert.Equal(t, "", fs.WorkingDir())
+	assert.Empty(t, fs.WorkingDir())
 }
 
 func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
@@ -189,7 +189,7 @@ func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 	// get sub FS for "my/dir" dir -> working dir is "/"
 	subDirFs6, err := fs.SubDirFs(filesystem.Join(`my`, `dir`))
 	require.NoError(t, err)
-	assert.Equal(t, ``, subDirFs6.WorkingDir())
+	assert.Empty(t, subDirFs6.WorkingDir())
 	// get sub FS for "my/dir/foo/bar" dir -> working dir is "/"
 	subDirFs7, err := fs.SubDirFs(filesystem.Join(`my`, `dir`, `foo`, `bar`))
 	require.NoError(t, err)
@@ -281,7 +281,7 @@ func (*testCases) TestExists(t *testing.T, fs filesystem.Fs, logger log.DebugLog
 	logger.Truncate()
 	assert.True(t, fs.Exists(ctx, filePath))
 	assert.False(t, fs.Exists(ctx, "file-non-exists.txt"))
-	assert.Equal(t, "", logger.AllMessages())
+	assert.Empty(t, logger.AllMessages())
 }
 
 func (*testCases) TestIsFile(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
@@ -549,7 +549,7 @@ func (*testCases) TestReadFileNotFound(t *testing.T, fs filesystem.Fs, logger lo
 	require.Error(t, err)
 	assert.Nil(t, file)
 	assert.True(t, strings.HasPrefix(err.Error(), `missing file "file.txt"`))
-	assert.Equal(t, "", logger.AllMessages())
+	assert.Empty(t, logger.AllMessages())
 }
 
 func (*testCases) TestWriteFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
@@ -614,7 +614,7 @@ func (*testCases) TestCreateOrUpdateFile(t *testing.T, fs filesystem.Fs, _ log.D
 	assert.True(t, fs.Exists(ctx, filePath))
 	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(filePath))
 	require.NoError(t, err)
-	assert.Equal(t, "", file.Content)
+	assert.Empty(t, file.Content)
 
 	// Add some lines
 	updated, err = fs.CreateOrUpdateFile(ctx, filesystem.NewFileDef(filePath), []filesystem.FileLine{

@@ -14,7 +14,7 @@ func TestConfigIdPlaceholder(t *testing.T) {
 
 func TestStripIdPlaceholder_NotFound(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "", StripIDPlaceholder(""))
+	assert.Empty(t, StripIDPlaceholder(""))
 	assert.Equal(t, "foo bar", StripIDPlaceholder("foo bar"))
 }
 
@@ -73,6 +73,6 @@ func TestReplaceFuncCallPlaceholders(t *testing.T) {
 
 	for i, c := range cases {
 		replaced := FormatAst(ReplacePlaceholders(&ast.LiteralString{Value: c.input}))
-		assert.Equal(t, c.expected+"\n", replaced, i)
+		assert.Equal(t, c.expected+"\n", replaced, "%+v", i)
 	}
 }

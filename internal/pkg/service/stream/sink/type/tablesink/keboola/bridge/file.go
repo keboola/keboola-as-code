@@ -113,7 +113,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedA
 	}
 	if b.credentialsEncryptor != nil {
 		// Encrypt credentials
-		metadata := cloudencrypt.Metadata{"file": file.FileKey.String()}
+		metadata := cloudencrypt.Metadata{"file": file.String()}
 		ciphertext, err := b.credentialsEncryptor.Encrypt(ctx, *stagingFile, metadata)
 		if err != nil {
 			return keboolasink.File{}, err

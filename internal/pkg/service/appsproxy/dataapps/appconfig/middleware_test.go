@@ -65,7 +65,7 @@ func testSetup(t *testing.T) (http.Handler, log.DebugLogger) {
 
 	// Create dummy handler
 	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		assert.NotEqual(t, "", appconfig.AppConfigFromContext(req.Context()).AppConfig.ID)
+		assert.NotEmpty(t, appconfig.AppConfigFromContext(req.Context()).AppConfig.ID)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})

@@ -390,8 +390,8 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "Internet Exploder", appRequest.Header.Get("User-Agent"))
 				assert.Equal(t, "application/json", appRequest.Header.Get("Content-Type"))
 				assert.NotEmpty(t, appRequest.Header.Get("X-Request-ID"))
-				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-Test"))
-				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-User-Email"))
+				assert.Empty(t, appRequest.Header.Get("X-Kbc-Test"))
+				assert.Empty(t, appRequest.Header.Get("X-Kbc-User-Email"))
 			},
 			expectedNotifications: map[string]int{
 				"123": 1,
@@ -464,7 +464,7 @@ func TestAppProxyRouter(t *testing.T) {
 				cookies := response.Cookies()
 				if assert.Len(t, cookies, 2) {
 					assert.Equal(t, "_oauth2_provider", cookies[0].Name)
-					assert.Equal(t, "", cookies[0].Value)
+					assert.Empty(t, cookies[0].Value)
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
@@ -472,7 +472,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
 					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
-					assert.Equal(t, "", cookies[1].Value)
+					assert.Empty(t, cookies[1].Value)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
@@ -815,7 +815,7 @@ func TestAppProxyRouter(t *testing.T) {
 				cookies = response.Cookies()
 				if assert.Len(t, cookies, 2) {
 					assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
-					assert.Equal(t, "", cookies[0].Value)
+					assert.Empty(t, cookies[0].Value)
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
@@ -942,7 +942,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "/some/data/app/url?foo=bar", appRequest.URL.String())
 				assert.Equal(t, "admin@keboola.com", appRequest.Header.Get("X-Kbc-User-Email"))
 				assert.Equal(t, "admin,manager", appRequest.Header.Get("X-Kbc-User-Roles"))
-				assert.Equal(t, "", appRequest.Header.Get("X-Kbc-Test"))
+				assert.Empty(t, appRequest.Header.Get("X-Kbc-Test"))
 			},
 			expectedNotifications: map[string]int{
 				"multi": 1,
@@ -2333,7 +2333,7 @@ func TestAppProxyRouter(t *testing.T) {
 				cookies = response.Cookies()
 				if assert.Len(t, cookies, 2) {
 					assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
-					assert.Equal(t, "", cookies[0].Value)
+					assert.Empty(t, cookies[0].Value)
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
@@ -2446,7 +2446,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 			assert.Equal(t, tc.expectedNotifications, appsAPI.Notifications)
 			assert.Equal(t, tc.expectedWakeUps, appsAPI.WakeUps)
-			assert.Equal(t, "", mocked.DebugLogger().ErrorMessages())
+			assert.Empty(t, mocked.DebugLogger().ErrorMessages())
 		})
 	}
 }

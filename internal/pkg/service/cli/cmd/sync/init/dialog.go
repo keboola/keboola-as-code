@@ -115,9 +115,10 @@ func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error)
 	// Defined by flag
 	if d.Branches.IsSet() {
 		value := d.Branches.Value
-		if value == "*" {
+		switch value {
+		case "*":
 			return model.AllowedBranches{model.AllBranchesDef}, nil
-		} else if value == "main" {
+		case "main":
 			return model.AllowedBranches{model.MainBranchDef}, nil
 		}
 		if allowedBranches := d.parseBranchesList(value, `,`); len(allowedBranches) > 0 {
@@ -150,7 +151,7 @@ func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error)
 func (d *branchesDialog) askMode() string {
 	var description string
 	var options []string
-	if d.Flags.AllowTargetENV.Value {
+	if d.AllowTargetENV.Value {
 		description = "Please select project's branch you want to use with this CLI.\nThe other branches will still exist, but they will be invisible in the CLI."
 		options = []string{
 			ModeMainBranch,

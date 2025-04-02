@@ -95,7 +95,7 @@ func TestErrResult_WithOutput(t *testing.T) {
 			"key2": "foo",
 		},
 	}, result)
-	assert.Equal(t, "", result.Result)
+	assert.Empty(t, result.Result)
 	assert.True(t, result.IsError())
 	assert.Equal(t, err, result.Error)
 
@@ -109,7 +109,7 @@ func TestErrResult_WithOutput(t *testing.T) {
 			"key2": "foo",
 		},
 	}, result)
-	assert.Equal(t, "", result.Result)
+	assert.Empty(t, result.Result)
 	assert.True(t, result.IsError())
 	assert.Equal(t, err, result.Error)
 

@@ -204,8 +204,8 @@ func (v *forTest) AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, o
 	actualSpans := v.Spans(t, opts...)
 
 	// Compare spans one by one, for easier debugging
-	assert.Equalf(
-		t, len(expectedSpans), len(actualSpans),
+	assert.Lenf(
+		t, actualSpans, len(expectedSpans),
 		`unexpected number of spans: actual "%d", expected "%d"`, len(actualSpans), len(expectedSpans),
 	)
 	spansCount := (int)(math.Max((float64)(len(expectedSpans)), (float64)(len(actualSpans))))
@@ -239,8 +239,8 @@ func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metri
 	actualMetrics := v.Metrics(t, opts...)
 
 	// Compare metrics one by one, for easier debugging
-	assert.Equalf(
-		t, len(expectedMetrics), len(actualMetrics),
+	assert.Lenf(
+		t, actualMetrics, len(expectedMetrics),
 		`unexpected number of metrics: actual "%d", expected "%d"`, len(expectedMetrics), len(actualMetrics),
 	)
 	metersCount := (int)(math.Max((float64)(len(expectedMetrics)), (float64)(len(actualMetrics))))

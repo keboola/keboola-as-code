@@ -136,8 +136,8 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 	fieldPath := strings.Trim(parts[1], " `")
 
 	// Process
-	switch {
-	case mark == "[x]" || mark == "[X]":
+	switch mark {
+	case "[x]", "[X]":
 		// Get all object fields
 		objectFields, found := d.objectFields[objectKey]
 		if !found {
@@ -151,23 +151,23 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		}
 
 		// Modify input ID, if it has been changed by use.
-		field.Input.ID = inputID
+		field.ID = inputID
 
 		// One input can be used multiple times, but type must match.
-		if i, found := d.inputs.Get(field.Input.ID); found {
-			if i.Type != field.Input.Type {
-				return errors.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.ID, i.Type, fieldPath, field.Input.Type)
+		if i, found := d.inputs.Get(field.ID); found {
+			if i.Type != field.Type {
+				return errors.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.ID, i.Type, fieldPath, field.Type)
 			}
 		}
 
 		// Save definitions
-		d.objectInputs.add(objectKey, create.InputDef{Path: field.Path, InputID: field.Input.ID})
-		if _, found := d.inputs.Get(field.Input.ID); !found {
+		d.objectInputs.add(objectKey, create.InputDef{Path: field.Path, InputID: field.ID})
+		if _, found := d.inputs.Get(field.ID); !found {
 			value := field.Input
 			d.inputs.Add(&value)
 		}
 		return nil
-	case mark == "[ ]" || mark == "[]":
+	case "[ ]", "[]":
 		// scalar value, not user input
 		return nil
 	default:

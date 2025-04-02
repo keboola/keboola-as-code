@@ -229,7 +229,7 @@ func LoadStateFile(fs filesystem.Fs, path string) (*StateFile, error) {
 	// Create definition if not exists
 	found := false
 	for _, branch := range stateFile.Branches {
-		if branch.Branch.IsDefault {
+		if branch.IsDefault {
 			found = true
 			break
 		}

@@ -25,17 +25,17 @@ func New(s *serde.Serde) Sink {
 
 // Active prefix contains all not deleted objects.
 func (v Sink) Active() SinkInState {
-	return SinkInState{PrefixT: v.PrefixT.Add("active")}
+	return SinkInState{PrefixT: v.Add("active")}
 }
 
 // Deleted prefix contains all deleted objects whose parent existed on deleted.
 func (v Sink) Deleted() SinkInState {
-	return SinkInState{PrefixT: v.PrefixT.Add("deleted")}
+	return SinkInState{PrefixT: v.Add("deleted")}
 }
 
 // Versions prefix contains full history of the object.
 func (v Sink) Versions() SinkVersions {
-	return SinkVersions{PrefixT: v.PrefixT.Add("version")}
+	return SinkVersions{PrefixT: v.Add("version")}
 }
 
 func (v SinkInState) In(objectKey any) etcdop.PrefixT[definition.Sink] {
@@ -52,25 +52,25 @@ func (v SinkInState) In(objectKey any) etcdop.PrefixT[definition.Sink] {
 }
 
 func (v SinkInState) InProject(k keboola.ProjectID) etcdop.PrefixT[definition.Sink] {
-	return v.PrefixT.Add(k.String())
+	return v.Add(k.String())
 }
 
 func (v SinkInState) InBranch(k key.BranchKey) etcdop.PrefixT[definition.Sink] {
-	return v.PrefixT.Add(k.String())
+	return v.Add(k.String())
 }
 
 func (v SinkInState) InSource(k key.SourceKey) etcdop.PrefixT[definition.Sink] {
-	return v.PrefixT.Add(k.String())
+	return v.Add(k.String())
 }
 
 func (v SinkInState) ByKey(k key.SinkKey) etcdop.KeyT[definition.Sink] {
-	return v.PrefixT.Key(k.String())
+	return v.Key(k.String())
 }
 
 func (v SinkVersions) Of(k key.SinkKey) SinkVersionsOf {
-	return SinkVersionsOf{PrefixT: v.PrefixT.Add(k.String())}
+	return SinkVersionsOf{PrefixT: v.Add(k.String())}
 }
 
 func (v SinkVersionsOf) Version(version definition.VersionNumber) etcdop.KeyT[definition.Sink] {
-	return v.PrefixT.Key(version.String())
+	return v.Key(version.String())
 }

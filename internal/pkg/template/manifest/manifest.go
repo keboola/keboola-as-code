@@ -65,7 +65,7 @@ func (f *File) Evaluate(ctx context.Context, jsonnetCtx *jsonnet.Context) (*Mani
 	}
 
 	// Set records
-	if err := m.records.SetRecords(records); err != nil {
+	if err := m.SetRecords(records); err != nil {
 		return nil, errors.Errorf(`cannot load manifest: %w`, err)
 	}
 
@@ -91,7 +91,7 @@ func (f *File) EvaluateAlwaysWithRecords(ctx context.Context, jsonnetCtx *jsonne
 	records, _ := content.records()
 
 	// Set records
-	if err := m.records.SetRecords(records); err != nil {
+	if err := m.SetRecords(records); err != nil {
 		return nil, errors.Errorf(`cannot load manifest: %w`, err)
 	}
 
@@ -109,7 +109,7 @@ func (f *File) RawContent() string {
 func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 	// Create file content
 	content := newFile()
-	content.setRecords(m.records.All())
+	content.setRecords(m.All())
 	content.MainConfig = m.mainConfig
 
 	// Save file
@@ -117,7 +117,7 @@ func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 		return err
 	}
 
-	m.records.ResetChanged()
+	m.ResetChanged()
 	return nil
 }
 

@@ -29,7 +29,7 @@ func TestResult(t *testing.T) {
 
 	// ResultOrErr
 	str, err := result.ResultOrErr()
-	assert.Equal(t, "", str)
+	assert.Empty(t, str)
 	require.NoError(t, err)
 
 	// Result

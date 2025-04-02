@@ -19,7 +19,7 @@ func (f *StructField) JSONName() string {
 	if f.jsonName != "" && f.jsonName != "-" {
 		return f.jsonName
 	}
-	return f.StructField.Name
+	return f.Name
 }
 
 func MapFromTaggedFields(tag string, model any) *orderedmap.OrderedMap {

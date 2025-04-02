@@ -29,7 +29,7 @@ func TestBuffer_SmallChunks(t *testing.T) {
 	assert.Equal(t, len(data), n)
 
 	// Check that buffer is not flushed yet
-	assert.Equal(t, "", out.String())
+	assert.Empty(t, out.String())
 
 	// Test writing data that causes flush
 	data = []byte("0")

@@ -94,8 +94,8 @@ func MockTableStorageAPICalls(tb testing.TB, transport *httpmock.MockTransport) 
 			jobID := keboola.StorageJobID(jobCounter)
 			table := keboola.Table{
 				TableKey:   tableKey,
-				PrimaryKey: data.TableDefinition.PrimaryKeyNames,
-				Columns:    data.TableDefinition.Columns.Names(),
+				PrimaryKey: data.PrimaryKeyNames,
+				Columns:    data.Columns.Names(),
 			}
 			tablesByJob[jobID] = table
 			tablesByKey[tableKey] = table

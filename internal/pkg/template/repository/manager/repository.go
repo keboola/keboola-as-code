@@ -94,7 +94,7 @@ func (r *CachedRepository) Template(ctx context.Context, reference model.Templat
 	// Check if is template already loaded
 	name := reference.Name()
 	r.templatesLock.RLock()
-	value, found := r.templates[name] //nolint:ifshort
+	value, found := r.templates[name] //nolint
 	r.templatesLock.RUnlock()
 	if found {
 		return value, nil

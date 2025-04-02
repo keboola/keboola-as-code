@@ -11,12 +11,12 @@ func TestChangedFields(t *testing.T) {
 
 	v := ChangedFields{}
 	assert.True(t, v.IsEmpty())
-	assert.Equal(t, "", v.String())
+	assert.Empty(t, v.String())
 
 	v.Add("foo")
 	v.Remove("foo")
 	assert.True(t, v.IsEmpty())
-	assert.Equal(t, "", v.String())
+	assert.Empty(t, v.String())
 	assert.False(t, v.Has("foo"))
 
 	v.Add("foo")
@@ -49,13 +49,13 @@ func TestChangedPaths(t *testing.T) {
 	v := ChangedFields{}
 	f := v.Add("foo")
 
-	assert.Equal(t, ``, f.Diff())
+	assert.Empty(t, f.Diff())
 
 	f.SetDiff(`abc`)
 	assert.Equal(t, `abc`, f.Diff())
 
 	assert.False(t, f.HasPath("key1.key2"))
-	assert.Equal(t, "", f.Paths())
+	assert.Empty(t, f.Paths())
 
 	f.AddPath("key1")
 	assert.True(t, f.HasPath("key1"))

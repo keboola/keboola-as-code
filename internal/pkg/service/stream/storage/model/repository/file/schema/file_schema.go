@@ -28,7 +28,7 @@ func New(s *serde.Serde) File {
 }
 
 func (s File) AllLevels() FileInLevel {
-	return FileInLevel{PrefixT: s.PrefixT.Add("all")}
+	return FileInLevel{PrefixT: s.Add("all")}
 }
 
 func (s File) InLevel(l model.Level) FileInLevel {
@@ -41,7 +41,7 @@ func (s File) InLevel(l model.Level) FileInLevel {
 }
 
 func (v FileInLevel) ByKey(k model.FileKey) etcdop.KeyT[model.File] {
-	return v.PrefixT.Key(k.String())
+	return v.Key(k.String())
 }
 
 func (v FileInLevel) InObject(k fmt.Stringer) FileInObject {
@@ -70,5 +70,5 @@ func (v FileInLevel) InSink(k key.SinkKey) FileInObject {
 }
 
 func (v FileInLevel) inObject(objectKey fmt.Stringer) FileInObject {
-	return FileInObject{PrefixT: v.PrefixT.Add(objectKey.String())}
+	return FileInObject{PrefixT: v.Add(objectKey.String())}
 }

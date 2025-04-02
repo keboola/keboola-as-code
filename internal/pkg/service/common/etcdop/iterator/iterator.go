@@ -72,21 +72,21 @@ func (v Definition) Do(ctx context.Context, opts ...op.Option) *Iterator {
 	return &Iterator{
 		ctx:            ctx,
 		opts:           opts,
-		client:         v.config.client,
-		sort:           v.config.sort,
-		pageSize:       v.config.pageSize,
-		revision:       v.config.revision,
-		fromSameRev:    v.config.fromSameRev,
-		start:          v.config.start(),
-		end:            v.config.end(),
-		lastIndexTotal: v.config.limit - 1, // -1 means no limit
-		indexOnPage:    -1,                 // Next method must be called at first
-		indexTotal:     -1,                 // Next method must be called at first
+		client:         v.client,
+		sort:           v.sort,
+		pageSize:       v.pageSize,
+		revision:       v.revision,
+		fromSameRev:    v.fromSameRev,
+		start:          v.start(),
+		end:            v.end(),
+		lastIndexTotal: v.limit - 1, // -1 means no limit
+		indexOnPage:    -1,          // Next method must be called at first
+		indexTotal:     -1,          // Next method must be called at first
 	}
 }
 
 func (v Definition) Prefix() string {
-	return v.config.prefix
+	return v.prefix
 }
 
 // CountAll records in the iterator range, WithLimit option is ignored.
@@ -94,8 +94,8 @@ func (v Definition) CountAll(opts ...etcd.OpOption) op.CountOp {
 	return op.NewCountOp(
 		v.client,
 		func(ctx context.Context) (etcd.Op, error) {
-			opts = append([]etcd.OpOption{etcd.WithRange(v.config.end()), etcd.WithCountOnly()}, opts...)
-			return etcd.OpGet(v.config.start(), opts...), nil
+			opts = append([]etcd.OpOption{etcd.WithRange(v.end()), etcd.WithCountOnly()}, opts...)
+			return etcd.OpGet(v.start(), opts...), nil
 		},
 		func(ctx context.Context, raw *op.RawResponse) (int64, error) {
 			return raw.Get().Count, nil

@@ -62,7 +62,7 @@ func (b *Bridge) canAcceptNewFile(ctx context.Context, sinkKey key.SinkKey) bool
 
 func (b *Bridge) CleanJob(ctx context.Context, job model.Job) (err error, deleted bool) {
 	// Parse storage job ID from string
-	id64, err := strconv.ParseInt(string(job.JobKey.JobID), 10, 64)
+	id64, err := strconv.ParseInt(string(job.JobID), 10, 64)
 	if err != nil {
 		err = errors.PrefixErrorf(err, `cannot get keboola storage job "%s"`, job.JobKey)
 		b.logger.Error(ctx, err.Error())

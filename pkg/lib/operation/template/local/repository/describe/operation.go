@@ -19,7 +19,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, tmpl *template.Template, d dependencies) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.repository.describe")
+	_, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.repository.describe")
 	defer span.End(&err)
 
 	w := d.Stdout()

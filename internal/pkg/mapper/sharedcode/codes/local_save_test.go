@@ -20,7 +20,7 @@ func TestSharedCodeLocalSave(t *testing.T) {
 	_, rowState := createInternalSharedCode(t, targetComponentID, state)
 
 	recipe := model.NewLocalSaveRecipe(rowState.Manifest(), rowState.Remote, model.NewChangedFields())
-	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentID))
+	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(recipe.Path(), targetComponentID))
 
 	// Create dir
 	require.NoError(t, state.ObjectsRoot().Mkdir(t.Context(), filesystem.Dir(codeFilePath)))

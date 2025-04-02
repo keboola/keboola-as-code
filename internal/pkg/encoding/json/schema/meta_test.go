@@ -69,7 +69,7 @@ func TestFieldMeta_Complex(t *testing.T) {
 	assert.True(t, found)
 	require.NoError(t, err)
 	assert.Equal(t, "Database", meta.Title)
-	assert.Equal(t, "", meta.Description)
+	assert.Empty(t, meta.Description)
 	assert.Nil(t, meta.Default)
 	assert.False(t, meta.Required)
 
@@ -89,7 +89,7 @@ func TestFieldMeta_Complex(t *testing.T) {
 	assert.True(t, found)
 	require.NoError(t, err)
 	assert.Equal(t, "Query Limit", meta.Title)
-	assert.Equal(t, "", meta.Description)
+	assert.Empty(t, meta.Description)
 	assert.Equal(t, "1234", meta.Default)
 	assert.False(t, meta.Required)
 }

@@ -119,3 +119,6 @@ check-licenses:
 update:
 	go tool go-mod-upgrade
 	go mod tidy
+
+install-golangci-lint:
+	./scripts/install-golangci-lint.sh

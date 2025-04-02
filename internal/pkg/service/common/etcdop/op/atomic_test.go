@@ -515,7 +515,7 @@ func TestAtomicUpdate(t *testing.T) {
 	atomicResult := atomicOp.Do(ctx, op.WithRetryMaxElapsedTime(100*time.Millisecond))
 	require.Error(t, atomicResult.Err())
 	wildcards.Assert(t, "atomic update failed: revision has been modified between GET and UPDATE op, attempt %d, elapsed time %s", atomicResult.Err().Error())
-	assert.Equal(t, "", atomicResult.Result()) // empty value on error
+	assert.Empty(t, atomicResult.Result()) // empty value on error
 	r, err = key1.Get(client).Do(ctx).ResultOrErr()
 	require.NoError(t, err)
 	assert.Equal(t, "newValue3", string(r.Value))

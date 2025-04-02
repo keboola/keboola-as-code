@@ -159,7 +159,7 @@ func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Pro
 	m.repositories = content.Templates.Repositories
 
 	// Set records
-	if err := m.records.SetRecords(content.records()); err != nil && !ignoreErrors {
+	if err := m.SetRecords(content.records()); err != nil && !ignoreErrors {
 		return nil, InvalidManifestError{errors.PrefixError(err, "invalid manifest")}
 	}
 
@@ -176,7 +176,7 @@ func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 	content.AllowedBranches = m.filter.AllowedBranches()
 	content.IgnoredComponents = m.filter.IgnoredComponents()
 	content.Templates.Repositories = m.repositories
-	content.setRecords(m.records.All())
+	content.setRecords(m.All())
 
 	// Map memory IDs to manifest IDs
 	if len(m.mapping) > 0 {
@@ -199,7 +199,7 @@ func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 		return err
 	}
 
-	m.records.ResetChanged()
+	m.ResetChanged()
 	return nil
 }
 

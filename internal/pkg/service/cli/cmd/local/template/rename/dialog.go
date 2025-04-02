@@ -23,7 +23,7 @@ func AskRenameInstance(projectState *project.State, d *dialog.Dialogs, f Flags) 
 		out.NewName = v
 	} else {
 		// Ask for instance name
-		v, _ := d.Prompt.Ask(&prompt.Question{
+		v, _ := d.Ask(&prompt.Question{
 			Label:       "Instance Name",
 			Description: "Please enter instance name.",
 			Default:     instance.InstanceName,

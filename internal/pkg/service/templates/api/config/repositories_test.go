@@ -14,7 +14,7 @@ func TestRepositories_MarshalText(t *testing.T) {
 
 	result, err := (Repositories{}).MarshalText()
 	require.NoError(t, err)
-	assert.Equal(t, "", string(result))
+	assert.Empty(t, string(result))
 
 	result, err = (Repositories{
 		{

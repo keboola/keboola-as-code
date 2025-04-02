@@ -70,7 +70,7 @@ func (v *Container) InvokeIfErr(ctx context.Context, errPtr *error) {
 func (v *Container) Invoke(ctx context.Context) {
 	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 30*time.Second, errors.New("rollback timeout"))
 	defer cancel()
-	if err := v.container.invokeOrErr(ctx); err != nil {
+	if err := v.invokeOrErr(ctx); err != nil {
 		v.logger.Warn(ctx, errors.PrefixError(err, "rollback failed").Error())
 	}
 }

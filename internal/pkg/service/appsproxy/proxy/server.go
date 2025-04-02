@@ -73,7 +73,7 @@ func (t *tracerWrapper) Start(ctx context.Context, spanName string, opts ...trac
 func (w *spanWrapper) End(options ...trace.SpanEndOption) {
 	if !strings.HasPrefix(w.req.URL.Path, config.InternalPrefix) {
 		// Proxied requests of Data App are always OK, regardless of the status code
-		w.Span.SetStatus(codes.Ok, "proxied request")
+		w.SetStatus(codes.Ok, "proxied request")
 	}
 
 	w.Span.End(options...)
@@ -140,7 +140,7 @@ func NewHandler(ctx context.Context, d dependencies.ServiceScope) http.Handler {
 		},
 		Mount: func(c httpserver.Components) {
 			// Create public request deps for each request
-			c.Muxer.Use(func(next http.Handler) http.Handler {
+			c.Use(func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					next.ServeHTTP(w, req.WithContext(context.WithValue(
 						req.Context(),
