@@ -9,6 +9,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// ErrInvalidStateTransition is a sentinel error returned when a file state transition fails due to the file being in an unexpected state.
+var ErrInvalidStateTransition = errors.New("invalid file state transition")
+
 type switchStateOption func(file *model.File)
 
 func withIsEmpty(isEmpty bool) switchStateOption {
@@ -42,7 +45,8 @@ func (r *Repository) stateTransition(k model.FileKey, now time.Time, from, to mo
 func (r *Repository) switchState(ctx context.Context, oldValue model.File, now time.Time, from, to model.FileState, opts ...switchStateOption) *op.TxnOp[model.File] {
 	// Validate from state
 	if oldValue.State != from {
-		return op.ErrorTxn[model.File](errors.Errorf(`file "%s" is in "%s" state, expected "%s"`, oldValue.FileKey, oldValue.State, from))
+		return op.ErrorTxn[model.File](errors.Errorf(`%w: file "%s" is in "%s" state, expected "%s"`,
+			ErrInvalidStateTransition, oldValue.FileKey, oldValue.State, from))
 	}
 
 	// Switch file state
