@@ -86,7 +86,7 @@ runs:
     - name: Load Go tools cache
       id: go-cache-tools
       if: inputs.without-cache != 'true'
-      uses: runs-on/cache@v4 # replacement for actions/cache@v4
+      uses: actions/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/bin
@@ -96,7 +96,7 @@ runs:
     - name: Load Go modules cache
       id: go-cache-mod
       if: inputs.without-cache != 'true'
-      uses: runs-on/cache@v4 # replacement for actions/cache@v4
+      uses: actions/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/modcache
@@ -109,7 +109,7 @@ runs:
     - name: Load Go build and test cache
       id: go-cache-build
       if: inputs.without-cache != 'true'
-      uses: runs-on/cache@v4 # replacement for actions/cache@v4
+      uses: actions/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/cache
@@ -122,7 +122,7 @@ runs:
     - name: Load Linter cache
       id: go-cache-linter
       if: inputs.build-type == 'lint' && inputs.without-cache != 'true'
-      uses: runs-on/cache@v4 # replacement for actions/cache@v4
+      uses: actions/cache@v4
       with:
         path: |
           ${{ env.GODIRS }}/lintcache
