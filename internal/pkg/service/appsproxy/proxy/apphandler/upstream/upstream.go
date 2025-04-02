@@ -113,14 +113,19 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
 
 	// Call notify while there is an active websocket connection
-	go func() {
+	go func(ctx context.Context) {
 		for {
-			if upstream.activeWsCount.Load() > 0 {
-				upstream.notify(ctx)
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if upstream.activeWsCount.Load() > 0 {
+					upstream.notify(ctx)
+				}
+				time.Sleep(30 * time.Second)
 			}
-			time.Sleep(30 * time.Second)
 		}
-	}()
+	}(ctx)
 
 	return upstream, nil
 }
