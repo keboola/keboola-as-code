@@ -172,6 +172,7 @@ func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context)
 	// Write to sinks in parallel
 	var lock sync.Mutex
 	var wg sync.WaitGroup
+	// Dispatching to all source in all branches
 	for _, sourceKey := range sources {
 		r.wg.Add(1)
 		wg.Add(1)
