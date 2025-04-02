@@ -78,6 +78,12 @@ linters:
     - usetesting
     - wastedassign
     - whitespace
+    # DISABLED
+    #- goimports # replaced with gci
+    #- gofmt # replaced with gofumpt
+    #- nolintlint # strange behavior
+    #- gomoddirectives # allow replace directive in go.mod
+    #- misspell - broken, rewrites code
   settings:
     depguard:
       rules:
