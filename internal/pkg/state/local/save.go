@@ -71,7 +71,7 @@ func (w *modelWriter) write() {
 	}
 
 	// Delete
-	w.ObjectManifest.ClearRelatedPaths()
+	w.ClearRelatedPaths()
 	for _, path := range toDelete {
 		if err := w.softDelete(path); err != nil {
 			w.errors.Append(err)
@@ -90,9 +90,9 @@ func (w *modelWriter) write() {
 
 		// Write
 		if fileRaw.HasTag(model.FileKindProjectDescription) {
-			w.ObjectManifest.AddRelatedPathInRoot(fileRaw.Path())
+			w.AddRelatedPathInRoot(fileRaw.Path())
 		} else {
-			w.ObjectManifest.AddRelatedPath(fileRaw.Path())
+			w.AddRelatedPath(fileRaw.Path())
 		}
 		if err := w.fs.WriteFile(w.ctx, fileRaw); err != nil {
 			w.errors.Append(err)

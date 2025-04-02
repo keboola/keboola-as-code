@@ -79,7 +79,7 @@ func (r *Repository) save(ctx context.Context, now time.Time, old, updated *mode
 			saveTxn.Merge(op.Txn(r.client).
 				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "=", 0)).
 				OnFailed(func(r *op.TxnResult[op.NoResult]) {
-					r.AddErr(serviceError.NewResourceAlreadyExistsError("slice", updated.SliceKey.String(), "file"))
+					r.AddErr(serviceError.NewResourceAlreadyExistsError("slice", updated.String(), "file"))
 				}),
 			)
 		} else {
@@ -87,7 +87,7 @@ func (r *Repository) save(ctx context.Context, now time.Time, old, updated *mode
 			saveTxn.Merge(op.Txn(r.client).
 				If(etcd.Compare(etcd.ModRevision(allKey.Key()), "!=", 0)).
 				OnFailed(func(r *op.TxnResult[op.NoResult]) {
-					r.AddErr(serviceError.NewResourceNotFoundError("slice", updated.SliceKey.String(), "file"))
+					r.AddErr(serviceError.NewResourceNotFoundError("slice", updated.String(), "file"))
 				}),
 			)
 		}

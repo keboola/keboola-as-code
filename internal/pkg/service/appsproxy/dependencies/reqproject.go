@@ -15,7 +15,7 @@ type projectRequestScope struct {
 }
 
 func NewProjectRequestScope(ctx context.Context, pubScp PublicRequestScope, tokenStr string) (v ProjectRequestScope, err error) {
-	ctx, span := pubScp.Telemetry().Tracer().Start(ctx, "keboola.go.apps.proxy.api.dependencies.NewProjectRequestScope")
+	_, span := pubScp.Telemetry().Tracer().Start(ctx, "keboola.go.apps.proxy.api.dependencies.NewProjectRequestScope")
 	defer span.End(&err)
 
 	return newProjectRequestScope(pubScp), nil

@@ -57,11 +57,8 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 
 	currentLevel := v.Core()
 	writeTxn := TxnWithResult(v.client, v.result)
-	for {
+	for !currentLevel.Empty() {
 		// Stop if there is no new operation
-		if currentLevel.Empty() {
-			break
-		}
 
 		// Prevent infinite loop
 		if level >= atomicOpMaxReadLevels {

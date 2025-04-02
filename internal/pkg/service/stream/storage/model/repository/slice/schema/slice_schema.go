@@ -28,7 +28,7 @@ func New(s *serde.Serde) Slice {
 }
 
 func (s Slice) AllLevels() SliceInLevel {
-	return SliceInLevel{PrefixT: s.PrefixT.Add("all")}
+	return SliceInLevel{PrefixT: s.Add("all")}
 }
 
 func (s Slice) InLevel(l model.Level) SliceInLevel {
@@ -41,7 +41,7 @@ func (s Slice) InLevel(l model.Level) SliceInLevel {
 }
 
 func (v SliceInLevel) ByKey(k model.SliceKey) etcdop.KeyT[model.Slice] {
-	return v.PrefixT.Key(k.String())
+	return v.Key(k.String())
 }
 
 func (v SliceInLevel) InObject(k fmt.Stringer) SliceInObject {
@@ -78,5 +78,5 @@ func (v SliceInLevel) InFileVolume(k model.FileVolumeKey) SliceInObject {
 }
 
 func (v SliceInLevel) inObject(objectKey fmt.Stringer) SliceInObject {
-	return SliceInObject{PrefixT: v.PrefixT.Add(objectKey.String())}
+	return SliceInObject{PrefixT: v.Add(objectKey.String())}
 }

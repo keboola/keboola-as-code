@@ -75,7 +75,7 @@ func Definition(ops ...Option) ent.Mixin {
 		for _, mixin := range c.parent.Mixin() {
 			if m, ok := mixin.(*Mixin); ok {
 				c.parentMixin = m
-				c.pkFields = append(m.pkConfig.pkFields, c.pkFields...)
+				c.pkFields = append(m.pkFields, c.pkFields...)
 			}
 		}
 	}
@@ -95,10 +95,10 @@ func (v *Mixin) Fields() []ent.Field {
 	// Generate field for each primary key part.
 	for _, f := range v.pkFields {
 		a := f.annotation()
-		switch {
-		case a.GoType.Kind == reflect.Int:
+		switch a.GoType.Kind {
+		case reflect.Int:
 			fields = append(fields, field.Int(f.Name).GoType(f.Type).Min(1).Immutable().Annotations(a))
-		case a.GoType.Kind == reflect.String:
+		case reflect.String:
 			fields = append(fields, field.String(f.Name).GoType(f.Type).NotEmpty().Immutable().Annotations(a))
 		default:
 			panic(errors.Errorf(`unexpected field "%s" type "%s", expected a int or string based type`, f.Name, a.GoType.Name))

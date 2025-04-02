@@ -11,9 +11,9 @@ import (
 func TestNewUserErrorWithCode(t *testing.T) {
 	t.Parallel()
 
-	require.NoError(t, os.Setenv("CUSTOM_ENV", "val1"))      //nolint:forbidigo, tenv, usetesting
-	require.NoError(t, os.Setenv("KBC_SECRET_VAR2", "val2")) //nolint:forbidigo, tenv, usetesting
-	require.NoError(t, os.Setenv("KBC_SECRET_VAR3", "val3")) //nolint:forbidigo, tenv, usetesting
+	require.NoError(t, os.Setenv("CUSTOM_ENV", "val1"))      //nolint:forbidigo, usetesting
+	require.NoError(t, os.Setenv("KBC_SECRET_VAR2", "val2")) //nolint:forbidigo, usetesting
+	require.NoError(t, os.Setenv("KBC_SECRET_VAR3", "val3")) //nolint:forbidigo, usetesting
 
 	provider, err := CreateTestInputsEnvProvider(t.Context())
 	require.NoError(t, err)

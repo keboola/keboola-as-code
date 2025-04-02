@@ -74,11 +74,11 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 
 	// All rows are without relations
 	assert.Empty(t, row1.Local.Relations)
-	assert.Empty(t, row1.ConfigRowManifest.Relations)
+	assert.Empty(t, row1.Relations)
 	assert.Empty(t, row2.Local.Relations)
-	assert.Empty(t, row2.ConfigRowManifest.Relations)
+	assert.Empty(t, row2.Relations)
 	assert.Empty(t, row3.Local.Relations)
-	assert.Empty(t, row3.ConfigRowManifest.Relations)
+	assert.Empty(t, row3.Relations)
 
 	// Invoke
 	changes := model.NewLocalChanges()
@@ -91,11 +91,11 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 		&model.VariablesValuesForRelation{},
 	}
 	assert.Empty(t, row1.Local.Relations)
-	assert.Empty(t, row1.ConfigRowManifest.Relations)
+	assert.Empty(t, row1.Relations)
 	assert.Equal(t, expectedRelation, row2.Local.Relations)
-	assert.Equal(t, expectedRelation, row2.ConfigRowManifest.Relations)
+	assert.Equal(t, expectedRelation, row2.Relations)
 	assert.Empty(t, row3.Local.Relations)
-	assert.Empty(t, row3.ConfigRowManifest.Relations)
+	assert.Empty(t, row3.Relations)
 }
 
 func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
@@ -122,11 +122,11 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 
 	// All rows are without relations
 	assert.Empty(t, row1.Local.Relations)
-	assert.Empty(t, row1.ConfigRowManifest.Relations)
+	assert.Empty(t, row1.Relations)
 	assert.Empty(t, row2.Local.Relations)
-	assert.Empty(t, row2.ConfigRowManifest.Relations)
+	assert.Empty(t, row2.Relations)
 	assert.Empty(t, row3.Local.Relations)
-	assert.Empty(t, row3.ConfigRowManifest.Relations)
+	assert.Empty(t, row3.Relations)
 
 	// Invoke
 	changes := model.NewLocalChanges()
@@ -139,9 +139,9 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 		&model.VariablesValuesForRelation{},
 	}
 	assert.Equal(t, expectedRelation, row1.Local.Relations)
-	assert.Equal(t, expectedRelation, row1.ConfigRowManifest.Relations)
+	assert.Equal(t, expectedRelation, row1.Relations)
 	assert.Empty(t, row2.Local.Relations)
-	assert.Empty(t, row2.ConfigRowManifest.Relations)
+	assert.Empty(t, row2.Relations)
 	assert.Empty(t, row3.Local.Relations)
-	assert.Empty(t, row3.ConfigRowManifest.Relations)
+	assert.Empty(t, row3.Relations)
 }

@@ -22,7 +22,7 @@ func New(s *serde.Serde) Job {
 }
 
 func (j Job) ForSink(k model.JobKey) etcdop.KeyT[model.Job] {
-	return j.PrefixT.Key(k.String())
+	return j.Key(k.String())
 }
 
 func (j Job) In(objectKey any) etcdop.PrefixT[model.Job] {
@@ -41,21 +41,21 @@ func (j Job) In(objectKey any) etcdop.PrefixT[model.Job] {
 }
 
 func (j Job) InProject(k keboola.ProjectID) etcdop.PrefixT[model.Job] {
-	return j.PrefixT.Add(k.String())
+	return j.Add(k.String())
 }
 
 func (j Job) InBranch(k key.BranchKey) etcdop.PrefixT[model.Job] {
-	return j.PrefixT.Add(k.String())
+	return j.Add(k.String())
 }
 
 func (j Job) InSource(k key.SourceKey) etcdop.PrefixT[model.Job] {
-	return j.PrefixT.Add(k.String())
+	return j.Add(k.String())
 }
 
 func (j Job) InSink(k key.SinkKey) etcdop.PrefixT[model.Job] {
-	return j.PrefixT.Add(k.String())
+	return j.Add(k.String())
 }
 
 func (j Job) ByKey(k model.JobKey) etcdop.KeyT[model.Job] {
-	return j.PrefixT.Key(k.String())
+	return j.Key(k.String())
 }

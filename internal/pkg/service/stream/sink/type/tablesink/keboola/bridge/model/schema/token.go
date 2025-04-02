@@ -19,5 +19,5 @@ func forToken(s *serde.Serde) Token {
 }
 
 func (v Token) ForSink(k key.SinkKey) etcdop.KeyT[keboolasink.Token] {
-	return v.PrefixT.Key(k.String())
+	return v.Key(k.String())
 }

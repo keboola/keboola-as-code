@@ -368,7 +368,7 @@ func (v *fsWithFreeLock) free() <-chan struct{} {
 		defer lock.Unlock()
 
 		// Delete directory
-		_ = os.RemoveAll(v._fs.BasePath())
+		_ = os.RemoveAll(v.BasePath())
 
 		// Clear values
 		v._fs = nil

@@ -144,7 +144,7 @@ func (n *GroupNode) OnChangeListener() *Listener {
 
 // CloneAssigner returns cloned Assigner frozen in the actual distribution.
 func (n *GroupNode) CloneAssigner() *Assigner {
-	return n.assigner.clone()
+	return n.clone()
 }
 
 // register node in the etcd prefix,
@@ -200,7 +200,7 @@ func (n *GroupNode) watch(ctx context.Context, wg *sync.WaitGroup) error {
 	}
 
 	// Check self-discovery
-	if !slices.Contains(n.assigner.Nodes(), n.nodeID) {
+	if !slices.Contains(n.Nodes(), n.nodeID) {
 		return errors.Errorf(`self-discovery failed: missing "%s" in discovered nodes`, n.nodeID)
 	}
 
@@ -209,11 +209,11 @@ func (n *GroupNode) watch(ctx context.Context, wg *sync.WaitGroup) error {
 
 // updateNodesFrom events. The operation is atomic.
 func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEvent[[]byte], reset bool) Events {
-	n.assigner.lock()
-	defer n.assigner.unlock()
+	n.lock()
+	defer n.unlock()
 
 	if reset {
-		n.assigner.resetNodes()
+		n.resetNodes()
 	}
 
 	var out Events
@@ -223,13 +223,13 @@ func (n *GroupNode) updateNodesFrom(ctx context.Context, events []etcdop.WatchEv
 			nodeID := string(rawEvent.Kv.Value)
 			event := Event{Type: EventNodeAdded, NodeID: nodeID, Message: fmt.Sprintf(`found a new node "%s"`, nodeID)}
 			out = append(out, event)
-			n.assigner.addNode(nodeID)
+			n.addNode(nodeID)
 			n.logger.Infof(ctx, event.Message)
 		case etcdop.DeleteEvent:
 			nodeID := string(rawEvent.PrevKv.Value)
 			event := Event{Type: EventNodeRemoved, NodeID: nodeID, Message: fmt.Sprintf(`the node "%s" gone`, nodeID)}
 			out = append(out, event)
-			n.assigner.removeNode(nodeID)
+			n.removeNode(nodeID)
 			n.logger.Infof(ctx, event.Message)
 		default:
 			panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))

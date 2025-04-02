@@ -63,7 +63,7 @@ func TestLoadMinimalManifestFile(t *testing.T) {
 		require.NoError(t, err)
 
 		// Assert
-		assert.Equal(t, c.records, manifest.records.All(), c.name)
+		assert.Equal(t, c.records, manifest.All(), c.name)
 		assert.Equal(t, c.mainConfig, manifest.MainConfig())
 	}
 }
@@ -93,7 +93,7 @@ func TestLoadManifestFile(t *testing.T) {
 		require.NoError(t, err)
 
 		// Assert
-		assert.Equal(t, c.records, manifest.records.All(), c.name)
+		assert.Equal(t, c.records, manifest.All(), c.name)
 		assert.Equal(t, c.mainConfig, manifest.MainConfig())
 	}
 }
@@ -107,7 +107,7 @@ func TestSaveManifestFile(t *testing.T) {
 		// Save
 		manifest := New()
 		manifest.mainConfig = c.mainConfig
-		require.NoError(t, manifest.records.SetRecords(c.records))
+		require.NoError(t, manifest.SetRecords(c.records))
 		require.NoError(t, manifest.Save(ctx, fs))
 
 		// Load file

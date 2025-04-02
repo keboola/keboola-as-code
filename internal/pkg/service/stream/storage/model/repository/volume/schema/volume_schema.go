@@ -18,11 +18,11 @@ func New(s *serde.Serde) Volume {
 }
 
 func (v Volume) WriterVolumes() etcdop.PrefixT[volume.Metadata] {
-	return v.PrefixT.Add("writer")
+	return v.Add("writer")
 }
 
 func (v Volume) ReaderVolumes() etcdop.PrefixT[volume.Metadata] {
-	return v.PrefixT.Add("reader")
+	return v.Add("reader")
 }
 
 func (v Volume) WriterVolume(id volume.ID) etcdop.KeyT[volume.Metadata] {

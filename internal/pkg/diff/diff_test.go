@@ -32,7 +32,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 	result := results.Results[0]
 	assert.Equal(t, ResultOnlyInLocal, result.State)
 	assert.True(t, result.ChangedFields.IsEmpty())
-	assert.Same(t, branchState.Local, result.ObjectState.LocalState().(*model.Branch))
+	assert.Same(t, branchState.Local, result.LocalState().(*model.Branch))
 }
 
 func TestDiffOnlyInRemote(t *testing.T) {
@@ -52,7 +52,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 	result := results.Results[0]
 	assert.Equal(t, ResultOnlyInRemote, result.State)
 	assert.True(t, result.ChangedFields.IsEmpty())
-	assert.Same(t, branchState.Remote, result.ObjectState.RemoteState().(*model.Branch))
+	assert.Same(t, branchState.Remote, result.RemoteState().(*model.Branch))
 }
 
 func TestDiffEqual(t *testing.T) {
@@ -83,8 +83,8 @@ func TestDiffEqual(t *testing.T) {
 	result := results.Results[0]
 	assert.Equal(t, ResultEqual, result.State)
 	assert.True(t, result.ChangedFields.IsEmpty())
-	assert.Same(t, branchState.Remote, result.ObjectState.RemoteState().(*model.Branch))
-	assert.Same(t, branchState.Local, result.ObjectState.LocalState().(*model.Branch))
+	assert.Same(t, branchState.Remote, result.RemoteState().(*model.Branch))
+	assert.Same(t, branchState.Local, result.LocalState().(*model.Branch))
 }
 
 func TestDiffNotEqual(t *testing.T) {
@@ -117,8 +117,8 @@ func TestDiffNotEqual(t *testing.T) {
 	assert.Equal(t, `isDefault, name`, result.ChangedFields.String())
 	assert.Equal(t, "  - name\n  + changed", result.ChangedFields.Get("name").Diff())
 	assert.Equal(t, "  - false\n  + true", result.ChangedFields.Get("isDefault").Diff())
-	assert.Same(t, branchState.Remote, result.ObjectState.RemoteState().(*model.Branch))
-	assert.Same(t, branchState.Local, result.ObjectState.LocalState().(*model.Branch))
+	assert.Same(t, branchState.Remote, result.RemoteState().(*model.Branch))
+	assert.Same(t, branchState.Local, result.LocalState().(*model.Branch))
 }
 
 func TestDiffEqualConfig(t *testing.T) {
@@ -170,13 +170,13 @@ func TestDiffEqualConfig(t *testing.T) {
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
 	assert.True(t, result1.ChangedFields.IsEmpty())
-	assert.Same(t, branchState.Remote, result1.ObjectState.RemoteState().(*model.Branch))
-	assert.Same(t, branchState.Local, result1.ObjectState.LocalState().(*model.Branch))
+	assert.Same(t, branchState.Remote, result1.RemoteState().(*model.Branch))
+	assert.Same(t, branchState.Local, result1.LocalState().(*model.Branch))
 	result2 := results.Results[1]
 	assert.Equal(t, ResultEqual, result2.State)
 	assert.True(t, result2.ChangedFields.IsEmpty())
-	assert.Same(t, configState.Remote, result2.ObjectState.RemoteState().(*model.Config))
-	assert.Same(t, configState.Local, result2.ObjectState.LocalState().(*model.Config))
+	assert.Same(t, configState.Remote, result2.RemoteState().(*model.Config))
+	assert.Same(t, configState.Local, result2.LocalState().(*model.Config))
 }
 
 func TestDiffNotEqualConfig(t *testing.T) {
@@ -229,14 +229,14 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
 	assert.True(t, result1.ChangedFields.IsEmpty())
-	assert.Same(t, branchState.Remote, result1.ObjectState.RemoteState().(*model.Branch))
-	assert.Same(t, branchState.Local, result1.ObjectState.LocalState().(*model.Branch))
+	assert.Same(t, branchState.Remote, result1.RemoteState().(*model.Branch))
+	assert.Same(t, branchState.Local, result1.LocalState().(*model.Branch))
 
 	result2 := results.Results[1]
 	assert.Equal(t, ResultNotEqual, result2.State)
 	assert.Equal(t, `description, name`, result2.ChangedFields.String())
-	assert.Same(t, configState.Remote, result2.ObjectState.RemoteState().(*model.Config))
-	assert.Same(t, configState.Local, result2.ObjectState.LocalState().(*model.Config))
+	assert.Same(t, configState.Remote, result2.RemoteState().(*model.Config))
+	assert.Same(t, configState.Local, result2.LocalState().(*model.Config))
 }
 
 func TestDiffNotEqualConfigConfiguration(t *testing.T) {
@@ -305,15 +305,15 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 	result1 := results.Results[0]
 	assert.Equal(t, ResultEqual, result1.State)
 	assert.True(t, result1.ChangedFields.IsEmpty())
-	assert.Same(t, branchState.Remote, result1.ObjectState.RemoteState().(*model.Branch))
-	assert.Same(t, branchState.Local, result1.ObjectState.LocalState().(*model.Branch))
+	assert.Same(t, branchState.Remote, result1.RemoteState().(*model.Branch))
+	assert.Same(t, branchState.Local, result1.LocalState().(*model.Branch))
 
 	result2 := results.Results[1]
 	assert.Equal(t, ResultNotEqual, result2.State)
 	assert.Equal(t, `configuration`, result2.ChangedFields.String())
 	assert.Equal(t, `foo.bar`, result2.ChangedFields.Get(`configuration`).Paths())
-	assert.Same(t, configState.Remote, result2.ObjectState.RemoteState().(*model.Config))
-	assert.Same(t, configState.Local, result2.ObjectState.LocalState().(*model.Config))
+	assert.Same(t, configState.Remote, result2.RemoteState().(*model.Config))
+	assert.Same(t, configState.Local, result2.LocalState().(*model.Config))
 }
 
 func TestDiffRelations(t *testing.T) {

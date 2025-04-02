@@ -666,14 +666,14 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 	require.NoError(t, err)
 	path1 := filesystem.Join(
 		ts.volumesPath1,
-		strings.NewReplacer(":", "-", ".", "-").Replace(slices[0].SliceKey.FileKey.String()),
-		strings.NewReplacer(":", "-", ".", "-").Replace(slices[0].SliceKey.SliceID.String()),
+		strings.NewReplacer(":", "-", ".", "-").Replace(slices[0].FileKey.String()),
+		strings.NewReplacer(":", "-", ".", "-").Replace(slices[0].SliceID.String()),
 		".slice-source1.csv.gz",
 	)
 	path2 := filesystem.Join(
 		ts.volumesPath1,
-		strings.NewReplacer(":", "-", ".", "-").Replace(slices[1].SliceKey.FileKey.String()),
-		strings.NewReplacer(":", "-", ".", "-").Replace(slices[1].SliceKey.SliceID.String()),
+		strings.NewReplacer(":", "-", ".", "-").Replace(slices[1].FileKey.String()),
+		strings.NewReplacer(":", "-", ".", "-").Replace(slices[1].SliceID.String()),
 		".slice-source2.csv.gz",
 	)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {

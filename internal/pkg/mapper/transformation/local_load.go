@@ -27,7 +27,7 @@ func (m *transformationMapper) MapAfterLocalLoad(ctx context.Context, recipe *mo
 		LocalLoadRecipe: recipe,
 		logger:          m.logger,
 		config:          recipe.Object.(*model.Config),
-		blocksDir:       m.state.NamingGenerator().BlocksDir(recipe.ObjectManifest.Path()),
+		blocksDir:       m.state.NamingGenerator().BlocksDir(recipe.Path()),
 		errors:          errors.NewMultiError(),
 	}
 
@@ -64,7 +64,7 @@ func (l *localLoader) loadBlocks(ctx context.Context) error {
 func (l *localLoader) validate() {
 	if l.errors.Len() == 0 {
 		for _, block := range l.blocks {
-			if err := l.State.ValidateValue(block); err != nil {
+			if err := l.ValidateValue(block); err != nil {
 				l.errors.AppendWithPrefixf(err, `block "%s" is not valid`, block.Path())
 			}
 		}
@@ -86,7 +86,7 @@ func (l *localLoader) addBlock(ctx context.Context, blockIndex int, path string)
 		Codes: make([]*model.Code, 0),
 	}
 
-	l.ObjectManifest.AddRelatedPath(block.Path())
+	l.AddRelatedPath(block.Path())
 	l.loadBlockMetaFile(ctx, block)
 	l.blocks = append(l.blocks, block)
 
@@ -109,7 +109,7 @@ func (l *localLoader) addCode(ctx context.Context, block *model.Block, codeIndex
 		Scripts: make(model.Scripts, 0),
 	}
 
-	l.ObjectManifest.AddRelatedPath(code.Path())
+	l.AddRelatedPath(code.Path())
 	l.loadCodeMetaFile(ctx, code)
 	l.addScripts(ctx, code)
 	block.Codes = append(block.Codes, code)
@@ -174,14 +174,14 @@ func (l *localLoader) blockDirs(ctx context.Context) []string {
 	}
 
 	// Track blocks dir
-	l.ObjectManifest.AddRelatedPath(l.blocksDir)
+	l.AddRelatedPath(l.blocksDir)
 
 	// Track .gitkeep, .gitignore
 	if path := filesystem.Join(l.blocksDir, `.gitkeep`); l.ObjectsRoot().IsFile(ctx, path) {
-		l.ObjectManifest.AddRelatedPath(path)
+		l.AddRelatedPath(path)
 	}
 	if path := filesystem.Join(l.blocksDir, `.gitignore`); l.ObjectsRoot().IsFile(ctx, path) {
-		l.ObjectManifest.AddRelatedPath(path)
+		l.AddRelatedPath(path)
 	}
 
 	// Load all dir entries

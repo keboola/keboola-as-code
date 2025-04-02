@@ -230,7 +230,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t Task, fn runTaskF
 		return Task{}, nil, err
 	}
 
-	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()), attribute.String("node", n.nodeID))
+	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.String()), attribute.String("node", n.nodeID))
 
 	// Create task and lock in etcd
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
@@ -264,7 +264,7 @@ func (n *Node) prepareTask(ctx context.Context, cfg Config) (t Task, fn runTaskF
 func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result, err error) {
 	// Create task context
 	ctx, cancel := cfg.Context()
-	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.Key.String()), attribute.String("node", n.nodeID))
+	ctx = ctxattr.ContextWith(ctx, attribute.String("task", task.String()), attribute.String("node", n.nodeID))
 
 	defer cancel()
 	if _, ok := ctx.Deadline(); !ok {

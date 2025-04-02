@@ -89,7 +89,7 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	assert.False(t, configManifest.State().IsInvalid())
 	assert.False(t, branchManifest.State().IsNotFound())
 	assert.False(t, configManifest.State().IsNotFound())
-	require.NoError(t, manifest.Records.SetRecords([]model.ObjectManifest{
+	require.NoError(t, manifest.SetRecords([]model.ObjectManifest{
 		branchManifest,
 		configManifest,
 	}))

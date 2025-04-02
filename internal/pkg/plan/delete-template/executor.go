@@ -22,8 +22,8 @@ func (e *executor) invoke() error {
 		uow.DeleteObject(action.State, action.Manifest)
 	}
 
-	branchState := e.Plan.projectState.MustGet(e.Plan.branchKey).(*model.BranchState)
-	if err := branchState.Local.Metadata.DeleteTemplateUsage(e.Plan.instanceID); err != nil {
+	branchState := e.projectState.MustGet(e.branchKey).(*model.BranchState)
+	if err := branchState.Local.Metadata.DeleteTemplateUsage(e.instanceID); err != nil {
 		return errors.PrefixError(err, "cannot remove template instance metadata")
 	}
 	uow.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())

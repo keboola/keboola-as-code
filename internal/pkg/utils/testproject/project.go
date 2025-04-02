@@ -111,11 +111,11 @@ func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (
 	// Set envs
 	p.envs = envs.Clone()
 	p.setEnv(`TEST_KBC_PROJECT_ID`, cast.ToString(p.ID()))
-	p.setEnv(`TEST_KBC_PROJECT_STAGING_STORAGE`, p.Project.StagingStorage())
-	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.Project.StorageAPIHost())
+	p.setEnv(`TEST_KBC_PROJECT_STAGING_STORAGE`, p.StagingStorage())
+	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.StorageAPIHost())
 	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
-	p.setEnv(`TEST_KBC_PROJECT_BACKEND`, p.Project.Backend())
-	p.setEnv(`TEST_KBC_PROJECT_LEGACY_TRANSFORMATION`, strconv.FormatBool(p.Project.LegacyTransformation()))
+	p.setEnv(`TEST_KBC_PROJECT_BACKEND`, p.Backend())
+	p.setEnv(`TEST_KBC_PROJECT_LEGACY_TRANSFORMATION`, strconv.FormatBool(p.LegacyTransformation()))
 	p.logf(`■ ️Initialization done.`)
 
 	// Remove all objects

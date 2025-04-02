@@ -38,7 +38,7 @@ func (e *executor) invoke() error {
 		case *newObjectAction:
 			e.persistNewObject(a)
 		case *deleteManifestRecordAction:
-			objectState, _ := e.State.Get(a.Key())
+			objectState, _ := e.Get(a.Key())
 			e.uow.DeleteObject(objectState, a.ObjectManifest)
 		default:
 			panic(errors.Errorf(`unexpected type "%T"`, action))

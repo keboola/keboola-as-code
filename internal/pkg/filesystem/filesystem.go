@@ -181,7 +181,7 @@ func IsFrom(path, base string) bool {
 	}
 
 	lB := len(base)
-	lP := len(path) // nolint: ifshort
+	lP := len(path) // nolint
 
 	// Path length must be greater than base length
 	if lP <= lB {

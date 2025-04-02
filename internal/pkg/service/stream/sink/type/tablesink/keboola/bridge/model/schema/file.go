@@ -19,5 +19,5 @@ func forFile(s *serde.Serde) File {
 }
 
 func (v File) ForFile(k model.FileKey) etcdop.KeyT[keboolasink.File] {
-	return v.PrefixT.Key(k.String())
+	return v.Key(k.String())
 }

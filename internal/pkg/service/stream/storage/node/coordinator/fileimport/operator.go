@@ -264,7 +264,7 @@ func (o *operator) checkFile(ctx context.Context, file *fileData) {
 	}
 
 	// Skip file import if sink is deleted or disabled
-	sink, ok := o.sinks.Get(file.FileKey.SinkKey)
+	sink, ok := o.sinks.Get(file.SinkKey)
 	if !ok || !sink.Enabled {
 		return
 	}
@@ -329,7 +329,7 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 
 	// Update telemetry
 	attrs := append(
-		file.FileKey.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
+		file.SinkKey.Telemetry(), // Anything more specific than SinkKey would make the metric too expensive
 		attribute.String("error_type", telemetry.ErrorType(err)),
 		attribute.String("operation", "fileimport"),
 	)
@@ -365,7 +365,7 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	if err != nil {
 		// Record metric for failed file imports
 		attrs := append(
-			file.FileKey.SinkKey.Telemetry(),
+			file.SinkKey.Telemetry(),
 			attribute.String("operation", "fileimport"),
 		)
 
@@ -392,7 +392,7 @@ func (o *operator) doImportFile(ctx context.Context, lock *etcdop.Mutex, file *f
 	}
 
 	if err != nil {
-		o.logger.Warnf(ctx, `Not switching file "%s" to imported state used %d operations`, file.FileKey.String(), result.MaxOps())
+		o.logger.Warnf(ctx, `Not switching file "%s" to imported state used %d operations`, file.String(), result.MaxOps())
 		return stats.Staging, errors.PrefixError(err, "cannot switch file to the imported state")
 	}
 

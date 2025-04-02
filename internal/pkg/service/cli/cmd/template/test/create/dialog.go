@@ -39,7 +39,7 @@ func (d *createTmplTestDialog) ask(ctx context.Context) (createOp.Options, []str
 	}
 
 	// User inputs
-	v, warnings, err := d.Dialogs.AskUseTemplateInputs(ctx, d.template.Inputs().ToExtended(), true, d.InputsFile)
+	v, warnings, err := d.AskUseTemplateInputs(ctx, d.template.Inputs().ToExtended(), true, d.InputsFile)
 	if err != nil {
 		return d.out, nil, err
 	} else {
@@ -51,8 +51,8 @@ func (d *createTmplTestDialog) ask(ctx context.Context) (createOp.Options, []str
 
 func (d *createTmplTestDialog) askTestName(ctx context.Context) (string, error) {
 	// Is flag set?
-	if d.Flags.TestName.IsSet() {
-		v := d.Flags.TestName.Value
+	if d.TestName.IsSet() {
+		v := d.TestName.Value
 		if len(v) > 0 {
 			err := d.checkTestNameIsUnique(ctx, v)
 			if err != nil {
@@ -63,7 +63,7 @@ func (d *createTmplTestDialog) askTestName(ctx context.Context) (string, error) 
 	}
 
 	// Ask for instance name
-	v, _ := d.Dialogs.Ask(&prompt.Question{
+	v, _ := d.Ask(&prompt.Question{
 		Label:       "Test Name",
 		Description: "Please enter a test name.",
 		Validator: func(val any) error {

@@ -701,7 +701,7 @@ func TestIterator_ForEach(t *testing.T) {
 	getAllOp := prefix.
 		GetAll(tracker, iterator.WithPageSize(2)).
 		ForEach(func(value *op.KeyValue, _ *iterator.Header) error {
-			_, _ = out.WriteString(fmt.Sprintf("%s\n", string(value.Value)))
+			_, _ = fmt.Fprintf(out, "%s\n", string(value.Value))
 			return nil
 		})
 

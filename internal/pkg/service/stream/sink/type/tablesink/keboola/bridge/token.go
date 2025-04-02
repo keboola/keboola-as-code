@@ -72,7 +72,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 	}
 
 	// Prepare encryption metadata
-	metadata := cloudencrypt.Metadata{"sink": sink.SinkKey.String()}
+	metadata := cloudencrypt.Metadata{"sink": sink.String()}
 
 	// Use token from the database, if the operation is not called from the API,
 	// so no modification of the sink target bucket is expected and the token should work.
@@ -80,7 +80,7 @@ func (b *Bridge) tokenForSink(ctx context.Context, now time.Time, sink definitio
 	if err != nil {
 		if existingToken == nil {
 			// Operation is not called from the API and there is no token in the database.
-			return keboola.Token{}, serviceError.NewResourceNotFoundError("sink token", sink.SinkKey.String(), "database")
+			return keboola.Token{}, serviceError.NewResourceNotFoundError("sink token", sink.String(), "database")
 		}
 
 		// Decrypt token

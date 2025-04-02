@@ -370,8 +370,8 @@ func mergeSharedCodes(object model.ObjectState, plan *TemplatePlan, sharedCodes 
 		if v.ComponentID == keboola.SharedCodeComponentID {
 			if sharedCodeConfig, exists := sharedCodes[v.Local.SharedCode.Target]; exists {
 				// Attach the config row to the existing shared code
-				v.ConfigID = sharedCodeConfig.ConfigKey.ID
-				v.Local.ConfigID = sharedCodeConfig.ConfigKey.ID
+				v.ConfigID = sharedCodeConfig.ID
+				v.Local.ConfigID = sharedCodeConfig.ID
 			}
 		}
 	}

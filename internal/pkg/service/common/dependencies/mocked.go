@@ -299,14 +299,14 @@ func NewMocked(tb testing.TB, ctx context.Context, opts ...MockedOption) Mocked 
 
 	// Use real APIs
 	if cfg.useRealAPIs {
-		d.baseScope.httpClient = client.NewTestClient()
-		d.publicScope.keboolaPublicAPI = cfg.keboolaProjectAPI.PublicAPI
-		d.projectScope.keboolaProjectAPI = cfg.keboolaProjectAPI
+		d.httpClient = client.NewTestClient()
+		d.keboolaPublicAPI = cfg.keboolaProjectAPI.PublicAPI
+		d.keboolaProjectAPI = cfg.keboolaProjectAPI
 		d.mockedHTTPTransport = nil
 	}
 
 	if cfg.useRealHTTPClient {
-		d.baseScope.httpClient = client.NewTestClient()
+		d.httpClient = client.NewTestClient()
 	}
 
 	if cfg.enableEtcdClient {
@@ -369,7 +369,7 @@ func (v *mocked) MockedDNSPort() int {
 }
 
 func (v *mocked) MockedRequest() *http.Request {
-	return v.requestInfo.request
+	return v.request
 }
 
 func (v *mocked) MockedProject(fs filesystem.Fs) *projectPkg.Project {

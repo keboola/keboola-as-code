@@ -15,5 +15,5 @@ func (s *wrappedDDSpan) TracerProvider() trace.TracerProvider {
 }
 
 func (s *wrappedDDSpan) RecordError(err error, _ ...trace.EventOption) {
-	s.Span.SetAttributes(ErrorAttrs(err)...)
+	s.SetAttributes(ErrorAttrs(err)...)
 }

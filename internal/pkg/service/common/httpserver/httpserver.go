@@ -45,7 +45,7 @@ func New(ctx context.Context, d dependencies, cfg Config) *HTTPServer {
 
 	// Register middlewares
 	middlewareCfg := middleware.NewConfig(cfg.MiddlewareOptions...)
-	com.Muxer.Use(middleware.OpenTelemetryExtractRoute())
+	com.Use(middleware.OpenTelemetryExtractRoute())
 	tel := d.Telemetry()
 	handler := middleware.Wrap(
 		com.Muxer,

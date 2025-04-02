@@ -21,7 +21,7 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 	configState, rowState := createLocalSharedCode(t, targetComponentID, state)
 
 	// Write file
-	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(rowState.ConfigRowManifest.Path(), targetComponentID))
+	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(rowState.Path(), targetComponentID))
 	require.NoError(t, fs.WriteFile(t.Context(), filesystem.NewRawFile(codeFilePath, `foo bar`)))
 	logger.Truncate()
 

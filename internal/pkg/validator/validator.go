@@ -266,8 +266,8 @@ func prefixErrorWithNamespace(e validator.FieldError, errMsg string, customNames
 
 	// Prefix error message with namespace
 	namespace := strings.Join(namespaceParts, ".")
-	switch {
-	case namespace == "":
+	switch namespace {
+	case "":
 		return errMsg
 	default:
 		return fmt.Sprintf(`"%s" %s`, namespace, errMsg)

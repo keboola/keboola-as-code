@@ -153,7 +153,7 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 
 			// Load object from filesystem
 			object := manifest.NewEmptyObject()
-			if found, err := u.Manager.loadObject(ctx, manifest, object); err != nil {
+			if found, err := u.loadObject(ctx, manifest, object); err != nil {
 				manifest.State().SetInvalid()
 				if !found {
 					manifest.State().SetNotFound()
@@ -215,7 +215,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	u.
 		workersFor(objectState.Level()).
 		AddWorker(func(ctx context.Context) error {
-			if err := u.Manager.saveObject(ctx, objectState.Manifest(), object, changedFields); err != nil {
+			if err := u.saveObject(ctx, objectState.Manifest(), object, changedFields); err != nil {
 				return err
 			}
 			objectState.SetLocalState(object)
@@ -232,7 +232,7 @@ func (u *UnitOfWork) DeleteObject(objectState model.ObjectState, manifest model.
 	u.
 		workersFor(manifest.Level()).
 		AddWorker(func(ctx context.Context) error {
-			if err := u.Manager.deleteObject(ctx, manifest); err != nil {
+			if err := u.deleteObject(ctx, manifest); err != nil {
 				return err
 			}
 			// ObjectState can be nil, if object exists only in manifest, but not in local/remote state

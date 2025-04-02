@@ -4,10 +4,10 @@ package syncmap_test
 
 import (
 	"testing"
+	"testing/synctest"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
-	"testing/synctest"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 )

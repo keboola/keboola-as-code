@@ -41,7 +41,7 @@ func forToken(s *serde.Serde) testToken {
 }
 
 func (v testToken) ForSink(k key.SinkKey) etcdop.KeyT[keboolaSink.Token] {
-	return v.PrefixT.Key(k.String())
+	return v.Key(k.String())
 }
 
 func TestMetadataCleanup(t *testing.T) {
@@ -853,14 +853,14 @@ func getExpectedKeys(allFiles []model.File, allSlices []model.Slice) []string {
 
 		if file.State == model.FileWriting {
 			expectedLocalFileKeys = append(expectedLocalFileKeys,
-				"storage/file/level/local/123/456/my-source/my-sink/"+file.FileKey.FileID.String())
+				"storage/file/level/local/123/456/my-source/my-sink/"+file.FileID.String())
 			expectedLocalSliceKeys = append(expectedLocalSliceKeys,
-				"storage/slice/level/local/123/456/my-source/my-sink/"+file.FileKey.FileID.String()+"/my-volume-1/"+slice.SliceKey.SliceID.String())
+				"storage/slice/level/local/123/456/my-source/my-sink/"+file.FileID.String()+"/my-volume-1/"+slice.SliceID.String())
 		} else {
 			expectedTargetFileKeys = append(expectedTargetFileKeys,
-				"storage/file/level/target/123/456/my-source/my-sink/"+file.FileKey.FileID.String())
+				"storage/file/level/target/123/456/my-source/my-sink/"+file.FileID.String())
 			expectedTargetSliceKeys = append(expectedTargetSliceKeys,
-				"storage/slice/level/target/123/456/my-source/my-sink/"+file.FileKey.FileID.String()+"/my-volume-1/"+slice.SliceKey.SliceID.String())
+				"storage/slice/level/target/123/456/my-source/my-sink/"+file.FileID.String()+"/my-volume-1/"+slice.SliceID.String())
 		}
 	}
 

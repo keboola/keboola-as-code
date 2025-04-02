@@ -108,7 +108,7 @@ func (c *Cleaner) clean(ctx context.Context) (err error) {
 	errs := errors.NewMultiError()
 	err = c.taskEtcdPrefix.GetAll(c.client).Do(ctx).ForEachKV(func(kv *op.KeyValueT[Task], header *iterator.Header) error {
 		if c.isForCleanup(kv.Value) {
-			ctx := ctxattr.ContextWith(ctx, attribute.String("task", kv.Value.Key.String()))
+			ctx := ctxattr.ContextWith(ctx, attribute.String("task", kv.Value.String()))
 			if err := etcdop.Key(kv.Key()).Delete(c.client).Do(ctx).Err(); err == nil {
 				c.logger.Debug(ctx, `deleted task`)
 				deletedTasksCount++

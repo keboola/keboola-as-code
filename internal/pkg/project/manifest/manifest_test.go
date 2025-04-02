@@ -85,7 +85,7 @@ func TestLoadManifestFile(t *testing.T) {
 		assert.Equal(t, c.naming, manifest.NamingTemplate(), c.name)
 		assert.Equal(t, c.filter.AllowedBranches(), manifest.AllowedBranches(), c.name)
 		assert.Equal(t, c.filter.IgnoredComponents(), manifest.IgnoredComponents(), c.name)
-		assert.Equal(t, c.records, manifest.records.All(), c.name)
+		assert.Equal(t, c.records, manifest.All(), c.name)
 	}
 }
 
@@ -100,7 +100,7 @@ func TestSaveManifestFile(t *testing.T) {
 		manifest.SetNamingTemplate(c.naming)
 		manifest.SetAllowedBranches(c.filter.AllowedBranches())
 		manifest.SetIgnoredComponents(c.filter.IgnoredComponents())
-		require.NoError(t, manifest.records.SetRecords(c.records))
+		require.NoError(t, manifest.SetRecords(c.records))
 		require.NoError(t, manifest.Save(ctx, fs))
 
 		// Load file

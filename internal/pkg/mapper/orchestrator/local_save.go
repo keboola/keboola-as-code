@@ -23,7 +23,7 @@ func (m *orchestratorMapper) MapBeforeLocalSave(ctx context.Context, recipe *mod
 		LocalSaveRecipe: recipe,
 		logger:          m.logger,
 		config:          recipe.Object.(*model.Config),
-		configPath:      recipe.ObjectManifest.GetAbsPath(),
+		configPath:      recipe.GetAbsPath(),
 	}
 	writer.save(ctx)
 	return nil
@@ -38,7 +38,7 @@ type localWriter struct {
 }
 
 func (w *localWriter) save(ctx context.Context) {
-	phasesDir := w.NamingGenerator().PhasesDir(w.ObjectManifest.Path())
+	phasesDir := w.NamingGenerator().PhasesDir(w.Path())
 
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.
 	w.Files.
@@ -65,7 +65,7 @@ func (w *localWriter) save(ctx context.Context) {
 
 	// Convert errors to warning
 	if errs.Len() > 0 {
-		err := errors.PrefixErrorf(errs, `cannot save orchestrator config "%s"`, w.ObjectManifest.Path())
+		err := errors.PrefixErrorf(errs, `cannot save orchestrator config "%s"`, w.Path())
 		w.logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 	}
 }

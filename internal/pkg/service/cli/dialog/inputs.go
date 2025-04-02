@@ -102,7 +102,7 @@ func createInputFieldLine(field input.ObjectField) inputFieldLine {
 	}
 	return inputFieldLine{
 		mark:      mark,
-		inputID:   field.Input.ID,
+		inputID:   field.ID,
 		fieldPath: field.Path.String(),
 		example:   field.Example,
 	}

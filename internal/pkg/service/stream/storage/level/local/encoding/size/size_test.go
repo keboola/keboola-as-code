@@ -338,7 +338,7 @@ func (w *testBuffer) Seek(offset int64, whence int) (ret int64, err error) {
 		return 0, w.seekError
 	}
 	if offset == 0 && whence == io.SeekStart {
-		w.Buffer.Reset()
+		w.Reset()
 	} else {
 		panic(errors.New("unexpected seek"))
 	}

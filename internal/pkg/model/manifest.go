@@ -225,7 +225,7 @@ func (b BranchManifest) SortKey(sort string) string {
 	if sort == SortByPath {
 		return fmt.Sprintf("%02d_branch_%s", b.Level(), b.Path())
 	} else {
-		return b.BranchKey.String()
+		return b.String()
 	}
 }
 
@@ -233,7 +233,7 @@ func (c ConfigManifest) SortKey(sort string) string {
 	if sort == SortByPath {
 		return fmt.Sprintf("%02d_config_%s", c.Level(), c.Path())
 	} else {
-		return c.ConfigKey.String()
+		return c.String()
 	}
 }
 
@@ -241,7 +241,7 @@ func (r ConfigRowManifest) SortKey(sort string) string {
 	if sort == SortByPath {
 		return fmt.Sprintf("%02d_row_%s", r.Level(), r.Path())
 	} else {
-		return r.ConfigRowKey.String()
+		return r.String()
 	}
 }
 

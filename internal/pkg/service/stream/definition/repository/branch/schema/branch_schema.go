@@ -22,18 +22,18 @@ func New(s *serde.Serde) Branch {
 
 // Active prefix contains all not deleted objects.
 func (v Branch) Active() BranchInState {
-	return BranchInState{PrefixT: v.PrefixT.Add("active")}
+	return BranchInState{PrefixT: v.Add("active")}
 }
 
 // Deleted prefix contains all deleted objects whose parent existed on deleted.
 func (v Branch) Deleted() BranchInState {
-	return BranchInState{PrefixT: v.PrefixT.Add("deleted")}
+	return BranchInState{PrefixT: v.Add("deleted")}
 }
 
 func (v BranchInState) InProject(k keboola.ProjectID) etcdop.PrefixT[definition.Branch] {
-	return v.PrefixT.Add(k.String())
+	return v.Add(k.String())
 }
 
 func (v BranchInState) ByKey(k key.BranchKey) etcdop.KeyT[definition.Branch] {
-	return v.PrefixT.Key(k.String())
+	return v.Key(k.String())
 }

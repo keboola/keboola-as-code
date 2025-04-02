@@ -41,7 +41,7 @@ func TestOnChangeListener(t *testing.T) {
 				return
 			case events := <-listener.C:
 				for _, event := range events {
-					_, _ = listenerLogs.WriteString(fmt.Sprintf("distribution changed: %s\n", event.Message))
+					_, _ = fmt.Fprintf(listenerLogs, "distribution changed: %s\n", event.Message)
 				}
 			}
 		}

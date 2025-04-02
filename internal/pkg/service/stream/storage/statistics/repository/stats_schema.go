@@ -37,7 +37,7 @@ func newSchema(s *serde.Serde) schema {
 func (s schema) InLevel(l model.Level) schemaInLevel {
 	switch l {
 	case model.LevelLocal, model.LevelStaging, model.LevelTarget:
-		return schemaInLevel{PrefixT: s.PrefixT.Add(l.String())}
+		return schemaInLevel{PrefixT: s.Add(l.String())}
 	default:
 		panic(errors.Errorf(`unexpected storage level "%v"`, l))
 	}
@@ -99,13 +99,13 @@ func (v schemaInLevel) InSliceSourceNode(k model.SliceKey, nodeID string) etcdop
 }
 
 func (v schemaInLevel) inObject(objectKey fmt.Stringer) schemaInObject {
-	return schemaInObject{PrefixT: v.PrefixT.Add(objectKey.String())}
+	return schemaInObject{PrefixT: v.Add(objectKey.String())}
 }
 
 func (v schemaInObject) Sum() etcdop.KeyT[statistics.Value] {
-	return v.PrefixT.Key(rollupSumKey)
+	return v.Key(rollupSumKey)
 }
 
 func (v schemaInObject) Reset() etcdop.KeyT[statistics.Value] {
-	return v.PrefixT.Key(rollupResetKey)
+	return v.Key(rollupResetKey)
 }

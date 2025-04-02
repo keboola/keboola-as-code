@@ -101,7 +101,7 @@ func (g Generator) ConfigPath(parentPath string, component *keboola.Component, c
 			}
 
 			targetComponentID = config.SharedCode.Target.String()
-		case component.ComponentKey.ID == keboola.DataAppsComponentID:
+		case component.ID == keboola.DataAppsComponentID:
 			// DataApp
 			template = string(g.template.DataAppConfig)
 		default:
