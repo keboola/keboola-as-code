@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -48,12 +49,13 @@ type Manager struct {
 }
 
 type AppUpstream struct {
-	manager   *Manager
-	app       api.AppConfig
-	target    *url.URL
-	handler   *chain.Chain
-	wsHandler *chain.Chain
-	cancelWs  context.CancelCauseFunc
+	manager       *Manager
+	app           api.AppConfig
+	target        *url.URL
+	handler       *chain.Chain
+	wsHandler     *chain.Chain
+	cancelWs      context.CancelCauseFunc
+	activeWsCount atomic.Int64
 }
 
 type dependencies interface {
@@ -109,6 +111,22 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 	upstream = &AppUpstream{manager: m, app: app, target: target}
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
+
+	// Call notify while there is an active websocket connection
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if upstream.activeWsCount.Load() > 0 {
+					upstream.notify(ctx)
+				}
+				time.Sleep(30 * time.Second)
+			}
+		}
+	}(ctx)
+
 	return upstream, nil
 }
 
@@ -152,6 +170,9 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 
 			ctx, c := context.WithCancelCause(ctx)
 			u.cancelWs = c
+
+			u.activeWsCount.Add(1)
+			defer u.activeWsCount.Add(-1)
 
 			proxy.ServeHTTP(w, req.WithContext(ctx))
 			return nil

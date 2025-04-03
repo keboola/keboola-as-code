@@ -86,7 +86,7 @@ func (w *Encoder) WriteRecord(record recordctx.Context) (result.WriteRecordResul
 		return result.WriteRecordResult{}, err
 	}
 
-	// Get notifier after succcessful written record
+	// Get notifier after successful written record
 	writeRecordResult := result.NewNotifierWriteRecordResult(n, w.notifier(record.Ctx()))
 	// Buffers can be released
 	// Important: values slice contains reference to the body []byte buffer, so it can be released sooner.
