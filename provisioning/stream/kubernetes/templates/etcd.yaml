@@ -4,3 +4,12 @@
 defragmentation:
   cronjob:
     schedule: "0 */2 * * *"
+
+disasterRecovery:
+  enabled: true
+  cronjob:
+    schedule: "*/5 * * * *"
+    podLabels:
+      stream-etcd-client: "true"
+  pvc:
+    size: 2Gi

@@ -93,6 +93,8 @@ helm upgrade \
   --set "resources.requests.memory=$STREAM_ETCD_MEMORY_SOFT_LIMIT" \
   --set "resources.limits.memory=$STREAM_ETCD_MEMORY_HARD_LIMIT" \
   --set "resources.requests.cpu=$STREAM_ETCD_CPU_SOFT_LIMIT" \
+  --set "disasterRecovery.cronjob.storageClassName=$ETCD_SNAPSHOTS_STORAGE_CLASS_NAME" \
+  --set "disasterRecovery.pvc.storageClassName=$ETCD_SNAPSHOTS_STORAGE_CLASS_NAME" \
   --set "extraEnvVars[3].name=GOMEMLIMIT" \
   --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY_SOFT_LIMIT}B" \
   --set "extraEnvVars[4].name=ETCD_MAX_TXN_OPS" \
