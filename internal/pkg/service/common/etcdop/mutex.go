@@ -224,7 +224,7 @@ func (s *mutexStore) clear(ctx context.Context, mtx *activeMutex) (err error) {
 
 	// Unlock DB if the lock is no more used
 	if unlockDB {
-		if err = mtx.dbMutex.Unlock(ctx); err != nil {
+		if err = mtx.dbMutex.Unlock(ctx); err != nil && mtx.dbSession != nil {
 			// DB connection is not working, state of the lock is unknown, close session
 			_ = mtx.dbSession.Close()
 		}
@@ -315,6 +315,7 @@ func (m *activeMutex) dbLock(ctx context.Context) (err error) {
 	select {
 	case <-m.dbSession.Done():
 		m.dbSession = nil
+		m.dbMutex = nil
 		return concurrency.ErrSessionExpired
 	default:
 		// continue
@@ -327,7 +328,8 @@ func (m *activeMutex) dbLock(ctx context.Context) (err error) {
 			return err
 		}
 	}
-	return
+
+	return nil
 }
 
 func (m *activeMutex) dbTryLock(ctx context.Context) (err error) {

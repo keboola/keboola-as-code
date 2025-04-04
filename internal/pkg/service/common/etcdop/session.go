@@ -168,6 +168,11 @@ func (b SessionBuilder) Start(ctx context.Context, wg *sync.WaitGroup, logger lo
 			if err != nil {
 				s.logger.Infof(ctx, "cannot create etcd session: %s", err.Error())
 				if !errors.Is(err, context.Canceled) {
+					if errors.Is(err, context.DeadlineExceeded) {
+						// Do not check error from closeSession, it can be already closed
+						_ = s.closeSession(ctx, "etcd unreachable, remove existing sessions")
+					}
+
 					delay := s.backoff.NextBackOff()
 					s.logger.Infof(ctx, "waiting %s before the retry", delay)
 					select {

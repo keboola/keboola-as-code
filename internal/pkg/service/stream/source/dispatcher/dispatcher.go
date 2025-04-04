@@ -97,7 +97,7 @@ func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID
 		return nil, ShutdownError{}
 	}
 
-	// Get all relevant sources
+	// Get all relevant sources from all branches
 	disabled := 0
 	var matchedSources []key.SourceKey
 	d.sources.WalkPrefix(sourceKeyPrefix(projectID, sourceID), func(key string, source *sourceData) (stop bool) {
@@ -122,6 +122,7 @@ func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID
 		}
 	}
 
+	// Dispatch to all sources in all branches
 	return d.sinkRouter.DispatchToSources(matchedSources, c), nil
 }
 
