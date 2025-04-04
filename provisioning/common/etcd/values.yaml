@@ -44,8 +44,6 @@ resources:
 autoCompactionMode: "periodic"
 autoCompactionRetention: "15m"
 
-removeMemberOnContainerTermination: false
-
 extraEnvVars:
   - name: ETCD_DISABLE_STORE_MEMBER_ID
     value: "yes"
