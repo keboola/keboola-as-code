@@ -17,7 +17,7 @@ export STREAM_IMAGE_TAG="${STREAM_IMAGE_TAG:=$(git rev-parse --short HEAD)-$(dat
 export K6_IMAGE_REPOSITORY="${K6_IMAGE_REPOSITORY:=docker.io/keboolabot/stream-benchmark}"
 export K6_IMAGE_TAG="${K6_IMAGE_TAG:=$(git rev-parse --short HEAD)-$(date +%s)}"
 
-export STREAM_ETCD_REPLICAS=1
+export STREAM_ETCD_REPLICAS=3
 export STREAM_API_REPLICAS=2
 export STREAM_HTTP_SOURCE_REPLICAS=2
 export STREAM_STORAGE_READER_WRITER_REPLICAS=2

@@ -87,7 +87,7 @@ helm upgrade \
   --values ./kubernetes/deploy/etcd/values_common.yaml \
   --values ./kubernetes/deploy/etcd/values_stream.yaml \
   --namespace "$NAMESPACE" \
-  --set "replicaCount=1" \
+  --set "replicaCount=$STREAM_ETCD_REPLICAS" \
   --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD" \
   --set "persistence.storageClass=$STREAM_ETCD_STORAGE_CLASS_NAME" \
   --set "resources.requests.memory=$STREAM_ETCD_MEMORY_SOFT_LIMIT" \
