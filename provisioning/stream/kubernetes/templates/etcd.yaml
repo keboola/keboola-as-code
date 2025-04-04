@@ -5,6 +5,9 @@ defragmentation:
   cronjob:
     schedule: "0 */2 * * *"
 
+preUpgradeJob:
+  enabled: false
+
 #startFromSnapshot:
 #  enabled: false
 #  existingClaim: "stream-etcd-snapshotter"
