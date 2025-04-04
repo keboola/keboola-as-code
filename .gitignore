@@ -23,6 +23,7 @@ benchmark.txt
 
 # IDE
 /.idea
+/.vscode
 
 # Dependency directory
 vendor/*
