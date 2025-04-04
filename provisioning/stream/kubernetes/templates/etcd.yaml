@@ -6,7 +6,7 @@ defragmentation:
     schedule: "0 */2 * * *"
 
 startFromSnapshot:
-  enabled: true
+  enabled: false
   snapshotFilename: "db-2025-04-03_14-15"
 
 disasterRecovery:
