@@ -4,3 +4,16 @@
 defragmentation:
   cronjob:
     schedule: "0 */2 * * *"
+
+startFromSnapshot:
+  enabled: false
+  snapshotFilename: ""
+
+disasterRecovery:
+  enabled: true
+  cronjob:
+    schedule: "*/5 * * * *"
+    podLabels:
+      stream-etcd-client: "true"
+  pvc:
+    size: 2Gi
