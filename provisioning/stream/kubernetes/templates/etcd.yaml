@@ -17,5 +17,4 @@ disasterRecovery:
     podLabels:
       stream-etcd-client: "true"
   pvc:
-    existingClaim: "stream-etcd-snapshotter"
     size: 2Gi
