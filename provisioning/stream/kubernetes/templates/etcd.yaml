@@ -4,3 +4,7 @@
 defragmentation:
   cronjob:
     schedule: "0 */2 * * *"
+
+preUpgradeJob:
+  podLabels:
+    stream-etcd-client: "true"
