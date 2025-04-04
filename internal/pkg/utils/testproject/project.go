@@ -653,7 +653,7 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendR
 
 			// Send request
 			_, err := p.keboolaProjectAPI.
-				CreateConfigRequest(configWithRows).
+				CreateConfigRequest(configWithRows, true).
 				WithBefore(func(ctx context.Context) error {
 					p.logf("▶ Config \"%s/%s/%s\"...", branch.Name, configFixture.ComponentID, configFixture.Name)
 					return nil
