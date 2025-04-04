@@ -74,16 +74,6 @@ func (a *Assigner) IsOwner(key string) (bool, error) {
 	return node == a.nodeID, nil
 }
 
-// MustCheckIsOwner method returns true, if the node is owner of the key.
-// The method panic if there is no node in the list.
-func (a *Assigner) MustCheckIsOwner(key string) bool {
-	is, err := a.IsOwner(key)
-	if err != nil {
-		panic(err)
-	}
-	return is
-}
-
 func (a *Assigner) clone() *Assigner {
 	clone := newAssigner(a.nodeID)
 	for _, nodeID := range a.Nodes() {
