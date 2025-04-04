@@ -7,7 +7,6 @@ defragmentation:
 
 startFromSnapshot:
   enabled: false
-  existingClaim: "stream-etcd-snapshotter"
   snapshotFilename: ""
 
 disasterRecovery:
