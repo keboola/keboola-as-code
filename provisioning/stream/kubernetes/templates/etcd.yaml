@@ -7,6 +7,7 @@ defragmentation:
 
 startFromSnapshot:
   enabled: false
+  existingClaim: "stream-etcd-snapshotter"
   snapshotFilename: "db-2025-04-03_14-15"
 
 disasterRecovery:
@@ -16,4 +17,5 @@ disasterRecovery:
     podLabels:
       stream-etcd-client: "true"
   pvc:
+    existingClaim: "stream-etcd-snapshotter"
     size: 2Gi
