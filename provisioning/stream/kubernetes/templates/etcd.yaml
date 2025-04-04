@@ -8,7 +8,7 @@ defragmentation:
 startFromSnapshot:
   enabled: false
   existingClaim: "stream-etcd-snapshotter"
-  snapshotFilename: "db-2025-04-03_14-15"
+  snapshotFilename: ""
 
 disasterRecovery:
   enabled: true
