@@ -23,6 +23,7 @@ az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP"
 
 # Common part of the deploy
 export ETCD_STORAGE_CLASS_NAME=
+export ETCD_SNAPSHOT_STORAGE_CLASS_NAME="stream-dr"
 export CLOUD_ENCRYPTION_PROVIDER="azure"
 . ./common.sh
 

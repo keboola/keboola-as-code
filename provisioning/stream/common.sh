@@ -79,6 +79,13 @@ export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "$NAMESPACE" stream-e
 # Override default txn ops
 export STREAM_ETCD_MAX_TXN_OPS="${STREAM_ETCD_MAX_TXN_OPS:=1024}"
 
+# Disaster recovery
+export ETCD_DISASTER_RECOVERY_ENABLED="${ETCD_DISASTER_RECOVERY_ENABLED:="true"}"
+export ETCD_SNAPSHOT_STORAGE_CLASS_NAME="${ETCD_SNAPSHOT_STORAGE_CLASS_NAME:=""}"
+export ETCD_FROM_SNAPSHOT_ENABLED="${ETCD_FROM_SNAPSHOT_ENABLED:="false"}"
+export ETCD_FROM_SNAPSHOT_FILENAME="${ETCD_FROM_SNAPSHOT_FILENAME:=""}"
+export ETCD_SNAPSHOT_VOLUME_SIZE="${ETCD_SNAPSHOT_VOLUME_SIZE:="10Gi"}"
+
 # Deploy etcd cluster
 helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
 helm upgrade \
@@ -93,6 +100,11 @@ helm upgrade \
   --set "resources.requests.memory=$STREAM_ETCD_MEMORY_SOFT_LIMIT" \
   --set "resources.limits.memory=$STREAM_ETCD_MEMORY_HARD_LIMIT" \
   --set "resources.requests.cpu=$STREAM_ETCD_CPU_SOFT_LIMIT" \
+  --set "disasterRecovery.enabled=$ETCD_DISASTER_RECOVERY_ENABLED" \
+  --set "disasterRecovery.pvc.storageClassName=$ETCD_SNAPSHOT_STORAGE_CLASS_NAME" \
+  --set "disasterRecovery.pvc.size=$ETCD_SNAPSHOT_VOLUME_SIZE" \
+  --set "startFromSnapshot.enabled=$ETCD_FROM_SNAPSHOT_ENABLED" \
+  --set "startFromSnapshot.snapshotFilename=$ETCD_FROM_SNAPSHOT_FILENAME" \
   --set "extraEnvVars[3].name=GOMEMLIMIT" \
   --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY_SOFT_LIMIT}B" \
   --set "extraEnvVars[4].name=ETCD_MAX_TXN_OPS" \
