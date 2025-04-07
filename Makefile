@@ -65,6 +65,30 @@ tests-unit:
 tests-unit-verbose:
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./internal/pkg... bash ./scripts/tests.sh
 
+tests-unit-cli:
+	TEST_PACKAGE=./internal/pkg/service/cli/... bash ./scripts/tests.sh
+
+tests-unit-templates:
+	TEST_PACKAGE=./internal/pkg/service/templates/... bash ./scripts/tests.sh
+
+tests-unit-stream:
+	TEST_PACKAGE=./internal/pkg/service/stream/... bash ./scripts/tests.sh
+
+tests-unit-appsproxy:
+	TEST_PACKAGE=./internal/pkg/service/appsproxy/... bash ./scripts/tests.sh
+
+tests-unit-common:
+	TEST_PACKAGE=./internal/pkg/service/common/... bash ./scripts/tests.sh
+
+# Get all service packages path patterns
+SERVICE_PKG_PATTERNS := ./internal/pkg/service/cli/... ./internal/pkg/service/templates/... ./internal/pkg/service/stream/... ./internal/pkg/service/appsproxy/... ./internal/pkg/service/common/...
+
+# Test all internal packages *except* those already covered by service-specific targets
+tests-unit-core:
+	# List all packages, list service packages, filter service ones out, then join with spaces for the command line
+	CORE_PKGS=$$(comm -23 <(go list ./internal/pkg/... | sort) <(go list $(SERVICE_PKG_PATTERNS) | sort) | tr '\n' ' '); \
+	TEST_PACKAGE="$$CORE_PKGS" bash ./scripts/tests.sh
+
 tests-cli:
 	TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh
 
