@@ -113,7 +113,7 @@ jobs:
 
           # Prevent testing unnecessary code for particular release
           if [ -n "${{ inputs.package-exception-regex }}" ]; then
-            export TEST_EXCEPT="go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}'"
+            export TEST_EXCEPT="$(go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}')"
           fi
 
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
