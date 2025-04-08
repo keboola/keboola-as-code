@@ -38,6 +38,7 @@ type dependencies interface {
 
 type Node struct {
 	config                  cleanup.Config
+	clock                   clockwork.Clock
 	logger                  log.Logger
 	telemetry               telemetry.Telemetry
 	bridge                  *keboolaSinkBridge.Bridge
@@ -51,6 +52,7 @@ type Node struct {
 func Start(d dependencies, cfg cleanup.Config) error {
 	n := &Node{
 		config:                  cfg,
+		clock:                   d.Clock(),
 		logger:                  d.Logger().WithComponent("storage.jobs.cleanup"),
 		telemetry:               d.Telemetry(),
 		bridge:                  d.KeboolaSinkBridge(),
@@ -85,7 +87,7 @@ func Start(d dependencies, cfg cleanup.Config) error {
 	go func() {
 		defer wg.Done()
 
-		ticker := d.Clock().NewTicker(n.config.JobCleanupInterval)
+		ticker := n.clock.NewTicker(n.config.JobCleanupInterval)
 		defer ticker.Stop()
 
 		for {

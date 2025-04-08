@@ -123,7 +123,7 @@ func Start(d dependencies, cfg cleanup.Config) error {
 	go func() {
 		defer wg.Done()
 
-		ticker := d.Clock().NewTicker(n.config.FileCleanupInterval)
+		ticker := n.clock.NewTicker(n.config.FileCleanupInterval)
 		defer ticker.Stop()
 
 		for {
