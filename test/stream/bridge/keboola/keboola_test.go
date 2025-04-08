@@ -895,7 +895,7 @@ func (ts *testState) testFileImport(t *testing.T, ctx context.Context, expectati
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"deleted \"1\" jobs","deletedJobsCount":1,"component":"storage.metadata.cleanup"}
+{"level":"info","message":"deleted \"1\" jobs","deletedJobsCount":1,"component":"storage.jobs.cleanup"}
 		`)
 	}, 20*time.Second, 100*time.Millisecond)
 	// Check file/slices state after the upload
