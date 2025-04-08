@@ -176,6 +176,7 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 
 	// Measure count of deleted files
 	fileCounter := atomic.NewInt64(0)
+	retainCounter := atomic.NewInt64(0)
 	defer func() {
 		count := fileCounter.Load()
 		span.SetAttributes(attribute.Int64("deletedFilesCount", count))
@@ -203,7 +204,9 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 					grp.Go(func() error {
 						err, deleted := n.cleanFile(ctx, file, fileCount)
 						if deleted {
-							fileCounter.Add(1)
+							fileCounter.Inc()
+						} else {
+							retainCounter.Inc()
 						}
 
 						if err != nil {
@@ -227,7 +230,11 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 	})
 
 	// Wait for all processing to complete
-	return grp.Wait()
+	err = grp.Wait()
+
+	n.logger.Infof(ctx, `metacleanup: deleted %d files, retained %d files, %d errors`, fileCounter.Load(), retainCounter.Load(), errCount.Load())
+
+	return err
 }
 
 func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
