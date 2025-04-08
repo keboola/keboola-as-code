@@ -193,6 +193,17 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 	// Process all sink keys
 	n.sinks.ForEach(func(sinkKey key.SinkKey, _ *sinkData) (stop bool) {
 		grp.Go(func() error {
+			// There can be several cleanup nodes, each node processes an own part.
+			owner, err := n.dist.IsOwner(sinkKey.ProjectID.String())
+			if err != nil {
+				n.logger.Warnf(ctx, "cannot check if the node is owner of the sink: %s", err)
+				return err
+			}
+
+			if !owner {
+				return nil
+			}
+
 			// Process files for this sink key
 			counter := 0
 			return n.storageRepository.File().ListIn(sinkKey, iterator.WithSort(etcd.SortDescend)).ForEach(
@@ -317,17 +328,6 @@ func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
 }
 
 func (n *Node) cleanFile(ctx context.Context, file model.File, fileCount int) (err error, deleted bool) {
-	// There can be several cleanup nodes, each node processes an own part.
-	owner, err := n.dist.IsOwner(file.ProjectID.String())
-	if err != nil {
-		n.logger.Warnf(ctx, "cannot check if the node is owner of the file: %s", err)
-		return err, false
-	}
-
-	if !owner {
-		return nil, false
-	}
-
 	// Log/trace file details
 	attrs := file.Telemetry()
 	attrs = append(attrs, attribute.String("file.age", n.clock.Since(file.LastStateChange().Time()).String()))
