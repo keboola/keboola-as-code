@@ -224,7 +224,7 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 	// Wait for all processing to complete
 	err = grp.Wait()
 
-	n.logger.Infof(ctx, `metacleanup: deleted %d files, retained %d files, %d errors`, fileCounter.Load(), retainCounter.Load(), errCount.Load())
+	n.logger.Infof(ctx, `cleanup deleted %d files, retained %d files, %d errors`, fileCounter.Load(), retainCounter.Load(), errCount.Load())
 
 	return err
 }

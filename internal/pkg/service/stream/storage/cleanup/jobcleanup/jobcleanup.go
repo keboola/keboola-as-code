@@ -114,6 +114,7 @@ func (n *Node) cleanJobs(ctx context.Context) (err error) {
 
 	// Measure count of deleted storage jobs
 	jobCounter := atomic.NewInt64(0)
+	retainCounter := atomic.NewInt64(0)
 	defer func() {
 		count := jobCounter.Load()
 		span.SetAttributes(attribute.Int64("deletedJobsCount", count))
@@ -152,7 +153,9 @@ func (n *Node) cleanJobs(ctx context.Context) (err error) {
 
 				err, deleted := n.bridge.CleanJob(ctx, job)
 				if deleted {
-					jobCounter.Add(1)
+					jobCounter.Inc()
+				} else {
+					retainCounter.Inc()
 				}
 
 				span.End(&err)
@@ -180,6 +183,10 @@ func (n *Node) cleanJobs(ctx context.Context) (err error) {
 		return err
 	}
 
-	// Handle error group error
-	return grp.Wait()
+	// Wait for all processing to complete
+	err = grp.Wait()
+
+	n.logger.Infof(ctx, `cleanup deleted %d jobs, retained %d jobs, %d errors`, jobCounter.Load(), retainCounter.Load(), errCount.Load())
+
+	return err
 }
