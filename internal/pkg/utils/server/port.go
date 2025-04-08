@@ -56,11 +56,13 @@ func NewPortManager(t *testing.T, tempDir, subFolder string) (pm *portManager, e
 
 func (p portManager) GeneratePorts() {
 	// Generate ports (1024-65535)
+	// Ports above 50000 are intentionally avoided because their usage may cause this error on windows:
+	// bind: An attempt was made to access a socket in a way forbidden by its access permissions.
 	duplicates := make([]int, 0, numberOfPorts)
 	for i := range numberOfPorts {
-		port := p.random.IntN(65535-1024+1) + 1024
+		port := p.random.IntN(50000-1024+1) + 1024
 		for IsPortOccupied(port) && slices.Contains(duplicates, port) {
-			port = p.random.IntN(65535-1024+1) + 1024
+			port = p.random.IntN(50000-1024+1) + 1024
 		}
 
 		duplicates = append(duplicates, port)
