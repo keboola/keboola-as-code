@@ -23,7 +23,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
+	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
@@ -45,6 +47,7 @@ type dependencies interface {
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
 	StorageRepository() *storageRepo.Repository
+	DefinitionRepository() *definitionRepo.Repository
 	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 	WatchTelemetryInterval() time.Duration
 }
@@ -59,8 +62,9 @@ type Node struct {
 	publicAPI               *keboola.PublicAPI
 	locks                   *distlock.Provider
 	storageRepository       *storageRepo.Repository
+	definitionRepository    *definitionRepo.Repository
 	keboolaBridgeRepository *keboolaBridgeRepo.Repository
-	sinks                   *etcdop.MirrorMap[model.File, key.SinkKey, *sinkData]
+	sinks                   *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
 	watchTelemetryInterval  time.Duration
 
 	// OTEL metrics
@@ -77,7 +81,8 @@ type cleanupEntity struct {
 }
 
 type sinkData struct {
-	sinkKey key.SinkKey
+	SinkKey key.SinkKey
+	Enabled bool
 }
 
 func Start(d dependencies, cfg Config) error {
@@ -90,6 +95,7 @@ func Start(d dependencies, cfg Config) error {
 		bridge:                  d.KeboolaSinkBridge(),
 		publicAPI:               d.KeboolaPublicAPI(),
 		storageRepository:       d.StorageRepository(),
+		definitionRepository:    d.DefinitionRepository(),
 		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 		watchTelemetryInterval:  d.WatchTelemetryInterval(),
 		metrics:                 node.NewMetrics(d.Telemetry().Meter()),
@@ -113,14 +119,15 @@ func Start(d dependencies, cfg Config) error {
 		n.logger.Info(ctx, "shutdown done")
 	})
 
-	n.sinks = etcdop.SetupMirrorMap[model.File, key.SinkKey, *sinkData](
-		n.storageRepository.File().WatchAllFiles(ctx),
-		func(_ string, file model.File) key.SinkKey {
-			return file.FileKey.SinkKey
+	n.sinks = etcdop.SetupMirrorMap[definition.Sink, key.SinkKey, *sinkData](
+		n.definitionRepository.Sink().GetAllAndWatch(ctx),
+		func(_ string, sink definition.Sink) key.SinkKey {
+			return sink.SinkKey
 		},
-		func(_ string, file model.File, rawValue *op.KeyValue, oldValue **sinkData) *sinkData {
+		func(_ string, sink definition.Sink, rawValue *op.KeyValue, oldValue **sinkData) *sinkData {
 			return &sinkData{
-				file.SinkKey,
+				SinkKey: sink.SinkKey,
+				Enabled: sink.IsEnabled(),
 			}
 		},
 	).BuildMirror()
@@ -191,7 +198,11 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 	var errCount atomic.Uint32
 
 	// Process all sink keys
-	n.sinks.ForEach(func(sinkKey key.SinkKey, _ *sinkData) (stop bool) {
+	n.sinks.ForEach(func(sinkKey key.SinkKey, sink *sinkData) (stop bool) {
+		if !sink.Enabled {
+			return false
+		}
+
 		grp.Go(func() error {
 			// There can be several cleanup nodes, each node processes an own part.
 			owner, err := n.dist.IsOwner(sinkKey.ProjectID.String())
