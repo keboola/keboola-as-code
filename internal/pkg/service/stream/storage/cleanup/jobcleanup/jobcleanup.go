@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/metacleanup"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/atomic"
@@ -21,6 +20,7 @@ import (
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -37,7 +37,7 @@ type dependencies interface {
 }
 
 type Node struct {
-	config                  metacleanup.Config
+	config                  cleanup.Config
 	logger                  log.Logger
 	telemetry               telemetry.Telemetry
 	bridge                  *keboolaSinkBridge.Bridge
@@ -48,7 +48,7 @@ type Node struct {
 	metrics *node.Metrics
 }
 
-func Start(d dependencies, cfg metacleanup.Config) error {
+func Start(d dependencies, cfg cleanup.Config) error {
 	n := &Node{
 		config:                  cfg,
 		logger:                  d.Logger().WithComponent("storage.jobs.cleanup"),

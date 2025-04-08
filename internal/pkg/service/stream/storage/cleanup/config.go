@@ -1,4 +1,4 @@
-package metacleanup
+package cleanup
 
 import "time"
 

@@ -8,7 +8,6 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/jobcleanup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -22,7 +21,8 @@ import (
 	keboolaSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	keboolaModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/metacleanup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup/jobcleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	bridgeEntity "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/bridge"
@@ -74,7 +74,7 @@ func TestJobCleanupCompletedJobs(t *testing.T) {
 	cleanupInterval := 12 * time.Hour
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := metacleanup.NewConfig()
+	cfg := cleanup.NewConfig()
 	cfg.FileCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
@@ -168,7 +168,7 @@ func TestJobCleanupProcessingJobs(t *testing.T) {
 	cleanupInterval := 12 * time.Hour
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := metacleanup.NewConfig()
+	cfg := cleanup.NewConfig()
 	cfg.JobCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
@@ -268,7 +268,7 @@ func TestJobCleanupNotFoundJobs(t *testing.T) {
 	cleanupInterval := 12 * time.Hour
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := metacleanup.NewConfig()
+	cfg := cleanup.NewConfig()
 	cfg.JobCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
@@ -360,7 +360,7 @@ func TestJobCleanupProcessingJobsErrorTolerance(t *testing.T) {
 	cleanupInterval := 12 * time.Hour
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := metacleanup.NewConfig()
+	cfg := cleanup.NewConfig()
 	cfg.Concurrency = 2
 	cfg.ErrorTolerance = 3
 	cfg.JobCleanupInterval = cleanupInterval

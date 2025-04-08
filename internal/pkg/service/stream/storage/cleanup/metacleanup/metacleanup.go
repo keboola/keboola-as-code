@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
@@ -45,16 +46,16 @@ type dependencies interface {
 }
 
 type Node struct {
-	config                  Config
-	clock                   clockwork.Clock
-	logger                  log.Logger
-	telemetry               telemetry.Telemetry
-	dist                    *distribution.GroupNode
-	locks                   *distlock.Provider
-	storageRepository       *storageRepo.Repository
-	definitionRepository    *definitionRepo.Repository
-	sinks                   *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
-	watchTelemetryInterval  time.Duration
+	config                 cleanup.Config
+	clock                  clockwork.Clock
+	logger                 log.Logger
+	telemetry              telemetry.Telemetry
+	dist                   *distribution.GroupNode
+	locks                  *distlock.Provider
+	storageRepository      *storageRepo.Repository
+	definitionRepository   *definitionRepo.Repository
+	sinks                  *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
+	watchTelemetryInterval time.Duration
 
 	// OTEL metrics
 	metrics *node.Metrics
@@ -65,17 +66,17 @@ type sinkData struct {
 	Enabled bool
 }
 
-func Start(d dependencies, cfg Config) error {
+func Start(d dependencies, cfg cleanup.Config) error {
 	n := &Node{
-		config:                  cfg,
-		clock:                   d.Clock(),
-		logger:                  d.Logger().WithComponent("storage.metadata.cleanup"),
-		telemetry:               d.Telemetry(),
-		locks:                   d.DistributedLockProvider(),
-		storageRepository:       d.StorageRepository(),
-		definitionRepository:    d.DefinitionRepository(),
-		watchTelemetryInterval:  d.WatchTelemetryInterval(),
-		metrics:                 node.NewMetrics(d.Telemetry().Meter()),
+		config:                 cfg,
+		clock:                  d.Clock(),
+		logger:                 d.Logger().WithComponent("storage.metadata.cleanup"),
+		telemetry:              d.Telemetry(),
+		locks:                  d.DistributedLockProvider(),
+		storageRepository:      d.StorageRepository(),
+		definitionRepository:   d.DefinitionRepository(),
+		watchTelemetryInterval: d.WatchTelemetryInterval(),
+		metrics:                node.NewMetrics(d.Telemetry().Meter()),
 	}
 
 	if dist, err := d.DistributionNode().Group("storage.metadata.cleanup"); err == nil {
