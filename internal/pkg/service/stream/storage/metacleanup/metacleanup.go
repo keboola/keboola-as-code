@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -26,9 +25,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
-	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
-	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
@@ -41,14 +37,10 @@ type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
-	EtcdClient() *etcd.Client
-	KeboolaSinkBridge() *keboolaSinkBridge.Bridge
-	KeboolaPublicAPI() *keboola.PublicAPI
 	DistributionNode() *distribution.Node
 	DistributedLockProvider() *distlock.Provider
 	StorageRepository() *storageRepo.Repository
 	DefinitionRepository() *definitionRepo.Repository
-	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 	WatchTelemetryInterval() time.Duration
 }
 
@@ -57,27 +49,15 @@ type Node struct {
 	clock                   clockwork.Clock
 	logger                  log.Logger
 	telemetry               telemetry.Telemetry
-	bridge                  *keboolaSinkBridge.Bridge
 	dist                    *distribution.GroupNode
-	publicAPI               *keboola.PublicAPI
 	locks                   *distlock.Provider
 	storageRepository       *storageRepo.Repository
 	definitionRepository    *definitionRepo.Repository
-	keboolaBridgeRepository *keboolaBridgeRepo.Repository
 	sinks                   *etcdop.MirrorMap[definition.Sink, key.SinkKey, *sinkData]
 	watchTelemetryInterval  time.Duration
 
 	// OTEL metrics
 	metrics *node.Metrics
-}
-
-// cleanupEntity represents a periodic cleanup task.
-type cleanupEntity struct {
-	name        string
-	interval    time.Duration
-	enabled     bool
-	cleanupFunc func(context.Context) error
-	logger      log.Logger
 }
 
 type sinkData struct {
@@ -92,11 +72,8 @@ func Start(d dependencies, cfg Config) error {
 		logger:                  d.Logger().WithComponent("storage.metadata.cleanup"),
 		telemetry:               d.Telemetry(),
 		locks:                   d.DistributedLockProvider(),
-		bridge:                  d.KeboolaSinkBridge(),
-		publicAPI:               d.KeboolaPublicAPI(),
 		storageRepository:       d.StorageRepository(),
 		definitionRepository:    d.DefinitionRepository(),
-		keboolaBridgeRepository: d.KeboolaBridgeRepository(),
 		watchTelemetryInterval:  d.WatchTelemetryInterval(),
 		metrics:                 node.NewMetrics(d.Telemetry().Meter()),
 	}
@@ -108,6 +85,10 @@ func Start(d dependencies, cfg Config) error {
 	}
 
 	ctx := context.Background()
+	if !n.config.EnableFileCleanup {
+		n.logger.Info(ctx, "local storage metadata cleanup is disabled")
+		return nil
+	}
 
 	// Graceful shutdown
 	ctx, cancel := context.WithCancelCause(ctx)
@@ -135,46 +116,34 @@ func Start(d dependencies, cfg Config) error {
 		n.logger.Errorf(ctx, "cannot start mirroring jobs: %s", err)
 		return err
 	}
-	// Define cleanup entities
-	entities := n.cleanupEntities()
 
-	// Start cleanup entities
-	for _, task := range entities {
-		wg.Add(1)
-		go n.runCleanupTask(ctx, wg, d.Clock(), task)
-	}
+	// Start timer
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		ticker := d.Clock().NewTicker(n.config.FileCleanupInterval)
+		defer ticker.Stop()
+
+		for {
+			if err := n.cleanMetadata(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				n.logger.Errorf(ctx, `local storage metadata cleanup failed: %s`, err)
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.Chan():
+				continue
+			}
+		}
+	}()
 
 	return nil
 }
 
-// runCleanupTask runs a cleanup task periodically.
-func (n *Node) runCleanupTask(ctx context.Context, wg *sync.WaitGroup, clock clockwork.Clock, entity cleanupEntity) {
-	defer wg.Done()
-
-	if !entity.enabled {
-		entity.logger.Infof(ctx, "local storage metadata %s cleanup is disabled", entity.name)
-		return
-	}
-
-	ticker := clock.NewTicker(entity.interval)
-	defer ticker.Stop()
-
-	for {
-		if err := entity.cleanupFunc(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			entity.logger.Errorf(ctx, `local storage metadata %s cleanup failed: %s`, entity.name, err)
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.Chan():
-			continue
-		}
-	}
-}
-
 // cleanMetadata iterates all files and deletes the expired ones.
-func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
+func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("clean metadata files timeout"))
 	defer cancel()
 
@@ -259,85 +228,6 @@ func (n *Node) cleanMetadataFiles(ctx context.Context) (err error) {
 	return err
 }
 
-func (n *Node) cleanMetadataJobs(ctx context.Context) (err error) {
-	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("clean metadata jobs timeout"))
-	defer cancel()
-
-	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanMetadataJobs")
-	defer span.End(&err)
-
-	// Measure count of deleted storage jobs
-	jobCounter := atomic.NewInt64(0)
-	defer func() {
-		count := jobCounter.Load()
-		span.SetAttributes(attribute.Int64("deletedJobsCount", count))
-		n.logger.With(attribute.Int64("deletedJobsCount", count)).Info(ctx, `deleted "<deletedJobsCount>" jobs`)
-	}()
-
-	n.logger.Info(ctx, `deleting metadata of success jobs`)
-	grp, ctx := errgroup.WithContext(ctx)
-	grp.SetLimit(n.config.Concurrency)
-
-	var errCount atomic.Uint32
-
-	// Iterate all storage jobs
-	err = n.keboolaBridgeRepository.
-		Job().
-		ListAll().
-		ForEach(func(job keboolaBridgeModel.Job, _ *iterator.Header) error {
-			grp.Go(func() error {
-				// There can be several cleanup nodes, each node processes an own part.
-				owner, err := n.dist.IsOwner(job.ProjectID.String())
-				if err != nil {
-					n.logger.Warnf(ctx, "cannot check if the node is owner of the job: %s", err)
-					return err
-				}
-
-				if !owner {
-					return nil
-				}
-
-				// Log/trace job details
-				attrs := job.Telemetry()
-				ctx := ctxattr.ContextWith(ctx, attrs...)
-
-				// Trace each job
-				ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
-
-				err, deleted := n.bridge.CleanJob(ctx, job)
-				if deleted {
-					jobCounter.Add(1)
-				}
-
-				span.End(&err)
-
-				if err != nil {
-					// Record metric for failed job cleanups
-					attrs := append(
-						job.JobKey.SinkKey.Telemetry(),
-						attribute.String("operation", "jobcleanup"),
-					)
-					n.metrics.JobCleanupFailed.Record(ctx, 1, metric.WithAttributes(attrs...))
-				}
-
-				if err != nil && int(errCount.Inc()) > n.config.ErrorTolerance {
-					return err
-				}
-				return nil
-			})
-
-			return nil
-		}).
-		Do(ctx).
-		Err()
-	if err != nil {
-		return err
-	}
-
-	// Handle error group error
-	return grp.Wait()
-}
-
 func (n *Node) cleanFile(ctx context.Context, file model.File, fileCount int) (err error, deleted bool) {
 	// Log/trace file details
 	attrs := file.Telemetry()
@@ -388,23 +278,4 @@ func (n *Node) isFileExpired(file model.File, age time.Duration, fileCount int) 
 
 	// Other files have a longer expiration so there is time for retries.
 	return age >= n.config.ActiveFileExpiration
-}
-
-func (n *Node) cleanupEntities() []cleanupEntity {
-	return []cleanupEntity{
-		{
-			name:        "file",
-			interval:    n.config.FileCleanupInterval,
-			enabled:     n.config.EnableFileCleanup,
-			cleanupFunc: n.cleanMetadataFiles,
-			logger:      n.logger,
-		},
-		{
-			name:        "job",
-			interval:    n.config.JobCleanupInterval,
-			enabled:     n.config.EnableJobCleanup,
-			cleanupFunc: n.cleanMetadataJobs,
-			logger:      n.logger,
-		},
-	}
 }
