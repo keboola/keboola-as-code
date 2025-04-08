@@ -23,7 +23,6 @@ import (
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup/jobcleanup"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	bridgeEntity "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
@@ -423,36 +422,4 @@ func TestJobCleanupProcessingJobsErrorTolerance(t *testing.T) {
 			assert.LessOrEqual(c, actual, 6)
 		}, 2*time.Second, 100*time.Millisecond)
 	}
-}
-
-func getExpectedKeys(allFiles []model.File, allSlices []model.Slice) []string {
-	var expectedLocalFileKeys []string
-	var expectedTargetFileKeys []string
-	var expectedLocalSliceKeys []string
-	var expectedTargetSliceKeys []string
-
-	for i, file := range allFiles {
-		slice := allSlices[i]
-
-		if file.State == model.FileWriting {
-			expectedLocalFileKeys = append(expectedLocalFileKeys,
-				"storage/file/level/local/123/456/my-source/my-sink/"+file.FileID.String())
-			expectedLocalSliceKeys = append(expectedLocalSliceKeys,
-				"storage/slice/level/local/123/456/my-source/my-sink/"+file.FileID.String()+"/my-volume-1/"+slice.SliceID.String())
-		} else {
-			expectedTargetFileKeys = append(expectedTargetFileKeys,
-				"storage/file/level/target/123/456/my-source/my-sink/"+file.FileID.String())
-			expectedTargetSliceKeys = append(expectedTargetSliceKeys,
-				"storage/slice/level/target/123/456/my-source/my-sink/"+file.FileID.String()+"/my-volume-1/"+slice.SliceID.String())
-		}
-	}
-
-	var expectedKeys []string
-
-	expectedKeys = append(expectedKeys, expectedLocalFileKeys...)
-	expectedKeys = append(expectedKeys, expectedTargetFileKeys...)
-	expectedKeys = append(expectedKeys, expectedLocalSliceKeys...)
-	expectedKeys = append(expectedKeys, expectedTargetSliceKeys...)
-
-	return expectedKeys
 }
