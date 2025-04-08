@@ -17,7 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	keboolaSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/metacleanup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
@@ -69,7 +70,7 @@ func TestMetadataCleanup(t *testing.T) {
 	cleanupInterval := 12 * time.Hour
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := metacleanup.NewConfig()
+	cfg := cleanup.NewConfig()
 	cfg.FileCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
@@ -250,7 +251,7 @@ func TestMetadataCleanupRetainsOneArchivedFile(t *testing.T) {
 	cleanupInterval := 12 * time.Hour
 	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
 	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := metacleanup.NewConfig()
+	cfg := cleanup.NewConfig()
 	cfg.FileCleanupInterval = cleanupInterval
 	cfg.ActiveFileExpiration = activeFileExpiration
 	cfg.ArchivedFileExpiration = importedFileExpiration
