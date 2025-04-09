@@ -147,7 +147,7 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("clean metadata files timeout"))
 	defer cancel()
 
-	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanMetadataFiles")
+	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.metacleanup.cleanMetadataFiles")
 	defer span.End(&err)
 
 	// Measure count of deleted files
@@ -236,7 +236,7 @@ func (n *Node) cleanFile(ctx context.Context, file model.File, fileCount int) (e
 	ctx = ctxattr.ContextWith(ctx, attrs...)
 
 	// Trace each file
-	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanFile")
+	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.metacleanup.cleanFile")
 	defer span.End(&err)
 
 	// Check if the file is expired
