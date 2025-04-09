@@ -149,10 +149,8 @@ storage:
                 # Statistics L2 in-memory cache invalidation interval. Validation rules: required,minDuration=100ms,maxDuration=5s
                 interval: 1s
     metadataCleanup:
-        # Enable local storage metadata cleanup for jobs.
-        enableJobCleanup: true
         # Enable local storage metadata cleanup for files.
-        enableFileCleanup: true
+        enable: true
         # How many files are deleted in parallel. Validation rules: required,min=1,max=500
         concurrency: 50
         # How many errors are tolerated before failing. Validation rules: required,min=0,max=100
@@ -164,9 +162,16 @@ storage:
         # Expiration interval of a file that has already been imported. Validation rules: required,minDuration=15m,maxDuration=720h
         archivedFileExpiration: 1h0m0s
         # Cleanup interval of a file. Validation rules: required,minDuration=30s,maxDuration=24h
-        fileCleanupInterval: 10m0s
+        interval: 10m0s
+    jobCleanup:
+        # Enable local storage metadata cleanup for jobs.
+        enable: true
+        # How many jobs are deleted in parallel. Validation rules: required,min=1,max=500
+        concurrency: 50
+        # How many errors are tolerated before failing. Validation rules: required,min=0,max=100
+        errorTolerance: 10
         # Cleanup interval of a job that has already completed. Validation rules: required,minDuration=5s,maxDuration=10m
-        jobCleanupInterval: 30s
+        interval: 30s
     diskCleanup:
         # Enable local storage disks cleanup.
         enabled: true

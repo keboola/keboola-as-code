@@ -21,7 +21,6 @@ import (
 	keboolaSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	keboolaModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup/jobcleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	bridgeEntity "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/bridge"
@@ -71,13 +70,8 @@ func TestJobCleanupCompletedJobs(t *testing.T) {
 
 	// Setup cleanup interval
 	cleanupInterval := 12 * time.Hour
-	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
-	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := cleanup.NewConfig()
-	cfg.FileCleanupInterval = cleanupInterval
-	cfg.ActiveFileExpiration = activeFileExpiration
-	cfg.ArchivedFileExpiration = importedFileExpiration
-	cfg.ArchivedFileRetentionPerSink = 0
+	cfg := jobcleanup.NewConfig()
+	cfg.Interval = cleanupInterval
 
 	// Register routes for receiving information about jobs
 	transport := mocked.MockedHTTPTransport()
@@ -165,12 +159,8 @@ func TestJobCleanupProcessingJobs(t *testing.T) {
 
 	// Setup cleanup interval
 	cleanupInterval := 12 * time.Hour
-	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
-	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := cleanup.NewConfig()
-	cfg.JobCleanupInterval = cleanupInterval
-	cfg.ActiveFileExpiration = activeFileExpiration
-	cfg.ArchivedFileExpiration = importedFileExpiration
+	cfg := jobcleanup.NewConfig()
+	cfg.Interval = cleanupInterval
 
 	// Register routes for receiving information about jobs
 	transport := mocked.MockedHTTPTransport()
@@ -265,13 +255,8 @@ func TestJobCleanupNotFoundJobs(t *testing.T) {
 
 	// Setup cleanup interval
 	cleanupInterval := 12 * time.Hour
-	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
-	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := cleanup.NewConfig()
-	cfg.JobCleanupInterval = cleanupInterval
-	cfg.ActiveFileExpiration = activeFileExpiration
-	cfg.ArchivedFileExpiration = importedFileExpiration
-	cfg.ArchivedFileRetentionPerSink = 0
+	cfg := jobcleanup.NewConfig()
+	cfg.Interval = cleanupInterval
 
 	// Register routes for receiving information about jobs
 	transport := mocked.MockedHTTPTransport()
@@ -357,14 +342,10 @@ func TestJobCleanupProcessingJobsErrorTolerance(t *testing.T) {
 
 	// Setup cleanup interval
 	cleanupInterval := 12 * time.Hour
-	importedFileExpiration := time.Hour    // the first call of the doCleanup triggers it
-	activeFileExpiration := 30 * time.Hour // the third call of the doCleanup triggers it
-	cfg := cleanup.NewConfig()
+	cfg := jobcleanup.NewConfig()
 	cfg.Concurrency = 2
 	cfg.ErrorTolerance = 3
-	cfg.JobCleanupInterval = cleanupInterval
-	cfg.ActiveFileExpiration = activeFileExpiration
-	cfg.ArchivedFileExpiration = importedFileExpiration
+	cfg.Interval = cleanupInterval
 
 	// Register routes for receiving information about jobs
 	transport := mocked.MockedHTTPTransport()

@@ -25,7 +25,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
 	storageRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
@@ -46,7 +45,7 @@ type dependencies interface {
 }
 
 type Node struct {
-	config                 cleanup.Config
+	config                 Config
 	clock                  clockwork.Clock
 	logger                 log.Logger
 	telemetry              telemetry.Telemetry
@@ -66,7 +65,7 @@ type sinkData struct {
 	Enabled bool
 }
 
-func Start(d dependencies, cfg cleanup.Config) error {
+func Start(d dependencies, cfg Config) error {
 	n := &Node{
 		config:                 cfg,
 		clock:                  d.Clock(),
@@ -86,7 +85,7 @@ func Start(d dependencies, cfg cleanup.Config) error {
 	}
 
 	ctx := context.Background()
-	if !n.config.EnableFileCleanup {
+	if !n.config.Enable {
 		n.logger.Info(ctx, "local storage metadata cleanup is disabled")
 		return nil
 	}
@@ -123,7 +122,7 @@ func Start(d dependencies, cfg cleanup.Config) error {
 	go func() {
 		defer wg.Done()
 
-		ticker := n.clock.NewTicker(n.config.FileCleanupInterval)
+		ticker := n.clock.NewTicker(n.config.Interval)
 		defer ticker.Stop()
 
 		for {
