@@ -81,13 +81,21 @@ tests-unit-common:
 	TEST_PACKAGE=./internal/pkg/service/common/... bash ./scripts/tests.sh
 
 # Get all service packages path patterns
-SERVICE_PKG_PATTERNS := ./internal/pkg/service/cli/... ./internal/pkg/service/templates/... ./internal/pkg/service/stream/... ./internal/pkg/service/appsproxy/... ./internal/pkg/service/common/...
+SERVICE_PKG_PATTERNS := ./internal/pkg/service/appsproxy/... \
+	./internal/pkg/service/cli/... \
+	./internal/pkg/service/common/... \
+	./internal/pkg/service/stream/... \
+	./internal/pkg/service/templates/...
 
 # Test all internal packages *except* those already covered by service-specific targets
 tests-unit-core:
 	# List all packages, list service packages, filter service ones out, then join with spaces for the command line
-	CORE_PKGS=$$(comm -23 <(go list ./internal/pkg/... | sort) <(go list $(SERVICE_PKG_PATTERNS) | sort) | tr '\n' ' '); \
-	TEST_PACKAGE="$$CORE_PKGS" bash ./scripts/tests.sh
+	bash -c 'CORE_PKGS=$$(comm -23 <(go list ./internal/pkg/... | sort) <(go list $(SERVICE_PKG_PATTERNS) | sort) | tr "\n" " "); \
+	TEST_PACKAGE="$$CORE_PKGS" bash ./scripts/tests.sh'
+
+# Test all service packages in one go
+tests-unit-services:
+	bash -c 'TEST_PACKAGE="$(SERVICE_PKG_PATTERNS)" bash ./scripts/tests.sh'
 
 tests-cli:
 	TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh

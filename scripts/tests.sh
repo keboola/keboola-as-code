@@ -32,7 +32,6 @@ if [[ $TEST_COVERAGE == "true" ]]; then
   TEST_ARGS="$TEST_ARGS -coverprofile=/tmp/profile.out"
 fi
 if [[ -n $TEST_EXCEPT ]]; then
-  # Convert newlines to spaces to ensure proper command construction
   TEST_PACKAGE=$(echo "$TEST_EXCEPT" | tr '\n' ' ')
 fi
 if [[ -z $TEST_SYNCTEST ]]; then
