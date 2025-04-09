@@ -21,7 +21,7 @@ import (
 	keboolaSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola"
 	keboolaModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	bridgeTest "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup/jobcleanup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/jobcleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test"
 	bridgeEntity "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/bridge"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"

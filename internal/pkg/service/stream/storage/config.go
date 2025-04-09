@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup/jobcleanup"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/jobcleanup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/writernode/diskcleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
