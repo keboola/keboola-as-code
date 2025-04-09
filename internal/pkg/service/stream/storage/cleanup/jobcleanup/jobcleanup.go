@@ -20,7 +20,6 @@ import (
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	keboolaBridgeModel "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model"
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -37,7 +36,7 @@ type dependencies interface {
 }
 
 type Node struct {
-	config                  cleanup.Config
+	config                  Config
 	clock                   clockwork.Clock
 	logger                  log.Logger
 	telemetry               telemetry.Telemetry
@@ -49,7 +48,7 @@ type Node struct {
 	metrics *node.Metrics
 }
 
-func Start(d dependencies, cfg cleanup.Config) error {
+func Start(d dependencies, cfg Config) error {
 	n := &Node{
 		config:                  cfg,
 		clock:                   d.Clock(),
@@ -67,7 +66,7 @@ func Start(d dependencies, cfg cleanup.Config) error {
 	}
 
 	ctx := context.Background()
-	if !n.config.EnableJobCleanup {
+	if !n.config.Enable {
 		n.logger.Info(ctx, "local storage job cleanup is disabled")
 		return nil
 	}
@@ -87,7 +86,7 @@ func Start(d dependencies, cfg cleanup.Config) error {
 	go func() {
 		defer wg.Done()
 
-		ticker := n.clock.NewTicker(n.config.JobCleanupInterval)
+		ticker := n.clock.NewTicker(n.config.Interval)
 		defer ticker.Stop()
 
 		for {
