@@ -113,7 +113,7 @@ func Start(d dependencies, cfg Config) error {
 		},
 	).BuildMirror()
 	if err := <-n.sinks.StartMirroring(ctx, wg, n.logger, n.telemetry, n.watchTelemetryInterval); err != nil {
-		n.logger.Errorf(ctx, "cannot start mirroring jobs: %s", err)
+		n.logger.Errorf(ctx, "cannot start mirroring sinks: %s", err)
 		return err
 	}
 
