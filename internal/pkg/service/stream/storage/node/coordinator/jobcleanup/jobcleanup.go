@@ -110,7 +110,7 @@ func (n *Node) cleanJobs(ctx context.Context) (err error) {
 	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("clean metadata jobs timeout"))
 	defer cancel()
 
-	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.jobs.cleanJobs")
+	ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.jobcleanup.cleanJobs")
 	defer span.End(&err)
 
 	// Measure count of deleted storage jobs
@@ -150,7 +150,7 @@ func (n *Node) cleanJobs(ctx context.Context) (err error) {
 				ctx := ctxattr.ContextWith(ctx, attrs...)
 
 				// Trace each job
-				ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.cleanup.metadata.cleanJob")
+				ctx, span := n.telemetry.Tracer().Start(ctx, "keboola.go.stream.model.jobcleanup.cleanJob")
 
 				err, deleted := n.bridge.CleanJob(ctx, job)
 				if deleted {
