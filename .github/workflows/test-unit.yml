@@ -24,10 +24,12 @@ permissions:
 
 jobs:
   test:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.name }}-${{ matrix.test-group }}
     strategy:
       fail-fast: false
       matrix:
+        name: [linux, mac-os, windows]
+        test-group: [core, services]
         include:
           - name: linux
             os: ubuntu-latest
@@ -113,7 +115,7 @@ jobs:
 
           # Prevent testing unnecessary code for particular release
           if [ -n "${{ inputs.package-exception-regex }}" ]; then
-            export TEST_EXCEPT="go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}'"
+            export TEST_EXCEPT="$(go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}')"
           fi
 
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
@@ -138,7 +140,7 @@ jobs:
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
             TEST_EXCEPT="$TEST_EXCEPT" \
             TEST_KBC_TMP_DIR="${{ runner.temp }}" \
-          make tests-unit
+          make tests-unit-${{ matrix.test-group }}
         env:
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}

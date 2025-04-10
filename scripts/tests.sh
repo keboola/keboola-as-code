@@ -32,16 +32,16 @@ if [[ $TEST_COVERAGE == "true" ]]; then
   TEST_ARGS="$TEST_ARGS -coverprofile=/tmp/profile.out"
 fi
 if [[ -n $TEST_EXCEPT ]]; then
-  TEST_PACKAGE="\$($TEST_EXCEPT)"
+  TEST_PACKAGE=$(echo "$TEST_EXCEPT" | tr '\n' ' ')
 fi
 if [[ -z $TEST_SYNCTEST ]]; then
   TEST_SYNCTEST="$TEST_SYNCTEST -tags=goexperiment.synctest"
 fi
 
-# Run tests, sequentially because the API is shared resource
+# Run tests
 echo "Running tests ..."
 export KBC_VERSION_CHECK=false # do not check the latest version in the tests
-cmd="go tool gotestsum --no-color=false --format \"$TEST_LOG_FORMAT\" -- $TEST_SYNCTEST -timeout 1800s -p $TEST_PARALLELISM_PKG -parallel $TEST_PARALLELISM $TEST_ARGS "$TEST_PACKAGE" $@"
+cmd="go tool gotestsum --no-color=false --format \"$TEST_LOG_FORMAT\" -- $TEST_SYNCTEST -timeout 1800s -p $TEST_PARALLELISM_PKG -parallel $TEST_PARALLELISM $TEST_ARGS $TEST_PACKAGE $*"
 echo $cmd
 eval $cmd
 echo "Ok. All tests passed."
