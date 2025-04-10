@@ -1,10 +1,13 @@
 # Build container
 FROM golang:1.24.1-alpine3.21 AS buildContainer
 # gcc and g++ are needed for CGO_ENABLED racer
-RUN apk add --update --no-cache bash make curl gcc g++ binutils-gold
+RUN apk add --update --no-cache bash curl gcc g++ binutils-gold
 WORKDIR /app
 
-COPY Makefile Makefile
+# Install Task
+RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
+
+COPY Taskfile.yml Taskfile.yml
 COPY scripts scripts
 
 COPY go.mod go.mod
@@ -12,7 +15,7 @@ COPY go.sum go.sum
 RUN go mod download
 
 COPY . .
-RUN make build-stream-service-with-race
+RUN task build-stream-service-with-race
 
 # Production container
 FROM alpine:3.20

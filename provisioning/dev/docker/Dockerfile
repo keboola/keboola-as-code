@@ -23,8 +23,11 @@ RUN chmod +x /usr/local/bin/toxiproxy-server
 
 # Install tools
 RUN mkdir -p /tmp/build
-COPY Makefile /tmp/build/Makefile
+COPY Taskfile.yml /tmp/build/Taskfile.yml
 COPY scripts  /tmp/build/scripts
+
+# Install Task
+RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
 
 # Install envsubstr and helm
 RUN curl -L https://github.com/a8m/envsubst/releases/download/v1.2.0/envsubst-$(uname -s)-$(uname -m) -o /usr/local/bin/envsubst && \

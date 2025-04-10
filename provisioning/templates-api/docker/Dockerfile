@@ -1,9 +1,12 @@
 # Build container
 FROM golang:1.24.1-alpine3.21 AS buildContainer
-RUN apk add -U --no-cache bash make curl
+RUN apk add -U --no-cache bash curl
 WORKDIR /app
 
-COPY Makefile Makefile
+# Install Task
+RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
+
+COPY Taskfile.yml Taskfile.yml
 COPY scripts scripts
 
 COPY go.mod go.mod
@@ -11,7 +14,7 @@ COPY go.sum go.sum
 RUN go mod download
 
 COPY . .
-RUN make build-templates-api
+RUN task build-templates-api
 
 # Production container
 FROM alpine:3.20
