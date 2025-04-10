@@ -33,6 +33,13 @@ TEMPLATES_API_ETCD_PDB_CREATE=$([[ $TEMPLATES_API_ETCD_REPLICAS -gt 1 ]] && echo
 # Namespace
 kubectl apply -f ./kubernetes/deploy/namespace.yaml
 
+# Temporary migration step
+# https://github.com/bitnami/charts/tree/main/bitnami/etcd#to-900
+kubectl -n $NAMESPACE label pod templates-api-etcd-0 app.kubernetes.io/component=etcd || true
+kubectl -n $NAMESPACE label pod templates-api-etcd-1 app.kubernetes.io/component=etcd || true
+kubectl -n $NAMESPACE label pod templates-api-etcd-2 app.kubernetes.io/component=etcd || true
+kubectl -n $NAMESPACE delete statefulset templates-api-etcd --cascade=orphan || true
+
 # Get etcd root password, if it is already present
 export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "$NAMESPACE" templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
 
