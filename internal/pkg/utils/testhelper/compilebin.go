@@ -16,8 +16,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
-// CompileBinary compiles a binary used in the test by running a make command.
-func CompileBinary(t *testing.T, binaryName string, makeCommand string) string {
+// CompileBinary compiles a binary used in the test by running a task command.
+func CompileBinary(t *testing.T, binaryName string, taskCommand string) string {
 	t.Helper()
 
 	// Compilation can be skipped by providing path to the binary.
@@ -35,7 +35,7 @@ func CompileBinary(t *testing.T, binaryName string, makeCommand string) string {
 		t.Logf(`no "%s" / "%s" envs found`, pathEnv, hashEnv)
 	}
 
-	// Get project dir, to run "make ..."
+	// Get project dir, to run "task ..."
 	_, thisFile, _, _ := runtime.Caller(0)                       //nolint:dogsled
 	thisDir := filepath.Dir(thisFile)                            //nolint:forbidigo
 	projectDir := filepath.Join(thisDir, "..", "..", "..", "..") //nolint:forbidigo
@@ -54,7 +54,7 @@ func CompileBinary(t *testing.T, binaryName string, makeCommand string) string {
 
 	// Build cmd
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("make", makeCommand)
+	cmd := exec.Command("task", taskCommand)
 	cmd.Dir = projectDir
 	cmd.Env = envs.ToSlice()
 	cmd.Stdout = io.MultiWriter(&stdout, VerboseStdout())
