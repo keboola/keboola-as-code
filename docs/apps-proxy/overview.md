@@ -23,7 +23,7 @@ In project directory uncomment in [docker-compose.yml](../../docker-compose.yml)
 ```
 command: >
     sh -c "git config --global --add safe.directory /code
-           make run-apps-proxy"
+           task run-apps-proxy"
 ```
 
 Then launch the dev container
