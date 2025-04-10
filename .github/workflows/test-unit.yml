@@ -140,7 +140,7 @@ jobs:
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
             TEST_EXCEPT="$TEST_EXCEPT" \
             TEST_KBC_TMP_DIR="${{ runner.temp }}" \
-          make tests-unit-${{ matrix.test-group }}
+          task tests-unit-${{ matrix.test-group }}
         env:
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
@@ -154,4 +154,3 @@ jobs:
           echo "AFTER UNIT TEST:"
           df -h /
           df -a /
-

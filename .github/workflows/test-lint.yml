@@ -52,5 +52,5 @@ jobs:
             --exclude '^https://test.hub.keboola.local/$'
 
       - name: Run code linters
-        run: make lint
+        run: task lint
         shell: bash

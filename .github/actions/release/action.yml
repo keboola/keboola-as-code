@@ -18,7 +18,7 @@ runs:
   steps:
     - name: Release
       shell: bash
-      run: make release
+      run: task release
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         CLI_DIST_BASE_URL: "https://cli-dist.keboola.com"

@@ -56,20 +56,20 @@ jobs:
         shell: bash
         run: |
           set -eo pipefail
-          
+
           # Build binary for test without external inputs
           env -i  \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \
             BUILD_TARGET_PATH="$TEST_BINARY_STREAM_SERVICE" \
-          make build-stream-service
+          task build-stream-service
           touch -d '1970-01-01T00:00:01' "$TEST_BINARY_STREAM_SERVICE"
-          
+
           # Calculate binary hash, it invalidates tests cache
           export TEST_BINARY_STREAM_SERVICE_HASH=`cat "$TEST_BINARY_STREAM_SERVICE" | $MD5_COMMAND | cut -d " " -f1`
           echo "Binary hash: $TEST_BINARY_STREAM_SERVICE_HASH" 
-          
+
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
           env -i  \
             TERM="$TERM" \
@@ -93,7 +93,7 @@ jobs:
             TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
             TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-          make tests-stream-service
+          task tests-stream-service
         env:
           TEST_BINARY_STREAM_SERVICE: "${{ runner.temp }}/test-build-stream-service"
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
