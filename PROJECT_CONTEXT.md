@@ -37,7 +37,7 @@ The project uses ETCD for distributed storage and synchronization, with a custom
 ### Docker Setup
 - Docker and Docker Compose
 - Go 1.24+
-- Make
+- Task
 
 For Docker-based development, see [Development Guide](docs/development.md).
 
@@ -80,9 +80,9 @@ docker-compose up -d
 ## CI/CD Pipeline
 
 ### Testing
-- Unit tests: `make test`
-- Integration tests: `make integration-test`
-- E2E tests: `make e2e-test`
+- Unit tests: `task tests`
+- Integration tests: `task tests`
+- E2E tests: `task tests-cli`
 
 ### Build Process
 1. Code validation

@@ -16,7 +16,7 @@ docker compose build
 
 It is possible when you do development on local environment and use `docker dev` image for `lint/build/test` there could be problem with `/vendor` file.
 
-Call `make fix` or `go mod vendor` to fix the `vendor` packages. Also when rebasing and there are adjustements in `go.mod`.
+Call `task fix` or `go mod vendor` to fix the `vendor` packages. Also when rebasing and there are adjustements in `go.mod`.
 
 ### Setup ENV
 
@@ -47,10 +47,10 @@ Use following command there, so the prometheus and dev service is connected
 ```
 command: >
 sh -c "git config --global --add safe.directory /code
-       make run-<your-service>"
+       task run-<your-service>"
 ```
 
-This ensures that the `/code` is safe directory to run. Make sure that under `<your-service>` you replace with desired service. E.g `make run-apps-proxy`.
+This ensures that the `/code` is safe directory to run. Make sure that under `<your-service>` you replace with desired service. E.g `task run-apps-proxy`.
 Then run this docker compose command
 ```
 docker compose up -d
@@ -97,12 +97,12 @@ as this command automatically fetches the `.env` file and sets up `TEST_KBC_PROJ
 
 Run the test suite and download the dependencies using:
 ```
-make ci
+task ci
 ```
 
 To run only the CLI [E2E tests](./e2e_tests.md), you can use:
 ```
-make tests-cli
+task tests-cli
 ```
 
 Use the `TEST_VERBOSE=true` ENV to run tests with verbose output to see HTTP requests, ENVs, etc.:
@@ -124,19 +124,19 @@ ETCD_VERBOSE=true TEST_VERBOSE=true go test -race -v -p 1 ./path/to/pkg... -run 
 
 To compile a local CLI binary to `./target`, run in the container:
 ```
-make build-local
+task build-local
 ```
 
 To compile the CLI binary for all architectures to `./target`, run in the container:
 ```
-make build
+task build
 ```
 
 ### Start Documentation Server
 
 To start the [Go Doc](https://go.dev/doc/) documentation server, run the command bellow, then open http://localhost:6060/pkg/github.com/keboola/keboola-as-code/?m=all:
 ```
-make godoc
+task godoc
 ```
 
 `m=all` is important to show also private packages.
@@ -148,14 +148,14 @@ API development uses [Goa code generator](https://goa.design/).
 To run the API locally:
 1. Start `bash` in the dev container, run `docker compose run --rm -u "$UID:$GID" --service-ports dev bash`.
 2. Set env var with Keboola stack: `export TEMPLATES_STORAGE_API_HOST=connection.keboola.com` (or `STREAM_STORAGE_API_HOST`)
-3. In the container run `make run-templates-api` (or `make run-stream-service`)
+3. In the container run `task run-templates-api` (or `task run-stream-service`)
  - The API is exposed to `http://localhost:8000/` (or `http://localhost:8001/`
  - When the code changes, the API recompiles and restarts.
 
 To run Stream Worker locally:
 1. Start `bash` in the dev container, run `docker compose run --rm -u "$UID:$GID" --service-ports dev bash`.
 2. Set env var with Keboola stack: `export STREAM_WORKER_STORAGE_API_HOST=connection.keboola.com`
-3. In the container run `make run-stream-worker`
+3. In the container run `task run-stream-worker`
 
 See [provisioning/stream/README.md](../provisioning/stream/README.md) or [provisioning/templates-api/README.md](../provisioning/templates-api/README.md) for more details about etcd and running in Minikube.
 
@@ -170,6 +170,6 @@ See [E2E_TESTS.md](./e2e_tests.md).
 
 ### IDE setup
 
-The scripts `make mod`, `make fix`, `make ci` calls `go mod vendor`.
+The scripts `task mod`, `task fix`, `task ci` calls `go mod vendor`.
 It syncs all dependencies (Go modules) to the `vendor` directory.
 So integration with the IDE should work automatically.

@@ -5,7 +5,7 @@
 - Go 1.24+
 - ETCD v3.5.17
 - Git
-- Make
+- Task
 
 ## Installation Steps
 
@@ -22,7 +22,16 @@ sudo pacman -S go
 go version
 ```
 
-### 2. Install ETCD
+### 2. Install Task
+```bash
+# Using the official installation script
+sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
+
+# Verify installation
+task --version
+```
+
+### 3. Install ETCD
 ```bash
 # For Ubuntu/Debian
 sudo apt-get install etcd
@@ -38,7 +47,7 @@ sudo systemctl enable etcd
 etcdctl endpoint health
 ```
 
-### 3. Clone and Setup Project
+### 4. Clone and Setup Project
 ```bash
 # Clone repository
 git clone https://github.com/keboola/keboola-as-code
@@ -78,10 +87,10 @@ Create `projects.json` with your project configuration:
 
 ```bash
 # Run tests
-make test
+task tests
 
 # Build local CLI binary
-make build-local
+task build-local
 
 # Run specific service (e.g., templates API)
 export TEMPLATES_STORAGE_API_HOST=connection.keboola.com
@@ -96,7 +105,7 @@ go run cmd/stream-api/main.go
 
 #### Start Documentation Server
 ```bash
-make godoc
+task godoc
 # Access at http://localhost:6060/pkg/github.com/keboola/keboola-as-code/?m=all
 ```
 

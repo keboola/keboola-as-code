@@ -15,7 +15,7 @@ User documentation can be found at [https://developers.keboola.com/integrate/pus
 
 The API design can be found in [api/stream/design.go](../../api/stream/design.go) and is implemented using **[Goa framework](https://goa.design/)**.
 
-There is `generate-stream-api` make command available to generate the code from the design specs. (The command is
+There is `generate-stream-api` task command available to generate the code from the design specs. (The command is
 also run before other commands to run the API locally, build API image, release the API, etc.)
 
 The command generates:

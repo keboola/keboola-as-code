@@ -22,7 +22,7 @@ Templates functionality is implemented also in the CLI. See the commands:
 
 The API design can be found in [api/templates/design.go](../../api/templates/design.go) and is implemented using **[Goa framework](https://goa.design/)**.
 
-There is `generate-templates-api` make command available to generate the code from the design specs. (The command is 
+There is `generate-templates-api` task command available to generate the code from the design specs. (The command is
 also run before other commands to run the API locally, build API image, release the API, etc.)
 
 The command generates: 
