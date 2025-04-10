@@ -56,20 +56,20 @@ jobs:
         shell: bash
         run: |
           set -eo pipefail
-          
+
           # Build binary for test without external inputs
           env -i  \
             TERM="$TERM" \
             HOME="$HOME" \
             PATH="$PATH" \
             BUILD_TARGET_PATH="$TEST_BINARY_TEMPLATES_API" \
-          make build-templates-api
+          task build-templates-api
           touch -d '1970-01-01T00:00:01' "$TEST_BINARY_TEMPLATES_API"
-          
+
           # Calculate binary hash, it invalidates tests cache
           export TEST_BINARY_TEMPLATES_API_HASH=`cat "$TEST_BINARY_TEMPLATES_API" | $MD5_COMMAND | cut -d " " -f1`
           echo "Binary hash: $TEST_BINARY_TEMPLATES_API_HASH"
-          
+
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
           env -i  \
             TERM="$TERM" \
@@ -88,7 +88,7 @@ jobs:
             TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
             TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-          make tests-templates-api
+          task tests-templates-api
         env:
           TEST_BINARY_TEMPLATES_API: "${{ runner.temp }}/test-build-templates-api"
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}

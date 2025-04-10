@@ -60,18 +60,18 @@ jobs:
       - name: Run tests
         run: |
           set -eo pipefail
-          
+
           if [ "$RUNNER_OS" == "Windows" ]; then
             export TEST_BINARY_CLI="${{ runner.temp }}\test-build-cli.exe"
           else
             export TEST_BINARY_CLI="${{ runner.temp }}/test-build-cli"
           fi
-          
+
           # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229#issuecomment-1988965927)
           if [ "$RUNNER_OS" == "macOS" ]; then
             export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
           fi
-          
+
           # Build binary for test without external inputs
           env -i  \
             TERM="$TERM" \
@@ -82,13 +82,13 @@ jobs:
             BUILD_TARGET_PATH="$TEST_BINARY_CLI" \
             CLI_BUILD_DATE="-" \
             CLI_BUILD_GIT_COMMIT="-" \
-          make build-local
+          task build-local
           touch -d '1970-01-01T00:00:01' "$TEST_BINARY_CLI"
-          
+
           # Calculate binary hash, it invalidates tests cache
           export TEST_BINARY_CLI_HASH=`cat "$TEST_BINARY_CLI" | $MD5_COMMAND | cut -d " " -f1`
           echo "Binary hash: $TEST_BINARY_CLI_HASH"
-          
+
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
           env -i  \
             TERM="$TERM" \
@@ -104,7 +104,7 @@ jobs:
             TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
             TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-          make tests-cli
+          task tests-cli
         shell: bash
         env:
           VERSION: ${{ inputs.version }}
