@@ -22,7 +22,7 @@ export STREAM_ETCD_MEMORY="${STREAM_ETCD_MEMORY:="256Mi"}"
 
 # Constants
 export NAMESPACE="templates-api"
-ETCD_HELM_CHART_VERSION="8.5.8"
+ETCD_HELM_CHART_VERSION="11.2.2"
 
 # Disable pod disruption budget (51%) if replicaCount=1, so it doesn't block the rollout.
 TEMPLATES_API_ETCD_PDB_CREATE=$([[ $TEMPLATES_API_ETCD_REPLICAS -gt 1 ]] && echo 'true' || echo 'false')
@@ -41,7 +41,8 @@ helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
 helm upgrade \
   --install templates-api-etcd bitnami/etcd \
   --version "$ETCD_HELM_CHART_VERSION" \
-  --values ./kubernetes/deploy/etcd/values.yaml \
+  --values ./kubernetes/deploy/etcd/values_common.yaml \
+  --values ./kubernetes/deploy/etcd/values_templates.yaml \
   --namespace "$NAMESPACE" \
   --set "replicaCount=$TEMPLATES_API_ETCD_REPLICAS" \
   --set "pdb.create=$TEMPLATES_API_ETCD_PDB_CREATE" \
