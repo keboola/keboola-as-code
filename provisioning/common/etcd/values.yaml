@@ -12,7 +12,7 @@ nodeSelector:
 
 # Locked/updated etcd image
 image:
-  tag: 3.5.14-debian-12-r1
+  tag: 3.5.21-debian-12-r1
 
 # Additional pod annotations
 podAnnotations:
@@ -43,8 +43,6 @@ resources:
 # Each 15 minutes are deleted all old revisions older than 15 minutes.
 autoCompactionMode: "periodic"
 autoCompactionRetention: "15m"
-
-removeMemberOnContainerTermination: false
 
 extraEnvVars:
   - name: ETCD_DISABLE_STORE_MEMBER_ID

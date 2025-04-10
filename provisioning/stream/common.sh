@@ -66,7 +66,7 @@ export STREAM_STORAGE_COORDINATOR_CPU_SOFT_LIMIT="${STREAM_STORAGE_COORDINATOR_C
 
 # Constants
 export NAMESPACE="stream"
-ETCD_HELM_CHART_VERSION="10.2.4"
+ETCD_HELM_CHART_VERSION="11.2.2"
 
 # Common part of the deployment. Same for AWS/Azure/Local
 ./kubernetes/build.sh
@@ -78,6 +78,12 @@ kubectl apply -f ./kubernetes/deploy/namespace.yaml
 export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "$NAMESPACE" stream-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
 # Override default txn ops
 export STREAM_ETCD_MAX_TXN_OPS="${STREAM_ETCD_MAX_TXN_OPS:=1024}"
+
+# Disaster recovery
+export ETCD_DISASTER_RECOVERY_ENABLED="${ETCD_DISASTER_RECOVERY_ENABLED:="false"}"
+export ETCD_SNAPSHOT_STORAGE_CLASS_NAME="${ETCD_SNAPSHOT_STORAGE_CLASS_NAME:=""}"
+export ETCD_FROM_SNAPSHOT_ENABLED="${ETCD_FROM_SNAPSHOT_ENABLED:="false"}"
+export ETCD_FROM_SNAPSHOT_FILENAME="${ETCD_FROM_SNAPSHOT_FILENAME:=""}"
 
 # Deploy etcd cluster
 helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
@@ -93,6 +99,10 @@ helm upgrade \
   --set "resources.requests.memory=$STREAM_ETCD_MEMORY_SOFT_LIMIT" \
   --set "resources.limits.memory=$STREAM_ETCD_MEMORY_HARD_LIMIT" \
   --set "resources.requests.cpu=$STREAM_ETCD_CPU_SOFT_LIMIT" \
+  --set "disasterRecovery.enabled=$ETCD_DISASTER_RECOVERY_ENABLED" \
+  --set "disasterRecovery.pvc.storageClassName=$ETCD_SNAPSHOT_STORAGE_CLASS_NAME" \
+  --set "startFromSnapshot.enabled=$ETCD_FROM_SNAPSHOT_ENABLED" \
+  --set "startFromSnapshot.snapshotFilename=$ETCD_FROM_SNAPSHOT_FILENAME" \
   --set "extraEnvVars[3].name=GOMEMLIMIT" \
   --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY_SOFT_LIMIT}B" \
   --set "extraEnvVars[4].name=ETCD_MAX_TXN_OPS" \
