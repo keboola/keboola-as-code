@@ -101,7 +101,7 @@ jobs:
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
 
       - name: Install OpenAPI Validator
-        run: npm install -g @apidevtools/swagger-cli
+        run: npm install -g @redocly/cli
 
       - name: Validate OpenAPI Definition
-        run: swagger-cli validate internal/pkg/service/stream/api/openapi/openapi3.yaml
+        run: redocly lint --config build/ci/redocly.yaml internal/pkg/service/stream/api/openapi/openapi3.yaml
