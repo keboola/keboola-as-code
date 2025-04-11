@@ -51,8 +51,8 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 		// Setup encryption
 		cfg.Encryption.Provider = encryption.ProviderAES
 		cfg.Encryption.AES.SecretKey = secretKey
-		// Enable metadata cleanup for removing storage jobs
-		cfg.Storage.MetadataCleanup.EnableJobCleanup = true
+		// Enable cleanup for removing storage jobs
+		cfg.Storage.JobCleanup.Enable = true
 		// Disable unrelated workers
 		cfg.Storage.DiskCleanup.Enabled = false
 		cfg.API.Task.CleanupEnabled = false
@@ -87,7 +87,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 		}
 
 		// Cleanup should be perfomed more frequently to remove already finished storage jobs
-		cfg.Storage.MetadataCleanup.FileCleanupInterval = 10 * time.Second
+		cfg.Storage.JobCleanup.Interval = 10 * time.Second
 	}
 
 	ts := setup(t)
@@ -345,8 +345,8 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
 		// Setup encryption
 		cfg.Encryption.Provider = encryption.ProviderAES
 		cfg.Encryption.AES.SecretKey = secretKey
-		// Enable metadata cleanup for removing storage jobs
-		cfg.Storage.MetadataCleanup.EnableJobCleanup = true
+		// Enable cleanup for removing storage jobs
+		cfg.Storage.JobCleanup.Enable = true
 		// Disable unrelated workers
 		cfg.Storage.DiskCleanup.Enabled = false
 		cfg.API.Task.CleanupEnabled = false
@@ -380,7 +380,7 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
 		}
 
 		// Cleanup should be performed more frequently to remove already finished storage jobs
-		cfg.Storage.MetadataCleanup.FileCleanupInterval = 10 * time.Second
+		cfg.Storage.JobCleanup.Interval = 10 * time.Second
 	}
 
 	ts := setup(t)
@@ -586,8 +586,8 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 		// Setup encryption
 		cfg.Encryption.Provider = encryption.ProviderAES
 		cfg.Encryption.AES.SecretKey = secretKey
-		// Enable metadata cleanup for removing storage jobs
-		cfg.Storage.MetadataCleanup.EnableJobCleanup = true
+		// Enable cleanup for removing storage jobs
+		cfg.Storage.JobCleanup.Enable = true
 		// Disable unrelated workers
 		cfg.Storage.DiskCleanup.Enabled = false
 		cfg.API.Task.CleanupEnabled = false
@@ -627,7 +627,7 @@ func TestKeboolaBridgeCompressionIssues(t *testing.T) { // nolint: paralleltest
 		}
 
 		// Cleanup should be perfomed more frequently to remove already finished storage jobs
-		cfg.Storage.MetadataCleanup.JobCleanupInterval = 10 * time.Second
+		cfg.Storage.JobCleanup.Interval = 10 * time.Second
 	}
 
 	ts := setup(t)
@@ -895,7 +895,7 @@ func (ts *testState) testFileImport(t *testing.T, ctx context.Context, expectati
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ts.logger.AssertJSONMessages(c, `
-{"level":"info","message":"deleted \"1\" jobs","deletedJobsCount":1,"component":"storage.metadata.cleanup"}
+{"level":"info","message":"deleted \"1\" jobs","deletedJobsCount":1,"component":"storage.jobs.cleanup"}
 		`)
 	}, 20*time.Second, 100*time.Millisecond)
 	// Check file/slices state after the upload

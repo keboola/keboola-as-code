@@ -30,6 +30,7 @@ func TestStart_Ok(t *testing.T) {
 {"level":"info","message":"joining distribution group","distribution.group":"operator.slice.rotation","distribution.node":"test-node","component":"distribution"}
 {"level":"info","message":"joining distribution group","distribution.group":"operator.file.import","distribution.node":"test-node","component":"distribution"}
 {"level":"info","message":"joining distribution group","distribution.group":"storage.metadata.cleanup","distribution.node":"test-node","component":"distribution"}
+{"level":"info","message":"joining distribution group","distribution.group":"storage.jobs.cleanup","distribution.node":"test-node","component":"distribution"}
 {"level":"info","message":"exiting (bye bye)"}
 {"level":"info","message":"received shutdown request","component":"distribution.mutex.provider"}
 {"level":"info","message":"closing etcd session: context canceled","component":"distribution.mutex.provider.etcd.session"}
