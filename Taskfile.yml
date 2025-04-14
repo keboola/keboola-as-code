@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  SERVICE_PKG_PATTERNS: >
+  SERVICE_PKG_PATTERNS: >-
     ./internal/pkg/service/appsproxy/...
     ./internal/pkg/service/cli/...
     ./internal/pkg/service/common/...
@@ -46,20 +46,26 @@ tasks:
       - go tool goreleaser release --clean --snapshot --skip=publish -f ./build/ci/goreleaser.yml
 
   build-templates-api:
+    vars:
+      BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/templates/api" }}'
     cmds:
-      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/templates/api)" ./cmd/templates-api
+      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/templates-api
 
   run-templates-api:
     cmds:
       - go tool air -c ./provisioning/templates-api/dev/.air-api.toml
 
   build-stream-service:
+    vars:
+      BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/stream/service" }}'
     cmds:
-      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/stream/service)" ./cmd/stream
+      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/stream
 
   build-stream-service-with-race:
+    vars:
+      BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/stream/service" }}'
     cmds:
-      - CGO_ENABLED=1 go build -race -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/stream/service)" ./cmd/stream
+      - CGO_ENABLED=1 go build -race -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/stream
 
   run-stream-service:
     cmds:
@@ -71,8 +77,10 @@ tasks:
       - ./target/stream/service api http-source storage-writer storage-reader storage-coordinator
 
   build-apps-proxy:
+    vars:
+      BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/apps-proxy/proxy" }}'
     cmds:
-      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/apps-proxy/proxy)" ./cmd/apps-proxy
+      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/apps-proxy
 
   run-apps-proxy:
     cmds:
@@ -118,7 +126,7 @@ tasks:
   tests-unit-core:
     cmds:
       # List all packages, list service packages, filter service ones out, then join with spaces for the command line
-      - bash -c 'CORE_PKGS=$$(comm -23 <(go list ./internal/pkg/... | sort) <(go list {{.SERVICE_PKG_PATTERNS}} | sort) | tr "\n" " "); TEST_PACKAGE="$$CORE_PKGS" bash ./scripts/tests.sh'
+      - bash -c 'TEST_PACKAGE=$(comm -23 <(go list ./internal/pkg/... | sort) <(go list {{.SERVICE_PKG_PATTERNS}} | sort) | tr "\n" " ") bash ./scripts/tests.sh'
 
   # Test all service packages in one go
   tests-unit-services:
