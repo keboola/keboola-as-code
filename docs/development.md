@@ -74,13 +74,12 @@ When you want to use `replace github.com/your/module => /newpath` in `go.mod`, t
 
 ```yml
 services:
-    dev:
-    ...
-    volumes:
-        -./:/code:z
-        - cache:/tmp/cache
-        - /path/in/your/system/module:/newpath
-    ...
+  dev:
+    # ...
+  volumes:
+    - ./:/code:z
+    - cache:/tmp/cache
+    - /path/in/your/system/module:/newpath
 ```
 
 This breaks usually the editor as the replace cannot be found in `/newpath`. Therefore be carefull that this works only with docker image and on local you could face issues.
@@ -103,6 +102,11 @@ task ci
 To run only the CLI [E2E tests](./e2e_tests.md), you can use:
 ```
 task tests-cli
+```
+
+To run a specific E2E test, you can use:
+```
+task e2e -- test/cli/path/to/test
 ```
 
 Use the `TEST_VERBOSE=true` ENV to run tests with verbose output to see HTTP requests, ENVs, etc.:
