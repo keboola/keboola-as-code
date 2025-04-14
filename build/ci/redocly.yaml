@@ -37,6 +37,3 @@ rules:
   
   # Allow localhost and example.com in server URLs - needed for development environments
   no-server-example.com: off
-  
-  # Allow invalid media type examples - needed for primaryKey property in column examples
-  no-invalid-media-type-examples: off
