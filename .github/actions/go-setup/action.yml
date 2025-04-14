@@ -60,21 +60,21 @@ runs:
         else
           GODIRS=/home/runner/.cache/go
         fi
-        
+
         mkdir -p $GODIRS/path
         mkdir -p $GODIRS/cache
         mkdir -p $GODIRS/modcache
         mkdir -p $GODIRS/lintcache
         mkdir -p $GODIRS/bin
         mkdir -p $GODIRS/tmp
-        
+
         go env -w \
         GOPATH=$GODIRS/path \
         GOCACHE=$GODIRS/cache \
         GOMODCACHE=$GODIRS/modcache \
         GOBIN=$GODIRS/bin \
         GOTMPDIR=$GODIRS/tmp
-        
+
         echo "GODIRS=$GODIRS" >> $GITHUB_ENV
         echo "GOLANGCI_LINT_CACHE=$GODIRS/lintcache" >> $GITHUB_ENV 
         echo "$GODIRS/bin" >> $GITHUB_PATH
@@ -132,6 +132,19 @@ runs:
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
+    - name: Install Task
+      shell: bash
+      run: |
+        TASK_PATH="$(go env GOBIN)/task"
+
+        if [ ! -f "$TASK_PATH" ]; then
+          echo "Installing Task..."
+          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b "$(go env GOBIN)"
+          echo "Installed Task $(task --version)"
+        else
+          echo "Using cached Task $(task --version)"
+        fi
+
     - name: Install golangci-lint v2
       if: inputs.build-type == 'lint'
       shell: bash
@@ -152,7 +165,7 @@ runs:
       run: |
         echo "Downloading modules ..."
         go mod tidy
-        
+
         echo "Modules size:"
         du -hd0 "$GODIRS/modcache"
 
@@ -168,12 +181,12 @@ runs:
       shell: bash
       run: |
         echo "Resetting modtime ..."
-        
+
         git-restore-mtime --git-dir "$GITHUB_WORKSPACE/.git"
-        
+
         excluded='-path "**/.out*" -or -path "**/.git/**" -or -name "projects.json"'
         echo "Excluded: $excluded"
-        
+
         echo "Dirs:"
         for dir in "$(go env GOROOT)" "$(go env GOMODCACHE)"
         do
@@ -182,7 +195,7 @@ runs:
           # Using xargs to make this fast, -exec would spawn a new process for every file.
           find -L "$dir" -not \( $excluded \) -print0 | xargs -0 touch -d '1970-01-01T00:00:01'
         done
-        
+
         echo "Done"
         echo
 
