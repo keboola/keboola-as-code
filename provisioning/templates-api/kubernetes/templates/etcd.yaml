@@ -1,0 +1,3 @@
+preUpgradeJob:
+  podLabels:
+    templates-api-etcd-client: "true"
