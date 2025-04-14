@@ -1276,15 +1276,15 @@ type ExampleTemplatesData struct {
 }
 
 type ExampleTemplateDetailData struct {
-	ID             string               `json:"id" yaml:"id"`
-	Name           string               `json:"name" yaml:"name"`
-	Deprecated     bool                 `json:"deprecated" yaml:"deprecated"`
-	Categories     []string             `json:"categories" yaml:"categories"`
-	Components     []string             `json:"components" yaml:"components"`
-	Author         ExampleAuthorData    `json:"author" yaml:"author"`
-	Description    string               `json:"description" yaml:"description"`
-	DefaultVersion string               `json:"defaultVersion" yaml:"defaultVersion"`
-	Versions       []ExampleVersionData `json:"versions" yaml:"versions"`
+	ID             string                `json:"id" yaml:"id"`
+	Name           string                `json:"name" yaml:"name"`
+	Deprecated     bool                  `json:"deprecated" yaml:"deprecated"`
+	Categories     []string              `json:"categories" yaml:"categories"`
+	Components     []string              `json:"components" yaml:"components"`
+	Author         ExampleAuthorData     `json:"author" yaml:"author"`
+	Description    string                `json:"description" yaml:"description"`
+	DefaultVersion string                `json:"defaultVersion" yaml:"defaultVersion"`
+	Versions       []ExampleVersionData  `json:"versions" yaml:"versions"`
 	Repository     ExampleRepositoryData `json:"repository" yaml:"repository"`
 }
 
@@ -1304,14 +1304,14 @@ type ExampleVersionDetailData struct {
 }
 
 type ExampleVersionDetailExtendedData struct {
-	Version         string                 `json:"version" yaml:"version"`
-	Stable          bool                   `json:"stable" yaml:"stable"`
-	Description     string                 `json:"description" yaml:"description"`
-	Components      []string               `json:"components" yaml:"components"`
-	LongDescription string                 `json:"longDescription" yaml:"longDescription"`
-	Readme          string                 `json:"readme" yaml:"readme"`
-	Repository      ExampleRepositoryData  `json:"repository" yaml:"repository"`
-	Template        ExampleTemplateData    `json:"template" yaml:"template"`
+	Version         string                `json:"version" yaml:"version"`
+	Stable          bool                  `json:"stable" yaml:"stable"`
+	Description     string                `json:"description" yaml:"description"`
+	Components      []string              `json:"components" yaml:"components"`
+	LongDescription string                `json:"longDescription" yaml:"longDescription"`
+	Readme          string                `json:"readme" yaml:"readme"`
+	Repository      ExampleRepositoryData `json:"repository" yaml:"repository"`
+	Template        ExampleTemplateData   `json:"template" yaml:"template"`
 }
 
 type ExampleStepGroupData struct {
@@ -1322,22 +1322,22 @@ type ExampleStepGroupData struct {
 }
 
 type ExampleStepData struct {
-	ID                string            `json:"id" yaml:"id"`
-	Icon              string            `json:"icon" yaml:"icon"`
-	Name              string            `json:"name" yaml:"name"`
-	Description       string            `json:"description" yaml:"description"`
-	DialogName        string            `json:"dialogName" yaml:"dialogName"`
-	DialogDescription string            `json:"dialogDescription" yaml:"dialogDescription"`
+	ID                string             `json:"id" yaml:"id"`
+	Icon              string             `json:"icon" yaml:"icon"`
+	Name              string             `json:"name" yaml:"name"`
+	Description       string             `json:"description" yaml:"description"`
+	DialogName        string             `json:"dialogName" yaml:"dialogName"`
+	DialogDescription string             `json:"dialogDescription" yaml:"dialogDescription"`
 	Inputs            []ExampleInputData `json:"inputs" yaml:"inputs"`
 }
 
 type ExampleInputData struct {
-	ID          string                `json:"id" yaml:"id"`
-	Name        string                `json:"name" yaml:"name"`
-	Description string                `json:"description" yaml:"description"`
-	Type        string                `json:"type" yaml:"type"`
-	Kind        string                `json:"kind" yaml:"kind"`
-	Default     any                   `json:"default" yaml:"default"`
+	ID          string                   `json:"id" yaml:"id"`
+	Name        string                   `json:"name" yaml:"name"`
+	Description string                   `json:"description" yaml:"description"`
+	Type        string                   `json:"type" yaml:"type"`
+	Kind        string                   `json:"kind" yaml:"kind"`
+	Default     any                      `json:"default" yaml:"default"`
 	Options     []ExampleInputOptionData `json:"options" yaml:"options"`
 }
 
@@ -1347,7 +1347,7 @@ type ExampleInputOptionData struct {
 }
 
 type ExampleStepPayloadData struct {
-	ID     string                `json:"id" yaml:"id"`
+	ID     string                    `json:"id" yaml:"id"`
 	Inputs []ExampleInputPayloadData `json:"inputs" yaml:"inputs"`
 }
 
@@ -1514,7 +1514,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 			ID:          "g02",
 			Description: "Configuration for system components",
 			Required:    "all",
-			Steps:       []ExampleStepData{
+			Steps: []ExampleStepData{
 				{
 					ID:                "g02-s01",
 					Icon:              "common:download",
@@ -1530,7 +1530,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 			ID:          "g03",
 			Description: "Select some destinations if you want.",
 			Required:    "optional",
-			Steps:       []ExampleStepData{
+			Steps: []ExampleStepData{
 				{
 					ID:                "g03-s01",
 					Icon:              "common:upload",
@@ -1844,29 +1844,29 @@ func ExampleValidationResult() any {
 }
 
 type ExampleTaskDef struct {
-	ID          string            `json:"id" yaml:"id"`
-	URL         string            `json:"url" yaml:"url"`
-	Type        string            `json:"type" yaml:"type"`
-	Status      string            `json:"status" yaml:"status"`
-	IsFinished  bool              `json:"isFinished" yaml:"isFinished"`
-	CreatedAt   string            `json:"createdAt" yaml:"createdAt"`
-	FinishedAt  string            `json:"finishedAt,omitempty" yaml:"finishedAt,omitempty"`
-	Duration    int               `json:"duration,omitempty" yaml:"duration,omitempty"`
-	Result      string            `json:"result,omitempty" yaml:"result,omitempty"`
-	Outputs     map[string]any    `json:"outputs,omitempty" yaml:"outputs,omitempty"`
+	ID         string         `json:"id" yaml:"id"`
+	URL        string         `json:"url" yaml:"url"`
+	Type       string         `json:"type" yaml:"type"`
+	Status     string         `json:"status" yaml:"status"`
+	IsFinished bool           `json:"isFinished" yaml:"isFinished"`
+	CreatedAt  string         `json:"createdAt" yaml:"createdAt"`
+	FinishedAt string         `json:"finishedAt,omitempty" yaml:"finishedAt,omitempty"`
+	Duration   int            `json:"duration,omitempty" yaml:"duration,omitempty"`
+	Result     string         `json:"result,omitempty" yaml:"result,omitempty"`
+	Outputs    map[string]any `json:"outputs,omitempty" yaml:"outputs,omitempty"`
 }
 
 func ExampleTask() ExampleTaskDef {
 	return ExampleTaskDef{
-		ID:          "task-1",
-		URL:         "https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP",
-		Type:        "template.use",
-		Status:      TaskStatusSuccess,
-		IsFinished:  true,
-		CreatedAt:   "2018-01-01T00:00:00.000Z",
-		FinishedAt:  "2018-01-01T00:00:00.000Z",
-		Duration:    123,
-		Result:      "task succeeded",
+		ID:         "task-1",
+		URL:        "https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP",
+		Type:       "template.use",
+		Status:     TaskStatusSuccess,
+		IsFinished: true,
+		CreatedAt:  "2018-01-01T00:00:00.000Z",
+		FinishedAt: "2018-01-01T00:00:00.000Z",
+		Duration:   123,
+		Result:     "task succeeded",
 		Outputs: map[string]any{
 			"instanceId": "V1StGXR8IZ5jdHi6BAmyT",
 		},
