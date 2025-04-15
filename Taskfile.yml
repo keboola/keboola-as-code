@@ -204,6 +204,7 @@ tasks:
     cmds:
       - go tool go-mod-upgrade
       - go mod tidy
+      - go mod vendor
 
   install-golangci-lint:
     cmds:
