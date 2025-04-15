@@ -21,14 +21,18 @@ RUN curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v29.2
 RUN curl -L https://github.com/Shopify/toxiproxy/releases/download/v2.11.0/toxiproxy-server-linux-amd64 -o /usr/local/bin/toxiproxy-server
 RUN chmod +x /usr/local/bin/toxiproxy-server
 
+# Install Task
+RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
+
 # Install tools
 RUN mkdir -p /tmp/build
 COPY Taskfile.yml /tmp/build/Taskfile.yml
 COPY scripts  /tmp/build/scripts
-RUN cd /tmp/build && make install-golangci-lint && cd / && rm -rf /tmp/build && go clean -cache -modcache
-
-# Install Task
-RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
+RUN cd /tmp/build && \
+    task install-golangci-lint && \
+    cd / && \
+    rm -rf /tmp/build && \
+    go clean -cache -modcache
 
 # Install envsubstr and helm
 RUN curl -L https://github.com/a8m/envsubst/releases/download/v1.2.0/envsubst-$(uname -s)-$(uname -m) -o /usr/local/bin/envsubst && \
