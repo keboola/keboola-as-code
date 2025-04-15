@@ -2,6 +2,9 @@ swagger: "2.0"
 info:
     title: Templates Service
     description: A service for applying templates to Keboola projects.
+    license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0
     version: "1.0"
 host: templates.keboola.com
 consumes:
