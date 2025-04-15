@@ -22,7 +22,7 @@ export STREAM_ETCD_MEMORY="${STREAM_ETCD_MEMORY:="256Mi"}"
 
 # Constants
 export NAMESPACE="templates-api"
-ETCD_HELM_CHART_VERSION="11.2.2"
+ETCD_HELM_CHART_VERSION="11.3.4"
 
 # Disable pod disruption budget (51%) if replicaCount=1, so it doesn't block the rollout.
 TEMPLATES_API_ETCD_PDB_CREATE=$([[ $TEMPLATES_API_ETCD_REPLICAS -gt 1 ]] && echo 'true' || echo 'false')
