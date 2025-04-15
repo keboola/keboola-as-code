@@ -4,13 +4,16 @@ E2E tests are divided by the service they test.
 
 - **CLI**
   - Location: [`test/cli`](../test/cli)
-  - Run the tests: `make tests-cli"`
+  - Run all tests: `task tests-cli`
+  - Run specific test: `task e2e -- test/cli/path/to/test`
 - **Templates API**
   - Location: [`test/templates/api`](../test/templates/api)
-  - Run the tests: `make tests-templates-api"`
+  - Run all tests: `task tests-templates-api`
+  - Run specific test: `task e2e -- test/templates/api/path/to/test`
 - **Stream API**
   - Location: [`test/stream/api`](../test/stream/api)
-  - Run the tests: `make tests-stream-api"`
+  - Run all tests: `task tests-stream-api`
+  - Run specific test: `task e2e -- test/stream/api/path/to/test`
 
 Tests for each service are grouped according to a common functionality they test. Then each directory in this group 
 contains a single test.

@@ -14,7 +14,7 @@ pwd
 # Check the most important problems first
 #echo "Running go vet ..."
 #if ! go vet ./...; then
-#    echo "Please fix ^^^ errors. You can try run \"make fix\"."
+#    echo "Please fix ^^^ errors. You can try run \"task fix\"."
 #    echo
 #    exit 1
 #fi
@@ -35,7 +35,7 @@ if golangci-lint run -c "./build/ci/golangci.yml" "$@"; then
     echo "Ok. The code looks good."
     echo
 else
-    echo "Please fix ^^^ errors. You can try run \"make fix\"."
+    echo "Please fix ^^^ errors. You can try run \"task fix\"."
     echo
     exit 1
 fi

@@ -5,8 +5,8 @@ The release process is handled by [.github/workflows](../.github/workflows).
 ## GoReleaser Automation
 
 - [GoReleaser](https://goreleaser.com/) automation defined in [build/ci/goreleaser.yml](../build/ci/goreleaser.yml).
-- The `cross-compile` step of the [GitHub Workflow](#workflow-steps) runs `goreleaser build` through `make build` to compile the binaries
-- The `release` step of the [GitHub Workflow](#workflow-steps) runs `goreleaser release` through `make release` but the release functionality itself is disabled. The tool just:
+- The `cross-compile` step of the [GitHub Workflow](#workflow-steps) runs `goreleaser build` through `task build` to compile the binaries
+- The `release` step of the [GitHub Workflow](#workflow-steps) runs `goreleaser release` through `task release` but the release functionality itself is disabled. The tool just:
   - signs the [macOS binary](#macos) for [Homebrew distribution](#homebrew)
   - creates mainfest for [Scoop](#scoop)
   - uses [GoReleaser publisher](https://goreleaser.com/customization/publishers/) functionality to upload the generated binaries to [distribution S3](#s3-distribution) 
