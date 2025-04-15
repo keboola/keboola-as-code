@@ -86,6 +86,10 @@ var _ = API("stream", func() {
 	Title("Stream Service")
 	Description("A service for continuously importing data to the Keboola platform.")
 	Version("1.0")
+	License(func() {
+		Name("Apache 2.0")
+		URL("http://www.apache.org/licenses/LICENSE-2.0")
+	})
 	HTTP(func() {
 		Path("v1")
 		Consumes("application/json")

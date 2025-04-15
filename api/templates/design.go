@@ -59,6 +59,10 @@ var _ = API("templates", func() {
 	Title("Templates Service")
 	Description("A service for applying templates to Keboola projects.")
 	Version("1.0")
+	License(func() {
+		Name("Apache 2.0")
+		URL("http://www.apache.org/licenses/LICENSE-2.0")
+	})
 	HTTP(func() {
 		Path("v1")
 		Consumes("application/json")
