@@ -30,6 +30,7 @@ COPY Taskfile.yml /tmp/build/Taskfile.yml
 COPY scripts  /tmp/build/scripts
 RUN cd /tmp/build && \
     task install-golangci-lint && \
+    task install-goreleaser && \
     cd / && \
     rm -rf /tmp/build && \
     go clean -cache -modcache

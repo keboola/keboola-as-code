@@ -158,6 +158,18 @@ runs:
           echo "Using cached golangci-lint $(golangci-lint --version)"
         fi
 
+    - name: Install goreleaser
+      shell: bash
+      run: |
+        GORELEASER_PATH="$(go env GOBIN)/goreleaser"
+
+        if [ ! -f "$GORELEASER_PATH" ]; then
+          ./scripts/install-goreleaser.sh
+          echo "Installed goreleaser $(goreleaser --version)"
+        else
+          echo "Using cached goreleaser $(goreleaser --version)"
+        fi
+
     - name: Download Go modules
       shell: bash
       run: |
