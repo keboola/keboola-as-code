@@ -41,7 +41,7 @@ require (
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/json-iterator/go v1.1.12
-	github.com/keboola/go-client v1.30.0
+	github.com/keboola/go-client v1.31.0
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250116143358-1ca36e2474e2
 	github.com/keboola/go-utils v1.3.3
 	github.com/klauspost/compress v1.18.0
@@ -161,7 +161,7 @@ require (
 )
 
 require (
-	cel.dev/expr v0.23.0 // indirect
+	cel.dev/expr v0.23.1 // indirect
 	cloud.google.com/go v0.120.0 // indirect
 	cloud.google.com/go/auth v0.15.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -172,9 +172,9 @@ require (
 	cloud.google.com/go/monitoring v1.24.1 // indirect
 	cloud.google.com/go/storage v1.51.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.9.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.3.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.1.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.0 // indirect
@@ -209,10 +209,10 @@ require (
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.29.12 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.65 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.29.14 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.67 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.70 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.72 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
@@ -222,10 +222,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kms v1.38.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.25.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.33.17 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.25.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19 // indirect
 	github.com/aws/smithy-go v1.22.3 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -329,7 +329,7 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/prometheus/client_model v0.6.1 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.63.0 // indirect
 	github.com/prometheus/procfs v0.16.0 // indirect
 	github.com/redis/go-redis/v9 v9.7.3 // indirect
@@ -382,9 +382,9 @@ require (
 	golang.org/x/oauth2 v0.29.0 // indirect
 	golang.org/x/perf v0.0.0-20250414141303-3fc2b901edf3 // indirect
 	google.golang.org/api v0.228.0 // indirect
-	google.golang.org/genproto v0.0.0-20250324211829-b45e905df463 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
+	google.golang.org/genproto v0.0.0-20250409194420-de1ac958c67a // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250409194420-de1ac958c67a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250409194420-de1ac958c67a // indirect
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
