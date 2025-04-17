@@ -31,19 +31,19 @@ tasks:
 
   build:
     cmds:
-      - GORELEASER_CURRENT_TAG=0.0.1-dev go tool goreleaser build --clean --snapshot -f ./build/ci/goreleaser.yml
+      - GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --clean --snapshot -f ./build/ci/goreleaser.yml
 
   build-local:
     cmds:
-      - GORELEASER_CURRENT_TAG=0.0.1-dev go tool goreleaser build --single-target --clean --snapshot -f ./build/ci/goreleaser.yml
+      - GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --single-target --clean --snapshot -f ./build/ci/goreleaser.yml
 
   release:
     cmds:
-      - go tool goreleaser release --clean -f ./build/ci/goreleaser.yml
+      - goreleaser release --clean -f ./build/ci/goreleaser.yml
 
   release-local:
     cmds:
-      - go tool goreleaser release --clean --snapshot --skip=publish -f ./build/ci/goreleaser.yml
+      - goreleaser release --clean --snapshot --skip=publish -f ./build/ci/goreleaser.yml
 
   build-templates-api:
     vars:
@@ -204,10 +204,15 @@ tasks:
     cmds:
       - go tool go-mod-upgrade
       - go mod tidy
+      - go mod vendor
 
   install-golangci-lint:
     cmds:
       - ./scripts/install-golangci-lint.sh
+
+  install-goreleaser:
+    cmds:
+      - ./scripts/install-goreleaser.sh
 
   # Runs single e2e test
   # Usage: task e2e -- <directory>

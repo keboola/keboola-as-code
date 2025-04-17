@@ -1,3 +1,4 @@
+version: 2
 project_name: "keboola-cli"
 dist: "target"
 builds:
@@ -19,16 +20,16 @@ builds:
         - '{{ if index .Env "BUILD_TARGET_PATH" }}cp "{{ .Path }}" "{{ .Env.BUILD_TARGET_PATH }}"{{ else }}true{{ end }}'
 
 changelog:
-  skip: true
+  disable: true
 
 archives:
   - id: archives
     files:
       - none*
-    format: zip
+    formats: [zip]
     format_overrides:
       - goos: darwin
-        format: binary
+        formats: [binary]
 
 signs:
   - id: mac-os-signed
@@ -41,7 +42,7 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  name_template: '{{ if index .Env "SNAPSHOT" }}{{ .Env.SNAPSHOT }}{{ else }}dev{{ end }}'
+  version_template: '{{ if index .Env "SNAPSHOT" }}{{ .Env.SNAPSHOT }}{{ else }}dev{{ end }}'
 
 nfpms:
   - id: packages
