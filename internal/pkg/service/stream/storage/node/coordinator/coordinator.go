@@ -8,9 +8,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/fileimport"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/filerotation"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/jobcleanup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/metacleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/node/coordinator/slicerotation"
 )
 
@@ -36,6 +37,10 @@ func Start(ctx context.Context, d dependencies.CoordinatorScope, cfg config.Conf
 	}
 
 	if err := metacleanup.Start(d, cfg.Storage.MetadataCleanup); err != nil {
+		return err
+	}
+
+	if err := jobcleanup.Start(d, cfg.Storage.JobCleanup); err != nil {
 		return err
 	}
 

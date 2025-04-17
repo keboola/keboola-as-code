@@ -25,6 +25,7 @@ RUN chmod +x /usr/local/bin/toxiproxy-server
 RUN mkdir -p /tmp/build
 COPY Taskfile.yml /tmp/build/Taskfile.yml
 COPY scripts  /tmp/build/scripts
+RUN cd /tmp/build && make install-golangci-lint && cd / && rm -rf /tmp/build && go clean -cache -modcache
 
 # Install Task
 RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
