@@ -1,0 +1,142 @@
+name: GitHub Cache Cleanup
+
+on:
+  schedule:
+    # Run every Sunday at 01:00 UTC (before the regular cache cleanup)
+    - cron: '0 1 * * 0'
+  workflow_dispatch: # Allow manual triggering
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (no actual deletions)'
+        type: boolean
+        default: true
+        required: true
+
+jobs:
+  cleanup:
+    name: Cleanup GitHub Caches
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed for cache operations
+      actions: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      # GitHub CLI is already installed in GitHub Actions runners
+      - name: Authenticate GitHub CLI
+        run: |
+          echo "Using GitHub CLI for cache management"
+          echo "GITHUB_TOKEN=${{ github.token }}" >> $GITHUB_ENV
+
+      - name: Determine cleanup scope
+        id: scope
+        run: |
+          # Every 4 weeks, do a full cleanup
+          WEEK=$(date +%U)
+          if [ $((WEEK % 4)) -eq 0 ]; then
+            echo "FULL_CLEAN=true" >> $GITHUB_ENV
+            echo "Performing full cache cleanup (week $WEEK is divisible by 4)"
+          else
+            echo "FULL_CLEAN=false" >> $GITHUB_ENV
+            echo "Performing selective cache cleanup (week $WEEK)"
+          fi
+          
+          # Calculate date for older-than filter (14 days for regular, 7 days for full clean)
+          if [ "$FULL_CLEAN" = "true" ]; then
+            echo "DATE_FILTER=7" >> $GITHUB_ENV
+          else
+            echo "DATE_FILTER=14" >> $GITHUB_ENV
+          fi
+
+      - name: List current cache usage
+        run: |
+          echo "Current GitHub cache usage:"
+          gh cache list --limit 1 | wc -l | xargs echo "Number of caches:"
+          
+          # List largest caches
+          echo "Largest caches:"
+          gh cache list --limit 10 --sort=size-desc
+          
+          # Get total size estimate
+          TOTAL_SIZE=$(gh cache list --limit 200 | awk '{sum+=$4} END {print sum/1024 " MB"}')
+          echo "Estimated total cache size (from sampled caches): ${TOTAL_SIZE}"
+
+      - name: Clean old caches
+        run: |
+          echo "Cleaning caches older than $DATE_FILTER days..."
+          
+          # Get cutoff date in ISO format
+          CUTOFF_DATE=$(date -d "$DATE_FILTER days ago" "+%Y-%m-%d")
+          echo "Cutoff date: $CUTOFF_DATE"
+          
+          # List caches older than the date filter
+          OLD_CACHES=$(gh cache list --limit 100 | awk -v date="$CUTOFF_DATE" '$3 <= date {print $1}')
+          
+          if [ -z "$OLD_CACHES" ]; then
+            echo "No old caches found to clean"
+          else
+            # Count how many caches to delete
+            CACHE_COUNT=$(echo "$OLD_CACHES" | wc -l)
+            echo "Found $CACHE_COUNT caches older than $CUTOFF_DATE to delete"
+            
+            # Delete each old cache
+            echo "$OLD_CACHES" | while read -r CACHE_KEY; do
+              echo "Deleting cache: $CACHE_KEY"
+              if [ "$DRYRUN" != "true" ]; then
+                gh cache delete "$CACHE_KEY" --confirm
+              else
+                echo "  → [DRY RUN] Would delete cache $CACHE_KEY"
+              fi
+            done
+          fi
+          
+      - name: Full cleanup (if enabled)
+        if: env.FULL_CLEAN == 'true'
+        run: |
+          echo "Performing full cache cleanup..."
+          
+          # Keep only the most recent cache for each key pattern
+          # First, extract unique cache key patterns (everything before the hash)
+          echo "Finding duplicate caches by pattern..."
+          
+          # List all caches
+          ALL_CACHES=$(gh cache list --limit 500)
+          
+          # Extract patterns (this is an approximation - adjust as needed for your key format)
+          echo "$ALL_CACHES" | awk '{print $2}' | grep -oE '.*-[^-]+$' | sort | uniq > /tmp/cache_patterns.txt
+          
+          # For each pattern, keep only the newest cache
+          cat /tmp/cache_patterns.txt | while read -r PATTERN; do
+            MATCHING_CACHES=$(echo "$ALL_CACHES" | grep "$PATTERN" | sort -k3,3r)
+            CACHE_COUNT=$(echo "$MATCHING_CACHES" | wc -l)
+            
+            if [ "$CACHE_COUNT" -gt 1 ]; then
+              echo "Found $CACHE_COUNT caches for pattern '$PATTERN', keeping the newest one"
+              
+              # Skip the first (newest) cache, delete the rest
+              echo "$MATCHING_CACHES" | tail -n +2 | awk '{print $1}' | while read -r CACHE_KEY; do
+                echo "Deleting older duplicate cache: $CACHE_KEY"
+                if [ "$DRYRUN" != "true" ]; then
+                  gh cache delete "$CACHE_KEY" --confirm
+                else
+                  echo "  → [DRY RUN] Would delete duplicate cache $CACHE_KEY"
+                fi
+              done
+            fi
+          done
+
+      - name: Report results
+        run: |
+          echo "Cache cleanup completed"
+          
+          if [ "$DRYRUN" == "true" ]; then
+            echo "Note: This was a dry run, no caches were actually deleted"
+          fi
+          
+          echo "Remaining GitHub cache usage:"
+          gh cache list --limit 1 | wc -l | xargs echo "Number of caches:"
+          
+          # Get remaining size estimate
+          TOTAL_SIZE=$(gh cache list --limit 200 | awk '{sum+=$4} END {print sum/1024 " MB"}')
+          echo "Estimated remaining cache size (from sampled caches): ${TOTAL_SIZE}" 
