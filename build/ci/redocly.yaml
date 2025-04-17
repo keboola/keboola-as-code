@@ -32,11 +32,5 @@ rules:
   operation-2xx-response: off
   operation-4xx-response: off
   
-  # License is not required in info block - internal API
-  info-license: off
-  
   # Allow localhost and example.com in server URLs - needed for development environments
   no-server-example.com: off
-  
-  # Allow invalid media type examples - needed for primaryKey property in column examples
-  no-invalid-media-type-examples: off

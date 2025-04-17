@@ -2,6 +2,9 @@ openapi: 3.0.3
 info:
     title: Stream Service
     description: A service for continuously importing data to the Keboola platform.
+    license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0
     version: "1.0"
 servers:
     - url: https://stream.{stack}
@@ -157,7 +160,6 @@ paths:
                                                 columns:
                                                     - type: uuid
                                                       name: id-col
-                                                      primaryKey: true
                                                     - type: datetime
                                                       name: datetime-col
                                                     - type: ip
@@ -1002,7 +1004,6 @@ paths:
                                             columns:
                                                 - type: uuid
                                                   name: id-col
-                                                  primaryKey: true
                                                 - type: datetime
                                                   name: datetime-col
                                                 - type: ip
@@ -1112,7 +1113,6 @@ paths:
                                     columns:
                                         - type: uuid
                                           name: id-col
-                                          primaryKey: true
                                         - type: datetime
                                           name: datetime-col
                                         - type: ip
@@ -1316,7 +1316,6 @@ paths:
                                         columns:
                                             - type: uuid
                                               name: id-col
-                                              primaryKey: true
                                             - type: datetime
                                               name: datetime-col
                                             - type: ip
@@ -1436,7 +1435,6 @@ paths:
                                     columns:
                                         - type: uuid
                                           name: id-col
-                                          primaryKey: true
                                         - type: datetime
                                           name: datetime-col
                                         - type: ip
@@ -2422,7 +2420,6 @@ paths:
                                             columns:
                                                 - type: uuid
                                                   name: id-col
-                                                  primaryKey: true
                                                 - type: datetime
                                                   name: datetime-col
                                                 - type: ip
@@ -3143,7 +3140,6 @@ components:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -3288,7 +3284,6 @@ components:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -3512,7 +3507,6 @@ components:
                             columns:
                                 - type: uuid
                                   name: id-col
-                                  primaryKey: true
                                 - type: datetime
                                   name: datetime-col
                                 - type: ip
@@ -3702,7 +3696,6 @@ components:
                             columns:
                                 - type: uuid
                                   name: id-col
-                                  primaryKey: true
                                 - type: datetime
                                   name: datetime-col
                                 - type: ip
@@ -3930,7 +3923,6 @@ components:
                                 columns:
                                     - type: uuid
                                       name: id-col
-                                      primaryKey: true
                                     - type: datetime
                                       name: datetime-col
                                     - type: ip
@@ -4211,7 +4203,6 @@ components:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -4274,7 +4265,6 @@ components:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -5000,7 +4990,6 @@ components:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -5426,7 +5415,6 @@ components:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -5529,7 +5517,6 @@ components:
                             columns:
                                 - type: uuid
                                   name: id-col
-                                  primaryKey: true
                                 - type: datetime
                                   name: datetime-col
                                 - type: ip
@@ -5946,7 +5933,6 @@ components:
             example:
                 - type: uuid
                   name: id-col
-                  primaryKey: true
                 - type: datetime
                   name: datetime-col
                 - type: ip
@@ -5977,7 +5963,6 @@ components:
                 columns:
                     - type: uuid
                       name: id-col
-                      primaryKey: true
                     - type: datetime
                       name: datetime-col
                     - type: ip
@@ -6019,7 +6004,6 @@ components:
                     columns:
                         - type: uuid
                           name: id-col
-                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -6063,7 +6047,6 @@ components:
                     columns:
                         - type: uuid
                           name: id-col
-                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -6107,7 +6090,6 @@ components:
                     columns:
                         - type: uuid
                           name: id-col
-                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -6429,7 +6411,6 @@ components:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -6489,7 +6470,6 @@ components:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip

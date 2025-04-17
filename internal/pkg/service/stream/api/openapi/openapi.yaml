@@ -2,6 +2,9 @@ swagger: "2.0"
 info:
     title: Stream Service
     description: A service for continuously importing data to the Keboola platform.
+    license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0
     version: "1.0"
 host: stream.keboola.com
 consumes:
@@ -1784,7 +1787,6 @@ definitions:
                     columns:
                         - type: uuid
                           name: id-col
-                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -1960,7 +1962,6 @@ definitions:
                             columns:
                                 - type: uuid
                                   name: id-col
-                                  primaryKey: true
                                 - type: datetime
                                   name: datetime-col
                                 - type: ip
@@ -2149,7 +2150,6 @@ definitions:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -2353,7 +2353,6 @@ definitions:
                                 columns:
                                     - type: uuid
                                       name: id-col
-                                      primaryKey: true
                                     - type: datetime
                                       name: datetime-col
                                     - type: ip
@@ -2537,7 +2536,6 @@ definitions:
                             columns:
                                 - type: uuid
                                   name: id-col
-                                  primaryKey: true
                                 - type: datetime
                                   name: datetime-col
                                 - type: ip
@@ -3246,7 +3244,6 @@ definitions:
                     columns:
                         - type: uuid
                           name: id-col
-                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -3581,7 +3578,6 @@ definitions:
                             columns:
                                 - type: uuid
                                   name: id-col
-                                  primaryKey: true
                                 - type: datetime
                                   name: datetime-col
                                 - type: ip
@@ -3665,7 +3661,6 @@ definitions:
                         columns:
                             - type: uuid
                               name: id-col
-                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -3985,7 +3980,6 @@ definitions:
                     columns:
                         - type: uuid
                           name: id-col
-                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -4079,7 +4073,6 @@ definitions:
                     columns:
                         - type: uuid
                           name: id-col
-                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -4246,7 +4239,6 @@ definitions:
                 example:
                     - type: uuid
                       name: id-col
-                      primaryKey: true
                     - type: datetime
                       name: datetime-col
                     - type: ip
@@ -4272,7 +4264,6 @@ definitions:
             columns:
                 - type: uuid
                   name: id-col
-                  primaryKey: true
                 - type: datetime
                   name: datetime-col
                 - type: ip
@@ -4315,7 +4306,6 @@ definitions:
                 columns:
                     - type: uuid
                       name: id-col
-                      primaryKey: true
                     - type: datetime
                       name: datetime-col
                     - type: ip
@@ -4360,7 +4350,6 @@ definitions:
                 columns:
                     - type: uuid
                       name: id-col
-                      primaryKey: true
                     - type: datetime
                       name: datetime-col
                     - type: ip
@@ -4405,7 +4394,6 @@ definitions:
                 columns:
                     - type: uuid
                       name: id-col
-                      primaryKey: true
                     - type: datetime
                       name: datetime-col
                     - type: ip

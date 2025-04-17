@@ -2,6 +2,9 @@ openapi: 3.0.3
 info:
     title: Templates Service
     description: A service for applying templates to Keboola projects.
+    license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0
     version: "1.0"
 servers:
     - url: https://templates.{stack}
@@ -170,9 +173,10 @@ paths:
                                 id: task-1
                                 url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
                                 type: template.use
+                                status: success
+                                isFinished: true
                                 createdAt: "2018-01-01T00:00:00.000Z"
                                 finishedAt: "2018-01-01T00:00:00.000Z"
-                                isFinished: true
                                 duration: 123
                                 result: task succeeded
                                 outputs:
@@ -267,10 +271,9 @@ paths:
                                     tokenId: "245941"
                                 version: abc123
                                 versionDetail:
-                                    exampleversiondata:
-                                        version: v1.2.3
-                                        stable: true
-                                        description: Stable version.
+                                    version: v1.2.3
+                                    stable: true
+                                    description: Stable version.
                                     components:
                                         - ex-generic-v2
                                         - keboola.snowflake-transformation
@@ -356,10 +359,9 @@ paths:
                                     tokenId: "245941"
                                 version: abc123
                                 versionDetail:
-                                    exampleversiondata:
-                                        version: v1.2.3
-                                        stable: true
-                                        description: Stable version.
+                                    version: v1.2.3
+                                    stable: true
+                                    description: Stable version.
                                     components:
                                         - ex-generic-v2
                                         - keboola.snowflake-transformation
@@ -453,9 +455,10 @@ paths:
                                 id: task-1
                                 url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
                                 type: template.use
+                                status: success
+                                isFinished: true
                                 createdAt: "2018-01-01T00:00:00.000Z"
                                 finishedAt: "2018-01-01T00:00:00.000Z"
-                                isFinished: true
                                 duration: 123
                                 result: task succeeded
                                 outputs:
@@ -483,10 +486,10 @@ paths:
                                                   error: Value cannot be empty.
                                                 - id: password
                                                   visible: false
-                                                  error: null
+                                                  error: ""
                                         - id: g02
                                           valid: true
-                                          error: null
+                                          error: ""
                                           steps:
                                             - id: g02-s01
                                               configured: false
@@ -498,7 +501,7 @@ paths:
                                               inputs:
                                                 - id: username
                                                   visible: true
-                                                  error: null
+                                                  error: ""
                                 error: InvalidPayload
                                 message: Inputs are not valid.
                 "404":
@@ -588,10 +591,10 @@ paths:
                                                   error: Value cannot be empty.
                                                 - id: password
                                                   visible: false
-                                                  error: null
+                                                  error: ""
                                         - id: g02
                                           valid: true
-                                          error: null
+                                          error: ""
                                           steps:
                                             - id: g02-s01
                                               configured: false
@@ -603,12 +606,12 @@ paths:
                                               inputs:
                                                 - id: username
                                                   visible: true
-                                                  error: null
+                                                  error: ""
                                 stepGroups:
                                     - id: g01
                                       description: Choose one of the eshop platforms.
                                       required: atLeastOne
-                                      step:
+                                      steps:
                                         - id: g01-s01
                                           icon: common:download
                                           name: Super Ecommerce
@@ -618,25 +621,25 @@ paths:
                                           inputs:
                                             - id: user
                                               name: User Name
-                                              description: ""
+                                              description: User name for the service
                                               type: string
                                               kind: input
                                               default: john
-                                              options: null
+                                              options: []
                                             - id: api-token
                                               name: API Token
                                               description: Insert Service API Token.
                                               type: string
                                               kind: hidden
                                               default: ""
-                                              options: null
+                                              options: []
                                             - id: export-description
                                               name: Description
                                               description: Please enter a short description of what this export is for.
                                               type: string
                                               kind: textarea
                                               default: This export exports data to ...
-                                              options: null
+                                              options: []
                                             - id: country
                                               name: Country
                                               description: Please select one country.
@@ -655,22 +658,22 @@ paths:
                                               description: Enter the maximum number of records.
                                               type: int
                                               kind: input
-                                              default: 1000
-                                              options: null
+                                              default: "1000"
+                                              options: []
                                             - id: person-height
                                               name: Person Height
-                                              description: ""
+                                              description: Enter the person's height in centimeters
                                               type: double
                                               kind: input
                                               default: 178.5
-                                              options: null
+                                              options: []
                                             - id: dummy-data
                                               name: Generate dummy data
                                               description: Do you want to generate dummy data?
                                               type: bool
                                               kind: confirm
                                               default: true
-                                              options: null
+                                              options: []
                                             - id: countries
                                               name: Countries
                                               description: Please select at least one country.
@@ -699,18 +702,18 @@ paths:
                                               type: string
                                               kind: input
                                               default: example.com
-                                              options: null
+                                              options: []
                                             - id: token
                                               name: Service Token
                                               description: Service API token.
                                               type: string
                                               kind: hidden
                                               default: ""
-                                              options: null
+                                              options: []
                                     - id: g02
-                                      description: ""
+                                      description: Configuration for system components
                                       required: all
-                                      step:
+                                      steps:
                                         - id: g02-s01
                                           icon: common:download
                                           name: Snowflake
@@ -721,7 +724,7 @@ paths:
                                     - id: g03
                                       description: Select some destinations if you want.
                                       required: optional
-                                      step:
+                                      steps:
                                         - id: g03-s01
                                           icon: common:upload
                                           name: Service 1
@@ -735,7 +738,7 @@ paths:
                                               type: string
                                               kind: input
                                               default: example.com
-                                              options: null
+                                              options: []
                                         - id: g03-s02
                                           icon: common:upload
                                           name: Maximum length step name
@@ -749,7 +752,7 @@ paths:
                                               type: string
                                               kind: input
                                               default: A wonderful serenity has taken possession of my entire soul, like these sweet mornings of spring white...
-                                              options: null
+                                              options: []
                                         - id: g03-s03
                                           icon: common:upload
                                           name: Service 3
@@ -770,7 +773,7 @@ paths:
                                               type: string
                                               kind: input
                                               default: example.com
-                                              options: null
+                                              options: []
                                         - id: g03-s05
                                           icon: common:upload
                                           name: Service 5
@@ -784,7 +787,7 @@ paths:
                                               type: string
                                               kind: input
                                               default: example.com
-                                              options: null
+                                              options: []
                 "404":
                     description: 'templates.versionNotFound: Version not found error.'
                     content:
@@ -866,10 +869,10 @@ paths:
                                               error: Value cannot be empty.
                                             - id: password
                                               visible: false
-                                              error: null
+                                              error: ""
                                     - id: g02
                                       valid: true
-                                      error: null
+                                      error: ""
                                       steps:
                                         - id: g02-s01
                                           configured: false
@@ -881,7 +884,7 @@ paths:
                                           inputs:
                                             - id: username
                                               visible: true
-                                              error: null
+                                              error: ""
                 "404":
                     description: 'templates.versionNotFound: Version not found error.'
                     content:
@@ -1024,10 +1027,10 @@ paths:
                                           description: Initial version.
                                         - version: v1.1.1
                                           stable: true
-                                          description: ""
+                                          description: Stable minor version.
                                         - version: v1.2.3
                                           stable: true
-                                          description: ""
+                                          description: Stable patch version.
                                         - version: v2.0.0
                                           stable: false
                                           description: Experimental support for new API.
@@ -1097,35 +1100,34 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/TemplateDetail'
                             example:
-                                exampletemplatedata:
-                                    id: my-template
-                                    name: My Template
-                                    deprecated: false
-                                    categories:
-                                        - E-commerce
-                                        - Other
-                                        - Social Media
-                                    components:
-                                        - ex-generic-v2
-                                        - keboola.snowflake-transformation
-                                    author:
-                                        name: Keboola
-                                        url: https://www.keboola.com
-                                    description: Full workflow to load all user accounts from the Service.
-                                    defaultVersion: v1.2.3
-                                    versions:
-                                        - version: v0.1.1
-                                          stable: false
-                                          description: Initial version.
-                                        - version: v1.1.1
-                                          stable: true
-                                          description: ""
-                                        - version: v1.2.3
-                                          stable: true
-                                          description: ""
-                                        - version: v2.0.0
-                                          stable: false
-                                          description: Experimental support for new API.
+                                id: my-template
+                                name: My Template
+                                deprecated: false
+                                categories:
+                                    - E-commerce
+                                    - Other
+                                    - Social Media
+                                components:
+                                    - ex-generic-v2
+                                    - keboola.snowflake-transformation
+                                author:
+                                    name: Keboola
+                                    url: https://www.keboola.com
+                                description: Full workflow to load all user accounts from the Service.
+                                defaultVersion: v1.2.3
+                                versions:
+                                    - version: v0.1.1
+                                      stable: false
+                                      description: Initial version.
+                                    - version: v1.1.1
+                                      stable: true
+                                      description: Stable minor version.
+                                    - version: v1.2.3
+                                      stable: true
+                                      description: Stable patch version.
+                                    - version: v2.0.0
+                                      stable: false
+                                      description: Experimental support for new API.
                                 repository:
                                     name: keboola
                                     url: https://github.com/keboola/keboola-as-code-templates
@@ -1189,16 +1191,14 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/VersionDetailExtended'
                             example:
-                                exampleversiondetaildata:
-                                    exampleversiondata:
-                                        version: v1.2.3
-                                        stable: true
-                                        description: Stable version.
-                                    components:
-                                        - ex-generic-v2
-                                        - keboola.snowflake-transformation
-                                    longDescription: Maximum length template **description** dolor sit amet, consectetuer adipiscing elit
-                                    readme: Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)
+                                version: v1.2.3
+                                stable: true
+                                description: Stable version.
+                                components:
+                                    - ex-generic-v2
+                                    - keboola.snowflake-transformation
+                                longDescription: Maximum length template **description** dolor sit amet, consectetuer adipiscing elit
+                                readme: Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)
                                 repository:
                                     name: keboola
                                     url: https://github.com/keboola/keboola-as-code-templates
@@ -1210,11 +1210,31 @@ paths:
                                     id: my-template
                                     name: My Template
                                     deprecated: false
+                                    categories:
+                                        - E-commerce
+                                        - Other
+                                        - Social Media
+                                    components:
+                                        - ex-generic-v2
+                                        - keboola.snowflake-transformation
                                     author:
                                         name: Keboola
                                         url: https://www.keboola.com
                                     description: Full workflow to load all user accounts from the Service.
                                     defaultVersion: v1.2.3
+                                    versions:
+                                        - version: v0.1.1
+                                          stable: false
+                                          description: Initial version.
+                                        - version: v1.1.1
+                                          stable: true
+                                          description: Stable minor version.
+                                        - version: v1.2.3
+                                          stable: true
+                                          description: Stable patch version.
+                                        - version: v2.0.0
+                                          stable: false
+                                          description: Experimental support for new API.
                 "404":
                     description: 'templates.versionNotFound: Version not found error.'
                     content:
@@ -1287,10 +1307,10 @@ paths:
                                                   error: Value cannot be empty.
                                                 - id: password
                                                   visible: false
-                                                  error: null
+                                                  error: ""
                                         - id: g02
                                           valid: true
-                                          error: null
+                                          error: ""
                                           steps:
                                             - id: g02-s01
                                               configured: false
@@ -1302,12 +1322,12 @@ paths:
                                               inputs:
                                                 - id: username
                                                   visible: true
-                                                  error: null
+                                                  error: ""
                                 stepGroups:
                                     - id: g01
                                       description: Choose one of the eshop platforms.
                                       required: atLeastOne
-                                      step:
+                                      steps:
                                         - id: g01-s01
                                           icon: common:download
                                           name: Super Ecommerce
@@ -1317,25 +1337,25 @@ paths:
                                           inputs:
                                             - id: user
                                               name: User Name
-                                              description: ""
+                                              description: User name for the service
                                               type: string
                                               kind: input
                                               default: john
-                                              options: null
+                                              options: []
                                             - id: api-token
                                               name: API Token
                                               description: Insert Service API Token.
                                               type: string
                                               kind: hidden
                                               default: ""
-                                              options: null
+                                              options: []
                                             - id: export-description
                                               name: Description
                                               description: Please enter a short description of what this export is for.
                                               type: string
                                               kind: textarea
                                               default: This export exports data to ...
-                                              options: null
+                                              options: []
                                             - id: country
                                               name: Country
                                               description: Please select one country.
@@ -1354,22 +1374,22 @@ paths:
                                               description: Enter the maximum number of records.
                                               type: int
                                               kind: input
-                                              default: 1000
-                                              options: null
+                                              default: "1000"
+                                              options: []
                                             - id: person-height
                                               name: Person Height
-                                              description: ""
+                                              description: Enter the person's height in centimeters
                                               type: double
                                               kind: input
                                               default: 178.5
-                                              options: null
+                                              options: []
                                             - id: dummy-data
                                               name: Generate dummy data
                                               description: Do you want to generate dummy data?
                                               type: bool
                                               kind: confirm
                                               default: true
-                                              options: null
+                                              options: []
                                             - id: countries
                                               name: Countries
                                               description: Please select at least one country.
@@ -1398,18 +1418,18 @@ paths:
                                               type: string
                                               kind: input
                                               default: example.com
-                                              options: null
+                                              options: []
                                             - id: token
                                               name: Service Token
                                               description: Service API token.
                                               type: string
                                               kind: hidden
                                               default: ""
-                                              options: null
+                                              options: []
                                     - id: g02
-                                      description: ""
+                                      description: Configuration for system components
                                       required: all
-                                      step:
+                                      steps:
                                         - id: g02-s01
                                           icon: common:download
                                           name: Snowflake
@@ -1420,7 +1440,7 @@ paths:
                                     - id: g03
                                       description: Select some destinations if you want.
                                       required: optional
-                                      step:
+                                      steps:
                                         - id: g03-s01
                                           icon: common:upload
                                           name: Service 1
@@ -1434,7 +1454,7 @@ paths:
                                               type: string
                                               kind: input
                                               default: example.com
-                                              options: null
+                                              options: []
                                         - id: g03-s02
                                           icon: common:upload
                                           name: Maximum length step name
@@ -1448,7 +1468,7 @@ paths:
                                               type: string
                                               kind: input
                                               default: A wonderful serenity has taken possession of my entire soul, like these sweet mornings of spring white...
-                                              options: null
+                                              options: []
                                         - id: g03-s03
                                           icon: common:upload
                                           name: Service 3
@@ -1469,7 +1489,7 @@ paths:
                                               type: string
                                               kind: input
                                               default: example.com
-                                              options: null
+                                              options: []
                                         - id: g03-s05
                                           icon: common:upload
                                           name: Service 5
@@ -1483,7 +1503,7 @@ paths:
                                               type: string
                                               kind: input
                                               default: example.com
-                                              options: null
+                                              options: []
                 "404":
                     description: 'templates.versionNotFound: Version not found error.'
                     content:
@@ -1561,9 +1581,10 @@ paths:
                                 id: task-1
                                 url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
                                 type: template.use
+                                status: success
+                                isFinished: true
                                 createdAt: "2018-01-01T00:00:00.000Z"
                                 finishedAt: "2018-01-01T00:00:00.000Z"
-                                isFinished: true
                                 duration: 123
                                 result: task succeeded
                                 outputs:
@@ -1591,10 +1612,10 @@ paths:
                                                   error: Value cannot be empty.
                                                 - id: password
                                                   visible: false
-                                                  error: null
+                                                  error: ""
                                         - id: g02
                                           valid: true
-                                          error: null
+                                          error: ""
                                           steps:
                                             - id: g02-s01
                                               configured: false
@@ -1606,7 +1627,7 @@ paths:
                                               inputs:
                                                 - id: username
                                                   visible: true
-                                                  error: null
+                                                  error: ""
                                 error: InvalidPayload
                                 message: Inputs are not valid.
                 "404":
@@ -1704,9 +1725,10 @@ paths:
                                 id: task-1
                                 url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
                                 type: template.use
+                                status: success
+                                isFinished: true
                                 createdAt: "2018-01-01T00:00:00.000Z"
                                 finishedAt: "2018-01-01T00:00:00.000Z"
-                                isFinished: true
                                 duration: 123
                                 result: task succeeded
                                 outputs:
@@ -1734,10 +1756,10 @@ paths:
                                                   error: Value cannot be empty.
                                                 - id: password
                                                   visible: false
-                                                  error: null
+                                                  error: ""
                                         - id: g02
                                           valid: true
-                                          error: null
+                                          error: ""
                                           steps:
                                             - id: g02-s01
                                               configured: false
@@ -1749,7 +1771,7 @@ paths:
                                               inputs:
                                                 - id: username
                                                   visible: true
-                                                  error: null
+                                                  error: ""
                                 error: InvalidPayload
                                 message: Inputs are not valid.
                 "404":
@@ -1857,10 +1879,10 @@ paths:
                                               error: Value cannot be empty.
                                             - id: password
                                               visible: false
-                                              error: null
+                                              error: ""
                                     - id: g02
                                       valid: true
-                                      error: null
+                                      error: ""
                                       steps:
                                         - id: g02-s01
                                           configured: false
@@ -1872,7 +1894,7 @@ paths:
                                           inputs:
                                             - id: username
                                               visible: true
-                                              error: null
+                                              error: ""
                 "404":
                     description: 'templates.versionNotFound: Version not found error.'
                     content:
@@ -1912,9 +1934,10 @@ paths:
                                 id: task-1
                                 url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
                                 type: template.use
+                                status: success
+                                isFinished: true
                                 createdAt: "2018-01-01T00:00:00.000Z"
                                 finishedAt: "2018-01-01T00:00:00.000Z"
-                                isFinished: true
                                 duration: 123
                                 result: task succeeded
                                 outputs:
@@ -2127,7 +2150,7 @@ components:
                 type: string
                 kind: hidden
                 default: ""
-                options: null
+                options: []
             required:
                 - id
                 - name
@@ -2193,8 +2216,8 @@ components:
                     example: foo bar
             description: Input value filled in by user.
             example:
-                id: user
-                value: user@example.com
+                id: g01-s01
+                value: foo bar
             required:
                 - id
                 - value
@@ -2212,7 +2235,7 @@ components:
                         - id: g01
                           description: Choose one of the eshop platforms.
                           required: atLeastOne
-                          step:
+                          steps:
                             - id: g01-s01
                               icon: common:download
                               name: Super Ecommerce
@@ -2222,25 +2245,25 @@ components:
                               inputs:
                                 - id: user
                                   name: User Name
-                                  description: ""
+                                  description: User name for the service
                                   type: string
                                   kind: input
                                   default: john
-                                  options: null
+                                  options: []
                                 - id: api-token
                                   name: API Token
                                   description: Insert Service API Token.
                                   type: string
                                   kind: hidden
                                   default: ""
-                                  options: null
+                                  options: []
                                 - id: export-description
                                   name: Description
                                   description: Please enter a short description of what this export is for.
                                   type: string
                                   kind: textarea
                                   default: This export exports data to ...
-                                  options: null
+                                  options: []
                                 - id: country
                                   name: Country
                                   description: Please select one country.
@@ -2259,22 +2282,22 @@ components:
                                   description: Enter the maximum number of records.
                                   type: int
                                   kind: input
-                                  default: 1000
-                                  options: null
+                                  default: "1000"
+                                  options: []
                                 - id: person-height
                                   name: Person Height
-                                  description: ""
+                                  description: Enter the person's height in centimeters
                                   type: double
                                   kind: input
                                   default: 178.5
-                                  options: null
+                                  options: []
                                 - id: dummy-data
                                   name: Generate dummy data
                                   description: Do you want to generate dummy data?
                                   type: bool
                                   kind: confirm
                                   default: true
-                                  options: null
+                                  options: []
                                 - id: countries
                                   name: Countries
                                   description: Please select at least one country.
@@ -2303,18 +2326,18 @@ components:
                                   type: string
                                   kind: input
                                   default: example.com
-                                  options: null
+                                  options: []
                                 - id: token
                                   name: Service Token
                                   description: Service API token.
                                   type: string
                                   kind: hidden
                                   default: ""
-                                  options: null
+                                  options: []
                         - id: g02
-                          description: ""
+                          description: Configuration for system components
                           required: all
-                          step:
+                          steps:
                             - id: g02-s01
                               icon: common:download
                               name: Snowflake
@@ -2325,7 +2348,7 @@ components:
                         - id: g03
                           description: Select some destinations if you want.
                           required: optional
-                          step:
+                          steps:
                             - id: g03-s01
                               icon: common:upload
                               name: Service 1
@@ -2339,7 +2362,7 @@ components:
                                   type: string
                                   kind: input
                                   default: example.com
-                                  options: null
+                                  options: []
                             - id: g03-s02
                               icon: common:upload
                               name: Maximum length step name
@@ -2353,7 +2376,7 @@ components:
                                   type: string
                                   kind: input
                                   default: A wonderful serenity has taken possession of my entire soul, like these sweet mornings of spring white...
-                                  options: null
+                                  options: []
                             - id: g03-s03
                               icon: common:upload
                               name: Service 3
@@ -2374,7 +2397,7 @@ components:
                                   type: string
                                   kind: input
                                   default: example.com
-                                  options: null
+                                  options: []
                             - id: g03-s05
                               icon: common:upload
                               name: Service 5
@@ -2388,7 +2411,7 @@ components:
                                   type: string
                                   kind: input
                                   default: example.com
-                                  options: null
+                                  options: []
                     minItems: 1
             description: List of the inputs divided to step groups and steps.
             example:
@@ -2408,10 +2431,10 @@ components:
                                   error: Value cannot be empty.
                                 - id: password
                                   visible: false
-                                  error: null
+                                  error: ""
                         - id: g02
                           valid: true
-                          error: null
+                          error: ""
                           steps:
                             - id: g02-s01
                               configured: false
@@ -2423,12 +2446,12 @@ components:
                               inputs:
                                 - id: username
                                   visible: true
-                                  error: null
+                                  error: ""
                 stepGroups:
                     - id: g01
                       description: Choose one of the eshop platforms.
                       required: atLeastOne
-                      step:
+                      steps:
                         - id: g01-s01
                           icon: common:download
                           name: Super Ecommerce
@@ -2438,25 +2461,25 @@ components:
                           inputs:
                             - id: user
                               name: User Name
-                              description: ""
+                              description: User name for the service
                               type: string
                               kind: input
                               default: john
-                              options: null
+                              options: []
                             - id: api-token
                               name: API Token
                               description: Insert Service API Token.
                               type: string
                               kind: hidden
                               default: ""
-                              options: null
+                              options: []
                             - id: export-description
                               name: Description
                               description: Please enter a short description of what this export is for.
                               type: string
                               kind: textarea
                               default: This export exports data to ...
-                              options: null
+                              options: []
                             - id: country
                               name: Country
                               description: Please select one country.
@@ -2475,22 +2498,22 @@ components:
                               description: Enter the maximum number of records.
                               type: int
                               kind: input
-                              default: 1000
-                              options: null
+                              default: "1000"
+                              options: []
                             - id: person-height
                               name: Person Height
-                              description: ""
+                              description: Enter the person's height in centimeters
                               type: double
                               kind: input
                               default: 178.5
-                              options: null
+                              options: []
                             - id: dummy-data
                               name: Generate dummy data
                               description: Do you want to generate dummy data?
                               type: bool
                               kind: confirm
                               default: true
-                              options: null
+                              options: []
                             - id: countries
                               name: Countries
                               description: Please select at least one country.
@@ -2519,18 +2542,18 @@ components:
                               type: string
                               kind: input
                               default: example.com
-                              options: null
+                              options: []
                             - id: token
                               name: Service Token
                               description: Service API token.
                               type: string
                               kind: hidden
                               default: ""
-                              options: null
+                              options: []
                     - id: g02
-                      description: ""
+                      description: Configuration for system components
                       required: all
-                      step:
+                      steps:
                         - id: g02-s01
                           icon: common:download
                           name: Snowflake
@@ -2541,7 +2564,7 @@ components:
                     - id: g03
                       description: Select some destinations if you want.
                       required: optional
-                      step:
+                      steps:
                         - id: g03-s01
                           icon: common:upload
                           name: Service 1
@@ -2555,7 +2578,7 @@ components:
                               type: string
                               kind: input
                               default: example.com
-                              options: null
+                              options: []
                         - id: g03-s02
                           icon: common:upload
                           name: Maximum length step name
@@ -2569,7 +2592,7 @@ components:
                               type: string
                               kind: input
                               default: A wonderful serenity has taken possession of my entire soul, like these sweet mornings of spring white...
-                              options: null
+                              options: []
                         - id: g03-s03
                           icon: common:upload
                           name: Service 3
@@ -2590,7 +2613,7 @@ components:
                               type: string
                               kind: input
                               default: example.com
-                              options: null
+                              options: []
                         - id: g03-s05
                           icon: common:upload
                           name: Service 5
@@ -2604,7 +2627,7 @@ components:
                               type: string
                               kind: input
                               default: example.com
-                              options: null
+                              options: []
             required:
                 - stepGroups
                 - initialState
@@ -2822,10 +2845,9 @@ components:
                     tokenId: "245941"
                 version: abc123
                 versionDetail:
-                    exampleversiondata:
-                        version: v1.2.3
-                        stable: true
-                        description: Stable version.
+                    version: v1.2.3
+                    stable: true
+                    description: Stable version.
                     components:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
@@ -3238,25 +3260,25 @@ components:
                     example:
                         - id: user
                           name: User Name
-                          description: ""
+                          description: User name for the service
                           type: string
                           kind: input
                           default: john
-                          options: null
+                          options: []
                         - id: api-token
                           name: API Token
                           description: Insert Service API Token.
                           type: string
                           kind: hidden
                           default: ""
-                          options: null
+                          options: []
                         - id: export-description
                           name: Description
                           description: Please enter a short description of what this export is for.
                           type: string
                           kind: textarea
                           default: This export exports data to ...
-                          options: null
+                          options: []
                         - id: country
                           name: Country
                           description: Please select one country.
@@ -3275,22 +3297,22 @@ components:
                           description: Enter the maximum number of records.
                           type: int
                           kind: input
-                          default: 1000
-                          options: null
+                          default: "1000"
+                          options: []
                         - id: person-height
                           name: Person Height
-                          description: ""
+                          description: Enter the person's height in centimeters
                           type: double
                           kind: input
                           default: 178.5
-                          options: null
+                          options: []
                         - id: dummy-data
                           name: Generate dummy data
                           description: Do you want to generate dummy data?
                           type: bool
                           kind: confirm
                           default: true
-                          options: null
+                          options: []
                         - id: countries
                           name: Countries
                           description: Please select at least one country.
@@ -3323,25 +3345,25 @@ components:
                 inputs:
                     - id: user
                       name: User Name
-                      description: ""
+                      description: User name for the service
                       type: string
                       kind: input
                       default: john
-                      options: null
+                      options: []
                     - id: api-token
                       name: API Token
                       description: Insert Service API Token.
                       type: string
                       kind: hidden
                       default: ""
-                      options: null
+                      options: []
                     - id: export-description
                       name: Description
                       description: Please enter a short description of what this export is for.
                       type: string
                       kind: textarea
                       default: This export exports data to ...
-                      options: null
+                      options: []
                     - id: country
                       name: Country
                       description: Please select one country.
@@ -3360,22 +3382,22 @@ components:
                       description: Enter the maximum number of records.
                       type: int
                       kind: input
-                      default: 1000
-                      options: null
+                      default: "1000"
+                      options: []
                     - id: person-height
                       name: Person Height
-                      description: ""
+                      description: Enter the person's height in centimeters
                       type: double
                       kind: input
                       default: 178.5
-                      options: null
+                      options: []
                     - id: dummy-data
                       name: Generate dummy data
                       description: Do you want to generate dummy data?
                       type: bool
                       kind: confirm
                       default: true
-                      options: null
+                      options: []
                     - id: countries
                       name: Countries
                       description: Please select at least one country.
@@ -3438,25 +3460,25 @@ components:
                           inputs:
                             - id: user
                               name: User Name
-                              description: ""
+                              description: User name for the service
                               type: string
                               kind: input
                               default: john
-                              options: null
+                              options: []
                             - id: api-token
                               name: API Token
                               description: Insert Service API Token.
                               type: string
                               kind: hidden
                               default: ""
-                              options: null
+                              options: []
                             - id: export-description
                               name: Description
                               description: Please enter a short description of what this export is for.
                               type: string
                               kind: textarea
                               default: This export exports data to ...
-                              options: null
+                              options: []
                             - id: country
                               name: Country
                               description: Please select one country.
@@ -3475,22 +3497,22 @@ components:
                               description: Enter the maximum number of records.
                               type: int
                               kind: input
-                              default: 1000
-                              options: null
+                              default: "1000"
+                              options: []
                             - id: person-height
                               name: Person Height
-                              description: ""
+                              description: Enter the person's height in centimeters
                               type: double
                               kind: input
                               default: 178.5
-                              options: null
+                              options: []
                             - id: dummy-data
                               name: Generate dummy data
                               description: Do you want to generate dummy data?
                               type: bool
                               kind: confirm
                               default: true
-                              options: null
+                              options: []
                             - id: countries
                               name: Countries
                               description: Please select at least one country.
@@ -3522,25 +3544,25 @@ components:
                       inputs:
                         - id: user
                           name: User Name
-                          description: ""
+                          description: User name for the service
                           type: string
                           kind: input
                           default: john
-                          options: null
+                          options: []
                         - id: api-token
                           name: API Token
                           description: Insert Service API Token.
                           type: string
                           kind: hidden
                           default: ""
-                          options: null
+                          options: []
                         - id: export-description
                           name: Description
                           description: Please enter a short description of what this export is for.
                           type: string
                           kind: textarea
                           default: This export exports data to ...
-                          options: null
+                          options: []
                         - id: country
                           name: Country
                           description: Please select one country.
@@ -3559,22 +3581,22 @@ components:
                           description: Enter the maximum number of records.
                           type: int
                           kind: input
-                          default: 1000
-                          options: null
+                          default: "1000"
+                          options: []
                         - id: person-height
                           name: Person Height
-                          description: ""
+                          description: Enter the person's height in centimeters
                           type: double
                           kind: input
                           default: 178.5
-                          options: null
+                          options: []
                         - id: dummy-data
                           name: Generate dummy data
                           description: Do you want to generate dummy data?
                           type: bool
                           kind: confirm
                           default: true
-                          options: null
+                          options: []
                         - id: countries
                           name: Countries
                           description: Please select at least one country.
@@ -3762,9 +3784,10 @@ components:
                 id: task-1
                 url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_dIklP
                 type: template.use
+                status: success
+                isFinished: true
                 createdAt: "2018-01-01T00:00:00.000Z"
                 finishedAt: "2018-01-01T00:00:00.000Z"
-                isFinished: true
                 duration: 123
                 result: task succeeded
                 outputs:
@@ -3854,10 +3877,10 @@ components:
                           description: Initial version.
                         - version: v1.1.1
                           stable: true
-                          description: ""
+                          description: Stable minor version.
                         - version: v1.2.3
                           stable: true
-                          description: ""
+                          description: Stable patch version.
                         - version: v2.0.0
                           stable: false
                           description: Experimental support for new API.
@@ -3884,10 +3907,10 @@ components:
                       description: Initial version.
                     - version: v1.1.1
                       stable: true
-                      description: ""
+                      description: Stable minor version.
                     - version: v1.2.3
                       stable: true
-                      description: ""
+                      description: Stable patch version.
                     - version: v2.0.0
                       stable: false
                       description: Experimental support for new API.
@@ -4016,43 +4039,42 @@ components:
                           description: Initial version.
                         - version: v1.1.1
                           stable: true
-                          description: ""
+                          description: Stable minor version.
                         - version: v1.2.3
                           stable: true
-                          description: ""
+                          description: Stable patch version.
                         - version: v2.0.0
                           stable: false
                           description: Experimental support for new API.
             example:
-                exampletemplatedata:
-                    id: my-template
-                    name: My Template
-                    deprecated: false
-                    categories:
-                        - E-commerce
-                        - Other
-                        - Social Media
-                    components:
-                        - ex-generic-v2
-                        - keboola.snowflake-transformation
-                    author:
-                        name: Keboola
-                        url: https://www.keboola.com
-                    description: Full workflow to load all user accounts from the Service.
-                    defaultVersion: v1.2.3
-                    versions:
-                        - version: v0.1.1
-                          stable: false
-                          description: Initial version.
-                        - version: v1.1.1
-                          stable: true
-                          description: ""
-                        - version: v1.2.3
-                          stable: true
-                          description: ""
-                        - version: v2.0.0
-                          stable: false
-                          description: Experimental support for new API.
+                id: my-template
+                name: My Template
+                deprecated: false
+                categories:
+                    - E-commerce
+                    - Other
+                    - Social Media
+                components:
+                    - ex-generic-v2
+                    - keboola.snowflake-transformation
+                author:
+                    name: Keboola
+                    url: https://www.keboola.com
+                description: Full workflow to load all user accounts from the Service.
+                defaultVersion: v1.2.3
+                versions:
+                    - version: v0.1.1
+                      stable: false
+                      description: Initial version.
+                    - version: v1.1.1
+                      stable: true
+                      description: Stable minor version.
+                    - version: v1.2.3
+                      stable: true
+                      description: Stable patch version.
+                    - version: v2.0.0
+                      stable: false
+                      description: Experimental support for new API.
                 repository:
                     name: keboola
                     url: https://github.com/keboola/keboola-as-code-templates
@@ -4147,10 +4169,10 @@ components:
                               description: Initial version.
                             - version: v1.1.1
                               stable: true
-                              description: ""
+                              description: Stable minor version.
                             - version: v1.2.3
                               stable: true
-                              description: ""
+                              description: Stable patch version.
                             - version: v2.0.0
                               stable: false
                               description: Experimental support for new API.
@@ -4185,10 +4207,10 @@ components:
                           description: Initial version.
                         - version: v1.1.1
                           stable: true
-                          description: ""
+                          description: Stable minor version.
                         - version: v1.2.3
                           stable: true
-                          description: ""
+                          description: Stable patch version.
                         - version: v2.0.0
                           stable: false
                           description: Experimental support for new API.
@@ -4476,10 +4498,10 @@ components:
                                   error: Value cannot be empty.
                                 - id: password
                                   visible: false
-                                  error: null
+                                  error: ""
                         - id: g02
                           valid: true
-                          error: null
+                          error: ""
                           steps:
                             - id: g02-s01
                               configured: false
@@ -4491,7 +4513,7 @@ components:
                               inputs:
                                 - id: username
                                   visible: true
-                                  error: null
+                                  error: ""
                 error: InvalidPayload
                 message: Inputs are not valid.
             required:
@@ -4539,10 +4561,10 @@ components:
                               error: Value cannot be empty.
                             - id: password
                               visible: false
-                              error: null
+                              error: ""
                     - id: g02
                       valid: true
-                      error: null
+                      error: ""
                       steps:
                         - id: g02-s01
                           configured: false
@@ -4554,7 +4576,7 @@ components:
                           inputs:
                             - id: username
                               visible: true
-                              error: null
+                              error: ""
             required:
                 - valid
                 - stepGroups
@@ -4625,10 +4647,9 @@ components:
                     minLength: 1
                     maxLength: 20
             example:
-                exampleversiondata:
-                    version: v1.2.3
-                    stable: true
-                    description: Stable version.
+                version: v1.2.3
+                stable: true
+                description: Stable version.
                 components:
                     - ex-generic-v2
                     - keboola.snowflake-transformation
@@ -4684,16 +4705,14 @@ components:
                     minLength: 1
                     maxLength: 20
             example:
-                exampleversiondetaildata:
-                    exampleversiondata:
-                        version: v1.2.3
-                        stable: true
-                        description: Stable version.
-                    components:
-                        - ex-generic-v2
-                        - keboola.snowflake-transformation
-                    longDescription: Maximum length template **description** dolor sit amet, consectetuer adipiscing elit
-                    readme: Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)
+                version: v1.2.3
+                stable: true
+                description: Stable version.
+                components:
+                    - ex-generic-v2
+                    - keboola.snowflake-transformation
+                longDescription: Maximum length template **description** dolor sit amet, consectetuer adipiscing elit
+                readme: Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)
                 repository:
                     name: keboola
                     url: https://github.com/keboola/keboola-as-code-templates
@@ -4705,11 +4724,31 @@ components:
                     id: my-template
                     name: My Template
                     deprecated: false
+                    categories:
+                        - E-commerce
+                        - Other
+                        - Social Media
+                    components:
+                        - ex-generic-v2
+                        - keboola.snowflake-transformation
                     author:
                         name: Keboola
                         url: https://www.keboola.com
                     description: Full workflow to load all user accounts from the Service.
                     defaultVersion: v1.2.3
+                    versions:
+                        - version: v0.1.1
+                          stable: false
+                          description: Initial version.
+                        - version: v1.1.1
+                          stable: true
+                          description: Stable minor version.
+                        - version: v1.2.3
+                          stable: true
+                          description: Stable patch version.
+                        - version: v2.0.0
+                          stable: false
+                          description: Experimental support for new API.
             required:
                 - version
                 - stable

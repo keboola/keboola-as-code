@@ -86,6 +86,10 @@ var _ = API("stream", func() {
 	Title("Stream Service")
 	Description("A service for continuously importing data to the Keboola platform.")
 	Version("1.0")
+	License(func() {
+		Name("Apache 2.0")
+		URL("http://www.apache.org/licenses/LICENSE-2.0")
+	})
 	HTTP(func() {
 		Path("v1")
 		Consumes("application/json")
@@ -1378,7 +1382,7 @@ var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
 	MinLength(minLength)
 	MaxLength(maxLength)
 	Example(column.Columns{
-		column.UUID{Name: "id-col", PrimaryKey: true},
+		column.UUID{Name: "id-col"},
 		column.Datetime{Name: "datetime-col"},
 		column.IP{Name: "ip-col"},
 		column.Headers{Name: "headers-col"},
