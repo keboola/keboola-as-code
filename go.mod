@@ -275,7 +275,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bep/godartsass/v2 v2.4.0 // indirect
 	github.com/bep/golibsass v1.2.0 // indirect
-	github.com/bep/imagemeta v0.9.0 // indirect
+	github.com/bep/imagemeta v0.11.0 // indirect
 	github.com/bep/lazycache v0.8.0 // indirect
 	github.com/bep/overlayfs v0.10.0 // indirect
 	// github.com/bitfield/gotestdox v0.2.2 // indirect
