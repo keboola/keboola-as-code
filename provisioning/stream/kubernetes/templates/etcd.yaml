@@ -3,7 +3,7 @@
 # Run defragmentation each 2 hours
 defrag:
   cronjob:
-    schedule: "0 */2 * * *"
+    schedule: "30 */2 * * *"
     podLabels:
       stream-etcd-client: "true"
 
