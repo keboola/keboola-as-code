@@ -9,7 +9,7 @@ ENV GOLANGCI_LINT_CACHE=/tmp/cache/golangci-lint
 ENV PATH="$PATH:$GOBIN"
 
 # Install packages
-RUN apt-get update && apt-get install --no-install-recommends --yes unzip nano libprotobuf-dev graphviz build-essential
+RUN apt-get update && apt-get install --no-install-recommends --yes zip unzip nano libprotobuf-dev graphviz build-essential
 ENV EDITOR=nano
 
 # Install Protobuf
