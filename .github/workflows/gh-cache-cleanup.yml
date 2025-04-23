@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Authenticate GitHub CLI
         run: |
           echo "GITHUB_TOKEN=${{ github.token }}" >> $GITHUB_ENV
@@ -92,7 +92,7 @@ jobs:
           fi
           
       - name: Deduplicate caches
-        if: env.FULL_CLEAN == 'true'
+        if: ${{ env.FULL_CLEAN == 'true' }}
         run: |
           echo "🔍 Looking for duplicate caches..."
           
@@ -147,5 +147,4 @@ jobs:
           REMAINING_COUNT=$(gh cache list --limit 1 | wc -l)
           REMAINING_SIZE=$(gh cache list --limit 1000 --json sizeInBytes | jq '.[] | .sizeInBytes' | paste -sd+ | bc -l | awk '{printf "%.2f", $1/(1024*1024*1024)}')
           echo "📊 Final stats: $REMAINING_COUNT caches, $REMAINING_SIZE GiB total"
-          
-          echo "✅ Cache cleanup completed" 
+          echo "✅ Cache cleanup completed"
