@@ -170,7 +170,7 @@ jobs:
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "arm64"
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "amd64"
           ./build/package/s3/publish.sh "keboola-cli_darwin_amd64_v1/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "amd64"
-          ./build/package/s3/publish.sh "keboola-cli_darwin_arm64/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_darwin_arm64_v8.0/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "arm64"
           # Publish packages
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.apk" "keboola-cli_${{ env.VERSION }}_linux_armv6.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.apk" "keboola-cli_${{ env.VERSION }}_linux_arm64.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
