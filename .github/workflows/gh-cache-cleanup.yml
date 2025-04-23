@@ -9,10 +9,7 @@ on:
       dry_run:
         description: 'Run in dry-run mode (no actual deletions)'
         type: boolean
-        default: true
-  pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize ]
+        default: false
 
 jobs:
   cleanup:
