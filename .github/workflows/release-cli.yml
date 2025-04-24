@@ -425,6 +425,7 @@ jobs:
         run: |
           java -jar jsign-6.0.jar --storetype AZUREKEYVAULT \
             --keystore kbc-cli-code-signing \
+            --alias codesigning \
             --storepass ${{ env.WINDOWS_SIGNING_ACCESS_TOKEN }} \
             --tsaurl http://timestamp.digicert.com \
             --replace \
@@ -459,6 +460,7 @@ jobs:
           msi="./build/package/windows/msi/${{ env.MSI_FILE }}"
           java -jar jsign-6.0.jar --storetype AZUREKEYVAULT \
             --keystore kbc-cli-code-signing \
+            --alias codesigning \
             --storepass ${{ env.WINDOWS_SIGNING_ACCESS_TOKEN }} \
             --tsaurl http://timestamp.digicert.com \
             --replace \
