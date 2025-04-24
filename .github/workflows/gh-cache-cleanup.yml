@@ -1,0 +1,149 @@
+name: GitHub Cache Cleanup
+
+on:
+  schedule:
+    # Run every Sunday at 01:00 UTC
+    - cron: '0 1 * * 0'
+  workflow_dispatch: # Allow manual triggering
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (no actual deletions)'
+        type: boolean
+        default: false
+
+jobs:
+  cleanup:
+    name: Cleanup GitHub Caches
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate GitHub CLI
+        run: |
+          echo "GITHUB_TOKEN=${{ github.token }}" >> $GITHUB_ENV
+
+      - name: Set run mode
+        run: |
+          if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
+            echo "DRYRUN=true" >> $GITHUB_ENV
+          else
+            echo "DRYRUN=false" >> $GITHUB_ENV
+          fi
+
+      - name: Determine cleanup scope
+        run: |
+          # Every 4 weeks, do a full cleanup
+          WEEK=$(date +%U)
+          if [ $((WEEK % 4)) -eq 0 ]; then
+            echo "FULL_CLEAN=true" >> $GITHUB_ENV
+            echo "DATE_FILTER=7" >> $GITHUB_ENV
+            echo "🔍 Full cleanup mode: removing caches older than 7 days and deduplicating"
+          else
+            echo "FULL_CLEAN=false" >> $GITHUB_ENV
+            echo "DATE_FILTER=14" >> $GITHUB_ENV
+            echo "🔍 Standard cleanup mode: removing caches older than 14 days"
+          fi
+
+      - name: Get cache statistics
+        run: |
+          CACHE_COUNT=$(gh cache list --limit 1000 | wc -l)
+          TOTAL_SIZE=$(gh cache list --limit 1000 --json sizeInBytes | jq '.[] | .sizeInBytes' | paste -sd+ | bc -l | awk '{printf "%.2f", $1/(1024*1024*1024)}')
+          
+          echo "📊 Cache stats: $CACHE_COUNT caches, $TOTAL_SIZE GiB total"
+          echo "📦 Top 5 largest caches:"
+          gh cache list --limit 5 --sort=size_in_bytes --order=desc
+
+      - name: Clean old caches
+        run: |
+          DATE_FILTER="${DATE_FILTER:-14}"
+          CUTOFF_DATE=$(date -d "$DATE_FILTER days ago" "+%Y-%m-%d")
+          
+          echo "📅 Finding caches older than $CUTOFF_DATE..."
+          
+          OLD_CACHES=$(gh cache list --limit 1000 | awk -v date="$CUTOFF_DATE" '$4 <= date {print $1}')
+          
+          if [ -z "$OLD_CACHES" ]; then
+            echo "✅ No old caches found"
+          else
+            CACHE_COUNT=$(echo "$OLD_CACHES" | wc -l)
+            
+            CACHES_TO_DELETE_SIZE=$(gh cache list --json id,sizeInBytes | jq --arg ids "$(echo $OLD_CACHES | tr '\n' '|')" '.[] | select(.id | test($ids)) | .sizeInBytes' | paste -sd+ | bc -l | awk '{printf "%.2f", $1/(1024*1024*1024)}')
+            echo "🗑️ Found $CACHE_COUNT caches ($CACHES_TO_DELETE_SIZE GiB) to remove"
+            
+            if [ "$DRYRUN" == "true" ]; then
+              echo "ℹ️ DRY RUN: Would delete $CACHE_COUNT caches"
+              
+              # Show sample of caches that would be deleted
+              echo "Sample caches to delete:"
+              echo "$OLD_CACHES" | head -3
+              COUNT_REMAINING=$((CACHE_COUNT - 3))
+              if [ $COUNT_REMAINING -gt 0 ]; then
+                echo "... and $COUNT_REMAINING more"
+              fi
+            else
+              echo "$OLD_CACHES" | while read -r CACHE_KEY; do
+                gh cache delete "$CACHE_KEY" --confirm
+              done
+              echo "✅ Deleted $CACHE_COUNT old caches"
+            fi
+          fi
+      - name: Deduplicate caches
+        if: ${{ env.FULL_CLEAN == 'true' }}
+        run: |
+          echo "🔍 Looking for duplicate caches..."
+          
+          gh cache list --limit 1000 --json id,key,createdAt,ref --jq '.' > /tmp/cache_list.json
+          
+          jq -r '.[] | "\(.key | match(".*-[^-]+$").string)|\(.ref)"' /tmp/cache_list.json | sort | uniq > /tmp/cache_patterns.txt
+          
+          TOTAL_DUPLICATES=0
+          
+          echo "Checking caches by pattern and ref..."
+          
+          cat /tmp/cache_patterns.txt | while read -r PATTERN_REF; do
+            PATTERN=$(echo "$PATTERN_REF" | cut -d'|' -f1)
+            REF=$(echo "$PATTERN_REF" | cut -d'|' -f2)
+            
+            MATCHING_IDS=$(jq --arg pat "$PATTERN" --arg ref "$REF" '.[] | select(.key | contains($pat)) | select(.ref == $ref) | [.createdAt, .id] | @tsv' /tmp/cache_list.json | sort -r | cut -f2)
+            MATCHING_COUNT=$(echo "$MATCHING_IDS" | grep -v "^$" | wc -l)
+            
+            if [ "$MATCHING_COUNT" -gt 1 ]; then
+              DUPLICATES=$((MATCHING_COUNT - 1))
+              TOTAL_DUPLICATES=$((TOTAL_DUPLICATES + DUPLICATES))
+              
+              echo "Found $DUPLICATES duplicate(s) for pattern '$PATTERN' on '$REF'"
+              
+              if [ "$DRYRUN" != "true" ]; then
+                # Delete all but the newest
+                echo "$MATCHING_IDS" | tail -n +2 | while read -r CACHE_ID; do
+                  if [ -n "$CACHE_ID" ]; then
+                    gh cache delete "$CACHE_ID" --confirm
+                  fi
+                done
+              fi
+            fi
+          done
+          
+          if [ $TOTAL_DUPLICATES -gt 0 ]; then
+            if [ "$DRYRUN" == "true" ]; then
+              echo "ℹ️ DRY RUN: Would delete $TOTAL_DUPLICATES duplicate caches"
+            else
+              echo "✅ Deleted $TOTAL_DUPLICATES duplicate caches"
+            fi
+          else
+            echo "✅ No duplicate caches found"
+          fi
+
+      - name: Report results
+        run: |
+          if [ "$DRYRUN" == "true" ]; then
+            echo "ℹ️ This was a dry run - no caches were deleted"
+          fi
+          
+          REMAINING_COUNT=$(gh cache list --limit 1 | wc -l)
+          REMAINING_SIZE=$(gh cache list --limit 1000 --json sizeInBytes | jq '.[] | .sizeInBytes' | paste -sd+ | bc -l | awk '{printf "%.2f", $1/(1024*1024*1024)}')
+          echo "📊 Final stats: $REMAINING_COUNT caches, $REMAINING_SIZE GiB total"
+          echo "✅ Cache cleanup completed"
