@@ -2,7 +2,7 @@
 
 ## Components
 
-- The Stream service is compiled to a single binary using `make build-stream-service`.
+- The Stream service is compiled to a single binary using `task build-stream-service`.
 - There is also a single `docker/service/Dockerfile`.
 - The command line `args` defines which service components are started, at least one component must be specified.
 - All components may run in single process, but for scalability and resource management, they run in several pods.

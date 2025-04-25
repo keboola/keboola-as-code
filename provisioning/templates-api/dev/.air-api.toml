@@ -4,7 +4,7 @@ tmp_dir = "target/.watcher"
 [build]
   bin = "./target/templates/api"
   args_bin = ["--node-id", "local-node"]
-  cmd = "make build-templates-api"
+  cmd = "task build-templates-api"
   delay = 2000
   exclude_dir = ["internal/pkg/service/templates/api/gen"]
   exclude_file = []
