@@ -382,7 +382,6 @@ require (
 	google.golang.org/genproto v0.0.0-20250409194420-de1ac958c67a // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250409194420-de1ac958c67a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250409194420-de1ac958c67a // indirect
-	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gotest.tools/gotestsum v1.12.1 // indirect
@@ -400,8 +399,6 @@ tool (
 	goa.design/goa/v3/cmd/goa
 	golang.org/x/perf/cmd/benchstat
 	golang.org/x/tools/cmd/godoc
-	google.golang.org/grpc/cmd/protoc-gen-go-grpc
-	google.golang.org/protobuf/cmd/protoc-gen-go
 	gotest.tools/gotestsum
 	mvdan.cc/gofumpt
 )

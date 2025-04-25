@@ -31,6 +31,7 @@ COPY scripts  /tmp/build/scripts
 RUN cd /tmp/build && \
     task install-golangci-lint && \
     task install-goreleaser && \
+    task install-protoc-gen-go && \
     cd / && \
     rm -rf /tmp/build && \
     go clean -cache -modcache
