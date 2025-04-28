@@ -7,7 +7,7 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
 # Version to install
-GOLANGCI_LINT_VERSION="v2.0.2"
+GOLANGCI_LINT_VERSION="v2.1.5"
 
 # Install or update golangci-lint
 echo "Installing golangci-lint $GOLANGCI_LINT_VERSION..."
