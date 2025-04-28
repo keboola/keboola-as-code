@@ -259,9 +259,18 @@ func TestVolume_NewReaderFor_Compression(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
-			t.Run("Ok", tc.TestOk)
-			t.Run("ReadError", tc.TestReadError)
-			t.Run("CloseError", tc.TestCloseError)
+			t.Run("Ok", func(t *testing.T) {
+				t.Parallel()
+				tc.TestOk(t)
+			})
+			t.Run("ReadError", func(t *testing.T) {
+				t.Parallel()
+				tc.TestReadError(t)
+			})
+			t.Run("CloseError", func(t *testing.T) {
+				t.Parallel()
+				tc.TestCloseError(t)
+			})
 		})
 	}
 }

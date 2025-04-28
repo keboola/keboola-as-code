@@ -137,7 +137,7 @@ linters:
           msg: Use context.WithCancelCause, context.WithTimeoutCause or context.WithDeadlineCause instead.
       analyze-types: true
     goconst:
-      ignore-strings: localhost
+      ignore-string-values: localhost
     gocyclo:
       min-complexity: 10
     gosec:
