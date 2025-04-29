@@ -1,4 +1,4 @@
-FROM golang:1.24.1
+FROM golang:1.24.2
 
 ENV HOME=/my-home
 ENV GOCACHE=/tmp/cache/go
@@ -13,12 +13,12 @@ RUN apt-get update && apt-get install --no-install-recommends --yes zip unzip na
 ENV EDITOR=nano
 
 # Install Protobuf
-RUN curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v29.2/protoc-29.2-linux-x86_64.zip && \
-    unzip protoc-29.2-linux-x86_64.zip -d /usr/local && \
-    rm -f protoc-29.2-linux-x86_64.zip
+RUN curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v30.2/protoc-30.2-linux-x86_64.zip && \
+    unzip protoc-30.2-linux-x86_64.zip -d /usr/local && \
+    rm -f protoc-30.2-linux-x86_64.zip
 
 # Download toxiproxy
-RUN curl -L https://github.com/Shopify/toxiproxy/releases/download/v2.11.0/toxiproxy-server-linux-amd64 -o /usr/local/bin/toxiproxy-server
+RUN curl -L https://github.com/Shopify/toxiproxy/releases/download/v2.12.0/toxiproxy-server-linux-amd64 -o /usr/local/bin/toxiproxy-server
 RUN chmod +x /usr/local/bin/toxiproxy-server
 
 # Install Task
@@ -31,12 +31,13 @@ COPY scripts  /tmp/build/scripts
 RUN cd /tmp/build && \
     task install-golangci-lint && \
     task install-goreleaser && \
+    task install-protoc-gen-go && \
     cd / && \
     rm -rf /tmp/build && \
     go clean -cache -modcache
 
 # Install envsubstr and helm
-RUN curl -L https://github.com/a8m/envsubst/releases/download/v1.2.0/envsubst-$(uname -s)-$(uname -m) -o /usr/local/bin/envsubst && \
+RUN curl -L https://github.com/a8m/envsubst/releases/download/v1.4.3/envsubst-$(uname -s)-$(uname -m) -o /usr/local/bin/envsubst && \
     chmod +x /usr/local/bin/envsubst && \
     curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 

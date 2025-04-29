@@ -214,6 +214,10 @@ tasks:
     cmds:
       - ./scripts/install-goreleaser.sh
 
+  install-protoc-gen-go:
+    cmds:
+      - ./scripts/install-protoc-gen-go.sh
+
   # Runs single e2e test
   # Usage: task e2e -- <directory>
   e2e:
