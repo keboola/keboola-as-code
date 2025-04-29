@@ -49,27 +49,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        with:
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: false
-
-      # To free up disk space to not run out during the run
-      - name: Delete unused SDKs MacOS
-        if: matrix.name == 'mac-os'
-        run: |
-          echo "BEFORE CLEAN-UP:"
-          df -hI /dev/disk3s1s1
-          sudo rm -rf /Applications/Xcode_*.app
-          echo "AFTER CLEAN-UP:"
-          df -hI /dev/disk3s1s1
-        continue-on-error: true
-
       - name: Setup Go, tools and caching
         uses: ./.github/actions/go-setup
         with:
