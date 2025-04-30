@@ -16,7 +16,7 @@ import (
 	"github.com/Shopify/toxiproxy/v2"
 	toxiproxyClient "github.com/Shopify/toxiproxy/v2/client"
 	"github.com/c2h5oh/datasize"
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

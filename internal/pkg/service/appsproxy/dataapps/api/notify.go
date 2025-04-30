@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	"github.com/keboola/go-client/pkg/request"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )

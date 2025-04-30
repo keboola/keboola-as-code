@@ -7,9 +7,9 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/jonboulle/clockwork"
-	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/gcs"
-	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/storage_file_upload/gcs"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/storage_file_upload/s3"
 	"github.com/relvacode/iso8601"
 	"go.uber.org/atomic"
 )

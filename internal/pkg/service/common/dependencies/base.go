@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"

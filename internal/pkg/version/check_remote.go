@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/request"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 

@@ -10,8 +10,8 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jarcoal/httpmock"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"

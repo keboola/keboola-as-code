@@ -3,7 +3,7 @@ package key
 import (
 	"strconv"
 
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"go.opentelemetry.io/otel/attribute"
 )
 

@@ -9,11 +9,11 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/configuration"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/configurationrow"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/key"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 )
 
 // ConfigurationRow is the model entity for the ConfigurationRow schema.

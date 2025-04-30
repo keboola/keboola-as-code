@@ -5,9 +5,9 @@ package configurationrow
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/predicate"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 )
 
 // ID filters vertices based on their ID field.

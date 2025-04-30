@@ -5,10 +5,10 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/keboola/go-client/pkg/keboola"
-	"github.com/keboola/go-client/pkg/request"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/semaphore"
 

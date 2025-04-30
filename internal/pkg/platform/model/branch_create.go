@@ -9,10 +9,10 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/branch"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/configuration"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/key"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 )
 
 // BranchCreate is the builder for creating a Branch entity.

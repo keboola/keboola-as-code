@@ -4,9 +4,9 @@ package httpclient
 import (
 	"io"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/client/trace"
-	"github.com/keboola/go-client/pkg/client/trace/otel"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client/trace"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client/trace/otel"
 	"go.opentelemetry.io/contrib/propagators/b3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -54,7 +54,7 @@ func WithoutForcedHTTP2() Option {
 
 func New(opts ...Option) client.Client {
 	// Apply options
-	conf := Config{userAgent: "keboola-go-client", forcedHTTP2: true}
+	conf := Config{userAgent: "keboola-sdk-go-client", forcedHTTP2: true}
 	for _, o := range opts {
 		o(&conf)
 	}

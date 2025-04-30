@@ -3,7 +3,7 @@ package task
 import (
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 )
 
 type Key struct {

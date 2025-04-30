@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	goaHttp "goa.design/goa/v3/http"

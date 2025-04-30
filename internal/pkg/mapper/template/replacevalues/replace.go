@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
