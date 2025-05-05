@@ -2,11 +2,14 @@ package env
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -25,6 +28,7 @@ type dependencies interface {
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Fs() filesystem.Fs // Add filesystem dependency
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
@@ -32,7 +36,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	defer span.End(&err)
 
 	// Check that we are in dbt directory
-	if _, _, err := d.LocalDbtProject(ctx); err != nil {
+	// Get dbt project
+	dbtProject, _, err := d.LocalDbtProject(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -54,30 +60,67 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
 
-	// Print ENVs
-	l := d.Logger()
-	l.Infof(ctx, `Commands to set environment for the dbt target:`)
-	l.Infof(ctx, `  export DBT_KBC_%s_TYPE=%s`, targetUpper, workspace.Type)
-	l.Infof(ctx, `  export DBT_KBC_%s_SCHEMA=%s`, targetUpper, workspace.Details.Connection.Schema)
-	l.Infof(ctx, `  export DBT_KBC_%s_WAREHOUSE=%s`, targetUpper, workspace.Details.Connection.Warehouse)
-	l.Infof(ctx, `  export DBT_KBC_%s_DATABASE=%s`, targetUpper, workspace.Details.Connection.Database)
+	// Prepare content for .env.local
+	var envContent strings.Builder
+	envVars := make(map[string]string)
 
-	linkedBucketEnvsMap := make(map[string]bool)
+	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = string(workspace.Type)
+	envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = workspace.Details.Connection.Schema
+	envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = workspace.Details.Connection.Warehouse
+	envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = workspace.Details.Connection.Database
+
+	linkedBucketEnvsMap := make(map[string]string) // Store env var name -> value
 	for _, bucket := range o.Buckets {
-		if bucket.LinkedProjectID != 0 && !linkedBucketEnvsMap[bucket.DatabaseEnv] {
-			stackPrefix, _, _ := strings.Cut(workspace.Details.Connection.Database, "_") // SAPI_..., KEBOOLA_..., etc.
-			linkedBucketEnvsMap[bucket.DatabaseEnv] = true                               // print only once
-			l.Infof(ctx, `  export %s=%s_%d`, bucket.DatabaseEnv, stackPrefix, bucket.LinkedProjectID)
+		if bucket.LinkedProjectID != 0 {
+			envVarName := bucket.DatabaseEnv
+			if _, exists := linkedBucketEnvsMap[envVarName]; !exists {
+				stackPrefix, _, _ := strings.Cut(workspace.Details.Connection.Database, "_") // SAPI_..., KEBOOLA_..., etc.
+				envVarValue := fmt.Sprintf("%s_%d", stackPrefix, bucket.LinkedProjectID)
+				linkedBucketEnvsMap[envVarName] = envVarValue
+				envVars[envVarName] = envVarValue
+			}
 		}
 	}
-	l.Infof(ctx, `  export DBT_KBC_%s_ACCOUNT=%s`, targetUpper, host)
-	l.Infof(ctx, `  export DBT_KBC_%s_USER=%s`, targetUpper, workspace.User)
-	l.Infof(ctx, `  export DBT_KBC_%s_PASSWORD=%s`, targetUpper, workspace.Password)
+	envVars[fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper)] = host
+	envVars[fmt.Sprintf("DBT_KBC_%s_USER", targetUpper)] = workspace.User
+	envVars[fmt.Sprintf("DBT_KBC_%s_PASSWORD", targetUpper)] = workspace.Password
+
+	// Format KEY=VALUE pairs
+	// Sort keys for consistent order
+	keys := make([]string, 0, len(envVars))
+	for k := range envVars {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := envVars[k]
+		// Basic quoting for values containing spaces or special characters, though passwords might still be tricky
+		// A more robust solution might involve dotenv-specific libraries if complex values are common.
+		if strings.ContainsAny(v, " #\"'\\") {
+			v = fmt.Sprintf(`\"%s\"`, strings.ReplaceAll(v, `\"`, `\\\"`))
+		}
+		_, _ = fmt.Fprintf(&envContent, "%s=%s\n", k, v)
+	}
+
+	// Write to .env.local
+	envFilePath := filesystem.Join(dbtProject.Fs().WorkingDir(), ".env.local")
+	envFile := filesystem.NewRawFile(envFilePath, envContent.String()).SetDescription("dbt environment variables")
+	if err := d.Fs().WriteFile(ctx, envFile); err != nil {
+		return errors.Errorf("cannot write file \"%s\": %w", envFilePath, err)
+	}
+
+	// Print info message
+	l := d.Logger()
+	l.Infof(ctx, `Environment variables for dbt target "%s" have been written to "%s".`, o.TargetName, envFilePath)
+	l.Info(ctx, `To load the variables into your current shell session, run:`)
+	l.Info(ctx, `  source .env.local`)
+	l.Info(ctx, `Or use a tool like direnv.`)
 
 	if len(linkedBucketEnvsMap) > 0 {
 		var linkedBucketEnvs []string
-		for env := range linkedBucketEnvsMap {
-			linkedBucketEnvs = append(linkedBucketEnvs, env)
+		for envName := range linkedBucketEnvsMap {
+			linkedBucketEnvs = append(linkedBucketEnvs, envName)
 		}
 		l.Info(ctx, "")
 		l.Info(ctx, "Note:")
