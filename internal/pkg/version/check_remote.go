@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/request"
 

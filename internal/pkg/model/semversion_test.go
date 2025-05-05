@@ -11,9 +11,9 @@ func TestNewVersion(t *testing.T) {
 	t.Parallel()
 	v, err := NewSemVersion(`1.2.3`)
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), v.Major())
-	assert.Equal(t, int64(2), v.Minor())
-	assert.Equal(t, int64(3), v.Patch())
+	assert.Equal(t, uint64(1), v.Major())
+	assert.Equal(t, uint64(2), v.Minor())
+	assert.Equal(t, uint64(3), v.Patch())
 }
 
 func TestVersion_IncMajor(t *testing.T) {
