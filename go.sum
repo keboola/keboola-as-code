@@ -843,8 +843,8 @@ github.com/spf13/afero v0.0.0-20170901052352-ee1bd8ee15a1/go.mod h1:j4pytiNVoe2o
 github.com/spf13/afero v1.14.0 h1:9tH6MapGnn/j0eb0yIXiLjERO8RB6xIVZRDCX7PtqWA=
 github.com/spf13/afero v1.14.0/go.mod h1:acJQ8t0ohCGuMN3O+Pv0V0hgMxNYDlvdk+VTfyZmbYo=
 github.com/spf13/cast v1.1.0/go.mod h1:r2rcYCSwa1IExKTDiTfzaxqT2FNHs8hODu4LnUfgKEg=
-github.com/spf13/cast v1.7.1 h1:cuNEagBQEHWN1FnbGEjCXL2szYEXqfJPbP2HNUaca9Y=
-github.com/spf13/cast v1.7.1/go.mod h1:ancEpBxwJDODSW/UG4rDrAqiKolqNNh2DX3mk86cAdo=
+github.com/spf13/cast v1.8.0 h1:gEN9K4b8Xws4EX0+a0reLmhq8moKn7ntRlQYgjPeCDk=
+github.com/spf13/cast v1.8.0/go.mod h1:ancEpBxwJDODSW/UG4rDrAqiKolqNNh2DX3mk86cAdo=
 github.com/spf13/cobra v1.9.1 h1:CXSaggrXdbHK9CF+8ywj8Amf7PBRmPCOJugH954Nnlo=
 github.com/spf13/cobra v1.9.1/go.mod h1:nDyEzZ8ogv936Cinf6g1RU9MRY64Ir93oCnqb9wxYW0=
 github.com/spf13/jwalterweatherman v0.0.0-20170901151539-12bd96e66386/go.mod h1:cQK4TGJAtQXfYWX+Ddv3mKDzgVb68N+wFjFa4jdeBTo=
@@ -1065,10 +1065,10 @@ go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN8
 go.uber.org/zap v1.18.1/go.mod h1:xg/QME4nWcxGxrpdeYfq7UvYrLh66cuVKdrbD1XF/NI=
 go.uber.org/zap v1.27.0 h1:aJMhYGrd5QSmlpLMr2MftRKl7t8J8PTZPA732ud/XR8=
 go.uber.org/zap v1.27.0/go.mod h1:GB2qFLM7cTU87MWRP2mPIjqfIDnGu+VIO4V/SdhGo2E=
-goa.design/goa/v3 v3.20.1 h1:NpGdgRjaXUMOvb4dIfkUwAJOrLf1Jz0K0ggYj4Q7DFM=
-goa.design/goa/v3 v3.20.1/go.mod h1:cLX3Y1JvnCabMWDAZxmfnjxM1f1l9g7Zf0C9CD9GIAQ=
-goa.design/plugins/v3 v3.20.0 h1:1PaevrRloUS6Dd/BsvwmdQmrlStzf1vX7KMhLKQut6E=
-goa.design/plugins/v3 v3.20.0/go.mod h1:LMbmQVgSeGerokWyTcKqsVRSkLrfzVlBSNLa6i9XZTg=
+goa.design/goa/v3 v3.21.0 h1:+Y1ka2R558pkvmaV6IoAR8LYvOKWbZJVnPmax0cTA1k=
+goa.design/goa/v3 v3.21.0/go.mod h1:tiyIZM2XW66uPBvJSIJJwzTu0FUNgR10eKUFV0elx8w=
+goa.design/plugins/v3 v3.21.0 h1:yS4fdnyg5IfGKQEz8mLja5xP1rGK1ZBSxIhjNw5IjTA=
+goa.design/plugins/v3 v3.21.0/go.mod h1:YMEAoP+871aGQSo0N5qNXJuBBuyn9onLk9PJ6rsz3KI=
 gocloud.dev v0.41.0 h1:qBKd9jZkBKEghYbP/uThpomhedK5s2Gy6Lz7h/zYYrM=
 gocloud.dev v0.41.0/go.mod h1:IetpBcWLUwroOOxKr90lhsZ8vWxeSkuszBnW62sbcf0=
 golang.org/dl v0.0.0-20190829154251-82a15e2f2ead/go.mod h1:IUMfjQLJQd4UTqG1Z90tenwKoCX93Gn3MAQJMOSBsDQ=
@@ -1249,8 +1249,8 @@ google.golang.org/genproto v0.0.0-20250409194420-de1ac958c67a h1:AoyioNVZR+nS6zb
 google.golang.org/genproto v0.0.0-20250409194420-de1ac958c67a/go.mod h1:qD4k1RhYfNmRjqaHJxKLG/HRtqbXVclhjop2mPlxGwA=
 google.golang.org/genproto/googleapis/api v0.0.0-20250414145226-207652e42e2e h1:UdXH7Kzbj+Vzastr5nVfccbmFsmYNygVLSPk1pEfDoY=
 google.golang.org/genproto/googleapis/api v0.0.0-20250414145226-207652e42e2e/go.mod h1:085qFyf2+XaZlRdCgKNCIZ3afY2p4HHZdoIRpId8F4A=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20250414145226-207652e42e2e h1:ztQaXfzEXTmCBvbtWYRhJxW+0iJcz2qXfd38/e9l7bA=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20250414145226-207652e42e2e/go.mod h1:qQ0YXyHHx3XkvlzUtpXDkS29lDSafHMZBAZDc03LQ3A=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250428153025-10db94c68c34 h1:h6p3mQqrmT1XkHVTfzLdNz1u7IhINeZkz67/xTbOuWs=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250428153025-10db94c68c34/go.mod h1:qQ0YXyHHx3XkvlzUtpXDkS29lDSafHMZBAZDc03LQ3A=
 google.golang.org/grpc v1.2.1-0.20170921194603-d4b75ebd4f9f/go.mod h1:yo6s7OP7yaDglbqo1J04qKzAhqBH6lvTonzMVmEdcZw=
 google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZiDr8c=
 google.golang.org/grpc v1.23.0/go.mod h1:Y5yQAOtifL1yxbo5wqy6BxZv8vAUGQwXBOALyacEbxg=
