@@ -13,17 +13,27 @@ runs:
       shell: bash
     # Download the latest release asset
     - id: kbc_download_latest_release
-      uses: robinraju/release-downloader@v1.7
-      with:
-        repository: "keboola/keboola-as-code"
-        latest: true
-        fileName: "*_linux_amd64.zip"
-        token: {{`${{ inputs.githubToken }}`}}
-        out-file-path: "{{`${{ runner.temp }}`}}/kbc"
+      run: |
+        # Get latest release info
+        API_URL="https://api.github.com/repos/keboola/keboola-as-code/releases/latest"
+        RELEASE_DATA=$(curl -s -H "Authorization: token {{`${{ inputs.githubToken }}`}}" "$API_URL")
+        
+        # Extract tag name and version
+        TAG=$(echo "$RELEASE_DATA" | grep '"tag_name":' | cut -d '"' -f 4)
+        VERSION=${TAG#v}
+        
+        # Download the asset
+        DOWNLOAD_URL="https://github.com/keboola/keboola-as-code/releases/download/$TAG/keboola-cli_${VERSION}_linux_amd64.zip"
+        curl -L -o "{{`${{ runner.temp }}`}}/kbc/keboola-cli_${VERSION}_linux_amd64.zip" \
+          -H "Authorization: token {{`${{ inputs.githubToken }}`}}" "$DOWNLOAD_URL"
+        
+        # Set output
+        echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+      shell: bash
     # Extract binary
     - id: kbc_extract_release
       run: |
-        latest_tag={{`${{steps.kbc_download_latest_release.outputs.tag_name}}`}}
+        latest_tag={{`${{ steps.kbc_download_latest_release.outputs.tag_name }}`}}
         latest_version=${latest_tag:1}
         release_zip="{{`${{ runner.temp }}`}}/kbc/keboola-cli_${latest_version}_linux_amd64.zip"
         if [ ! -f "$release_zip" ]; then
