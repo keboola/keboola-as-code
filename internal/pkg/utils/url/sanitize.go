@@ -16,7 +16,7 @@ func SanitizeURLString(rawURL string) string {
 	// If there's user information, do not return it
 	if u.User != nil {
 		u.User = nil
-		u, err = url.Parse(u.String())
+		u, _ = url.Parse(u.String()) //nolint:errcheck
 		return u.String()
 	}
 
