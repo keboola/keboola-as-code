@@ -67,3 +67,77 @@ func TestParseQuery_Nested(t *testing.T) {
 	))
 	assert.Equal(t, exp, res)
 }
+
+func TestSanitizeURLString(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		inputURL string
+		expected string
+	}{
+		{
+			name:     "url with username and password",
+			inputURL: "https://user:password@example.com/path?query=value",
+			expected: "https://example.com/path?query=value",
+		},
+		{
+			name:     "url with username only",
+			inputURL: "ftp://user@example.com/resource",
+			expected: "ftp://example.com/resource",
+		},
+		{
+			name:     "url with no userinfo",
+			inputURL: "http://example.com/page",
+			expected: "http://example.com/page",
+		},
+		{
+			name:     "malformed url",
+			inputURL: "://example.com",
+			expected: "://example.com",
+		},
+		{
+			name:     "empty string",
+			inputURL: "",
+			expected: "",
+		},
+		{
+			name:     "url with only host",
+			inputURL: "example.com",
+			expected: "example.com", // url.Parse will treat this as a path if no scheme
+		},
+		{
+			name:     "url with scheme and host, no userinfo",
+			inputURL: "https://example.com",
+			expected: "https://example.com",
+		},
+		{
+			name:     "url with special characters in userinfo",
+			inputURL: "https://user%20name:p@$$wOrd@example.com",
+			expected: "https://example.com",
+		},
+		{
+			name:     "url with empty password",
+			inputURL: "https://user:@example.com",
+			expected: "https://example.com",
+		},
+		{
+			name:     "url with empty username",
+			inputURL: "https://:password@example.com",
+			expected: "https://example.com",
+		},
+		{
+			name:     "url with empty userinfo",
+			inputURL: "https://@example.com",
+			expected: "https://example.com", // No actual user info to sanitize
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.expected, SanitizeURLString(tc.inputURL))
+		})
+	}
+}
