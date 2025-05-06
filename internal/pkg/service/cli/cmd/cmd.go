@@ -26,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/flag"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	cliutil "github.com/keboola/keboola-as-code/internal/pkg/service/cli/util"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
@@ -190,6 +191,9 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 			stdout,
 			stderr,
 		))
+
+		// Propagate context to all subcommands
+		cliutil.PropagateContext(cmd)
 
 		// Check version
 		if err := versionCheck.Run(cmd.Context(), root.globalFlags.VersionCheck.Value, p.BaseScope()); err != nil {
