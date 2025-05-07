@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/url"
 	pullOp "github.com/keboola/keboola-as-code/pkg/lib/operation/repository/pull"
 	loadTemplateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/load"
 	loadRepositoryOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/repository/load"
@@ -137,20 +138,21 @@ func (r *CachedRepository) update(ctx context.Context) (*CachedRepository, bool,
 	if repo, ok := r.git.(*git.RemoteRepository); ok {
 		// Log start
 		startTime := time.Now()
-		r.d.Logger().Infof(ctx, `repository "%s" update started`, r.URLAndRef())
+		sanitizedURL := url.SanitizeURLString(r.URLAndRef())
+		r.d.Logger().Infof(ctx, `repository "%s" update started`, sanitizedURL)
 
 		// Pull
 		result, err := pullOp.Run(ctx, repo, r.d)
 		if err != nil {
-			r.d.Logger().Errorf(ctx, `error while updating repository "%s": %s`, r.URLAndRef(), err)
+			r.d.Logger().Errorf(ctx, `error while updating repository "%s": %s`, sanitizedURL, err)
 			return nil, false, err
 		}
 
 		// Done
 		if result.Changed {
-			r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" updated from %s to %s`, r.URLAndRef(), result.OldHash, result.NewHash)
+			r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" updated from %s to %s`, sanitizedURL, result.OldHash, result.NewHash)
 		} else {
-			r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" update finished, no change found (%s)`, r.URLAndRef(), result.NewHash)
+			r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" update finished, no change found (%s)`, sanitizedURL, result.NewHash)
 		}
 
 		// No change

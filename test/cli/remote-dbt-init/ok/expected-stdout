@@ -2,11 +2,7 @@ Creating a new workspace, please wait.
 Created the new workspace "dbt_source".
 Profile stored in "profiles.yml".
 Sources stored in "models/_sources" directory.
-Commands to set environment for the dbt target:
-  export DBT_KBC_TARGET1_TYPE=snowflake
-  export DBT_KBC_TARGET1_SCHEMA=%s
-  export DBT_KBC_TARGET1_WAREHOUSE=%s
-  export DBT_KBC_TARGET1_DATABASE=%s
-  export DBT_KBC_TARGET1_ACCOUNT=%s
-  export DBT_KBC_TARGET1_USER=%s
-  export DBT_KBC_TARGET1_PASSWORD=%s
+Environment variables for dbt target "target1" have been written to ".env.local".
+To load the variables into your current shell session, run:
+  source .env.local
+Or use a tool like direnv.
