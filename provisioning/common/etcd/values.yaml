@@ -115,167 +115,21 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 0 # replaced by startupProbe
 
-# Defragmentation, see extraDeploy.
-defragmentation:
+preUpgradeJob:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+    limits:
+      memory: "64Mi"
+
+defrag:
+  enabled: true
   cronjob:
-    ## @param defragmentation.cronjob.schedule Schedule in Cron format to run defragmentation
-    ## See https://en.wikipedia.org/wiki/Cron
-    ##
     schedule: "0 */24 * * *"
-    ## @param defragmentation.cronjob.historyLimit Number of successful finished jobs to retain
-    ##
-    historyLimit: 1
-    ## Configure resource requests and limits for defragmentation containers
-    ##
     resources:
       requests:
         cpu: "100m"
         memory: "64Mi"
       limits:
         memory: "64Mi"
-extraDeploy:
-  # Defragmentation cron job definition
-  - |-
-    apiVersion: {{ include "common.capabilities.cronjob.apiVersion" . }}
-    kind: CronJob
-    metadata:
-      name: {{ printf "%s-defrag" (include "common.names.fullname" .) | trunc 63 | trimSuffix "-" }}
-      namespace: {{ .Release.Namespace | quote }}
-      labels:
-        app.kubernetes.io/name: {{ include "common.names.name" . }}
-        helm.sh/chart: {{ include "common.names.chart" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}-defrag
-        app.kubernetes.io/managed-by: {{ .Release.Service }}
-        {{ template "common.names.fullname" . }}-client: "true"
-        {{- if .Values.commonLabels }}
-        {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
-        {{- end }}
-      {{- if .Values.commonAnnotations }}
-      annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
-      {{- end }}
-    spec:
-      concurrencyPolicy: Forbid
-      schedule: {{ .Values.defragmentation.cronjob.schedule | quote }}
-      successfulJobsHistoryLimit: {{ .Values.defragmentation.cronjob.historyLimit }}
-      jobTemplate:
-        spec:
-          template:
-            metadata:
-              labels:
-                app.kubernetes.io/name: {{ include "common.names.name" . }}
-                helm.sh/chart: {{ include "common.names.chart" . }}
-                app.kubernetes.io/instance: {{ .Release.Name }}-defrag
-                app.kubernetes.io/managed-by: {{ .Release.Service }}
-                {{ template "common.names.fullname" . }}-client: "true"
-                {{- if .Values.podLabels }}
-                {{- include "common.tplvalues.render" (dict "value" .Values.podLabels "context" $) | nindent 12 }}
-                {{- end }}
-                app.kubernetes.io/component: defragmentation
-            spec:
-              {{- if .Values.nodeSelector }}
-              nodeSelector: {{- toYaml .Values.nodeSelector | nindent 12 }}
-              {{- end }}
-              {{- if .Values.tolerations }}
-              tolerations: {{- toYaml .Values.tolerations | nindent 12 }}
-              {{- end }}
-              {{- include "etcd.imagePullSecrets" . | nindent 10 }}
-              restartPolicy: OnFailure
-              {{- if .Values.podSecurityContext.enabled }}
-              securityContext: {{- omit .Values.podSecurityContext "enabled" | toYaml | nindent 12 }}
-              {{- end }}
-              containers:
-                - name: etcd-defrag
-                  image: {{ include "etcd.image" . }}
-                  imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
-                  {{- if .Values.containerSecurityContext.enabled }}
-                  securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 16 }}
-                  {{- end }}
-                  command:
-                    - "/bin/bash"
-                    - "-c"
-                    - |-
-                      #!/usr/bin/env bash
-                      set -eo pipefail
-                      
-                      # Include library
-                      . /opt/bitnami/scripts/libetcd.sh
-                      
-                      # Common flags
-                      read -r -a flags <<<"$(etcdctl_auth_flags)"
-                      cmd="etcdctl --command-timeout=60s ${flags[@]}"
-                      
-                      # Sequentially run defragmentation for each node
-                      for (( index=0; index<$ETCD_REPLICAS; index++ )); do
-                        endpoint="${ETCD_HOST_PREFIX}-${index}.${ETCD_CLUSTER_DOMAIN}:${ETCD_CLIENT_PORT}"
-                        echo "Processing \"$endpoint\"..."
-                      
-                        # Run defragmentation
-                        $cmd --endpoints "$endpoint" defrag
-                        echo "OK"
-                        echo
-                      
-                        # Print cluster status
-                        $cmd --endpoints "$endpoint" --write-out=table endpoint status
-                        echo
-                      done
-    
-                      # Clear alarms (use the latest endpoint)
-                      $cmd --endpoints "$endpoint" alarm disarm
-                      $cmd --endpoints "$endpoint" alarm list
-                  env:
-                    - name: ETCDCTL_API
-                      value: "3"
-                    - name: ETCD_HOST_PREFIX
-                      value: "{{ include "etcd.peerProtocol" . }}://{{ include "common.names.fullname" . }}"
-                    {{- $releaseNamespace := .Release.Namespace }}
-                    {{- $etcdFullname := include "common.names.fullname" . }}
-                    {{- $etcdHeadlessServiceName := (printf "%s-%s" $etcdFullname "headless" | trunc 63 | trimSuffix "-") }}
-                    {{- $clusterDomain := .Values.clusterDomain }}
-                    - name: ETCD_CLUSTER_DOMAIN
-                      value: {{ printf "%s.%s.svc.%s" $etcdHeadlessServiceName $releaseNamespace $clusterDomain | quote }}
-                    - name: ETCD_CLIENT_PORT
-                      value: "{{ .Values.containerPorts.client }}"
-                    - name: ETCD_REPLICAS
-                      value: "{{.Values.replicaCount}}"
-                    {{- if .Values.auth.client.secureTransport }}
-                    - name: ETCD_CERT_FILE
-                      value: "/opt/bitnami/etcd/certs/client/{{ .Values.auth.client.certFilename }}"
-                    - name: ETCD_KEY_FILE
-                      value: "/opt/bitnami/etcd/certs/client/{{ .Values.auth.client.certKeyFilename }}"
-                    {{- if .Values.auth.client.enableAuthentication }}
-                    - name: ETCD_CLIENT_CERT_AUTH
-                      value: "true"
-                    - name: ETCD_TRUSTED_CA_FILE
-                      value: "/opt/bitnami/etcd/certs/client/{{ .Values.auth.client.caFilename | default "ca.crt" }}"
-                    {{- else if .Values.auth.client.caFilename }}
-                    - name: ETCD_TRUSTED_CA_FILE
-                      value: "/opt/bitnami/etcd/certs/client/{{ .Values.auth.client.caFilename | default "ca.crt" }}"
-                    {{- end }}
-                    {{- end }}
-                    {{- if or .Values.auth.rbac.create .Values.auth.rbac.enabled }}
-                    - name: ETCD_ROOT_PASSWORD
-                      valueFrom:
-                        secretKeyRef:
-                          name: {{ include "etcd.secretName" . }}
-                          key: {{ include "etcd.secretPasswordKey" . }}
-                    {{- end }}
-                    {{- if ((.Values.defragmentation.cronjob.resources).limits).memory }}
-                    - name: GOMEMLIMIT
-                      value: "{{ .Values.defragmentation.cronjob.resources.limits.memory }}B"
-                    {{- end }}
-                  {{- if .Values.defragmentation.cronjob.resources }}
-                  resources: {{- toYaml .Values.defragmentation.cronjob.resources | nindent 16 }}
-                  {{- end }}
-                  {{- if .Values.auth.client.secureTransport }}
-                  volumeMounts:
-                    - name: certs
-                      mountPath: /opt/bitnami/etcd/certs/client
-                      readOnly: true
-                  {{- end }}
-              volumes:
-                {{- if .Values.auth.client.secureTransport }}
-                - name: certs
-                  secret:
-                    secretName: {{ required "A secret containing the client certificates is required" (tpl .Values.auth.client.existingSecret .) }}
-                    defaultMode: 256
-                {{- end }}
