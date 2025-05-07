@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 )
 
 type Bucket struct {

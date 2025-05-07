@@ -1,7 +1,7 @@
 package branch
 
 import (
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"

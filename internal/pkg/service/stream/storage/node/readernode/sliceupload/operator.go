@@ -8,7 +8,7 @@ import (
 
 	"github.com/ccoveille/go-safecast"
 	"github.com/jonboulle/clockwork"
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"

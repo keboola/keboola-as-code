@@ -3,8 +3,8 @@ package scheduler_test
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/deepcopy"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"

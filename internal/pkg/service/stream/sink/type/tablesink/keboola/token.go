@@ -3,8 +3,8 @@ package keboola
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

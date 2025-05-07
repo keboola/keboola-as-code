@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/klauspost/pgzip"
 	"github.com/schollz/progressbar/v3"
 	"go.uber.org/atomic"

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel/attribute"
 

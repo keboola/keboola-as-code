@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/keboola/go-client/pkg/request"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
 	"github.com/pquerna/cachecontrol/cacheobject"
 	"go.opentelemetry.io/otel/attribute"
 

@@ -77,8 +77,8 @@ keboola_go_http_server_apdex_<T>_sum.count / keboola_go_http_server_apdex_count.
 
 ## HTTP Client
 
-Client telemetry is implemented in the [go-client](https://github.com/keboola/go-client) repository, in
-the [pkg/client/trace/otel](https://github.com/keboola/go-client/tree/main/pkg/client/trace/otel) package.
+Client telemetry is implemented in the [keboola-sdk-go](https://github.com/keboola/keboola-sdk-go) repository, in
+the [pkg/client/trace/otel](https://github.com/keboola/keboola-sdk-go/tree/main/pkg/client/trace/otel) package.
 
 ### Spans
 

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/relvacode/iso8601"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

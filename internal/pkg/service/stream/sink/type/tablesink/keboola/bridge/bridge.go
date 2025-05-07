@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/singleflight"
 

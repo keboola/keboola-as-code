@@ -4,8 +4,8 @@ package create
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"

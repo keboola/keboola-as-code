@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

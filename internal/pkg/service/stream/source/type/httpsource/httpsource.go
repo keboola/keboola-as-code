@@ -11,7 +11,7 @@ import (
 	"github.com/ccoveille/go-safecast"
 	"github.com/jonboulle/clockwork"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	routing "github.com/qiangxue/fasthttp-routing"
 	"github.com/valyala/fasthttp"
 

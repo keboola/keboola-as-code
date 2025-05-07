@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cobra"
 
 	utils2 "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/utils"

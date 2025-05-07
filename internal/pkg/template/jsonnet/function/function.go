@@ -10,7 +10,7 @@ import (
 	"slices"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"

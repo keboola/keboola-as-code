@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"

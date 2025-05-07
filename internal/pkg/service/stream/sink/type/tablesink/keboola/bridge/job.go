@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"

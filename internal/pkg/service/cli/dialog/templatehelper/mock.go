@@ -2,8 +2,8 @@ package templatehelper
 
 import (
 	"github.com/jarcoal/httpmock"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"

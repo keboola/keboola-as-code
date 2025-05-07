@@ -2,7 +2,7 @@
 package api
 
 import (
-	"github.com/keboola/go-client/pkg/request"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
 )
 
 type API struct {

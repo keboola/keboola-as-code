@@ -13,8 +13,8 @@ import (
 	"time"
 
 	toxiproxyClient "github.com/Shopify/toxiproxy/v2/client"
-	"github.com/keboola/go-client/pkg/keboola"
 	utilsproject "github.com/keboola/go-utils/pkg/testproject"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"

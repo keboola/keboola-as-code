@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"

@@ -1,7 +1,7 @@
 package mapper
 
 import (
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	api "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"

@@ -61,9 +61,9 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/jonboulle/clockwork"
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	etcdPkg "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"

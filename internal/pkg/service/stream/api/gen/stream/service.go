@@ -12,13 +12,13 @@ import (
 	"context"
 	"io"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"goa.design/goa/v3/security"
 )
 

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"

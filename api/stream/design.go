@@ -687,13 +687,13 @@ var _ = Service("stream", func() {
 // IDs -----------------------------------------------------------------------------------------------------------------
 
 var ProjectID = Type("ProjectID", Int, func() {
-	Meta("struct:field:type", "= keboola.ProjectID", "github.com/keboola/go-client/pkg/keboola")
+	Meta("struct:field:type", "= keboola.ProjectID", "github.com/keboola/keboola-sdk-go/v2/pkg/keboola")
 	Description("ID of the project.")
 	Example(123)
 })
 
 var BranchID = Type("BranchID", Int, func() {
-	Meta("struct:field:type", "= keboola.BranchID", "github.com/keboola/go-client/pkg/keboola")
+	Meta("struct:field:type", "= keboola.BranchID", "github.com/keboola/keboola-sdk-go/v2/pkg/keboola")
 	Description("ID of the branch.")
 	Example(345)
 })
