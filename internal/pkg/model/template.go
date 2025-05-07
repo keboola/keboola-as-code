@@ -31,9 +31,9 @@ type TemplateRepository struct {
 // String returns human-readable name of the repository.
 func (r TemplateRepository) String() string {
 	if r.Type == RepositoryTypeDir {
-		return fmt.Sprintf("dir:%s", url.SanitizeURLString(r.URL))
+		return fmt.Sprintf(`dir:"%s"`, url.SanitizeURLString(r.URL))
 	}
-	return fmt.Sprintf("%s:%s", url.SanitizeURLString(r.URL), r.Ref)
+	return fmt.Sprintf(`"%s":"%s"`, url.SanitizeURLString(r.URL), r.Ref)
 }
 
 // Hash returns unique identifier of the repository.
