@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -27,6 +28,7 @@ type dependencies interface {
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Fs() filesystem.Fs
 }
 
 func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
