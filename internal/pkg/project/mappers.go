@@ -3,6 +3,7 @@ package project
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/branchmetadata"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/codemapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/configmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
@@ -33,6 +34,8 @@ func MappersFor(s *state.State, d dependencies) (mapper.Mappers, error) {
 		// AES codes
 		transformation.NewMapper(s),
 		sharedcode.NewCodesMapper(s),
+		// Custom Python component
+		codemapper.NewMapper(s),
 		// Shared code links
 		sharedcode.NewLinksMapper(s),
 		// Relations between objects
