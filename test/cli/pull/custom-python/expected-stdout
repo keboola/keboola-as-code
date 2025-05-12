@@ -1,0 +1,13 @@
+%A
+DEBUG	Project state has been successfully loaded.
+%A
+Plan for "pull" operation:
+  + B main
+  + C main/application/kds-team.app-custom-python/test
+  + C main/extractor/ex-generic-v2/empty
+%A
+DEBUG	Saved ".keboola/manifest.json"
+%A
+INFO	Pull done.
+%A
+DEBUG	Sent "sync-pull" successful event id: "%s"

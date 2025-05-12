@@ -1,0 +1,9 @@
+{
+  "parameters": {
+    "code": "from keboola.component import CommonInterface\nci = CommonInterface()\n# access user parameters\nprint(ci.configuration.parameters)\n\nprint(200)\n",
+    "packages": [],
+    "user_properties": {
+      "debug": false
+    }
+  }
+}
