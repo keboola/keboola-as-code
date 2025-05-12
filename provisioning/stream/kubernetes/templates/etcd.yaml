@@ -3,8 +3,15 @@
 # Run defragmentation each 2 hours
 defragmentation:
   cronjob:
-    schedule: "0 */2 * * *"
+    schedule: "30 */2 * * *"
 
 preUpgradeJob:
   podLabels:
     stream-etcd-client: "true"
+
+disasterRecovery:
+  cronjob:
+    schedule: "* */1 * * *"
+    snapshotHistoryLimit: 48
+    podLabels:
+      stream-etcd-client: "true"
