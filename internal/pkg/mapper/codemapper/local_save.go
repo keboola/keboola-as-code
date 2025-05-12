@@ -48,20 +48,18 @@ func (w *localWriter) save(ctx context.Context) error {
 		return w.errors.ErrorOrNil()
 	}
 
-	// If the code is not empty, save it to a file
-	if content != "" {
-		// Path to code.py file
-		codePath := filesystem.Join(w.Path(), "code.py")
+	// Always save the file, even if the code is empty
+	// Path to code.py file
+	codePath := filesystem.Join(w.Path(), "code.py")
 
-		// Create file
-		w.Files.
-			Add(filesystem.NewRawFile(codePath, content)).
-			SetDescription("Python code").
-			AddTag(model.FileTypeOther).
-			AddTag(model.FileKindNativeCode)
+	// Create file
+	w.Files.
+		Add(filesystem.NewRawFile(codePath, content)).
+		SetDescription("Python code").
+		AddTag(model.FileTypeOther).
+		AddTag(model.FileKindNativeCode)
 
-		w.Logger().Debugf(ctx, "Saved Python code to %s", codePath)
-	}
+	w.Logger().Debugf(ctx, "Saved Python code to %s", codePath)
 
 	return w.errors.ErrorOrNil()
 }
