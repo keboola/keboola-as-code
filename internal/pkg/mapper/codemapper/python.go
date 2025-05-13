@@ -29,6 +29,10 @@ func (m *pythonMapper) isPythonConfig(object any) (bool, error) {
 		return false, err
 	}
 
-	// Check if this is a Custom Python component
-	return component.ID == CustomPythonApp, nil
+	switch component.ID {
+	case CustomPythonApp:
+		return true, nil
+	default:
+		return false, nil
+	}
 }
