@@ -16,7 +16,7 @@ import (
 // MapAfterLocalLoad - loads Python code from code.py file and inserts it into the configuration.
 func (m *pythonMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	// Check if this is a Custom Python configuration
-	if ok, err := m.isCustomPythonConfig(recipe.Object); err != nil {
+	if ok, err := m.isPythonConfig(recipe.Object); err != nil {
 		return err
 	} else if !ok {
 		return nil

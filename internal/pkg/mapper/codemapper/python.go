@@ -17,8 +17,8 @@ func NewMapper(s *state.State) *pythonMapper {
 	return &pythonMapper{state: s, logger: s.Logger()}
 }
 
-// isCustomPythonConfig checks if the object is a Custom Python configuration.
-func (m *pythonMapper) isCustomPythonConfig(object any) (bool, error) {
+// isPythonConfig checks if the object contains python code within configuration. Can be present in `script` or `code` JSON objects.
+func (m *pythonMapper) isPythonConfig(object any) (bool, error) {
 	v, ok := object.(*model.Config)
 	if !ok {
 		return false, nil

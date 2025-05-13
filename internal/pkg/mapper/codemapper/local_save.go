@@ -14,7 +14,7 @@ import (
 // MapBeforeLocalSave - extracts Python code from configuration and saves it to code.py file.
 func (m *pythonMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Check if this is a Custom Python configuration
-	if ok, err := m.isCustomPythonConfig(recipe.Object); err != nil {
+	if ok, err := m.isPythonConfig(recipe.Object); err != nil {
 		return err
 	} else if !ok {
 		return nil
