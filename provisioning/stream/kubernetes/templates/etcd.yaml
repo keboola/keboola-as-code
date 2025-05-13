@@ -1,9 +1,11 @@
 # Extends values from the common directory
 
 # Run defragmentation each 2 hours
-defragmentation:
+defrag:
   cronjob:
     schedule: "0 */2 * * *"
+    podLabels:
+      stream-etcd-client: "true"
 
 preUpgradeJob:
   podLabels:
