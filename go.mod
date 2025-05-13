@@ -104,6 +104,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/version v0.65.1 // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/go-test/deep v1.1.1 // indirect
+	github.com/icholy/gomajor v0.14.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect
 	github.com/onsi/gomega v1.37.0 // indirect
 	github.com/otiai10/mint v1.6.3 // indirect
@@ -395,6 +396,7 @@ tool (
 	github.com/air-verse/air
 	github.com/daixiang0/gci
 	github.com/google/go-licenses/v2
+	github.com/icholy/gomajor
 	github.com/mightyguava/jl/cmd/jl
 	github.com/oligot/go-mod-upgrade
 	goa.design/goa/v3/cmd/goa
