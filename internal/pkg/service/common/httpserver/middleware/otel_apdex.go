@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/urfave/negroni"
+	"github.com/urfave/negroni/v3"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/metric"
 

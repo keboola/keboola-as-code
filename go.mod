@@ -9,7 +9,7 @@ replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
 require (
-	ariga.io/atlas v0.32.1
+	ariga.io/atlas v0.33.0
 	entgo.io/ent v0.14.4
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -68,10 +68,10 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
-	github.com/urfave/negroni v1.0.0
+	github.com/urfave/negroni/v3 v3.1.1
 	github.com/valyala/fasthttp v1.62.0
 	github.com/valyala/fastjson v1.6.4
-	github.com/writeas/go-strip-markdown v2.0.1+incompatible
+	github.com/writeas/go-strip-markdown/v2 v2.1.1
 	github.com/xtaci/kcp-go/v5 v5.6.20
 	go.etcd.io/etcd/api/v3 v3.5.21
 	go.etcd.io/etcd/client/v3 v3.5.21
@@ -93,7 +93,7 @@ require (
 	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
 	golang.org/x/sync v0.14.0
 	google.golang.org/grpc v1.72.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.73.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.73.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.21
 )
@@ -104,6 +104,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/version v0.65.1 // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/go-test/deep v1.1.1 // indirect
+	github.com/icholy/gomajor v0.14.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect
 	github.com/onsi/gomega v1.37.0 // indirect
 	github.com/otiai10/mint v1.6.3 // indirect
@@ -158,7 +159,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
@@ -395,6 +396,7 @@ tool (
 	github.com/air-verse/air
 	github.com/daixiang0/gci
 	github.com/google/go-licenses/v2
+	github.com/icholy/gomajor
 	github.com/mightyguava/jl/cmd/jl
 	github.com/oligot/go-mod-upgrade
 	goa.design/goa/v3/cmd/goa

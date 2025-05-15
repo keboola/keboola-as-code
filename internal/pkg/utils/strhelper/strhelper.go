@@ -11,7 +11,7 @@ import (
 	"github.com/jpillora/longestcommon"
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
-	stripmd "github.com/writeas/go-strip-markdown"
+	stripmd "github.com/writeas/go-strip-markdown/v2"
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
