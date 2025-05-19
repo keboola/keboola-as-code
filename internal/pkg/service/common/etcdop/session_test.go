@@ -8,7 +8,7 @@ import (
 	"time"
 
 	toxiproxy "github.com/Shopify/toxiproxy/v2"
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

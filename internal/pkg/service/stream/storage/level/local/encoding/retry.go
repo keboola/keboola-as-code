@@ -3,7 +3,7 @@ package encoding
 import (
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 )
 
 func newChunkBackoff() *backoff.ExponentialBackOff {
@@ -12,7 +12,6 @@ func newChunkBackoff() *backoff.ExponentialBackOff {
 	b.Multiplier = 2
 	b.InitialInterval = 100 * time.Millisecond
 	b.MaxInterval = 15 * time.Second
-	b.MaxElapsedTime = 0 // don't stop
 	b.Reset()
 	return b
 }

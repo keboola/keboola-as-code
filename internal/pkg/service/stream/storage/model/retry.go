@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -53,7 +53,6 @@ func newBackoff() *backoff.ExponentialBackOff {
 	b.Multiplier = 4
 	b.InitialInterval = 2 * time.Minute
 	b.MaxInterval = 3 * time.Hour
-	b.MaxElapsedTime = 0 // don't stop
 	b.Reset()
 	return b
 }

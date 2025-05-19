@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
@@ -87,7 +87,7 @@ func (b SessionBuilder) WithTTLSeconds(v int) SessionBuilder {
 	return b
 }
 
-// WithOnSession registers a callback that is called on each session creation.
+// WithOnSession registers a callback, that is called on each session creation.
 // The callback must not be blocking.
 // In the work you start in the OnSession callback, you should check <-session.Done().
 func (b SessionBuilder) WithOnSession(fn onSession) SessionBuilder {
@@ -328,7 +328,6 @@ func newSessionBackoff() *backoff.ExponentialBackOff {
 	b.InitialInterval = 50 * time.Millisecond
 	b.Multiplier = 2
 	b.MaxInterval = 1 * time.Minute
-	b.MaxElapsedTime = 0 // never stop
 	b.Reset()
 	return b
 }

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -196,7 +196,6 @@ func newOpenPipelineBackoff() *backoff.ExponentialBackOff {
 	b.Multiplier = 4
 	b.InitialInterval = 100 * time.Millisecond
 	b.MaxInterval = 60 * time.Second
-	b.MaxElapsedTime = 0 // don't stop
 	b.Reset()
 	return b
 }
