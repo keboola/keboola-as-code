@@ -30,7 +30,7 @@ func NewConfig() Config {
 			FileImportTimeout:         duration.From(15 * time.Minute),
 		},
 		Import: ImportConfig{
-			MaxSlices:   200,
+			MaxSlices:   100,
 			MinInterval: duration.From(60 * time.Second),
 			Trigger: ImportTrigger{
 				Count:       50000,
@@ -53,7 +53,7 @@ type OperatorConfig struct {
 
 // ImportConfig configures the file import.
 type ImportConfig struct {
-	MaxSlices   uint64            `json:"maxSlices" configKey:"maxSlices" configUsage:"Max number of slices in a file before an import is triggered, takes precedence over other settings." validate:"required,min=100,max=200"`
+	MaxSlices   uint64            `json:"maxSlices" configKey:"maxSlices" configUsage:"Max number of slices in a file before an import is triggered, takes precedence over other settings." validate:"required,min=50,max=149"`
 	MinInterval duration.Duration `json:"minInterval" configKey:"minInterval" configUsage:"Min duration from the last import to trigger the next, takes precedence over other settings." validate:"required,minDuration=30s,maxDuration=24h"`
 	Trigger     ImportTrigger     `json:"trigger" configKey:"trigger"`
 }
