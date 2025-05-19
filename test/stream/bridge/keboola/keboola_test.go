@@ -75,7 +75,7 @@ func TestKeboolaBridgeWorkflow(t *testing.T) {
 
 		// In the test, we trigger the file import via the records count, the other values are intentionally high.
 		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
-			MaxSlices:   200,
+			MaxSlices:   100,
 			MinInterval: duration.From(30 * time.Second), // minimum
 			Trigger: targetConfig.ImportTrigger{
 				Count:       30,
@@ -368,7 +368,7 @@ func TestNetworkIssuesKeboolaBridgeWorkflow(t *testing.T) {
 		cfg.Sink.Table.Keboola.JobLimit = 1
 
 		cfg.Storage.Level.Target.Import = targetConfig.ImportConfig{
-			MaxSlices:   200,
+			MaxSlices:   100,
 			MinInterval: duration.From(30 * time.Second), // minimum
 			Trigger: targetConfig.ImportTrigger{
 				Count:       30,
