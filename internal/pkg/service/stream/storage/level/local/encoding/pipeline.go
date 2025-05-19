@@ -432,7 +432,7 @@ func (p *pipeline) Close(ctx context.Context) error {
 	// Wait for all Write method calls, it includes waiting for the sync.
 	p.writeCompletedWg.Wait()
 
-	// Close writers  chain, it closes all writers and generates the last chunk.
+	// Close writers chain, it closes all writers and generates the last chunk.
 	if err := p.chain.Close(ctx); err != nil {
 		errs.Append(err)
 	}
