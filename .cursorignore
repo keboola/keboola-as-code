@@ -5,4 +5,3 @@ third_party/*
 .idea/*
 .vscode/*
 .DS_Store
-build/*
