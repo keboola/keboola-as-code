@@ -18,6 +18,9 @@ type File struct {
 	Provider targetModel.Provider
 }
 
+// ErrWaitForImportOperationDeadlineExceeded is a sentinel error used when waiting for import operation times out.
+var ErrWaitForImportOperationDeadlineExceeded = errors.New("wait for import operation deadline exceeded")
+
 type (
 	importFileFn       func(ctx context.Context, file File, stats statistics.Value) error
 	canAcceptNewFileFn func(ctx context.Context, sinkKey key.SinkKey) bool

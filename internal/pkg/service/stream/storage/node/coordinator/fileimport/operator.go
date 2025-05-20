@@ -307,7 +307,11 @@ func (o *operator) importFile(ctx context.Context, file *fileData) {
 	// Import file
 	stats, err := o.doImportFile(ctx, lock, file)
 	if err != nil {
-		o.logger.Error(ctx, err.Error())
+		if errors.Is(err, plugin.ErrWaitForImportOperationDeadlineExceeded) {
+			o.logger.Warn(ctx, err.Error())
+		} else {
+			o.logger.Error(ctx, err.Error())
+		}
 
 		// Update the entity, the ctx may be cancelled
 		dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("retry increment timeout"))

@@ -252,7 +252,9 @@ func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statist
 
 	// Wait for job to complete
 	err = api.WaitForStorageJob(ctx, job)
-	if err != nil {
+	if err != nil && errors.Is(err, context.DeadlineExceeded) {
+		return plugin.ErrWaitForImportOperationDeadlineExceeded
+	} else if err != nil {
 		return err
 	}
 
