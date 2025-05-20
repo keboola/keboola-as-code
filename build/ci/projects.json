@@ -112,144 +112,102 @@
     "token": "$TEST_KBC_PROJECT_50_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8763,
-    "stagingStorage": "s3",
+    "host": "connection.europe-west3.gcp.keboola.com",
+    "project": 1712,
+    "stagingStorage": "gcs",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8763_TOKEN",
-    "legacyTransformation": true
+    "token": "$TEST_KBC_PROJECT_1712_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8764,
-    "stagingStorage": "s3",
+    "host": "connection.europe-west3.gcp.keboola.com",
+    "project": 1713,
+    "stagingStorage": "gcs",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8764_TOKEN",
-    "legacyTransformation": true
+    "token": "$TEST_KBC_PROJECT_1713_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8765,
-    "stagingStorage": "s3",
+    "host": "connection.europe-west3.gcp.keboola.com",
+    "project": 1714,
+    "stagingStorage": "gcs",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8765_TOKEN",
-    "legacyTransformation": true
+    "token": "$TEST_KBC_PROJECT_1714_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8766,
-    "stagingStorage": "s3",
+    "host": "connection.europe-west3.gcp.keboola.com",
+    "project": 1715,
+    "stagingStorage": "gcs",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8766_TOKEN",
-    "legacyTransformation": true
+    "token": "$TEST_KBC_PROJECT_1715_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8768,
-    "stagingStorage": "s3",
+    "host": "connection.europe-west3.gcp.keboola.com",
+    "project": 1716,
+    "stagingStorage": "gcs",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8768_TOKEN"
+    "token": "$TEST_KBC_PROJECT_1716_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8769,
-    "stagingStorage": "s3",
+    "host": "connection.europe-west3.gcp.keboola.com",
+    "project": 1717,
+    "stagingStorage": "gcs",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8769_TOKEN"
+    "token": "$TEST_KBC_PROJECT_1717_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8770,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8770_TOKEN",
-    "legacyTransformation": true
+    "host": "connection.us-east4.gcp.keboola.com",
+    "project": 869,
+    "stagingStorage": "gcs",
+    "backend": "bigquery",
+    "token": "$TEST_KBC_PROJECT_869_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8771,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8771_TOKEN",
-    "legacyTransformation": true
+    "host": "connection.us-east4.gcp.keboola.com",
+    "project": 870,
+    "stagingStorage": "gcs",
+    "backend": "bigquery",
+    "token": "$TEST_KBC_PROJECT_870_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8772,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8772_TOKEN",
-    "legacyTransformation": true
+    "host": "connection.us-east4.gcp.keboola.com",
+    "project": 871,
+    "stagingStorage": "gcs",
+    "backend": "bigquery",
+    "token": "$TEST_KBC_PROJECT_871_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8773,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8773_TOKEN",
-    "legacyTransformation": true
+    "host": "connection.us-east4.gcp.keboola.com",
+    "project": 872,
+    "stagingStorage": "gcs",
+    "backend": "bigquery",
+    "token": "$TEST_KBC_PROJECT_872_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8775,
-    "stagingStorage": "s3",
+    "host": "connection.us-east4.gcp.keboola.com",
+    "project": 873,
+    "stagingStorage": "gcs",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8775_TOKEN"
+    "token": "$TEST_KBC_PROJECT_873_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8776,
-    "stagingStorage": "s3",
+    "host": "connection.us-east4.gcp.keboola.com",
+    "project": 874,
+    "stagingStorage": "gcs",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8776_TOKEN"
+    "token": "$TEST_KBC_PROJECT_874_TOKEN"
+  },  
+  {
+    "host": "connection.us-east4.gcp.keboola.com",
+    "project": 875,
+    "stagingStorage": "gcs",
+    "backend": "snowflake",
+    "token": "$TEST_KBC_PROJECT_875_TOKEN"
   },
   {
-    "host": "connection.keboola.com",
-    "project": 8777,
-    "stagingStorage": "s3",
+    "host": "connection.us-east4.gcp.keboola.com",
+    "project": 876,
+    "stagingStorage": "gcs",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8777_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.keboola.com",
-    "project": 8778,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8778_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.keboola.com",
-    "project": 8779,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8779_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.keboola.com",
-    "project": 8780,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8780_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.keboola.com",
-    "project": 8781,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8781_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.keboola.com",
-    "project": 8782,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_8782_TOKEN",
-    "legacyTransformation": true
+    "token": "$TEST_KBC_PROJECT_876_TOKEN"
   },
   {
     "host": "connection.keboola.com",
@@ -272,56 +230,23 @@
     "project": 9433,
     "stagingStorage": "s3",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_9433_TOKEN",
-    "legacyTransformation": true
+    "token": "$TEST_KBC_PROJECT_9433_TOKEN"
+  },
+    {
+    "host": "connection.keboola.com",
+    "project": 10166,
+    "stagingStorage": "s3",
+    "backend": "snowflake",
+    "token": "$TEST_KBC_PROJECT_10166_TOKEN",
+    "isGuest": true
   },
   {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 10889,
-    "stagingStorage": "abs",
+    "host": "connection.keboola.com",
+    "project": 10169,
+    "stagingStorage": "s3",
     "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_10889_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 10893,
-    "stagingStorage": "abs",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_10893_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 10894,
-    "stagingStorage": "abs",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_10894_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 10895,
-    "stagingStorage": "abs",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_10895_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 10896,
-    "stagingStorage": "abs",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_10896_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 10897,
-    "stagingStorage": "abs",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_10897_TOKEN",
-    "legacyTransformation": true
+    "token": "$TEST_KBC_PROJECT_10169_TOKEN",
+    "isGuest": true
   },
   {
     "host": "connection.north-europe.azure.keboola.com",
@@ -398,53 +323,5 @@
     "backend": "snowflake",
     "token": "$TEST_KBC_PROJECT_10912_TOKEN",
     "legacyTransformation": true
-  },
-  {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 10913,
-    "stagingStorage": "abs",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_10913_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 20469,
-    "stagingStorage": "abs",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_20469_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 20473,
-    "stagingStorage": "abs",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_20473_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.north-europe.azure.keboola.com",
-    "project": 20474,
-    "stagingStorage": "abs",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_20474_TOKEN",
-    "legacyTransformation": true
-  },
-  {
-    "host": "connection.keboola.com",
-    "project": 10166,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_10166_TOKEN",
-    "isGuest": true
-  },
-  {
-    "host": "connection.keboola.com",
-    "project": 10169,
-    "stagingStorage": "s3",
-    "backend": "snowflake",
-    "token": "$TEST_KBC_PROJECT_10169_TOKEN",
-    "isGuest": true
   }
 ]
