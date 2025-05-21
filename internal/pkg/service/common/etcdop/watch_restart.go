@@ -138,7 +138,6 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 			restart = true
 
 			// Delay is applied only if the restart is caused by an error, not by the manual restart
-			var delay time.Duration
 			if lastErr != nil {
 				// Calculate delay
 				restartDelay = b.NextBackOff()
@@ -150,7 +149,7 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 				select {
 				case <-ctx.Done():
 					return
-				case <-time.After(delay):
+				case <-time.After(restartDelay):
 					// continue
 				}
 			} else if subStream.cancelCause != nil {
