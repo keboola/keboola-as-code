@@ -14,8 +14,10 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	routing "github.com/qiangxue/fasthttp-routing"
 	"github.com/valyala/fasthttp"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -105,6 +107,13 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		// Dispatch request to all sinks
 		result, err := dp.Dispatch(keboola.ProjectID(projectIDInt), sourceID, secret, recordCtx)
 		if err != nil {
+			// Create an enriched context.Context for logging this specific error event.
+			errorLoggingCtx := ctxattr.ContextWith(ctx,
+				attribute.String("project.id", strconv.Itoa(projectIDInt)),
+				attribute.String("source.id", string(sourceID)),
+			)
+			// Log the detailed error with the enriched context and attributes.
+			logger.Warn(errorLoggingCtx, errors.Wrapf(err, "dispatch failed").Error())
 			errorHandler(c.RequestCtx, err)
 			return nil //nolint:nilerr
 		}
@@ -125,6 +134,13 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		enc := json.NewEncoder(c)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(result); err != nil {
+			// Create an enriched context.Context for logging this specific error event.
+			errorLoggingCtx := ctxattr.ContextWith(ctx,
+				attribute.String("project.id", strconv.Itoa(projectIDInt)),
+				attribute.String("source.id", string(sourceID)),
+			)
+			// Log the detailed error with the enriched context and attributes.
+			logger.Warn(errorLoggingCtx, errors.Wrapf(err, "dispatch failed").Error())
 			errorHandler(c.RequestCtx, err)
 			return nil //nolint:nilerr
 		}
