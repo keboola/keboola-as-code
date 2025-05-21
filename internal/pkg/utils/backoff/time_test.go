@@ -1,21 +1,25 @@
-package op
+package backoff
 
 import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAtomicUpdateBackoff(t *testing.T) {
+func TestTimeBackoff(t *testing.T) {
 	t.Parallel()
 
-	b := newBackoff()
-	b.RandomizationFactor = 0
-
 	clk := clockwork.NewFakeClock()
+
+	eb := backoff.NewExponentialBackOff()
+	eb.RandomizationFactor = 0
+	eb.Multiplier = 2
+	eb.InitialInterval = 10 * time.Millisecond
+	eb.MaxInterval = 2 * time.Second
+	b := NewTimeBackoff(eb, 15 * time.Second)
 	b.Clock = clk
 	b.Reset()
 
