@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -68,7 +68,7 @@ func (v *AtomicOp[R]) DoWithoutRetry(ctx context.Context, opts ...Option) *TxnRe
 		// Create a new empty container: for operations generated during the processing of the current level
 		nextLevel := newAtomicOpCtx(currentLevel.newEmpty(), store)
 
-		// Invoke current read level and merge generated partial write txn
+		// Invoke the current read level and merge generated partial write txn
 		ctx := context.WithValue(ctx, actualAtomicOpCtxKey, nextLevel)
 		if partialWriteTxn, revision, err := currentLevel.do(ctx, tracker, opts...); err == nil {
 			if firstReadRevision == 0 {

@@ -4,12 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	etcd "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	timebackoff "github.com/keboola/keboola-as-code/internal/pkg/utils/backoff"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -73,14 +74,14 @@ func DoWithRetry(ctx context.Context, client etcd.KV, op etcd.Op, opts ...Option
 	return response, err
 }
 
-func newBackoff(opts ...Option) *backoff.ExponentialBackOff {
+func newBackoff(opts ...Option) *timebackoff.TimeBackoff {
 	c := newConfig(opts)
 	b := backoff.NewExponentialBackOff()
 	b.RandomizationFactor = 0.2
 	b.Multiplier = 2
 	b.InitialInterval = c.retryInitialInterval
 	b.MaxInterval = c.retryMaxInterval
-	b.MaxElapsedTime = c.retryMaxElapsedTime
-	b.Reset()
-	return b
+	tb := timebackoff.NewTimeBackoff(b, c.retryMaxElapsedTime)
+	tb.Reset()
+	return tb
 }

@@ -19,7 +19,7 @@ func TestTimeBackoff(t *testing.T) {
 	eb.Multiplier = 2
 	eb.InitialInterval = 10 * time.Millisecond
 	eb.MaxInterval = 2 * time.Second
-	b := NewTimeBackoff(eb, 15 * time.Second)
+	b := NewTimeBackoff(eb, 15*time.Second)
 	b.Clock = clk
 	b.Reset()
 

@@ -12,13 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	timebackoff "github.com/keboola/keboola-as-code/internal/pkg/utils/backoff"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -132,7 +133,7 @@ func (r *RemoteRepository) URL() string {
 	return r.ref.URL
 }
 
-// Ref is Git branch or tag.
+// Ref is a Git branch or tag.
 func (r *RemoteRepository) Ref() string {
 	return r.ref.Ref
 }
@@ -259,7 +260,7 @@ func (r *RemoteRepository) runGitCmd(ctx context.Context, args ...string) (cmdRe
 			// We want to return the reason why retries were made.
 			lastErr = err
 		}
-		if delay := retry.NextBackOff(); delay == retry.Stop {
+		if delay := retry.NextBackOff(); delay == backoff.Stop {
 			return result, lastErr
 		} else {
 			select {
@@ -378,15 +379,15 @@ func (v *fsWithFreeLock) free() <-chan struct{} {
 	return done
 }
 
-func newBackoff() *backoff.ExponentialBackOff {
+func newBackoff() backoff.BackOff {
 	b := backoff.NewExponentialBackOff()
 	b.RandomizationFactor = 0
 	b.InitialInterval = 200 * time.Millisecond
 	b.Multiplier = 2
 	b.MaxInterval = 500 * time.Millisecond
-	b.MaxElapsedTime = 2 * time.Second
-	b.Reset()
-	return b
+	tb := timebackoff.NewTimeBackoff(b, 2*time.Second)
+	tb.Reset()
+	return tb
 }
 
 func errorMsg(result cmdResult, err error) string {
