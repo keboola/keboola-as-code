@@ -2,3 +2,5 @@
 DEBUG	Project state has been successfully loaded.
 DEBUG	Validation done.
 INFO	Everything is good.
+%A
+DEBUG	Sent "local-validate" successful event id: "%s"

@@ -1,8 +1,6 @@
 package create
 
 import (
-	"time"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -48,7 +46,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-create-workspace")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "remote-workspace-create")
 
 			// Run operation
 			err = create.Run(cmd.Context(), options, d)

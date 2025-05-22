@@ -28,7 +28,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "row",
 		Short: helpmsg.Read(`local/create/row/short`),
 		Long:  helpmsg.Read(`local/create/row/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// flags
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
@@ -52,6 +52,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "local-create-row")
 
 			// Create row
 			return createRow.Run(cmd.Context(), projectState, options, d)

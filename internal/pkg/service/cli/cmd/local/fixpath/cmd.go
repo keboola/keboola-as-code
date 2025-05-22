@@ -25,7 +25,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "fix-paths",
 		Short: helpmsg.Read(`local/fix-paths/short`),
 		Long:  helpmsg.Read(`local/fix-paths/long`),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// flags
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
@@ -49,6 +49,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 				DryRun:   f.DryRun.Value,
 				LogEmpty: true,
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "local-fix-paths")
 
 			// Rename
 			_, err = rename.Run(cmd.Context(), projectState, options, d)

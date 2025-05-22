@@ -25,7 +25,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "diff",
 		Short: helpmsg.Read(`sync/diff/short`),
 		Long:  helpmsg.Read(`sync/diff/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
@@ -60,6 +60,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 				PrintDetails:      f.Details.Value,
 				LogUntrackedPaths: true,
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "sync-diff")
 
 			// Print diff
 			results, err := printdiff.Run(cmd.Context(), projectState, options, d)

@@ -15,7 +15,7 @@ func Commands(d dependencies.Provider) *cobra.Command {
 		Use:   `test`,
 		Short: helpmsg.Read(`template/test/short`),
 		Long:  helpmsg.Read(`template/test/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			return run.Command(d).RunE(cmd, args)
 		},
 	}

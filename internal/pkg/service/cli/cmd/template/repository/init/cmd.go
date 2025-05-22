@@ -22,7 +22,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   `init`,
 		Short: helpmsg.Read(`template/repository/init/short`),
 		Long:  helpmsg.Read(`template/repository/init/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Require empty dir
 			if _, err := p.BaseScope().EmptyDir(cmd.Context()); err != nil {
 				return err

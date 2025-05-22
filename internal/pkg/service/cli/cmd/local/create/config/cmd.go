@@ -28,7 +28,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "config",
 		Short: helpmsg.Read(`local/create/config/short`),
 		Long:  helpmsg.Read(`local/create/config/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// flags
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
@@ -52,6 +52,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "local-create-config")
 
 			// Create config
 			return createConfig.Run(cmd.Context(), projectState, options, d)

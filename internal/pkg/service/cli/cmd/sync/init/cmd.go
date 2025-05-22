@@ -1,8 +1,6 @@
 package init
 
 import (
-	"time"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -53,27 +51,27 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get dependencies
-			projectDeps, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
 				return err
 			}
 
 			// Get init options
-			options, err := AskInitOptions(cmd.Context(), projectDeps.Dialogs(), projectDeps, f)
+			options, err := AskInitOptions(cmd.Context(), d.Dialogs(), d, f)
 			if err != nil {
 				return err
 			}
 
 			// Create ENV files
-			if err = createEnvFiles.Run(cmd.Context(), projectDeps.Fs(), projectDeps); err != nil {
+			if err = createEnvFiles.Run(cmd.Context(), d.Fs(), d); err != nil {
 				return err
 			}
 
 			// Send cmd successful/failed event
-			defer projectDeps.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "sync-init")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "sync-init")
 
 			// Init
-			return initOp.Run(cmd.Context(), options, projectDeps)
+			return initOp.Run(cmd.Context(), options, d)
 		},
 	}
 

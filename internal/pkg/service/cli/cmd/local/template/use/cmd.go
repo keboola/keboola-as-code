@@ -31,7 +31,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   `use <repository>/<template>[/<version>]`,
 		Short: helpmsg.Read(`local/template/use/short`),
 		Long:  helpmsg.Read(`local/template/use/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// flags
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
@@ -74,6 +74,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "local-template-use")
 
 			// Use template
 			opResult, err := useOp.Run(cmd.Context(), projectState, template, options, d)

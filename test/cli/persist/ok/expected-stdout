@@ -21,3 +21,5 @@ DEBUG	Removed "main/extractor/ex-generic-v2/new"
 DEBUG	Saved ".keboola/manifest.json"
 INFO	Rename done.
 INFO	Persist done.
+%A
+DEBUG	Sent "local-persist" successful event id: "%s"

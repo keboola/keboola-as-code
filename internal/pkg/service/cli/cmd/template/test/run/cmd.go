@@ -30,7 +30,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "run [template] [version]",
 		Short: helpmsg.Read(`template/test/run/short`),
 		Long:  helpmsg.Read(`template/test/run/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err

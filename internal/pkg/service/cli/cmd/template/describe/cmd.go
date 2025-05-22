@@ -24,7 +24,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "describe <template> [version]",
 		Short: helpmsg.Read(`template/describe/short`),
 		Long:  helpmsg.Read(`template/describe/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			if len(args) < 1 {
 				return errors.New(`please enter argument with the template ID you want to use and optionally its version`)
 			}
