@@ -29,11 +29,13 @@ func NewTimeBackoff(b backoff.BackOff, maxElapsedTime time.Duration) *TimeBackof
 func (b *TimeBackoff) NextBackOff() time.Duration {
 	next := b.BackOff.NextBackOff()
 
-	if b.MaxElapsedTime != 0 {
-		elapsed := b.GetElapsedTime()
-		if elapsed+next >= b.MaxElapsedTime {
-			return backoff.Stop
-		}
+	if b.MaxElapsedTime == 0 {
+		return next
+	}
+
+	elapsed := b.GetElapsedTime()
+	if elapsed+next >= b.MaxElapsedTime {
+		return backoff.Stop
 	}
 
 	return next
