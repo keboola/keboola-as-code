@@ -226,6 +226,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
   "error": "stream.in.noSourceFound",
   "message": "The specified combination of projectID, sourceID and secret was not found."
 }`,
+			ExpectedLogs: `{"level":"warn","message":"dispatch failed","nodeId":"test-node","project.id":"1111","source.id":"my-source","component":"http-source"}`,
 		},
 		{
 			Name:               "stream input - POST - not found - invalid secret",
@@ -240,6 +241,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
   "error": "stream.in.noSourceFound",
   "message": "The specified combination of projectID, sourceID and secret was not found."
 }`,
+			ExpectedLogs: `{"level":"warn","message":"dispatch failed","nodeId":"test-node","project.id":"123","source.id":"my-source-1","component":"http-source"}`,
 		},
 		{
 			Name:               "stream input - POST - not found - disabled source",
@@ -254,6 +256,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
   "error": "stream.in.disabledSource",
   "message": "The specified source is disabled in all branches."
 }`,
+			ExpectedLogs: `{"level":"warn","message":"dispatch failed","nodeId":"test-node","project.id":"123","source.id":"my-source-2","component":"http-source"}`,
 		},
 		{
 			Name: "stream input - POST - open pipeline error",
@@ -631,7 +634,6 @@ func sendTestRequests(t *testing.T, f *testState) {
 			assert.EventuallyWithT(t, func(c *assert.CollectT) {
 				logger.AssertJSONMessages(c, tc.ExpectedLogs)
 			}, 5*time.Second, 10*time.Millisecond)
-			logger.AssertJSONMessages(t, tc.ExpectedLogs)
 			if tc.ExpectedErr != "" {
 				if assert.Error(t, err) {
 					wildcards.Assert(t, tc.ExpectedErr, err.Error())
