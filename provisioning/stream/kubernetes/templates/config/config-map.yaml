@@ -254,7 +254,7 @@ data:
         staging:
           operator:
             # Upload triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s
-            sliceRotationCheckInterval: 1s
+            sliceRotationCheckInterval: 5s
             # Timeout of the slice rotation operation. Validation rules: required,minDuration=30s,maxDuration=15m
             sliceRotationTimeout: 5m0s
             # Timeout of the slice close operation. Validation rules: required,minDuration=10s,maxDuration=10m
@@ -276,7 +276,7 @@ data:
         target:
           operator:
             # Import triggers check interval. Validation rules: required,minDuration=100ms,maxDuration=30s
-            fileRotationCheckInterval: 1s
+            fileRotationCheckInterval: 5s
             # Timeout of the file rotation operation. Validation rules: required,minDuration=30s,maxDuration=15m
             fileRotationTimeout: 5m0s
             # Timeout of the file close operation. Validation rules: required,minDuration=10s,maxDuration=10m
