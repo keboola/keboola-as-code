@@ -8,7 +8,9 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/santhosh-tekuri/jsonschema/v6"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -126,24 +128,28 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) error {
 	// Sort errors
 	sort.Slice(errs, func(i, j int) bool {
-		return errs[i].InstanceLocation < errs[j].InstanceLocation
+		return errs[i].DetailedOutput().InstanceLocation < errs[j].DetailedOutput().InstanceLocation
 	})
 
+	defaultPrinter := message.NewPrinter(language.English)
 	schemaErrs := errors.NewMultiError()
 	docErrs := errors.NewMultiError()
 	for _, e := range errs {
+		o := e.DetailedOutput()
+		errMsg := o.Error.Kind.LocalizedString(defaultPrinter)
+
 		// Schema error does not start with our pseudo schema file.
-		isSchemaErr := !strings.HasPrefix(e.AbsoluteKeywordLocation, pseudoSchemaFile)
-		path := strings.TrimLeft(e.InstanceLocation, "/")
+		isSchemaErr := !strings.HasPrefix(o.AbsoluteKeywordLocation, pseudoSchemaFile)
+		path := strings.TrimLeft(o.InstanceLocation, "/")
 		path = strings.ReplaceAll(path, "/", ".")
-		msg := strings.ReplaceAll(strings.ReplaceAll(e.Message, `'`, `"`), `n"t`, `n't`)
+		msg := strings.ReplaceAll(strings.ReplaceAll(errMsg, `'`, `"`), `n"t`, `n't`)
 
 		var formattedErr error
 		switch {
 		case len(e.Causes) > 0:
 			// Process nested errors.
 			if err := processErrors(e.Causes, isSchemaErr || parentIsSchemaErr); err != nil {
-				if e.Message == "" || e.Message == "doesn't validate with ''" || e.Message == `'' is invalid:` {
+				if errMsg == "" || errMsg == "doesn't validate with ''" || errMsg == `'' is invalid:` {
 					formattedErr = err
 				} else {
 					formattedErr = errors.PrefixError(err, msg)
@@ -153,14 +159,14 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 			// Required field in a JSON schema should be an array of required nested fields.
 			// But, for historical reasons, in Keboola components, "required: true" is also used.
 			// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
-			if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
+			if strings.HasSuffix(o.InstanceLocation, "/required") && errMsg == "expected array, but got boolean" {
 				continue
 			}
 			// JSON schema may contain empty enums, in dynamic selects.
-			if strings.HasSuffix(e.InstanceLocation, "/enum") && e.Message == "minimum 1 items required, but found 0 items" {
+			if strings.HasSuffix(o.InstanceLocation, "/enum") && errMsg == "minimum 1 items required, but found 0 items" {
 				continue
 			}
-			formattedErr = errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message)
+			formattedErr = errors.Wrapf(e, `"%s" is invalid: %s`, path, errMsg)
 		default:
 			// Format error
 			if path == "" {
@@ -193,9 +199,12 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 
 func compileSchema(s []byte, savePropertyOrder bool) (*jsonschema.Schema, error) {
 	c := jsonschema.NewCompiler()
-	c.ExtractAnnotations = true
 	if savePropertyOrder {
-		registerPropertyOrderExt(c)
+		vocabulary, err := buildPropertyOrderVocabulary()
+		if err != nil {
+			return nil, err
+		}
+		c.RegisterVocabulary(vocabulary)
 	}
 
 	// Decode JSON

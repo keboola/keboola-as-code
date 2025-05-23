@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
@@ -31,8 +31,8 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	}
 
 	// Return default value
-	if len(schema.Enum) > 0 {
-		return schema.Enum[0]
+	if len(schema.Enum.Values) > 0 {
+		return schema.Enum.Values[0]
 	}
 
 	// Prevent infinite recursion
@@ -74,7 +74,7 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	case `object`:
 		return buildOrderedMap(schema, level)
 	case `string`:
-		switch schema.Format {
+		switch schema.Format.Name {
 		case `date-time`:
 			return `2018-11-13T20:20:39+00:00`
 		case `time`:
@@ -124,8 +124,8 @@ func buildOrderedMap(schema *jsonschema.Schema, level int) any {
 }
 
 func getFirstType(schema *jsonschema.Schema) string {
-	if len(schema.Types) > 0 {
-		return schema.Types[0]
+	if !schema.Types.IsEmpty() {
+		return schema.Types.ToStrings()[0]
 	}
 	return `unknown`
 }
@@ -153,8 +153,10 @@ func sortSchemas(schemas []*jsonschema.Schema) {
 }
 
 func getPropertyOrder(schema *jsonschema.Schema) int64 {
-	if v, ok := schema.Extensions[`propertyOrder`]; ok {
-		return int64(v.(propertyOrderSchema))
+	for _, extension := range schema.Extensions {
+		if propertyOrder, ok := extension.(propertyOrderSchema); ok {
+			return int64(propertyOrder)
+		}
 	}
 	return math.MaxInt64
 }
