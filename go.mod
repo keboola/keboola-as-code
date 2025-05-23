@@ -20,7 +20,7 @@ require (
 	github.com/armon/go-radix v1.0.1-0.20221118154546-54df44f2176c
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/ccoveille/go-safecast v1.6.1
-	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/coder/websocket v1.8.13
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/dgraph-io/ristretto/v2 v2.2.0
@@ -103,6 +103,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.65.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.65.1 // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/go-test/deep v1.1.1 // indirect
 	github.com/icholy/gomajor v0.14.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/hashicorp/yamux"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/maps"
@@ -264,7 +264,6 @@ func newClientConnBackoff() *backoff.ExponentialBackOff {
 	b.Multiplier = 2
 	b.InitialInterval = 5 * time.Millisecond
 	b.MaxInterval = 5 * time.Second
-	b.MaxElapsedTime = 0 // don't stop
 	b.Reset()
 	return b
 }

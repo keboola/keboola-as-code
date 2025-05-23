@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -44,7 +44,7 @@ func (s *RestartableWatchStreamRaw) SetupConsumer() WatchConsumerSetup[[]byte] {
 // An exponential backoff is used between attempts.
 // The operation can be cancelled using the context.
 func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.Context) *WatchStreamRaw) *RestartableWatchStreamRaw {
-	b := backoff.WithContext(newWatchBackoff(), ctx)
+	b := newWatchBackoff()
 	ctx, cancel := context.WithCancelCause(ctx)
 	stream := &RestartableWatchStreamRaw{WatchStreamE: WatchStreamRaw{channel: make(chan WatchResponseRaw), cancel: cancel}, lock: &sync.Mutex{}}
 	go func() {
@@ -138,7 +138,6 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 			restart = true
 
 			// Delay is applied only if the restart is caused by an error, not by the manual restart
-			var delay time.Duration
 			if lastErr != nil {
 				// Calculate delay
 				restartDelay = b.NextBackOff()
@@ -150,7 +149,7 @@ func wrapStreamWithRestart(ctx context.Context, channelFactory func(ctx context.
 				select {
 				case <-ctx.Done():
 					return
-				case <-time.After(delay):
+				case <-time.After(restartDelay):
 					// continue
 				}
 			} else if subStream.cancelCause != nil {
@@ -169,7 +168,6 @@ func newWatchBackoff() *backoff.ExponentialBackOff {
 	b.InitialInterval = 50 * time.Millisecond
 	b.Multiplier = 2
 	b.MaxInterval = 1 * time.Minute
-	b.MaxElapsedTime = 0 // never stop
 	b.Reset()
 	return b
 }
