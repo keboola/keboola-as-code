@@ -20,10 +20,6 @@ func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
 		return nil, err
 	}
 
-	// Generate default object value
-	if len(schema.Types) == 0 {
-		schema.Types = []string{`object`}
-	}
 	content := getDefaultValueFor(schema, 0).(*orderedmap.OrderedMap)
 	return content, nil
 }
@@ -61,7 +57,8 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	}
 
 	// Generate value based on type
-	switch getFirstType(schema) {
+	firstType := getFirstType(schema)
+	switch firstType {
 	case `array`:
 		// Generate array with one item of each allowed type
 		values := make([]any, 0)
@@ -74,7 +71,11 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 			}
 		}
 		return values
-	case `object`:
+	case `object`, `unknown`:
+		if firstType == `unknown` && level != 0 {
+			return ``
+		}
+
 		values := orderedmap.New()
 		if schema.Properties != nil {
 			props := make([]*jsonschema.Schema, 0)
