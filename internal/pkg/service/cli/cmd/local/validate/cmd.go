@@ -29,7 +29,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "validate",
 		Short: helpmsg.Read(`local/validate/short`),
 		Long:  helpmsg.Read(`local/validate/long`),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
@@ -52,6 +52,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 				ValidateSecrets:    true,
 				ValidateJSONSchema: true,
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "local-validate")
 
 			// Validate
 			if err := validate.Run(cmd.Context(), projectState, options, d); err != nil {
@@ -79,7 +82,7 @@ func ValidateConfigCommand(p dependencies.Provider) *cobra.Command {
 		Use:   "config component.id config.json",
 		Short: helpmsg.Read(`local/validate/config/short`),
 		Long:  helpmsg.Read(`local/validate/config/long`),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			if len(args) != 2 {
 				return errors.New("please enter two arguments: component ID and JSON file path")
 			}
@@ -96,6 +99,7 @@ func ValidateConfigCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			o := validateConfig.Options{ComponentID: keboola.ComponentID(args[0]), ConfigPath: args[1]}
+
 			return validateConfig.Run(cmd.Context(), o, d)
 		},
 	}
@@ -110,13 +114,13 @@ func ValidateRowCommand(p dependencies.Provider) *cobra.Command {
 		Use:   "row component.id row.json",
 		Short: helpmsg.Read(`local/validate/row/short`),
 		Long:  helpmsg.Read(`local/validate/row/long`),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			if len(args) != 2 {
 				return errors.New("please enter two arguments: component ID and JSON file path")
 			}
 
 			f := Flags{}
-			err = p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f)
+			err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f)
 			if err != nil {
 				return err
 			}
@@ -127,6 +131,7 @@ func ValidateRowCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			o := validateRow.Options{ComponentID: keboola.ComponentID(args[0]), RowPath: args[1]}
+
 			return validateRow.Run(cmd.Context(), o, d)
 		},
 	}
@@ -141,12 +146,13 @@ func ValidateSchemaCommand(p dependencies.Provider) *cobra.Command {
 		Use:   "schema schema.json config.json",
 		Short: helpmsg.Read(`local/validate/schema/short`),
 		Long:  helpmsg.Read(`local/validate/schema/long`),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			if len(args) != 2 {
 				return errors.New("please enter two arguments: JSON schema path and JSON file path")
 			}
 
 			o := validateSchema.Options{SchemaPath: args[0], FilePath: args[1]}
+
 			return validateSchema.Run(cmd.Context(), o, p.BaseScope())
 		},
 	}

@@ -22,7 +22,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   `profile`,
 		Short: helpmsg.Read(`dbt/generate/profile/short`),
 		Long:  helpmsg.Read(`dbt/generate/profile/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Check that we are in dbt directory
 			if _, _, err := p.LocalDbtProject(cmd.Context()); err != nil {
 				return err

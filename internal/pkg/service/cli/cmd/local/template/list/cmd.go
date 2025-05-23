@@ -26,7 +26,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "list",
 		Short: helpmsg.Read(`local/template/list/short`),
 		Long:  helpmsg.Read(`local/template/list/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// flags
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
@@ -51,6 +51,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			branchState := projectState.MustGet(branch.BranchKey).(*model.BranchState)
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "local-template-list")
 
 			// List template instances
 			return listOp.Run(cmd.Context(), branchState, d)

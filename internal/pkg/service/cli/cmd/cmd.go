@@ -120,7 +120,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 		SilenceUsage:      true,
 		SilenceErrors:     true, // custom error handling, see printError
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Print help if no command specified
 			return root.Help()
 		},

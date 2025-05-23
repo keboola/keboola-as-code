@@ -2,7 +2,6 @@ package download
 
 import (
 	"strconv"
-	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cobra"
@@ -81,7 +80,8 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-file-download")
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "remote-file-download")
 
 			opts := download.Options{
 				File:              file,

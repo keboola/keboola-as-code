@@ -2,7 +2,6 @@ package _import
 
 import (
 	"strconv"
-	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cobra"
@@ -108,7 +107,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed events
-			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-table-import")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "remote-table-import")
 
 			return tableImport.Run(cmd.Context(), opts, d)
 		},

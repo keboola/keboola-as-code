@@ -27,7 +27,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   `delete`,
 		Short: helpmsg.Read(`local/template/delete/short`),
 		Long:  helpmsg.Read(`local/template/delete/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// flags
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
@@ -54,6 +54,10 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Delete template
 			options := deleteOp.Options{Branch: branchKey, Instance: instance.InstanceID, DryRun: f.DryRun.Value}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "local-template-delete")
+
 			return deleteOp.Run(cmd.Context(), projectState, options, d)
 		},
 	}

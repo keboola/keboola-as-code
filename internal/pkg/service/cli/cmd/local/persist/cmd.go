@@ -26,7 +26,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "persist",
 		Short: helpmsg.Read(`local/persist/short`),
 		Long:  helpmsg.Read(`local/persist/long`),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// flags
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
@@ -50,6 +50,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 				DryRun:            f.DryRun.Value,
 				LogUntrackedPaths: true,
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "local-persist")
 
 			// Persist
 			return persist.Run(cmd.Context(), projectState, options, d)

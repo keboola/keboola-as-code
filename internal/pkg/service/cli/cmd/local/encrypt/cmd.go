@@ -26,7 +26,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "encrypt",
 		Short: helpmsg.Read(`local/encrypt/short`),
 		Long:  helpmsg.Read(`local/encrypt/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
@@ -49,6 +49,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 				DryRun:   f.DryRun.Value,
 				LogEmpty: true,
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "local-encrypt")
 
 			// Encrypt
 			return encrypt.Run(cmd.Context(), projectState, options, d)

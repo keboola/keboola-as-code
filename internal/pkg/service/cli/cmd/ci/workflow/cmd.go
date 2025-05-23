@@ -34,7 +34,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "workflows",
 		Short: helpmsg.Read(`ci/workflows/short`),
 		Long:  helpmsg.Read(`ci/workflows/long`),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Bind flags to struct
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {

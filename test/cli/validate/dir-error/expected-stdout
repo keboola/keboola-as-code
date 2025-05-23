@@ -1,3 +1,5 @@
 %A
 DEBUG	Project state has been successfully loaded.
+%A
+DEBUG	Sent "local-validate" failed event id: "%s"
 DEBUG	Error debug log:%A

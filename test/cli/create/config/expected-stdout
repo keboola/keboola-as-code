@@ -5,3 +5,5 @@ DEBUG	Saved "main/extractor/keboola.ex-db-mysql/new-config/config.json"
 DEBUG	Saved "main/extractor/keboola.ex-db-mysql/new-config/description.md"
 DEBUG	Saved ".keboola/manifest.json"
 INFO	Created new config "main/extractor/keboola.ex-db-mysql/new-config"
+%A
+DEBUG	Sent "local-create-config" successful event id: "%s"

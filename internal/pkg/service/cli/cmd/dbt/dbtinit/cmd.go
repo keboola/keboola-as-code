@@ -26,7 +26,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   `init`,
 		Short: helpmsg.Read(`dbt/init/short`),
 		Long:  helpmsg.Read(`dbt/init/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Check that we are in dbt directory
 			if _, _, err := p.LocalDbtProject(cmd.Context()); err != nil {
 				return err
@@ -54,6 +54,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "dbt-init")
 
 			return initOp.Run(cmd.Context(), opts, d)
 		},
