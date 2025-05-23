@@ -20,10 +20,6 @@ func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
 		return nil, err
 	}
 
-	// Generate default object value
-	if len(schema.Types) == 0 {
-		schema.Types = []string{`object`}
-	}
 	content := getDefaultValueFor(schema, 0).(*orderedmap.OrderedMap)
 	return content, nil
 }
@@ -61,7 +57,8 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	}
 
 	// Generate value based on type
-	switch getFirstType(schema) {
+	firstType := getFirstType(schema)
+	switch firstType {
 	case `array`:
 		// Generate array with one item of each allowed type
 		values := make([]any, 0)
@@ -75,22 +72,7 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 		}
 		return values
 	case `object`:
-		values := orderedmap.New()
-		if schema.Properties != nil {
-			props := make([]*jsonschema.Schema, 0)
-			keys := make(map[string]string)
-			for key, prop := range schema.Properties {
-				props = append(props, prop)
-				keys[prop.Location] = key
-			}
-			sortSchemas(props)
-
-			for _, prop := range props {
-				key := keys[prop.Location]
-				values.Set(key, getDefaultValueFor(prop, level+1))
-			}
-		}
-		return values
+		return buildOrderedMap(schema, level)
 	case `string`:
 		switch schema.Format {
 		case `date-time`:
@@ -114,8 +96,31 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	case `boolean`:
 		return false
 	default:
+		if level == 0 {
+			return buildOrderedMap(schema, level)
+		}
+
 		return ``
 	}
+}
+
+func buildOrderedMap(schema *jsonschema.Schema, level int) any {
+	values := orderedmap.New()
+	if schema.Properties != nil {
+		props := make([]*jsonschema.Schema, 0)
+		keys := make(map[string]string)
+		for key, prop := range schema.Properties {
+			props = append(props, prop)
+			keys[prop.Location] = key
+		}
+		sortSchemas(props)
+
+		for _, prop := range props {
+			key := keys[prop.Location]
+			values.Set(key, getDefaultValueFor(prop, level+1))
+		}
+	}
+	return values
 }
 
 func getFirstType(schema *jsonschema.Schema) string {
