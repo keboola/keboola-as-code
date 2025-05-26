@@ -31,26 +31,29 @@ func Command(p dependencies.Provider) *cobra.Command {
 		Use:   "create",
 		Short: helpmsg.Read(`template/create/short`),
 		Long:  helpmsg.Read(`template/create/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
 			}
 
 			// Command must be used in template repository
-			dep, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
+			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
 				return err
 			}
 
 			// Options
-			options, err := AskCreateTemplateOpts(cmd.Context(), dep.Dialogs(), dep, f)
+			options, err := AskCreateTemplateOpts(cmd.Context(), d.Dialogs(), d, f)
 			if err != nil {
 				return err
 			}
 
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "template-create")
+
 			// Create template
-			return createOp.Run(cmd.Context(), options, dep)
+			return createOp.Run(cmd.Context(), options, d)
 		},
 	}
 

@@ -1,8 +1,6 @@
 package detail
 
 import (
-	"time"
-
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cobra"
 
@@ -47,7 +45,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-detail-workspace")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "remote-workspace-detail")
 
 			return detail.Run(cmd.Context(), d, keboola.ConfigID(id))
 		},

@@ -22,7 +22,7 @@ func StatusCommand(p dependencies.Provider) *cobra.Command {
 		Use:   "status",
 		Short: helpmsg.Read(`status/short`),
 		Long:  helpmsg.Read(`status/long`),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			f := Flags{}
 			if err := p.BaseScope().ConfigBinder().Bind(cmd.Context(), cmd.Flags(), args, &f); err != nil {
 				return err
@@ -32,6 +32,7 @@ func StatusCommand(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			return status.Run(cmd.Context(), d)
 		},
 	}

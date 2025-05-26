@@ -34,3 +34,5 @@ DEBUG	Removed "main/transformation/keboola.python-transformation-v2/python-trans
 DEBUG	Removed "main/extractor/keboola.ex-db-mysql/tables/rows/my-row"
 DEBUG	Saved ".keboola/manifest.json"
 INFO	Rename done.
+%A
+DEBUG	Sent "local-fix-paths" successful event id: "%s"

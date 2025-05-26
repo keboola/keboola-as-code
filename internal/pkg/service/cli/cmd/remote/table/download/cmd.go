@@ -2,7 +2,6 @@ package download
 
 import (
 	"context"
-	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cobra"
@@ -124,7 +123,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(cmd.Context(), time.Now(), &cmdErr, "remote-table-unload")
+			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "remote-table-unload")
 
 			return download.Run(cmd.Context(), downloadOpts, d)
 		},
