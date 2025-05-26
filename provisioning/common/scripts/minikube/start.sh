@@ -13,6 +13,4 @@ minikube start \
 --extra-config=kubelet.housekeeping-interval=10s \
 --wait "apiserver,system_pods,default_sa,apps_running,node_ready,kubelet" \
 --cni=calico
-
 minikube addons enable metrics-server
-minikube addons enable csi-hostpath-driver
