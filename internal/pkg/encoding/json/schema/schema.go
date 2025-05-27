@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"bytes"
 	"context"
 	"sort"
 	"strings"
@@ -9,8 +8,6 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/santhosh-tekuri/jsonschema/v6"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -106,9 +103,9 @@ func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 	err := validateDocument(schema, parametersMap)
 
 	// Process schema errors
-	validationErrors := &jsonschema.ValidationError{}
-	if errors.As(err, &validationErrors) {
-		return processErrors(validationErrors.Causes, false)
+	validationError := &jsonschema.ValidationError{}
+	if errors.As(err, &validationError) {
+		return processErrors(validationError.DetailedOutput().Errors)
 	} else if err != nil {
 		return err
 	}
@@ -125,48 +122,30 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	return schema.Validate(document.ToMap())
 }
 
-func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) error {
+func processErrors(errs []jsonschema.OutputUnit) error {
 	// Sort errors
 	sort.Slice(errs, func(i, j int) bool {
-		return errs[i].DetailedOutput().InstanceLocation < errs[j].DetailedOutput().InstanceLocation
+		return errs[i].InstanceLocation < errs[j].InstanceLocation
 	})
 
-	defaultPrinter := message.NewPrinter(language.English)
-	schemaErrs := errors.NewMultiError()
 	docErrs := errors.NewMultiError()
 	for _, e := range errs {
-		o := e.DetailedOutput()
-		errMsg := o.Error.Kind.LocalizedString(defaultPrinter)
+		errMsg := ""
+		if e.Error != nil {
+			errMsg = e.Error.String()
+		}
 
-		// Schema error does not start with our pseudo schema file.
-		isSchemaErr := !strings.HasPrefix(o.AbsoluteKeywordLocation, pseudoSchemaFile)
-		path := strings.TrimLeft(o.InstanceLocation, "/")
+		path := strings.TrimLeft(e.InstanceLocation, "/")
 		path = strings.ReplaceAll(path, "/", ".")
 		msg := strings.ReplaceAll(strings.ReplaceAll(errMsg, `'`, `"`), `n"t`, `n't`)
 
 		var formattedErr error
 		switch {
-		case len(e.Causes) > 0:
+		case len(e.Errors) > 0:
 			// Process nested errors.
-			if err := processErrors(e.Causes, isSchemaErr || parentIsSchemaErr); err != nil {
-				if errMsg == "" || errMsg == "doesn't validate with ''" || errMsg == `'' is invalid:` {
-					formattedErr = err
-				} else {
-					formattedErr = errors.PrefixError(err, msg)
-				}
+			if err := processErrors(e.Errors); err != nil {
+				formattedErr = err
 			}
-		case isSchemaErr:
-			// Required field in a JSON schema should be an array of required nested fields.
-			// But, for historical reasons, in Keboola components, "required: true" is also used.
-			// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
-			if strings.HasSuffix(o.InstanceLocation, "/required") && errMsg == "expected array, but got boolean" {
-				continue
-			}
-			// JSON schema may contain empty enums, in dynamic selects.
-			if strings.HasSuffix(o.InstanceLocation, "/enum") && errMsg == "minimum 1 items required, but found 0 items" {
-				continue
-			}
-			formattedErr = errors.Wrapf(e, `"%s" is invalid: %s`, path, errMsg)
 		default:
 			// Format error
 			if path == "" {
@@ -177,21 +156,8 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 		}
 
 		if formattedErr != nil {
-			if isSchemaErr {
-				schemaErrs.Append(formattedErr)
-			} else {
-				docErrs.Append(formattedErr)
-			}
+			docErrs.Append(formattedErr)
 		}
-	}
-
-	// Errors in the schema have priority, they will be written to the user as a warning.
-	if schemaErrs.Len() > 0 {
-		if parentIsSchemaErr {
-			// Only parent schema error is wrapped to the SchemaError type, nested errors are not.
-			return schemaErrs
-		}
-		return &SchemaError{error: schemaErrs}
 	}
 
 	return docErrs.ErrorOrNil()
@@ -224,7 +190,12 @@ func compileSchema(s []byte, savePropertyOrder bool) (*jsonschema.Schema, error)
 		}
 	})
 
-	if err := c.AddResource(pseudoSchemaFile, bytes.NewReader(json.MustEncode(m, false))); err != nil {
+	decoded, err := jsonschema.UnmarshalJSON(strings.NewReader(json.MustEncodeString(m, false)))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.AddResource(pseudoSchemaFile, decoded); err != nil {
 		return nil, err
 	}
 

@@ -31,7 +31,7 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	}
 
 	// Return default value
-	if len(schema.Enum.Values) > 0 {
+	if schema.Enum != nil && len(schema.Enum.Values) > 0 {
 		return schema.Enum.Values[0]
 	}
 
@@ -74,6 +74,10 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	case `object`:
 		return buildOrderedMap(schema, level)
 	case `string`:
+		if schema.Format == nil {
+			return ``
+		}
+
 		switch schema.Format.Name {
 		case `date-time`:
 			return `2018-11-13T20:20:39+00:00`
@@ -124,7 +128,7 @@ func buildOrderedMap(schema *jsonschema.Schema, level int) any {
 }
 
 func getFirstType(schema *jsonschema.Schema) string {
-	if !schema.Types.IsEmpty() {
+	if schema.Types != nil && !schema.Types.IsEmpty() {
 		return schema.Types.ToStrings()[0]
 	}
 	return `unknown`
