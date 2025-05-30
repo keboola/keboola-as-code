@@ -73,9 +73,9 @@ require (
 	github.com/valyala/fastjson v1.6.4
 	github.com/writeas/go-strip-markdown/v2 v2.1.1
 	github.com/xtaci/kcp-go/v5 v5.6.21
-	go.etcd.io/etcd/api/v3 v3.5.21
-	go.etcd.io/etcd/client/v3 v3.5.21
-	go.etcd.io/etcd/tests/v3 v3.5.21
+	go.etcd.io/etcd/api/v3 v3.6.0
+	go.etcd.io/etcd/client/v3 v3.6.0
+	go.etcd.io/etcd/tests/v3 v3.6.0
 	go.nhat.io/aferocopy/v2 v2.0.3
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0
@@ -102,10 +102,16 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.65.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.65.1 // indirect
+	github.com/VividCortex/ewma v1.2.0 // indirect
+	github.com/bgentry/speakeasy v0.2.0 // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/cheggaaa/pb/v3 v3.1.6 // indirect
 	github.com/go-test/deep v1.1.1 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
 	github.com/icholy/gomajor v0.14.0 // indirect
+	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect
 	github.com/onsi/gomega v1.37.0 // indirect
 	github.com/otiai10/mint v1.6.3 // indirect
@@ -113,10 +119,14 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.4 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
+	go.etcd.io/etcd/etcdctl/v3 v3.6.0 // indirect
+	go.etcd.io/gofail v0.2.0 // indirect
+	go.etcd.io/raft/v3 v3.6.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.31.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.125.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
+	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 )
 
 require (
@@ -275,7 +285,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gohugoio/hashstructure v0.5.0 // indirect
 	github.com/gohugoio/hugo v0.147.3 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
@@ -291,8 +300,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
-	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.2.0 // indirect
@@ -362,11 +369,9 @@ require (
 	github.com/zclconf/go-cty v1.16.2 // indirect
 	github.com/zclconf/go-cty-yaml v1.1.0 // indirect
 	go.etcd.io/bbolt v1.4.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.21 // indirect
-	go.etcd.io/etcd/client/v2 v2.305.21 // indirect
-	go.etcd.io/etcd/pkg/v3 v3.5.21 // indirect
-	go.etcd.io/etcd/raft/v3 v3.5.21 // indirect
-	go.etcd.io/etcd/server/v3 v3.5.21 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.6.0 // indirect
+	go.etcd.io/etcd/pkg/v3 v3.6.0 // indirect
+	go.etcd.io/etcd/server/v3 v3.6.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component v1.31.0 // indirect
