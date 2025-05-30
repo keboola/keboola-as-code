@@ -16,7 +16,7 @@
 
 # Tech Stack
 - **Language**: Go 1.24+
-- **Storage**: ETCD v3.5.17
+- **Storage**: ETCD v3.6
 - **Key Libraries**:
   - `go.etcd.io/etcd/client/v3`: ETCD client
   - `go.opentelemetry.io/otel`: Telemetry and metrics
