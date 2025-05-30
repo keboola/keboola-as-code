@@ -1,10 +1,10 @@
 Error:
 - Validation failed:
   - Config "foo/extractor/keboola.ex-azure-cost-management/with-schema/config.json" doesn't match schema:
-    - missing properties: "subscriptionId"
+    - missing property "subscriptionId"
   - Config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-1/config.json" doesn't match schema:
-    - "export": missing properties: "aggregation"
-    - "export.groupingDimensions": expected array, but got string
+    - "export": missing property "aggregation"
+    - "export.groupingDimensions": got string, want array
   - Config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-2/config.json" doesn't match schema:
     - "export.type": value must be one of "ActualCost", "AmortizedCost", "Usage"
   - Config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-3/config.json" doesn't match schema:
