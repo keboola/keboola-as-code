@@ -19,7 +19,7 @@ const (
 // TxnOp provides a high-level interface built on top of etcd.Txn., see If, Then and Else methods.
 //
 // For more information on etcd transactions, please refer to:
-// https://etcd.io/docs/v3.5/learning/api/#transaction
+// https://etcd.io/docs/v3.6/learning/api/#transaction
 //
 // Like other operations in this package, you can define processors using the AddProcessor method.
 //
