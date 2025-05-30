@@ -2,34 +2,48 @@ package schema
 
 import (
 	"encoding/json"
+	"strings"
 
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
-
-// propertyOrderExt - jsonschema extension to store "propertyOrder" key.
-type propertyOrderExt struct{}
 
 type propertyOrderSchema int64
 
-func registerPropertyOrderExt(c *jsonschema.Compiler) {
-	c.RegisterExtension("propertyOrder", propertyOrderMeta(), propertyOrderExt{})
-}
-
-func propertyOrderMeta() *jsonschema.Schema {
-	schema := `
+func buildPropertyOrderVocabulary() (*jsonschema.Vocabulary, error) {
+	url := "propertyOrder.json"
+	schemaString := `
 {
   "properties" : {
     "propertyOrder": {
-    "type": "integer"
+      "type": "integer"
     }
   }
 }
 `
-	return jsonschema.MustCompileString("propertyOrder.json", schema)
+
+	schema, err := jsonschema.UnmarshalJSON(strings.NewReader(schemaString))
+	if err != nil {
+		return nil, err
+	}
+
+	c := jsonschema.NewCompiler()
+	if err := c.AddResource(url, schema); err != nil {
+		return nil, err
+	}
+	sch, err := c.Compile(url)
+	if err != nil {
+		return nil, err
+	}
+
+	return &jsonschema.Vocabulary{
+		URL:     url,
+		Schema:  sch,
+		Compile: compilePropertyOrder,
+	}, nil
 }
 
-func (propertyOrderExt) Compile(_ jsonschema.CompilerContext, m map[string]any) (jsonschema.ExtSchema, error) {
-	if value, ok := m["propertyOrder"]; ok {
+func compilePropertyOrder(ctx *jsonschema.CompilerContext, obj map[string]any) (jsonschema.SchemaExt, error) {
+	if value, ok := obj["propertyOrder"]; ok {
 		n, err := value.(json.Number).Int64()
 		return propertyOrderSchema(n), err
 	}
@@ -38,6 +52,5 @@ func (propertyOrderExt) Compile(_ jsonschema.CompilerContext, m map[string]any) 
 	return nil, nil
 }
 
-func (s propertyOrderSchema) Validate(_ jsonschema.ValidationContext, _ any) error {
-	return nil
+func (s propertyOrderSchema) Validate(_ *jsonschema.ValidatorContext, _ any) {
 }

@@ -1,3 +1,3 @@
 Error:
-- "export": missing properties: "aggregation"
-- "export.groupingDimensions": expected array, but got string
+- "export": missing property "aggregation"
+- "export.groupingDimensions": got string, want array
