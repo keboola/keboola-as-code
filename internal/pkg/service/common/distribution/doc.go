@@ -57,14 +57,14 @@
 //   - Or it can be covered by application logic in another way, for example by a [Node.OnChangeListener].
 //
 // Read more:
-//   - https://etcd.io/docs/v3.5/learning/why/#notes-on-the-usage-of-lock-and-lease
+//   - https://etcd.io/docs/v3.6/learning/why/#notes-on-the-usage-of-lock-and-lease
 //   - "Actually, the lease mechanism itself doesn't guarantee mutual exclusion...."
 //
 // # Listeners
 //
 // Use [Node.OnChangeListener] method to create a listener for nodes distribution change events.
 //
-// [etcd lease]: https://etcd.io/docs/v3.5/learning/api/#lease-api
+// [etcd lease]: https://etcd.io/docs/v3.6/learning/api/#lease-api
 // [Hash Ring pattern]: https://www.youtube.com/watch?v=UF9Iqmg94tk
 // [lafikl/consistent]: https://github.com/lafikl/consistent
 package distribution

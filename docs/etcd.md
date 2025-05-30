@@ -26,17 +26,17 @@ This document describes how and why we use the [etcd](https://etcd.io/docs/) dat
 ## Features
 
 The following features of the etcd database are important to us:
-- [Data model](https://etcd.io/docs/v3.5/learning/data_model/)
+- [Data model](https://etcd.io/docs/v3.6/learning/data_model/)
   - etcd is a [KV store](https://en.wikipedia.org/wiki/Key%E2%80%93value_database); key and value are bytes.
   - Every change in the database increments a global counter - revision.
-  - The database [guarantees](https://etcd.io/docs/v3.5/learning/api_guarantees/) well-known properties: Atomicity, Consistency, Isolation, and Durability.
+  - The database [guarantees](https://etcd.io/docs/v3.6/learning/api_guarantees/) well-known properties: Atomicity, Consistency, Isolation, and Durability.
   - It is a database focused on consistency.
-  - The maximum recommended size of all data is [8GB](https://etcd.io/docs/v3.5/dev-guide/limit/).
-- Multiple keys from a `prefix/`, or `start-end` range can be loaded using [Range Queries](https://etcd.io/docs/v3.5/learning/api/#range).
-- The database provides `if, then, else` [transactions](https://etcd.io/docs/v3.5/learning/api/#transaction).
+  - The maximum recommended size of all data is [8GB](https://etcd.io/docs/v3.6/dev-guide/limit/).
+- Multiple keys from a `prefix/`, or `start-end` range can be loaded using [Range Queries](https://etcd.io/docs/v3.6/learning/api/#range).
+- The database provides `if, then, else` [transactions](https://etcd.io/docs/v3.6/learning/api/#transaction).
   - This is a different concept than transactions in relational databases.
-- The [Lease API](https://etcd.io/docs/v3.5/learning/api/#lease-api) enables deletion of keys on client disconnection or outage.
-- The [Watch API](https://etcd.io/docs/v3.5/learning/api/#watch-api) is very important to us.
+- The [Lease API](https://etcd.io/docs/v3.6/learning/api/#lease-api) enables deletion of keys on client disconnection or outage.
+- The [Watch API](https://etcd.io/docs/v3.6/learning/api/#watch-api) is very important to us.
   - The database sends information about key changes to clients.
   - The client does not have to periodically query the database state.
   - This allows the necessary part of the database state to be stored in memory.
@@ -268,11 +268,11 @@ require.NoError(t, txn.Do(ctx).Err())
 The `etcdop` framework does not change the default settings of the database isolation level.
 
 etcd provides two isolation levels on read:
-- [Linearizable Isolation](https://etcd.io/docs/v3.5/learning/api_guarantees/) - requires cluster consensus.
+- [Linearizable Isolation](https://etcd.io/docs/v3.6/learning/api_guarantees/) - requires cluster consensus.
   - > Linearizability provides the illusion that each operation applied by concurrent processes takes effect instantaneously at some point between its invocation and its response.
   - > etcd ensures linearizability for all operations by default.
   - > Linearizability comes with a cost, however, because linearized requests must go through the [Raft](https://raft.github.io/) consensus process.
-- [Serializable Isolation](https://etcd.io/docs/v3.5/learning/api_guarantees/) - reads only from one node.
+- [Serializable Isolation](https://etcd.io/docs/v3.6/learning/api_guarantees/) - reads only from one node.
   - > To obtain lower latencies and higher throughput for read requests.
   - > It may access stale data with respect to quorum.
 
