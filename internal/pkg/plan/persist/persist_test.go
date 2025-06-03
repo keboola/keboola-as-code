@@ -1,7 +1,6 @@
 package persist
 
 import (
-	"fmt"
 	"runtime"
 	"strconv"
 	"sync"
@@ -988,7 +987,6 @@ func (tc *testCase) run(t *testing.T) {
 	// Assert state after
 	assert.Empty(t, projectState.UntrackedPaths())
 	for _, objectState := range tc.expectedStates {
-		fmt.Println(objectState.Key())
 		realState, found := projectState.Get(objectState.Key())
 		assert.Truef(t, found, `%s should exists`, objectState.Desc())
 		assert.Equalf(t, objectState, realState, `object "%s" has unexpected content`, objectState.Desc())

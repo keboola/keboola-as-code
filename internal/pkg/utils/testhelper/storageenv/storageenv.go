@@ -2,15 +2,13 @@ package storageenv
 
 import (
 	"context"
-	"math/rand"
 	"strings"
-	"time"
 
-	"github.com/oklog/ulid/v2"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 type storageEnvTicketProvider struct {
@@ -42,9 +40,7 @@ func (p *storageEnvTicketProvider) getForTicket(key string) string {
 	nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
 	if _, found := p.envs.Lookup(key); !found && nameRegexp.MatchString(key) {
 		// Generate ULID
-		ms := ulid.Timestamp(time.Now())
-		entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
-		newID := ulid.MustNew(ms, entropy).String()
+		newID := ulid.NewDefaultGenerator().NewULID()
 
 		p.envs.Set(key, newID)
 		return newID

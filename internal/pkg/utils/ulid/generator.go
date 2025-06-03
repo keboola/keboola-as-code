@@ -1,8 +1,8 @@
 package ulid
 
 import (
+	crand "crypto/rand"
 	"io"
-	"math/rand"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -20,9 +20,7 @@ type defaultGenerator struct {
 
 // NewDefaultGenerator creates a new standard ULID generator.
 func NewDefaultGenerator() Generator {
-	source := rand.NewSource(time.Now().UnixNano())
-	random := rand.New(source)
-	entropyReader := ulid.Monotonic(random, 0)
+	entropyReader := ulid.Monotonic(crand.Reader, 0)
 
 	return &defaultGenerator{
 		entropy: entropyReader,

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,7 +16,6 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
-	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -28,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 type Project struct {
@@ -621,12 +620,11 @@ func (p *Project) prepareConfigs(
 		// Generate ID for config
 		p.logf("▶ ID for config \"%s\"...", configDesc)
 		// Generate ULID
-		ms := ulid.Timestamp(time.Now())
-		entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
-		newID := ulid.MustNew(ms, entropy).String()
+		generator := ulid.NewDefaultGenerator()
+		newID := generator.NewULID()
 		configWithRows.BranchID = branch.ID
 		configWithRows.ID = keboola.ConfigID(newID)
-		p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, configFixture.Name), configWithRows.ID.String())
+		p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, configFixture.Name), newID)
 		p.logf("✔️ ID for config \"%s\".", configDesc)
 
 		// For each row
@@ -636,9 +634,7 @@ func (p *Project) prepareConfigs(
 			// Generate ID for row
 			p.logf("▶ ID for config row \"%s\"...", rowDesc)
 			// Generate ULID
-			ms := ulid.Timestamp(time.Now())
-			entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
-			newID := ulid.MustNew(ms, entropy).String()
+			newID := generator.NewULID()
 			row.ID = keboola.RowID(newID)
 
 			// Generate row name for ENV, if needed
