@@ -80,6 +80,11 @@ func ValidateConfigRow(component *keboola.Component, configRow *model.ConfigRow)
 }
 
 func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
+	schema, err := NormalizeSchema(schema)
+	if err != nil {
+		return err
+	}
+
 	// Get parameters key
 	var parametersMap *orderedmap.OrderedMap
 	parameters, found := content.Get("parameters")
@@ -100,7 +105,7 @@ func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 	}
 
 	// Validate
-	err := validateDocument(schema, parametersMap)
+	err = validateDocument(schema, parametersMap)
 
 	// Process schema errors
 	validationError := &jsonschema.ValidationError{}
@@ -110,6 +115,42 @@ func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 		return err
 	}
 	return nil
+}
+
+func NormalizeSchema(schema []byte) ([]byte, error) {
+	// Decode JSON
+	m := orderedmap.New()
+	if err := json.Decode(schema, &m); err != nil {
+		return nil, err
+	}
+
+	m.VisitAllRecursive(func(path orderedmap.Path, value any, parent any) {
+		// Required field in a JSON schema should be an array of required nested fields.
+		// But, for historical reasons, in Keboola components, "required: true" is also used.
+		// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
+		if path.Last() == orderedmap.MapStep("required") && value == true {
+			if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
+				parentMap.Delete("required")
+			}
+		}
+
+		// JSON schema may contain empty enums, in dynamic selects.
+		if path.Last() == orderedmap.MapStep("enum") {
+			if enumArray, ok := value.([]any); ok && len(enumArray) == 0 {
+				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
+					parentMap.Set("enum", []any{"placeholder"})
+				}
+			}
+		}
+	})
+
+	// Encode back to JSON
+	normalized, err := json.Encode(m, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return normalized, nil
 }
 
 func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {

@@ -1,6 +1,8 @@
 package schema_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -330,6 +332,99 @@ func testInvalidComponentSchema(t *testing.T, invalidSchema []byte, expectedLogs
 	content.Set(`parameters`, orderedmap.New())
 	require.NoError(t, ValidateObjects(t.Context(), logger, registry))
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
+}
+
+func TestNormalizeSchema_RequiredTrue(t *testing.T) {
+	t.Parallel()
+
+	schema := []byte(`
+{
+  "type": "object",
+  "properties": {
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string",
+          "required": true
+        },
+        "number": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
+`)
+
+	// Normalize the schema
+	normalizedSchema, err := NormalizeSchema(schema)
+	require.NoError(t, err)
+
+	expectedSchema := []byte(`
+{
+  "type": "object",
+  "properties": {
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "number": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
+`)
+	var buf bytes.Buffer
+	err = json.Compact(&buf, expectedSchema)
+	require.NoError(t, err)
+	expectedSchema = buf.Bytes()
+
+	assert.Equal(t, strings.TrimSpace(string(expectedSchema)), strings.TrimSpace(string(normalizedSchema)))
+}
+
+func TestNormalizeSchema_EmptyEnum(t *testing.T) {
+	t.Parallel()
+
+	schema := []byte(`
+{
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": []
+    }
+  }
+}
+`)
+
+	// Normalize the schema
+	normalizedSchema, err := NormalizeSchema(schema)
+	require.NoError(t, err)
+
+	expectedSchema := []byte(`
+{
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "placeholder"
+      ]
+    }
+  }
+}
+`)
+	var buf bytes.Buffer
+	err = json.Compact(&buf, expectedSchema)
+	require.NoError(t, err)
+	expectedSchema = buf.Bytes()
+
+	assert.Equal(t, strings.TrimSpace(string(expectedSchema)), strings.TrimSpace(string(normalizedSchema)))
 }
 
 func getTestSchema() []byte {
