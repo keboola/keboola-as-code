@@ -1,6 +1,7 @@
 package ulid
 
 import (
+	"io"
 	"math/rand"
 	"time"
 
@@ -13,19 +14,23 @@ type Generator interface {
 }
 
 // defaultGenerator is the standard ULID generator using oklog/ulid.
-type defaultGenerator struct{}
+type defaultGenerator struct {
+	entropy io.Reader
+}
 
 // NewDefaultGenerator creates a new standard ULID generator.
 func NewDefaultGenerator() Generator {
-	return &defaultGenerator{}
+	source := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(source)
+	entropyReader := ulid.Monotonic(random, 0)
+
+	return &defaultGenerator{
+		entropy: entropyReader,
+	}
 }
 
 // NewULID generates a new ULID string.
-// It replicates the entropy generation logic previously in the executor.
 func (g *defaultGenerator) NewULID() string {
 	ms := ulid.Timestamp(time.Now())
-	// A new rand.Source is created for each ULID to ensure entropy,
-	// similar to the original implementation.
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
-	return ulid.MustNew(ms, entropy).String()
+	return ulid.MustNew(ms, g.entropy).String()
 }

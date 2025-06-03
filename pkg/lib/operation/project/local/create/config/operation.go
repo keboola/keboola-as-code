@@ -2,17 +2,15 @@ package config
 
 import (
 	"context"
-	"math/rand"
-	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/oklog/ulid/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 )
 
@@ -40,9 +38,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Generate unique ID
-	ms := ulid.Timestamp(time.Now())
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
-	newID := ulid.MustNew(ms, entropy).String()
+	newID := ulid.NewDefaultGenerator().NewULID()
 	key.ID = keboola.ConfigID(newID)
 
 	// Create and save object

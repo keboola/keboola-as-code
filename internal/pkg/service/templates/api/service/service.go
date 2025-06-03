@@ -29,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	deleteTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
 	renameInst "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
@@ -876,6 +877,7 @@ func generateTemplatePreview(
 		d.Components(),
 		projectState.State(),
 		d.ProjectBackends(),
+		ulid.NewDefaultGenerator(),
 	)
 	plan, err := useTemplate.PrepareTemplate(ctx, d, useTemplate.ExtendedOptions{
 		TargetBranch:          o.TargetBranch,
