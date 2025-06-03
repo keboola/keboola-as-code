@@ -227,7 +227,7 @@ func registerOkResponder(t *testing.T, transport *httpmock.MockTransport, captur
 
 		*capturedBody = prettyBody.String()
 
-		return httpmock.NewJsonResponderOrPanic(http.StatusCreated, map[string]any{"id": "12345"})(req)
+		return httpmock.NewJsonResponderOrPanic(http.StatusCreated, map[string]any{"uuid": "12345"})(req)
 	})
 }
 
