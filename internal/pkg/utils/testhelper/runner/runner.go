@@ -94,7 +94,7 @@ func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.Cance
 	ctx, cancelFn := context.WithTimeout(t.Context(), testTimeout)
 
 	// Create ENV provider
-	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.ProjectAPI(), project.Env())
+	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.Env())
 
 	envMap := project.Env()
 	// Disable version check

@@ -2,8 +2,11 @@ package row
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -21,7 +24,6 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }
@@ -32,9 +34,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	logger := d.Logger()
 
-	// Get Storage API
-	api := d.KeboolaProjectAPI()
-
 	// Config row key
 	key := model.ConfigRowKey{
 		BranchID:    o.BranchID,
@@ -43,13 +42,10 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Generate unique ID
-	ticketProvider := keboola.NewTicketProvider(ctx, api)
-	ticketProvider.Request(func(ticket *keboola.Ticket) {
-		key.ID = keboola.RowID(ticket.ID)
-	})
-	if err := ticketProvider.Resolve(); err != nil {
-		return errors.Errorf(`cannot generate new ID: %w`, err)
-	}
+	ms := ulid.Timestamp(time.Now())
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+	newID := ulid.MustNew(ms, entropy).String()
+	key.ID = keboola.RowID(newID)
 
 	// Create and save object
 	uow := projectState.LocalManager().NewUnitOfWork(ctx)

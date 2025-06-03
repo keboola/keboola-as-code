@@ -55,7 +55,6 @@
 package dependencies
 
 import (
-	"context"
 	"io"
 	"net/http"
 
@@ -106,7 +105,6 @@ type PublicScope interface {
 // ProjectScope dependencies require authentication - Storage API token.
 type ProjectScope interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
-	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
 	ProjectBackends() []string
 	ProjectName() string

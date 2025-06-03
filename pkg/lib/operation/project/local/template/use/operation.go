@@ -43,7 +43,6 @@ type dependencies interface {
 	StorageAPIHost() string
 	StorageAPITokenID() string
 	Logger() log.Logger
-	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
 	ProjectBackends() []string
 	Telemetry() telemetry.Telemetry
@@ -63,16 +62,24 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.template.use")
 	defer span.End(&err)
 
-	// Create tickets provider, to generate new IDS
-	tickets := d.ObjectIDGeneratorFactory()(ctx)
-
 	if o.InstanceID == "" {
 		// Generate ID for the template instance
 		o.InstanceID = idgenerator.TemplateInstanceID()
 	}
 
 	// Prepare template
-	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.InstanceID, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State(), d.ProjectBackends())
+	tmplCtx := use.NewContext(
+		ctx,
+		tmpl.Reference(),
+		tmpl.ObjectsRoot(),
+		o.InstanceID,
+		o.TargetBranch,
+		o.Inputs,
+		tmpl.Inputs().InputsMap(),
+		d.Components(),
+		projectState.State(),
+		d.ProjectBackends(),
+	)
 	plan, err := PrepareTemplate(ctx, d, ExtendedOptions{
 		TargetBranch:          o.TargetBranch,
 		Inputs:                o.Inputs,

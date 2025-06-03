@@ -4,11 +4,14 @@ package preview
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"sync"
+	"time"
 
 	jsonnetLib "github.com/google/go-jsonnet"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet/fsimporter"
@@ -29,10 +32,8 @@ type Context struct {
 	jsonnetCtx        *jsonnet.Context
 	replacements      *replacevalues.Values
 	inputsValues      map[string]template.InputValue
-	tickets           *keboola.TicketProvider
 	components        *model.ComponentsMap
 	placeholdersCount int
-	ticketsResolved   bool
 	projectBackends   []string
 
 	lock          *sync.Mutex
@@ -78,7 +79,17 @@ const (
 	placeholderEnd   = "~~>>"
 )
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *keboola.TicketProvider, components *model.ComponentsMap, projectState *state.State, projectBackends []string) *Context {
+func NewContext(
+	ctx context.Context,
+	templateRef model.TemplateRef,
+	objectsRoot filesystem.Fs,
+	targetBranch model.BranchKey,
+	inputsValues template.InputsValues,
+	inputsDefsMap map[string]*template.Input,
+	components *model.ComponentsMap,
+	projectState *state.State,
+	projectBackends []string,
+) *Context {
 	ctx = template.NewContext(ctx)
 	c := &Context{
 		_context:        ctx,
@@ -86,7 +97,6 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		jsonnetCtx:      jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
 		replacements:    replacevalues.NewValues(),
 		inputsValues:    make(map[string]template.InputValue),
-		tickets:         tickets,
 		components:      components,
 		lock:            &sync.Mutex{},
 		placeholders:    make(PlaceholdersMap),
@@ -146,12 +156,6 @@ func (c *Context) Placeholders() PlaceholdersMap {
 
 func (c *Context) Replacements() (*replacevalues.Values, error) {
 	// Generate new IDs
-	if !c.ticketsResolved {
-		if err := c.tickets.Resolve(); err != nil {
-			return nil, err
-		}
-		c.ticketsResolved = true
-	}
 	return c.replacements, nil
 }
 
@@ -219,17 +223,20 @@ func (c *Context) mapID(oldID any) string {
 	p := c.RegisterPlaceholder(oldID, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
 		var newID any
-		c.tickets.Request(func(ticket *keboola.Ticket) {
-			switch p.asValue.(type) {
-			case keboola.ConfigID:
-				newID = keboola.ConfigID(ticket.ID)
-			case keboola.RowID:
-				newID = keboola.RowID(ticket.ID)
-			default:
-				panic(errors.New("unexpected ID type"))
-			}
-			cb(newID)
-		})
+		// Generate ULID
+		ms := ulid.Timestamp(time.Now())
+		entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+		generatedID := ulid.MustNew(ms, entropy).String()
+
+		switch p.asValue.(type) {
+		case keboola.ConfigID:
+			newID = keboola.ConfigID(generatedID)
+		case keboola.RowID:
+			newID = keboola.RowID(generatedID)
+		default:
+			panic(errors.New("unexpected ID type"))
+		}
+		cb(newID)
 	})
 	return p.asString
 }

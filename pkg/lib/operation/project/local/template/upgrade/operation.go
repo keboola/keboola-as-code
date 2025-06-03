@@ -27,7 +27,6 @@ type dependencies interface {
 	Logger() log.Logger
 	Components() *model.ComponentsMap
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
-	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
 	ProjectBackends() []string
 	StorageAPIHost() string
@@ -40,11 +39,19 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.template.upgrade")
 	defer span.End(&err)
 
-	// Create tickets provider, to generate new IDs, if needed
-	tickets := d.ObjectIDGeneratorFactory()(ctx)
-
 	// Prepare template
-	tmplCtx := upgrade.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceID, o.Branch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State(), d.ProjectBackends())
+	tmplCtx := upgrade.NewContext(
+		ctx,
+		tmpl.Reference(),
+		tmpl.ObjectsRoot(),
+		o.Instance.InstanceID,
+		o.Branch,
+		o.Inputs,
+		tmpl.Inputs().InputsMap(),
+		d.Components(),
+		projectState.State(),
+		d.ProjectBackends(),
+	)
 	plan, err := use.PrepareTemplate(ctx, d, use.ExtendedOptions{
 		TargetBranch:          o.Branch,
 		Inputs:                o.Inputs,

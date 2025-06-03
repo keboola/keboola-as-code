@@ -1,14 +1,12 @@
 package persist
 
 import (
-	"net/http"
+	"fmt"
 	"runtime"
 	"testing"
 
-	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -927,15 +925,6 @@ func (tc *testCase) run(t *testing.T) {
 	// Container
 	d := dependencies.NewMocked(t, t.Context())
 
-	// Register new IDs API responses
-	var ticketResponses []*http.Response
-	for i := 1; i <= tc.expectedNewIds; i++ {
-		response, err := httpmock.NewJsonResponse(200, map[string]any{"id": cast.ToString(1000 + i)})
-		require.NoError(t, err)
-		ticketResponses = append(ticketResponses, response)
-	}
-	d.MockedHTTPTransport().RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
-
 	// Load state
 	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true}, d)
 	require.NoError(t, err)
@@ -970,12 +959,10 @@ func (tc *testCase) run(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, plan.Invoke(ctx, d.Logger(), d.KeboolaProjectAPI(), projectState.State()))
 
-	// Assert new IDs requests count
-	assert.Equal(t, tc.expectedNewIds, d.MockedHTTPTransport().GetCallCountInfo()["POST =~/storage/tickets"])
-
 	// Assert state after
 	assert.Empty(t, projectState.UntrackedPaths())
 	for _, objectState := range tc.expectedStates {
+		fmt.Println(objectState.Key())
 		realState, found := projectState.Get(objectState.Key())
 		assert.Truef(t, found, `%s should exists`, objectState.Desc())
 		assert.Equalf(t, objectState, realState, `object "%s" has unexpected content`, objectState.Desc())

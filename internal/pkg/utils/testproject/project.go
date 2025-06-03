@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
+	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -548,18 +550,19 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 	ctx, cancelFn := context.WithCancelCause(p.ctx)
 	defer cancelFn(errors.New("configs creation in default branch cancelled"))
 
-	tickets := keboola.NewTicketProvider(ctx, p.keboolaProjectAPI)
 	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
 	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
 	// Prepare configs
 	envPrefix := "TEST_BRANCH_ALL_CONFIG"
-	p.prepareConfigs(ctx, grp, sendReady, tickets, envPrefix, configs, p.defaultBranch)
-
-	// Generate new IDs
-	if err := tickets.Resolve(); err != nil {
-		return errors.Errorf(`cannot generate new IDs: %w`, err)
-	}
+	p.prepareConfigs(
+		ctx,
+		grp,
+		sendReady,
+		envPrefix,
+		configs,
+		p.defaultBranch,
+	)
 
 	// Wait for requests
 	close(sendReady) // unblock requests
@@ -573,19 +576,20 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	ctx, cancelFn := context.WithCancelCause(p.ctx)
 	defer cancelFn(errors.New("configs creation cancelled"))
 
-	tickets := keboola.NewTicketProvider(ctx, p.keboolaProjectAPI)
 	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
 	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
 	// Prepare configs
 	for _, branchFixture := range branches {
 		envPrefix := fmt.Sprintf("TEST_BRANCH_%s_CONFIG", branchFixture.Name)
-		p.prepareConfigs(ctx, grp, sendReady, tickets, envPrefix, branchFixture.Configs, p.branchesByName[branchFixture.Name])
-	}
-
-	// Generate new IDs
-	if err := tickets.Resolve(); err != nil {
-		return errors.Errorf(`cannot generate new IDs: %w`, err)
+		p.prepareConfigs(
+			ctx,
+			grp,
+			sendReady,
+			envPrefix,
+			branchFixture.Configs,
+			p.branchesByName[branchFixture.Name],
+		)
 	}
 
 	// Add additional ENVs
@@ -601,7 +605,14 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	return nil
 }
 
-func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendReady <-chan struct{}, tickets *keboola.TicketProvider, envPrefix string, names []string, branch *keboola.Branch) {
+func (p *Project) prepareConfigs(
+	ctx context.Context,
+	grp *errgroup.Group,
+	sendReady <-chan struct{},
+	envPrefix string,
+	names []string,
+	branch *keboola.Branch,
+) {
 	for _, name := range names {
 		configFixture := fixtures.LoadConfig(name)
 		configWithRows := configFixture.ToAPI()
@@ -609,12 +620,14 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendR
 
 		// Generate ID for config
 		p.logf("▶ ID for config \"%s\"...", configDesc)
-		tickets.Request(func(ticket *keboola.Ticket) {
-			configWithRows.BranchID = branch.ID
-			configWithRows.ID = keboola.ConfigID(ticket.ID)
-			p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, configFixture.Name), configWithRows.ID.String())
-			p.logf("✔️ ID for config \"%s\".", configDesc)
-		})
+		// Generate ULID
+		ms := ulid.Timestamp(time.Now())
+		entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+		newID := ulid.MustNew(ms, entropy).String()
+		configWithRows.BranchID = branch.ID
+		configWithRows.ID = keboola.ConfigID(newID)
+		p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, configFixture.Name), configWithRows.ID.String())
+		p.logf("✔️ ID for config \"%s\".", configDesc)
 
 		// For each row
 		for rowIndex, row := range configWithRows.Rows {
@@ -622,17 +635,19 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendR
 
 			// Generate ID for row
 			p.logf("▶ ID for config row \"%s\"...", rowDesc)
-			tickets.Request(func(ticket *keboola.Ticket) {
-				row.ID = keboola.RowID(ticket.ID)
+			// Generate ULID
+			ms := ulid.Timestamp(time.Now())
+			entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+			newID := ulid.MustNew(ms, entropy).String()
+			row.ID = keboola.RowID(newID)
 
-				// Generate row name for ENV, if needed
-				rowName := row.Name
-				if len(rowName) == 0 {
-					rowName = cast.ToString(rowIndex + 1)
-				}
-				p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, configFixture.Name, rowName), row.ID.String())
-				p.logf("✔️ ID for config row \"%s\".", rowDesc)
-			})
+			// Generate row name for ENV, if needed
+			rowName := row.Name
+			if len(rowName) == 0 {
+				rowName = cast.ToString(rowIndex + 1)
+			}
+			p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, configFixture.Name, rowName), row.ID.String())
+			p.logf("✔️ ID for config row \"%s\".", rowDesc)
 		}
 
 		// Create configs and rows

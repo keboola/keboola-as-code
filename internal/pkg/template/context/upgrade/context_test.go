@@ -1,7 +1,6 @@
 package upgrade_test
 
 import (
-	"net/http"
 	"strings"
 	"testing"
 
@@ -9,8 +8,6 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
-	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -30,25 +27,13 @@ func TestContext(t *testing.T) {
 	ctx := t.Context()
 
 	// Mocked ticket provider
-	c, httpTransport := client.NewMockedClient()
+	_, httpTransport := client.NewMockedClient()
 	httpTransport.RegisterResponder(resty.MethodGet, `https://connection.keboola.com/v2/storage/?exclude=components`,
 		httpmock.NewStringResponder(200, `{
 			"services": [],
 			"features": []
 		}`),
 	)
-	api, err := keboola.NewAuthorizedAPI(t.Context(), "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
-	require.NoError(t, err)
-	tickets := keboola.NewTicketProvider(t.Context(), api)
-
-	// Mocked tickets
-	var ticketResponses []*http.Response
-	for i := 1; i <= 2; i++ {
-		response, err := httpmock.NewJsonResponse(200, map[string]any{"id": cast.ToString(1000 + i)})
-		require.NoError(t, err)
-		ticketResponses = append(ticketResponses, response)
-	}
-	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Inputs
 	targetBranch := model.BranchKey{ID: 123}
@@ -100,7 +85,18 @@ func TestContext(t *testing.T) {
 
 	// Create context
 	fs := aferofs.NewMemoryFs()
-	tmplContext := NewContext(t.Context(), templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
+	tmplContext := NewContext(
+		t.Context(),
+		templateRef,
+		fs,
+		instanceID,
+		targetBranch,
+		inputsValues,
+		map[string]*template.Input{},
+		testapi.MockedComponentsMap(),
+		projectState,
+		d.ProjectBackends(),
+	)
 
 	// Check Jsonnet functions
 	code := `
