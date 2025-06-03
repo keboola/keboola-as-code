@@ -4,14 +4,11 @@ package use
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"sync"
-	"time"
 
 	jsonnetLib "github.com/google/go-jsonnet"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/oklog/ulid/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet/fsimporter"
@@ -25,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 // Context represents the process of the replacing values when applying a template.
@@ -59,6 +57,7 @@ type Context struct {
 	components        *model.ComponentsMap
 	placeholdersCount int
 	projectBackends   []string
+	idGenerator       ulid.Generator
 
 	lock          *sync.Mutex
 	placeholders  PlaceholdersMap
@@ -107,6 +106,7 @@ func NewContext(
 	components *model.ComponentsMap,
 	projectState *state.State,
 	projectBackends []string,
+	idGenerator ulid.Generator,
 ) *Context {
 	ctx = template.NewContext(ctx)
 	c := &Context{
@@ -124,6 +124,7 @@ func NewContext(
 		inputsUsage:     metadata.NewInputsUsage(),
 		inputsDefsMap:   inputsDefsMap,
 		projectBackends: projectBackends,
+		idGenerator:     idGenerator,
 	}
 
 	// Convert inputsValues to map
@@ -250,10 +251,8 @@ func (c *Context) mapID(oldID any) string {
 	p := c.RegisterPlaceholder(oldID, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
 		var newID any
-		// Generate ULID
-		ms := ulid.Timestamp(time.Now())
-		entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
-		generatedID := ulid.MustNew(ms, entropy).String()
+		// Generate ULID using the generator
+		generatedID := c.idGenerator.NewULID()
 
 		switch p.asValue.(type) {
 		case keboola.ConfigID:

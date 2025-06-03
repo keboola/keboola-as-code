@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/use"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 // dataAppInstanceIDContentPath contains path to the app instance ID in the configuration content.
@@ -40,6 +41,7 @@ func NewContext(
 	components *model.ComponentsMap,
 	projectState *state.State,
 	backends []string,
+	idGenerator ulid.Generator,
 ) *Context {
 	c := &Context{
 		Context: use.NewContext(
@@ -53,6 +55,7 @@ func NewContext(
 			components,
 			projectState,
 			backends,
+			idGenerator,
 		),
 	}
 

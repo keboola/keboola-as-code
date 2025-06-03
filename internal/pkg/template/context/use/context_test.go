@@ -2,7 +2,9 @@ package use_test
 
 import (
 	"context"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
@@ -26,6 +28,28 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
+
+// mockUlidGenerator generates sequential IDs for testing.
+// Copied from upgrade_test, ensure it meets the needs of this test or adjust.
+type mockUlidGenerator struct {
+	mutex  sync.Mutex
+	nextID int
+}
+
+// newMockUlidGenerator creates a generator that will produce IDs "1001", "1002", ...
+func newMockUlidGenerator() *mockUlidGenerator {
+	return &mockUlidGenerator{
+		nextID: 1001, // Default starting ID, adjust if tests expect different sequences
+	}
+}
+
+func (g *mockUlidGenerator) NewULID() string {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+	idStr := strconv.Itoa(g.nextID)
+	g.nextID++
+	return idStr
+}
 
 func TestContext(t *testing.T) {
 	t.Parallel()
@@ -81,6 +105,7 @@ func TestContext(t *testing.T) {
 	// Create template use context
 	d := dependenciesPkg.NewMocked(t, ctx)
 	projectState := d.MockedState()
+	mockIDGenerator := newMockUlidGenerator()
 	useCtx := NewContext(
 		ctxWithVal,
 		templateRef,
@@ -92,6 +117,7 @@ func TestContext(t *testing.T) {
 		testapi.MockedComponentsMap(),
 		projectState,
 		d.ProjectBackends(),
+		mockIDGenerator,
 	)
 
 	// Check Jsonnet functions
@@ -206,6 +232,7 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Context factory for template use operation
 	newUseCtx := func() *Context {
+		mockIDGen := newMockUlidGenerator()
 		return NewContext(
 			ctx,
 			templateRef,
@@ -217,6 +244,7 @@ func TestComponentsFunctions(t *testing.T) {
 			components,
 			projectState,
 			d.ProjectBackends(),
+			mockIDGen,
 		)
 	}
 
@@ -329,7 +357,8 @@ func TestHasBackendFunction(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 
 	// Context factory for template use operation
-	newUseCtx := func() *Context {
+	newUseCtxFactory := func() *Context {
+		mockIDGen := newMockUlidGenerator()
 		return NewContext(
 			ctx,
 			templateRef,
@@ -341,6 +370,7 @@ func TestHasBackendFunction(t *testing.T) {
 			components,
 			projectState,
 			d.ProjectBackends(),
+			mockIDGen,
 		)
 	}
 
@@ -359,7 +389,7 @@ func TestHasBackendFunction(t *testing.T) {
 }
 `
 
-	output, err := jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
+	output, err := jsonnet.Evaluate(code, newUseCtxFactory().JsonnetContext())
 	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
@@ -372,7 +402,7 @@ func TestHasBackendFunction(t *testing.T) {
   "snowflake": false
 }
 `
-	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
+	output, err = jsonnet.Evaluate(code, newUseCtxFactory().JsonnetContext())
 	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }

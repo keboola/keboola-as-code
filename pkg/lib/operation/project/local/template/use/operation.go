@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/use"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	saveProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
@@ -79,6 +80,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 		d.Components(),
 		projectState.State(),
 		d.ProjectBackends(),
+		ulid.NewDefaultGenerator(),
 	)
 	plan, err := PrepareTemplate(ctx, d, ExtendedOptions{
 		TargetBranch:          o.TargetBranch,

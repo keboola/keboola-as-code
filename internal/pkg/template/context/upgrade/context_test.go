@@ -1,7 +1,9 @@
 package upgrade_test
 
 import (
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
@@ -20,6 +22,27 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
+
+// mockUlidGenerator generates sequential IDs for testing.
+type mockUlidGenerator struct {
+	mutex  sync.Mutex
+	nextID int
+}
+
+// newMockUlidGenerator creates a generator that will produce IDs "1001", "1002", ...
+func newMockUlidGenerator() *mockUlidGenerator {
+	return &mockUlidGenerator{
+		nextID: 1001, // Start IDs from 1001 as per test expectations
+	}
+}
+
+func (g *mockUlidGenerator) NewULID() string {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+	idStr := strconv.Itoa(g.nextID)
+	g.nextID++
+	return idStr
+}
 
 func TestContext(t *testing.T) {
 	t.Parallel()
@@ -85,6 +108,7 @@ func TestContext(t *testing.T) {
 
 	// Create context
 	fs := aferofs.NewMemoryFs()
+	mockIDGenerator := newMockUlidGenerator() // Create mock generator
 	tmplContext := NewContext(
 		t.Context(),
 		templateRef,
@@ -96,6 +120,7 @@ func TestContext(t *testing.T) {
 		testapi.MockedComponentsMap(),
 		projectState,
 		d.ProjectBackends(),
+		mockIDGenerator, // Pass mock generator
 	)
 
 	// Check Jsonnet functions

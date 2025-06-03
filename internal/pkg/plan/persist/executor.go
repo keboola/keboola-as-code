@@ -2,34 +2,34 @@ package persist
 
 import (
 	"context"
-	"math/rand"
-	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/oklog/ulid/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 type executor struct {
 	*Plan
 	*state.State
-	logger log.Logger
-	uow    *local.UnitOfWork
-	errors errors.MultiError
+	logger        log.Logger
+	uow           *local.UnitOfWork
+	errors        errors.MultiError
+	ulidGenerator ulid.Generator
 }
 
-func newExecutor(ctx context.Context, logger log.Logger, keboolaProjectAPI *keboola.AuthorizedAPI, projectState *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, logger log.Logger, projectState *state.State, plan *Plan, idGenerator ulid.Generator) *executor {
 	return &executor{
-		Plan:   plan,
-		State:  projectState,
-		logger: logger,
-		uow:    projectState.LocalManager().NewUnitOfWork(ctx),
-		errors: errors.NewMultiError(),
+		Plan:          plan,
+		State:         projectState,
+		logger:        logger,
+		uow:           projectState.LocalManager().NewUnitOfWork(ctx),
+		errors:        errors.NewMultiError(),
+		ulidGenerator: idGenerator,
 	}
 }
 
@@ -57,10 +57,8 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 	// Generate unique ID
 	key := action.Key
 
-	// Generate ULID
-	ms := ulid.Timestamp(time.Now())
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
-	newID := ulid.MustNew(ms, entropy).String()
+	// Generate ULID using the generator
+	newID := e.ulidGenerator.NewULID()
 
 	// Set new id to the key
 	switch k := key.(type) {

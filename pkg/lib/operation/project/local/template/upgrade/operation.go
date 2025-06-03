@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 )
 
@@ -51,6 +52,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 		d.Components(),
 		projectState.State(),
 		d.ProjectBackends(),
+		ulid.NewDefaultGenerator(),
 	)
 	plan, err := use.PrepareTemplate(ctx, d, use.ExtendedOptions{
 		TargetBranch:          o.Branch,
