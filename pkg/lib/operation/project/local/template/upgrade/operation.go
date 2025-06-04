@@ -34,6 +34,7 @@ type dependencies interface {
 	StorageAPITokenID() string
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer
+	NewIDGenerator() ulid.Generator
 }
 
 func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (result *use.Result, err error) {
@@ -52,7 +53,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 		d.Components(),
 		projectState.State(),
 		d.ProjectBackends(),
-		ulid.NewDefaultGenerator(),
+		d.NewIDGenerator(),
 	)
 	plan, err := use.PrepareTemplate(ctx, d, use.ExtendedOptions{
 		TargetBranch:          o.Branch,

@@ -23,6 +23,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer
+	NewIDGenerator() ulid.Generator
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -48,7 +49,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(ctx, logger, projectState.State(), ulid.NewDefaultGenerator()); err != nil {
+		if err := plan.Invoke(ctx, logger, projectState.State(), d.NewIDGenerator()); err != nil {
 			return errors.PrefixError(err, "cannot persist objects")
 		}
 

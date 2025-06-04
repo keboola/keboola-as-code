@@ -612,6 +612,7 @@ func (p *Project) prepareConfigs(
 	names []string,
 	branch *keboola.Branch,
 ) {
+	generator := ulid.NewDefaultGenerator()
 	for _, name := range names {
 		configFixture := fixtures.LoadConfig(name)
 		configWithRows := configFixture.ToAPI()
@@ -620,7 +621,6 @@ func (p *Project) prepareConfigs(
 		// Generate ID for config
 		p.logf("▶ ID for config \"%s\"...", configDesc)
 		// Generate ULID
-		generator := ulid.NewDefaultGenerator()
 		newID := generator.NewULID()
 		configWithRows.BranchID = branch.ID
 		configWithRows.ID = keboola.ConfigID(newID)

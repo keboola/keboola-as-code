@@ -48,6 +48,7 @@ type dependencies interface {
 	ProjectBackends() []string
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer
+	NewIDGenerator() ulid.Generator
 }
 
 func LoadTemplateOptions() loadState.Options {
@@ -80,7 +81,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 		d.Components(),
 		projectState.State(),
 		d.ProjectBackends(),
-		ulid.NewDefaultGenerator(),
+		d.NewIDGenerator(),
 	)
 	plan, err := PrepareTemplate(ctx, d, ExtendedOptions{
 		TargetBranch:          o.TargetBranch,

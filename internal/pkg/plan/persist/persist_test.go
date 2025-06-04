@@ -2,8 +2,6 @@ package persist
 
 import (
 	"runtime"
-	"strconv"
-	"sync"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -29,27 +27,6 @@ type testCase struct {
 	expectedPlan    []action
 	expectedStates  []model.ObjectState
 	expectedMissing []model.Key
-}
-
-// mockUlidGenerator generates sequential IDs for testing.
-type mockUlidGenerator struct {
-	mutex  sync.Mutex
-	nextID int
-}
-
-// newMockUlidGenerator creates a generator that will produce IDs "1001", "1002", ...
-func newMockUlidGenerator() *mockUlidGenerator {
-	return &mockUlidGenerator{
-		nextID: 1001, // Start IDs from 1001 as per test expectations
-	}
-}
-
-func (g *mockUlidGenerator) NewULID() string {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-	idStr := strconv.Itoa(g.nextID)
-	g.nextID++
-	return idStr
 }
 
 func TestPersistNoChange(t *testing.T) {
@@ -947,9 +924,6 @@ func (tc *testCase) run(t *testing.T) {
 	// Container
 	d := dependencies.NewMocked(t, t.Context())
 
-	// Create mock ULID generator
-	mockIDGenerator := newMockUlidGenerator()
-
 	// Load state
 	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true}, d)
 	require.NoError(t, err)
@@ -982,7 +956,7 @@ func (tc *testCase) run(t *testing.T) {
 	// Invoke
 	plan, err = NewPlan(ctx, projectState.State()) // plan with callbacks
 	require.NoError(t, err)
-	require.NoError(t, plan.Invoke(ctx, d.Logger(), projectState.State(), mockIDGenerator))
+	require.NoError(t, plan.Invoke(ctx, d.Logger(), projectState.State(), d.NewIDGenerator()))
 
 	// Assert state after
 	assert.Empty(t, projectState.UntrackedPaths())

@@ -23,6 +23,7 @@ type Options struct {
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	NewIDGenerator() ulid.Generator
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -38,7 +39,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Generate unique ID
-	newID := ulid.NewDefaultGenerator().NewULID()
+	newID := d.NewIDGenerator().NewULID()
 	key.ID = keboola.ConfigID(newID)
 
 	// Create and save object

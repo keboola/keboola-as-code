@@ -6,7 +6,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -46,6 +48,28 @@ type mocked struct {
 	config              *MockedConfig
 	mockedHTTPTransport *httpmock.MockTransport
 	testEtcdClient      *etcdPkg.Client
+}
+
+// mockUlidGenerator generates sequential IDs for testing.
+// Copied from upgrade_test, ensure it meets the needs of this test or adjust.
+type mockUlidGenerator struct {
+	mutex  sync.Mutex
+	nextID int
+}
+
+// newMockUlidGenerator creates a generator that will produce IDs "1001", "1002", ...
+func newMockUlidGenerator() *mockUlidGenerator {
+	return &mockUlidGenerator{
+		nextID: 1001, // Default starting ID, adjust if tests expect different sequences
+	}
+}
+
+func (g *mockUlidGenerator) NewULID() string {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+	idStr := strconv.Itoa(g.nextID)
+	g.nextID++
+	return idStr
 }
 
 type MockedConfig struct {
@@ -290,7 +314,7 @@ func NewMocked(tb testing.TB, ctx context.Context, opts ...MockedOption) Mocked 
 	// Create dependencies container
 	var err error
 	d := &mocked{config: cfg, t: tb, mockedHTTPTransport: mockedHTTPTransport}
-	d.baseScope = newBaseScope(ctx, logger, cfg.telemetry, cfg.stdout, cfg.stderr, cfg.clock, proc, httpClient)
+	d.baseScope = newBaseScope(ctx, logger, cfg.telemetry, cfg.stdout, cfg.stderr, cfg.clock, proc, httpClient, newMockUlidGenerator())
 	d.publicScope, err = newPublicScope(ctx, d, cfg.storageAPIHost, WithPreloadComponents(true))
 	require.NoError(tb, err)
 	d.projectScope, err = newProjectScope(ctx, d, cfg.storageAPIToken)
