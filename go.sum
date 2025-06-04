@@ -604,13 +604,8 @@ github.com/keboola/go-oauth2-proxy/v7 v7.0.0-20250325124709-f4d482276c37 h1:asV4
 github.com/keboola/go-oauth2-proxy/v7 v7.0.0-20250325124709-f4d482276c37/go.mod h1:obobYo1zYAcAt8cjTbsj6o7ZI1x0hhZuQSUPRlzwZ1k=
 github.com/keboola/go-utils v1.3.3 h1:H3FuF8aRQ5eO529aFXja6Z6PQ+iADnsTb3Ilnc6EwhA=
 github.com/keboola/go-utils v1.3.3/go.mod h1:xBr4P0ErJTbuQihw5Fq4fE7VYMhBWxDQj+UWInV4x/k=
-<<<<<<< HEAD
-github.com/keboola/keboola-sdk-go/v2 v2.1.2-0.20250603080622-3cbb8db044d7 h1:dKrQCsjHv/Z9uLe+ojWHFnbV0hxll9DEzkFF6OdnldM=
-github.com/keboola/keboola-sdk-go/v2 v2.1.2-0.20250603080622-3cbb8db044d7/go.mod h1:dvrwbY9TDwlX/muPn0mjU+uzQTxVkPITUVgyUX4sUOs=
-=======
-github.com/keboola/keboola-sdk-go/v2 v2.1.2-0.20250603081542-5b53d3826cfa h1:5IeQr8VdKyOOKhUhKBjnEja9K3xVmvSEJV0qsx571HU=
-github.com/keboola/keboola-sdk-go/v2 v2.1.2-0.20250603081542-5b53d3826cfa/go.mod h1:dvrwbY9TDwlX/muPn0mjU+uzQTxVkPITUVgyUX4sUOs=
->>>>>>> 9f74bf799 (BC: Remove ticket generator)
+github.com/keboola/keboola-sdk-go/v2 v2.3.0 h1:gspW0qpdTVBXTj+QtS4hQhpMncOmcfLFDVwF2WWwor8=
+github.com/keboola/keboola-sdk-go/v2 v2.3.0/go.mod h1:dvrwbY9TDwlX/muPn0mjU+uzQTxVkPITUVgyUX4sUOs=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

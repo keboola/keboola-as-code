@@ -1,8 +1,11 @@
 package ulid
 
 import (
+	"crypto/rand"
 	crand "crypto/rand"
+	"encoding/binary"
 	"io"
+	"log"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -18,9 +21,18 @@ type defaultGenerator struct {
 	entropy io.Reader
 }
 
+// Generates a secure random seed
+func secureRandomSeed() uint64 {
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		log.Fatal("cannot read random seed:", err)
+	}
+	return uint64(binary.BigEndian.Uint64(b[:]))
+}
+
 // NewDefaultGenerator creates a new standard ULID generator.
 func NewDefaultGenerator() Generator {
-	entropyReader := ulid.Monotonic(crand.Reader, 0)
+	entropyReader := ulid.Monotonic(crand.Reader, secureRandomSeed())
 
 	return &defaultGenerator{
 		entropy: entropyReader,
