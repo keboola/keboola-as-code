@@ -53,6 +53,7 @@ func TestBridge_SendSliceUploadEvent_OkEvent(t *testing.T) {
   "message": "Slice upload done.",
   "params": "{\"branchId\":456,\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"streamId\":\"123/456/my-source\"}",
   "results": "{\"statistics\":{\"compressedSize\":52428800,\"firstRecordAt\":\"2000-01-01T20:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"slicesCount\":1,\"stagingSize\":26214400,\"uncompressedSize\":104857600}}",
+  "runId": "",
   "type": "info"
 }`, body)
 }
@@ -86,6 +87,7 @@ func TestBridge_SendSliceUploadEvent_ErrorEvent(t *testing.T) {
   "message": "Slice upload failed.",
   "params": "{\"branchId\":456,\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"streamId\":\"123/456/my-source\"}",
   "results": "{\"error\":\"some error\"}",
+  "runId": "",
   "type": "error"
 }`, body)
 }
@@ -143,6 +145,7 @@ func TestBridge_SendFileImportEvent_OkEvent(t *testing.T) {
   "message": "File import done.",
   "params": "{\"branchId\":456,\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"streamId\":\"123/456/my-source\"}",
   "results": "{\"statistics\":{\"compressedSize\":52428800,\"firstRecordAt\":\"2000-01-01T01:00:00.000Z\",\"lastRecordAt\":\"2000-01-02T01:00:00.000Z\",\"recordsCount\":123,\"slicesCount\":1,\"stagingSize\":26214400,\"uncompressedSize\":104857600}}",
+  "runId": "",
   "type": "info"
 }`, body)
 }
@@ -176,6 +179,7 @@ func TestBridge_SendFileImportEvent_ErrorEvent(t *testing.T) {
   "message": "File import failed.",
   "params": "{\"branchId\":456,\"projectId\":123,\"sinkId\":\"my-sink\",\"sourceId\":\"my-source\",\"streamId\":\"123/456/my-source\"}",
   "results": "{\"error\":\"some error\"}",
+  "runId": "",
   "type": "error"
 }`, body)
 }
