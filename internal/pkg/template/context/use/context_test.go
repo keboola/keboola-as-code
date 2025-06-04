@@ -7,10 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/go-resty/resty/v2"
-	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,15 +50,6 @@ func (g *mockUlidGenerator) NewULID() string {
 
 func TestContext(t *testing.T) {
 	t.Parallel()
-
-	// Mocked ticket provider
-	_, httpTransport := client.NewMockedClient()
-	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
-		httpmock.NewStringResponder(200, `{
-			"services": [],
-			"features": []
-		}`),
-	)
 	ctx := t.Context()
 
 	// Inputs
@@ -209,15 +197,6 @@ func TestContext(t *testing.T) {
 
 func TestComponentsFunctions(t *testing.T) {
 	t.Parallel()
-
-	// Mocked ticket provider
-	_, httpTransport := client.NewMockedClient()
-	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
-		httpmock.NewStringResponder(200, `{
-			"services": [],
-			"features": []
-		}`),
-	)
 	ctx := t.Context()
 
 	d := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
@@ -334,15 +313,6 @@ func TestComponentsFunctions(t *testing.T) {
 
 func TestHasBackendFunction(t *testing.T) {
 	t.Parallel()
-
-	// Mocked ticket provider
-	_, httpTransport := client.NewMockedClient()
-	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
-		httpmock.NewStringResponder(200, `{
-			"services": [],
-			"features": []
-		}`),
-	)
 	ctx := t.Context()
 
 	d := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
