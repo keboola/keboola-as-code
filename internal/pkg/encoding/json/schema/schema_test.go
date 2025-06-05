@@ -239,6 +239,25 @@ func TestValidateObjects_BooleanRequired(t *testing.T) {
 	})))
 }
 
+func TestValidateObjects_EmptyEnum(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`{"properties": {"key1": {"enum": []}}}`)
+
+	// Keboola is using enums with no options in the schema because the valid options are loaded dynamically.
+	// Let's make sure that this does not cause the schema to be considered invalid.
+	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "key1", Value: "value1"},
+			}),
+		},
+	}))
+	require.Error(t, err)
+	// An error is expected, it just shouldn't be a schema error.
+	assert.Equal(t, "\"key1\": value must be one of ", err.Error())
+}
+
 func TestValidateObjects_SkipEmpty(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
