@@ -227,7 +227,7 @@ func TestValidateObjects_BooleanRequired(t *testing.T) {
 	// Required field in a JSON schema should be an array of required nested fields.
 	// But, for historical reasons, in Keboola components, "required: true" is also used.
 	// In the UI, this causes the drop-down list to not have an empty value.
-	// For this reason,the error should be ignored.
+	// For this reason, the error should be ignored.
 	require.NoError(t, ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
 		{
 			Key: "parameters",
@@ -375,46 +375,6 @@ func TestNormalizeSchema_RequiredTrue(t *testing.T) {
           "type": "integer"
         }
       }
-    }
-  }
-}
-`)
-	var buf bytes.Buffer
-	err = json.Compact(&buf, expectedSchema)
-	require.NoError(t, err)
-	expectedSchema = buf.Bytes()
-
-	assert.Equal(t, strings.TrimSpace(string(expectedSchema)), strings.TrimSpace(string(normalizedSchema)))
-}
-
-func TestNormalizeSchema_EmptyEnum(t *testing.T) {
-	t.Parallel()
-
-	schema := []byte(`
-{
-  "type": "object",
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": []
-    }
-  }
-}
-`)
-
-	// Normalize the schema
-	normalizedSchema, err := NormalizeSchema(schema)
-	require.NoError(t, err)
-
-	expectedSchema := []byte(`
-{
-  "type": "object",
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "placeholder"
-      ]
     }
   }
 }

@@ -133,15 +133,6 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 				parentMap.Delete("required")
 			}
 		}
-
-		// JSON schema may contain empty enums, in dynamic selects.
-		if path.Last() == orderedmap.MapStep("enum") {
-			if enumArray, ok := value.([]any); ok && len(enumArray) == 0 {
-				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
-					parentMap.Set("enum", []any{"placeholder"})
-				}
-			}
-		}
 	})
 
 	// Encode back to JSON
