@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/use"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 // dataAppInstanceIDContentPath contains path to the app instance ID in the configuration content.
@@ -29,9 +30,33 @@ type Context struct {
 	*use.Context
 }
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceID string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefs map[string]*template.Input, tickets *keboola.TicketProvider, components *model.ComponentsMap, projectState *state.State, backends []string) *Context {
+func NewContext(
+	ctx context.Context,
+	templateRef model.TemplateRef,
+	objectsRoot filesystem.Fs,
+	instanceID string,
+	targetBranch model.BranchKey,
+	inputsValues template.InputsValues,
+	inputsDefs map[string]*template.Input,
+	components *model.ComponentsMap,
+	projectState *state.State,
+	backends []string,
+	idGenerator ulid.Generator,
+) *Context {
 	c := &Context{
-		Context: use.NewContext(ctx, templateRef, objectsRoot, instanceID, targetBranch, inputsValues, inputsDefs, tickets, components, projectState, backends),
+		Context: use.NewContext(
+			ctx,
+			templateRef,
+			objectsRoot,
+			instanceID,
+			targetBranch,
+			inputsValues,
+			inputsDefs,
+			components,
+			projectState,
+			backends,
+			idGenerator,
+		),
 	}
 
 	// Register existing IDs, so they will be reused

@@ -55,7 +55,6 @@
 package dependencies
 
 import (
-	"context"
 	"io"
 	"net/http"
 
@@ -78,6 +77,7 @@ import (
 	taskPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -91,6 +91,7 @@ type BaseScope interface {
 	Process() *servicectx.Process
 	Stdout() io.Writer
 	Stderr() io.Writer
+	NewIDGenerator() ulid.Generator
 }
 
 // PublicScope dependencies are available from the Storage API and other sources without authentication / Storage API token.
@@ -106,7 +107,6 @@ type PublicScope interface {
 // ProjectScope dependencies require authentication - Storage API token.
 type ProjectScope interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
-	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
 	ProjectBackends() []string
 	ProjectName() string

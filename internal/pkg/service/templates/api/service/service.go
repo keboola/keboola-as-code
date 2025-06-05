@@ -29,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	deleteTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
 	renameInst "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
@@ -855,15 +856,29 @@ func tryLockProject(ctx context.Context, d dependencies.ProjectRequestScope) (un
 	return unlockFn, nil
 }
 
-func generateTemplatePreview(ctx context.Context, tmpl *template.Template, d dependencies.ProjectRequestScope, projectState *project.State, o preview.Options) (result *use.Result, err error) {
+func generateTemplatePreview(
+	ctx context.Context,
+	tmpl *template.Template,
+	d dependencies.ProjectRequestScope,
+	projectState *project.State,
+	o preview.Options,
+) (result *use.Result, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.template.preview")
 	defer span.End(&err)
 
-	// Create tickets provider, to generate new IDS
-	tickets := d.ObjectIDGeneratorFactory()(ctx)
-
 	// Prepare template
-	tmplCtx := preview.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State(), d.ProjectBackends())
+	tmplCtx := preview.NewContext(
+		ctx,
+		tmpl.Reference(),
+		tmpl.ObjectsRoot(),
+		o.TargetBranch,
+		o.Inputs,
+		tmpl.Inputs().InputsMap(),
+		d.Components(),
+		projectState.State(),
+		d.ProjectBackends(),
+		ulid.NewDefaultGenerator(),
+	)
 	plan, err := useTemplate.PrepareTemplate(ctx, d, useTemplate.ExtendedOptions{
 		TargetBranch:          o.TargetBranch,
 		Inputs:                o.Inputs,

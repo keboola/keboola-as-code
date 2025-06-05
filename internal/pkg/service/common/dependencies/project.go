@@ -169,13 +169,6 @@ func (v *projectScope) KeboolaProjectAPI() *keboola.AuthorizedAPI {
 	return v.keboolaProjectAPI
 }
 
-func (v *projectScope) ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider {
-	v.check()
-	return func(ctx context.Context) *keboola.TicketProvider {
-		return keboola.NewTicketProvider(ctx, v.KeboolaProjectAPI())
-	}
-}
-
 type MasterTokenRequiredError struct{}
 
 func (MasterTokenRequiredError) StatusCode() int {

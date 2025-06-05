@@ -11,19 +11,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // baseScope dependencies container implements BaseScope interface.
 type baseScope struct {
-	logger     log.Logger
-	telemetry  telemetry.Telemetry
-	stdout     io.Writer
-	stderr     io.Writer
-	clock      clockwork.Clock
-	httpClient client.Client
-	validator  validator.Validator
-	process    *servicectx.Process
+	logger        log.Logger
+	telemetry     telemetry.Telemetry
+	stdout        io.Writer
+	stderr        io.Writer
+	clock         clockwork.Clock
+	httpClient    client.Client
+	validator     validator.Validator
+	process       *servicectx.Process
+	ulidGenerator ulid.Generator
 }
 
 func NewBaseScope(
@@ -35,8 +37,9 @@ func NewBaseScope(
 	clk clockwork.Clock,
 	process *servicectx.Process,
 	httpClient client.Client,
+	ulidGenerator ulid.Generator,
 ) BaseScope {
-	return newBaseScope(ctx, logger, tel, stdout, stderr, clk, process, httpClient)
+	return newBaseScope(ctx, logger, tel, stdout, stderr, clk, process, httpClient, ulidGenerator)
 }
 
 func newBaseScope(
@@ -48,18 +51,20 @@ func newBaseScope(
 	clk clockwork.Clock,
 	process *servicectx.Process,
 	httpClient client.Client,
+	ulidGenerator ulid.Generator,
 ) *baseScope {
 	_, span := tel.Tracer().Start(ctx, "keboola.go.common.dependencies.NewBaseScope")
 	defer span.End(nil)
 	return &baseScope{
-		logger:     logger,
-		telemetry:  tel,
-		stdout:     stdout,
-		stderr:     stderr,
-		clock:      clk,
-		process:    process,
-		httpClient: httpClient,
-		validator:  validator.New(),
+		logger:        logger,
+		telemetry:     tel,
+		stdout:        stdout,
+		stderr:        stderr,
+		clock:         clk,
+		process:       process,
+		httpClient:    httpClient,
+		validator:     validator.New(),
+		ulidGenerator: ulidGenerator,
 	}
 }
 
@@ -107,4 +112,9 @@ func (v *baseScope) Stdout() io.Writer {
 func (v *baseScope) Stderr() io.Writer {
 	v.check()
 	return v.stderr
+}
+
+func (v *baseScope) NewIDGenerator() ulid.Generator {
+	v.check()
+	return v.ulidGenerator
 }

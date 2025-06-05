@@ -2,16 +2,11 @@ package use_test
 
 import (
 	"context"
-	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/go-resty/resty/v2"
-	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -31,28 +26,7 @@ import (
 
 func TestContext(t *testing.T) {
 	t.Parallel()
-
-	// Mocked ticket provider
-	c, httpTransport := client.NewMockedClient()
-	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
-		httpmock.NewStringResponder(200, `{
-			"services": [],
-			"features": []
-		}`),
-	)
 	ctx := t.Context()
-	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
-	require.NoError(t, err)
-	tickets := keboola.NewTicketProvider(ctx, api)
-
-	// Mocked tickets
-	var ticketResponses []*http.Response
-	for i := 1; i <= 2; i++ {
-		response, err := httpmock.NewJsonResponse(200, map[string]any{"id": cast.ToString(1000 + i)})
-		require.NoError(t, err)
-		ticketResponses = append(ticketResponses, response)
-	}
-	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Inputs
 	targetBranch := model.BranchKey{ID: 123}
@@ -95,7 +69,19 @@ func TestContext(t *testing.T) {
 	// Create template use context
 	d := dependenciesPkg.NewMocked(t, ctx)
 	projectState := d.MockedState()
-	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState, d.ProjectBackends())
+	useCtx := NewContext(
+		ctxWithVal,
+		templateRef,
+		fs,
+		instanceID,
+		targetBranch,
+		inputsValues,
+		map[string]*template.Input{},
+		testapi.MockedComponentsMap(),
+		projectState,
+		d.ProjectBackends(),
+		d.NewIDGenerator(),
+	)
 
 	// Check Jsonnet functions
 	code := `
@@ -186,22 +172,10 @@ func TestContext(t *testing.T) {
 
 func TestComponentsFunctions(t *testing.T) {
 	t.Parallel()
-
-	// Mocked ticket provider
-	c, httpTransport := client.NewMockedClient()
-	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
-		httpmock.NewStringResponder(200, `{
-			"services": [],
-			"features": []
-		}`),
-	)
 	ctx := t.Context()
-	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", "my-token", keboola.WithClient(&c))
-	require.NoError(t, err)
 
 	d := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
 	projectState := d.MockedState()
-	tickets := keboola.NewTicketProvider(t.Context(), api)
 	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{}
@@ -212,7 +186,19 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Context factory for template use operation
 	newUseCtx := func() *Context {
-		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components, projectState, d.ProjectBackends())
+		return NewContext(
+			ctx,
+			templateRef,
+			fs,
+			instanceID,
+			targetBranch,
+			inputsValues,
+			inputs,
+			components,
+			projectState,
+			d.ProjectBackends(),
+			d.NewIDGenerator(),
+		)
 	}
 
 	// Jsonnet template
@@ -301,24 +287,11 @@ func TestComponentsFunctions(t *testing.T) {
 
 func TestHasBackendFunction(t *testing.T) {
 	t.Parallel()
-
-	// Mocked ticket provider
-	c, httpTransport := client.NewMockedClient()
-	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
-		httpmock.NewStringResponder(200, `{
-			"services": [],
-			"features": []
-		}`),
-	)
 	ctx := t.Context()
 
 	d := dependenciesPkg.NewMocked(t, ctx, dependenciesPkg.WithSnowflakeBackend())
 
-	api, err := keboola.NewAuthorizedAPI(ctx, "https://connection.keboola.com", d.StorageAPIToken().Token, keboola.WithClient(&c))
-	require.NoError(t, err)
-
 	projectState := d.MockedState()
-	tickets := keboola.NewTicketProvider(t.Context(), api)
 	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{}
@@ -328,8 +301,20 @@ func TestHasBackendFunction(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 
 	// Context factory for template use operation
-	newUseCtx := func() *Context {
-		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components, projectState, d.ProjectBackends())
+	newUseCtxFactory := func() *Context {
+		return NewContext(
+			ctx,
+			templateRef,
+			fs,
+			instanceID,
+			targetBranch,
+			inputsValues,
+			inputs,
+			components,
+			projectState,
+			d.ProjectBackends(),
+			d.NewIDGenerator(),
+		)
 	}
 
 	// Jsonnet template
@@ -347,7 +332,7 @@ func TestHasBackendFunction(t *testing.T) {
 }
 `
 
-	output, err := jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
+	output, err := jsonnet.Evaluate(code, newUseCtxFactory().JsonnetContext())
 	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
@@ -360,7 +345,7 @@ func TestHasBackendFunction(t *testing.T) {
   "snowflake": false
 }
 `
-	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
+	output, err = jsonnet.Evaluate(code, newUseCtxFactory().JsonnetContext())
 	require.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }

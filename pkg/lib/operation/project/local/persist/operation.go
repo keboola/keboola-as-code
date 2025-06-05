@@ -4,13 +4,12 @@ import (
 	"context"
 	"io"
 
-	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/persist"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 )
@@ -21,10 +20,10 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Stdout() io.Writer
+	NewIDGenerator() ulid.Generator
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -32,9 +31,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	defer span.End(&err)
 
 	logger := d.Logger()
-
-	// Get Storage API
-	api := d.KeboolaProjectAPI()
 
 	// Get plan
 	plan, err := persist.NewPlan(ctx, projectState.State())
@@ -53,7 +49,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(ctx, logger, api, projectState.State()); err != nil {
+		if err := plan.Invoke(ctx, logger, projectState.State(), d.NewIDGenerator()); err != nil {
 			return errors.PrefixError(err, "cannot persist objects")
 		}
 

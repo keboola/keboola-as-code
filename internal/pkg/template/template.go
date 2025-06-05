@@ -428,6 +428,7 @@ func (c *evaluatedTemplate) MainConfig() (*model.TemplateMainConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	mainConfig := mainConfigRaw.(*model.ConfigKey)
 	if mainConfig == nil {
 		return nil, nil

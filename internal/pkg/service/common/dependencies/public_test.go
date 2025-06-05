@@ -18,7 +18,17 @@ func TestNewPublicDeps_LazyLoadComponents(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
 	httpClient := httpclient.New()
-	baseDeps := newBaseScope(ctx, log.NewNopLogger(), telemetry.NewNop(), os.Stdout, os.Stderr, clockwork.NewRealClock(), servicectx.NewForTest(t), httpClient)
+	baseDeps := newBaseScope(
+		ctx,
+		log.NewNopLogger(),
+		telemetry.NewNop(),
+		os.Stdout,
+		os.Stderr,
+		clockwork.NewRealClock(),
+		servicectx.NewForTest(t),
+		httpClient,
+		newMockUlidGenerator(),
+	)
 
 	// Create public deps without loading components.
 	deps, err := newPublicScope(t.Context(), baseDeps, "https://connection.keboola.com")

@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 // baseScope dependencies container implements BaseScope interface.
@@ -50,7 +51,17 @@ func newBaseScope(
 	envs *env.Map,
 ) *baseScope {
 	return &baseScope{
-		BaseScope:    dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), stdout, stderr, clockwork.NewRealClock(), proc, httpClient),
+		BaseScope: dependencies.NewBaseScope(
+			ctx,
+			logger,
+			telemetry.NewNop(),
+			stdout,
+			stderr,
+			clockwork.NewRealClock(),
+			proc,
+			httpClient,
+			ulid.NewDefaultGenerator(),
+		),
 		envs:         envs,
 		fs:           fs,
 		fsInfo:       FsInfo{fs: fs},

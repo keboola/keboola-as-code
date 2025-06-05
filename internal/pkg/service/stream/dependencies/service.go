@@ -28,6 +28,7 @@ import (
 	statsRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/test/dummy"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 const (
@@ -111,7 +112,17 @@ func newParentScopes(
 
 	d := &parentScopes{}
 
-	d.BaseScope = dependencies.NewBaseScope(ctx, logger, tel, stdout, stderr, clockwork.NewRealClock(), proc, httpClient)
+	d.BaseScope = dependencies.NewBaseScope(
+		ctx,
+		logger,
+		tel,
+		stdout,
+		stderr,
+		clockwork.NewRealClock(),
+		proc,
+		httpClient,
+		ulid.NewDefaultGenerator(),
+	)
 
 	d.PublicScope, err = dependencies.NewPublicScope(ctx, d, cfg.StorageAPIHost, dependencies.WithLogIndexLoading(true))
 	if err != nil {

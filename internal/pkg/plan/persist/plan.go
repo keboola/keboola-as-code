@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 type Plan struct {
@@ -35,6 +34,6 @@ func (p *Plan) Log(w io.Writer) {
 	}
 }
 
-func (p *Plan) Invoke(ctx context.Context, logger log.Logger, keboolaProjectAPI *keboola.AuthorizedAPI, projectState *state.State) error {
-	return newExecutor(ctx, logger, keboolaProjectAPI, projectState, p).invoke()
+func (p *Plan) Invoke(ctx context.Context, logger log.Logger, projectState *state.State, idGenerator ulid.Generator) error {
+	return newExecutor(ctx, logger, projectState, p, idGenerator).invoke()
 }

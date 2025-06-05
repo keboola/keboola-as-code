@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
@@ -124,7 +125,17 @@ func newTestDependencies(
 	apiHost,
 	apiToken string,
 ) (*Dependencies, error) {
-	baseDeps := dependenciesPkg.NewBaseScope(ctx, logger, tel, stdout, stderr, clockwork.NewRealClock(), proc, client.NewTestClient())
+	baseDeps := dependenciesPkg.NewBaseScope(
+		ctx,
+		logger,
+		tel,
+		stdout,
+		stderr,
+		clockwork.NewRealClock(),
+		proc,
+		client.NewTestClient(),
+		ulid.NewDefaultGenerator(),
+	)
 	publicDeps, err := dependenciesPkg.NewPublicScope(ctx, baseDeps, apiHost, dependenciesPkg.WithPreloadComponents(true))
 	if err != nil {
 		return nil, err

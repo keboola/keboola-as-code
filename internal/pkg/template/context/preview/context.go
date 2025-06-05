@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
 type Context struct {
@@ -29,11 +30,10 @@ type Context struct {
 	jsonnetCtx        *jsonnet.Context
 	replacements      *replacevalues.Values
 	inputsValues      map[string]template.InputValue
-	tickets           *keboola.TicketProvider
 	components        *model.ComponentsMap
 	placeholdersCount int
-	ticketsResolved   bool
 	projectBackends   []string
+	idGenerator       ulid.Generator
 
 	lock          *sync.Mutex
 	placeholders  PlaceholdersMap
@@ -78,7 +78,18 @@ const (
 	placeholderEnd   = "~~>>"
 )
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *keboola.TicketProvider, components *model.ComponentsMap, projectState *state.State, projectBackends []string) *Context {
+func NewContext(
+	ctx context.Context,
+	templateRef model.TemplateRef,
+	objectsRoot filesystem.Fs,
+	targetBranch model.BranchKey,
+	inputsValues template.InputsValues,
+	inputsDefsMap map[string]*template.Input,
+	components *model.ComponentsMap,
+	projectState *state.State,
+	projectBackends []string,
+	idGenerator ulid.Generator,
+) *Context {
 	ctx = template.NewContext(ctx)
 	c := &Context{
 		_context:        ctx,
@@ -86,7 +97,6 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		jsonnetCtx:      jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
 		replacements:    replacevalues.NewValues(),
 		inputsValues:    make(map[string]template.InputValue),
-		tickets:         tickets,
 		components:      components,
 		lock:            &sync.Mutex{},
 		placeholders:    make(PlaceholdersMap),
@@ -94,6 +104,7 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		inputsUsage:     metadata.NewInputsUsage(),
 		inputsDefsMap:   inputsDefsMap,
 		projectBackends: projectBackends,
+		idGenerator:     idGenerator,
 	}
 
 	// Convert inputsValues to map
@@ -146,12 +157,6 @@ func (c *Context) Placeholders() PlaceholdersMap {
 
 func (c *Context) Replacements() (*replacevalues.Values, error) {
 	// Generate new IDs
-	if !c.ticketsResolved {
-		if err := c.tickets.Resolve(); err != nil {
-			return nil, err
-		}
-		c.ticketsResolved = true
-	}
 	return c.replacements, nil
 }
 
@@ -219,17 +224,18 @@ func (c *Context) mapID(oldID any) string {
 	p := c.RegisterPlaceholder(oldID, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
 		var newID any
-		c.tickets.Request(func(ticket *keboola.Ticket) {
-			switch p.asValue.(type) {
-			case keboola.ConfigID:
-				newID = keboola.ConfigID(ticket.ID)
-			case keboola.RowID:
-				newID = keboola.RowID(ticket.ID)
-			default:
-				panic(errors.New("unexpected ID type"))
-			}
-			cb(newID)
-		})
+		// Generate ULID
+		generatedID := c.idGenerator.NewULID()
+
+		switch p.asValue.(type) {
+		case keboola.ConfigID:
+			newID = keboola.ConfigID(generatedID)
+		case keboola.RowID:
+			newID = keboola.RowID(generatedID)
+		default:
+			panic(errors.New("unexpected ID type"))
+		}
+		cb(newID)
 	})
 	return p.asString
 }

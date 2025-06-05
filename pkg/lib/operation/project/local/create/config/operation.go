@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 )
 
@@ -20,9 +21,9 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	NewIDGenerator() ulid.Generator
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -31,9 +32,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	logger := d.Logger()
 
-	// Get Storage API
-	api := d.KeboolaProjectAPI()
-
 	// Config key
 	key := model.ConfigKey{
 		BranchID:    o.BranchID,
@@ -41,13 +39,8 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Generate unique ID
-	ticketProvider := keboola.NewTicketProvider(ctx, api)
-	ticketProvider.Request(func(ticket *keboola.Ticket) {
-		key.ID = keboola.ConfigID(ticket.ID)
-	})
-	if err := ticketProvider.Resolve(); err != nil {
-		return errors.Errorf(`cannot generate new ID: %w`, err)
-	}
+	newID := d.NewIDGenerator().NewULID()
+	key.ID = keboola.ConfigID(newID)
 
 	// Create and save object
 	uow := projectState.LocalManager().NewUnitOfWork(ctx)
