@@ -1,0 +1,1 @@
+local validate schema schema.json config.json
