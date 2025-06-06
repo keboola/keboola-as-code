@@ -1,6 +1,8 @@
 package schema_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -48,10 +50,10 @@ func TestValidateObjects_Error(t *testing.T) {
 	err := ValidateContent(schema, content)
 	require.Error(t, err)
 	expectedErr := `
-- missing properties: "firstName"
-- "address": missing properties: "street"
-- "address.number": expected integer, but got string
-- "age": must be >= 0 but found -1
+- missing property "firstName"
+- "address": missing property "street"
+- "address.number": got string, want integer
+- "age": minimum: got -1, want 0
 `
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 }
@@ -70,8 +72,7 @@ func TestValidateObjects_InvalidSchema_InvalidJSON(t *testing.T) {
 	}))
 	require.Error(t, err)
 	expected := `
-invalid JSON schema:
-- invalid character '.' looking for beginning of object key string, offset: 2
+invalid character '.' looking for beginning of object key string, offset: 2
 `
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
@@ -101,7 +102,7 @@ func TestValidateObjects_Ignore_TestConnectionButton(t *testing.T) {
 
 	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{{Key: "parameters", Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})}}))
 	if assert.Error(t, err) {
-		assert.Equal(t, `missing properties: "id"`, err.Error())
+		assert.Equal(t, `missing property "id"`, err.Error())
 	}
 }
 
@@ -130,7 +131,7 @@ func TestValidateObjects_Ignore_ValidationButton(t *testing.T) {
 
 	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{{Key: "parameters", Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})}}))
 	if assert.Error(t, err) {
-		assert.Equal(t, `missing properties: "id"`, err.Error())
+		assert.Equal(t, `missing property "id"`, err.Error())
 	}
 }
 
@@ -161,7 +162,7 @@ func TestValidateObjects_Ignore_DynamicSingleSelect(t *testing.T) {
 
 	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{{Key: "parameters", Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})}}))
 	if assert.Error(t, err) {
-		assert.Equal(t, `missing properties: "id"`, err.Error())
+		assert.Equal(t, `missing property "id"`, err.Error())
 	}
 }
 
@@ -196,7 +197,7 @@ func TestValidateObjects_Ignore_DynamicMultiSelect(t *testing.T) {
 
 	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{{Key: "parameters", Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})}}))
 	if assert.Error(t, err) {
-		assert.Equal(t, `missing properties: "id"`, err.Error())
+		assert.Equal(t, `missing property "id"`, err.Error())
 	}
 }
 
@@ -212,9 +213,9 @@ func TestValidateObjects_InvalidSchema_InvalidType(t *testing.T) {
 	require.Error(t, err)
 	expected := `
 invalid JSON schema:
-- allOf failed:
-  - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
-    - "properties" is invalid: expected object, but got boolean
+- "file:///schema.json#" is not valid against metaschema: jsonschema validation failed with 'https://json-schema.org/draft/2020-12/schema#'
+  - at '': 'allOf' failed
+    - at '/properties': got boolean, want object
 `
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
@@ -226,7 +227,7 @@ func TestValidateObjects_BooleanRequired(t *testing.T) {
 	// Required field in a JSON schema should be an array of required nested fields.
 	// But, for historical reasons, in Keboola components, "required: true" is also used.
 	// In the UI, this causes the drop-down list to not have an empty value.
-	// For this reason,the error should be ignored.
+	// For this reason, the error should be ignored.
 	require.NoError(t, ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
 		{
 			Key: "parameters",
@@ -236,6 +237,25 @@ func TestValidateObjects_BooleanRequired(t *testing.T) {
 			}),
 		},
 	})))
+}
+
+func TestValidateObjects_EmptyEnum(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`{"properties": {"key1": {"enum": []}}}`)
+
+	// Keboola is using enums with no options in the schema because the valid options are loaded dynamically.
+	// Let's make sure that this does not cause the schema to be considered invalid.
+	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "key1", Value: "value1"},
+			}),
+		},
+	}))
+	require.Error(t, err)
+	// An error is expected, it just shouldn't be a schema error.
+	assert.Equal(t, "\"key1\": value must be one of ", err.Error())
 }
 
 func TestValidateObjects_SkipEmpty(t *testing.T) {
@@ -250,19 +270,15 @@ func TestValidateObjects_InvalidSchema_Warning1(t *testing.T) {
 	invalidSchema := []byte(`{"properties": {"key1": {"properties": true}}}`)
 	expectedLogs := `
 WARN  config JSON schema of the component "foo.bar" is invalid, please contact support:
-- allOf failed:
-  - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
-    - doesn't validate with "https://json-schema.org/draft/2020-12/schema#":
-      - allOf failed:
-        - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
-          - "properties.key1.properties" is invalid: expected object, but got boolean
+- "file:///schema.json#" is not valid against metaschema: jsonschema validation failed with 'https://json-schema.org/draft/2020-12/schema#'
+  - at '': 'allOf' failed
+    - at '/properties/key1': 'allOf' failed
+      - at '/properties/key1/properties': got boolean, want object
 WARN  config row JSON schema of the component "foo.bar" is invalid, please contact support:
-- allOf failed:
-  - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
-    - doesn't validate with "https://json-schema.org/draft/2020-12/schema#":
-      - allOf failed:
-        - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
-          - "properties.key1.properties" is invalid: expected object, but got boolean
+- "file:///schema.json#" is not valid against metaschema: jsonschema validation failed with 'https://json-schema.org/draft/2020-12/schema#'
+  - at '': 'allOf' failed
+    - at '/properties/key1': 'allOf' failed
+      - at '/properties/key1/properties': got boolean, want object
 `
 	testInvalidComponentSchema(t, invalidSchema, expectedLogs)
 }
@@ -282,15 +298,15 @@ func TestValidateObjects_InvalidSchema_Warning2(t *testing.T) {
 `)
 	expectedLogs := `
 WARN  config JSON schema of the component "foo.bar" is invalid, please contact support:
-- anyOf failed:
-  - doesn't validate with "/definitions/simpleTypes":
-    - "properties.foo.type" is invalid: value must be one of "array", "boolean", "integer", "null", "number", "object", "string"
-  - "properties.foo.type" is invalid: expected array, but got string
+- "file:///schema.json#" is not valid against metaschema: jsonschema validation failed with 'http://json-schema.org/draft-04/schema#'
+  - at '/properties/foo/type': 'anyOf' failed
+    - at '/properties/foo/type': value must be one of 'array', 'boolean', 'integer', 'null', 'number', 'object', 'string'
+    - at '/properties/foo/type': got string, want array
 WARN  config row JSON schema of the component "foo.bar" is invalid, please contact support:
-- anyOf failed:
-  - doesn't validate with "/definitions/simpleTypes":
-    - "properties.foo.type" is invalid: value must be one of "array", "boolean", "integer", "null", "number", "object", "string"
-  - "properties.foo.type" is invalid: expected array, but got string
+- "file:///schema.json#" is not valid against metaschema: jsonschema validation failed with 'http://json-schema.org/draft-04/schema#'
+  - at '/properties/foo/type': 'anyOf' failed
+    - at '/properties/foo/type': value must be one of 'array', 'boolean', 'integer', 'null', 'number', 'object', 'string'
+    - at '/properties/foo/type': got string, want array
 `
 	testInvalidComponentSchema(t, invalidSchema, expectedLogs)
 }
@@ -335,6 +351,59 @@ func testInvalidComponentSchema(t *testing.T, invalidSchema []byte, expectedLogs
 	content.Set(`parameters`, orderedmap.New())
 	require.NoError(t, ValidateObjects(t.Context(), logger, registry))
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
+}
+
+func TestNormalizeSchema_RequiredTrue(t *testing.T) {
+	t.Parallel()
+
+	schema := []byte(`
+{
+  "type": "object",
+  "properties": {
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string",
+          "required": true
+        },
+        "number": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
+`)
+
+	// Normalize the schema
+	normalizedSchema, err := NormalizeSchema(schema)
+	require.NoError(t, err)
+
+	expectedSchema := []byte(`
+{
+  "type": "object",
+  "properties": {
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "number": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
+`)
+	var buf bytes.Buffer
+	err = json.Compact(&buf, expectedSchema)
+	require.NoError(t, err)
+	expectedSchema = buf.Bytes()
+
+	assert.Equal(t, strings.TrimSpace(string(expectedSchema)), strings.TrimSpace(string(normalizedSchema)))
 }
 
 func getTestSchema() []byte {
