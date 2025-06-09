@@ -36,55 +36,33 @@ type MiddlewareTest struct {
 
 func middlewareTests() []MiddlewareTest {
 	req1Attrs := attribute.NewSet(
-		attribute.String("http.method", http.MethodGet),
-		attribute.String("http.scheme", "http"),
-		attribute.String("net.host.name", "example.com"),
+		attribute.String("http.request.method", http.MethodGet),
 		attribute.String("http.route", "/api/ignored-tracing"),
-		attribute.Int("http.status_code", http.StatusOK),
+		attribute.Int("http.response.status_code", http.StatusOK),
+		attribute.String("network.protocol.name", "http"),
+		attribute.String("network.protocol.version", "1.1"),
+		attribute.String("server.address", "example.com"),
+		attribute.String("url.scheme", "http"),
 		attribute.String("endpoint.name", "/api/ignored-tracing"),
 	)
 	req2Attrs := attribute.NewSet(
-		attribute.String("http.method", "POST"),
-		attribute.String("http.scheme", "http"),
-		attribute.String("net.host.name", "example.com"),
+		attribute.String("http.request.method", "POST"),
 		attribute.String("http.route", "/api/item/:id/:secret1"),
-		attribute.Int("http.status_code", http.StatusInternalServerError),
+		attribute.Int("http.response.status_code", http.StatusInternalServerError),
+		attribute.String("network.protocol.name", "http"),
+		attribute.String("network.protocol.version", "1.1"),
+		attribute.String("server.address", "example.com"),
+		attribute.String("url.scheme", "http"),
 		attribute.String("endpoint.name", "my-endpoint"),
 	)
 	basicMetrics := []metricdata.Metrics{
 		{
-			Name:        "keboola.go.http.server.request.size",
-			Description: "Measures the size of HTTP request messages.",
+			Name:        "keboola.go.http.server.request.body.size",
+			Description: "Size of HTTP server request bodies.",
 			Unit:        "By",
-			Data: metricdata.Sum[int64]{
+			Data: metricdata.Histogram[int64]{
 				Temporality: 1,
-				IsMonotonic: true, // counter
-				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: 0, Attributes: req1Attrs},
-					{Value: 0, Attributes: req2Attrs},
-				},
-			},
-		},
-		{
-			Name:        "keboola.go.http.server.response.size",
-			Description: "Measures the size of HTTP response messages.",
-			Unit:        "By",
-			Data: metricdata.Sum[int64]{
-				Temporality: 1,
-				IsMonotonic: true, // counter
-				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: int64(len(responseContent)), Attributes: req1Attrs},
-					{Value: int64(len(responseContent)), Attributes: req2Attrs},
-				},
-			},
-		},
-		{
-			Name:        "keboola.go.http.server.duration",
-			Description: "Measures the duration of inbound HTTP requests.",
-			Unit:        "ms",
-			Data: metricdata.Histogram[float64]{
-				Temporality: 1,
-				DataPoints: []metricdata.HistogramDataPoint[float64]{
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
 					{
 						Count:      1,
 						Bounds:     []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
@@ -93,6 +71,46 @@ func middlewareTests() []MiddlewareTest {
 					{
 						Count:      1,
 						Bounds:     []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						Attributes: req2Attrs,
+					},
+				},
+			},
+		},
+		{
+			Name:        "keboola.go.http.server.response.body.size",
+			Description: "Size of HTTP server response bodies.",
+			Unit:        "By",
+			Data: metricdata.Histogram[int64]{
+				Temporality: 1,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Count:      1,
+						Bounds:     []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						Attributes: req1Attrs,
+					},
+					{
+						Count:      1,
+						Bounds:     []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						Attributes: req2Attrs,
+					},
+				},
+			},
+		},
+		{
+			Name:        "keboola.go.http.server.request.duration",
+			Description: "Duration of HTTP server requests.",
+			Unit:        "s",
+			Data: metricdata.Histogram[float64]{
+				Temporality: 1,
+				DataPoints: []metricdata.HistogramDataPoint[float64]{
+					{
+						Count:      1,
+						Bounds:     []float64{0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10},
+						Attributes: req1Attrs,
+					},
+					{
+						Count:      1,
+						Bounds:     []float64{0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10},
 						Attributes: req2Attrs,
 					},
 				},
@@ -318,14 +336,15 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 				Description: "",
 			},
 			Attributes: []attribute.KeyValue{
-				attribute.String("http.method", "POST"),
-				attribute.String("http.scheme", "http"),
-				attribute.String("net.host.name", "example.com"),
-				attribute.String("net.sock.peer.addr", "192.0.2.1"),
-				attribute.Int("net.sock.peer.port", 1234),
+				attribute.String("server.address", "example.com"),
+				attribute.String("http.request.method", "POST"),
+				attribute.String("url.scheme", "http"),
+				attribute.String("network.peer.address", "192.0.2.1"),
+				attribute.Int("network.peer.port", 1234),
 				attribute.String("user_agent.original", "my-user-agent"),
-				attribute.String("http.target", "/api/item/123/****"),
-				attribute.String("net.protocol.version", "1.1"),
+				attribute.String("client.address", "192.0.2.1"),
+				attribute.String("url.path", "/api/item/123/my-secret-1"),
+				attribute.String("network.protocol.version", "1.1"),
 				attribute.String("http.request_id", "<dynamic>"),
 				attribute.String("span.kind", "server"),
 				attribute.String("span.type", "web"),
@@ -336,12 +355,13 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 				attribute.String("http.route", "/api/item/:id/:secret1"),
 				attribute.String("http.route_param.id", "123"),
 				attribute.String("http.route_param.secret1", "****"),
+				attribute.String("http.target", "/api/item/123/****"),
 				attribute.String("endpoint.service", "MyService"),
 				attribute.String("endpoint.name", "MyEndpoint"),
 				attribute.String("endpoint.name_full", "MyService.MyEndpoint"),
 				attribute.String("http.response.header.x-request-id", "<dynamic>"),
-				attribute.Int("http.response_content_length", len(responseContent)),
-				attribute.Int("http.status_code", http.StatusInternalServerError),
+				attribute.Int("http.response.body.size", len(responseContent)),
+				attribute.Int("http.response.status_code", http.StatusInternalServerError),
 			},
 		},
 	}
