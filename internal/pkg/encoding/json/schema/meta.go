@@ -4,7 +4,7 @@ import (
 	"slices"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/spf13/cast"
 )
 

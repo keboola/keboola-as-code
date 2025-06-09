@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
@@ -20,10 +20,6 @@ func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {
 		return nil, err
 	}
 
-	// Generate default object value
-	if len(schema.Types) == 0 {
-		schema.Types = []string{`object`}
-	}
 	content := getDefaultValueFor(schema, 0).(*orderedmap.OrderedMap)
 	return content, nil
 }
@@ -35,8 +31,8 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	}
 
 	// Return default value
-	if len(schema.Enum) > 0 {
-		return schema.Enum[0]
+	if schema.Enum != nil && len(schema.Enum.Values) > 0 {
+		return schema.Enum.Values[0]
 	}
 
 	// Prevent infinite recursion
@@ -61,7 +57,8 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	}
 
 	// Generate value based on type
-	switch getFirstType(schema) {
+	firstType := getFirstType(schema)
+	switch firstType {
 	case `array`:
 		// Generate array with one item of each allowed type
 		values := make([]any, 0)
@@ -75,24 +72,13 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 		}
 		return values
 	case `object`:
-		values := orderedmap.New()
-		if schema.Properties != nil {
-			props := make([]*jsonschema.Schema, 0)
-			keys := make(map[string]string)
-			for key, prop := range schema.Properties {
-				props = append(props, prop)
-				keys[prop.Location] = key
-			}
-			sortSchemas(props)
-
-			for _, prop := range props {
-				key := keys[prop.Location]
-				values.Set(key, getDefaultValueFor(prop, level+1))
-			}
-		}
-		return values
+		return buildOrderedMap(schema, level)
 	case `string`:
-		switch schema.Format {
+		if schema.Format == nil {
+			return ``
+		}
+
+		switch schema.Format.Name {
 		case `date-time`:
 			return `2018-11-13T20:20:39+00:00`
 		case `time`:
@@ -114,13 +100,36 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	case `boolean`:
 		return false
 	default:
+		if level == 0 {
+			return buildOrderedMap(schema, level)
+		}
+
 		return ``
 	}
 }
 
+func buildOrderedMap(schema *jsonschema.Schema, level int) any {
+	values := orderedmap.New()
+	if schema.Properties != nil {
+		props := make([]*jsonschema.Schema, 0)
+		keys := make(map[string]string)
+		for key, prop := range schema.Properties {
+			props = append(props, prop)
+			keys[prop.Location] = key
+		}
+		sortSchemas(props)
+
+		for _, prop := range props {
+			key := keys[prop.Location]
+			values.Set(key, getDefaultValueFor(prop, level+1))
+		}
+	}
+	return values
+}
+
 func getFirstType(schema *jsonschema.Schema) string {
-	if len(schema.Types) > 0 {
-		return schema.Types[0]
+	if schema.Types != nil && !schema.Types.IsEmpty() {
+		return schema.Types.ToStrings()[0]
 	}
 	return `unknown`
 }
@@ -148,8 +157,10 @@ func sortSchemas(schemas []*jsonschema.Schema) {
 }
 
 func getPropertyOrder(schema *jsonschema.Schema) int64 {
-	if v, ok := schema.Extensions[`propertyOrder`]; ok {
-		return int64(v.(propertyOrderSchema))
+	for _, extension := range schema.Extensions {
+		if propertyOrder, ok := extension.(propertyOrderSchema); ok {
+			return int64(propertyOrder)
+		}
 	}
 	return math.MaxInt64
 }

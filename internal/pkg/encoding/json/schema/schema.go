@@ -1,14 +1,13 @@
 package schema
 
 import (
-	"bytes"
 	"context"
 	"sort"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -81,6 +80,11 @@ func ValidateConfigRow(component *keboola.Component, configRow *model.ConfigRow)
 }
 
 func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
+	schema, err := NormalizeSchema(schema)
+	if err != nil {
+		return err
+	}
+
 	// Get parameters key
 	var parametersMap *orderedmap.OrderedMap
 	parameters, found := content.Get("parameters")
@@ -101,16 +105,43 @@ func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 	}
 
 	// Validate
-	err := validateDocument(schema, parametersMap)
+	err = validateDocument(schema, parametersMap)
 
 	// Process schema errors
-	validationErrors := &jsonschema.ValidationError{}
-	if errors.As(err, &validationErrors) {
-		return processErrors(validationErrors.Causes, false)
+	validationError := &jsonschema.ValidationError{}
+	if errors.As(err, &validationError) {
+		return processErrors(validationError.DetailedOutput().Errors)
 	} else if err != nil {
 		return err
 	}
 	return nil
+}
+
+func NormalizeSchema(schema []byte) ([]byte, error) {
+	// Decode JSON
+	m := orderedmap.New()
+	if err := json.Decode(schema, &m); err != nil {
+		return nil, err
+	}
+
+	m.VisitAllRecursive(func(path orderedmap.Path, value any, parent any) {
+		// Required field in a JSON schema should be an array of required nested fields.
+		// But, for historical reasons, in Keboola components, "required: true" is also used.
+		// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
+		if path.Last() == orderedmap.MapStep("required") && value == true {
+			if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
+				parentMap.Delete("required")
+			}
+		}
+	})
+
+	// Encode back to JSON
+	normalized, err := json.Encode(m, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return normalized, nil
 }
 
 func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
@@ -123,44 +154,30 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	return schema.Validate(document.ToMap())
 }
 
-func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) error {
+func processErrors(errs []jsonschema.OutputUnit) error {
 	// Sort errors
 	sort.Slice(errs, func(i, j int) bool {
 		return errs[i].InstanceLocation < errs[j].InstanceLocation
 	})
 
-	schemaErrs := errors.NewMultiError()
 	docErrs := errors.NewMultiError()
 	for _, e := range errs {
-		// Schema error does not start with our pseudo schema file.
-		isSchemaErr := !strings.HasPrefix(e.AbsoluteKeywordLocation, pseudoSchemaFile)
+		errMsg := ""
+		if e.Error != nil {
+			errMsg = e.Error.String()
+		}
+
 		path := strings.TrimLeft(e.InstanceLocation, "/")
 		path = strings.ReplaceAll(path, "/", ".")
-		msg := strings.ReplaceAll(strings.ReplaceAll(e.Message, `'`, `"`), `n"t`, `n't`)
+		msg := strings.ReplaceAll(strings.ReplaceAll(errMsg, `'`, `"`), `n"t`, `n't`)
 
 		var formattedErr error
 		switch {
-		case len(e.Causes) > 0:
+		case len(e.Errors) > 0:
 			// Process nested errors.
-			if err := processErrors(e.Causes, isSchemaErr || parentIsSchemaErr); err != nil {
-				if e.Message == "" || e.Message == "doesn't validate with ''" || e.Message == `'' is invalid:` {
-					formattedErr = err
-				} else {
-					formattedErr = errors.PrefixError(err, msg)
-				}
+			if err := processErrors(e.Errors); err != nil {
+				formattedErr = err
 			}
-		case isSchemaErr:
-			// Required field in a JSON schema should be an array of required nested fields.
-			// But, for historical reasons, in Keboola components, "required: true" is also used.
-			// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
-			if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
-				continue
-			}
-			// JSON schema may contain empty enums, in dynamic selects.
-			if strings.HasSuffix(e.InstanceLocation, "/enum") && e.Message == "minimum 1 items required, but found 0 items" {
-				continue
-			}
-			formattedErr = errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message)
 		default:
 			// Format error
 			if path == "" {
@@ -171,21 +188,8 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 		}
 
 		if formattedErr != nil {
-			if isSchemaErr {
-				schemaErrs.Append(formattedErr)
-			} else {
-				docErrs.Append(formattedErr)
-			}
+			docErrs.Append(formattedErr)
 		}
-	}
-
-	// Errors in the schema have priority, they will be written to the user as a warning.
-	if schemaErrs.Len() > 0 {
-		if parentIsSchemaErr {
-			// Only parent schema error is wrapped to the SchemaError type, nested errors are not.
-			return schemaErrs
-		}
-		return &SchemaError{error: schemaErrs}
 	}
 
 	return docErrs.ErrorOrNil()
@@ -193,9 +197,12 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 
 func compileSchema(s []byte, savePropertyOrder bool) (*jsonschema.Schema, error) {
 	c := jsonschema.NewCompiler()
-	c.ExtractAnnotations = true
 	if savePropertyOrder {
-		registerPropertyOrderExt(c)
+		vocabulary, err := buildPropertyOrderVocabulary()
+		if err != nil {
+			return nil, err
+		}
+		c.RegisterVocabulary(vocabulary)
 	}
 
 	// Decode JSON
@@ -215,7 +222,12 @@ func compileSchema(s []byte, savePropertyOrder bool) (*jsonschema.Schema, error)
 		}
 	})
 
-	if err := c.AddResource(pseudoSchemaFile, bytes.NewReader(json.MustEncode(m, false))); err != nil {
+	decoded, err := jsonschema.UnmarshalJSON(strings.NewReader(json.MustEncodeString(m, false)))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.AddResource(pseudoSchemaFile, decoded); err != nil {
 		return nil, err
 	}
 
