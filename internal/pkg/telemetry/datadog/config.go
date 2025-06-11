@@ -1,6 +1,6 @@
 package datadog
 
-import "gopkg.in/DataDog/dd-trace-go.v1/profiler"
+import "github.com/DataDog/dd-trace-go/v2/profiler"
 
 type Config struct {
 	Enabled  bool           `configKey:"enabled" configUsage:"Enable DataDog integration."`
