@@ -18,12 +18,12 @@ spec:
     - ports:
         - port: 8000
     # Metrics
-    - ports:
-        - port: 9000
-      from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: datadog
-          podSelector:
-            matchLabels:
-              app: datadog-agent
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: datadog
+        podSelector:
+          matchLabels:
+            app: datadog-agent
+      ports:
+      - port: 9000

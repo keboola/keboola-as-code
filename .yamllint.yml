@@ -1,0 +1,16 @@
+---
+# .yamllint.yml
+extends: default
+ignore: |
+  /vendor/
+  /provisioning/
+  /target/
+  **/openapi*.yaml
+rules:
+  line-length:
+    max: 240  # For long commands in Taskfile
+  indentation:
+    spaces: consistent
+    indent-sequences: false
+  truthy:
+    allowed-values: ['true', 'false', 'on']

@@ -1,3 +1,4 @@
+---
 send_anonymous_usage_stats: false
 Profile1:
     target: target1

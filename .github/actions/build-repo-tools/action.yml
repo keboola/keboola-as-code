@@ -1,3 +1,4 @@
+---
 name: 'Build Linux repository tools'
 description: 'Build Linux repository tools'
 inputs:
@@ -7,12 +8,12 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: docker/build-push-action@v6
-      with:
-        context: ${{ github.workspace }}/build/package/linux/${{ inputs.type }}
-        file: ${{ github.workspace }}/build/package/linux/${{ inputs.type }}/Dockerfile
-        push: true
-        tags: keboolabot/keboola-as-code-${{ inputs.type }}-tools:latest
-        cache-from: type=registry,ref=keboolabot/keboola-as-code-${{ inputs.type }}-tools:buildcache
-        cache-to: type=registry,ref=keboolabot/keboola-as-code-${{ inputs.type }}-tools:buildcache,mode=max
-        provenance: false
+  - uses: docker/build-push-action@v6
+    with:
+      context: ${{ github.workspace }}/build/package/linux/${{ inputs.type }}
+      file: ${{ github.workspace }}/build/package/linux/${{ inputs.type }}/Dockerfile
+      push: true
+      tags: keboolabot/keboola-as-code-${{ inputs.type }}-tools:latest
+      cache-from: type=registry,ref=keboolabot/keboola-as-code-${{ inputs.type }}-tools:buildcache
+      cache-to: type=registry,ref=keboolabot/keboola-as-code-${{ inputs.type }}-tools:buildcache,mode=max
+      provenance: false

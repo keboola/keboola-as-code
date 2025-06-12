@@ -1,10 +1,11 @@
+---
 name: 'Release: Templates API'
 
 on:
   push:
     tags:
-      - 'production-templates-api-v**'
-      - 'dev-templates-api-v**'
+    - 'production-templates-api-v**'
+    - 'dev-templates-api-v**'
 
 env:
   # DockerHub login
@@ -53,51 +54,51 @@ jobs:
     permissions:
       id-token: write
     needs:
-      - test-lint
-      - test-unit
-      - test-e2e-service-templates
-      - test-k8s-service-templates
+    - test-lint
+    - test-unit
+    - test-e2e-service-templates
+    - test-k8s-service-templates
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: Docker login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USER }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
+    - name: Docker login
+      uses: docker/login-action@v3
+      with:
+        username: ${{ env.DOCKERHUB_USER }}
+        password: ${{ env.DOCKERHUB_TOKEN }}
 
-      - name: Build image
-        uses: docker/build-push-action@v6
-        with:
-          load: true
-          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          context: .
-          file: provisioning/templates-api/docker/Dockerfile
+    - name: Build image
+      uses: docker/build-push-action@v6
+      with:
+        load: true
+        tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+        context: .
+        file: provisioning/templates-api/docker/Dockerfile
 
-      - name: Push image to Amazon ECR, Azure ACR and GCP GAR
-        uses: ./.github/actions/push-image-aws-azure-gcp
-        with:
-          imageName: ${{ env.IMAGE_NAME }}
-          imageTag: ${{ env.IMAGE_TAG }}
-          ecrRegion: ${{ env.ECR_REGION }}
-          ecrRepository: ${{ env.ECR_REPOSITORY }}
-          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
-          gcpRegistry: ${{ env.GCP_REGISTRY }}
-          gcpRepository: ${{ env.GCP_REPOSITORY }}
-          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
-          gcpServiceAccount: ${{ env.GCP_SERVICE_ACCOUNT }}
-          acrRepository: ${{ env.ACR_REPOSITORY }}
-          acrRegistry: ${{ env.ACR_REGISTRY }}
-          acrUsername: ${{ env.ACR_USERNAME }}
-          acrPassword: ${{ secrets.TEMPLATES_API_ACR_PASSWORD }}
+    - name: Push image to Amazon ECR, Azure ACR and GCP GAR
+      uses: ./.github/actions/push-image-aws-azure-gcp
+      with:
+        imageName: ${{ env.IMAGE_NAME }}
+        imageTag: ${{ env.IMAGE_TAG }}
+        ecrRegion: ${{ env.ECR_REGION }}
+        ecrRepository: ${{ env.ECR_REPOSITORY }}
+        ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
+        gcpRegistry: ${{ env.GCP_REGISTRY }}
+        gcpRepository: ${{ env.GCP_REPOSITORY }}
+        gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+        gcpServiceAccount: ${{ env.GCP_SERVICE_ACCOUNT }}
+        acrRepository: ${{ env.ACR_REPOSITORY }}
+        acrRegistry: ${{ env.ACR_REGISTRY }}
+        acrUsername: ${{ env.ACR_USERNAME }}
+        acrPassword: ${{ secrets.TEMPLATES_API_ACR_PASSWORD }}
 
-      - name: Trigger image tag update
-        uses: ./.github/actions/trigger-image-tag-update
-        with:
-          helm-chart: "templates-api"
-          image-tag: ${{ env.IMAGE_TAG }}
-          github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}
+    - name: Trigger image tag update
+      uses: ./.github/actions/trigger-image-tag-update
+      with:
+        helm-chart: "templates-api"
+        image-tag: ${{ env.IMAGE_TAG }}
+        github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}

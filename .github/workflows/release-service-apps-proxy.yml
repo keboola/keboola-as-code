@@ -1,10 +1,11 @@
-name: 'Release: Apps Proxy'
+---
+name: "Release: Apps Proxy"
 
 on:
   push:
     tags:
-      - 'production-apps-proxy-v**'
-      - 'dev-apps-proxy-v**'
+    - 'production-apps-proxy-v**'
+    - 'dev-apps-proxy-v**'
 
 env:
   # DockerHub login
@@ -30,6 +31,7 @@ jobs:
     name: "Lint"
     secrets: inherit
     uses: ./.github/workflows/test-lint.yml
+
   test-unit:
     name: "Unit Tests"
     secrets: inherit
@@ -37,60 +39,62 @@ jobs:
     with:
       without-cache: true
       package-exception-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/cli"
+
   test-k8s-service-apps-proxy:
-    name: "K8S: Apps Proxy"
+    name: "K8s: Apps Proxy"
     secrets: inherit
     uses: ./.github/workflows/test-k8s-service-apps-proxy.yml
+
   build-and-push-proxy-image:
     name: "Build & Push Proxy Image"
     runs-on: ubuntu-latest
     permissions:
       id-token: write
     needs:
-      - test-lint
-      - test-unit
-      - test-k8s-service-apps-proxy
+    - test-lint
+    - test-unit
+    - test-k8s-service-apps-proxy
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: Docker login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USER }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
+    - name: Docker login
+      uses: docker/login-action@v3
+      with:
+        username: ${{ env.DOCKERHUB_USER }}
+        password: ${{ env.DOCKERHUB_TOKEN }}
 
-      - name: Build image
-        uses: docker/build-push-action@v6
-        with:
-          load: true
-          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          context: .
-          file: provisioning/apps-proxy/docker/Dockerfile
+    - name: Build image
+      uses: docker/build-push-action@v6
+      with:
+        load: true
+        tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+        context: .
+        file: provisioning/apps-proxy/docker/Dockerfile
 
-      - name: Push image to Amazon ECR, Azure ACR and GCP GAR
-        uses: ./.github/actions/push-image-aws-azure-gcp
-        with:
-          imageName: ${{ env.IMAGE_NAME }}
-          imageTag: ${{ env.IMAGE_TAG }}
-          ecrRegion: ${{ env.ECR_REGION }}
-          ecrRepository: ${{ env.ECR_REPOSITORY }}
-          ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
-          gcpRegistry: ${{ env.GCP_REGISTRY }}
-          gcpRepository: ${{ env.GCP_REPOSITORY }}
-          gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
-          gcpServiceAccount: ${{ env.GCP_SERVICE_ACCOUNT }}
-          acrRepository: ${{ env.ACR_REPOSITORY }}
-          acrRegistry: ${{ env.ACR_REGISTRY }}
-          acrUsername: ${{ env.ACR_USERNAME }}
-          acrPassword: ${{ secrets.APPS_PROXY_ACR_PASSWORD }}
+    - name: Push image to Amazon ECR, Azure ACR and GCP GAR
+      uses: ./.github/actions/push-image-aws-azure-gcp
+      with:
+        imageName: ${{ env.IMAGE_NAME }}
+        imageTag: ${{ env.IMAGE_TAG }}
+        ecrRegion: ${{ env.ECR_REGION }}
+        ecrRepository: ${{ env.ECR_REPOSITORY }}
+        ecrPushRole: ${{ env.ECR_PUSH_ROLE }}
+        gcpRegistry: ${{ env.GCP_REGISTRY }}
+        gcpRepository: ${{ env.GCP_REPOSITORY }}
+        gcpIdentityProvider: ${{ env.GCP_IDENTITY_PROVIDER }}
+        gcpServiceAccount: ${{ env.GCP_SERVICE_ACCOUNT }}
+        acrRepository: ${{ env.ACR_REPOSITORY }}
+        acrRegistry: ${{ env.ACR_REGISTRY }}
+        acrUsername: ${{ env.ACR_USERNAME }}
+        acrPassword: ${{ secrets.APPS_PROXY_ACR_PASSWORD }}
 
-      - name: Trigger image tag update
-        uses: ./.github/actions/trigger-image-tag-update
-        with:
-          helm-chart: "apps-proxy"
-          image-tag: ${{ env.IMAGE_TAG }}
-          github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}
+    - name: Trigger image tag update
+      uses: ./.github/actions/trigger-image-tag-update
+      with:
+        helm-chart: "apps-proxy"
+        image-tag: ${{ env.IMAGE_TAG }}
+        github-app-private-key: ${{ secrets.GITOPS_KBC_STACKS_TRIGGER_APP_PVK }}

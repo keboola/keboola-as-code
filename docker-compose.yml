@@ -1,95 +1,98 @@
+---
 services:
   dev:
     image: keboolabot/keboola-as-code-dev
     build:
-      context: .
-      dockerfile: ./provisioning/dev/docker/Dockerfile
-    # Uncomment when you would like to inspect metrics of your service using prometheus container.
-    # Change the <your-service> placeholder with desired service to be inspected. E.g apps-proxy
+    context: .
+    dockerfile: ./provisioning/dev/docker/Dockerfile
+    # Uncomment when you would like to inspect metrics of your service using
+    # prometheus container.
+    # Change the <your-service> placeholder with desired service to be inspected.
+    # E.g apps-proxy
     # See ./docs/development.md for more information how to startup the compose etc.
-    #command: >
+    # command: >
     #       sh -c "git config --global --add safe.directory /code
     #              task run-<your-service>"
     links:
-      - etcd
-      - redis
-      - sandboxesmock
-      - prometheus
+    - etcd
+    - redis
+    - sandboxesmock
+    - prometheus
     networks:
-      - prometheus
-      - etcd
-      - apps-proxy
+    - prometheus
+    - etcd
+    - apps-proxy
     volumes:
-      - ./:/code:z
-      - cache:/tmp/cache
+    - ./:/code:z
+    - cache:/tmp/cache
     ulimits:
-      nofile:
-        soft: 50000
-        hard: 50000
+    nofile:
+      soft: 50000
+      hard: 50000
     environment:
-      # For all
-      - TEST_KBC_TMP_DIR=/tmp
-      - TEST_KBC_PROJECTS_FILE=/code/projects.json
-      - TEST_KBC_PROJECTS_LOCK_HOST
-      - TEST_KBC_PROJECTS_LOCK_PASSWORD
-      # For Templates API
-      - TEMPLATES_STORAGE_API_HOST=connection.keboola.com
-      - TEMPLATES_API_LISTEN_ADDRESS=0.0.0.0:8000
-      - TEMPLATES_API_PUBLIC_URL=http://localhost:8000
-      - TEMPLATES_METRICS_LISTEN_ADDRESS=0.0.0.0:9000
-      # For Stream Service
-      - STREAM_NODE_ID=my-node
-      - STREAM_HOSTNAME=localhost
-      - STREAM_API_LISTEN=0.0.0.0:8001
-      - STREAM_API_PUBLIC_URL=http://localhost:8001
-      - STREAM_SOURCE_HTTP_LISTEN=0.0.0.0:8010
-      - STREAM_SOURCE_HTTP_PUBLIC_URL=http://localhost:8010
-      - STREAM_STORAGE_VOLUMES_PATH=/tmp/volumes
-      - STREAM_STORAGE_API_HOST=connection.keboola.com
-      - STREAM_METRICS_LISTEN_ADDRESS=0.0.0.0:9001
-      # Apps Proxy
-      - APPS_PROXY_LISTEN_ADDRESS=0.0.0.0:8002
-      - APPS_PROXY_METRICS_LISTEN_ADDRESS=0.0.0.0:9002
-      - APPS_PROXY_API_PUBLIC_URL=https://hub.keboola.local
-      - APPS_PROXY_SANDBOXES_API_URL=http://sandboxesmock:1080/
-      - APPS_PROXY_COOKIE_SECRET_SALT=secret
-      # Disable DataDog integration
-      - TEMPLATES_DATADOG_ENABLED=false
-      - STREAM_DATADOG_ENABLED=false
-      - APPS_PROXY_DATADOG_ENABLED=false
-      - DD_AGENT_HOST=datadog
-      # Etcd for unit tests
-      - UNIT_ETCD_ENABLED=true
-      - UNIT_ETCD_ENDPOINT=etcd:2379
-      - UNIT_ETCD_USERNAME=root
-      - UNIT_ETCD_PASSWORD=toor
-      - UNIT_ETCD_NAMESPACE=templates-api
-      # Etcd for the Templates API`
-      - TEMPLATES_ETCD_ENDPOINT=etcd:2379
-      - TEMPLATES_ETCD_USERNAME=root
-      - TEMPLATES_ETCD_PASSWORD=toor
-      - TEMPLATES_ETCD_NAMESPACE=templates-api
-      # Etcd for the Stream Service
-      - STREAM_ETCD_ENDPOINT=etcd:2379
-      - STREAM_ETCD_USERNAME=root
-      - STREAM_ETCD_PASSWORD=toor
-      - STREAM_ETCD_NAMESPACE=stream
+    # For all
+    - TEST_KBC_TMP_DIR=/tmp
+    - TEST_KBC_PROJECTS_FILE=/code/projects.json
+    - TEST_KBC_PROJECTS_LOCK_HOST
+    - TEST_KBC_PROJECTS_LOCK_PASSWORD
+    # For Templates API
+    - TEMPLATES_STORAGE_API_HOST=connection.keboola.com
+    - TEMPLATES_API_LISTEN_ADDRESS=0.0.0.0:8000
+    - TEMPLATES_API_PUBLIC_URL=http://localhost:8000
+    - TEMPLATES_METRICS_LISTEN_ADDRESS=0.0.0.0:9000
+    # For Stream Service
+    - STREAM_NODE_ID=my-node
+    - STREAM_HOSTNAME=localhost
+    - STREAM_API_LISTEN=0.0.0.0:8001
+    - STREAM_API_PUBLIC_URL=http://localhost:8001
+    - STREAM_SOURCE_HTTP_LISTEN=0.0.0.0:8010
+    - STREAM_SOURCE_HTTP_PUBLIC_URL=http://localhost:8010
+    - STREAM_STORAGE_VOLUMES_PATH=/tmp/volumes
+    - STREAM_STORAGE_API_HOST=connection.keboola.com
+    - STREAM_METRICS_LISTEN_ADDRESS=0.0.0.0:9001
+    # Apps Proxy
+    - APPS_PROXY_LISTEN_ADDRESS=0.0.0.0:8002
+    - APPS_PROXY_METRICS_LISTEN_ADDRESS=0.0.0.0:9002
+    - APPS_PROXY_API_PUBLIC_URL=https://hub.keboola.local
+    - APPS_PROXY_SANDBOXES_API_URL=http://sandboxesmock:1080/
+    - APPS_PROXY_COOKIE_SECRET_SALT=secret
+    # Disable DataDog integration
+    - TEMPLATES_DATADOG_ENABLED=false
+    - STREAM_DATADOG_ENABLED=false
+    - APPS_PROXY_DATADOG_ENABLED=false
+    - DD_AGENT_HOST=datadog
+    # Etcd for unit tests
+    - UNIT_ETCD_ENABLED=true
+    - UNIT_ETCD_ENDPOINT=etcd:2379
+    - UNIT_ETCD_USERNAME=root
+    - UNIT_ETCD_PASSWORD=toor
+    - UNIT_ETCD_NAMESPACE=templates-api
+    # Etcd for the Templates API
+    - TEMPLATES_ETCD_ENDPOINT=etcd:2379
+    - TEMPLATES_ETCD_USERNAME=root
+    - TEMPLATES_ETCD_PASSWORD=toor
+    - TEMPLATES_ETCD_NAMESPACE=templates-api
+    # Etcd for the Stream Service
+    - STREAM_ETCD_ENDPOINT=etcd:2379
+    - STREAM_ETCD_USERNAME=root
+    - STREAM_ETCD_PASSWORD=toor
+    - STREAM_ETCD_NAMESPACE=stream
     ports:
-      # PProf
-      - "4000:4000"
-      - "4001:4001"
-      # Templates API
-      - "8000:8000" # API
-      - "9000:9000" # metrics
-      # Stream Service
-      - "8001:8001" # API
-      - "9001:9001" # metrics
-      - "8010:8010" # source
-      # Apps Proxy
-      - "8002:8002" # Proxy
-      - "9002:9002" # metrics
-      # Go docs
-      - "6060:6060"
+    # PProf
+    - "4000:4000"
+    - "4001:4001"
+    # Templates API
+    - "8000:8000"  # API
+    - "9000:9000"  # metrics
+    # Stream Service
+    - "8001:8001"  # API
+    - "9001:9001"  # metrics
+    - "8010:8010"  # source
+    # Apps Proxy
+    - "8002:8002"  # Proxy
+    - "9002:9002"  # metrics
+    # Go docs
+    - "6060:6060"
 
   # To store locks for TEST_KBC_PROJECTS when testing.
   redis:
@@ -97,117 +100,117 @@ services:
     hostname: redis
     command: ["redis-server", "/etc/redis/redis.conf"]
     ports:
-      - "6379:6379"
+    - "6379:6379"
     volumes:
-      - ./provisioning/common/redis/redis.conf:/etc/redis/redis.conf
+    - ./provisioning/common/redis/redis.conf:/etc/redis/redis.conf
     environment:
-      REDIS_PORT: 6379
+    REDIS_PORT: 6379
 
   # Same etcd is used for all services, but with different namespace
   etcd:
     hostname: etcd
     image: docker.io/bitnami/etcd:3.5.11-debian-11-r3
     networks:
-      - etcd
+    - etcd
     environment:
-      ALLOW_NONE_AUTHENTICATION: "no"
-      ETCD_NAME: "etcd"
-      ETCD_ROOT_PASSWORD: "toor"
-      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
-      ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd:2380"
-      ETCD_INITIAL_CLUSTER_TOKEN: "cluster"
-      ETCD_INITIAL_CLUSTER": "default=http://etcd:2379"
-      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
-      ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
-      ETCD_DISABLE_STORE_MEMBER_ID: "true"
-      ETCD_MAX_TXN_OPS: "128"
+    ALLOW_NONE_AUTHENTICATION: "no"
+    ETCD_NAME: "etcd"
+    ETCD_ROOT_PASSWORD: "toor"
+    ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+    ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd:2380"
+    ETCD_INITIAL_CLUSTER_TOKEN: "cluster"
+    ETCD_INITIAL_CLUSTER": "default=http://etcd:2379"
+    ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+    ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
+    ETCD_DISABLE_STORE_MEMBER_ID: "true"
+    ETCD_MAX_TXN_OPS: "128"
 
   k6:
     volumes:
-      - ./scripts:/scripts
+    - ./scripts:/scripts
     image: keboolabot/stream-benchmark
     build:
-      context: .
-      dockerfile: ./provisioning/stream/docker/k6/Dockerfile
+    context: .
+    dockerfile: ./provisioning/stream/docker/k6/Dockerfile
     network_mode: host
     ulimits:
-      nofile:
-        soft: 50000
-        hard: 50000
+    nofile:
+      soft: 50000
+      hard: 50000
     environment:
-      - K6_API_TOKEN
-      - K6_API_HOST
-      - K6_OVERWRITE_SOURCE_HOST
-      - K6_CLOUD_API_TOKEN
-      - K6_SCENARIO
-      - K6_TABLE_MAPPING
-      - K6_PARALLEL_REQS_PER_USER
-      - K6_CONST_VIRTUAL_USERS
-      - K6_CONST_TOTAL_REQUESTS
-      - K6_CONST_TIMEOUT
-      - K6_RAMPING_MAX_VIRTUAL_USERS
-      - K6_RAMPING_UP_DURATION
-      - K6_RAMPING_STABLE_DURATION
-      - K6_RAMPING_DOWN_DURATION
-      - STREAM_PAYLOAD_SIZE
+    - K6_API_TOKEN
+    - K6_API_HOST
+    - K6_OVERWRITE_SOURCE_HOST
+    - K6_CLOUD_API_TOKEN
+    - K6_SCENARIO
+    - K6_TABLE_MAPPING
+    - K6_PARALLEL_REQS_PER_USER
+    - K6_CONST_VIRTUAL_USERS
+    - K6_CONST_TOTAL_REQUESTS
+    - K6_CONST_TIMEOUT
+    - K6_RAMPING_MAX_VIRTUAL_USERS
+    - K6_RAMPING_UP_DURATION
+    - K6_RAMPING_STABLE_DURATION
+    - K6_RAMPING_DOWN_DURATION
+    - STREAM_PAYLOAD_SIZE
 
   sandboxesmock:
     image: mockserver/mockserver:latest
     ports:
-      - 1080:1080
+    - 1080:1080
     environment:
-      MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
-      MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
-      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/sandboxesMock.json
+    MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+    MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
+    MOCKSERVER_INITIALIZATION_JSON_PATH: /config/sandboxesMock.json
     volumes:
-      - ./provisioning/apps-proxy/dev/sandboxesMock.json:/config/sandboxesMock.json:Z
+    - ./provisioning/apps-proxy/dev/sandboxesMock.json:/config/sandboxesMock.json:Z
     networks:
-      - apps-proxy
+    - apps-proxy
 
   https-proxy:
     image: https-proxy
     volumes:
-      - ./ca:/etc/nginx/ca
-      - ./certs:/etc/nginx/certs
+    - ./ca:/etc/nginx/ca
+    - ./certs:/etc/nginx/certs
     environment:
-      - DOMAIN=hub.keboola.local
-      - TARGET_HOST=dev
-      - TARGET_HOST_HEADER=test.hub.keboola.local
-      - TARGET_PORT=8000
+    - DOMAIN=hub.keboola.local
+    - TARGET_HOST=dev
+    - TARGET_HOST_HEADER=test.hub.keboola.local
+    - TARGET_PORT=8000
     ports:
-      - 443:443
+    - 443:443
     networks:
-      - apps-proxy
+    - apps-proxy
 
   datadog:
     image: gcr.io/datadoghq/agent:7
     container_name: dd-agent
     environment:
-      - DD_API_KEY
-      - DD_SITE=datadoghq.eu
-      - DD_HOSTNAME=datadog
-      - DD_APM_ENABLED=false
-      - DD_LOGS_ENABLED=true
-      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
-      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
-      - DD_CONTAINER_EXCLUDE=image:gcr.io/datadoghq/agent*
-      - DD_CONTAINER_EXCLUDE_METRICS=image:gcr.io/datadoghq/agent*
-      - DD_CONTAINER_EXCLUDE_LOGS=image:gcr.io/datadoghq/agent*
+    - DD_API_KEY
+    - DD_SITE=datadoghq.eu
+    - DD_HOSTNAME=datadog
+    - DD_APM_ENABLED=false
+    - DD_LOGS_ENABLED=true
+    - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+    - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    - DD_CONTAINER_EXCLUDE=image:gcr.io/datadoghq/agent*
+    - DD_CONTAINER_EXCLUDE_METRICS=image:gcr.io/datadoghq/agent*
+    - DD_CONTAINER_EXCLUDE_LOGS=image:gcr.io/datadoghq/agent*
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /proc/:/host/proc/:ro
-      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-        #- /opt/datadog-agent/run:/opt/datadog-agent/run:rw
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - /proc/:/host/proc/:ro
+    - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    # - /opt/datadog-agent/run:/opt/datadog-agent/run:rw
 
   prometheus:
     image: prom/prometheus
     volumes:
-      - "./provisioning/dev/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+    - "./provisioning/dev/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
     networks:
-      - prometheus
+    - prometheus
     ports:
-      - 9090:9090
+    - 9090:9090
 
 volumes:
   cache:

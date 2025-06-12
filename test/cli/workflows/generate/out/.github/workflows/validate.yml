@@ -1,3 +1,4 @@
+---
 name: Validate
 on: push
 env:
@@ -6,11 +7,11 @@ jobs:
   kbc-validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - name: Install Keboola as Code CLI
-        uses: ./.github/actions/install
-        with:
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push dry run
-        run: kbc push --dry-run
+    - name: Check out repository code
+      uses: actions/checkout@v4
+    - name: Install Keboola as Code CLI
+      uses: ./.github/actions/install
+      with:
+        githubToken: ${{ secrets.GITHUB_TOKEN }}
+    - name: Push dry run
+      run: kbc push --dry-run

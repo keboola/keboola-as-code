@@ -1,10 +1,11 @@
+---
 name: 'Push CI'
 
 on:
   push:
     # Avoid tags
     branches:
-      - "**"
+    - "**"
 
 jobs:
   yaml-lint:

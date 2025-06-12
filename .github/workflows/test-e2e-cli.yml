@@ -1,3 +1,4 @@
+---
 name: "E2E Tests: CLI"
 
 on:
@@ -18,7 +19,7 @@ env:
 # Required for aws-actions/configure-aws-credentials using OIDC, assume role
 permissions:
   id-token: write
-  contents: read 
+  contents: read
 
 jobs:
   test:
@@ -27,87 +28,87 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: linux
-            os: ubuntu-latest
-          - name: mac-os
-            os: macos-latest
-          - name: windows
-            os: windows-2022
+        - name: linux
+          os: ubuntu-latest
+        - name: mac-os
+          os: macos-latest
+        - name: windows
+          os: windows-2022
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Setup line endings
-        run: git config --global core.autocrlf false
+    - name: Setup line endings
+      run: git config --global core.autocrlf false
 
-      - name: Change default TEST_COVERAGE when on main branch
-        if: github.ref == 'refs/heads/main'
-        run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
+    - name: Change default TEST_COVERAGE when on main branch
+      if: github.ref == 'refs/heads/main'
+      run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
 
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Setup Go, tools and caching
-        uses: ./.github/actions/go-setup
-        with:
-          build-type: e2e-tests-cli
-          without-cache: ${{ inputs.without-cache }}
-          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+    - name: Setup Go, tools and caching
+      uses: ./.github/actions/go-setup
+      with:
+        build-type: e2e-tests-cli
+        without-cache: ${{ inputs.without-cache }}
+        cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
-      - name: Set TEST_KBC_PROJECTS_FILE entries
-        uses: ./.github/actions/export-kbc-projects
-        with:
-          secrets: ${{ toJSON(secrets) }}
+    - name: Set TEST_KBC_PROJECTS_FILE entries
+      uses: ./.github/actions/export-kbc-projects
+      with:
+        secrets: ${{ toJSON(secrets) }}
 
-      - name: Run tests
-        run: |
-          set -eo pipefail
+    - name: Run tests
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+        TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
+        TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
+      run: |
+        set -eo pipefail
 
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            export TEST_BINARY_CLI="${{ runner.temp }}\test-build-cli.exe"
-          else
-            export TEST_BINARY_CLI="${{ runner.temp }}/test-build-cli"
-          fi
+        if ["$RUNNER_OS" == "Windows"]; then
+        export TEST_BINARY_CLI="${{ runner.temp }}\test-build-cli.exe"
+        else
+        export TEST_BINARY_CLI="${{ runner.temp }}/test-build-cli"
+        fi
 
-          # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229#issuecomment-1988965927)
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
-          fi
+        # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229# issuecomment-1988965927)
+        if ["$RUNNER_OS" == "macOS"]; then
+        export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
+        fi
 
-          # Build binary for test without external inputs
-          env -i  \
-            TERM="$TERM" \
-            HOME="$HOME" \
-            PATH="$PATH" \
-            GOFLAGS="$GOFLAGS" \
-            APPDATA="$APPDATA" \
-            BUILD_TARGET_PATH="$TEST_BINARY_CLI" \
-            CLI_BUILD_DATE="-" \
-            CLI_BUILD_GIT_COMMIT="-" \
-          task build-local
-          touch -d '1970-01-01T00:00:01' "$TEST_BINARY_CLI"
+        # Build binary for test without external inputs
+        env -i  \
+        TERM="$TERM" \
+        HOME="$HOME" \
+        PATH="$PATH" \
+        GOFLAGS="$GOFLAGS" \
+        APPDATA="$APPDATA" \
+        BUILD_TARGET_PATH="$TEST_BINARY_CLI" \
+        CLI_BUILD_DATE="-" \
+        CLI_BUILD_GIT_COMMIT="-" \
+        task build-local
+        touch -d '1970-01-01T00:00:01' "$TEST_BINARY_CLI"
 
-          # Calculate binary hash, it invalidates tests cache
-          export TEST_BINARY_CLI_HASH=`cat "$TEST_BINARY_CLI" | $MD5_COMMAND | cut -d " " -f1`
-          echo "Binary hash: $TEST_BINARY_CLI_HASH"
+        # Calculate binary hash, it invalidates tests cache
+        export TEST_BINARY_CLI_HASH=`cat "$TEST_BINARY_CLI" | $MD5_COMMAND | cut -d " " -f1`
+        echo "Binary hash: $TEST_BINARY_CLI_HASH"
 
-          # ENVs can affect test caching, make sure to only run tests with expected ENVs
-          env -i  \
-            TERM="$TERM" \
-            HOME="$HOME" \
-            PATH="$PATH" \
-            APPDATA="$APPDATA" \
-            TEST_BINARY_CLI="$TEST_BINARY_CLI" \
-            TEST_BINARY_CLI_HASH="$TEST_BINARY_CLI_HASH" \
-            TEST_PARALLELISM="$TEST_PARALLELISM" \
-            TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
-            TEST_COVERAGE="false" \
-            TEST_CREATE_OUT_DIR="false" \
-            TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
-            TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
-            TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
+        # ENVs can affect test caching, make sure to only run tests with expected ENVs
+        env -i  \
+        TERM="$TERM" \
+        HOME="$HOME" \
+        PATH="$PATH" \
+          APPDATA="$APPDATA" \
+          TEST_BINARY_CLI="$TEST_BINARY_CLI" \
+          TEST_BINARY_CLI_HASH="$TEST_BINARY_CLI_HASH" \
+          TEST_PARALLELISM="$TEST_PARALLELISM" \
+          TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
+          TEST_COVERAGE="false" \
+          TEST_CREATE_OUT_DIR="false" \
+          TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
+          TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
+          TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
           task tests-cli
-        shell: bash
-        env:
-          VERSION: ${{ inputs.version }}
-          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
-          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
-          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'

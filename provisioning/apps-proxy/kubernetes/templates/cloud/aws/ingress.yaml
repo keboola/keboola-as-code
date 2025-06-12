@@ -14,20 +14,20 @@ spec:
     - host: "hub.${HOSTNAME_SUFFIX}"
       http:
         paths:
-          - backend:
-              service:
-                name: apps-proxy
-                port:
-                  number: 80
-            path: /
-            pathType: Prefix
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: apps-proxy
+              port:
+                number: 80
     - host: "*.hub.${HOSTNAME_SUFFIX}"
       http:
         paths:
-          - backend:
-              service:
-                name: apps-proxy
-                port:
-                  number: 80
-            path: /
-            pathType: Prefix
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: apps-proxy
+              port:
+                number: 80

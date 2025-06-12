@@ -1,17 +1,22 @@
+---
 name: 'K8S: Apps Proxy'
 
 on:
   # This workflow is also part of the release pipeline,
   # in that case, the actual version is deployed twice.
   workflow_call:
+    inputs:
+      version:
+        type: string
+        required: false
   # In PR the previous version is deployed first and then the actual version.
   pull_request:
     paths:
-      - .github/workflows/test-k8s-service-apps-proxy.yml
-      - provisioning/apps-proxy/**
-      - provisioning/common/**
-      # When the config structure is changed it may be necessary to adjust k8s configmap.
-      - internal/pkg/service/appsproxy/config/**
+    - .github/workflows/test-k8s-service-apps-proxy.yml
+    - provisioning/apps-proxy/**
+    - provisioning/common/**
+    # When the config structure is changed it may be necessary to adjust k8s configmap.
+    - internal/pkg/service/appsproxy/config/**
 
 env:
   MINIKUBE_PROFILE: apps-proxy
@@ -34,146 +39,147 @@ jobs:
     name: "K8S test: Data Apps Proxy"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Create artifacts directory
-        run: mkdir -p /tmp/artifacts
+    - name: Create artifacts directory
+      run: mkdir -p /tmp/artifacts
 
-      - name: Copy latest scripts to a temp dir
-        run: cp -R ${{ github.workspace }}/provisioning/common/scripts /tmp/latest-scripts
+    - name: Copy latest scripts to a temp dir
+      run: cp -R ${{ github.workspace }}/provisioning/common/scripts /tmp/latest-scripts
 
-      - name: Install gron tool
-        run: |
-          url="https://github.com/tomnomnom/gron/releases/download/v0.7.1/gron-linux-amd64-0.7.1.tgz"
-          curl -L "$url" | tar -xz -C /usr/local/bin
+    - name: Install gron tool
+      run: |
+        url="https://github.com/tomnomnom/gron/releases/download/v0.7.1/gron-linux-amd64-0.7.1.tgz"
+        curl -L "$url" | tar -xz -C /usr/local/bin
 
-      - name: Install MiniKube
-        run: /tmp/latest-scripts/minikube/install.sh
+    - name: Install MiniKube
+      run: /tmp/latest-scripts/minikube/install.sh
 
-      - name: Start MiniKube
-        run: /tmp/latest-scripts/minikube/start.sh
+    - name: Start MiniKube
+      run: /tmp/latest-scripts/minikube/start.sh
 
-      - name: Set Kubernetes namespace
-        run: kubectl config set-context --current "--namespace=$KUBERNETES_NAMESPACE"
+    - name: Set Kubernetes namespace
+      run: kubectl config set-context --current "--namespace=$KUBERNETES_NAMESPACE"
 
-      - name: Checkout BASE branch (or HEAD if it is not a pull request)
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
+    - name: Checkout BASE branch (or HEAD if it is not a pull request)
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.base.ref }}
 
-      - name: Deploy the old version, from the BASE branch
-        continue-on-error: true
-        run: ./deploy_local.sh
+    - name: Deploy the old version, from the BASE branch
+      continue-on-error: true
+      run: ./deploy_local.sh
 
-      - name: Dump the old version (for diff)
-        continue-on-error: true
-        run: sleep 10 && /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.old.json
+    - name: Dump the old version (for diff)
+      continue-on-error: true
+      run: sleep 10 && /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.old.json
 
-      - name: Checkout HEAD branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
+    - name: Checkout HEAD branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Deploy the new version, from the HEAD branch
-        run: ./deploy_local.sh
+    - name: Deploy the new version, from the HEAD branch
+      run: ./deploy_local.sh
 
-      - name: Dump the new version (for diff)
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          # Delete empty old replica sets
-          emptyReplicaSets=$(kubectl get replicasets --ignore-not-found | tail --lines=+2 | awk '{if ($2 + $3 + $4 == 0) print $1}')
-          echo -e "Found empty replica sets:"
-          echo "$emptyReplicaSets"
-          echo "-------------------------"
-          echo "$emptyReplicaSets" | xargs --no-run-if-empty -I {} kubectl delete replicaset "{}"
-          # Wait for pod startup/termination
-          sleep 10
-          # Dump objects
-          /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.new.json
+    - name: Dump the new version (for diff)
+      if: always()
+      run: |
+        set -Eeuo pipefail
+        # Delete empty old replica sets
+        emptyReplicaSets=$(kubectl get replicasets --ignore-not-found | tail --lines=+2 | awk '{if ($2 + $3 + $4 == 0) print $1}')
+        echo -e "Found empty replica sets:"
+        echo "$emptyReplicaSets"
+        echo "-------------------------"
+        echo "$emptyReplicaSets" | xargs --no-run-if-empty -I {} kubectl delete replicaset "{}"
+        # Wait for pod startup/termination
+        sleep 10
+        # Dump objects
+        /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.new.json
 
-      - name: Check deployment of the API nodes
-        if: always()
-        run: kubectl rollout status "deployment/$API_RELEASE_NAME" --timeout=10s
+    - name: Check deployment of the API nodes
+      if: always()
+      run: kubectl rollout status "deployment/$API_RELEASE_NAME" --timeout=10s
 
-      - name: Check access to API metrics from the DataDog Agent
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          kubectl create namespace datadog || true
-          export POD_IP=`kubectl get pod -l app=apps-proxy -o=jsonpath='{.items[0].status.podIP}'`
-          echo "Pod IP: $POD_IP"
-          kubectl run --attach --rm --restart=Never check-api-datadog \
-          --namespace datadog \
+    - name: Check access to API metrics from the DataDog Agent
+      if: always()
+      run: |
+        set -Eeuo pipefail
+        kubectl create namespace datadog || true
+        export POD_IP=`kubectl get pod -l app=apps-proxy -o=jsonpath='{.items[0].status.podIP}'`
+        echo "Pod IP: $POD_IP"
+        kubectl run --attach --rm --restart=Never check-api-datadog \
+        --namespace datadog \
+        --image docker.io/alpine/curl \
+        --labels="app=datadog-agent" \
+        --env="POD_IP=$POD_IP" \
+        --env="METRICS_PORT=$METRICS_PORT" \
+        --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 \"$POD_IP:$METRICS_PORT/metrics\" | tail"
+
+    - name: Check forbidden access to the API metrics from other places
+      if: always()
+      run: |
+        set -Eeuo pipefail
+        export POD_IP=`kubectl get pod -l app=apps-proxy -o=jsonpath='{.items[0].status.podIP}'`
+        echo "Pod IP: $POD_IP"
+        if kubectl run --attach --rm --restart=Never check-api-other \
           --image docker.io/alpine/curl \
-          --labels="app=datadog-agent" \
           --env="POD_IP=$POD_IP" \
           --env="METRICS_PORT=$METRICS_PORT" \
-          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"
+          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 \"$POD_IP:$METRICS_PORT/metrics\" | tail"; then
+        echo "The command did not fail, but it should have."
+        exit 1
+        else
+        echo "The command failed, OK."
+        exit 0
+        fi
 
-      - name: Check forbidden access to the API metrics from other places
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          export POD_IP=`kubectl get pod -l app=apps-proxy -o=jsonpath='{.items[0].status.podIP}'`
-          echo "Pod IP: $POD_IP"
-          if kubectl run --attach --rm --restart=Never check-api-other \
-            --image docker.io/alpine/curl \
-            --env="POD_IP=$POD_IP" \
-            --env="METRICS_PORT=$METRICS_PORT" \
-            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"; then
-            echo "The command did not fail, but it should have."
-            exit 1
-          else
-            echo "The command failed, OK."
-            exit 0
-          fi
+    - name: Check Proxy response
+      if: always()
+      run: curl --fail -L -s --max-time 5 "$(minikube service --url $API_RELEASE_NAME --namespace $KUBERNETES_NAMESPACE)/health-check"
 
-      - name: Check Proxy response
-        if: always()
-        run: curl --fail -L -s --max-time 5 "$(minikube service --url $API_RELEASE_NAME --namespace $KUBERNETES_NAMESPACE)/health-check"
+    - name: Diff the old and the new Kubernetes state
+      if: always()
+      run: |
+        set -Eeuo pipefail
 
-      - name: Diff the old and the new Kubernetes state
-        if: always()
-        run: |
-          set -Eeuo pipefail
+        # Diff JSON states
+        /tmp/latest-scripts/k8s/diff.sh \
+        /tmp/artifacts/test-k8s-state.old.json \
+        /tmp/artifacts/test-k8s-state.new.json \
+        /tmp/artifacts/test-k8s-state.diff || true
 
-          # Diff JSON states
-          /tmp/latest-scripts/k8s/diff.sh \
-            /tmp/artifacts/test-k8s-state.old.json \
-            /tmp/artifacts/test-k8s-state.new.json \
-            /tmp/artifacts/test-k8s-state.diff || true
+        # Remove ANSI sequences
+        sed -e 's/\x1b\[[0-9;]*m//g' -i /tmp/artifacts/test-k8s-state.diff || true
 
-          # Remove ANSI sequences
-          sed -e 's/\x1b\[[0-9;]*m//g' -i /tmp/artifacts/test-k8s-state.diff || true
+        # Prepare PR comment message
+        echo -e "  ##  # ${{ env.SERVICE_NAME }} Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
+        echo -e "Between \`base\` ${{ github.event.pull_request.base.sha }} :arrow_left:  \`head\` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
+        echo -e "<details>\n<summary>Expand</summary>\n\n\`\`\`diff\n" >> /tmp/artifacts/test-k8s-state.diff.message
+        head -c 50000 /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message || true
+        echo -e "\n\n(see artifacts in the Github Action for more information)\n\`\`\`\n</details>" >> /tmp/artifacts/test-k8s-state.diff.message
 
-          # Prepare PR comment message
-          echo -e "### ${{ env.SERVICE_NAME }} Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
-          echo -e "Between \`base\` ${{ github.event.pull_request.base.sha }} :arrow_left:  \`head\` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
-          echo -e "<details>\n<summary>Expand</summary>\n\n\`\`\`diff\n" >> /tmp/artifacts/test-k8s-state.diff.message
-          head -c 50000 /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message || true
-          echo -e "\n\n(see artifacts in the Github Action for more information)\n\`\`\`\n</details>" >> /tmp/artifacts/test-k8s-state.diff.message
+    - name: Dump logs
+      if: always()
+      run: |
+        /tmp/latest-scripts/minikube/logs.sh /tmp/artifacts &&
+        /tmp/latest-scripts/k8s/logs.sh /tmp/artifacts
 
-      - name: Dump logs
-        if: always()
-        run: |
-          /tmp/latest-scripts/minikube/logs.sh /tmp/artifacts &&
-          /tmp/latest-scripts/k8s/logs.sh /tmp/artifacts
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-k8s-state-apps-proxy
+        path: /tmp/artifacts
+        if-no-files-found: error
 
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-k8s-state-apps-proxy
-          path: /tmp/artifacts
-          if-no-files-found: error
-
-      - name: Send PR comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: "${{ env.KUBERNETES_NAMESPACE }}-kubernetes-state-diff"
-          recreate: true
-          path: /tmp/artifacts/test-k8s-state.diff.message
+    - name: Send PR comment
+      if: always()
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        header: "${{ env.KUBERNETES_NAMESPACE }}-kubernetes-state-diff"
+        recreate: true
+        path: /tmp/artifacts/test-k8s-state.diff.message
