@@ -4,9 +4,9 @@ import (
 	"context"
 	"strconv"
 
+	ddtracer "github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	ddtracer "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 )
@@ -29,7 +29,7 @@ func (t *wrappedDDTracer) Start(parentCtx context.Context, spanName string, opts
 		ddCtx := ddspan.Context()
 		ctx = ctxattr.ContextWith(
 			ctx,
-			attribute.String("dd.trace_id", strconv.FormatUint(ddCtx.TraceID(), 10)),
+			attribute.String("dd.trace_id", strconv.FormatUint(ddCtx.TraceIDLower(), 10)),
 			attribute.String("dd.span_id", strconv.FormatUint(ddCtx.SpanID(), 10)),
 		)
 
