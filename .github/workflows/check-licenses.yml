@@ -1,3 +1,4 @@
+---
 name: "Check licenses"
 
 on:
@@ -13,53 +14,51 @@ jobs:
     name: check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Setup Go, tools and caching
-        uses: ./.github/actions/go-setup
-        with:
-          build-type: check-licenses
-          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+    - name: Setup Go, tools and caching
+      uses: ./.github/actions/go-setup
+      with:
+        build-type: check-licenses
+        cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
-      #####################
-      ### License Types ###
-      #####################
-      # Forbidden (Non Commercial)
-      #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L323
-      #     Licenses that are forbidden to be used.
-      #
-      # Restricted
-      #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L176
-      #     Licenses in this category require mandatory source
-      #	    distribution if we ship a product that includes third-party code
-      #	    protected by such a license.
-      #
-      # Reciprocal, Notice, Permissive, Unencumbered
-      #     Packages with these licenses are safe to use.
-      #     Some of them restrict changes,
-      #     but this is not an issue when we use them as libraries without changes.
-      - name: Run license checker
-        # Ignored:
-        #    - github.com/eliukblau/pixterm, license detection failed (Reciprocal - MPL-2.0)
-        #    - github.com/bsm/redislock, license detection failed (Notice - Apache-2.0)
-        #    - github.com/jmespath/go-jmespath, license detection failed (Notice - Apache-2.0)
-        run: |
-          go tool go-licenses check ./... --disallowed_types forbidden,restricted,unknown \
-            --ignore github.com/eliukblau/pixterm \
-            --ignore github.com/bsm/redislock \
-            --ignore github.com/jmespath/go-jmespath
-        shell: bash
+    # License Types
+    # Forbidden (Non Commercial)
+    #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go  # L323
+    #     Licenses that are forbidden to be used.
+    #
+    # Restricted
+    #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go  # L176
+    #     Licenses in this category require mandatory source
+    #     distribution if we ship a product that includes third-party code
+    #     protected by such a license.
+    #
+    # Reciprocal, Notice, Permissive, Unencumbered
+    #     Packages with these licenses are safe to use.
+    #     Some of them restrict changes,
+    #     but this is not an issue when we use them as libraries without changes.
+    - name: Run license checker
+      # Ignored:
+      #    - github.com/eliukblau/pixterm, license detection failed (Reciprocal - MPL-2.0)
+      #    - github.com/bsm/redislock, license detection failed (Notice - Apache-2.0)
+      #    - github.com/jmespath/go-jmespath, license detection failed (Notice - Apache-2.0)
+      shell: bash
+      run: |
+        go tool go-licenses check ./... --disallowed_types forbidden,restricted,unknown \
+          --ignore github.com/eliukblau/pixterm \
+          --ignore github.com/bsm/redislock \
+          --ignore github.com/jmespath/go-jmespath
 
-      - name: Save licenses report
-        if: always()
-        run: mkdir -p /tmp/go-licenses; go tool go-licenses csv > /tmp/go-licenses/go-licenses.csv ./...
-        shell: bash
+    - name: Save licenses report
+      if: always()
+      run: mkdir -p /tmp/go-licenses; go tool go-licenses csv > /tmp/go-licenses/go-licenses.csv ./...
+      shell: bash
 
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: go-licenses
-          path: /tmp/go-licenses/go-licenses.csv
-          if-no-files-found: error
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: go-licenses
+        path: /tmp/go-licenses/go-licenses.csv
+        if-no-files-found: error

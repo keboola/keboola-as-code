@@ -1,3 +1,4 @@
+---
 # Common etcd definition for the Templates API and Stream API.
 # Values can be overridden by Helm --set flag or by another --values files.
 # Chart default values: https://github.com/bitnami/charts/blob/master/bitnami/etcd/values.yaml
@@ -45,21 +46,16 @@ autoCompactionMode: "periodic"
 autoCompactionRetention: "15m"
 
 extraEnvVars:
-  - name: ETCD_DISABLE_STORE_MEMBER_ID
-    value: "yes"
-  # Set max DB size to 8GB, it is the recommended maximum.
-  - name: ETCD_QUOTA_BACKEND_BYTES
-    value: "8589934592"
-  # Optimize memory usage, see: https://etcd.io/docs/v3.5/tuning/#snapshots
-  # Default value in etcd v3.2+ is "100 000": https://etcd.io/docs/v3.5/op-guide/maintenance/#raft-log-retention
-  - name: ETCD_SNAPSHOT_COUNT
-    value: "10000"
-  # GOMEMLIMIT to prevent OOM kill, update the value together with "resources" spec.
-  - name: GOMEMLIMIT
-    value: "256MiB"
-  # Increase limit of operations in transaction.
-  - name: ETCD_MAX_TXN_OPS
-    value: "1024"
+- name: ETCD_DISABLE_STORE_MEMBER_ID
+  value: "yes"
+- name: ETCD_QUOTA_BACKEND_BYTES
+  value: "8589934592"
+- name: ETCD_SNAPSHOT_COUNT
+  value: "10000"
+- name: GOMEMLIMIT
+  value: "256MiB"
+- name: ETCD_MAX_TXN_OPS
+  value: "1024"
 
 # The root password is used for authentication, the client gets a JWT token with short expiration.
 auth:
@@ -80,16 +76,16 @@ networkPolicy:
   enabled: true
   allowExternal: false
   extraIngress:
-  # Allow DataDog HTTP calls to the /metrics
-  - ports:
-      - port: 2379
-    from:
+    # Allow DataDog HTTP calls to the /metrics
+    - from:
       - namespaceSelector:
           matchLabels:
             kubernetes.io/metadata.name: datadog
         podSelector:
           matchLabels:
             app: datadog-agent
+      ports:
+        - port: 2379
 
 # Set disk size
 persistence:

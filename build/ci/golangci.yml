@@ -1,140 +1,143 @@
-# Configuration Documentation
-#
-# This file configures golangci-lint, a Go linter aggregator that runs various linters
-# in parallel and reports issues in a unified format.
-#
-# Key sections:
-# - linters: Configures which linters are enabled and their settings
-# - issues: Controls how issues are reported and filtered
-# - formatters: Configures code formatters that can be applied
-
-# For more details, see: https://golangci-lint.run/usage/configuration/
-
-version: "2"
+---
+# Golangci-lint configuration
 run:
   concurrency: 8
   modules-download-mode: mod
   tests: true
+
 linters:
   default: none
   enable:
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - contextcheck
-    - copyloopvar
-    - decorder
-    - depguard
-    - dogsled
-    - dupl
-    - durationcheck
-    - errcheck
-    - errchkjson
-    - errname
-    - errorlint
-    - exhaustive
-    - forbidigo
-    - ginkgolinter
-    - gocheckcompilerdirectives
-    - gochecknoglobals
-    - gochecknoinits
-    - gochecksumtype
-    - goconst
-    - gocritic
-    - godot
-    - godox
-    - goheader
-    - gomodguard
-    - goprintffuncname
-    - gosec
-    - gosmopolitan
-    - govet
-    - grouper
-    - importas
-    - inamedparam
-    - ineffassign
-    - intrange
-    - makezero
-    - musttag
-    - nakedret
-    - nilerr
-    - noctx
-    - paralleltest
-    - prealloc
-    - predeclared
-    - promlinter
-    - reassign
-    - rowserrcheck
-    - sqlclosecheck
-    - staticcheck
-    - tagliatelle
-    - testifylint
-    - thelper
-    - tparallel
-    - unconvert
-    - unparam
-    - unused
-    - usestdlibvars
-    - usetesting
-    - wastedassign
-    - whitespace
-    # DISABLED
-    #- goimports # replaced with gci
-    #- gofmt # replaced with gofumpt
-    #- nolintlint # strange behavior
-    #- gomoddirectives # allow replace directive in go.mod
-    #- misspell - broken, rewrites code
+  - asciicheck
+  - bidichk
+  - bodyclose
+  - contextcheck
+  - copyloopvar
+  - decorder
+  - depguard
+  - dogsled
+  - dupl
+  - durationcheck
+  - errcheck
+  - errchkjson
+  - errname
+  - errorlint
+  - exhaustive
+  - forbidigo
+  - ginkgolinter
+  - gocheckcompilerdirectives
+  - gochecknoglobals
+  - gochecknoinits
+  - gochecksumtype
+  - goconst
+  - gocritic
+  - godot
+  - godox
+  - goheader
+  - gomodguard
+  - goprintffuncname
+  - gosec
+  - gosmopolitan
+  - govet
+  - grouper
+  - importas
+  - inamedparam
+  - ineffassign
+  - intrange
+  - makezero
+  - musttag
+  - nakedret
+  - nilerr
+  - noctx
+  - paralleltest
+  - prealloc
+  - predeclared
+  - promlinter
+  - reassign
+  - rowserrcheck
+  - sqlclosecheck
+  - staticcheck
+  - tagliatelle
+  - testifylint
+  - thelper
+  - tparallel
+  - unconvert
+  - unparam
+  - unused
+  - usestdlibvars
+  - usetesting
+  - wastedassign
+  - whitespace
+  # DISABLED
+  # - goimports # replaced with gci
+  # - gofmt # replaced with gofumpt
+  # - nolintlint # strange behavior
+  # - gomoddirectives # allow replace directive in go.mod
+  # - misspell - broken, rewrites code
+
   settings:
     depguard:
       rules:
         aferocopy:
           list-mode: lax
           files:
-            - '!**/internal/pkg/filesystem/aferofs/*'
+          - '!**/internal/pkg/filesystem/aferofs/*'
           deny:
-            - pkg: go.nhat.io/aferocopy/*
-              desc: please use "aferofs.CopyFs2Fs" function
+          - pkg: go.nhat.io/aferocopy/*
+            desc: please use "aferofs.CopyFs2Fs" function
         errors:
           list-mode: lax
           files:
-            - '!**/internal/pkg/utils/errors/*'
+          - '!**/internal/pkg/utils/errors/*'
           deny:
-            - pkg: errors
-              desc: please use the package "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+          - pkg: errors
+            desc: >-
+              please use the package
+              "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
         zap:
           list-mode: lax
           files:
-            - '!**/internal/pkg/log/*'
-            - '!**/internal/pkg/service/common/ctxattr/*'
+          - '!**/internal/pkg/log/*'
+          - '!**/internal/pkg/service/common/ctxattr/*'
           deny:
-            - pkg: go.uber.org/zap
-              desc: please use "github.com/keboola/keboola-as-code/internal/pkg/log" package
+          - pkg: go.uber.org/zap
+            desc: >-
+              please use
+              "github.com/keboola/keboola-as-code/internal/pkg/log" package
     dupl:
       threshold: 500
     exhaustive:
       default-signifies-exhaustive: true
     forbidigo:
       forbid:
-        - pattern: ^(fmt\.Print.*|print|println)$
-          msg: Debug statements are forbidden, use a logger, not debug statements.
-        - pattern: ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
-          msg: Use "internal/pkg/filesystem" package instead.
-        - pattern: ^testhelper.(GetFileContent|Glob)$
-          msg: Use "internal/pkg/filesystem" package instead.
-        - pattern: ^filepath\..*$
-          msg: Use "internal/pkg/filesystem" package instead.
-        - pattern: ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$
-          msg: The httpmock singleton is forbidden, it doesn't work in parallel tests, use client.Transport = httpmock.NewMockTransport() instead.
-        - pattern: ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
-          msg: Os ENVs singleton is forbidden, use env.Map instead.
-        - pattern: ^os\.(Stdout|Stderr)$
-          msg: Use dependencies instead.
-        - pattern: ^fmt\.Errorf$
-          msg: Use errors.Errorf instead to include stack trace.
-        - pattern: ^gonanoid\..*$
-          msg: Use "internal/pkg/idgenerator" package instead.
-        - pattern: ^context\.(WithCancel|WithTimeout|WithDeadline)$
-          msg: Use context.WithCancelCause, context.WithTimeoutCause or context.WithDeadlineCause instead.
+      - pattern: ^(fmt\.Print.*|print|println)$
+        msg: >-
+          Debug statements are forbidden, use a logger, not debug statements.
+      - pattern: >-
+          ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
+        msg: Use "internal/pkg/filesystem" package instead.
+      - pattern: ^testhelper.(GetFileContent|Glob)$
+        msg: Use "internal/pkg/filesystem" package instead.
+      - pattern: ^filepath\..*$
+        msg: Use "internal/pkg/filesystem" package instead.
+      - pattern: >-
+          ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$
+        msg: >-
+          The httpmock singleton is forbidden, it doesn't work in parallel tests,
+          use client.Transport = httpmock.NewMockTransport() instead.
+      - pattern: >-
+          ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
+        msg: Os ENVs singleton is forbidden, use env.Map instead.
+      - pattern: ^os\.(Stdout|Stderr)$
+        msg: Use dependencies instead.
+      - pattern: ^fmt\.Errorf$
+        msg: Use errors.Errorf instead to include stack trace.
+      - pattern: ^gonanoid\..*$
+        msg: Use "internal/pkg/idgenerator" package instead.
+      - pattern: ^context\.(WithCancel|WithTimeout|WithDeadline)$
+        msg: >-
+          Use context.WithCancelCause, context.WithTimeoutCause or
+          context.WithDeadlineCause instead.
       analyze-types: true
     goconst:
       ignore-string-values: localhost
@@ -142,143 +145,139 @@ linters:
       min-complexity: 10
     gosec:
       excludes:
-        - G601
+      - G601
     misspell:
       ignore-rules:
-        - Statuser
+      - Statuser
     staticcheck:
       checks:
-        - all
+      - all
     testifylint:
       disable:
-        - error-is-as
-        - go-require
+      - error-is-as
+      - go-require
     wrapcheck:
       ignore-package-globs:
-        - github.com/keboola/keboola-as-code/*
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    rules:
-      - linters:
-          - bodyclose
-          - contextcheck
-          - dogsled
-          - dupl
-          - errcheck
-          - errorlint
-          - gochecknoglobals
-          - goconst
-          - gocyclo
-          - gosec
-        path: _test\.go
-      - linters:
-          - forbidigo
-        path: _test\.go
-        text: use of `os.Std(out|err)` forbidden
-      - linters:
-          - forbidigo
-        path: _test\.go
-        text: use of `context.WithTimeout` forbidden
-      - linters:
-          - forbidigo
-        path: internal/pkg/utils/errors/.*
-        text: use of `fmt.Errorf` forbidden
-      - linters:
-          - staticcheck
-        path: api/.*
-      - linters:
-          - forbidigo
-        path: internal/pkg/platform/schema/compiler/.*
-        text: os.
-      - linters:
-          - forbidigo
-        path: internal/pkg/platform/schema/compiler/.*
-        text: filepath.
-      - linters:
-          - forbidigo
-        path: internal/pkg/service/stream/.*
-        text: os.
-      - linters:
-          - forbidigo
-        path: internal/pkg/service/stream/.*
-        text: filepath.
-      - linters:
-          - forbidigo
-        path: internal/pkg/service/common/configmap/*
-        text: fmt.
-      - linters:
-          - forbidigo
-        path: internal/pkg/service/common/entrypoint/*
-        text: os.
-      - linters:
-          - forbidigo
-        path: internal/pkg/service/common/entrypoint/*
-        text: fmt.
-      - linters:
-          - goconst
-        path: .*
-        text: string `https?` has .+ occurrences, make it a constant
-      - linters:
-          - contextcheck
-        path: .*
-        text: Function `.*` should pass the context parameter
-      - linters:
-          - wastedassign
-        path: .*
-        text: assigned to ctx, but never used afterwards
-      - path: (.+)\.go$
-        text: 'G306: Expect WriteFile permissions to be 0600 or less'
-      - path: (.+)\.go$
-        text: string `keboola.*` has .* occurrences, make it a constant
-      - path: (.+)\.go$
-        text: string `true` has .* occurrences, make it a constant
-      - path: (.+)\.go$
-        text: string `false` has .* occurrences, make it a constant
-      - path: (.+)\.go$
-        text: ineffectual assignment to ctx
-      - path: (.+)\.go$
-        text: should not use underscores in package names
-      - path: (.+)\.go$
-        text: this value of `ctx` is never use
-    paths:
-      - build
-      - docs
-      - provisioning
-      - scripts
-      - target
-      - third_party
-      - vendor
-      - third_party$
-      - builtin$
-      - examples$
+      - github.com/keboola/keboola-as-code/*
+
 issues:
   max-issues-per-linter: 0
   max-same-issues: 25
+  exclusions:
+    generated: lax
+    presets:
+    - comments
+    - common-false-positives
+    - legacy
+    - std-error-handling
+    rules:
+    - linters:
+      - bodyclose
+      - contextcheck
+      - dogsled
+      - dupl
+      - errcheck
+      - errorlint
+      - gochecknoglobals
+      - goconst
+      - gocyclo
+      - gosec
+      path: _test\.go
+    - linters:
+      - forbidigo
+      path: _test\.go
+      text: use of `os.Std(out|err)` forbidden
+    - linters:
+      - forbidigo
+      path: _test\.go
+      text: use of `context.WithTimeout` forbidden
+    - linters:
+      - forbidigo
+      path: internal/pkg/utils/errors/.*
+      text: use of `fmt.Errorf` forbidden
+    - linters:
+      - staticcheck
+      path: api/.*
+    - linters:
+      - forbidigo
+      path: internal/pkg/platform/schema/compiler/.*
+      text: os.
+    - linters:
+      - forbidigo
+      path: internal/pkg/platform/schema/compiler/.*
+      text: filepath.
+    - linters:
+      - forbidigo
+      path: internal/pkg/service/stream/.*
+      text: os.
+    - linters:
+      - forbidigo
+      path: internal/pkg/service/stream/.*
+      text: filepath.
+    - linters:
+      - forbidigo
+      path: internal/pkg/service/common/configmap/*
+      text: fmt.
+    - linters:
+      - forbidigo
+      path: internal/pkg/service/common/entrypoint/*
+      text: os.
+    - linters:
+      - forbidigo
+      path: internal/pkg/service/common/entrypoint/*
+      text: fmt.
+    - linters:
+      - goconst
+      path: .*
+      text: string `https?` has .+ occurrences, make it a constant
+    - linters:
+      - contextcheck
+      path: .*
+      text: Function `.*` should pass the context parameter
+    - linters:
+      - wastedassign
+      path: .*
+      text: assigned to ctx, but never used afterwards
+    - path: (.+)\.go$
+      text: 'G306: Expect WriteFile permissions to be 0600 or less'
+    - path: (.+)\.go$
+      text: string `keboola.*` has .* occurrences, make it a constant
+    - path: (.+)\.go$
+      text: string `true` has .* occurrences, make it a constant
+    - path: (.+)\.go$
+      text: string `false` has .* occurrences, make it a constant
+    - path: (.+)\.go$
+      text: ineffectual assignment to ctx
+    - path: (.+)\.go$
+      text: should not use underscores in package names
+    - path: (.+)\.go$
+      text: this value of `ctx` is never use
+    paths:
+    - build
+    - docs
+    - provisioning
+    - scripts
+    - target
+    - third_party
+    - vendor
+    - third_party$
+    - builtin$
+    - examples$
+
 formatters:
   enable:
-    - gci
-    - gofumpt
+  - gci
+  - gofumpt
   settings:
     gci:
       sections:
-        - standard
-        - default
-        - prefix(github.com/keboola/keboola-as-code)
+      - standard
+      - default
+      - prefix(github.com/keboola/keboola-as-code)
   exclusions:
     generated: lax
     paths:
-      - build
-      - docs
-      - provisioning
-      - scripts
-      - target
-      - third_party
-      - vendor
-      - third_party$
-      - builtin$
-      - examples$
+    - build
+    - docs
+    - provisioning
+    - scripts

@@ -1,42 +1,44 @@
+---
 version: 2
 project_name: "keboola-cli"
 dist: "target"
+
 builds:
-  - main: "./cmd/kbc/main.go"
-    binary: "kbc"
-    goos: [ "linux", "darwin", "windows" ]
-    goarch: [ "amd64", "arm", "arm64" ]
-    goarm: [ "6" ]
-    env:
-      - CGO_ENABLED=0
-    ldflags:
-      - -s -w
-      - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildVersion={{ if index .Env "VERSION" }}{{ .Env.VERSION }}{{ else }}dev{{ end }}
-      - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildDate={{ if index .Env "CLI_BUILD_DATE" }}{{ .Env.CLI_BUILD_DATE }}{{ else }}{{.Date}}{{ end }}
-      - -X github.com/keboola/keboola-as-code/internal/pkg/build.GitCommit={{ if index .Env "CLI_BUILD_GIT_COMMIT" }}{{ .Env.CLI_BUILD_GIT_COMMIT }}{{ else }}{{.Commit}}{{ end }}
-    hooks:
-      post:
-        # Copy binary to BUILD_TARGET_PATH if set
-        - '{{ if index .Env "BUILD_TARGET_PATH" }}cp "{{ .Path }}" "{{ .Env.BUILD_TARGET_PATH }}"{{ else }}true{{ end }}'
+- main: "./cmd/kbc/main.go"
+  binary: "kbc"
+  goos: ["linux", "darwin", "windows"]
+  goarch: ["amd64", "arm", "arm64"]
+  goarm: ["6"]
+  env:
+  - CGO_ENABLED=0
+  ldflags:
+  - -s -w
+  - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildVersion={{ if index .Env "VERSION" }}{{ .Env.VERSION }}{{ else }}dev{{ end }}
+  - -X github.com/keboola/keboola-as-code/internal/pkg/build.BuildDate={{ if index .Env "CLI_BUILD_DATE" }}{{ .Env.CLI_BUILD_DATE }}{{ else }}{{.Date}}{{ end }}
+  - -X github.com/keboola/keboola-as-code/internal/pkg/build.GitCommit={{ if index .Env "CLI_BUILD_GIT_COMMIT" }}{{ .Env.CLI_BUILD_GIT_COMMIT }}{{ else }}{{.Commit}}{{ end }}
+  hooks:
+    post:
+    # Copy binary to BUILD_TARGET_PATH if set
+    - '{{ if index .Env "BUILD_TARGET_PATH" }}cp "{{ .Path }}" "{{ .Env.BUILD_TARGET_PATH }}"{{ else }}true{{ end }}'
 
 changelog:
   disable: true
 
 archives:
-  - id: archives
-    files:
-      - none*
-    formats: [zip]
-    format_overrides:
-      - goos: darwin
-        formats: [binary]
+- id: archives
+  files:
+  - none*
+  formats: [zip]
+  format_overrides:
+  - goos: darwin
+    formats: [binary]
 
 signs:
-  - id: mac-os-signed
-    signature: "${artifact}.zip"
-    cmd: ./build/package/mac-os/notarytool/notarize.sh
-    args: [ "${artifact}", "${signature}" ]
-    artifacts: binary
+- id: mac-os-signed
+  signature: "${artifact}.zip"
+  cmd: ./build/package/mac-os/notarytool/notarize.sh
+  args: ["${artifact}", "${signature}"]
+  artifacts: binary
 
 checksum:
   algorithm: sha256
@@ -45,39 +47,39 @@ snapshot:
   version_template: '{{ if index .Env "SNAPSHOT" }}{{ .Env.SNAPSHOT }}{{ else }}dev{{ end }}'
 
 nfpms:
-  - id: packages
-    vendor: Keboola
-    homepage: https://www.keboola.com/product/cli
-    maintainer: Keboola <support@keboola.com>
-    description: Keboola CLI tool.
-    license: Apache2
-    bindir: /usr/bin
-    formats:
-      - apk
-      - deb
-      - rpm
-    recommends:
-      - git
-    rpm:
-      signature:
-        key_file: '{{ if index .Env "DEB_KEY_PRIVATE_PATH" }}{{ .Env.DEB_KEY_PRIVATE_PATH }}{{ end }}'
-    deb:
-      signature:
-        key_file: '{{ if index .Env "RPM_KEY_PRIVATE_PATH" }}{{ .Env.RPM_KEY_PRIVATE_PATH }}{{ end }}'
-    apk:
-      signature:
-        key_name: keboola
-        key_file: '{{ if index .Env "APK_KEY_PRIVATE_PATH" }}{{ .Env.APK_KEY_PRIVATE_PATH }}{{ end }}'
+- id: packages
+  vendor: Keboola
+  homepage: https://www.keboola.com/product/cli
+  maintainer: Keboola <support@keboola.com>
+  description: Keboola CLI tool.
+  license: Apache2
+  bindir: /usr/bin
+  formats:
+  - apk
+  - deb
+  - rpm
+  recommends:
+  - git
+  rpm:
+    signature:
+      key_file: '{{ if index .Env "RPM_KEY_PRIVATE_PATH" }}{{ .Env.RPM_KEY_PRIVATE_PATH }}{{ end }}'
+  deb:
+    signature:
+      key_file: '{{ if index .Env "DEB_KEY_PRIVATE_PATH" }}{{ .Env.DEB_KEY_PRIVATE_PATH }}{{ end }}'
+  apk:
+    signature:
+      key_name: keboola
+      key_file: '{{ if index .Env "APK_KEY_PRIVATE_PATH" }}{{ .Env.APK_KEY_PRIVATE_PATH }}{{ end }}'
 
 scoops:
-  - repository:
-      owner: keboola
-      name: scoop-keboola-cli
-    homepage: https://www.keboola.com/product/cli
-    description: Operate your cloud data pipeline from the command line
-    license: Apache2
-    url_template: "{{ .Env.CLI_DIST_BASE_URL }}/zip/{{ .ArtifactName }}"
-    skip_upload: true
+- repository:
+    owner: keboola
+    name: scoop-keboola-cli
+  homepage: https://www.keboola.com/product/cli
+  description: Operate your cloud data pipeline from the command line
+  license: Apache2
+  url_template: "{{ .Env.CLI_DIST_BASE_URL }}/zip/{{ .ArtifactName }}"
+  skip_upload: true
 
 release:
   disable: true

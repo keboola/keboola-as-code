@@ -1,12 +1,17 @@
+---
 name: 'Push CI'
 
 on:
   push:
     # Avoid tags
     branches:
-      - "**"
+    - "**"
 
 jobs:
+  yaml-lint:
+    name: "Lint yaml files in project"
+    uses: ./.github/workflows/yaml-lint.yml
+
   check-license:
     name: "Check licenses"
     secrets: inherit

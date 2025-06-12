@@ -1,3 +1,4 @@
+---
 name: 'Setup Go, tools and caching'
 description: 'Setup Go, tools and caching'
 inputs:
@@ -18,201 +19,201 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Assume AWS S3 caching role
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::831559560923:role/S3-gh-actions-caching
-        role-session-name: ghactionscaching
-        aws-region: us-east-1
+  - name: Assume AWS S3 caching role
+    uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::831559560923:role/S3-gh-actions-caching
+      role-session-name: ghactionscaching
+      aws-region: us-east-1
 
-    - name: Extract GO_VERSION from go.mod file
-      shell: bash
-      run: sed -En 's/^go[[:space:]]+([[:digit:].]+)$/GO_VERSION=\1/p' go.mod >> $GITHUB_ENV
+  - name: Extract GO_VERSION from go.mod file
+    shell: bash
+    run: sed -En 's/^go[[:space:]]+([[:digit:].]+)$/GO_VERSION=\1/p' go.mod >> $GITHUB_ENV
 
-    - name: Install Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: false
+  - name: Install Go
+    uses: actions/setup-go@v5
+    with:
+      go-version: ${{ env.GO_VERSION }}
+      cache: false
 
-    # There is no md5sum command on macOS by default
-    - name: Export name of the MD5 sum command for E2E tests
-      shell: bash
-      run: |
-        if [ "$RUNNER_OS" == "macOS" ]; then
-          echo "MD5_COMMAND=md5" >> $GITHUB_ENV
-        else
-          echo "MD5_COMMAND=md5sum" >> $GITHUB_ENV
-        fi
+  # There is no md5sum command on macOS by default
+  - name: Export name of the MD5 sum command for E2E tests
+    shell: bash
+    run: |
+      if [ "$RUNNER_OS" == "macOS" ]; then
+        echo "MD5_COMMAND=md5" >> $GITHUB_ENV
+      else
+        echo "MD5_COMMAND=md5sum" >> $GITHUB_ENV
+      fi
 
-    # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
-    # GOCACHE    - Build and test cache.
-    # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
-    # GOBIN      - Compiled binaries from "go install ...", we need a directory outside GOPATH to cache only installed tools.
-    - name: Set and export Go envs
-      shell: bash
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          # C: is slow: https://github.com/actions/runner-images/issues/8755
-          GODIRS=D:/tmp/go
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          GODIRS=/Users/runner/.cache/go
-        else
-          GODIRS=/home/runner/.cache/go
-        fi
+      # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
+      # GOCACHE    - Build and test cache.
+      # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
+      # GOBIN      - Compiled binaries from "go install ...", we need a directory outside GOPATH to cache only installed tools.
+  - name: Set and export Go envs
+    shell: bash
+    run: |
+      if [ "$RUNNER_OS" == "Windows" ]; then
+        # C: is slow: https://github.com/actions/runner-images/issues/8755
+        GODIRS=D:/tmp/go
+      elif [ "$RUNNER_OS" == "macOS" ]; then
+        GODIRS=/Users/runner/.cache/go
+      else
+        GODIRS=/home/runner/.cache/go
+      fi
 
-        mkdir -p $GODIRS/path
-        mkdir -p $GODIRS/cache
-        mkdir -p $GODIRS/modcache
-        mkdir -p $GODIRS/lintcache
-        mkdir -p $GODIRS/bin
-        mkdir -p $GODIRS/tmp
+      mkdir -p $GODIRS/path
+      mkdir -p $GODIRS/cache
+      mkdir -p $GODIRS/modcache
+      mkdir -p $GODIRS/lintcache
+      mkdir -p $GODIRS/bin
+      mkdir -p $GODIRS/tmp
 
-        go env -w \
-        GOPATH=$GODIRS/path \
-        GOCACHE=$GODIRS/cache \
-        GOMODCACHE=$GODIRS/modcache \
-        GOBIN=$GODIRS/bin \
-        GOTMPDIR=$GODIRS/tmp
+      go env -w \
+      GOPATH=$GODIRS/path \
+      GOCACHE=$GODIRS/cache \
+      GOMODCACHE=$GODIRS/modcache \
+      GOBIN=$GODIRS/bin \
+      GOTMPDIR=$GODIRS/tmp
 
-        echo "GODIRS=$GODIRS" >> $GITHUB_ENV
-        echo "GOLANGCI_LINT_CACHE=$GODIRS/lintcache" >> $GITHUB_ENV 
-        echo "$GODIRS/bin" >> $GITHUB_PATH
+      echo "GODIRS=$GODIRS" >> $GITHUB_ENV
+      echo "GOLANGCI_LINT_CACHE=$GODIRS/lintcache" >> $GITHUB_ENV
+      echo "$GODIRS/bin" >> $GITHUB_PATH
 
-      env:
-        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+    env:
+      RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
     # Load compiled tools from cache to skip installation
-    - name: Load Go tools cache
-      id: go-cache-tools
-      if: inputs.without-cache != 'true'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ env.GODIRS }}/bin
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/install-golangci-lint.sh') }}
+  - name: Load Go tools cache
+    id: go-cache-tools
+    if: inputs.without-cache != 'true'
+    uses: actions/cache@v4
+    with:
+      path: |
+        ${{ env.GODIRS }}/bin
+      key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/install-golangci-lint.sh') }}
 
-    # Load dependencies - Go modules to skip download
-    - name: Load Go modules cache
-      id: go-cache-mod
-      if: inputs.without-cache != 'true'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ env.GODIRS }}/modcache
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
-        # restore-keys: |
-        #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
-      env:
-        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+  # Load dependencies - Go modules to skip download
+  - name: Load Go modules cache
+    id: go-cache-mod
+    if: inputs.without-cache != 'true'
+    uses: actions/cache@v4
+    with:
+      path: |
+        ${{ env.GODIRS }}/modcache
+      key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
+    # restore-keys: |
+    #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
+    env:
+      RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
-    - name: Load Go build and test cache
-      id: go-cache-build
-      if: inputs.without-cache != 'true'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ env.GODIRS }}/cache
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
-        # restore-keys: |
-        #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
-      env:
-        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+  - name: Load Go build and test cache
+    id: go-cache-build
+    if: inputs.without-cache != 'true'
+    uses: actions/cache@v4
+    with:
+      path: |
+        ${{ env.GODIRS }}/cache
+      key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
+    # restore-keys: |
+    #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
+    env:
+      RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
-    - name: Load Linter cache
-      id: go-cache-linter
-      if: inputs.build-type == 'lint' && inputs.without-cache != 'true'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ env.GODIRS }}/lintcache
-        key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-${{ hashFiles('**/go.mod') }}
-        # restore-keys: |
-        #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
-      env:
-        RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
+  - name: Load Linter cache
+    id: go-cache-linter
+    if: inputs.build-type == 'lint' && inputs.without-cache != 'true'
+    uses: actions/cache@v4
+    with:
+      path: |
+        ${{ env.GODIRS }}/lintcache
+      key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-${{ hashFiles('**/go.mod') }}
+    # restore-keys: |
+    #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
+    env:
+      RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
-    - name: Install Task
-      shell: bash
-      run: |
-        TASK_PATH="$(go env GOBIN)/task"
+  - name: Install Task
+    shell: bash
+    run: |
+      TASK_PATH="$(go env GOBIN)/task"
 
-        if [ ! -f "$TASK_PATH" ]; then
-          echo "Installing Task..."
-          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b "$(go env GOBIN)"
-          echo "Installed Task $(task --version)"
-        else
-          echo "Using cached Task $(task --version)"
-        fi
+      if [ ! -f "$TASK_PATH" ]; then
+        echo "Installing Task..."
+        sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b "$(go env GOBIN)"
+        echo "Installed Task $(task --version)"
+      else
+        echo "Using cached Task $(task --version)"
+      fi
 
-    - name: Install golangci-lint
-      if: inputs.build-type == 'lint'
-      shell: bash
-      run: |
-        GOLINT_PATH="$(go env GOBIN)/golangci-lint"
+  - name: Install golangci-lint
+    if: inputs.build-type == 'lint'
+    shell: bash
+    run: |
+      GOLINT_PATH="$(go env GOBIN)/golangci-lint"
 
-        if [ ! -f "$GOLINT_PATH" ]; then
-          task install-golangci-lint
-          echo "Installed golangci-lint $(golangci-lint --version)"
-        else
-          echo "Using cached golangci-lint $(golangci-lint --version)"
-        fi
+      if [ ! -f "$GOLINT_PATH" ]; then
+        task install-golangci-lint
+        echo "Installed golangci-lint $(golangci-lint --version)"
+      else
+        echo "Using cached golangci-lint $(golangci-lint --version)"
+      fi
 
-    - name: Install goreleaser
-      shell: bash
-      run: |
-        GORELEASER_PATH="$(go env GOBIN)/goreleaser"
+  - name: Install goreleaser
+    shell: bash
+    run: |
+      GORELEASER_PATH="$(go env GOBIN)/goreleaser"
 
-        if [ ! -f "$GORELEASER_PATH" ]; then
-          ./scripts/install-goreleaser.sh
-          echo "Installed goreleaser $(goreleaser --version)"
-        else
-          echo "Using cached goreleaser $(goreleaser --version)"
-        fi
+      if [ ! -f "$GORELEASER_PATH" ]; then
+        ./scripts/install-goreleaser.sh
+        echo "Installed goreleaser $(goreleaser --version)"
+      else
+        echo "Using cached goreleaser $(goreleaser --version)"
+      fi
 
-    - name: Download Go modules
-      shell: bash
-      run: |
-        echo "Downloading modules ..."
-        go mod tidy
+  - name: Download Go modules
+    shell: bash
+    run: |
+      echo "Downloading modules ..."
+      go mod tidy
 
-        echo "Modules size:"
-        du -hd0 "$GODIRS/modcache"
+      echo "Modules size:"
+      du -hd0 "$GODIRS/modcache"
 
-    - name: Install git-restore-mtime
-      shell: bash
-      run: |
-        path="$(go env GOBIN)/git-restore-mtime"
-        curl -o "$path" https://raw.githubusercontent.com/MestreLion/git-tools/v2022.12/git-restore-mtime
-        chmod +x "$path"
+  - name: Install git-restore-mtime
+    shell: bash
+    run: |
+      path="$(go env GOBIN)/git-restore-mtime"
+      curl -o "$path" https://raw.githubusercontent.com/MestreLion/git-tools/v2022.12/git-restore-mtime
+      chmod +x "$path"
 
-    - name: Reset modtime of files to 1 unix timestamp, to make Go test caching work
-      if: inputs.without-cache != 'true'
-      shell: bash
-      run: |
-        echo "Resetting modtime ..."
+  - name: Reset modtime of files to 1 unix timestamp, to make Go test caching work
+    if: inputs.without-cache != 'true'
+    shell: bash
+    run: |
+      echo "Resetting modtime ..."
 
-        git-restore-mtime --git-dir "$GITHUB_WORKSPACE/.git"
+      git-restore-mtime --git-dir "$GITHUB_WORKSPACE/.git"
 
-        excluded='-path "**/.out*" -or -path "**/.git/**" -or -name "projects.json"'
-        echo "Excluded: $excluded"
+      excluded='-path "**/.out*" -or -path "**/.git/**" -or -name "projects.json"'
+      echo "Excluded: $excluded"
 
-        echo "Dirs:"
-        for dir in "$(go env GOROOT)" "$(go env GOMODCACHE)"
-        do
-          echo "$dir"
-          # !!! -L = follow symlinks
-          # Using xargs to make this fast, -exec would spawn a new process for every file.
-          find -L "$dir" -not \( $excluded \) -print0 | xargs -0 touch -d '1970-01-01T00:00:01'
-        done
+      echo "Dirs:"
+      for dir in "$(go env GOROOT)" "$(go env GOMODCACHE)"
+      do
+        echo "$dir"
+        # !!! -L = follow symlinks
+        # Using xargs to make this fast, -exec would spawn a new process for every file.
+        find -L "$dir" -not \( $excluded \) -print0 | xargs -0 touch -d '1970-01-01T00:00:01'
+      done
 
-        echo "Done"
-        echo
+      echo "Done"
+      echo
 
-    # Enable the step to debug Go testing cache misses.
-    # To find problematic dir/file: Run the workflow twice, download tests logs, sort lines and make a diff.
-    # https://pkg.go.dev/cmd/go#hdr-Build_and_test_caching
-    - name: Enable debugging of the Go test cache
-      if: false # disabled, enable for debugging
-      shell: bash
-      run: echo "GODEBUG=gocachehash=1" >> $GITHUB_ENV
+  # Enable the step to debug Go testing cache misses.
+  # To find problematic dir/file: Run the workflow twice, download tests logs, sort lines and make a diff.
+  # https://pkg.go.dev/cmd/go  #hdr-Build_and_test_caching
+  - name: Enable debugging of the Go test cache
+    if: false  # disabled, enable for debugging
+    shell: bash
+    run: echo "GODEBUG=gocachehash=1" >> $GITHUB_ENV

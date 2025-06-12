@@ -1,3 +1,4 @@
+---
 name: 'Mount S3 bucket'
 description: 'Mount S3 bucket'
 inputs:
@@ -22,15 +23,15 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Mount S3 bucket
-      shell: bash
-      run: |
-        sudo apt install s3fs
-        sudo mkdir ${{ inputs.mountedFolder }}
-        sudo chown -R $(id -u):$(id -g) ${{ inputs.mountedFolder }}
-        mkdir $HOME/.aws
-        printf "[default]\nregion=${{ inputs.awsRegion }}\naws_access_key_id=${{ inputs.awsAccessKeyId }}\naws_secret_access_key=${{ inputs.awsSecretAccessKey }}\naws_session_token=${{ inputs.awsSessionToken }}\n" >> $HOME/.aws/credentials
-        chmod 600 ${HOME}/.aws/credentials
-        echo -e "\nuser_allow_other\n" | sudo tee -a /etc/fuse.conf
-        s3fs -o allow_other -o ahbe_conf="$GITHUB_ACTION_PATH/ahbe.conf" ${{ inputs.awsBucketName }} ${{ inputs.mountedFolder }}
-        ls -alh ${{ inputs.mountedFolder }}
+  - name: Mount S3 bucket
+    shell: bash
+    run: |
+      sudo apt install s3fs
+      sudo mkdir ${{ inputs.mountedFolder }}
+      sudo chown -R $(id -u):$(id -g) ${{ inputs.mountedFolder }}
+      mkdir $HOME/.aws
+      printf "[default]\nregion=${{ inputs.awsRegion }}\naws_access_key_id=${{ inputs.awsAccessKeyId }}\naws_secret_access_key=${{ inputs.awsSecretAccessKey }}\naws_session_token=${{ inputs.awsSessionToken }}\n" >> $HOME/.aws/credentials
+      chmod 600 ${HOME}/.aws/credentials
+      echo -e "\nuser_allow_other\n" | sudo tee -a /etc/fuse.conf
+      s3fs -o allow_other -o ahbe_conf="$GITHUB_ACTION_PATH/ahbe.conf" ${{ inputs.awsBucketName }} ${{ inputs.mountedFolder }}
+      ls -alh ${{ inputs.mountedFolder }}
