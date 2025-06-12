@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/mocktracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -20,9 +20,6 @@ import (
 func TestContextAttributes(t *testing.T) {
 	t.Parallel()
 
-	mockTracer := mocktracer.Start()
-	defer mockTracer.Stop()
-
 	// Setup telemetry
 	logger := log.NewDebugLogger()
 	tel, err := telemetry.New(
@@ -32,6 +29,10 @@ func TestContextAttributes(t *testing.T) {
 		nil,
 	)
 	require.NoError(t, err)
+
+	// Start mock tracer
+	mockTracer := mocktracer.Start()
+	defer mockTracer.Stop()
 
 	// Add some common context attribute, it should appear in span and log record
 	ctx := t.Context()

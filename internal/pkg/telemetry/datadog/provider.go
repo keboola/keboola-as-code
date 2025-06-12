@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
+	ddotel "github.com/DataDog/dd-trace-go/v2/ddtrace/opentelemetry"
+	ddTracer "github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/trace"
-	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
-	ddTracer "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
