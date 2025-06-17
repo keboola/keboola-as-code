@@ -57,7 +57,14 @@ esac
 
 # --- List all resources in buffer namespace ---
 echo "[INFO] Listing all resources in namespace 'buffer':"
-kubectl api-resources --verbs=list --namespaced -o name | xargs -n 1 kubectl get --ignore-not-found -n buffer
+for resource in $(kubectl api-resources --verbs=list --namespaced -o name); do
+  output=$(kubectl get "$resource" -n buffer --ignore-not-found)
+  if [[ -n "$output" && "$output" != "No resources found"* ]]; then
+    echo "===== $resource ====="
+    echo "$output"
+    echo
+  fi
+done
 
 # --- List all PersistentVolumes bound to buffer namespace ---
 echo "[INFO] Listing PersistentVolumes bound to 'buffer' namespace:"
