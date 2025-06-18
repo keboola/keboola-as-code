@@ -61,7 +61,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 			return err
 		}
 
-		err = fs.WriteFile(ctx, filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucket.SourceName), string(yamlEnc)))
+		err = fs.WriteFile(ctx, filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucket.SourceName), string(yamlEnc)).SetYamlDocumentSeparator(true))
 		if err != nil {
 			return err
 		}

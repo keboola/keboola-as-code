@@ -38,7 +38,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// Load profiles file if exists
 	profilesFile := orderedmap.New()
-	profilesFileDef := filesystem.NewFileDef(dbt.ProfilesPath).SetDescription("dbt profiles")
+	profilesFileDef := filesystem.NewFileDef(dbt.ProfilesPath).SetDescription("dbt profiles").SetYamlDocumentSeparator(true)
 	if fs.Exists(ctx, dbt.ProfilesPath) {
 		if _, err := fs.FileLoader().ReadYamlFileTo(ctx, profilesFileDef, profilesFile); err != nil {
 			return err
@@ -98,7 +98,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}))
 
 	// Save file
-	if err := fs.WriteFile(ctx, filesystem.NewYamlFile(dbt.ProfilesPath, profilesFile).SetDescription("dbt profiles")); err != nil {
+	if err := fs.WriteFile(ctx, filesystem.NewYamlFile(dbt.ProfilesPath, profilesFile).SetDescription("dbt profiles").SetYamlDocumentSeparator(true)); err != nil {
 		return err
 	}
 
