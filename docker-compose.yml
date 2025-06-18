@@ -3,8 +3,8 @@ services:
   dev:
     image: keboolabot/keboola-as-code-dev
     build:
-    context: .
-    dockerfile: ./provisioning/dev/docker/Dockerfile
+      context: .
+      dockerfile: ./provisioning/dev/docker/Dockerfile
     # Uncomment when you would like to inspect metrics of your service using
     # prometheus container.
     # Change the <your-service> placeholder with desired service to be inspected.
@@ -26,9 +26,9 @@ services:
     - ./:/code:z
     - cache:/tmp/cache
     ulimits:
-    nofile:
-      soft: 50000
-      hard: 50000
+      nofile:
+        soft: 50000
+        hard: 50000
     environment:
     # For all
     - TEST_KBC_TMP_DIR=/tmp
@@ -104,7 +104,7 @@ services:
     volumes:
     - ./provisioning/common/redis/redis.conf:/etc/redis/redis.conf
     environment:
-    REDIS_PORT: 6379
+      REDIS_PORT: 6379
 
   # Same etcd is used for all services, but with different namespace
   etcd:
@@ -113,30 +113,30 @@ services:
     networks:
     - etcd
     environment:
-    ALLOW_NONE_AUTHENTICATION: "no"
-    ETCD_NAME: "etcd"
-    ETCD_ROOT_PASSWORD: "toor"
-    ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
-    ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd:2380"
-    ETCD_INITIAL_CLUSTER_TOKEN: "cluster"
-    ETCD_INITIAL_CLUSTER": "default=http://etcd:2379"
-    ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
-    ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
-    ETCD_DISABLE_STORE_MEMBER_ID: "true"
-    ETCD_MAX_TXN_OPS: "128"
+      ALLOW_NONE_AUTHENTICATION: "no"
+      ETCD_NAME: "etcd"
+      ETCD_ROOT_PASSWORD: "toor"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd:2380"
+      ETCD_INITIAL_CLUSTER_TOKEN: "cluster"
+      ETCD_INITIAL_CLUSTER": "default=http://etcd:2379"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+      ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
+      ETCD_DISABLE_STORE_MEMBER_ID: "true"
+      ETCD_MAX_TXN_OPS: "128"
 
   k6:
     volumes:
     - ./scripts:/scripts
     image: keboolabot/stream-benchmark
     build:
-    context: .
-    dockerfile: ./provisioning/stream/docker/k6/Dockerfile
+      context: .
+      dockerfile: ./provisioning/stream/docker/k6/Dockerfile
     network_mode: host
     ulimits:
-    nofile:
-      soft: 50000
-      hard: 50000
+      nofile:
+        soft: 50000
+        hard: 50000
     environment:
     - K6_API_TOKEN
     - K6_API_HOST
@@ -159,9 +159,9 @@ services:
     ports:
     - 1080:1080
     environment:
-    MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
-    MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
-    MOCKSERVER_INITIALIZATION_JSON_PATH: /config/sandboxesMock.json
+      MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+      MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/sandboxesMock.json
     volumes:
     - ./provisioning/apps-proxy/dev/sandboxesMock.json:/config/sandboxesMock.json:Z
     networks:
