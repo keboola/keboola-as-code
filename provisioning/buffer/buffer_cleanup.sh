@@ -47,6 +47,8 @@ case "$CLOUD_PROVIDER" in
       --query "properties.outputs.clusterName.value" \
       --output tsv)
     echo "[INFO] Using Azure AKS: $CLUSTER_NAME"
+    
+    export AAD_LOGIN_METHOD=azurecli
     az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP" --overwrite-existing
     ;;
   *)
