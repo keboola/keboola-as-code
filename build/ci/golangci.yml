@@ -1,12 +1,20 @@
----
-# Golangci-lint configuration
-version: 2
+# Configuration Documentation
+#
+# This file configures golangci-lint, a Go linter aggregator that runs various linters
+# in parallel and reports issues in a unified format.
+#
+# Key sections:
+# - linters: Configures which linters are enabled and their settings
+# - issues: Controls how issues are reported and filtered
+# - formatters: Configures code formatters that can be applied
 
+# For more details, see: https://golangci-lint.run/usage/configuration/
+
+version: "2"
 run:
   concurrency: 8
   modules-download-mode: mod
   tests: true
-
 linters:
   default: none
   enable:
@@ -71,12 +79,11 @@ linters:
     - wastedassign
     - whitespace
     # DISABLED
-    # - goimports # replaced with gci
-    # - gofmt # replaced with gofumpt
-    # - nolintlint # strange behavior
-    # - gomoddirectives # allow replace directive in go.mod
-    # - misspell - broken, rewrites code
-
+    #- goimports # replaced with gci
+    #- gofmt # replaced with gofumpt
+    #- nolintlint # strange behavior
+    #- gomoddirectives # allow replace directive in go.mod
+    #- misspell - broken, rewrites code
   settings:
     depguard:
       rules:
@@ -93,9 +100,7 @@ linters:
             - '!**/internal/pkg/utils/errors/*'
           deny:
             - pkg: errors
-              desc: >-
-                please use the package
-                "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+              desc: please use the package "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
         zap:
           list-mode: lax
           files:
@@ -103,9 +108,7 @@ linters:
             - '!**/internal/pkg/service/common/ctxattr/*'
           deny:
             - pkg: go.uber.org/zap
-              desc: >-
-                please use
-                "github.com/keboola/keboola-as-code/internal/pkg/log" package
+              desc: please use "github.com/keboola/keboola-as-code/internal/pkg/log" package
     dupl:
       threshold: 500
     exhaustive:
@@ -113,22 +116,16 @@ linters:
     forbidigo:
       forbid:
         - pattern: ^(fmt\.Print.*|print|println)$
-          msg: >-
-            Debug statements are forbidden, use a logger, not debug statements.
-        - pattern: >-
-            ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
+          msg: Debug statements are forbidden, use a logger, not debug statements.
+        - pattern: ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
           msg: Use "internal/pkg/filesystem" package instead.
         - pattern: ^testhelper.(GetFileContent|Glob)$
           msg: Use "internal/pkg/filesystem" package instead.
         - pattern: ^filepath\..*$
           msg: Use "internal/pkg/filesystem" package instead.
-        - pattern: >-
-            ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$
-          msg: >-
-            The httpmock singleton is forbidden, it doesn't work in parallel tests,
-            use client.Transport = httpmock.NewMockTransport() instead.
-        - pattern: >-
-            ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
+        - pattern: ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$
+          msg: The httpmock singleton is forbidden, it doesn't work in parallel tests, use client.Transport = httpmock.NewMockTransport() instead.
+        - pattern: ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
           msg: Os ENVs singleton is forbidden, use env.Map instead.
         - pattern: ^os\.(Stdout|Stderr)$
           msg: Use dependencies instead.
@@ -137,9 +134,7 @@ linters:
         - pattern: ^gonanoid\..*$
           msg: Use "internal/pkg/idgenerator" package instead.
         - pattern: ^context\.(WithCancel|WithTimeout|WithDeadline)$
-          msg: >-
-            Use context.WithCancelCause, context.WithTimeoutCause or
-            context.WithDeadlineCause instead.
+          msg: Use context.WithCancelCause, context.WithTimeoutCause or context.WithDeadlineCause instead.
       analyze-types: true
     goconst:
       ignore-string-values: localhost
@@ -161,10 +156,6 @@ linters:
     wrapcheck:
       ignore-package-globs:
         - github.com/keboola/keboola-as-code/*
-
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 25
   exclusions:
     generated: lax
     presets:
@@ -265,7 +256,9 @@ issues:
       - third_party$
       - builtin$
       - examples$
-
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 25
 formatters:
   enable:
     - gci

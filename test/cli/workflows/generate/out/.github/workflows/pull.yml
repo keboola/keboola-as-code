@@ -1,4 +1,3 @@
----
 name: Automatic pull
 on:
   schedule:
@@ -33,7 +32,7 @@ jobs:
       # Commit message contains date and output of the pull command
       - name: Commit and push
         run: |
-          currentDate=`date +%Y-%m-%d:%T%Z`
+          currentDate=`date +%%Y-%%m-%%d:%%T%%Z`
           pull_log=`cat "$RUNNER_TEMP/log.txt"`
           git config --global user.name 'Keboola CLI'
           git config --global user.email 'keboola-cli@users.noreply.github.com'
