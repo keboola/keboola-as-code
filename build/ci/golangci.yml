@@ -250,6 +250,10 @@ issues:
         text: string `false` has .* occurrences, make it a constant
       - path: (.+)\.go$
         text: ineffectual assignment to ctx
+      - path: (.+)\.go$
+        text: should not use underscores in package names
+      - path: (.+)\.go$
+        text: this value of `ctx` is never use
     paths:
       - build
       - docs
@@ -279,3 +283,9 @@ formatters:
       - docs
       - provisioning
       - scripts
+      - target
+      - third_party
+      - vendor
+      - third_party$
+      - builtin$
+      - examples$
