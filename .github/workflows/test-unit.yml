@@ -108,6 +108,11 @@ jobs:
 
       - name: Run tests
         shell: bash
+        env:
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
+          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
+          UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
         run: |
           # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229# issuecomment-1988965927)
           if ["$RUNNER_OS" == "macOS"]; then
@@ -141,7 +146,7 @@ jobs:
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
             TEST_EXCEPT="$TEST_EXCEPT" \
             TEST_KBC_TMP_DIR="${{ runner.temp }}" \
-            task tests-unit-${{ matrix.test-group }}
+          task tests-unit-${{ matrix.test-group }}
 
       - name: Check how much space is left after unit test
         if: matrix.name == 'linux'
