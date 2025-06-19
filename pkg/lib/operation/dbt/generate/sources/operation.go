@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -58,27 +57,21 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	for _, bucket := range o.Buckets {
 		sourcesDef := generateSourcesDefinition(bucket)
 
-		// Create YAML encoder with proper formatting
-		var buf bytes.Buffer
-		enc := yaml.NewEncoder(&buf)
-		enc.SetIndent(2)
-
-		// Create a YAML node with proper style settings
-		var node yaml.Node
-		if err := node.Encode(sourcesDef); err != nil {
+		// Use custom YAML encoder with 2-space indentation
+		var yamlEnc []byte
+		var buf strings.Builder
+		encoder := yaml.NewEncoder(&buf)
+		encoder.SetIndent(2) // Set 2-space indentation
+		if err := encoder.Encode(&sourcesDef); err != nil {
 			return err
 		}
-
-		// Set sequence style to not indent
-		setNodeStyle(&node)
-
-		// Encode the node
-		if err := enc.Encode(&node); err != nil {
+		if err := encoder.Close(); err != nil {
 			return err
 		}
+		yamlEnc = []byte(buf.String())
 
 		// Add document separator and ensure single newline at end
-		content := "---\n" + strings.TrimSpace(buf.String()) + "\n"
+		content := "---\n" + strings.TrimSpace(string(yamlEnc)) + "\n"
 
 		// Write the file
 		err = fs.WriteFile(ctx, filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucket.SourceName), content))
@@ -89,32 +82,4 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	d.Logger().Infof(ctx, `Sources stored in "%s" directory.`, dbt.SourcesPath)
 	return nil
-}
-
-// setNodeStyle sets the YAML node style for proper formatting
-func setNodeStyle(node *yaml.Node) {
-	if node.Kind == yaml.MappingNode {
-		// For each key-value pair in the mapping
-		for i := 0; i < len(node.Content); i += 2 {
-			key := node.Content[i]
-			value := node.Content[i+1]
-
-			// If the value is a sequence, set its column to match the key's column
-			if value.Kind == yaml.SequenceNode {
-				value.Column = key.Column
-				for _, item := range value.Content {
-					item.Column = key.Column
-				}
-			}
-
-			// Recursively process the value
-			setNodeStyle(value)
-		}
-	} else if node.Kind == yaml.SequenceNode {
-		// If this is a sequence node, ensure all items have the same column as the sequence
-		for _, item := range node.Content {
-			item.Column = node.Column
-			setNodeStyle(item)
-		}
-	}
 }

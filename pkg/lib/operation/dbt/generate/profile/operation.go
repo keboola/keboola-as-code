@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"gopkg.in/yaml.v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/yaml"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -99,11 +99,17 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}))
 
 	// Save file
-	content, err := yaml.EncodeString(profilesFile)
-	if err != nil {
+	// Use custom YAML encoder with 2-space indentation
+	var buf strings.Builder
+	encoder := yaml.NewEncoder(&buf)
+	encoder.SetIndent(2) // Set 2-space indentation
+	if err := encoder.Encode(profilesFile); err != nil {
 		return err
 	}
-	content = "---\n" + content
+	if err := encoder.Close(); err != nil {
+		return err
+	}
+	content := "---\n" + strings.TrimSpace(buf.String()) + "\n"
 	if err := fs.WriteFile(ctx, filesystem.NewRawFile(dbt.ProfilesPath, content).SetDescription("dbt profiles")); err != nil {
 		return err
 	}
