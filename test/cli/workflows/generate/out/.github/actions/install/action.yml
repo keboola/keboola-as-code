@@ -12,7 +12,7 @@ runs:
       run: |
         mkdir "${{ runner.temp }}/kbc"
       shell: bash
-      # Download the latest release asset
+    # Download the latest release asset
     - id: kbc_download_latest_release
       run: |
         # Get latest release info
@@ -31,7 +31,7 @@ runs:
         # Set output
         echo "tag_name=$TAG" >> $GITHUB_OUTPUT
       shell: bash
-      # Extract binary
+    # Extract binary
     - id: kbc_extract_release
       run: |
         latest_tag=${{ steps.kbc_download_latest_release.outputs.tag_name }}
