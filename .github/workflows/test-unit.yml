@@ -108,45 +108,40 @@ jobs:
 
       - name: Run tests
         shell: bash
-        env:
-          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
-          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
-          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
-          UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
         run: |
           # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229# issuecomment-1988965927)
           if ["$RUNNER_OS" == "macOS"]; then
-          export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
+            export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
           fi
 
           # Prevent testing unnecessary code for particular release
           if [-n "${{ inputs.package-exception-regex }}"]; then
-          export TEST_EXCEPT="$(go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}')"
+            export TEST_EXCEPT="$(go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}')"
           fi
 
           # ENVs can affect test caching, make sure to only run tests with expected ENVs
           env -i  \
-          TERM="$TERM" \
-          HOME="$HOME" \
-          PATH="$PATH" \
-          GOFLAGS="$GOFLAGS" \
-          APPDATA="$APPDATA" \
-          DATADOG_ENABLED="false" \
-          UNIT_ETCD_ENABLED="$UNIT_ETCD_ENABLED" \
-          UNIT_ETCD_ENDPOINT="etcd:2379" \
-          UNIT_ETCD_USERNAME="root" \
-          UNIT_ETCD_PASSWORD="toor" \
-          UNIT_ETCD_NAMESPACE="unit" \
-          TEST_PARALLELISM="$TEST_PARALLELISM" \
-          TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
-          TEST_COVERAGE="$TEST_COVERAGE" \
-          TEST_CREATE_OUT_DIR="false" \
-          TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
-          TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
-          TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-          TEST_EXCEPT="$TEST_EXCEPT" \
-          TEST_KBC_TMP_DIR="${{ runner.temp }}" \
-          task tests-unit-${{ matrix.test-group }}
+            TERM="$TERM" \
+            HOME="$HOME" \
+            PATH="$PATH" \
+            GOFLAGS="$GOFLAGS" \
+            APPDATA="$APPDATA" \
+            DATADOG_ENABLED="false" \
+            UNIT_ETCD_ENABLED="$UNIT_ETCD_ENABLED" \
+            UNIT_ETCD_ENDPOINT="etcd:2379" \
+            UNIT_ETCD_USERNAME="root" \
+            UNIT_ETCD_PASSWORD="toor" \
+            UNIT_ETCD_NAMESPACE="unit" \
+            TEST_PARALLELISM="$TEST_PARALLELISM" \
+            TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
+            TEST_COVERAGE="$TEST_COVERAGE" \
+            TEST_CREATE_OUT_DIR="false" \
+            TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
+            TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
+            TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
+            TEST_EXCEPT="$TEST_EXCEPT" \
+            TEST_KBC_TMP_DIR="${{ runner.temp }}" \
+            task tests-unit-${{ matrix.test-group }}
 
       - name: Check how much space is left after unit test
         if: matrix.name == 'linux'

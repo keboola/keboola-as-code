@@ -248,50 +248,28 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: homebrew-formulae
+          path: target/homebrew
 
-      - name: Setup SSH key
+      - name: Push Homebrew formulae
+        uses: cpina/github-action-push-to-another-repository@main
         env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          echo "${{ secrets.HOMEBREW_UPDATE_KEY }}" > ~/.ssh/github_rsa
-          chmod 600 ~/.ssh/github_rsa
-          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add ~/.ssh/github_rsa
+          API_TOKEN_GITHUB: ${{ secrets.HOMEBREW_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+        with:
+          source-directory: "target/homebrew"
+          destination-github-username: "keboola"
+          destination-repository-name: "homebrew-keboola-cli"
+          target-branch: main
 
-      - name: Clone Homebrew tap
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
-          git clone git@github.com:keboola/homebrew-keboola-cli homebrew
-
-      - name: Update Homebrew tap
-        working-directory: homebrew
-        run: |
-          # Remove old formulae
-          find . -name '*.rb' -type f -exec rm {} \;
-
-          # Add new formulae
-          cp ../Formula/* .
-
-          # Commit and push changes
-          git add .
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git config user.name "Keboola As Code Bot"
-            git config user.email "noreply@keboola.com"
-            git commit -m "Release CLI v${{ env.VERSION }}"
-            git push origin main
-          fi
-
-  update-repositories-winget:
+  update-repositories-linux:
     needs:
       - version
       - release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
+    # only one parallel job allowed - used shared S3
+    concurrency:
+      group: release
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -300,72 +278,86 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
 
-      - name: Download WinGet manifests
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Build DEB repo tools
+        uses: ./.github/actions/build-repo-tools
+        with:
+          type: deb
+
+      - name: Build RPM repo tools
+        uses: ./.github/actions/build-repo-tools
+        with:
+          type: rpm
+
+      - name: Build APK repo tools
+        uses: ./.github/actions/build-repo-tools
+        with:
+          type: apk
+
+      - name: Clean aws credentials file
+        run: rm -rf ${HOME}/.aws
+
+      - name: Configure AWS Credentials to CLI Assets Account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_ROLE_REGION }}
+
+      - name: Mount CLI Assets S3 Bucket
+        uses: ./.github/actions/mount-s3
+        with:
+          mountedFolder: /s3bucket
+          awsRegion: ${{ env.AWS_REGION }}
+          awsBucketName: ${{ env.AWS_BUCKET_NAME }}
+          awsAccessKeyId: ${{ env.AWS_ACCESS_KEY_ID }}
+          awsSecretAccessKey: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          awsSessionToken: ${{ env.AWS_SESSION_TOKEN }}
+
+      - name: Index Linux packages in CLI Assets S3
+        run: ./build/package/linux/index.sh /s3bucket
+        env:
+          DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
+          RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
+          APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
+          DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
+          RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
+          APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
+
+      - name: Download Scoop manifest
         uses: actions/download-artifact@v4
         with:
-          name: winget-manifests
+          name: scoop-manifest
+          path: target/scoop
 
-      - name: Setup SSH key
+      - name: Push Scoop manifest
+        uses: cpina/github-action-push-to-another-repository@main
         env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          echo "${{ secrets.WINGET_UPDATE_KEY }}" > ~/.ssh/github_rsa
-          chmod 600 ~/.ssh/github_rsa
-          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add ~/.ssh/github_rsa
+          API_TOKEN_GITHUB: ${{ secrets.SCOOP_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+        with:
+          source-directory: "target/scoop"
+          destination-github-username: "keboola"
+          destination-repository-name: "scoop-keboola-cli"
+          target-branch: main
 
-      - name: Clone WinGet repository fork
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
-          git clone git@github.com:${{ env.WINGET_PACKAGES_REPO_FORK }} winget
-
-      - name: Create branch for new version
-        working-directory: winget
-        run: |
-          git config user.name "Keboola As Code Bot"
-          git config user.email "noreply@keboola.com"
-          git checkout -b keboola-cli-${{ env.VERSION }}
-
-      - name: Update WinGet manifests
-        working-directory: winget
-        run: |
-          # Create directory for the new version
-          mkdir -p manifests/k/Keboola/KeboolaConnection/${{ env.VERSION }}/
-
-          # Copy manifests
-          cp ../manifests/Keboola.KeboolaConnection.*.yaml manifests/k/Keboola/KeboolaConnection/${{ env.VERSION }}/
-
-          # Commit changes
-          git add .
-          git commit -m "Add Keboola Connection v${{ env.VERSION }}"
-
-      - name: Push changes and create PR
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        working-directory: winget
-        run: |
-          git push -u origin keboola-cli-${{ env.VERSION }}
-
-      - name: Create Pull Request
-        env:
-          GITHUB_TOKEN: ${{ secrets.WINGET_UPDATE_TOKEN }}
-        run: |
-          gh pr create \
-            --repo microsoft/winget-pkgs \
-            --head ${{ env.WINGET_PACKAGES_REPO_FORK }}:keboola-cli-${{ env.VERSION }} \
-            --title "Add Keboola Connection v${{ env.VERSION }}" \
-            --body "Automated PR to update Keboola Connection to version ${{ env.VERSION }}"
-
-  update-repositories-arch:
+  update-repositories-windows:
     needs:
       - version
       - release
+      - push-to-s3-and-release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
-    runs-on: ubuntu-latest
+    outputs:
+      msi_checksum: ${{ steps.checksum.outputs.msi_checksum }}
+      msi_file: ${{ steps.build_msi.outputs.msi_file }}
+    runs-on: windows-2022
     permissions:
       id-token: write
       contents: read
@@ -373,42 +365,299 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
 
-      - name: Download Arch PKGBUILDs
-        uses: actions/download-artifact@v4
+      - name: Install GitHub "hub" CLI
+        uses: geertvdc/setup-hub@master
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'  # allow add-path
+
+      - name: Install Java
+        uses: actions/setup-java@v4
         with:
-          name: arch-pkgbuilds
+          distribution: 'zulu'  # See 'Supported distributions' for available options
+          java-version: '21'
 
-      - name: Setup SSH key
+      - name: Download zipped exe
+        id: download_zip
+        shell: bash
         env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
-          echo "${{ secrets.ARCH_UPDATE_KEY }}" > ~/.ssh/aur_rsa
-          chmod 600 ~/.ssh/aur_rsa
-          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add ~/.ssh/aur_rsa
+          hub release download "${TAG}" -i '*windows_amd64*.zip'
+          printf "zip=%s\n" *.zip >> $GITHUB_OUTPUT
+          unzip -o *.zip && rm -v *.zip
 
-      - name: Clone AUR package
+      - name: Prepare PATH
+        id: setup_msbuild
+        uses: microsoft/setup-msbuild@v2.0.0
+
+      - name: Obtain signing cert
+        id: obtain_cert
+        shell: bash
         env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+          CERT_CONTENTS: ${{ secrets.WINDOWS_CERT_PFX }}
         run: |
-          git clone ssh://aur@aur.archlinux.org/keboola-cli.git aur
+          base64 -d <<<"$CERT_CONTENTS" > ./cert.pfx
 
-      - name: Update AUR package
-        working-directory: aur
+      - name: Fetch token
+        shell: bash
         run: |
-          # Copy new PKGBUILD
-          cp ../PKGBUILD .
-          cp ../.SRCINFO .
+          RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/${{ secrets.WINDOWS_SIGNING_TENANT_ID }}/oauth2/v2.0/token" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -H "Accept: application/json" \
+          -d "grant_type=client_credentials&client_id=${{ secrets.WINDOWS_SIGNING_CLIENT_ID }}&client_secret=${{ secrets.WINDOWS_SIGNING_CLIENT_SECRET }}&scope=https://vault.azure.net/.default")
 
-          # Commit and push changes
-          git config user.name "Keboola As Code Bot"
-          git config user.email "noreply@keboola.com"
-          git add .
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update to v${{ env.VERSION }}"
-            git push origin master
+          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
+
+          if [[ -z "$ACCESS_TOKEN" ]]; then
+          echo "Failed to fetch access token"
+          echo "Response: $RESPONSE"
+          exit 1
           fi
+
+          echo "WINDOWS_SIGNING_ACCESS_TOKEN=${ACCESS_TOKEN}" >> $GITHUB_ENV
+
+      - name: Download jsign
+        shell: bash
+        run: |
+          curl -L -o jsign-6.0.jar https://github.com/ebourg/jsign/releases/download/6.0/jsign-6.0.jar
+
+      - name: Sign EXE
+        shell: bash
+        run: |
+          java -jar jsign-6.0.jar --storetype AZUREKEYVAULT \
+            --keystore kbc-cli-code-signing \
+            --alias codesigning \
+            --storepass ${{ env.WINDOWS_SIGNING_ACCESS_TOKEN }} \
+            --tsaurl http://timestamp.digicert.com \
+            --replace \
+            "kbc.exe"
+
+      - name: Build MSI
+        id: build_msi
+        shell: bash
+        env:
+          MSBUILD_PATH: ${{ steps.setup_msbuild.outputs.msbuildPath }}
+          ZIP_FILE: ${{ steps.download_zip.outputs.zip }}
+        run: |
+          mkdir msi
+          filename="$(basename "$ZIP_FILE" ".zip")"
+          "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
+          echo "msi_file=${filename}.msi" >> $GITHUB_OUTPUT
+
+      # Error Handling: "ERROR StatusLogger Log4j2 could not find a logging implementation.
+      # Please add log4j-core to the classpath. Using SimpleLogger to log to the console..."
+      #
+      # This error indicates that the jsign tool (which uses Log4j2 for logging) is unable to find
+      # the core logging implementation (log4j-core) in its classpath. As a result, Log4j2 defaults
+      # to SimpleLogger, which logs to the console.
+      #
+      # To resolve this issue, ensure that the jsign-6.0.jar file includes the log4j-core library
+      # or that the log4j-core dependency is correctly added to the classpath.
+      - name: Sign MSI
+        shell: bash
+        env:
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        run: |
+          msi="./build/package/windows/msi/${{ env.MSI_FILE }}"
+          java -jar jsign-6.0.jar --storetype AZUREKEYVAULT \
+            --keystore kbc-cli-code-signing \
+            --alias codesigning \
+            --storepass ${{ env.WINDOWS_SIGNING_ACCESS_TOKEN }} \
+            --tsaurl http://timestamp.digicert.com \
+            --replace \
+            $msi
+
+      - name: Configure AWS Credentials to CLI Assets Account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_ROLE_REGION }}
+
+      - name: Upload MSI to CLI Assets S3
+        env:
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        shell: bash
+        run: |
+          aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${AWS_BUCKET_NAME}/msi/
+
+      - name: Checksum MSI
+        id: checksum
+        env:
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        shell: bash
+        run: |
+          choco install checksum
+          checksum=$(checksum -t=sha256 -f="./build/package/windows/msi/${MSI_FILE}")
+          echo $checksum
+          echo "msi_checksum=${checksum}" >> $GITHUB_OUTPUT
+
+      - name: Push Chocolatey
+        env:
+          CHOCOLATEY_KEY: ${{ secrets.CHOCOLATEY_KEY }}
+          MSI_CHECKSUM: ${{ steps.checksum.outputs.msi_checksum }}
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        run: |
+          New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push"
+          New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push\tools"
+          cd .\build\package\chocolatey\push
+          $url="$env:BASE_URL/msi/$env:MSI_FILE"
+          ((Get-Content -path ..\keboola-cli.nuspec -Raw) -replace '{VERSION}',$env:VERSION) | Set-Content -Path .\keboola-cli.nuspec
+          ((Get-Content -path ..\chocolateyinstall.ps1 -Raw) -replace '{URL}',$url -replace '{CHECKSUM}',$env:MSI_CHECKSUM) | Set-Content -Path .\tools\chocolateyinstall.ps1
+          choco apikey -k $env:CHOCOLATEY_KEY -s https://push.chocolatey.org/
+          choco pack keboola-cli.nuspec
+          choco push keboola-cli.$env:VERSION.nupkg -s https://push.chocolatey.org
+
+      - name: Update Winget Repository fork
+        uses: TobKed/github-forks-sync-action@master
+        with:
+          github_token: ${{ secrets.WINGET_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+          upstream_repository: microsoft/winget-pkgs
+          target_repository: ${{ env.WINGET_PACKAGES_REPO_FORK }}
+          upstream_branch: master
+          target_branch: master
+          force: true
+
+      - name: Submit package to Winget Repository (create PR)
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_RELEASE_GITHUB_PERSONAL_ACCESS_TOKEN }}
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        run: |
+          curl -kLSs https://aka.ms/wingetcreate/latest -o wingetcreate.exe
+          msiUrl="${BASE_URL}/msi/${MSI_FILE}"
+          ./wingetcreate.exe update -v $VERSION -u $msiUrl -t $GITHUB_TOKEN Keboola.KeboolaCLI -s
+
+  test-install-linux:
+    needs:
+      - update-repositories-linux
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+    steps:
+      - name: Install on Ubuntu
+        if: always()
+        run: |
+          docker run --rm ubuntu bash -c '
+          set -e
+          set -o pipefail
+          apt-get update -y && apt-get install -y wget ca-certificates gnupg
+          wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
+          echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
+          apt-get update
+          apt-get install -y keboola-cli
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+      - name: Install on Debian
+        if: always()
+        run: |
+          docker run --rm debian bash -c '
+          set -e
+          set -o pipefail
+          apt-get update -y && apt-get install -y wget ca-certificates gnupg
+          wget -P /etc/apt/trusted.gpg.d https://cli-dist.keboola.com/deb/keboola.gpg
+          echo "deb https://cli-dist.keboola.com/deb /" | tee /etc/apt/sources.list.d/keboola.list
+          apt-get update
+          apt-get install -y keboola-cli
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+      - name: Install on Fedora
+        if: always()
+        run: |
+          docker run --rm fedora bash -c '
+          set -e
+          set -o pipefail
+          rpm --import https://cli-dist.keboola.com/rpm/keboola.gpg
+          echo "[keboola]
+          name=keboola
+          baseurl=https://cli-dist.keboola.com/rpm
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://cli-dist.keboola.com/rpm/keboola.gpg
+          " | tee /etc/yum.repos.d/keboola.repo
+          dnf install -y keboola-cli
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+      - name: Install on Alpine
+        if: always()
+        run: |
+          docker run --rm  alpine sh -c '
+          set -e
+          set -o pipefail
+          echo "https://cli-dist.keboola.com/apk" | tee -a /etc/apk/repositories
+          wget -P /etc/apk/keys/ https://cli-dist.keboola.com/apk/keboola.rsa.pub
+          apk update
+          apk add keboola-cli
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+
+  test-install-homebrew-linux:
+    needs:
+      - update-repositories-homebrew
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+    steps:
+      - name: Install on Linux by Homebrew
+        if: always()
+        run: |
+          docker run --rm homebrew/brew sh -c '
+          set -e
+          brew install keboola/keboola-cli/keboola-cli
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+          '
+
+  test-install-homebrew-mac-os:
+    needs:
+      - update-repositories-homebrew
+      - push-to-s3-and-release
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+    runs-on: macos-latest
+    steps:
+      - name: Remove old git package
+        run: brew list --full-name | grep '^git@' | xargs -r brew uninstall --ignore-dependencies
+
+      - name: Install on MacOS by Homebrew
+        run: |
+          brew install keboola/keboola-cli/keboola-cli
+          kbc --version | tee /dev/stderr | grep -q "Version:    ${{ env.VERSION }}"
+
+  test-install-windows:
+    needs:
+      - update-repositories-windows
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+    runs-on: windows-2022
+    steps:
+      - name: Download MSI
+        shell: bash
+        env:
+          MSI_FILE: ${{ needs.update-repositories-windows.outputs.msi_file }}
+        run: |
+          curl "${BASE_URL}/msi/${MSI_FILE}" --output install.msi
+
+      - name: Install on Windows from MSI
+        timeout-minutes: 2
+        continue-on-error: true
+        run: |
+          msiexec /i install.msi /quiet /qn /le install_log.txt
+
+      - name: Get the Install log
+        run: |
+          if (Test-Path "install_log.txt") {
+            Get-Content -Path install_log.txt
+          }
+
+      - name: Check the CLI was installed
+        run: |
+          if (!(Test-Path "C:\Program Files\Keboola CLI")) {
+            Exit 1
+          }
+
+      - name: Install on Windows using Scoop
+        run: |
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          scoop bucket add keboola https://github.com/keboola/scoop-keboola-cli.git
+          scoop install keboola/keboola-cli
+          kbc --version
+          If (-Not (kbc --version | Select-String -Quiet "Version:    $($env:VERSION)")) { throw "kbc command not installed properly" }

@@ -5,10 +5,6 @@ on:
   # This workflow is also part of the release pipeline,
   # in that case, the actual version is deployed twice.
   workflow_call:
-    inputs:
-      version:
-        type: string
-        required: false
   # In PR the previous version is deployed first and then the actual version.
   pull_request:
     paths:
@@ -117,7 +113,7 @@ jobs:
           --labels="app=datadog-agent" \
           --env="POD_IP=$POD_IP" \
           --env="METRICS_PORT=$METRICS_PORT" \
-          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 \"$POD_IP:$METRICS_PORT/metrics\" | tail"
+          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"
 
       - name: Check forbidden access to the API metrics from other places
         if: always()
@@ -129,12 +125,12 @@ jobs:
             --image docker.io/alpine/curl \
             --env="POD_IP=$POD_IP" \
             --env="METRICS_PORT=$METRICS_PORT" \
-            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 \"$POD_IP:$METRICS_PORT/metrics\" | tail"; then
-          echo "The command did not fail, but it should have."
-          exit 1
+            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"; then
+            echo "The command did not fail, but it should have."
+            exit 1
           else
-          echo "The command failed, OK."
-          exit 0
+            echo "The command failed, OK."
+            exit 0
           fi
 
       - name: Check Proxy response
@@ -148,15 +144,15 @@ jobs:
 
           # Diff JSON states
           /tmp/latest-scripts/k8s/diff.sh \
-          /tmp/artifacts/test-k8s-state.old.json \
-          /tmp/artifacts/test-k8s-state.new.json \
-          /tmp/artifacts/test-k8s-state.diff || true
+            /tmp/artifacts/test-k8s-state.old.json \
+            /tmp/artifacts/test-k8s-state.new.json \
+            /tmp/artifacts/test-k8s-state.diff || true
 
           # Remove ANSI sequences
           sed -e 's/\x1b\[[0-9;]*m//g' -i /tmp/artifacts/test-k8s-state.diff || true
 
           # Prepare PR comment message
-          echo -e "  ##  # ${{ env.SERVICE_NAME }} Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
+          echo -e "### ${{ env.SERVICE_NAME }} Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
           echo -e "Between \`base\` ${{ github.event.pull_request.base.sha }} :arrow_left:  \`head\` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
           echo -e "<details>\n<summary>Expand</summary>\n\n\`\`\`diff\n" >> /tmp/artifacts/test-k8s-state.diff.message
           head -c 50000 /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message || true
@@ -177,7 +173,6 @@ jobs:
           if-no-files-found: error
 
       - name: Send PR comment
-        if: always()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: "${{ env.KUBERNETES_NAMESPACE }}-kubernetes-state-diff"
