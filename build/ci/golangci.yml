@@ -1,5 +1,7 @@
 ---
 # Golangci-lint configuration
+version: 2
+
 run:
   concurrency: 8
   modules-download-mode: mod
