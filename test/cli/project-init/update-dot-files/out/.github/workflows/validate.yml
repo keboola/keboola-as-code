@@ -1,10 +1,6 @@
 ---
 name: Validate
-on:
-  push:
-    branches:
-      - '**'
-      - '!main'
+on: push
 env:
   KBC_STORAGE_API_TOKEN: ${{ secrets.KBC_STORAGE_API_TOKEN }}
 jobs:
