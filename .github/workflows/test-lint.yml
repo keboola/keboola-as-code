@@ -14,44 +14,44 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-    # Removing this directory helps to prevent a "no space left on device" error.
-    - name: Remove useless data
-      run: rm -rf /opt/hostedtoolcache
+      # Removing this directory helps to prevent a "no space left on device" error.
+      - name: Remove useless data
+        run: rm -rf /opt/hostedtoolcache
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@main
-      with:
-        android: true
-        dotnet: true
-        haskell: true
-        large-packages: false
-        docker-images: false
-        swap-storage: false
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: false
+          swap-storage: false
 
-    - name: Setup Go, tools and caching
-      uses: ./.github/actions/go-setup
-      with:
-        build-type: lint
-        cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+      - name: Setup Go, tools and caching
+        uses: ./.github/actions/go-setup
+        with:
+          build-type: lint
+          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
-    - name: Check links in Markdown files
-      uses: lycheeverse/lychee-action@v2.4.1
-      with:
-        fail: true
-        args: |
-          './**/*.md'
-          --verbose
-          --exclude-path 'vendor'
-          --exclude-path 'test'
-          --exclude '^http://localhost.*'
-          --exclude '^https://app.datadoghq.eu/.*'
-          --exclude '^https://community.chocolatey.org/.*'
-          --exclude '^https://packages.debian.org/$'
-          --exclude '^https://test.hub.keboola.local/$'
+      - name: Check links in Markdown files
+        uses: lycheeverse/lychee-action@v2.4.1
+        with:
+          fail: true
+          args: |
+            './**/*.md'
+            --verbose
+            --exclude-path 'vendor'
+            --exclude-path 'test'
+            --exclude '^http://localhost.*'
+            --exclude '^https://app.datadoghq.eu/.*'
+            --exclude '^https://community.chocolatey.org/.*'
+            --exclude '^https://packages.debian.org/$'
+            --exclude '^https://test.hub.keboola.local/$'
 
-    - name: Run code linters
-      run: task lint
-      shell: bash
+      - name: Run code linters
+        run: task lint
+        shell: bash

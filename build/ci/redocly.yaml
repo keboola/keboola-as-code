@@ -16,18 +16,18 @@ rules:
   security-defined:
     severity: error
     exceptions:
-    - path: /
-      methods: [get]
-    - path: /v1
-      methods: [get]
-    - path: /v1/documentation/openapi.json
-      methods: [get]
-    - path: /v1/documentation/openapi.yaml
-      methods: [get]
-    - path: /v1/documentation/openapi3.json
-      methods: [get]
-    - path: /v1/documentation/openapi3.yaml
-      methods: [get]
+      - path: /
+        methods: [get]
+      - path: /v1
+        methods: [get]
+      - path: /v1/documentation/openapi.json
+        methods: [get]
+      - path: /v1/documentation/openapi.yaml
+        methods: [get]
+      - path: /v1/documentation/openapi3.json
+        methods: [get]
+      - path: /v1/documentation/openapi3.yaml
+        methods: [get]
 
   # Disabling rules for mandatory HTTP responses - some endpoints may not return standard HTTP codes
   operation-2xx-response: false

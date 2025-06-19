@@ -12,217 +12,217 @@ vars:
 tasks:
   generate-model:
     cmds:
-    - ./scripts/generate-model.sh
+      - ./scripts/generate-model.sh
 
   generate-protobuf:
     cmds:
-    - ./scripts/generate-protobuf.sh
+      - ./scripts/generate-protobuf.sh
 
   generate-appsproxy-api:
     cmds:
-    - SERVICE_NAME=appsproxy bash ./scripts/generate-api.sh
+      - SERVICE_NAME=appsproxy bash ./scripts/generate-api.sh
 
   generate-templates-api:
     cmds:
-    - SERVICE_NAME=templates bash ./scripts/generate-api.sh
+      - SERVICE_NAME=templates bash ./scripts/generate-api.sh
 
   generate-stream-api:
     cmds:
-    - SERVICE_NAME=stream bash ./scripts/generate-api.sh
+      - SERVICE_NAME=stream bash ./scripts/generate-api.sh
 
   build:
     cmds:
-    - GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --clean --snapshot -f ./build/ci/goreleaser.yml
+      - GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --clean --snapshot -f ./build/ci/goreleaser.yml
 
   build-local:
     cmds:
-    - GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --single-target --clean --snapshot -f ./build/ci/goreleaser.yml
+      - GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --single-target --clean --snapshot -f ./build/ci/goreleaser.yml
 
   release:
     cmds:
-    - goreleaser release --clean -f ./build/ci/goreleaser.yml
+      - goreleaser release --clean -f ./build/ci/goreleaser.yml
 
   release-local:
     cmds:
-    - goreleaser release --clean --snapshot --skip=publish -f ./build/ci/goreleaser.yml
+      - goreleaser release --clean --snapshot --skip=publish -f ./build/ci/goreleaser.yml
 
   build-templates-api:
     vars:
-    BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/templates/api" }}'
+      BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/templates/api" }}'
     cmds:
-    - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/templates-api
+      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/templates-api
 
   run-templates-api:
     cmds:
-    - go tool air -c ./provisioning/templates-api/dev/.air-api.toml
+      - go tool air -c ./provisioning/templates-api/dev/.air-api.toml
 
   build-stream-service:
     vars:
-    BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/stream/service" }}'
+      BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/stream/service" }}'
     cmds:
-    - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/stream
+      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/stream
 
   build-stream-service-with-race:
     vars:
-    BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/stream/service" }}'
+      BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/stream/service" }}'
     cmds:
-    - CGO_ENABLED=1 go build -race -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/stream
+      - CGO_ENABLED=1 go build -race -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/stream
 
   run-stream-service:
     cmds:
-    - rm -rf /tmp/stream-volumes && mkdir -p /tmp/stream-volumes/hdd/my-volume && go tool air -c ./provisioning/stream/dev/.air.toml
+      - rm -rf /tmp/stream-volumes && mkdir -p /tmp/stream-volumes/hdd/my-volume && go tool air -c ./provisioning/stream/dev/.air.toml
 
   run-stream-service-once:
     deps: [build-stream-service-with-race]
     cmds:
-    - ./target/stream/service api http-source storage-writer storage-reader storage-coordinator
+      - ./target/stream/service api http-source storage-writer storage-reader storage-coordinator
 
   build-apps-proxy:
     vars:
-    BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/apps-proxy/proxy" }}'
+      BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/apps-proxy/proxy" }}'
     cmds:
-    - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/apps-proxy
+      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/apps-proxy
 
   run-apps-proxy:
     cmds:
-    - go tool air -c ./provisioning/apps-proxy/dev/.air.toml
+      - go tool air -c ./provisioning/apps-proxy/dev/.air.toml
 
   tests:
     cmds:
-    - TEST_PACKAGE=./... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./... bash ./scripts/tests.sh
 
   tests-verbose:
     cmds:
-    - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./... bash ./scripts/tests.sh
+      - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./... bash ./scripts/tests.sh
 
   tests-unit:
     cmds:
-    - TEST_PACKAGE=./internal/pkg/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./internal/pkg/... bash ./scripts/tests.sh
 
   tests-unit-verbose:
     cmds:
-    - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./internal/pkg... bash ./scripts/tests.sh
+      - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./internal/pkg... bash ./scripts/tests.sh
 
   tests-unit-cli:
     cmds:
-    - TEST_PACKAGE=./internal/pkg/service/cli/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./internal/pkg/service/cli/... bash ./scripts/tests.sh
 
   tests-unit-templates:
     cmds:
-    - TEST_PACKAGE=./internal/pkg/service/templates/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./internal/pkg/service/templates/... bash ./scripts/tests.sh
 
   tests-unit-stream:
     cmds:
-    - TEST_PACKAGE=./internal/pkg/service/stream/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./internal/pkg/service/stream/... bash ./scripts/tests.sh
 
   tests-unit-appsproxy:
     cmds:
-    - TEST_PACKAGE=./internal/pkg/service/appsproxy/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./internal/pkg/service/appsproxy/... bash ./scripts/tests.sh
 
   tests-unit-common:
     cmds:
-    - TEST_PACKAGE=./internal/pkg/service/common/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./internal/pkg/service/common/... bash ./scripts/tests.sh
 
   # Test all internal packages *except* those already covered by service-specific targets
   tests-unit-core:
     cmds:
-    # List all packages, list service packages, filter service ones out, then join with spaces for the command line
-    - |
-      bash -c 'TEST_PACKAGE=$(comm -23 <(go list ./internal/pkg/... | sort) <(go list {{.SERVICE_PKG_PATTERNS}} | sort) | tr "\n" " ") bash ./scripts/tests.sh'
+      # List all packages, list service packages, filter service ones out, then join with spaces for the command line
+      - |
+        bash -c 'TEST_PACKAGE=$(comm -23 <(go list ./internal/pkg/... | sort) <(go list {{.SERVICE_PKG_PATTERNS}} | sort) | tr "\n" " ") bash ./scripts/tests.sh'
 
   # Test all service packages in one go
   tests-unit-services:
     cmds:
-    - bash -c 'TEST_PACKAGE="{{.SERVICE_PKG_PATTERNS}}" bash ./scripts/tests.sh'
+      - bash -c 'TEST_PACKAGE="{{.SERVICE_PKG_PATTERNS}}" bash ./scripts/tests.sh'
 
   tests-cli:
     cmds:
-    - TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh
 
   tests-cli-verbose:
     cmds:
-    - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh
+      - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh
 
   tests-templates-api:
     cmds:
-    - TEST_PACKAGE=./test/templates/api/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./test/templates/api/... bash ./scripts/tests.sh
 
   tests-templates-api-verbose:
     cmds:
-    - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh
+      - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh
 
   tests-stream-service:
     cmds:
-    - TEST_PACKAGE=./test/stream/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./test/stream/... bash ./scripts/tests.sh
 
   tests-stream-service-verbose:
     cmds:
-    - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/stream/... bash ./scripts/tests.sh
+      - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/stream/... bash ./scripts/tests.sh
 
   tests-stream-api:
     cmds:
-    - TEST_PACKAGE=./test/stream/api/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./test/stream/api/... bash ./scripts/tests.sh
 
   tests-stream-api-verbose:
     cmds:
-    - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/stream/api/... bash ./scripts/tests.sh
+      - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/stream/api/... bash ./scripts/tests.sh
 
   tests-stream-worker:
     cmds:
-    - TEST_PACKAGE=./test/stream/worker/... bash ./scripts/tests.sh
+      - TEST_PACKAGE=./test/stream/worker/... bash ./scripts/tests.sh
 
   tests-stream-worker-verbose:
     cmds:
-    - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/stream/worker/... bash ./scripts/tests.sh
+      - TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/stream/worker/... bash ./scripts/tests.sh
 
   mod:
     cmds:
-    - bash ./scripts/mod.sh
+      - bash ./scripts/mod.sh
 
   lint:
     cmds:
-    - bash ./scripts/lint.sh
+      - bash ./scripts/lint.sh
 
   lint-all:
     cmds:
-    - bash ./scripts/lint.sh --max-issues-per-linter=0 --max-same-issues=0
+      - bash ./scripts/lint.sh --max-issues-per-linter=0 --max-same-issues=0
 
   fix:
     cmds:
-    - bash ./scripts/fix.sh
+      - bash ./scripts/fix.sh
 
   ci:
     deps: [mod, lint, tests]
 
   godoc:
     cmds:
-    - go tool godoc -http=0.0.0.0:6060
+      - go tool godoc -http=0.0.0.0:6060
 
   check-licenses:
     cmds:
-    - go tool go-licenses check ./... --disallowed_types forbidden,restricted
+      - go tool go-licenses check ./... --disallowed_types forbidden,restricted
 
   update:
     cmds:
-    - go tool go-mod-upgrade
-    - go mod tidy
-    - go mod vendor
-    - go tool gomajor list
+      - go tool go-mod-upgrade
+      - go mod tidy
+      - go mod vendor
+      - go tool gomajor list
 
   install-golangci-lint:
     cmds:
-    - ./scripts/install-golangci-lint.sh
+      - ./scripts/install-golangci-lint.sh
 
   install-goreleaser:
     cmds:
-    - ./scripts/install-goreleaser.sh
+      - ./scripts/install-goreleaser.sh
 
   install-protoc-gen-go:
     cmds:
-    - ./scripts/install-protoc-gen-go.sh
+      - ./scripts/install-protoc-gen-go.sh
 
   # Runs single e2e test
   # Usage: task e2e -- <directory>
   e2e:
     cmds:
-    - ./scripts/e2e.sh {{.CLI_ARGS}}
+      - ./scripts/e2e.sh {{.CLI_ARGS}}

@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/yaml"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -38,7 +39,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// Load profiles file if exists
 	profilesFile := orderedmap.New()
-	profilesFileDef := filesystem.NewFileDef(dbt.ProfilesPath).SetDescription("dbt profiles").SetYamlDocumentSeparator(true)
+	profilesFileDef := filesystem.NewFileDef(dbt.ProfilesPath).SetDescription("dbt profiles")
 	if fs.Exists(ctx, dbt.ProfilesPath) {
 		if _, err := fs.FileLoader().ReadYamlFileTo(ctx, profilesFileDef, profilesFile); err != nil {
 			return err
@@ -98,7 +99,12 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}))
 
 	// Save file
-	if err := fs.WriteFile(ctx, filesystem.NewYamlFile(dbt.ProfilesPath, profilesFile).SetDescription("dbt profiles").SetYamlDocumentSeparator(true)); err != nil {
+	content, err := yaml.EncodeString(profilesFile)
+	if err != nil {
+		return err
+	}
+	content = "---\n" + content
+	if err := fs.WriteFile(ctx, filesystem.NewRawFile(dbt.ProfilesPath, content).SetDescription("dbt profiles")); err != nil {
 		return err
 	}
 

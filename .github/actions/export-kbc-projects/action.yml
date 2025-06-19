@@ -8,19 +8,19 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Generate projects.json file, replace secrets
-    shell: bash
-    run: |
-      # Filter secrets by the prefix, set key=value ENVs
-      jqQuery='to_entries[] | select(.key | startswith("TEST_KBC_PROJECT_")) | "\(.key)=\(.value|tostring) "'
-      export $(
-      (jq -r -j "$jqQuery") << EndOfSecrets
-        ${{ inputs.secrets }}
-      EndOfSecrets
-      )
+    - name: Generate projects.json file, replace secrets
+      shell: bash
+      run: |
+        # Filter secrets by the prefix, set key=value ENVs
+        jqQuery='to_entries[] | select(.key | startswith("TEST_KBC_PROJECT_")) | "\(.key)=\(.value|tostring) "'
+        export $(
+        (jq -r -j "$jqQuery") << EndOfSecrets
+          ${{ inputs.secrets }}
+        EndOfSecrets
+        )
 
-      # Replace Storage API tokens
-      envsubst < build/ci/projects.json > projects.json
+        # Replace Storage API tokens
+        envsubst < build/ci/projects.json > projects.json
 
-      # Fix tests caching
-      touch -d '1970-01-01T00:00:01' projects.json
+        # Fix tests caching
+        touch -d '1970-01-01T00:00:01' projects.json

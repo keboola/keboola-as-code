@@ -11,6 +11,6 @@ rules:
     max: 240  # For long commands in Taskfile
   indentation:
     spaces: consistent
-    indent-sequences: false
+    indent-sequences: true
   truthy:
     allowed-values: ['true', 'false', 'on']

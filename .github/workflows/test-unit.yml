@@ -32,126 +32,126 @@ jobs:
         name: [linux, mac-os, windows]
         test-group: [core, services]
         include:
-        - name: linux
-          os: ubuntu-latest
-        - name: mac-os
-          os: macos-latest
-        - name: windows
-          os: windows-2022
+          - name: linux
+            os: ubuntu-latest
+          - name: mac-os
+            os: macos-latest
+          - name: windows
+            os: windows-2022
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Setup line endings
-      run: git config --global core.autocrlf false
+      - name: Setup line endings
+        run: git config --global core.autocrlf false
 
-    - name: Change default TEST_COVERAGE when on main branch
-      if: github.ref == 'refs/heads/main'
-      run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
+      - name: Change default TEST_COVERAGE when on main branch
+        if: github.ref == 'refs/heads/main'
+        run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@main
-      with:
-        android: true
-        dotnet: true
-        haskell: true
-        large-packages: true
-        docker-images: true
-        swap-storage: false
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
 
-    # To free up disk space to not run out during the run
-    - name: Delete unused SDKs MacOS
-      if: matrix.name == 'mac-os'
-      continue-on-error: true
-      run: |
-        echo "BEFORE CLEAN-UP:"
-        df -hI /dev/disk3s1s1
-        sudo rm -rf /Applications/Xcode_*.app
-        echo "AFTER CLEAN-UP:"
-        df -hI /dev/disk3s1s1
+      # To free up disk space to not run out during the run
+      - name: Delete unused SDKs MacOS
+        if: matrix.name == 'mac-os'
+        continue-on-error: true
+        run: |
+          echo "BEFORE CLEAN-UP:"
+          df -hI /dev/disk3s1s1
+          sudo rm -rf /Applications/Xcode_*.app
+          echo "AFTER CLEAN-UP:"
+          df -hI /dev/disk3s1s1
 
-    - name: Setup Go, tools and caching
-      uses: ./.github/actions/go-setup
-      with:
-        build-type: unit-tests
-        without-cache: ${{ inputs.without-cache }}
-        cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+      - name: Setup Go, tools and caching
+        uses: ./.github/actions/go-setup
+        with:
+          build-type: unit-tests
+          without-cache: ${{ inputs.without-cache }}
+          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
-    - name: Check how much space is left after go setup
-      if: matrix.name == 'linux'
-      shell: bash
-      run: |
-        echo "AFTER GO SETUP:"
-        df -h /
-        df -a /
+      - name: Check how much space is left after go setup
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          echo "AFTER GO SETUP:"
+          df -h /
+          df -a /
 
-    - name: Set TEST_KBC_PROJECTS_FILE entries
-      uses: ./.github/actions/export-kbc-projects
-      with:
-        secrets: ${{ toJSON(secrets) }}
+      - name: Set TEST_KBC_PROJECTS_FILE entries
+        uses: ./.github/actions/export-kbc-projects
+        with:
+          secrets: ${{ toJSON(secrets) }}
 
-    - name: Start etcd database (only on linux)
-      if: matrix.name == 'linux'
-      run: |
-        set -Eeuo pipefail
-        docker compose run -d --rm --publish 2379:2379 etcd
-        sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
+      - name: Start etcd database (only on linux)
+        if: matrix.name == 'linux'
+        run: |
+          set -Eeuo pipefail
+          docker compose run -d --rm --publish 2379:2379 etcd
+          sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
 
-    - name: Check how much space is left after etcd setup
-      if: matrix.name == 'linux'
-      shell: bash
-      run: |
-        echo "AFTER ETCD SETUP:"
-        df -h /
-        df -a /
+      - name: Check how much space is left after etcd setup
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          echo "AFTER ETCD SETUP:"
+          df -h /
+          df -a /
 
-    - name: Run tests
-      shell: bash
-      env:
-        TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
-        TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
-        TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
-        UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
-      run: |
-        # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229# issuecomment-1988965927)
-        if ["$RUNNER_OS" == "macOS"]; then
-        export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
-        fi
+      - name: Run tests
+        shell: bash
+        env:
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
+          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
+          UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
+        run: |
+          # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229# issuecomment-1988965927)
+          if ["$RUNNER_OS" == "macOS"]; then
+          export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
+          fi
 
-        # Prevent testing unnecessary code for particular release
-        if [-n "${{ inputs.package-exception-regex }}"]; then
-        export TEST_EXCEPT="$(go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}')"
-        fi
+          # Prevent testing unnecessary code for particular release
+          if [-n "${{ inputs.package-exception-regex }}"]; then
+          export TEST_EXCEPT="$(go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}')"
+          fi
 
-        # ENVs can affect test caching, make sure to only run tests with expected ENVs
-        env -i  \
-        TERM="$TERM" \
-        HOME="$HOME" \
-        PATH="$PATH" \
-        GOFLAGS="$GOFLAGS" \
-        APPDATA="$APPDATA" \
-        DATADOG_ENABLED="false" \
-        UNIT_ETCD_ENABLED="$UNIT_ETCD_ENABLED" \
-        UNIT_ETCD_ENDPOINT="etcd:2379" \
-        UNIT_ETCD_USERNAME="root" \
-        UNIT_ETCD_PASSWORD="toor" \
-        UNIT_ETCD_NAMESPACE="unit" \
-        TEST_PARALLELISM="$TEST_PARALLELISM" \
-        TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
-        TEST_COVERAGE="$TEST_COVERAGE" \
-        TEST_CREATE_OUT_DIR="false" \
-        TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
-        TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
-        TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-        TEST_EXCEPT="$TEST_EXCEPT" \
-        TEST_KBC_TMP_DIR="${{ runner.temp }}" \
-        task tests-unit-${{ matrix.test-group }}
+          # ENVs can affect test caching, make sure to only run tests with expected ENVs
+          env -i  \
+          TERM="$TERM" \
+          HOME="$HOME" \
+          PATH="$PATH" \
+          GOFLAGS="$GOFLAGS" \
+          APPDATA="$APPDATA" \
+          DATADOG_ENABLED="false" \
+          UNIT_ETCD_ENABLED="$UNIT_ETCD_ENABLED" \
+          UNIT_ETCD_ENDPOINT="etcd:2379" \
+          UNIT_ETCD_USERNAME="root" \
+          UNIT_ETCD_PASSWORD="toor" \
+          UNIT_ETCD_NAMESPACE="unit" \
+          TEST_PARALLELISM="$TEST_PARALLELISM" \
+          TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
+          TEST_COVERAGE="$TEST_COVERAGE" \
+          TEST_CREATE_OUT_DIR="false" \
+          TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
+          TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
+          TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
+          TEST_EXCEPT="$TEST_EXCEPT" \
+          TEST_KBC_TMP_DIR="${{ runner.temp }}" \
+          task tests-unit-${{ matrix.test-group }}
 
-    - name: Check how much space is left after unit test
-      if: matrix.name == 'linux'
-      shell: bash
-      run: |
-        echo "AFTER UNIT TEST:"
-        df -h /
-        df -a /
+      - name: Check how much space is left after unit test
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          echo "AFTER UNIT TEST:"
+          df -h /
+          df -a /

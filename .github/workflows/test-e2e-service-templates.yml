@@ -25,70 +25,70 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - name: linux
-          os: ubuntu-latest
+          - name: linux
+            os: ubuntu-latest
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Setup line endings
-      run: git config --global core.autocrlf false
+      - name: Setup line endings
+        run: git config --global core.autocrlf false
 
-    - name: Change default TEST_COVERAGE when on main branch
-      if: github.ref == 'refs/heads/main'
-      run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
+      - name: Change default TEST_COVERAGE when on main branch
+        if: github.ref == 'refs/heads/main'
+        run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Go, tools and caching
-      uses: ./.github/actions/go-setup
-      with:
-        build-type: e2e-tests-templates
-        without-cache: ${{ inputs.without-cache }}
-        cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+      - name: Setup Go, tools and caching
+        uses: ./.github/actions/go-setup
+        with:
+          build-type: e2e-tests-templates
+          without-cache: ${{ inputs.without-cache }}
+          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
-    - name: Start etcd database
-      run: |
-        set -Eeuo pipefail
-        docker compose run -d --rm --publish 2379:2379 etcd
-        sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
+      - name: Start etcd database
+        run: |
+          set -Eeuo pipefail
+          docker compose run -d --rm --publish 2379:2379 etcd
+          sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
 
-    - name: Set TEST_KBC_PROJECTS_FILE entries
-      uses: ./.github/actions/export-kbc-projects
-      with:
-        secrets: ${{ toJSON(secrets) }}
+      - name: Set TEST_KBC_PROJECTS_FILE entries
+        uses: ./.github/actions/export-kbc-projects
+        with:
+          secrets: ${{ toJSON(secrets) }}
 
-    - name: Run tests
-      shell: bash
-      env:
-        TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
-        TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
-        TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
-      run: |
-        set -eo pipefail
+      - name: Run tests
+        shell: bash
+        env:
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
+          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
+        run: |
+          set -eo pipefail
 
-        # ENVs can affect test caching, make sure to only run tests with expected ENVs
-        env -i  \
-        TERM="$TERM" \
-        HOME="$HOME" \
-        PATH="$PATH" \
-        DATADOG_ENABLED="false" \
-        E2E_ETCD_ENABLED="true" \
-        E2E_ETCD_ENDPOINT="etcd:2379" \
-        E2E_ETCD_USERNAME="root" \
-        E2E_ETCD_PASSWORD="toor" \
-        E2E_ETCD_NAMESPACE="e2e" \
-        TEST_PARALLELISM="$TEST_PARALLELISM" \
-        TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
-        TEST_COVERAGE="false" \
-        TEST_CREATE_OUT_DIR="false" \
-        TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
-        TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
-        TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
-        TEST_KBC_TMP_DIR="${{ runner.temp }}" \
-        task tests-templates-e2e
+          # ENVs can affect test caching, make sure to only run tests with expected ENVs
+          env -i  \
+          TERM="$TERM" \
+          HOME="$HOME" \
+          PATH="$PATH" \
+          DATADOG_ENABLED="false" \
+          E2E_ETCD_ENABLED="true" \
+          E2E_ETCD_ENDPOINT="etcd:2379" \
+          E2E_ETCD_USERNAME="root" \
+          E2E_ETCD_PASSWORD="toor" \
+          E2E_ETCD_NAMESPACE="e2e" \
+          TEST_PARALLELISM="$TEST_PARALLELISM" \
+          TEST_PARALLELISM_PKG="$TEST_PARALLELISM_PKG" \
+          TEST_COVERAGE="false" \
+          TEST_CREATE_OUT_DIR="false" \
+          TEST_KBC_PROJECTS_LOCK_HOST="$TEST_KBC_PROJECTS_LOCK_HOST" \
+          TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
+          TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
+          TEST_KBC_TMP_DIR="${{ runner.temp }}" \
+          task tests-templates-e2e
 
-    - name: Install OpenAPI Validator
-      run: npm install -g @redocly/cli
+      - name: Install OpenAPI Validator
+        run: npm install -g @redocly/cli
 
-    - name: Validate OpenAPI Definition
-      run: redocly lint --config build/ci/redocly.yaml internal/pkg/service/templates/api/openapi/openapi3.yaml
+      - name: Validate OpenAPI Definition
+        run: redocly lint --config build/ci/redocly.yaml internal/pkg/service/templates/api/openapi/openapi3.yaml

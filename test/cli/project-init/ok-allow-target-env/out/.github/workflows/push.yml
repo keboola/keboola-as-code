@@ -3,12 +3,12 @@ name: Continuous Integration
 on:
   push:
     branches:
-    - main
+      - main
     tags:
-    - "v*"
+      - "v*"
   pull_request:
     branches:
-    - main
+      - main
 permissions:
   contents: write
 env:
@@ -23,12 +23,12 @@ jobs:
       cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
-    - name: Check out repository code
-      uses: actions/checkout@v4
-    - name: Install Keboola as Code CLI
-      uses: ./.github/actions/install
-      with:
-        githubToken: ${{ secrets.GITHUB_TOKEN }}
-    - name: Push to Keboola Connection
-      run: |
-        kbc push "#KeboolaCLI: commit $COMMIT_REF"
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Install Keboola as Code CLI
+        uses: ./.github/actions/install
+        with:
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push to Keboola Connection
+        run: |
+          kbc push "#KeboolaCLI: commit $COMMIT_REF"

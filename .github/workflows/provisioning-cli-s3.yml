@@ -11,15 +11,15 @@ on:
   # Run tests in a PR to the main branch.
   pull_request:
     paths:
-    - provisioning/cli-dist/**
+      - provisioning/cli-dist/**
     branches:
-    - main
+      - main
   # Run tests and deploy on merge to the main branch.
   push:
     paths:
-    - provisioning/cli-dist/**
+      - provisioning/cli-dist/**
     branches:
-    - main
+      - main
 
 env:
   TF_VERSION: 1.1.4
@@ -36,95 +36,95 @@ jobs:
       id-token: write
       contents: read
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::813746015128:role/kbc-github-actions-admin-role
-        aws-region: eu-central-1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::813746015128:role/kbc-github-actions-admin-role
+          aws-region: eu-central-1
 
-    - name: Terraform Init
-      run: terraform init -backend-config=backend_testing.conf -input=false -lock-timeout=5m
+      - name: Terraform Init
+        run: terraform init -backend-config=backend_testing.conf -input=false -lock-timeout=5m
 
-    - name: Terraform Validate
-      id: validate
-      run: terraform validate
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
 
-    - name: Terraform Plan
-      run: terraform plan -var-file="testing.tfvars" -input=false -lock-timeout=5m
+      - name: Terraform Plan
+        run: terraform plan -var-file="testing.tfvars" -input=false -lock-timeout=5m
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve -var-file="testing.tfvars" -input=false -lock-timeout=5m
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file="testing.tfvars" -input=false -lock-timeout=5m
 
   production-plan:
     name: 'Try Plan for Production'
     needs:
-    - testing-deploy
+      - testing-deploy
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-read-only-role
-        aws-region: eu-central-1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-read-only-role
+          aws-region: eu-central-1
 
-    - name: Terraform Init
-      run: terraform init -backend-config=backend_production.conf -input=false -lock-timeout=5m
+      - name: Terraform Init
+        run: terraform init -backend-config=backend_production.conf -input=false -lock-timeout=5m
 
-    - name: Terraform Plan
-      run: terraform plan -input=false -var-file="production.tfvars" -lock-timeout=5m
+      - name: Terraform Plan
+        run: terraform plan -input=false -var-file="production.tfvars" -lock-timeout=5m
 
   production-deploy:
     name: 'Deploy to Production'
     needs:
-    - production-plan
+      - production-plan
     runs-on: ubuntu-latest
     if: inputs.deploy || github.ref == 'refs/heads/main'
     permissions:
       id-token: write
       contents: read
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
-        aws-region: eu-central-1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          aws-region: eu-central-1
 
-    - name: Terraform Init
-      run: terraform init -backend-config=backend_production.conf -input=false
+      - name: Terraform Init
+        run: terraform init -backend-config=backend_production.conf -input=false
 
-    - name: Terraform Validate
-      id: validate
-      run: terraform validate
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
 
-    - name: Terraform Plan
-      run: terraform plan -input=false -var-file="production.tfvars"
+      - name: Terraform Plan
+        run: terraform plan -input=false -var-file="production.tfvars"
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve -var-file="production.tfvars" -input=false
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file="production.tfvars" -input=false

@@ -1,26 +1,26 @@
 ---
 version: 2
 sources:
-- name: in.c-test
-  freshness:
-    warn_after:
-      count: 1
-      period: day
-  database: '{{ env_var("DBT_KBC_TARGET1_DATABASE") }}'
-  schema: in.c-test
-  loaded_at_field: '"_timestamp"'
-  tables:
-  - name: products
-    quoting:
-      database: true
-      schema: true
-      identifier: true
-    columns:
-    - name: '"id"'
-      tests:
-      - unique
-      - not_null
-    - name: '"idCategory"'
-      tests:
-      - unique
-      - not_null
+  - name: in.c-test
+    freshness:
+      warn_after:
+        count: 1
+        period: day
+    database: '{{ env_var("DBT_KBC_TARGET1_DATABASE") }}'
+    schema: in.c-test
+    loaded_at_field: '"_timestamp"'
+    tables:
+      - name: products
+        quoting:
+          database: true
+          schema: true
+          identifier: true
+        columns:
+          - name: '"id"'
+            tests:
+              - unique
+              - not_null
+          - name: '"idCategory"'
+            tests:
+              - unique
+              - not_null

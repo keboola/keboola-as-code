@@ -8,42 +8,42 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - id: prepare
-    run: |
-      mkdir "${{ runner.temp }}/kbc"
-    shell: bash
-  # Download the latest release asset
-  - id: kbc_download_latest_release
-    run: |
-      # Get latest release info
-      API_URL="https://api.github.com/repos/keboola/keboola-as-code/releases/latest"
-      RELEASE_DATA=$(curl -s -H "Authorization: token ${{ inputs.githubToken }}" "$API_URL")
+    - id: prepare
+      run: |
+        mkdir "${{ runner.temp }}/kbc"
+      shell: bash
+    # Download the latest release asset
+    - id: kbc_download_latest_release
+      run: |
+        # Get latest release info
+        API_URL="https://api.github.com/repos/keboola/keboola-as-code/releases/latest"
+        RELEASE_DATA=$(curl -s -H "Authorization: token ${{ inputs.githubToken }}" "$API_URL")
 
-      # Extract tag name and version
-      TAG=$(echo "$RELEASE_DATA" | grep '"tag_name":' | cut -d '"' -f 4)
-      VERSION=${TAG#v}
+        # Extract tag name and version
+        TAG=$(echo "$RELEASE_DATA" | grep '"tag_name":' | cut -d '"' -f 4)
+        VERSION=${TAG#v}
 
-      # Download the asset
-      DOWNLOAD_URL="https://github.com/keboola/keboola-as-code/releases/download/$TAG/keboola-cli_${VERSION}_linux_amd64.zip"
-      curl -L -o "${{ runner.temp }}/kbc/keboola-cli_${VERSION}_linux_amd64.zip" \
-        -H "Authorization: token ${{ inputs.githubToken }}" "$DOWNLOAD_URL"
+        # Download the asset
+        DOWNLOAD_URL="https://github.com/keboola/keboola-as-code/releases/download/$TAG/keboola-cli_${VERSION}_linux_amd64.zip"
+        curl -L -o "${{ runner.temp }}/kbc/keboola-cli_${VERSION}_linux_amd64.zip" \
+          -H "Authorization: token ${{ inputs.githubToken }}" "$DOWNLOAD_URL"
 
-      # Set output
-      echo "tag_name=$TAG" >> $GITHUB_OUTPUT
-    shell: bash
-  # Extract binary
-  - id: kbc_extract_release
-    run: |
-      latest_tag=${{ steps.kbc_download_latest_release.outputs.tag_name }}
-      latest_version=${latest_tag:1}
-      release_zip="${{ runner.temp }}/kbc/keboola-cli_${latest_version}_linux_amd64.zip"
-      if [ ! -f "$release_zip" ]; then
-        echo "Could not download keboola-cli_${latest_version}_linux_amd64.zip from the latest release."
-        exit 1
-      fi
-      release_bin="/usr/local/bin/kbc"
-      unzip "$release_zip" -d /usr/local/bin
-      chmod +x "$release_bin"
-      echo "Keboola as Code CLI installed: $release_bin"
-      kbc --version
-    shell: bash
+        # Set output
+        echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+      shell: bash
+    # Extract binary
+    - id: kbc_extract_release
+      run: |
+        latest_tag=${{ steps.kbc_download_latest_release.outputs.tag_name }}
+        latest_version=${latest_tag:1}
+        release_zip="${{ runner.temp }}/kbc/keboola-cli_${latest_version}_linux_amd64.zip"
+        if [ ! -f "$release_zip" ]; then
+          echo "Could not download keboola-cli_${latest_version}_linux_amd64.zip from the latest release."
+          exit 1
+        fi
+        release_bin="/usr/local/bin/kbc"
+        unzip "$release_zip" -d /usr/local/bin
+        chmod +x "$release_bin"
+        echo "Keboola as Code CLI installed: $release_bin"
+        kbc --version
+      shell: bash

@@ -4,32 +4,32 @@ services:
   deb:
     image: keboolabot/keboola-as-code-deb-tools
     build:
-    context: ./deb
-    dockerfile: ./deb/Dockerfile
+      context: ./deb
+      dockerfile: ./deb/Dockerfile
     volumes:
-    - $PACKAGES_DIR:/packages
+      - $PACKAGES_DIR:/packages
     environment:
-    - DEB_KEY_PUBLIC
-    - DEB_KEY_PRIVATE
+      - DEB_KEY_PUBLIC
+      - DEB_KEY_PRIVATE
 
   rpm:
     image: keboolabot/keboola-as-code-rpm-tools
     build:
-    context: ./rpm
-    dockerfile: ./rpm/Dockerfile
+      context: ./rpm
+      dockerfile: ./rpm/Dockerfile
     volumes:
-    - $PACKAGES_DIR:/packages
+      - $PACKAGES_DIR:/packages
     environment:
-    - RPM_KEY_PUBLIC
-    - RPM_KEY_PRIVATE
+      - RPM_KEY_PUBLIC
+      - RPM_KEY_PRIVATE
 
   apk:
     image: keboolabot/keboola-as-code-apk-tools
     build:
-    context: ./apk
-    dockerfile: ./apk/Dockerfile
+      context: ./apk
+      dockerfile: ./apk/Dockerfile
     volumes:
-    - $PACKAGES_DIR:/packages
+      - $PACKAGES_DIR:/packages
     environment:
-    - APK_KEY_PUBLIC
-    - APK_KEY_PRIVATE
+      - APK_KEY_PUBLIC
+      - APK_KEY_PRIVATE

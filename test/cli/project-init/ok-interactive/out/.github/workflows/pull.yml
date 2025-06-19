@@ -2,7 +2,7 @@
 name: Automatic pull
 on:
   schedule:
-  - cron: '0 * * * *'
+    - cron: '0 * * * *'
 permissions:
   contents: write
 env:
@@ -15,28 +15,28 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
-    - name: Check out repository code
-      uses: actions/checkout@v4
-    - name: Install Keboola as Code CLI
-      uses: ./.github/actions/install
-      with:
-        githubToken: ${{ secrets.GITHUB_TOKEN }}
-    # Pull remote project's state
-    - name: Pull from Keboola Connection
-      id: kbc_pull_step
-      run: |
-        set -eo pipefail
-        kbc pull --force 2>&1 | tee "$RUNNER_TEMP/log.txt"
-    # Automatic pull can be canceled by push, wait a while
-    - name: Wait
-      run: sleep 20
-    # Commit message contains date and output of the pull command
-    - name: Commit and push
-      run: |
-        currentDate=`date +%%Y-%%m-%%d:%%T%%Z`
-        pull_log=`cat "$RUNNER_TEMP/log.txt"`
-        git config --global user.name 'Keboola CLI'
-        git config --global user.email 'keboola-cli@users.noreply.github.com'
-        git add -A
-        git commit -a -m "Automatic pull $currentDate" -m "$pull_log" || true
-        git push
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Install Keboola as Code CLI
+        uses: ./.github/actions/install
+        with:
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+      # Pull remote project's state
+      - name: Pull from Keboola Connection
+        id: kbc_pull_step
+        run: |
+          set -eo pipefail
+          kbc pull --force 2>&1 | tee "$RUNNER_TEMP/log.txt"
+      # Automatic pull can be canceled by push, wait a while
+      - name: Wait
+        run: sleep 20
+      # Commit message contains date and output of the pull command
+      - name: Commit and push
+        run: |
+          currentDate=`date +%Y-%m-%d:%T%Z`
+          pull_log=`cat "$RUNNER_TEMP/log.txt"`
+          git config --global user.name 'Keboola CLI'
+          git config --global user.email 'keboola-cli@users.noreply.github.com'
+          git add -A
+          git commit -a -m "Automatic pull $currentDate" -m "$pull_log" || true
+          git push

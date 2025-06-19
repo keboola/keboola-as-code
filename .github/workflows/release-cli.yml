@@ -4,7 +4,7 @@ name: "Release: CLI"
 on:
   push:
     tags:
-    - "v**"
+      - "v**"
 
 env:
   TAG: ${{ github.ref_name }}
@@ -36,16 +36,16 @@ jobs:
     outputs:
       VERSION: ${{ steps.version.outputs.VERSION }}
     steps:
-    - name: Set version
-      id: version
-      run: |
-        VERSION=$(echo "${{ github.ref_name }}" | sed -n -E 's:^v?([0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?)$:\1:p')
-        if [ -z "$VERSION" ]; then
-          echo "expected a semantic tag, found \"$TAG\""
-          exit 1
-        fi
-        echo "VERSION=$VERSION" >> $GITHUB_ENV
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      - name: Set version
+        id: version
+        run: |
+          VERSION=$(echo "${{ github.ref_name }}" | sed -n -E 's:^v?([0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?)$:\1:p')
+          if [ -z "$VERSION" ]; then
+            echo "expected a semantic tag, found \"$TAG\""
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
   test-lint:
     name: "Lint"
@@ -63,7 +63,7 @@ jobs:
   test-e2e-cli:
     name: "E2E: CLI"
     needs:
-    - version
+      - version
     secrets: inherit
     uses: ./.github/workflows/test-e2e-cli.yml
     with:
@@ -79,11 +79,11 @@ jobs:
 
   release:
     needs:
-    - version
-    - test-lint
-    - test-unit
-    - test-e2e-cli
-    - provisioning-cli-s3
+      - version
+      - test-lint
+      - test-unit
+      - test-e2e-cli
+      - provisioning-cli-s3
     # only one parallel job allowed - used shared S3
     concurrency:
       group: release
@@ -95,49 +95,49 @@ jobs:
       contents: write
     runs-on: macos-latest
     steps:
-    - name: Check out the repo
-      uses: actions/checkout@v4
+      - name: Check out the repo
+        uses: actions/checkout@v4
 
-    - name: Setup Go, tools and caching
-      uses: ./.github/actions/go-setup
-      with:
-        build-type: cli-release
-        cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
+      - name: Setup Go, tools and caching
+        uses: ./.github/actions/go-setup
+        with:
+          build-type: cli-release
+          cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
-    - name: Import Code-Signing Certificates
-      uses: Apple-Actions/import-codesign-certs@v5
-      with:
-        # The certificates in a PKCS12 file encoded as a base64 string
-        p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
-        # The password used to import the PKCS12 file.
-        p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+      - name: Import Code-Signing Certificates
+        uses: Apple-Actions/import-codesign-certs@v5
+        with:
+          # The certificates in a PKCS12 file encoded as a base64 string
+          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+          # The password used to import the PKCS12 file.
+          p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
 
-    - name: Write private keys
-      env:
-        DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
-        RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
-        APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
-      run: |
-        mkdir -p /tmp/keys
-        echo "$DEB_KEY_PRIVATE" > /tmp/keys/deb.key
-        chmod 0600 /tmp/keys/deb.key
-        echo "$RPM_KEY_PRIVATE" > /tmp/keys/rpm.key
-        chmod 0600 /tmp/keys/rpm.key
-        echo "$APK_KEY_PRIVATE" > /tmp/keys/apk.key
-        chmod 0600 /tmp/keys/apk.key
+      - name: Write private keys
+        env:
+          DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
+          RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
+          APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
+        run: |
+          mkdir -p /tmp/keys
+          echo "$DEB_KEY_PRIVATE" > /tmp/keys/deb.key
+          chmod 0600 /tmp/keys/deb.key
+          echo "$RPM_KEY_PRIVATE" > /tmp/keys/rpm.key
+          chmod 0600 /tmp/keys/rpm.key
+          echo "$APK_KEY_PRIVATE" > /tmp/keys/apk.key
+          chmod 0600 /tmp/keys/apk.key
 
-    - name: Release CLI
-      uses: ./.github/actions/release
-      with:
-        tag: ${{ env.TAG }}
-        version: ${{ env.VERSION }}
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        apple_account_password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+      - name: Release CLI
+        uses: ./.github/actions/release
+        with:
+          tag: ${{ env.TAG }}
+          version: ${{ env.VERSION }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          apple_account_password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
 
   push-to-s3-and-release:
     needs:
-    - version
-    - release
+      - version
+      - release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     permissions:
@@ -145,95 +145,95 @@ jobs:
       contents: write
     runs-on: macos-latest
     steps:
-    - name: Check out the repo
-      uses: actions/checkout@v4
+      - name: Check out the repo
+        uses: actions/checkout@v4
 
-    - name: Download targets
-      uses: actions/download-artifact@v4
-      with:
-        name: release-targets
+      - name: Download targets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-targets
 
-    - name: Configure AWS Credentials to CLI Assets Account
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS Credentials to CLI Assets Account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Upload artifacts to KAC Assets S3
-      shell: bash
-      env:
-        AWS_REGION: ${{ env.AWS_REGION }}
-        AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
-        AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
-      run: |
-        ls -al
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_checksums.txt" "keboola-cli_${{ env.VERSION }}_checksums.txt" "keboola-cli" "${{ env.VERSION }}" "" ""
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.zip" "keboola-cli_${{ env.VERSION }}_linux_armv6.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.zip" "keboola-cli_${{ env.VERSION }}_linux_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.zip" "keboola-cli_${{ env.VERSION }}_linux_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_armv6.zip" "keboola-cli_${{ env.VERSION }}_windows_armv6.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "armv6"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "arm64"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "amd64"
-        ./build/package/s3/publish.sh "keboola-cli_darwin_amd64_v1/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "amd64"
-        ./build/package/s3/publish.sh "keboola-cli_darwin_arm64_v8.0/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "arm64"
-        # Publish packages
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.apk" "keboola-cli_${{ env.VERSION }}_linux_armv6.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.apk" "keboola-cli_${{ env.VERSION }}_linux_arm64.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.apk" "keboola-cli_${{ env.VERSION }}_linux_amd64.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.deb" "keboola-cli_${{ env.VERSION }}_linux_armv6.deb" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.deb" "keboola-cli_${{ env.VERSION }}_linux_arm64.deb" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.deb" "keboola-cli_${{ env.VERSION }}_linux_amd64.deb" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.rpm" "keboola-cli_${{ env.VERSION }}_linux_armv6.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.rpm" "keboola-cli_${{ env.VERSION }}_linux_arm64.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
-        ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.rpm" "keboola-cli_${{ env.VERSION }}_linux_amd64.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
-        ls -al
+      - name: Upload artifacts to KAC Assets S3
+        shell: bash
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+        run: |
+          ls -al
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_checksums.txt" "keboola-cli_${{ env.VERSION }}_checksums.txt" "keboola-cli" "${{ env.VERSION }}" "" ""
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.zip" "keboola-cli_${{ env.VERSION }}_linux_armv6.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.zip" "keboola-cli_${{ env.VERSION }}_linux_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.zip" "keboola-cli_${{ env.VERSION }}_linux_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_armv6.zip" "keboola-cli_${{ env.VERSION }}_windows_armv6.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_darwin_amd64_v1/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_darwin_arm64_v8.0/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "arm64"
+          # Publish packages
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.apk" "keboola-cli_${{ env.VERSION }}_linux_armv6.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.apk" "keboola-cli_${{ env.VERSION }}_linux_arm64.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.apk" "keboola-cli_${{ env.VERSION }}_linux_amd64.apk" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.deb" "keboola-cli_${{ env.VERSION }}_linux_armv6.deb" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.deb" "keboola-cli_${{ env.VERSION }}_linux_arm64.deb" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.deb" "keboola-cli_${{ env.VERSION }}_linux_amd64.deb" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.rpm" "keboola-cli_${{ env.VERSION }}_linux_armv6.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.rpm" "keboola-cli_${{ env.VERSION }}_linux_arm64.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
+          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.rpm" "keboola-cli_${{ env.VERSION }}_linux_amd64.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
+          ls -al
 
-    - name: Upload artifact to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/gh-release/*
-        tag: ${{ env.TAG }}
-        overwrite: true
-        file_glob: true
-        prerelease: true
+      - name: Upload artifact to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/gh-release/*
+          tag: ${{ env.TAG }}
+          overwrite: true
+          file_glob: true
+          prerelease: true
 
   test-expected-files:
     needs:
-    - version
-    - release
-    - push-to-s3-and-release
+      - version
+      - release
+      - push-to-s3-and-release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: ubuntu-latest
     steps:
-    - name: Check expected files exist
-      run: |
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_checksums.txt"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_darwin_amd64.zip"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_darwin_arm64.zip"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.apk"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.deb"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.rpm"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.zip"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.apk"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.deb"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.rpm"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.zip"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.apk"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.deb"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.rpm"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.zip"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_amd64.zip"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_arm64.zip"
-        curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_armv6.zip"
+      - name: Check expected files exist
+        run: |
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_checksums.txt"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_darwin_amd64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_darwin_arm64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.apk"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.deb"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.rpm"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_amd64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.apk"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.deb"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.rpm"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_arm64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.apk"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.deb"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.rpm"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_amd64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_arm64.zip"
+          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_armv6.zip"
 
   update-repositories-homebrew:
     needs:
-    - version
-    - release
+      - version
+      - release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: ubuntu-latest
@@ -241,55 +241,55 @@ jobs:
       id-token: write
       contents: read
     steps:
-    - name: Check out the repo
-      uses: actions/checkout@v4
+      - name: Check out the repo
+        uses: actions/checkout@v4
 
-    - name: Download Homebrew formulae
-      uses: actions/download-artifact@v4
-      with:
-        name: homebrew-formulae
+      - name: Download Homebrew formulae
+        uses: actions/download-artifact@v4
+        with:
+          name: homebrew-formulae
 
-    - name: Setup SSH key
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan github.com >> ~/.ssh/known_hosts
-        echo "${{ secrets.HOMEBREW_UPDATE_KEY }}" > ~/.ssh/github_rsa
-        chmod 600 ~/.ssh/github_rsa
-        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-        ssh-add ~/.ssh/github_rsa
+      - name: Setup SSH key
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          echo "${{ secrets.HOMEBREW_UPDATE_KEY }}" > ~/.ssh/github_rsa
+          chmod 600 ~/.ssh/github_rsa
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add ~/.ssh/github_rsa
 
-    - name: Clone Homebrew tap
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      run: |
-        git clone git@github.com:keboola/homebrew-keboola-cli homebrew
+      - name: Clone Homebrew tap
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          git clone git@github.com:keboola/homebrew-keboola-cli homebrew
 
-    - name: Update Homebrew tap
-      working-directory: homebrew
-      run: |
-        # Remove old formulae
-        find . -name '*.rb' -type f -exec rm {} \;
+      - name: Update Homebrew tap
+        working-directory: homebrew
+        run: |
+          # Remove old formulae
+          find . -name '*.rb' -type f -exec rm {} \;
 
-        # Add new formulae
-        cp ../Formula/* .
+          # Add new formulae
+          cp ../Formula/* .
 
-        # Commit and push changes
-        git add .
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-        else
-          git config user.name "Keboola As Code Bot"
-          git config user.email "noreply@keboola.com"
-          git commit -m "Release CLI v${{ env.VERSION }}"
-          git push origin main
-        fi
+          # Commit and push changes
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git config user.name "Keboola As Code Bot"
+            git config user.email "noreply@keboola.com"
+            git commit -m "Release CLI v${{ env.VERSION }}"
+            git push origin main
+          fi
 
   update-repositories-winget:
     needs:
-    - version
-    - release
+      - version
+      - release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: ubuntu-latest
@@ -297,72 +297,72 @@ jobs:
       id-token: write
       contents: read
     steps:
-    - name: Check out the repo
-      uses: actions/checkout@v4
+      - name: Check out the repo
+        uses: actions/checkout@v4
 
-    - name: Download WinGet manifests
-      uses: actions/download-artifact@v4
-      with:
-        name: winget-manifests
+      - name: Download WinGet manifests
+        uses: actions/download-artifact@v4
+        with:
+          name: winget-manifests
 
-    - name: Setup SSH key
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan github.com >> ~/.ssh/known_hosts
-        echo "${{ secrets.WINGET_UPDATE_KEY }}" > ~/.ssh/github_rsa
-        chmod 600 ~/.ssh/github_rsa
-        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-        ssh-add ~/.ssh/github_rsa
+      - name: Setup SSH key
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          echo "${{ secrets.WINGET_UPDATE_KEY }}" > ~/.ssh/github_rsa
+          chmod 600 ~/.ssh/github_rsa
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add ~/.ssh/github_rsa
 
-    - name: Clone WinGet repository fork
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      run: |
-        git clone git@github.com:${{ env.WINGET_PACKAGES_REPO_FORK }} winget
+      - name: Clone WinGet repository fork
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          git clone git@github.com:${{ env.WINGET_PACKAGES_REPO_FORK }} winget
 
-    - name: Create branch for new version
-      working-directory: winget
-      run: |
-        git config user.name "Keboola As Code Bot"
-        git config user.email "noreply@keboola.com"
-        git checkout -b keboola-cli-${{ env.VERSION }}
+      - name: Create branch for new version
+        working-directory: winget
+        run: |
+          git config user.name "Keboola As Code Bot"
+          git config user.email "noreply@keboola.com"
+          git checkout -b keboola-cli-${{ env.VERSION }}
 
-    - name: Update WinGet manifests
-      working-directory: winget
-      run: |
-        # Create directory for the new version
-        mkdir -p manifests/k/Keboola/KeboolaConnection/${{ env.VERSION }}/
+      - name: Update WinGet manifests
+        working-directory: winget
+        run: |
+          # Create directory for the new version
+          mkdir -p manifests/k/Keboola/KeboolaConnection/${{ env.VERSION }}/
 
-        # Copy manifests
-        cp ../manifests/Keboola.KeboolaConnection.*.yaml manifests/k/Keboola/KeboolaConnection/${{ env.VERSION }}/
+          # Copy manifests
+          cp ../manifests/Keboola.KeboolaConnection.*.yaml manifests/k/Keboola/KeboolaConnection/${{ env.VERSION }}/
 
-        # Commit changes
-        git add .
-        git commit -m "Add Keboola Connection v${{ env.VERSION }}"
+          # Commit changes
+          git add .
+          git commit -m "Add Keboola Connection v${{ env.VERSION }}"
 
-    - name: Push changes and create PR
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      working-directory: winget
-      run: |
-        git push -u origin keboola-cli-${{ env.VERSION }}
+      - name: Push changes and create PR
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        working-directory: winget
+        run: |
+          git push -u origin keboola-cli-${{ env.VERSION }}
 
-    - name: Create Pull Request
-      env:
-        GITHUB_TOKEN: ${{ secrets.WINGET_UPDATE_TOKEN }}
-      run: |
-        gh pr create \
-          --repo microsoft/winget-pkgs \
-          --head ${{ env.WINGET_PACKAGES_REPO_FORK }}:keboola-cli-${{ env.VERSION }} \
-          --title "Add Keboola Connection v${{ env.VERSION }}" \
-          --body "Automated PR to update Keboola Connection to version ${{ env.VERSION }}"
+      - name: Create Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_UPDATE_TOKEN }}
+        run: |
+          gh pr create \
+            --repo microsoft/winget-pkgs \
+            --head ${{ env.WINGET_PACKAGES_REPO_FORK }}:keboola-cli-${{ env.VERSION }} \
+            --title "Add Keboola Connection v${{ env.VERSION }}" \
+            --body "Automated PR to update Keboola Connection to version ${{ env.VERSION }}"
 
   update-repositories-arch:
     needs:
-    - version
-    - release
+      - version
+      - release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: ubuntu-latest
@@ -370,45 +370,45 @@ jobs:
       id-token: write
       contents: read
     steps:
-    - name: Check out the repo
-      uses: actions/checkout@v4
+      - name: Check out the repo
+        uses: actions/checkout@v4
 
-    - name: Download Arch PKGBUILDs
-      uses: actions/download-artifact@v4
-      with:
-        name: arch-pkgbuilds
+      - name: Download Arch PKGBUILDs
+        uses: actions/download-artifact@v4
+        with:
+          name: arch-pkgbuilds
 
-    - name: Setup SSH key
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
-        echo "${{ secrets.ARCH_UPDATE_KEY }}" > ~/.ssh/aur_rsa
-        chmod 600 ~/.ssh/aur_rsa
-        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-        ssh-add ~/.ssh/aur_rsa
+      - name: Setup SSH key
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+          echo "${{ secrets.ARCH_UPDATE_KEY }}" > ~/.ssh/aur_rsa
+          chmod 600 ~/.ssh/aur_rsa
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add ~/.ssh/aur_rsa
 
-    - name: Clone AUR package
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      run: |
-        git clone ssh://aur@aur.archlinux.org/keboola-cli.git aur
+      - name: Clone AUR package
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          git clone ssh://aur@aur.archlinux.org/keboola-cli.git aur
 
-    - name: Update AUR package
-      working-directory: aur
-      run: |
-        # Copy new PKGBUILD
-        cp ../PKGBUILD .
-        cp ../.SRCINFO .
+      - name: Update AUR package
+        working-directory: aur
+        run: |
+          # Copy new PKGBUILD
+          cp ../PKGBUILD .
+          cp ../.SRCINFO .
 
-        # Commit and push changes
-        git config user.name "Keboola As Code Bot"
-        git config user.email "noreply@keboola.com"
-        git add .
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "Update to v${{ env.VERSION }}"
-          git push origin master
-        fi
+          # Commit and push changes
+          git config user.name "Keboola As Code Bot"
+          git config user.email "noreply@keboola.com"
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update to v${{ env.VERSION }}"
+            git push origin master
+          fi
