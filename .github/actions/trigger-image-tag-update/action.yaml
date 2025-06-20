@@ -1,3 +1,4 @@
+---
 name: Trigger image tag update
 description: 'Trigger image tag update workflow'
 inputs:
@@ -23,7 +24,6 @@ inputs:
     description: 'The "Keboola - kbc-stacks trigger" GitHub App private key'
     required: true
 
-
 runs:
   using: 'composite'
   steps:
@@ -35,6 +35,7 @@ runs:
         private-key: ${{ inputs.github-app-private-key }}
         owner: ${{ github.repository_owner }}
         repositories: "kbc-stacks"
+
     - name: Trigger image tag update
       shell: bash
       env:
@@ -61,11 +62,11 @@ runs:
         ENCODED_METADATA=$(echo "$METADATA" | base64 -w 0)
 
         gh workflow run update-image-tag.yaml \
-        -R keboola/kbc-stacks \
-        -r main \
-        -f helm-chart=${{ inputs.helm-chart }} \
-        -f image-tag=${{ inputs.image-tag }} \
-        -f automerge=${{ inputs.automerge }} \
-        -f dry-run=${{ inputs.dry-run }} \
-        -f commit-sha=${{ inputs.commit-sha }} \
-        -f metadata="$ENCODED_METADATA"
+          -R keboola/kbc-stacks \
+          -r main \
+          -f helm-chart=${{ inputs.helm-chart }} \
+          -f image-tag=${{ inputs.image-tag }} \
+          -f automerge=${{ inputs.automerge }} \
+          -f dry-run=${{ inputs.dry-run }} \
+          -f commit-sha=${{ inputs.commit-sha }} \
+          -f metadata="$ENCODED_METADATA"

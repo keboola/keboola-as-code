@@ -1,4 +1,5 @@
-name: 'Release: Apps Proxy'
+---
+name: "Release: Apps Proxy"
 
 on:
   push:
@@ -30,6 +31,7 @@ jobs:
     name: "Lint"
     secrets: inherit
     uses: ./.github/workflows/test-lint.yml
+
   test-unit:
     name: "Unit Tests"
     secrets: inherit
@@ -37,10 +39,12 @@ jobs:
     with:
       without-cache: true
       package-exception-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/cli"
+
   test-k8s-service-apps-proxy:
-    name: "K8S: Apps Proxy"
+    name: "K8s: Apps Proxy"
     secrets: inherit
     uses: ./.github/workflows/test-k8s-service-apps-proxy.yml
+
   build-and-push-proxy-image:
     name: "Build & Push Proxy Image"
     runs-on: ubuntu-latest

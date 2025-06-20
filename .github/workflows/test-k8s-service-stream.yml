@@ -1,4 +1,5 @@
-name: 'K8S: Stream Service'
+---
+name: 'K8S: Stream'
 
 on:
   # This workflow is also part of the release pipeline,
@@ -131,9 +132,9 @@ jobs:
         run: |
           set -Eeuo pipefail
           kubectl create namespace datadog || true
-          
+
           for APP_WITH_METRICS_PORT in "stream-api:9000" "stream-http-source:9000" "stream-storage-writer-reader:9001" "stream-storage-writer-reader:9002" "stream-storage-coordinator:9000"
-          do 
+          do
             IFS=: read -r APP METRICS_PORT <<< "$APP_WITH_METRICS_PORT"
             echo "---------------------------------"
             echo "Checking $APP:$METRICS_PORT"
@@ -145,7 +146,7 @@ jobs:
             --labels="app=datadog-agent" \
             --env="POD_IP=$POD_IP" \
             --env="METRICS_PORT=$METRICS_PORT" \
-            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"
+            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 \"$POD_IP:$METRICS_PORT/metrics\" | tail"
             echo "---------------------------------"
           done
 
@@ -153,7 +154,7 @@ jobs:
         if: always()
         run: |
           set -Eeuo pipefail
-          
+
           for APP_WITH_METRICS_PORT in "stream-api:9000" "stream-http-source:9000" "stream-storage-writer-reader:9001" "stream-storage-writer-reader:9002" "stream-storage-coordinator:9000"
           do
             IFS=: read -r APP METRICS_PORT <<< "$APP_WITH_METRICS_PORT"
@@ -165,7 +166,7 @@ jobs:
               --image docker.io/alpine/curl \
               --env="POD_IP=$POD_IP" \
               --env="METRICS_PORT=$METRICS_PORT" \
-              --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"; then
+              --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 \"$POD_IP:$METRICS_PORT/metrics\" | tail"; then
               echo "The command did not fail, but it should have."
               exit 1
             else

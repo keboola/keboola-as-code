@@ -1,3 +1,4 @@
+---
 name: 'Push image to Amazon ECR, Azure ACR and GCP GAR'
 description: 'Push image to Amazon ECR, Azure ACR and GCP GAR'
 inputs:
@@ -59,8 +60,8 @@ runs:
         docker tag ${{ inputs.imageName }}:${{ inputs.imageTag }} ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepository }}:${{ inputs.imageTag }}
         docker push ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepository }}:${{ inputs.imageTag }}
 
-    - id: 'gcpAuth'
-      name: Authenticate to GCP
+    - name: Authenticate to GCP
+      id: 'gcpAuth'
       uses: google-github-actions/auth@v2
       with:
         token_format: access_token
@@ -93,4 +94,3 @@ runs:
       run: |
         docker tag ${{ inputs.imageName }}:${{ inputs.imageTag }} ${{ inputs.acrRegistry }}/${{ inputs.acrRepository }}:${{ inputs.imageTag }}
         docker push ${{ inputs.acrRegistry }}/${{ inputs.acrRepository }}:${{ inputs.imageTag }}
-

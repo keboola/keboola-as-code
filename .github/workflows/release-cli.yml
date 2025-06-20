@@ -1,3 +1,4 @@
+---
 name: "Release: CLI"
 
 on:
@@ -160,6 +161,12 @@ jobs:
 
       - name: Upload artifacts to KAC Assets S3
         shell: bash
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
         run: |
           ls -al
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_checksums.txt" "keboola-cli_${{ env.VERSION }}_checksums.txt" "keboola-cli" "${{ env.VERSION }}" "" ""
@@ -182,12 +189,6 @@ jobs:
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.rpm" "keboola-cli_${{ env.VERSION }}_linux_arm64.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.rpm" "keboola-cli_${{ env.VERSION }}_linux_amd64.rpm" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
           ls -al
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
-          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
 
       - name: Upload artifact to release
         uses: svenstaro/upload-release-action@v2
@@ -367,12 +368,12 @@ jobs:
       - name: Install GitHub "hub" CLI
         uses: geertvdc/setup-hub@master
         env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true' # allow add-path
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'  # allow add-path
 
       - name: Install Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu' # See 'Supported distributions' for available options
+          distribution: 'zulu'  # See 'Supported distributions' for available options
           java-version: '21'
 
       - name: Download zipped exe
@@ -404,15 +405,15 @@ jobs:
           -H "Content-Type: application/x-www-form-urlencoded" \
           -H "Accept: application/json" \
           -d "grant_type=client_credentials&client_id=${{ secrets.WINDOWS_SIGNING_CLIENT_ID }}&client_secret=${{ secrets.WINDOWS_SIGNING_CLIENT_SECRET }}&scope=https://vault.azure.net/.default")
-          
+
           ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
-          
+
           if [[ -z "$ACCESS_TOKEN" ]]; then
           echo "Failed to fetch access token"
           echo "Response: $RESPONSE"
           exit 1
           fi
-          
+
           echo "WINDOWS_SIGNING_ACCESS_TOKEN=${ACCESS_TOKEN}" >> $GITHUB_ENV
 
       - name: Download jsign

@@ -1,3 +1,4 @@
+---
 name: Keboola as Code Install
 description: Install Keboola as Code CLI
 inputs:
@@ -17,16 +18,16 @@ runs:
         # Get latest release info
         API_URL="https://api.github.com/repos/keboola/keboola-as-code/releases/latest"
         RELEASE_DATA=$(curl -s -H "Authorization: token ${{ inputs.githubToken }}" "$API_URL")
-        
+
         # Extract tag name and version
         TAG=$(echo "$RELEASE_DATA" | grep '"tag_name":' | cut -d '"' -f 4)
         VERSION=${TAG#v}
-        
+
         # Download the asset
         DOWNLOAD_URL="https://github.com/keboola/keboola-as-code/releases/download/$TAG/keboola-cli_${VERSION}_linux_amd64.zip"
         curl -L -o "${{ runner.temp }}/kbc/keboola-cli_${VERSION}_linux_amd64.zip" \
           -H "Authorization: token ${{ inputs.githubToken }}" "$DOWNLOAD_URL"
-        
+
         # Set output
         echo "tag_name=$TAG" >> $GITHUB_OUTPUT
       shell: bash

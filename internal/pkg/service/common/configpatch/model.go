@@ -64,8 +64,8 @@ func (v PatchKVs) With(slices ...PatchKVs) (out PatchKVs) {
 func (v PatchKVs) In(prefix string) (out PatchKVs) {
 	prefix = strings.TrimSuffix(prefix, ".") + "."
 	for _, item := range v {
-		if strings.HasPrefix(item.KeyPath, prefix) {
-			item.KeyPath = strings.TrimPrefix(item.KeyPath, prefix)
+		if after, ok := strings.CutPrefix(item.KeyPath, prefix); ok {
+			item.KeyPath = after
 			out = append(out, item)
 		}
 	}

@@ -1,4 +1,5 @@
-name: "E2E: Templates"
+---
+name: "E2E Tests: Templates"
 
 on:
   workflow_call:
@@ -15,7 +16,7 @@ env:
 # Required for aws-actions/configure-aws-credentials using OIDC, assume role
 permissions:
   id-token: write
-  contents: read 
+  contents: read
 
 jobs:
   test:

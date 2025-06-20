@@ -38,8 +38,8 @@ func (s *service) startTask(ctx context.Context, cfg taskConfig) (task.Task, err
 
 	objectKey := cfg.ObjectKey.String()
 	projectIDPrefix := cfg.ProjectID.String() + "/"
-	if strings.HasPrefix(objectKey, projectIDPrefix) {
-		objectKey = strings.TrimPrefix(objectKey, projectIDPrefix)
+	if after, ok := strings.CutPrefix(objectKey, projectIDPrefix); ok {
+		objectKey = after
 	} else {
 		return task.Task{}, errors.Errorf(`object key must start with the project ID "%s", found: "%s"`, projectIDPrefix, objectKey)
 	}

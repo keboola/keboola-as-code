@@ -69,12 +69,12 @@ func (v *wrapper) registerCustomRules() {
 			Tag: "templateicon",
 			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
 				value := fl.Field().String()
-				if strings.HasPrefix(value, "component:") {
-					value = strings.TrimPrefix(value, "component:")
+				if after, ok := strings.CutPrefix(value, "component:"); ok {
+					value = after
 					return len(value) > 0
 				}
-				if strings.HasPrefix(value, "common:") {
-					value = strings.TrimPrefix(value, "common:")
+				if after, ok := strings.CutPrefix(value, "common:"); ok {
+					value = after
 					return allowedTemplateIcons[value]
 				}
 				return false

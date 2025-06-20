@@ -1,3 +1,4 @@
+---
 # Configuration file for Redocly OpenAPI validator
 # Used for CI/CD validation of OpenAPI definitions for Templates and Stream services
 
@@ -9,28 +10,28 @@ extends: [recommended]
 # Modified rules
 rules:
   # Ignores unused components in the definition - it's common to have components prepared for future use
-  no-unused-components: off
-  
+  no-unused-components: false
+
   # Excludes specified paths from security validation (like documentation endpoints)
   security-defined:
-      severity: error
-      exceptions:
-        - path: /
-          methods: [get]
-        - path: /v1
-          methods: [get]
-        - path: /v1/documentation/openapi.json
-          methods: [get]
-        - path: /v1/documentation/openapi.yaml
-          methods: [get]
-        - path: /v1/documentation/openapi3.json
-          methods: [get]
-        - path: /v1/documentation/openapi3.yaml
-          methods: [get]
-  
+    severity: error
+    exceptions:
+      - path: /
+        methods: [get]
+      - path: /v1
+        methods: [get]
+      - path: /v1/documentation/openapi.json
+        methods: [get]
+      - path: /v1/documentation/openapi.yaml
+        methods: [get]
+      - path: /v1/documentation/openapi3.json
+        methods: [get]
+      - path: /v1/documentation/openapi3.yaml
+        methods: [get]
+
   # Disabling rules for mandatory HTTP responses - some endpoints may not return standard HTTP codes
-  operation-2xx-response: off
-  operation-4xx-response: off
-  
+  operation-2xx-response: false
+  operation-4xx-response: false
+
   # Allow localhost and example.com in server URLs - needed for development environments
-  no-server-example.com: off
+  no-server-example.com: false
