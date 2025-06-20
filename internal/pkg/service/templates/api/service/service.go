@@ -12,12 +12,14 @@ import (
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cast"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -366,6 +368,9 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 }
 
 func (s *service) InstancesIndex(ctx context.Context, d dependencies.ProjectRequestScope, payload *InstancesIndexPayload) (res *Instances, err error) {
+	_, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.service.InstancesIndex")
+	defer span.End(&err)
+
 	branchKey, err := getBranch(ctx, d, payload.Branch)
 	if err != nil {
 		return nil, err
@@ -381,8 +386,12 @@ func (s *service) InstancesIndex(ctx context.Context, d dependencies.ProjectRequ
 	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.ID))})
 	prj := project.NewWithManifest(ctx, fs, m)
 
+	ctx = ctxattr.ContextWith(ctx,
+		attribute.String("branch.id", branchKey.ID.String()),
+		attribute.String("project.id", d.ProjectID().String()),
+	)
 	// Load project state
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
+	prjState, err := prj.LoadState(ctx, loadState.Options{LoadRemoteState: true}, d)
 	if err != nil {
 		return nil, err
 	}
