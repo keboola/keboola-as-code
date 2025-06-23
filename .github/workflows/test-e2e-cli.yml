@@ -69,14 +69,14 @@ jobs:
         run: |
           set -eo pipefail
 
-          if ["$RUNNER_OS" == "Windows"]; then
+          if [ "$RUNNER_OS" == "Windows" ]; then
             export TEST_BINARY_CLI="${{ runner.temp }}\test-build-cli.exe"
           else
             export TEST_BINARY_CLI="${{ runner.temp }}/test-build-cli"
           fi
 
           # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229# issuecomment-1988965927)
-          if ["$RUNNER_OS" == "macOS"]; then
+          if [ "$RUNNER_OS" == "macOS" ]; then
             export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
           fi
 

@@ -115,12 +115,12 @@ jobs:
           UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
         run: |
           # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229# issuecomment-1988965927)
-          if ["$RUNNER_OS" == "macOS"]; then
+          if [ "$RUNNER_OS" == "macOS" ]; then
             export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
           fi
 
           # Prevent testing unnecessary code for particular release
-          if [-n "${{ inputs.package-exception-regex }}"]; then
+          if [ -n "${{ inputs.package-exception-regex }}" ]; then
             export TEST_EXCEPT="$(go list ./internal/pkg/... | grep -vE '${{ inputs.package-exception-regex }}')"
           fi
 
