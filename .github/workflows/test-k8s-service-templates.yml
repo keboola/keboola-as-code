@@ -1,4 +1,5 @@
-name: 'K8S: Templates API'
+---
+name: 'K8S: Templates'
 
 on:
   # This workflow is also part of the release pipeline,

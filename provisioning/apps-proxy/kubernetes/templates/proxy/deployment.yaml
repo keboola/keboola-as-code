@@ -39,91 +39,91 @@ spec:
           }
     spec:
       containers:
-        - name: apps-proxy
-          image: $APPS_PROXY_REPOSITORY:$APPS_PROXY_IMAGE_TAG
-          resources:
-            requests:
-              cpu: "50m"
-              memory: "100Mi"
-            limits:
-              memory: "130Mi"
-          ports:
-            - containerPort: 8000 # Proxy
-            - containerPort: 9000 # metrics
-          env:
-            # 80% of the resources.limits.memory
-            - name: GOMEMLIMIT
-              value: "104MiB"
-            - name: APPS_PROXY_SANDBOXES_API_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: apps-proxy
-                  key: sandboxesApiHost
-            - name: APPS_PROXY_SANDBOXES_API_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: apps-proxy-token
-                  key: sandboxesApiToken
-            - name: APPS_PROXY_API_PUBLIC_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: apps-proxy
-                  key: appsProxyApiHost
-            - name: APPS_PROXY_COOKIE_SECRET_SALT
-              valueFrom:
-                secretKeyRef:
-                  name: apps-proxy-salt
-                  key: cookieSecretSalt
-            - name: APPS_PROXY_CSRF_TOKEN_SALT
-              valueFrom:
-                secretKeyRef:
-                  name: apps-proxy-csrf-token-salt
-                  key: csrfTokenSalt
-            - name: DD_AGENT_HOST
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: DD_ENV
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['tags.datadoghq.com/env']
-            - name: DD_SERVICE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['tags.datadoghq.com/service']
-            - name: DD_VERSION
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['tags.datadoghq.com/version']
-            - name: OTEL_METRICS_EXEMPLAR_FILTER
-              value: always_off
-          startupProbe:
-            httpGet:
-              path: /health-check
-              port: 8000
-              httpHeaders:
-                - name: Host
-                  value: KubernetesStartupProbe
-            initialDelaySeconds: 10
-            periodSeconds: 1
-            failureThreshold: 30
-          readinessProbe:
-            httpGet:
-              path: /health-check
-              port: 8000
-              httpHeaders:
-                - name: Host
-                  value: KubernetesReadinessProbe
-            periodSeconds: 10
-            failureThreshold: 1
-          livenessProbe:
-            httpGet:
-              path: /health-check
-              port: 8000
-              httpHeaders:
-                - name: Host
-                  value: KubernetesLivenessProbe
-            periodSeconds: 10
-            failureThreshold: 3
+      - name: apps-proxy
+        image: $APPS_PROXY_REPOSITORY:$APPS_PROXY_IMAGE_TAG
+        ports:
+        - containerPort: 8000 # Proxy
+        - containerPort: 9000 # metrics
+        env:
+        # 80% of the resources.limits.memory
+        - name: GOMEMLIMIT
+          value: "104MiB"
+        - name: APPS_PROXY_SANDBOXES_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: apps-proxy
+              key: sandboxesApiHost
+        - name: APPS_PROXY_SANDBOXES_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: apps-proxy-token
+              key: sandboxesApiToken
+        - name: APPS_PROXY_API_PUBLIC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: apps-proxy
+              key: appsProxyApiHost
+        - name: APPS_PROXY_COOKIE_SECRET_SALT
+          valueFrom:
+            secretKeyRef:
+              name: apps-proxy-salt
+              key: cookieSecretSalt
+        - name: APPS_PROXY_CSRF_TOKEN_SALT
+          valueFrom:
+            secretKeyRef:
+              name: apps-proxy-csrf-token-salt
+              key: csrfTokenSalt
+        - name: DD_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+        - name: OTEL_METRICS_EXEMPLAR_FILTER
+          value: always_off
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "100Mi"
+          limits:
+            memory: "130Mi"
+        startupProbe:
+          httpGet:
+            path: /health-check
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: KubernetesStartupProbe
+          initialDelaySeconds: 10
+          periodSeconds: 1
+          failureThreshold: 30
+        readinessProbe:
+          httpGet:
+            path: /health-check
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: KubernetesReadinessProbe
+          periodSeconds: 10
+          failureThreshold: 1
+        livenessProbe:
+          httpGet:
+            path: /health-check
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: KubernetesLivenessProbe
+          periodSeconds: 10
+          failureThreshold: 3
       nodeSelector:
         nodepool: main

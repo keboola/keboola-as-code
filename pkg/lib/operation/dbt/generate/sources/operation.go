@@ -3,6 +3,7 @@ package sources
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"gopkg.in/yaml.v3"
@@ -56,12 +57,24 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	for _, bucket := range o.Buckets {
 		sourcesDef := generateSourcesDefinition(bucket)
 
-		yamlEnc, err := yaml.Marshal(&sourcesDef)
-		if err != nil {
+		// Use custom YAML encoder with 2-space indentation
+		var yamlEnc []byte
+		var buf strings.Builder
+		encoder := yaml.NewEncoder(&buf)
+		encoder.SetIndent(2) // Set 2-space indentation
+		if err := encoder.Encode(&sourcesDef); err != nil {
 			return err
 		}
+		if err := encoder.Close(); err != nil {
+			return err
+		}
+		yamlEnc = []byte(buf.String())
 
-		err = fs.WriteFile(ctx, filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucket.SourceName), string(yamlEnc)))
+		// Add document separator and ensure single newline at end
+		content := "---\n" + strings.TrimSpace(string(yamlEnc)) + "\n"
+
+		// Write the file
+		err = fs.WriteFile(ctx, filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucket.SourceName), content))
 		if err != nil {
 			return err
 		}

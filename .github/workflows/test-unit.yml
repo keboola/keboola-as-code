@@ -1,3 +1,4 @@
+---
 name: "Unit Tests"
 
 on:
@@ -62,13 +63,13 @@ jobs:
       # To free up disk space to not run out during the run
       - name: Delete unused SDKs MacOS
         if: matrix.name == 'mac-os'
+        continue-on-error: true
         run: |
           echo "BEFORE CLEAN-UP:"
           df -hI /dev/disk3s1s1
           sudo rm -rf /Applications/Xcode_*.app
           echo "AFTER CLEAN-UP:"
           df -hI /dev/disk3s1s1
-        continue-on-error: true
 
       - name: Setup Go, tools and caching
         uses: ./.github/actions/go-setup
@@ -107,8 +108,13 @@ jobs:
 
       - name: Run tests
         shell: bash
+        env:
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
+          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
+          UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
         run: |
-          # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229#issuecomment-1988965927)
+          # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229# issuecomment-1988965927)
           if [ "$RUNNER_OS" == "macOS" ]; then
             export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
           fi
@@ -141,11 +147,6 @@ jobs:
             TEST_EXCEPT="$TEST_EXCEPT" \
             TEST_KBC_TMP_DIR="${{ runner.temp }}" \
           task tests-unit-${{ matrix.test-group }}
-        env:
-          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
-          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
-          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
-          UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
 
       - name: Check how much space is left after unit test
         if: matrix.name == 'linux'

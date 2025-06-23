@@ -1,3 +1,4 @@
+---
 name: "E2E Tests: CLI"
 
 on:
@@ -18,7 +19,7 @@ env:
 # Required for aws-actions/configure-aws-credentials using OIDC, assume role
 permissions:
   id-token: write
-  contents: read 
+  contents: read
 
 jobs:
   test:
@@ -58,6 +59,13 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Run tests
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
+          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
+          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
+          package-exception-regex: "./internal/pkg/service/appsproxy|./internal/pkg/service/stream|./internal/pkg/service/templates"
         run: |
           set -eo pipefail
 
@@ -67,7 +75,7 @@ jobs:
             export TEST_BINARY_CLI="${{ runner.temp }}/test-build-cli"
           fi
 
-          # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229#issuecomment-1988965927)
+          # Prevent linker warnings on macOs (https://github.com/golang/go/issues/61229# issuecomment-1988965927)
           if [ "$RUNNER_OS" == "macOS" ]; then
             export GOFLAGS="-ldflags=-extldflags=-Wl,-ld_classic"
           fi
@@ -105,9 +113,3 @@ jobs:
             TEST_KBC_PROJECTS_LOCK_PASSWORD="$TEST_KBC_PROJECTS_LOCK_PASSWORD" \
             TEST_KBC_PROJECTS_FILE="$TEST_KBC_PROJECTS_FILE" \
           task tests-cli
-        shell: bash
-        env:
-          VERSION: ${{ inputs.version }}
-          TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
-          TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
-          TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'

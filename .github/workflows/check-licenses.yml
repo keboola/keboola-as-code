@@ -1,3 +1,4 @@
+---
 name: "Check licenses"
 
 on:
@@ -9,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    name: check
+  check-licenses:
+    name: check-licenses
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,9 +23,7 @@ jobs:
           build-type: check-licenses
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
-      #####################
-      ### License Types ###
-      #####################
+      # License Types
       # Forbidden (Non Commercial)
       #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L323
       #     Licenses that are forbidden to be used.
@@ -32,8 +31,8 @@ jobs:
       # Restricted
       #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L176
       #     Licenses in this category require mandatory source
-      #	    distribution if we ship a product that includes third-party code
-      #	    protected by such a license.
+      #     distribution if we ship a product that includes third-party code
+      #     protected by such a license.
       #
       # Reciprocal, Notice, Permissive, Unencumbered
       #     Packages with these licenses are safe to use.
@@ -44,12 +43,12 @@ jobs:
         #    - github.com/eliukblau/pixterm, license detection failed (Reciprocal - MPL-2.0)
         #    - github.com/bsm/redislock, license detection failed (Notice - Apache-2.0)
         #    - github.com/jmespath/go-jmespath, license detection failed (Notice - Apache-2.0)
+        shell: bash
         run: |
           go tool go-licenses check ./... --disallowed_types forbidden,restricted,unknown \
             --ignore github.com/eliukblau/pixterm \
             --ignore github.com/bsm/redislock \
             --ignore github.com/jmespath/go-jmespath
-        shell: bash
 
       - name: Save licenses report
         if: always()

@@ -1,12 +1,14 @@
+---
 version: 2
 project_name: "keboola-cli"
 dist: "target"
+
 builds:
   - main: "./cmd/kbc/main.go"
     binary: "kbc"
-    goos: [ "linux", "darwin", "windows" ]
-    goarch: [ "amd64", "arm", "arm64" ]
-    goarm: [ "6" ]
+    goos: ["linux", "darwin", "windows"]
+    goarch: ["amd64", "arm", "arm64"]
+    goarm: ["6"]
     env:
       - CGO_ENABLED=0
     ldflags:
@@ -35,7 +37,7 @@ signs:
   - id: mac-os-signed
     signature: "${artifact}.zip"
     cmd: ./build/package/mac-os/notarytool/notarize.sh
-    args: [ "${artifact}", "${signature}" ]
+    args: ["${artifact}", "${signature}"]
     artifacts: binary
 
 checksum:
@@ -60,10 +62,10 @@ nfpms:
       - git
     rpm:
       signature:
-        key_file: '{{ if index .Env "DEB_KEY_PRIVATE_PATH" }}{{ .Env.DEB_KEY_PRIVATE_PATH }}{{ end }}'
+        key_file: '{{ if index .Env "RPM_KEY_PRIVATE_PATH" }}{{ .Env.RPM_KEY_PRIVATE_PATH }}{{ end }}'
     deb:
       signature:
-        key_file: '{{ if index .Env "RPM_KEY_PRIVATE_PATH" }}{{ .Env.RPM_KEY_PRIVATE_PATH }}{{ end }}'
+        key_file: '{{ if index .Env "DEB_KEY_PRIVATE_PATH" }}{{ .Env.DEB_KEY_PRIVATE_PATH }}{{ end }}'
     apk:
       signature:
         key_name: keboola

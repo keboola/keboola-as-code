@@ -1,3 +1,4 @@
+---
 name: 'Release CLI'
 description: 'Release CLI to AWS bucket'
 inputs:

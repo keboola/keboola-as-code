@@ -1,13 +1,16 @@
+---
 services:
   dev:
     image: keboolabot/keboola-as-code-dev
     build:
       context: .
       dockerfile: ./provisioning/dev/docker/Dockerfile
-    # Uncomment when you would like to inspect metrics of your service using prometheus container.
-    # Change the <your-service> placeholder with desired service to be inspected. E.g apps-proxy
+    # Uncomment when you would like to inspect metrics of your service using
+    # prometheus container.
+    # Change the <your-service> placeholder with desired service to be inspected.
+    # E.g apps-proxy
     # See ./docs/development.md for more information how to startup the compose etc.
-    #command: >
+    # command: >
     #       sh -c "git config --global --add safe.directory /code
     #              task run-<your-service>"
     links:
@@ -64,7 +67,7 @@ services:
       - UNIT_ETCD_USERNAME=root
       - UNIT_ETCD_PASSWORD=toor
       - UNIT_ETCD_NAMESPACE=templates-api
-      # Etcd for the Templates API`
+      # Etcd for the Templates API
       - TEMPLATES_ETCD_ENDPOINT=etcd:2379
       - TEMPLATES_ETCD_USERNAME=root
       - TEMPLATES_ETCD_PASSWORD=toor
@@ -79,15 +82,15 @@ services:
       - "4000:4000"
       - "4001:4001"
       # Templates API
-      - "8000:8000" # API
-      - "9000:9000" # metrics
+      - "8000:8000"  # API
+      - "9000:9000"  # metrics
       # Stream Service
-      - "8001:8001" # API
-      - "9001:9001" # metrics
-      - "8010:8010" # source
+      - "8001:8001"  # API
+      - "9001:9001"  # metrics
+      - "8010:8010"  # source
       # Apps Proxy
-      - "8002:8002" # Proxy
-      - "9002:9002" # metrics
+      - "8002:8002"  # Proxy
+      - "9002:9002"  # metrics
       # Go docs
       - "6060:6060"
 
@@ -198,7 +201,7 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-        #- /opt/datadog-agent/run:/opt/datadog-agent/run:rw
+    # - /opt/datadog-agent/run:/opt/datadog-agent/run:rw
 
   prometheus:
     image: prom/prometheus

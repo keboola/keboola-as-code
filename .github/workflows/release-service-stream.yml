@@ -1,3 +1,4 @@
+---
 name: 'Release: Stream Service'
 
 on:
@@ -13,7 +14,7 @@ env:
 
   IMAGE_TAG: ${{ github.ref_name }}
   IMAGE_NAME: "keboola/stream-service"
- 
+
   ECR_REGION: "us-east-1"
   ECR_REPOSITORY: "keboola/stream-service"
   ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-StreamServicePushRole-k57lBKJxl9Dr"
@@ -55,7 +56,7 @@ jobs:
       - test-lint
       - test-unit
       - test-e2e-service-stream
-#     - test-k8s-service-stream
+      # - test-k8s-service-stream
     steps:
       - name: Checkout
         uses: actions/checkout@v4

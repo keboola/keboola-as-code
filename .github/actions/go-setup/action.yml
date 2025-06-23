@@ -1,3 +1,4 @@
+---
 name: 'Setup Go, tools and caching'
 description: 'Setup Go, tools and caching'
 inputs:
@@ -45,10 +46,10 @@ runs:
           echo "MD5_COMMAND=md5sum" >> $GITHUB_ENV
         fi
 
-    # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
-    # GOCACHE    - Build and test cache.
-    # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
-    # GOBIN      - Compiled binaries from "go install ...", we need a directory outside GOPATH to cache only installed tools.
+      # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
+      # GOCACHE    - Build and test cache.
+      # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
+      # GOBIN      - Compiled binaries from "go install ...", we need a directory outside GOPATH to cache only installed tools.
     - name: Set and export Go envs
       shell: bash
       run: |
@@ -76,7 +77,7 @@ runs:
         GOTMPDIR=$GODIRS/tmp
 
         echo "GODIRS=$GODIRS" >> $GITHUB_ENV
-        echo "GOLANGCI_LINT_CACHE=$GODIRS/lintcache" >> $GITHUB_ENV 
+        echo "GOLANGCI_LINT_CACHE=$GODIRS/lintcache" >> $GITHUB_ENV
         echo "$GODIRS/bin" >> $GITHUB_PATH
 
       env:
@@ -101,8 +102,8 @@ runs:
         path: |
           ${{ env.GODIRS }}/modcache
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-${{ hashFiles('**/go.mod') }}
-        # restore-keys: |
-        #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
+      # restore-keys: |
+      #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-mod-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -114,8 +115,8 @@ runs:
         path: |
           ${{ env.GODIRS }}/cache
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-${{ hashFiles('**/go.mod') }}
-        # restore-keys: |
-        #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
+      # restore-keys: |
+      #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-build-${{ inputs.build-type }}-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -127,8 +128,8 @@ runs:
         path: |
           ${{ env.GODIRS }}/lintcache
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-${{ hashFiles('**/go.mod') }}
-        # restore-keys: |
-        #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
+      # restore-keys: |
+      #   ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-linter-
       env:
         RUNS_ON_S3_BUCKET_CACHE: ${{ inputs.cache-s3-bucket }}
 
@@ -213,6 +214,6 @@ runs:
     # To find problematic dir/file: Run the workflow twice, download tests logs, sort lines and make a diff.
     # https://pkg.go.dev/cmd/go#hdr-Build_and_test_caching
     - name: Enable debugging of the Go test cache
-      if: false # disabled, enable for debugging
+      if: false  # disabled, enable for debugging
       shell: bash
       run: echo "GODEBUG=gocachehash=1" >> $GITHUB_ENV

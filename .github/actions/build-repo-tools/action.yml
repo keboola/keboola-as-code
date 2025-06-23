@@ -1,5 +1,6 @@
-name: 'Build Linux repository tools'
-description: 'Build Linux repository tools'
+---
+name: Build repository tools
+description: Build repository tools
 inputs:
   type:
     description: Repo type.

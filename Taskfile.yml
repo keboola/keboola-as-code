@@ -1,3 +1,4 @@
+---
 version: '3'
 
 vars:
@@ -126,7 +127,8 @@ tasks:
   tests-unit-core:
     cmds:
       # List all packages, list service packages, filter service ones out, then join with spaces for the command line
-      - bash -c 'TEST_PACKAGE=$(comm -23 <(go list ./internal/pkg/... | sort) <(go list {{.SERVICE_PKG_PATTERNS}} | sort) | tr "\n" " ") bash ./scripts/tests.sh'
+      - |
+        bash -c 'TEST_PACKAGE=$(comm -23 <(go list ./internal/pkg/... | sort) <(go list {{.SERVICE_PKG_PATTERNS}} | sort) | tr "\n" " ") bash ./scripts/tests.sh'
 
   # Test all service packages in one go
   tests-unit-services:

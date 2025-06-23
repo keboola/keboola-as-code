@@ -1,13 +1,14 @@
+---
 Profile1:
-    outputs:
-        target3:
-            account: '{{ env_var("DBT_KBC_TARGET3_ACCOUNT") }}'
-            database: '{{ env_var("DBT_KBC_TARGET3_DATABASE") }}'
-            password: '{{ env_var("DBT_KBC_TARGET3_PASSWORD") }}'
-            schema: '{{ env_var("DBT_KBC_TARGET3_SCHEMA") }}'
-            type: '{{ env_var("DBT_KBC_TARGET3_TYPE") }}'
-            user: '{{ env_var("DBT_KBC_TARGET3_USER") }}'
-            warehouse: '{{ env_var("DBT_KBC_TARGET3_WAREHOUSE") }}'
-    target: target3
+  outputs:
+    target3:
+      account: '{{ env_var("DBT_KBC_TARGET3_ACCOUNT") }}'
+      database: '{{ env_var("DBT_KBC_TARGET3_DATABASE") }}'
+      password: '{{ env_var("DBT_KBC_TARGET3_PASSWORD") }}'
+      schema: '{{ env_var("DBT_KBC_TARGET3_SCHEMA") }}'
+      type: '{{ env_var("DBT_KBC_TARGET3_TYPE") }}'
+      user: '{{ env_var("DBT_KBC_TARGET3_USER") }}'
+      warehouse: '{{ env_var("DBT_KBC_TARGET3_WAREHOUSE") }}'
+  target: target3
 foo: bar
 send_anonymous_usage_stats: false

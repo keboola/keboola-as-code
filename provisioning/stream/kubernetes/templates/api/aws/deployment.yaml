@@ -42,90 +42,94 @@ spec:
       serviceAccountName: stream-identity
       terminationGracePeriodSeconds: 60
       containers:
-        - name: stream-api
-          image: $STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG
-          command: ["/app/service"]
-          args: ["--config-file", "/stream/config/config.yaml", "api"] # run API component
-          resources:
-            requests:
-              cpu: "$STREAM_API_CPU_SOFT_LIMIT"
-              memory: "$STREAM_API_MEMORY_SOFT_LIMIT"
-            limits:
-              memory: "$STREAM_API_MEMORY_HARD_LIMIT"
-          ports:
-            - containerPort: 8000 # API
-            - containerPort: 9000 # metrics
-          volumeMounts:
-            - name: config
-              mountPath: /stream/config
-              readOnly: true
-          env:
-            - name: GOMEMLIMIT
-              value: "${STREAM_API_MEMORY_SOFT_LIMIT}B"
-            - name: STREAM_API_LISTEN
-              value: 0.0.0.0:8000
-            - name: STREAM_METRICS_LISTEN
-              value: 0.0.0.0:9000
-            - name: STREAM_NODE_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: STREAM_HOSTNAME
-              value: "localhost"
-            - name: STREAM_ETCD_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: stream-etcd
-                  key: etcd-root-password
-            - name: DD_AGENT_HOST
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: DD_ENV
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['tags.datadoghq.com/env']
-            - name: DD_SERVICE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['tags.datadoghq.com/service']
-            - name: DD_VERSION
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['tags.datadoghq.com/version']
-            - name: OTEL_METRICS_EXEMPLAR_FILTER
-              value: always_off
-          envFrom:
-            - secretRef:
-                name: stream-infra-secrets
-          startupProbe:
-            httpGet:
-              path: /health-check
-              port: 8000
-              httpHeaders:
-                - name: Host
-                  value: KubernetesStartupProbe
-            initialDelaySeconds: 10
-            periodSeconds: 1
-            failureThreshold: 30
-          readinessProbe:
-            httpGet:
-              path: /health-check
-              port: 8000
-              httpHeaders:
-                - name: Host
-                  value: KubernetesReadinessProbe
-            periodSeconds: 10
-            failureThreshold: 1
-          livenessProbe:
-            httpGet:
-              path: /health-check
-              port: 8000
-              httpHeaders:
-                - name: Host
-                  value: KubernetesLivenessProbe
-            periodSeconds: 10
-            failureThreshold: 3
+      - name: stream-api
+        image: $STREAM_IMAGE_REPOSITORY:$STREAM_IMAGE_TAG
+        command:
+          - "/app/service"
+        args:
+          - "--config-file"
+          - "/stream/config/config.yaml"
+          - "api" # run API component
+        ports:
+        - containerPort: 8000 # API
+        - containerPort: 9000 # metrics
+        volumeMounts:
+        - name: config
+          mountPath: /stream/config
+          readOnly: true
+        env:
+        - name: GOMEMLIMIT
+          value: "${STREAM_API_MEMORY_SOFT_LIMIT}B"
+        - name: STREAM_API_LISTEN
+          value: 0.0.0.0:8000
+        - name: STREAM_METRICS_LISTEN
+          value: 0.0.0.0:9000
+        - name: STREAM_NODE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: STREAM_HOSTNAME
+          value: "localhost"
+        - name: STREAM_ETCD_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: stream-etcd
+              key: etcd-root-password
+        - name: DD_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+        - name: OTEL_METRICS_EXEMPLAR_FILTER
+          value: always_off
+        envFrom:
+        - secretRef:
+            name: stream-infra-secrets
+        resources:
+          requests:
+            cpu: "$STREAM_API_CPU_SOFT_LIMIT"
+            memory: "$STREAM_API_MEMORY_SOFT_LIMIT"
+          limits:
+            memory: "$STREAM_API_MEMORY_HARD_LIMIT"
+        startupProbe:
+          httpGet:
+            path: /health-check
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: KubernetesStartupProbe
+          initialDelaySeconds: 10
+          periodSeconds: 1
+          failureThreshold: 30
+        readinessProbe:
+          httpGet:
+            path: /health-check
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: KubernetesReadinessProbe
+          periodSeconds: 10
+          failureThreshold: 1
+        livenessProbe:
+          httpGet:
+            path: /health-check
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: KubernetesLivenessProbe
+          periodSeconds: 10
+          failureThreshold: 3
       volumes:
         - name: config
           configMap:
