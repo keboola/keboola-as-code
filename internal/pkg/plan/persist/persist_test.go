@@ -925,7 +925,7 @@ func (tc *testCase) run(t *testing.T) {
 	d := dependencies.NewMocked(t, t.Context())
 
 	// Load state
-	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true}, d)
+	projectState, err := d.MockedProject(fs).LoadState(ctx, loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true}, d)
 	require.NoError(t, err)
 
 	// Assert state before

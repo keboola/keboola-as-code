@@ -41,7 +41,7 @@ func TestRenameAllPlan(t *testing.T) {
 	d.MockedHTTPTransport().RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySQLExResponder.Once())
 
 	// Load state
-	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, d)
+	projectState, err := d.MockedProject(fs).LoadState(t.Context(), loadState.Options{LoadLocalState: true}, d)
 	require.NoError(t, err)
 
 	// Get rename plan

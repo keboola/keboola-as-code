@@ -78,7 +78,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 		// Load project state
 		prj := project.NewWithManifest(ctx, fs, manifest)
-		projectState, err := prj.LoadState(loadState.InitOptions(o.Pull), d)
+		projectState, err := prj.LoadState(ctx, loadState.InitOptions(o.Pull), d)
 		if err != nil {
 			return err
 		}

@@ -215,7 +215,7 @@ func (s *service) Preview(ctx context.Context, d dependencies.ProjectRequestScop
 			prj := project.NewWithManifest(ctx, fs, m)
 
 			// Load project state
-			prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
+			prjState, err := prj.LoadState(ctx, loadState.Options{LoadRemoteState: true}, d)
 			if err != nil {
 				return task.ErrResult(err)
 			}
@@ -321,7 +321,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 			prj := project.NewWithManifest(ctx, fs, m)
 
 			// Load project state
-			prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
+			prjState, err := prj.LoadState(ctx, loadState.Options{LoadRemoteState: true}, d)
 			if err != nil {
 				return task.ErrResult(err)
 			}
@@ -419,7 +419,7 @@ func (s *service) InstanceIndex(ctx context.Context, d dependencies.ProjectReque
 	prj := project.NewWithManifest(ctx, fs, m)
 
 	// Load project state
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
+	prjState, err := prj.LoadState(ctx, loadState.Options{LoadRemoteState: true}, d)
 	if err != nil {
 		return nil, err
 	}
@@ -814,7 +814,7 @@ func getTemplateInstance(ctx context.Context, d dependencies.ProjectRequestScope
 	prj := project.NewWithManifest(ctx, fs, m)
 
 	// Load project state
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
+	prjState, err := prj.LoadState(ctx, loadState.Options{LoadRemoteState: true}, d)
 	if err != nil {
 		return nil, branchKey, nil, err
 	}

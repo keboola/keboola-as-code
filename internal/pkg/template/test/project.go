@@ -106,7 +106,7 @@ func PrepareProject(
 		loadOptions = loadState.LocalOperationOptions()
 	}
 
-	prjState, err := prj.LoadState(loadOptions, testDeps)
+	prjState, err := prj.LoadState(ctx, loadOptions, testDeps)
 	if err != nil {
 		unlockFn()
 		return nil, nil, nil, nil, err

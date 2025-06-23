@@ -52,7 +52,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Load project state
-			projectState, err := prj.LoadState(loadState.PushOptions(), d)
+			projectState, err := prj.LoadState(cmd.Context(), loadState.PushOptions(), d)
 			if err != nil {
 				return err
 			}

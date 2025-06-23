@@ -84,7 +84,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				}
 
 				// Load project state - to pull new branch after create
-				projectState, err := prj.LoadState(loadState.PullOptions(false), d)
+				projectState, err := prj.LoadState(cmd.Context(), loadState.PullOptions(false), d)
 				if err != nil {
 					return err
 				}
