@@ -46,10 +46,10 @@ runs:
           echo "MD5_COMMAND=md5sum" >> $GITHUB_ENV
         fi
 
-        # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
-        # GOCACHE    - Build and test cache.
-        # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
-        # GOBIN      - Compiled binaries from "go install ...", we need a directory outside GOPATH to cache only installed tools.
+      # GOPATH     - Should be empty in our setup, see GOMODCACHE and GOBIN.
+      # GOCACHE    - Build and test cache.
+      # GOMODCACHE - The directory where the go command will store downloaded modules and related files.
+      # GOBIN      - Compiled binaries from "go install ...", we need a directory outside GOPATH to cache only installed tools.
     - name: Set and export Go envs
       shell: bash
       run: |
@@ -212,7 +212,7 @@ runs:
 
     # Enable the step to debug Go testing cache misses.
     # To find problematic dir/file: Run the workflow twice, download tests logs, sort lines and make a diff.
-    # https://pkg.go.dev/cmd/go  #hdr-Build_and_test_caching
+    # https://pkg.go.dev/cmd/go#hdr-Build_and_test_caching
     - name: Enable debugging of the Go test cache
       if: false  # disabled, enable for debugging
       shell: bash

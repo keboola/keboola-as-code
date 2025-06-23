@@ -25,11 +25,11 @@ jobs:
 
       # License Types
       # Forbidden (Non Commercial)
-      #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go  # L323
+      #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L323
       #     Licenses that are forbidden to be used.
       #
       # Restricted
-      #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go  # L176
+      #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L176
       #     Licenses in this category require mandatory source
       #     distribution if we ship a product that includes third-party code
       #     protected by such a license.
