@@ -1,11 +1,8 @@
 package orchestrator
 
 import (
-	"strconv"
-
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -14,20 +11,20 @@ type taskParser struct {
 	content *orderedmap.OrderedMap
 }
 
-func (p *taskParser) id() (int, error) {
+func (p *taskParser) id() (string, error) {
 	raw, found := p.content.Get(`id`)
 	if !found {
-		return 0, errors.New(`missing "id" key`)
+		return "", errors.New(`missing "id" key`)
 	}
-	value, ok := raw.(float64) // JSON int is float64, by default in Go
+	value, ok := raw.(string)
 	if !ok {
-		return 0, errors.Errorf(`"id" must be int, found %T`, raw)
+		return "", errors.Errorf(`"id" must be string, found %T`, raw)
 	}
-	if _, err := strconv.Atoi(cast.ToString(value)); err != nil {
-		return 0, errors.Errorf(`"id" must be int, found "%+v"`, raw)
+	if len(value) == 0 {
+		return "", errors.New(`"id" cannot be empty`)
 	}
 	p.content.Delete(`id`)
-	return int(value), nil
+	return value, nil
 }
 
 func (p *taskParser) name() (string, error) {

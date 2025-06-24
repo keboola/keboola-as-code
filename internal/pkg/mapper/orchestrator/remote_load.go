@@ -259,7 +259,7 @@ func (l *remoteLoader) parseTask(taskRaw any) error {
 		if phase, found := l.phaseByKey[cast.ToString(phaseID)]; found {
 			phase.Tasks = append(phase.Tasks, task)
 		} else {
-			errs.Append(errors.Errorf(`phase "%d" not found`, phaseID))
+			errs.Append(errors.Errorf(`phase "%s" not found`, phaseID))
 		}
 	}
 
