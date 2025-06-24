@@ -97,18 +97,6 @@ runs:
           ${{ env.GODIRS }}/bin
         key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ inputs.cache-version }}-tools-${{ hashFiles('scripts/tools.sh') }}
 
-    # Install missing tools
-    - name: Install tools
-      shell: bash
-      run: |
-        echo "Installing tools ..."
-        ./scripts/tools.sh
-        
-        echo "Installed tools:"
-        ls -alh "$GODIRS/bin"
-        
-        go clean -cache -modcache
-
     # Load dependencies - Go modules to skip download
     - name: Load Go modules cache
       id: go-cache-mod
