@@ -60,20 +60,20 @@ func (p *taskParser) enabled() (bool, error) {
 	return value, nil
 }
 
-func (p *taskParser) phaseID() (int, error) {
+func (p *taskParser) phaseID() (string, error) {
 	raw, found := p.content.Get(`phase`)
 	if !found {
-		return 0, errors.New(`missing "phase" key`)
+		return "", errors.New(`missing "phase" key`)
 	}
-	value, ok := raw.(float64) // JSON int is float64, by default in Go
+	value, ok := raw.(string)
 	if !ok {
-		return 0, errors.Errorf(`"phase" must be int, found %T`, raw)
+		return "", errors.Errorf(`"phase" must be string, found %T`, raw)
 	}
-	if _, err := strconv.Atoi(cast.ToString(value)); err != nil {
-		return 0, errors.Errorf(`"phase" must be int, found "%+v"`, raw)
+	if len(value) == 0 {
+		return "", errors.New(`"phase" cannot be empty`)
 	}
 	p.content.Delete(`phase`)
-	return int(value), nil
+	return value, nil
 }
 
 func (p *taskParser) componentID() (keboola.ComponentID, error) {
