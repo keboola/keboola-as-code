@@ -1,14 +1,15 @@
+package
+
 // Package prefixtree wraps go-radix library, adds lock and generic type support.
-package prefixtree
+prefixtree
 
 import (
-	"sync"
-
 	"github.com/armon/go-radix"
+	"github.com/sasha-s/go-deadlock"
 )
 
 type AtomicTree[T any] struct {
-	lock *sync.RWMutex
+	lock *deadlock.RWMutex
 	tree *Tree[T]
 }
 
@@ -27,10 +28,10 @@ type TreeReadOnly[T any] interface {
 }
 
 func New[T any]() *AtomicTree[T] {
-	return NewWithLock[T](&sync.RWMutex{})
+	return NewWithLock[T](&deadlock.RWMutex{})
 }
 
-func NewWithLock[T any](lock *sync.RWMutex) *AtomicTree[T] {
+func NewWithLock[T any](lock *deadlock.RWMutex) *AtomicTree[T] {
 	return &AtomicTree[T]{
 		lock: lock,
 		tree: &Tree[T]{tree: radix.New()},

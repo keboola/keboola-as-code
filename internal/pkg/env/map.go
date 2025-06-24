@@ -6,9 +6,9 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/joho/godotenv"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -25,13 +25,13 @@ type Provider interface {
 // Keys are represented as uppercase string.
 type Map struct {
 	data map[string]string
-	lock *sync.RWMutex
+	lock *deadlock.RWMutex
 }
 
 func Empty() *Map {
 	return &Map{
 		data: make(map[string]string),
-		lock: &sync.RWMutex{},
+		lock: &deadlock.RWMutex{},
 	}
 }
 

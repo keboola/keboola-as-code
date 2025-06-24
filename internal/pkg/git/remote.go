@@ -1,5 +1,7 @@
+package
+
 // nolint: forbidigo
-package git
+git
 
 import (
 	"bytes"
@@ -9,10 +11,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -30,11 +32,11 @@ type RemoteRepository struct {
 	baseDirPath string        // base directory for working and stable dir
 	workingDir  filesystem.Fs // directory for work and updates
 
-	valuesLock       *sync.RWMutex // sync access to stableDir and stableCommitHash fields
+	valuesLock       *deadlock.RWMutex // sync access to stableDir and stableCommitHash fields
 	stableDir        *fsWithFreeLock
 	stableCommitHash string
 
-	cmdLock *sync.Mutex // only one git command can run at a time
+	cmdLock *deadlock.Mutex // only one git command can run at a time
 }
 
 type RepositoryFsUnlockFn func()
@@ -91,8 +93,8 @@ func Checkout(ctx context.Context, ref model.TemplateRepository, sparse bool, lo
 		logger:      logger,
 		baseDirPath: baseDirPath,
 		workingDir:  workingDirFs,
-		valuesLock:  &sync.RWMutex{},
-		cmdLock:     &sync.Mutex{},
+		valuesLock:  &deadlock.RWMutex{},
+		cmdLock:     &deadlock.Mutex{},
 	}
 
 	// Clone parameters
@@ -352,11 +354,11 @@ type _fs = filesystem.Fs
 
 type fsWithFreeLock struct {
 	_fs
-	freeLock *sync.RWMutex
+	freeLock *deadlock.RWMutex
 }
 
 func newFsWithFreeLock(fs filesystem.Fs) *fsWithFreeLock {
-	return &fsWithFreeLock{_fs: fs, freeLock: &sync.RWMutex{}}
+	return &fsWithFreeLock{_fs: fs, freeLock: &deadlock.RWMutex{}}
 }
 
 func (v *fsWithFreeLock) free() <-chan struct{} {

@@ -1,5 +1,7 @@
+package
+
 // Package size allows to measure how much data has passed through a writer.
-package size
+size
 
 import (
 	"context"
@@ -7,11 +9,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -21,7 +23,7 @@ import (
 // Meter implements io.Writer interface to measure size of the data written to the underlying writer.
 type Meter struct {
 	w    io.Writer
-	lock sync.Mutex
+	lock deadlock.Mutex
 	size datasize.ByteSize
 }
 
@@ -31,7 +33,7 @@ type MeterWithBackup struct {
 	*Meter
 	backup       backup
 	backupTicker clockwork.Ticker
-	lock         sync.RWMutex
+	lock         deadlock.RWMutex
 }
 
 // backup interface contains used methods from *os.File.

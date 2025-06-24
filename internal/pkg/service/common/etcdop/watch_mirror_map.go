@@ -7,6 +7,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -33,12 +34,12 @@ type MirrorMap[T any, K comparable, V any] struct {
 	onUpdate  []func(update MirrorUpdate)
 	onChanges []func(changes MirrorUpdateChanges[K, V])
 
-	updatedLock sync.RWMutex
+	updatedLock deadlock.RWMutex
 	updated     chan struct{}
 
-	mapLock      sync.RWMutex
+	mapLock      deadlock.RWMutex
 	mapData      map[K]V
-	revisionLock sync.RWMutex
+	revisionLock deadlock.RWMutex
 	revision     int64
 }
 

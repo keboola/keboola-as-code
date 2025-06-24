@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -37,7 +38,7 @@ type SlicePipeline struct {
 	cancel context.CancelCauseFunc
 	wg     sync.WaitGroup
 
-	lock     sync.RWMutex
+	lock     deadlock.RWMutex
 	pipeline encoding.Pipeline
 }
 

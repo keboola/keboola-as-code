@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/sasha-s/go-deadlock"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -26,7 +27,7 @@ type CoordinatorNode struct {
 	// revision reported by source nodes
 	revisions *etcdop.MirrorMap[int64, string, int64]
 
-	listenersLock sync.Mutex
+	listenersLock deadlock.Mutex
 	listenerID    int
 	listeners     map[int]*listener
 }

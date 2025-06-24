@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -27,7 +28,7 @@ type pipelineRef struct {
 	onClose  func(ctx context.Context, cause string)
 
 	// lock protects pipeline field
-	lock sync.RWMutex
+	lock deadlock.RWMutex
 	// pipeline to write data to the sink,
 	// it is initialized when the first record is received.
 	pipeline pipeline.Pipeline

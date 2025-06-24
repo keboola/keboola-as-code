@@ -7,11 +7,11 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -46,7 +46,7 @@ func testTransportSmallData(t *testing.T, transportFactory func(cfg network.Conf
 	addr := srv.Addr().String()
 
 	// Stream server handler
-	var receivedLock sync.Mutex
+	var receivedLock deadlock.Mutex
 	var received []string
 	receivedDone := make(chan struct{}, 2)
 	go func() {

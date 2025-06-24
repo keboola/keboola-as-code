@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/sasha-s/go-deadlock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics/repository"
@@ -30,7 +32,7 @@ type L2 struct {
 	wg     *sync.WaitGroup
 
 	enabled   bool
-	cacheLock *sync.RWMutex
+	cacheLock *deadlock.RWMutex
 	cache     l2CachePerObjectKey
 	revision  int64
 }
@@ -43,7 +45,7 @@ func NewL2Cache(d dependencies, l1Cache *L1, config statistics.L2CacheConfig) (*
 		l1Cache:   l1Cache,
 		wg:        &sync.WaitGroup{},
 		enabled:   config.Enabled,
-		cacheLock: &sync.RWMutex{},
+		cacheLock: &deadlock.RWMutex{},
 		cache:     make(l2CachePerObjectKey),
 	}
 

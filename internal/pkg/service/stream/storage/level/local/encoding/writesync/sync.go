@@ -8,6 +8,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -23,9 +24,10 @@ type Syncer struct {
 	config   Config
 	pipeline Pipeline
 
-	cancel    context.CancelCauseFunc
-	cancelled <-chan struct{}
-	wg        *sync.WaitGroup
+	cancel        context.CancelCauseFunc
+	cancelled     <-chan struct{}
+	syncLoopWg    *sync.WaitGroup
+	triggerSyncWg *sync.WaitGroup
 
 	statistics StatisticsProvider
 
@@ -37,10 +39,10 @@ type Syncer struct {
 	lastSyncAt               *atomic.Time
 
 	// syncLock ensures that only one sync runs at a time
-	syncLock *sync.Mutex
+	syncLock *deadlock.Mutex
 
 	// notifierLock protects the notifier field during a swap on sync
-	notifierLock *sync.RWMutex
+	notifierLock *deadlock.RWMutex
 	notifier     *notify.Notifier
 
 	// syncFn is operation triggered on sync
@@ -98,14 +100,15 @@ func NewSyncer(
 		clock:                    clock,
 		config:                   config,
 		pipeline:                 pipeline,
-		wg:                       &sync.WaitGroup{},
+		syncLoopWg:               &sync.WaitGroup{},
+		triggerSyncWg:            &sync.WaitGroup{},
 		statistics:               statistics,
 		acceptedWritesSnapshot:   atomic.NewUint64(0),
 		uncompressedSizeSnapshot: atomic.NewUint64(0),
 		compressedSizeSnapshot:   atomic.NewUint64(0),
 		lastSyncAt:               atomic.NewTime(clock.Now()),
-		syncLock:                 &sync.Mutex{},
-		notifierLock:             &sync.RWMutex{},
+		syncLock:                 &deadlock.Mutex{},
+		notifierLock:             &deadlock.RWMutex{},
 		notifier:                 notify.New(),
 		syncFn:                   syncFn,
 	}
@@ -173,9 +176,9 @@ func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
 	compressedSizeSnapshot := uint64(s.statistics.CompressedSize())
 
 	// Run sync in the background
-	s.wg.Add(1)
+	s.triggerSyncWg.Add(1)
 	go func() {
-		defer s.wg.Done()
+		defer s.triggerSyncWg.Done()
 		defer s.syncLock.Unlock()
 
 		ctx := context.Background()
@@ -198,6 +201,7 @@ func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
 		notifier.Done(err)
 	}()
 
+	s.triggerSyncWg.Wait()
 	return notifier
 }
 
@@ -215,7 +219,7 @@ func (s *Syncer) Stop(ctx context.Context) error {
 	err := s.TriggerSync(true).Wait(ctx)
 
 	// Wait for sync loop and running sync, if any
-	s.wg.Wait()
+	s.syncLoopWg.Wait()
 
 	s.logger.Debug(ctx, `syncer stopped`)
 	return err
@@ -233,9 +237,9 @@ func (s *Syncer) isCancelled() bool {
 func (s *Syncer) syncLoop() {
 	ticker := s.clock.NewTicker(s.config.CheckInterval.Duration())
 
-	s.wg.Add(1)
+	s.syncLoopWg.Add(1)
 	go func() {
-		defer s.wg.Done()
+		defer s.syncLoopWg.Done()
 		defer ticker.Stop()
 
 		// Periodically check the conditions and start synchronization if any condition is met

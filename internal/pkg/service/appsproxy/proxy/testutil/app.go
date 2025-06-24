@@ -6,12 +6,12 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -27,7 +27,7 @@ type AppServer struct {
 func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 	t.Helper()
 
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 	var requests []*http.Request
 
 	mux := http.NewServeMux()

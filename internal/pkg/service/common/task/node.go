@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/spf13/cast"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
@@ -59,7 +60,7 @@ type Node struct {
 	tasksCount *atomic.Int64
 
 	taskEtcdPrefix etcdop.PrefixT[Task]
-	taskLocksMutex *sync.Mutex
+	taskLocksMutex *deadlock.Mutex
 	taskLocks      map[string]bool
 
 	exceptionIDPrefix string
@@ -100,7 +101,7 @@ func NewNode(nodeID string, exceptionIDPrefix string, d dependencies, cfg NodeCo
 		config:            cfg,
 		tasksCount:        atomic.NewInt64(0),
 		taskEtcdPrefix:    newTaskPrefix(d.EtcdSerde()),
-		taskLocksMutex:    &sync.Mutex{},
+		taskLocksMutex:    &deadlock.Mutex{},
 		taskLocks:         make(map[string]bool),
 		exceptionIDPrefix: exceptionIDPrefix,
 	}

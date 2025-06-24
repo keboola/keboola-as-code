@@ -17,6 +17,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sasha-s/go-deadlock"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -33,7 +34,7 @@ type Opener[V volume.Volume] func(spec volume.Spec) (V, error)
 func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, volumesPath string, opener Opener[V]) (*volume.Collection[V], error) {
 	logger.With(attribute.String("volumes.path", volumesPath)).Infof(ctx, "searching for volumes in volumes path")
 
-	lock := &sync.Mutex{}
+	lock := &deadlock.Mutex{}
 	errs := errors.NewMultiError()
 	wg := &sync.WaitGroup{}
 

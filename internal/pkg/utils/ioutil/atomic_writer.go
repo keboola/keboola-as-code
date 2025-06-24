@@ -5,7 +5,8 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"sync"
+
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -17,14 +18,14 @@ import (
 // - io.Closer
 // - terminal.FileWriter.
 type AtomicWriter struct {
-	mutex   *sync.Mutex
+	mutex   *deadlock.Mutex
 	writers []io.Writer
 	buffer  *bytes.Buffer
 }
 
 func NewAtomicWriter() *AtomicWriter {
 	var buffer bytes.Buffer
-	return &AtomicWriter{&sync.Mutex{}, []io.Writer{bufio.NewWriter(&buffer)}, &buffer}
+	return &AtomicWriter{&deadlock.Mutex{}, []io.Writer{bufio.NewWriter(&buffer)}, &buffer}
 }
 
 // ConnectTo allows writes to multiple targets.

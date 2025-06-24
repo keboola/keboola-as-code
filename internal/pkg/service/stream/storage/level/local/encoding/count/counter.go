@@ -1,5 +1,7 @@
+package
+
 // Package count provides a counter with backup to a file.
-package count
+count
 
 import (
 	"bytes"
@@ -8,10 +10,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -21,7 +23,7 @@ import (
 
 // Counter is an atomic counter.
 type Counter struct {
-	lock    *sync.RWMutex
+	lock    *deadlock.RWMutex
 	count   uint64
 	firstAt utctime.UTCTime
 	lastAt  utctime.UTCTime
@@ -44,7 +46,7 @@ type backup interface {
 }
 
 func NewCounter() *Counter {
-	return &Counter{lock: &sync.RWMutex{}}
+	return &Counter{lock: &deadlock.RWMutex{}}
 }
 
 func NewCounterWithBackupFile(ctx context.Context, clk clockwork.Clock, logger log.Logger, backupPath string, backupInterval time.Duration) (*CounterWithBackup, error) {

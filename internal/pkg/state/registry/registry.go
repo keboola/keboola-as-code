@@ -2,9 +2,9 @@ package registry
 
 import (
 	"context"
-	"sync"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -18,7 +18,7 @@ type Registry struct {
 	*pathsRO
 	paths          *knownpaths.Paths
 	sortBy         string
-	lock           *sync.Mutex
+	lock           *deadlock.Mutex
 	namingRegistry *naming.Registry
 	components     *model.ComponentsMap
 	objects        *orderedmap.OrderedMap
@@ -29,7 +29,7 @@ func New(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *m
 		pathsRO:        paths.ReadOnly(),
 		paths:          paths,
 		sortBy:         sortBy,
-		lock:           &sync.Mutex{},
+		lock:           &deadlock.Mutex{},
 		namingRegistry: namingRegistry,
 		components:     components,
 		objects:        orderedmap.New(),

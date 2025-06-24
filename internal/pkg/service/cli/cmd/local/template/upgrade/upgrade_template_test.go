@@ -1,10 +1,10 @@
 package upgrade
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -125,7 +125,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 	// Interaction
-	wg := sync.WaitGroup{}
+	wg := deadlock.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

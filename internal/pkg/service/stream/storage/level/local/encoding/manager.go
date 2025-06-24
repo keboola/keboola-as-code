@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -26,7 +27,7 @@ type Manager struct {
 	clock  clockwork.Clock
 	events *events.Events[Pipeline]
 
-	pipelinesLock *sync.Mutex
+	pipelinesLock *deadlock.Mutex
 	pipelines     map[string]*pipelineRef
 }
 
@@ -45,7 +46,7 @@ func NewManager(d dependencies) *Manager {
 		logger:        d.Logger(),
 		clock:         d.Clock(),
 		events:        events.New[Pipeline](),
-		pipelinesLock: &sync.Mutex{},
+		pipelinesLock: &deadlock.Mutex{},
 		pipelines:     make(map[string]*pipelineRef),
 	}
 

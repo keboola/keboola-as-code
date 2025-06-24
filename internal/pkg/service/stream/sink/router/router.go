@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/sasha-s/go-deadlock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -39,7 +40,7 @@ type Router struct {
 	definitions *definitionRepo.Repository
 	collection  *collection
 
-	lock      sync.RWMutex
+	lock      deadlock.RWMutex
 	pipelines map[key.SinkKey]*pipelineRef
 
 	// closed channel block new writer during shutdown
@@ -170,7 +171,7 @@ func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context)
 	}
 
 	// Write to sinks in parallel
-	var lock sync.Mutex
+	var lock deadlock.Mutex
 	var wg sync.WaitGroup
 	// Dispatching to all sources in all branches
 	for _, sourceKey := range sources {
@@ -219,7 +220,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	}
 
 	// Write to sinks in parallel
-	var lock sync.Mutex
+	var lock deadlock.Mutex
 	var wg sync.WaitGroup
 	for _, sink := range source.sinks {
 		if !sink.enabled {
