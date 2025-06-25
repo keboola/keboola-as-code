@@ -6,10 +6,10 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/profiler"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
-	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -90,7 +90,7 @@ func run(ctx context.Context, cfg config.Config, posArgs []string) error {
 					logger, proc,
 					tracer.WithGlobalTag("stream.components", components.String()),
 					tracer.WithRuntimeMetrics(),
-					tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
+					tracer.WithSamplingRules(tracer.TraceSamplingRules(tracer.Rule{Rate: 1.0})),
 					tracer.WithAnalyticsRate(1.0),
 					tracer.WithDebugMode(cfg.Datadog.Debug),
 				), nil

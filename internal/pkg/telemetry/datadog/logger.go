@@ -3,7 +3,7 @@ package datadog
 import (
 	"context"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
@@ -18,6 +18,6 @@ func (l ddLogger) Log(msg string) {
 	l.Logger.WithComponent("datadog").Info(context.Background(), msg)
 }
 
-func NewDDLogger(logger log.Logger) ddtrace.Logger {
+func NewDDLogger(logger log.Logger) tracer.Logger {
 	return &ddLogger{Logger: logger}
 }
