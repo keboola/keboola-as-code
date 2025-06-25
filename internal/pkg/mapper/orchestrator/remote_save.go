@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -35,13 +36,13 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 	for index, phase := range orchestration.Phases {
 		phaseID := index + 1
 		phaseContent := orderedmap.New()
-		phaseContent.Set(`id`, phaseID)
+		phaseContent.Set(`id`, cast.ToString(phaseID))
 		phaseContent.Set(`name`, phase.Name)
 
 		// Map dependsOn
-		dependsOn := make([]int, 0)
+		dependsOn := make([]string, 0)
 		for _, depOnPhase := range phase.DependsOn {
-			dependsOn = append(dependsOn, depOnPhase.Index+1)
+			dependsOn = append(dependsOn, cast.ToString(depOnPhase.Index+1))
 		}
 		phaseContent.Set(`dependsOn`, dependsOn)
 
@@ -55,10 +56,10 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 		for _, task := range phase.Tasks {
 			taskID++
 			taskContent := orderedmap.New()
-			taskContent.Set(`id`, taskID)
+			taskContent.Set(`id`, cast.ToString(taskID))
 			taskContent.Set(`name`, task.Name)
 			taskContent.Set(`enabled`, task.Enabled)
-			taskContent.Set(`phase`, phaseID)
+			taskContent.Set(`phase`, cast.ToString(phaseID))
 
 			// Copy additional content
 			for _, k := range task.Content.Keys() {
