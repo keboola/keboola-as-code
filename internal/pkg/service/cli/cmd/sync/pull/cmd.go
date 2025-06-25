@@ -59,7 +59,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Load project state
-			projectState, err := prj.LoadState(loadState.PullOptions(force), d)
+			projectState, err := prj.LoadState(cmd.Context(), loadState.PullOptions(force), d)
 			if err != nil {
 				if !force && errors.As(err, &loadState.InvalidLocalStateError{}) {
 					logger.Info(cmd.Context(), "")

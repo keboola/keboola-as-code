@@ -94,7 +94,7 @@ func (p *Project) MappersFor(state *state.State) (mapper.Mappers, error) {
 	return MappersFor(state, p.deps)
 }
 
-func (p *Project) LoadState(options loadState.Options, d dependencies) (*State, error) {
+func (p *Project) LoadState(ctx context.Context, options loadState.Options, d dependencies) (*State, error) {
 	p.deps = d
 
 	// Use filter from the project manifest
@@ -106,7 +106,7 @@ func (p *Project) LoadState(options loadState.Options, d dependencies) (*State, 
 	}
 
 	// Load state
-	s, err := loadState.Run(p.ctx, p, loadOptionsWithFilter, d)
+	s, err := loadState.Run(ctx, p, loadOptionsWithFilter, d)
 	if err != nil {
 		return nil, err
 	}

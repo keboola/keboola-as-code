@@ -31,7 +31,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t, t.Context())
-	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(t.Context(), loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
 	// Set fake file editor
@@ -224,7 +224,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	d, console := dialog.NewForTest(t, true)
 
 	deps := dependencies.NewMocked(t, t.Context())
-	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(t.Context(), loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
 	// Set fake file editor
@@ -351,7 +351,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 
 	deps := dependencies.NewMocked(t, t.Context())
 
-	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(t.Context(), loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
 	// Run
@@ -513,7 +513,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	}
 
 	deps := dependencies.NewMocked(t, t.Context())
-	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(t.Context(), loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
 	// Run
@@ -609,7 +609,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 		InputsFile:   configmap.Value[string]{Value: inputsFilePath, SetBy: configmap.SetByFlag},
 	}
 	deps := dependencies.NewMocked(t, t.Context())
-	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, deps)
+	projectState, err := deps.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(t.Context(), loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
 	// Run

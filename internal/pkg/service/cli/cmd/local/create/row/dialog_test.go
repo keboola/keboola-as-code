@@ -66,7 +66,7 @@ func TestAskCreateRow(t *testing.T) {
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(configDir, naming.DescriptionFile), ``)))
 
 	// Test dependencies
-	projectState, err := deps.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, deps)
+	projectState, err := deps.MockedProject(fs).LoadState(ctx, loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
 	// Interaction

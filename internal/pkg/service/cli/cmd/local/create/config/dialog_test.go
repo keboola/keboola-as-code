@@ -52,7 +52,7 @@ func TestAskCreateConfig(t *testing.T) {
 	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
 	// Load project
-	projectState, err := deps.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, deps)
+	projectState, err := deps.MockedProject(fs).LoadState(ctx, loadState.Options{LoadLocalState: true}, deps)
 	require.NoError(t, err)
 
 	// Interaction
