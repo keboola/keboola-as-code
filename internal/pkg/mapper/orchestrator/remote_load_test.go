@@ -22,25 +22,25 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 {
   "phases": [
     {
-      "id": 456,
+      "id": "456",
       "name": "Phase With Deps",
       "dependsOn": [
-        123
-      ],
+        "123"
+      ],	
       "foo": "bar"
     },
     {
-      "id": 123,
+      "id": "123",
       "name": "Phase",
       "dependsOn": []
     }
   ],
   "tasks": [
     {
-      "id": 1001,
+      "id": "1001",
       "name": "Task 1",
       "enabled": true,
-      "phase": 123,
+      "phase": "123",
       "task": {
         "componentId": "foo.bar1",
         "configId": "123",
@@ -49,10 +49,10 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
       "continueOnFailure": false
     },
     {
-      "id": 1002,
+      "id": "1002",
       "enabled": true,
       "name": "Task 2",
-      "phase": 456,
+      "phase": "456",
       "task": {
         "componentId": "foo.bar2",
         "configId": "456",
@@ -61,10 +61,10 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
       "continueOnFailure": false
     },
     {
-      "id": 1003,
+      "id": "1003",
       "enabled": false,
       "name": "Task 3",
-      "phase": 123,
+      "phase": "123",
       "task": {
         "componentId": "foo.bar2",
         "configId": "789",
@@ -73,10 +73,10 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
       "continueOnFailure": false
     },
     {
-      "id": 1004,
+      "id": "1004",
       "enabled": true,
       "name": "Task 4 - ConfigData",
-      "phase": 456,
+      "phase": "456",
       "task": {
         "componentId": "foo.bar3",
         "configData":{"params":"value"},
@@ -255,20 +255,20 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 {
   "phases": [
     {
-      "id": 123,
+      "id": "123",
       "name": "Phase",
       "dependsOn": []
     },
     {
-      "id": 456
+      "id": "456"
     },
     {}
   ],
   "tasks": [
     {
-      "id": 1001,
+      "id": "1001",
       "name": "Task 1",
-      "phase": 123,
+      "phase": "123",
       "task": {
         "componentId": "foo.bar1",
         "configId": "123",
@@ -276,9 +276,9 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
       }
     },
     {
-      "id": 1002,
+      "id": "1002",
       "name": "Task 2",
-      "phase": 789,
+      "phase": "789",
       "task": {
         "componentId": "foo.bar2",
         "configId": "456",
@@ -387,27 +387,27 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 {
   "phases": [
     {
-      "id": 1,
+      "id": "1",
       "name": "Phase 1",
-      "dependsOn": [5]
+      "dependsOn": ["5"]
     },
     {
-      "id": 2,
+      "id": "2",
       "name": "Phase 2",
       "dependsOn": []
     },
     {
-      "id": 3,
+      "id": "3",
       "name": "Phase 3",
-      "dependsOn": [1, 4, 5]
+      "dependsOn": ["1", "4", "5"]
     },
     {
-      "id": 4,
+      "id": "4",
       "name": "Phase 4",
-      "dependsOn": [2, 5]
+      "dependsOn": ["2", "5"]
     },
     {
-      "id": 5,
+      "id": "5",
       "name": "Phase 5",
       "dependsOn": []
     }
@@ -550,44 +550,44 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 {
   "phases": [
     {
-      "id": 1,
+      "id": "1",
       "name": "Phase 1",
-      "dependsOn": [2]
+      "dependsOn": ["2"]
     },
     {
-      "id": 2,
+      "id": "2",
       "name": "Phase 2",
-      "dependsOn": [3, 1]
+      "dependsOn": ["3", "1"]
     },
     {
-      "id": 3,
+      "id": "3",
       "name": "Phase 3",
-      "dependsOn": [4]
+      "dependsOn": ["4"]
     },
     {
-      "id": 4,
+      "id": "4",
       "name": "Phase 4",
-      "dependsOn": [3]
+      "dependsOn": ["3"]
     },
     {
-      "id": 5,
+      "id": "5",
       "name": "Phase 5",
-      "dependsOn": [8]
+      "dependsOn": ["8"]
     },
     {
-      "id": 6,
+      "id": "6",
       "name": "Phase 6",
-      "dependsOn": [5]
+      "dependsOn": ["5"]
     },
     {
-      "id": 7,
+      "id": "7",
       "name": "Phase 7",
-      "dependsOn": [6]
+      "dependsOn": ["6"]
     },
     {
-      "id": 8,
+      "id": "8",
       "name": "Phase 8",
-      "dependsOn": [7]
+      "dependsOn": ["7"]
     }
   ],
   "tasks": []

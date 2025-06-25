@@ -18,7 +18,7 @@ func (p *taskParser) id() (string, error) {
 	}
 	value, ok := raw.(string)
 	if !ok {
-		return "", errors.Errorf(`"id" must be string, found %T`, raw)
+		return "", errors.Errorf(`"id" must be string, found %v`, raw)
 	}
 	if len(value) == 0 {
 		return "", errors.New(`"id" cannot be empty`)
@@ -64,7 +64,7 @@ func (p *taskParser) phaseID() (string, error) {
 	}
 	value, ok := raw.(string)
 	if !ok {
-		return "", errors.Errorf(`"phase" must be string, found %T`, raw)
+		return "", errors.Errorf(`"phase" must be string, found %v`, raw)
 	}
 	if len(value) == 0 {
 		return "", errors.New(`"phase" cannot be empty`)

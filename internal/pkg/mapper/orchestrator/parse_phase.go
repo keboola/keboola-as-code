@@ -17,7 +17,7 @@ func (p *phaseParser) id() (string, error) {
 	}
 	value, ok := raw.(string)
 	if !ok {
-		return "", errors.Errorf(`"id" must be string, found %T`, raw)
+		return "", errors.Errorf(`"id" must be string, found %v`, raw)
 	}
 	if len(value) == 0 {
 		return "", errors.New(`"id" cannot be empty`)
@@ -60,7 +60,7 @@ func (p *phaseParser) dependsOnIds() ([]string, error) {
 			}
 			value = append(value, item)
 		} else {
-			return nil, errors.Errorf(`"dependsOn" key must contain only strings, found "%+v", index %d`, itemRaw, i)
+			return nil, errors.Errorf(`"dependsOn" key must contain only strings, found %v, index %d`, itemRaw, i)
 		}
 	}
 
