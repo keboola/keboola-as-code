@@ -170,7 +170,10 @@ func PrepareTemplate(ctx context.Context, d dependencies, o ExtendedOptions) (pl
 	}
 
 	// Update instance metadata
-	branchState := o.ProjectState.GetOrNil(o.TargetBranch).(*model.BranchState)
+	branchState, found := o.ProjectState.GetOrNil(o.TargetBranch).(*model.BranchState)
+	if !found {
+		return nil, errors.Errorf(`branch "%d" not found`, o.TargetBranch.ID)
+	}
 	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), o.InstanceID, o.InstanceName, o.Template.TemplateID(), o.Template.Repository().Name, o.Template.Version(), d.StorageAPITokenID(), mainConfig); err != nil {
 		errs.Append(err)
 	}
