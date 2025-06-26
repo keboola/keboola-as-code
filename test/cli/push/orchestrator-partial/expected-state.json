@@ -23,31 +23,31 @@
           "configuration": {
             "phases": [
               {
-                "id": 1,
+                "id": "1",
                 "name": "Phase 1",
                 "dependsOn": []
               },
               {
-                "id": 2,
+                "id": "2",
                 "name": "Phase 2",
                 "dependsOn": [
-                  1
+                  "1"
                 ]
               },
               {
-                "id": 3,
+                "id": "3",
                 "name": "New phase",
                 "dependsOn": [
-                  2
+                  "2"
                 ]
               }
             ],
             "tasks": [
               {
-                "id": 1,
+                "id": "1",
                 "name": "Task 1",
                 "enabled": true,
-                "phase": 1,
+                "phase": "1",
                 "task": {
                   "mode": "run",
                   "componentId": "ex-generic-v2",
@@ -56,10 +56,10 @@
                 "continueOnFailure": false
               },
               {
-                "id": 2,
+                "id": "2",
                 "name": "Task 4 - configData",
                 "enabled": false,
-                "phase": 1,
+                "phase": "1",
                 "task": {
                   "mode": "run",
                   "componentId": "ex-generic-v2",
@@ -70,10 +70,10 @@
                 "continueOnFailure": true
               },
               {
-                "id": 3,
+                "id": "3",
                 "name": "Task 2",
                 "enabled": true,
-                "phase": 2,
+                "phase": "2",
                 "task": {
                   "mode": "run",
                   "componentId": "ex-generic-v2",
@@ -82,10 +82,10 @@
                 "continueOnFailure": false
               },
               {
-                "id": 4,
+                "id": "4",
                 "name": "Task 3 - disabled",
                 "enabled": false,
-                "phase": 2,
+                "phase": "2",
                 "task": {
                   "mode": "run",
                   "componentId": "ex-generic-v2"
@@ -93,10 +93,10 @@
                 "continueOnFailure": true
               },
               {
-                "id": 5,
+                "id": "5",
                 "name": "Task 1",
                 "enabled": true,
-                "phase": 3,
+                "phase": "3",
                 "task": {
                   "mode": "run",
                   "componentId": "ex-generic-v2",
@@ -105,10 +105,10 @@
                 "continueOnFailure": true
               },
               {
-                "id": 6,
+                "id": "6",
                 "name": "Task 2",
                 "enabled": true,
-                "phase": 3,
+                "phase": "3",
                 "task": {
                   "mode": "run",
                   "componentId": "ex-generic-v2",

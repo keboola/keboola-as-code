@@ -137,25 +137,25 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 {
   "phases": [
     {
-      "id": 1,
+      "id": "1",
       "name": "Phase",
       "dependsOn": [],
       "foo": "bar"
     },
     {
-      "id": 2,
+      "id": "2",
       "name": "Phase With Deps",
       "dependsOn": [
-        1
+        "1"
       ]
     }
   ],
   "tasks": [
     {
-      "id": 1,
+      "id": "1",
       "name": "Task 1",
       "enabled": true,
-      "phase": 1,
+      "phase": "1",
       "task": {
         "mode": "run",
         "componentId": "foo.bar1",
@@ -164,10 +164,10 @@ func TestMapBeforeRemoteSave(t *testing.T) {
       "continueOnFailure": false
     },
     {
-      "id": 2,
+      "id": "2",
       "name": "Task 3",
       "enabled": false,
-      "phase": 1,
+      "phase": "1",
       "task": {
         "mode": "run",
         "componentId": "foo.bar2",
@@ -176,10 +176,10 @@ func TestMapBeforeRemoteSave(t *testing.T) {
       "continueOnFailure": false
     },
     {
-      "id": 3,
+      "id": "3",
       "name": "Task 2",
       "enabled": true,
-      "phase": 2,
+      "phase": "2",
       "task": {
         "mode": "run",
         "componentId": "foo.bar2",
@@ -188,10 +188,10 @@ func TestMapBeforeRemoteSave(t *testing.T) {
       "continueOnFailure": false
     },
     {
-      "id": 4,
+      "id": "4",
       "name": "Task 4 - ConfigData",
       "enabled": true,
-      "phase": 2,
+      "phase": "2",
       "task": {
         "mode": "run",
         "componentId": "foo.bar3",
