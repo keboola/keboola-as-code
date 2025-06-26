@@ -23,7 +23,7 @@ func CopyFs2Fs(srcFs filesystem.Fs, srcPath string, dstFs filesystem.Fs, dstPath
 		// If filesystem implemented by Afero lib -> get lib backend
 		aferoSrc = fs.Backend()
 	} else {
-		return errors.Errorf(`unexpected type of src filesyste "%T"`, srcFs)
+		return errors.Errorf(`unexpected type of src filesystem "%T"`, srcFs)
 	}
 
 	// Detect dst filesystem
@@ -35,7 +35,7 @@ func CopyFs2Fs(srcFs filesystem.Fs, srcPath string, dstFs filesystem.Fs, dstPath
 		// If filesystem implemented by Afero lib -> get lib backend
 		aferoDst = fs.Backend()
 	} else {
-		return errors.Errorf(`unexpected type of dst filesyste "%T"`, dstFs)
+		return errors.Errorf(`unexpected type of dst filesystem "%T"`, dstFs)
 	}
 
 	// nolint: forbidigo
