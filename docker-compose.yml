@@ -109,7 +109,7 @@ services:
   # Same etcd is used for all services, but with different namespace
   etcd:
     hostname: etcd
-    image: docker.io/bitnami/etcd:3.5.11-debian-11-r3
+    image: docker.io/bitnami/etcd:3.6.0-debian-12-r1
     networks:
       - etcd
     environment:

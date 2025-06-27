@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.etcd.io/etcd/tests/v3/integration"
+	"go.etcd.io/etcd/tests/v3/framework/integration"
 	"google.golang.org/grpc/connectivity"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -30,7 +30,7 @@ func TestWatchConsumer_NotTyped(t *testing.T) {
 
 	// Create etcd cluster for test
 	integration.BeforeTestExternal(t)
-	cluster := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3, UseBridge: true})
+	cluster := integration.NewCluster(t, &integration.ClusterConfig{Size: 3, UseBridge: true})
 	defer cluster.Terminate(t)
 	cluster.WaitLeader(t)
 	testClient := cluster.Client(1)
@@ -166,7 +166,7 @@ func TestWatchConsumer_Typed(t *testing.T) {
 
 	// Create etcd cluster for test
 	integration.BeforeTestExternal(t)
-	cluster := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3, UseBridge: true})
+	cluster := integration.NewCluster(t, &integration.ClusterConfig{Size: 3, UseBridge: true})
 	defer cluster.Terminate(t)
 	cluster.WaitLeader(t)
 	testClient := cluster.Client(1)
