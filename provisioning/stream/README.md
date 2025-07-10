@@ -181,7 +181,7 @@ export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "stream" stream-etcd 
 
 kubectl run --tty --stdin --rm --restart=Never stream-etcd-client \
   --namespace stream \
-  --image docker.io/bitnami/etcd:3.5-debian-12 \
+  --image docker.io/bitnami/etcd:3.6-debian-12 \
   --labels="stream-etcd-client=true" \
   --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
   --env="ETCDCTL_ENDPOINTS=stream-etcd:2379" \

@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Go 1.24+
-- ETCD v3.5.17
+- ETCD v3.6
 - Git
 - Task
 

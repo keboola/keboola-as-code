@@ -132,8 +132,8 @@ func TestAppProxyHandler(t *testing.T) {
 			return strings.HasPrefix(metric.Name, "keboola.")
 		}),
 		telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
-			host, _ := attrs.Value("net.host.name")
-			status, _ := attrs.Value("http.status_code")
+			host, _ := attrs.Value("server.address")
+			status, _ := attrs.Value("http.response.status_code")
 			return fmt.Sprintf("%d:%s", status.AsInt64(), host.AsString())
 		}),
 	)
@@ -147,373 +147,53 @@ func TestAppProxyHandler(t *testing.T) {
 	expectedMetricsJSON := `
 [
   {
-    "Name": "keboola.go.http.server.request.size",
-    "Description": "Measures the size of HTTP request messages.",
+    "Name": "keboola.go.http.server.request.body.size",
+    "Description": "Size of HTTP server request bodies.",
     "Unit": "By",
     "Data": {
       "DataPoints": [
         {
           "Attributes": [
             {
-              "Key": "http.method",
+              "Key": "http.request.method",
               "Value": {
                 "Type": "STRING",
                 "Value": "GET"
               }
             },
             {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
+              "Key": "http.response.status_code",
               "Value": {
                 "Type": "INT64",
                 "Value": 200
               }
             },
             {
-              "Key": "net.host.name",
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "server.address",
               "Value": {
                 "Type": "STRING",
                 "Value": "hub.keboola.local"
               }
-            }
-          ],
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
             },
             {
-              "Key": "http.scheme",
+              "Key": "url.scheme",
               "Value": {
                 "Type": "STRING",
                 "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
-                "Value": 200
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "public-123.hub.keboola.local"
-              }
-            },
-            {
-              "Key": "proxy.app.id",
-              "Value": {
-                "Type": "STRING",
-                "Value": "123"
-              }
-            },
-            {
-              "Key": "proxy.app.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "public"
-              }
-            },
-            {
-              "Key": "proxy.app.projectId",
-              "Value": {
-                "Type": "STRING",
-                "Value": "456"
-              }
-            },
-            {
-              "Key": "proxy.app.upstream",
-              "Value": {
-                "Type": "STRING",
-                "Value": "http://app.local:<port>"
-              }
-            }
-          ],
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
-                "Value": 400
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "public-123.foo.bar.local"
-              }
-            }
-          ],
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
-                "Value": 404
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "hub.keboola.local"
-              }
-            }
-          ],
-        }
-      ],
-      "Temporality": "CumulativeTemporality",
-      "IsMonotonic": true
-    }
-  },
-  {
-    "Name": "keboola.go.http.server.response.size",
-    "Description": "Measures the size of HTTP response messages.",
-    "Unit": "By",
-    "Data": {
-      "DataPoints": [
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
-                "Value": 200
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "hub.keboola.local"
-              }
-            }
-          ],
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
-                "Value": 200
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "public-123.hub.keboola.local"
-              }
-            },
-            {
-              "Key": "proxy.app.id",
-              "Value": {
-                "Type": "STRING",
-                "Value": "123"
-              }
-            },
-            {
-              "Key": "proxy.app.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "public"
-              }
-            },
-            {
-              "Key": "proxy.app.projectId",
-              "Value": {
-                "Type": "STRING",
-                "Value": "456"
-              }
-            },
-            {
-              "Key": "proxy.app.upstream",
-              "Value": {
-                "Type": "STRING",
-                "Value": "http://app.local:<port>"
-              }
-            }
-          ],
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
-                "Value": 400
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "public-123.foo.bar.local"
-              }
-            }
-          ],
-        },
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
-                "Value": 404
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "hub.keboola.local"
-              }
-            }
-          ],
-        }
-      ],
-      "Temporality": "CumulativeTemporality",
-      "IsMonotonic": true
-    }
-  },
-  {
-    "Name": "keboola.go.http.server.duration",
-    "Description": "Measures the duration of inbound HTTP requests.",
-    "Unit": "ms",
-    "Data": {
-      "DataPoints": [
-        {
-          "Attributes": [
-            {
-              "Key": "http.method",
-              "Value": {
-                "Type": "STRING",
-                "Value": "GET"
-              }
-            },
-            {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
-              "Value": {
-                "Type": "INT64",
-                "Value": 200
-              }
-            },
-            {
-              "Key": "net.host.name",
-              "Value": {
-                "Type": "STRING",
-                "Value": "hub.keboola.local"
               }
             }
           ],
@@ -522,31 +202,31 @@ func TestAppProxyHandler(t *testing.T) {
         {
           "Attributes": [
             {
-              "Key": "http.method",
+              "Key": "http.request.method",
               "Value": {
                 "Type": "STRING",
                 "Value": "GET"
               }
             },
             {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
+              "Key": "http.response.status_code",
               "Value": {
                 "Type": "INT64",
                 "Value": 200
               }
             },
             {
-              "Key": "net.host.name",
+              "Key": "network.protocol.name",
               "Value": {
                 "Type": "STRING",
-                "Value": "public-123.hub.keboola.local"
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
               }
             },
             {
@@ -576,6 +256,20 @@ func TestAppProxyHandler(t *testing.T) {
                 "Type": "STRING",
                 "Value": "http://app.local:<port>"
               }
+            },
+            {
+              "Key": "server.address",
+              "Value": {
+                "Type": "STRING",
+                "Value": "public-123.hub.keboola.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
             }
           ],
           "Count": 1,
@@ -583,31 +277,45 @@ func TestAppProxyHandler(t *testing.T) {
         {
           "Attributes": [
             {
-              "Key": "http.method",
+              "Key": "http.request.method",
               "Value": {
                 "Type": "STRING",
                 "Value": "GET"
               }
             },
             {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
+              "Key": "http.response.status_code",
               "Value": {
                 "Type": "INT64",
                 "Value": 400
               }
             },
             {
-              "Key": "net.host.name",
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "server.address",
               "Value": {
                 "Type": "STRING",
                 "Value": "public-123.foo.bar.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
               }
             }
           ],
@@ -616,35 +324,565 @@ func TestAppProxyHandler(t *testing.T) {
         {
           "Attributes": [
             {
-              "Key": "http.method",
+              "Key": "http.request.method",
               "Value": {
                 "Type": "STRING",
                 "Value": "GET"
               }
             },
             {
-              "Key": "http.scheme",
-              "Value": {
-                "Type": "STRING",
-                "Value": "https"
-              }
-            },
-            {
-              "Key": "http.status_code",
+              "Key": "http.response.status_code",
               "Value": {
                 "Type": "INT64",
                 "Value": 404
               }
             },
             {
-              "Key": "net.host.name",
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "server.address",
               "Value": {
                 "Type": "STRING",
                 "Value": "hub.keboola.local"
               }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
             }
           ],
           "Count": 1,
+        }
+      ],
+      "Temporality": "CumulativeTemporality"
+    }
+  },
+  {
+    "Name": "keboola.go.http.server.response.body.size",
+    "Description": "Size of HTTP server response bodies.",
+    "Unit": "By",
+    "Data": {
+      "DataPoints": [
+        {
+          "Attributes": [
+            {
+              "Key": "http.request.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.response.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 200
+              }
+            },
+            {
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "server.address",
+              "Value": {
+                "Type": "STRING",
+                "Value": "hub.keboola.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            }
+          ],
+          "Count": 2,
+        },
+        {
+          "Attributes": [
+            {
+              "Key": "http.request.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.response.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 200
+              }
+            },
+            {
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "proxy.app.id",
+              "Value": {
+                "Type": "STRING",
+                "Value": "123"
+              }
+            },
+            {
+              "Key": "proxy.app.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "public"
+              }
+            },
+            {
+              "Key": "proxy.app.projectId",
+              "Value": {
+                "Type": "STRING",
+                "Value": "456"
+              }
+            },
+            {
+              "Key": "proxy.app.upstream",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http://app.local:<port>"
+              }
+            },
+            {
+              "Key": "server.address",
+              "Value": {
+                "Type": "STRING",
+                "Value": "public-123.hub.keboola.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            }
+          ],
+          "Count": 1,
+        },
+        {
+          "Attributes": [
+            {
+              "Key": "http.request.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.response.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 400
+              }
+            },
+            {
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "server.address",
+              "Value": {
+                "Type": "STRING",
+                "Value": "public-123.foo.bar.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            }
+          ],
+          "Count": 1,
+        },
+        {
+          "Attributes": [
+            {
+              "Key": "http.request.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.response.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 404
+              }
+            },
+            {
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "server.address",
+              "Value": {
+                "Type": "STRING",
+                "Value": "hub.keboola.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            }
+          ],
+          "Count": 1,
+        }
+      ],
+      "Temporality": "CumulativeTemporality"
+    }
+  },
+  {
+    "Name": "keboola.go.http.server.request.duration",
+    "Description": "Duration of HTTP server requests.",
+    "Unit": "s",
+    "Data": {
+      "DataPoints": [
+        {
+          "Attributes": [
+            {
+              "Key": "http.request.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.response.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 200
+              }
+            },
+            {
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "server.address",
+              "Value": {
+                "Type": "STRING",
+                "Value": "hub.keboola.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            }
+          ],
+          "Count": 2,
+          "Bounds": [
+            0.005,
+            0.01,
+            0.025,
+            0.05,
+            0.075,
+            0.1,
+            0.25,
+            0.5,
+            0.75,
+            1,
+            2.5,
+            5,
+            7.5,
+            10
+          ],
+        },
+        {
+          "Attributes": [
+            {
+              "Key": "http.request.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.response.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 200
+              }
+            },
+            {
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "proxy.app.id",
+              "Value": {
+                "Type": "STRING",
+                "Value": "123"
+              }
+            },
+            {
+              "Key": "proxy.app.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "public"
+              }
+            },
+            {
+              "Key": "proxy.app.projectId",
+              "Value": {
+                "Type": "STRING",
+                "Value": "456"
+              }
+            },
+            {
+              "Key": "proxy.app.upstream",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http://app.local:<port>"
+              }
+            },
+            {
+              "Key": "server.address",
+              "Value": {
+                "Type": "STRING",
+                "Value": "public-123.hub.keboola.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            }
+          ],
+          "Count": 1,
+          "Bounds": [
+            0.005,
+            0.01,
+            0.025,
+            0.05,
+            0.075,
+            0.1,
+            0.25,
+            0.5,
+            0.75,
+            1,
+            2.5,
+            5,
+            7.5,
+            10
+          ],
+        },
+        {
+          "Attributes": [
+            {
+              "Key": "http.request.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.response.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 400
+              }
+            },
+            {
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "server.address",
+              "Value": {
+                "Type": "STRING",
+                "Value": "public-123.foo.bar.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            }
+          ],
+          "Count": 1,
+          "Bounds": [
+            0.005,
+            0.01,
+            0.025,
+            0.05,
+            0.075,
+            0.1,
+            0.25,
+            0.5,
+            0.75,
+            1,
+            2.5,
+            5,
+            7.5,
+            10
+          ],
+        },
+        {
+          "Attributes": [
+            {
+              "Key": "http.request.method",
+              "Value": {
+                "Type": "STRING",
+                "Value": "GET"
+              }
+            },
+            {
+              "Key": "http.response.status_code",
+              "Value": {
+                "Type": "INT64",
+                "Value": 404
+              }
+            },
+            {
+              "Key": "network.protocol.name",
+              "Value": {
+                "Type": "STRING",
+                "Value": "http"
+              }
+            },
+            {
+              "Key": "network.protocol.version",
+              "Value": {
+                "Type": "STRING",
+                "Value": "1.1"
+              }
+            },
+            {
+              "Key": "server.address",
+              "Value": {
+                "Type": "STRING",
+                "Value": "hub.keboola.local"
+              }
+            },
+            {
+              "Key": "url.scheme",
+              "Value": {
+                "Type": "STRING",
+                "Value": "https"
+              }
+            }
+          ],
+          "Count": 1,
+          "Bounds": [
+            0.005,
+            0.01,
+            0.025,
+            0.05,
+            0.075,
+            0.1,
+            0.25,
+            0.5,
+            0.75,
+            1,
+            2.5,
+            5,
+            7.5,
+            10
+          ],
         }
       ],
       "Temporality": "CumulativeTemporality"
