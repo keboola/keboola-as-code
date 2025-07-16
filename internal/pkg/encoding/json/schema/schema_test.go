@@ -222,7 +222,7 @@ invalid JSON schema:
 
 func TestValidateObjects_BooleanRequired(t *testing.T) {
 	t.Parallel()
-	invalidSchema := []byte(`{"properties": {"key1": {"required": true}}}`)
+	invalidSchema := []byte(`{"properties": {"key1": {"required": true}, "key2": {"required": false}}}`)
 
 	// Required field in a JSON schema should be an array of required nested fields.
 	// But, for historical reasons, in Keboola components, "required: true" is also used.

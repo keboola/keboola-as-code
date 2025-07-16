@@ -126,11 +126,13 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 
 	m.VisitAllRecursive(func(path orderedmap.Path, value any, parent any) {
 		// Required field in a JSON schema should be an array of required nested fields.
-		// But, for historical reasons, in Keboola components, "required: true" is also used.
+		// But, for historical reasons, in Keboola components, "required: true" and "required: false" are also used.
 		// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
-		if path.Last() == orderedmap.MapStep("required") && value == true {
-			if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
-				parentMap.Delete("required")
+		if path.Last() == orderedmap.MapStep("required") {
+			if _, ok := value.(bool); ok {
+				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
+					parentMap.Delete("required")
+				}
 			}
 		}
 	})
