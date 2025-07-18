@@ -135,6 +135,15 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 				}
 			}
 		}
+
+		// Empty enums are removed, we're using those for asynchronously loaded enums.
+		if path.Last() == orderedmap.MapStep("enum") {
+			if arr, ok := value.([]any); ok && len(arr) == 0 {
+				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
+					parentMap.Delete("enum")
+				}
+			}
+		}
 	})
 
 	// Encode back to JSON
