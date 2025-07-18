@@ -92,13 +92,18 @@ func (p *phaseParser) dependsOnPaths() ([]string, error) {
 		}
 	}
 
-	// Convert []any -> []string
+	// Convert []any -> []string, accept string or int/float64
 	value := make([]string, 0)
 	for i, item := range rawSlice {
-		if itemStr, ok := item.(string); ok {
-			value = append(value, itemStr)
-		} else {
-			return nil, errors.Errorf(`"dependsOn" key must contain only strings, found %T, index %d`, itemStr, i)
+		switch v := item.(type) {
+		case string:
+			value = append(value, v)
+		case int:
+			value = append(value, fmt.Sprintf("%d", v))
+		case float64:
+			value = append(value, fmt.Sprintf("%.0f", v))
+		default:
+			return nil, errors.Errorf(`"dependsOn" key must contain only strings or ints, found %T, index %d`, item, i)
 		}
 	}
 
