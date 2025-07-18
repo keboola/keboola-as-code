@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"fmt"
+
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -15,15 +17,23 @@ func (p *phaseParser) id() (string, error) {
 	if !found {
 		return "", errors.New(`missing "id" key`)
 	}
-	value, ok := raw.(string)
-	if !ok {
-		return "", errors.Errorf(`"id" must be string, found %v`, raw)
+	// Accept string or int/float64, always convert to string
+	switch v := raw.(type) {
+	case string:
+		if len(v) == 0 {
+			return "", errors.New(`"id" cannot be empty`)
+		}
+		p.content.Delete(`id`)
+		return v, nil
+	case int:
+		p.content.Delete(`id`)
+		return fmt.Sprintf("%d", v), nil
+	case float64:
+		p.content.Delete(`id`)
+		return fmt.Sprintf("%.0f", v), nil
+	default:
+		return "", errors.Errorf(`"id" must be string or int, found %T`, raw)
 	}
-	if len(value) == 0 {
-		return "", errors.New(`"id" cannot be empty`)
-	}
-	p.content.Delete(`id`)
-	return value, nil
 }
 
 func (p *phaseParser) name() (string, error) {
@@ -51,16 +61,21 @@ func (p *phaseParser) dependsOnIds() ([]string, error) {
 		}
 	}
 
-	// Convert []any -> []string
+	// Convert []any -> []string, accept string or int/float64
 	value := make([]string, 0)
 	for i, itemRaw := range rawSlice {
-		if item, ok := itemRaw.(string); ok {
-			if len(item) == 0 {
+		switch v := itemRaw.(type) {
+		case string:
+			if len(v) == 0 {
 				return nil, errors.Errorf(`"dependsOn" cannot contain empty strings, found empty string at index %d`, i)
 			}
-			value = append(value, item)
-		} else {
-			return nil, errors.Errorf(`"dependsOn" key must contain only strings, found %v, index %d`, itemRaw, i)
+			value = append(value, v)
+		case int:
+			value = append(value, fmt.Sprintf("%d", v))
+		case float64:
+			value = append(value, fmt.Sprintf("%.0f", v))
+		default:
+			return nil, errors.Errorf(`"dependsOn" key must contain only strings or ints, found %T, index %d`, itemRaw, i)
 		}
 	}
 
@@ -77,13 +92,18 @@ func (p *phaseParser) dependsOnPaths() ([]string, error) {
 		}
 	}
 
-	// Convert []any -> []string
+	// Convert []any -> []string, accept string or int/float64
 	value := make([]string, 0)
 	for i, item := range rawSlice {
-		if itemStr, ok := item.(string); ok {
-			value = append(value, itemStr)
-		} else {
-			return nil, errors.Errorf(`"dependsOn" key must contain only strings, found %T, index %d`, itemStr, i)
+		switch v := item.(type) {
+		case string:
+			value = append(value, v)
+		case int:
+			value = append(value, fmt.Sprintf("%d", v))
+		case float64:
+			value = append(value, fmt.Sprintf("%.0f", v))
+		default:
+			return nil, errors.Errorf(`"dependsOn" key must contain only strings or ints, found %T, index %d`, item, i)
 		}
 	}
 

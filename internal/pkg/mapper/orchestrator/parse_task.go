@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"fmt"
+
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
@@ -16,15 +18,23 @@ func (p *taskParser) id() (string, error) {
 	if !found {
 		return "", errors.New(`missing "id" key`)
 	}
-	value, ok := raw.(string)
-	if !ok {
-		return "", errors.Errorf(`"id" must be string, found %v`, raw)
+	// Accept string or int/float64, always convert to string
+	switch v := raw.(type) {
+	case string:
+		if len(v) == 0 {
+			return "", errors.New(`"id" cannot be empty`)
+		}
+		p.content.Delete(`id`)
+		return v, nil
+	case int:
+		p.content.Delete(`id`)
+		return fmt.Sprintf("%d", v), nil
+	case float64:
+		p.content.Delete(`id`)
+		return fmt.Sprintf("%.0f", v), nil
+	default:
+		return "", errors.Errorf(`"id" must be string or int, found %T`, raw)
 	}
-	if len(value) == 0 {
-		return "", errors.New(`"id" cannot be empty`)
-	}
-	p.content.Delete(`id`)
-	return value, nil
 }
 
 func (p *taskParser) name() (string, error) {
@@ -62,15 +72,23 @@ func (p *taskParser) phaseID() (string, error) {
 	if !found {
 		return "", errors.New(`missing "phase" key`)
 	}
-	value, ok := raw.(string)
-	if !ok {
-		return "", errors.Errorf(`"phase" must be string, found %v`, raw)
+	// Accept string or int/float64, always convert to string
+	switch v := raw.(type) {
+	case string:
+		if len(v) == 0 {
+			return "", errors.New(`"phase" cannot be empty`)
+		}
+		p.content.Delete(`phase`)
+		return v, nil
+	case int:
+		p.content.Delete(`phase`)
+		return fmt.Sprintf("%d", v), nil
+	case float64:
+		p.content.Delete(`phase`)
+		return fmt.Sprintf("%.0f", v), nil
+	default:
+		return "", errors.Errorf(`"phase" must be string or int, found %T`, raw)
 	}
-	if len(value) == 0 {
-		return "", errors.New(`"phase" cannot be empty`)
-	}
-	p.content.Delete(`phase`)
-	return value, nil
 }
 
 func (p *taskParser) componentID() (keboola.ComponentID, error) {

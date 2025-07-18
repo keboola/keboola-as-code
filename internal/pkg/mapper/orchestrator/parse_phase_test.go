@@ -23,10 +23,10 @@ func TestParsePhase(t *testing.T) {
 	}{
 		{
 			`{"id":123,"foo":"bar"}`,
-			`{"id":123,"foo":"bar"}`,
+			`{"foo":"bar"}`,
 			func(p *phaseParser) (any, error) { return p.id() },
-			"",
-			errors.New(`"id" must be string, found 123`),
+			"123",
+			nil,
 		},
 		{
 			`{"foo":"bar"}`,
@@ -37,10 +37,10 @@ func TestParsePhase(t *testing.T) {
 		},
 		{
 			`{"id":12.34,"foo":"bar"}`,
-			`{"id":12.34,"foo":"bar"}`,
+			`{"foo":"bar"}`,
 			func(p *phaseParser) (any, error) { return p.id() },
-			"",
-			errors.New(`"id" must be string, found 12.34`),
+			"12",
+			nil,
 		},
 		{
 			`{"id":"123","foo":"bar"}`,
@@ -107,10 +107,10 @@ func TestParsePhase(t *testing.T) {
 		},
 		{
 			`{"dependsOn":[1,"2","3"],"foo":"bar"}`,
-			`{"dependsOn":[1,"2","3"],"foo":"bar"}`,
+			`{"foo":"bar"}`,
 			func(p *phaseParser) (any, error) { return p.dependsOnIds() },
-			[]string(nil),
-			errors.New(`"dependsOn" key must contain only strings, found 1, index 0`),
+			[]string{"1", "2", "3"},
+			nil,
 		},
 		{
 			`{"dependsOn":["foo1", "foo2"],"foo":"bar"}`,
@@ -135,10 +135,10 @@ func TestParsePhase(t *testing.T) {
 		},
 		{
 			`{"dependsOn":["1",2,"3"],"foo":"bar"}`,
-			`{"dependsOn":["1",2,"3"],"foo":"bar"}`,
+			`{"foo":"bar"}`,
 			func(p *phaseParser) (any, error) { return p.dependsOnPaths() },
-			[]string(nil),
-			errors.New(`"dependsOn" key must contain only strings, found string, index 1`),
+			[]string{"1", "2", "3"},
+			nil,
 		},
 		{
 			`{"foo":"bar"}`,
