@@ -13,7 +13,7 @@ nodeSelector:
 
 # Locked/updated etcd image
 image:
-  tag: 3.5.21-debian-12-r1
+  tag: 3.6.0-debian-12-r1
 
 # Additional pod annotations
 podAnnotations:
@@ -37,7 +37,7 @@ resources:
   limits:
     memory: "256Mi"
 
-# Keep 15 minutes of history, see https://etcd.io/docs/v3.5/op-guide/maintenance/#auto-compaction.
+# Keep 15 minutes of history, see https://etcd.io/docs/v3.6/op-guide/maintenance/#auto-compaction.
 # etcd uses MVCC - multi version concurrency control.
 # All previous versions of the database state are kept.
 # Here, the Auto Compaction Mode is enabled.
@@ -48,12 +48,17 @@ autoCompactionRetention: "15m"
 extraEnvVars:
 - name: ETCD_DISABLE_STORE_MEMBER_ID
   value: "yes"
+# Set max DB size to 8GB, it is the recommended maximum.
 - name: ETCD_QUOTA_BACKEND_BYTES
   value: "8589934592"
+# Optimize memory usage, see: https://etcd.io/docs/v3.6/tuning/#snapshots
+# Default value in etcd v3.2+ is "100 000": https://etcd.io/docs/v3.6/op-guide/maintenance/#raft-log-retention
 - name: ETCD_SNAPSHOT_COUNT
   value: "10000"
+# GOMEMLIMIT to prevent OOM kill, update the value together with "resources" spec.
 - name: GOMEMLIMIT
   value: "256MiB"
+# Increase limit of operations in transaction.
 - name: ETCD_MAX_TXN_OPS
   value: "1024"
 

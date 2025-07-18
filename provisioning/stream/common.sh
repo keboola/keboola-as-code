@@ -66,7 +66,7 @@ export STREAM_STORAGE_COORDINATOR_CPU_SOFT_LIMIT="${STREAM_STORAGE_COORDINATOR_C
 
 # Constants
 export NAMESPACE="stream"
-ETCD_HELM_CHART_VERSION="11.3.4"
+ETCD_HELM_CHART_VERSION="12.0.11"
 
 # Common part of the deployment. Same for AWS/Azure/Local
 ./kubernetes/build.sh
