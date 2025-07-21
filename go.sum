@@ -371,8 +371,8 @@ github.com/getkin/kin-openapi v0.132.0 h1:3ISeLMsQzcb5v26yeJrBcdTCEQTag36ZjaGk7M
 github.com/getkin/kin-openapi v0.132.0/go.mod h1:3OlG51PCYNsPByuiMB0t4fjnNlIDnaEDsjiKUV8nL58=
 github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 h1:Arcl6UOIS/kgO2nW3A65HN+7CMjSDP/gofXL4CZt1V4=
 github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344/go.mod h1:GIjDIg/heH5DOkXY3YJ/wNhfHsQHoXGjl8G8amsYQ1I=
-github.com/go-chi/chi/v5 v5.2.1 h1:KOIHODQj58PmL80G2Eak4WdvUzjSJSm0vG72crDCqb8=
-github.com/go-chi/chi/v5 v5.2.1/go.mod h1:L2yAIGWB3H+phAw1NxKwWM+7eUH/lU8pOMm5hHcoops=
+github.com/go-chi/chi/v5 v5.2.2 h1:CMwsvRVTbXVytCk1Wd72Zy1LAsAh9GxMmSNWLHCG618=
+github.com/go-chi/chi/v5 v5.2.2/go.mod h1:L2yAIGWB3H+phAw1NxKwWM+7eUH/lU8pOMm5hHcoops=
 github.com/go-jose/go-jose/v3 v3.0.4 h1:Wp5HA7bLQcKnf6YYao/4kpRpVMp/yf6+pJKV8WFSaNY=
 github.com/go-jose/go-jose/v3 v3.0.4/go.mod h1:5b+7YgP7ZICgJDBdfjZaIt+H/9L9T/YQrVfLAMboGkQ=
 github.com/go-jose/go-jose/v4 v4.1.0 h1:cYSYxd3pw5zd2FSXk2vGdn9igQU2PS8MuxrCOCl0FdY=
@@ -1065,10 +1065,10 @@ go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN8
 go.uber.org/zap v1.18.1/go.mod h1:xg/QME4nWcxGxrpdeYfq7UvYrLh66cuVKdrbD1XF/NI=
 go.uber.org/zap v1.27.0 h1:aJMhYGrd5QSmlpLMr2MftRKl7t8J8PTZPA732ud/XR8=
 go.uber.org/zap v1.27.0/go.mod h1:GB2qFLM7cTU87MWRP2mPIjqfIDnGu+VIO4V/SdhGo2E=
-goa.design/goa/v3 v3.21.1 h1:tLwhbcNoEBJm1CcJc3ks6oZ8BHYl6vFuxEBnl2kC428=
-goa.design/goa/v3 v3.21.1/go.mod h1:E+97AYffVIvDi6LkuNdfdvMZb8UFb/+ie3V0/WBBdgc=
-goa.design/plugins/v3 v3.21.1 h1:7MUuJRadaoQC4Gi0eRm47O4pB6yAPoEs4NAt+i/Fkzc=
-goa.design/plugins/v3 v3.21.1/go.mod h1:2tX6XgqRqABgyhnUpj4t3pNEv39gCaeCrSxIx9fi8Is=
+goa.design/goa/v3 v3.21.5 h1:eS6SHJ1KZ5q5bhT/llw0LMTCWbosBwlFX4v8MctYs38=
+goa.design/goa/v3 v3.21.5/go.mod h1:5THVDuChOIctYM+t3xmL4f2fJbFPzzwvrYMj3PQZg9g=
+goa.design/plugins/v3 v3.21.5 h1:UrKKlMCLAfqWT4LN/kEHvVngp2OydWqQUk6rRsPuAwg=
+goa.design/plugins/v3 v3.21.5/go.mod h1:sqmDVF4CIqFxl2GI8t8HOJR4PE60wEM+x8q/EtOmEVU=
 gocloud.dev v0.41.0 h1:qBKd9jZkBKEghYbP/uThpomhedK5s2Gy6Lz7h/zYYrM=
 gocloud.dev v0.41.0/go.mod h1:IetpBcWLUwroOOxKr90lhsZ8vWxeSkuszBnW62sbcf0=
 golang.org/dl v0.0.0-20190829154251-82a15e2f2ead/go.mod h1:IUMfjQLJQd4UTqG1Z90tenwKoCX93Gn3MAQJMOSBsDQ=
