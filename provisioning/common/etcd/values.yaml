@@ -13,7 +13,7 @@ nodeSelector:
 
 # Locked/updated etcd image
 image:
-  tag: 3.6.0-debian-12-r1
+  tag: 3.6.2-debian-12-r1
 
 # Additional pod annotations
 podAnnotations:
