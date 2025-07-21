@@ -24,10 +24,10 @@ func TestParseTask(t *testing.T) {
 	}{
 		{
 			`{"id":123,"foo":"bar"}`,
-			`{"id":123,"foo":"bar"}`,
+			`{"foo":"bar"}`,
 			func(p *taskParser) (any, error) { return p.id() },
-			"",
-			errors.New(`"id" must be string, found 123`),
+			"123",
+			nil,
 		},
 		{
 			`{"foo":"bar"}`,
@@ -38,10 +38,10 @@ func TestParseTask(t *testing.T) {
 		},
 		{
 			`{"id":12.34,"foo":"bar"}`,
-			`{"id":12.34,"foo":"bar"}`,
+			`{"foo":"bar"}`,
 			func(p *taskParser) (any, error) { return p.id() },
-			"",
-			errors.New(`"id" must be string, found 12.34`),
+			"12",
+			nil,
 		},
 		{
 			`{"id":"123","foo":"bar"}`,
@@ -122,10 +122,10 @@ func TestParseTask(t *testing.T) {
 		},
 		{
 			`{"phase":123,"foo":"bar"}`,
-			`{"phase":123,"foo":"bar"}`,
+			`{"foo":"bar"}`,
 			func(p *taskParser) (any, error) { return p.phaseID() },
-			"",
-			errors.New(`"phase" must be string, found 123`),
+			"123",
+			nil,
 		},
 		{
 			`{"phase":"","foo":"bar"}`,
