@@ -1,5 +1,13 @@
 #!/bin/bash
 
+set -e  # Exit immediately if a command exits with a non-zero status
+
+# Check for gpg
+if ! command -v gpg >/dev/null 2>&1; then
+  echo "gpg is required but not installed. Aborting."
+  exit 1
+fi
+
 set -o errexit          # Exit on most errors (see the manual)
 set -o errtrace         # Make sure any error trap is inherited
 set -o nounset          # Disallow expansion of unset variables
