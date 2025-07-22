@@ -74,16 +74,22 @@ func (d *downloader) Download(ctx context.Context) (returnErr error) {
 	}
 
 	// Create progress bar, it writes to stderr
-	d.bar = progressbar.DefaultBytes(size, "Downloading")
-	defer func() {
-		if closeErr := d.bar.Close(); returnErr == nil && closeErr != nil {
-			returnErr = closeErr
-		}
-	}()
+	// Only create progress bar if size is greater than 0
+	if size > 0 {
+		d.bar = progressbar.DefaultBytes(size, "Downloading")
+		defer func() {
+			if closeErr := d.bar.Close(); returnErr == nil && closeErr != nil {
+				returnErr = closeErr
+			}
+		}()
 
-	stderr := d.Stderr()
-	progressbar.OptionSetWriter(stderr)(d.bar)
-	progressbar.OptionOnCompletion(func() { fmt.Fprint(stderr, "\n") })
+		stderr := d.Stderr()
+		progressbar.OptionSetWriter(stderr)(d.bar)
+		progressbar.OptionOnCompletion(func() { fmt.Fprint(stderr, "\n") })
+	} else {
+		// For empty files or when size cannot be determined, just show a message
+		d.Logger().Info(ctx, "Downloading (size unknown or empty file)")
+	}
 
 	// Download
 	if d.options.ToStdout() || !d.options.AllowSliced || !d.options.File.IsSliced {
