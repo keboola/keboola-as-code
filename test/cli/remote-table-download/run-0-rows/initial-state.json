@@ -1,0 +1,32 @@
+{
+  "backend": {
+    "type": "snowflake"
+  },
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "buckets": [
+    {
+      "id": "in.c-test",
+      "name": "test",
+      "stage": "in",
+      "tables": [
+        {
+          "id": "in.c-test.accounts",
+          "name": "accounts",
+          "primaryKey": ["Id", "Name"],
+          "columns": ["Id", "Name", "Region", "Status", "First_Order"],
+          "rows": []
+        }
+      ]
+    }
+  ]
+}
+

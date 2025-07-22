@@ -1,0 +1,1 @@
+remote table download --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --order Id in.c-test.accounts -o data.csv
