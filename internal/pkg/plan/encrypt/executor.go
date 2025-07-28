@@ -67,8 +67,9 @@ func (e *executor) encryptRequest(action *action) request.Sendable {
 	}
 
 	// Prepare request
+	componentID := object.GetComponentID()
 	return e.keboolaProjectAPI.
-		EncryptRequest(int(e.projectID), object.GetComponentID(), data).
+		EncryptRequest(int(e.projectID), &componentID, nil, nil, data).
 		WithOnSuccess(func(ctx context.Context, results *map[string]string) error {
 			for key, encrypted := range *results {
 				path := keyToPath[key]
