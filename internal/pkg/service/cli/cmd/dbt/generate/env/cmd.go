@@ -58,7 +58,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 			snowflakeWorkspaces := make([]*keboola.WorkspaceWithConfig, 0)
 			for _, w := range allWorkspaces {
-				if w.Workspace.Type == keboola.WorkspaceTypeSnowflake {
+				if keboola.WorkspaceType(w.Workspace.Type) == keboola.WorkspaceTypeSnowflake {
 					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
 				}
 			}

@@ -56,7 +56,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	targetUpper := strings.ToUpper(o.TargetName)
 	host := workspace.Host
-	if workspace.Type == keboola.WorkspaceTypeSnowflake {
+	if keboola.WorkspaceType(workspace.Type) == keboola.WorkspaceTypeSnowflake {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
 

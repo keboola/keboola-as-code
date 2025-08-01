@@ -39,11 +39,11 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 	c, w := workspace.Config, workspace.Workspace
 
 	logger.Infof(ctx, "Workspace \"%s\"\nID: %s\nType: %s", c.Name, c.ID, w.Type)
-	if keboola.WorkspaceSupportsSizes(w.Type) {
+	if keboola.WorkspaceSupportsSizes(keboola.WorkspaceType(w.Type)) {
 		logger.Infof(ctx, `Size: %s`, w.Size)
 	}
 
-	switch w.Type {
+	switch keboola.WorkspaceType(w.Type) {
 	case keboola.WorkspaceTypeSnowflake:
 		logger.Infof(
 			ctx,
