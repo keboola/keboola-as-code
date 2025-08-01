@@ -25,6 +25,7 @@ type DbtInitOptions struct {
 
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
+	ProjectBackends() []string
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
@@ -50,11 +51,12 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 
 	// Create workspace
 	d.Logger().Info(ctx, `Creating a new workspace, please wait.`)
+	backend := d.ProjectBackends()[0]
 	w, err := d.KeboolaProjectAPI().CreateWorkspace(
 		ctx,
 		branch.ID,
 		o.WorkspaceName,
-		keboola.WorkspaceTypeSnowflake,
+		keboola.WorkspaceType(backend),
 	)
 	if err != nil {
 		return errors.Errorf("cannot create workspace: %w", err)

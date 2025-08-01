@@ -1,0 +1,1 @@
+dbt init -T target1 -W dbt_source --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
