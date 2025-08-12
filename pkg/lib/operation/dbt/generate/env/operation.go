@@ -19,7 +19,7 @@ import (
 type Options struct {
 	BranchKey  keboola.BranchKey
 	TargetName string
-	Workspace  *keboola.Workspace
+	Workspace  *keboola.SandboxWorkspace
 	Buckets    []listbuckets.Bucket // optional, set if the buckets have been loaded in a parent command
 }
 
@@ -49,14 +49,14 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 
 	// Load workspace credentials
-	workspace, err := d.KeboolaProjectAPI().GetWorkspaceInstanceRequest(o.Workspace.ID).Send(ctx)
+	workspace, err := d.KeboolaProjectAPI().GetSandboxWorkspaceInstanceRequest(o.Workspace.ID).Send(ctx)
 	if err != nil {
 		return errors.Errorf("could not load workspace credentials: %w", err)
 	}
 
 	targetUpper := strings.ToUpper(o.TargetName)
 	host := workspace.Host
-	if workspace.Type == keboola.WorkspaceTypeSnowflake {
+	if workspace.Type == string(keboola.SandboxWorkspaceTypeSnowflake) {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
 
@@ -64,7 +64,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	var envContent strings.Builder
 	envVars := make(map[string]string)
 
-	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = workspace.Type
+	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = string(workspace.Type)
 	envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = workspace.Details.Connection.Schema
 	envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = workspace.Details.Connection.Warehouse
 	envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = workspace.Details.Connection.Database

@@ -31,20 +31,20 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("workspace details timeout"))
 	defer cancel()
 
-	workspace, err := d.KeboolaProjectAPI().GetWorkspace(ctx, branch.ID, configID)
+	workspace, err := d.KeboolaProjectAPI().GetSandboxWorkspace(ctx, branch.ID, configID)
 	if err != nil {
 		return err
 	}
 
-	c, w := workspace.Config, workspace.Workspace
+	c, w := workspace.Config, workspace.SandboxWorkspace
 
 	logger.Infof(ctx, "Workspace \"%s\"\nID: %s\nType: %s", c.Name, c.ID, w.Type)
-	if keboola.WorkspaceSupportsSizes(w.Type) {
+	if keboola.SandboxWorkspaceSupportsSizes(keboola.SandboxWorkspaceType(w.Type)) {
 		logger.Infof(ctx, `Size: %s`, w.Size)
 	}
 
-	switch w.Type {
-	case keboola.WorkspaceTypeSnowflake:
+	switch keboola.SandboxWorkspaceType(w.Type) {
+	case keboola.SandboxWorkspaceTypeSnowflake:
 		logger.Infof(
 			ctx,
 			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
@@ -55,9 +55,9 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 			w.Details.Connection.Schema,
 			w.Details.Connection.Warehouse,
 		)
-	case keboola.WorkspaceTypePython:
+	case keboola.SandboxWorkspaceTypePython:
 		fallthrough
-	case keboola.WorkspaceTypeR:
+	case keboola.SandboxWorkspaceTypeR:
 		logger.Infof(
 			ctx,
 			"Credentials:\n  Host: %s\n  Password: %s",
