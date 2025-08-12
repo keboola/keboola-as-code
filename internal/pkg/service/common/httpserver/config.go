@@ -7,6 +7,8 @@ type Config struct {
 	ErrorNamePrefix   string
 	ExceptionIDPrefix string
 	MiddlewareOptions []middleware.Option
+	// Enable gzip compression for responses
+	EnableGzip bool
 	// Mount endpoints to the Muxer
 	Mount func(c Components)
 }
