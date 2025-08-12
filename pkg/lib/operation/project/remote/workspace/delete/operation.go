@@ -17,7 +17,7 @@ type dependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
 }
 
-func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspace *keboola.WorkspaceWithConfig) (err error) {
+func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspace *keboola.SandboxWorkspaceWithConfig) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.workspace.delete")
 	defer span.End(&err)
 
@@ -27,11 +27,11 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 	defer cancel()
 
 	logger.Infof(ctx, `Deleting the workspace "%s" (%s), please wait.`, workspace.Config.Name, workspace.Config.ID)
-	err = d.KeboolaProjectAPI().DeleteWorkspace(
+	err = d.KeboolaProjectAPI().DeleteSandboxWorkspace(
 		ctx,
 		branchID,
 		workspace.Config.ID,
-		workspace.Workspace.ID,
+		workspace.SandboxWorkspace.ID,
 	)
 	if err != nil {
 		return err

@@ -107,7 +107,7 @@ func TestAlwaysIgnoredComponents(t *testing.T) {
 	t.Parallel()
 	m := NoFilter()
 	assert.True(t, m.IsObjectIgnored(
-		&Config{ConfigKey: ConfigKey{ComponentID: keboola.WorkspacesComponent}},
+		&Config{ConfigKey: ConfigKey{ComponentID: keboola.SandboxWorkspacesComponent}},
 	))
 }
 

@@ -52,13 +52,13 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get all Snowflake workspaces for the dialog
-			allWorkspaces, err := d.KeboolaProjectAPI().ListWorkspaces(cmd.Context(), branch.ID)
+			allWorkspaces, err := d.KeboolaProjectAPI().ListSandboxWorkspaces(cmd.Context(), branch.ID)
 			if err != nil {
 				return err
 			}
-			snowflakeWorkspaces := make([]*keboola.WorkspaceWithConfig, 0)
+			snowflakeWorkspaces := make([]*keboola.SandboxWorkspaceWithConfig, 0)
 			for _, w := range allWorkspaces {
-				if w.Workspace.Type == keboola.WorkspaceTypeSnowflake {
+				if w.Config.ComponentID == keboola.SandboxWorkspacesComponent {
 					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
 				}
 			}

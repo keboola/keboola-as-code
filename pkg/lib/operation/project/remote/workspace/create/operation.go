@@ -37,29 +37,29 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("workspace creation timeout"))
 	defer cancel()
 
-	opts := make([]keboola.CreateWorkspaceOption, 0)
+	opts := make([]keboola.CreateSandboxWorkspaceOption, 0)
 	if len(o.Size) > 0 {
 		opts = append(opts, keboola.WithSize(o.Size))
 	}
 
 	logger.Info(ctx, `Creating a new workspace, please wait.`)
 	// Create workspace by API
-	w, err := d.KeboolaProjectAPI().CreateWorkspace(
+	w, err := d.KeboolaProjectAPI().CreateSandboxWorkspace(
 		ctx,
 		branch.ID,
 		o.Name,
-		o.Type,
+		keboola.SandboxWorkspaceType(o.Type),
 		opts...,
 	)
 	if err != nil {
 		return errors.Errorf("cannot create workspace: %w", err)
 	}
 
-	workspace := w.Workspace
+	workspace := w.SandboxWorkspace
 
 	logger.Infof(ctx, `Created the new workspace "%s" (%s).`, o.Name, w.Config.ID)
-	switch workspace.Type {
-	case keboola.WorkspaceTypeSnowflake:
+	switch keboola.SandboxWorkspaceType(workspace.Type) {
+	case keboola.SandboxWorkspaceTypeSnowflake:
 		logger.Infof(
 			ctx,
 			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
@@ -70,9 +70,9 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 			workspace.Details.Connection.Schema,
 			workspace.Details.Connection.Warehouse,
 		)
-	case keboola.WorkspaceTypePython:
+	case keboola.SandboxWorkspaceTypePython:
 		fallthrough
-	case keboola.WorkspaceTypeR:
+	case keboola.SandboxWorkspaceTypeR:
 		logger.Infof(
 			ctx,
 			"Credentials:\n  Host: %s\n  Password: %s",

@@ -434,17 +434,17 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 
 	for _, fixture := range sandboxes {
 		wg.Go(func() {
-			opts := make([]keboola.CreateWorkspaceOption, 0)
-			if keboola.WorkspaceSupportsSizes(fixture.Type) && len(fixture.Size) > 0 {
+			opts := make([]keboola.CreateSandboxWorkspaceOption, 0)
+			if keboola.SandboxWorkspaceSupportsSizes(keboola.SandboxWorkspaceType(fixture.Type)) && len(fixture.Size) > 0 {
 				opts = append(opts, keboola.WithSize(fixture.Size))
 			}
 
 			p.logf("▶ Sandbox \"%s\"...", fixture.Name)
-			sandbox, err := p.keboolaProjectAPI.CreateWorkspace(
+			sandbox, err := p.keboolaProjectAPI.CreateSandboxWorkspace(
 				ctx,
 				defaultBranchID,
 				fixture.Name,
-				fixture.Type,
+				keboola.SandboxWorkspaceType(fixture.Type),
 				opts...,
 			)
 			if err != nil {

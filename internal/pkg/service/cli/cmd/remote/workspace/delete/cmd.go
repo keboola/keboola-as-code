@@ -45,7 +45,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			allWorkspaces, err := d.KeboolaProjectAPI().ListWorkspaces(cmd.Context(), branch.ID)
+			allWorkspaces, err := d.KeboolaProjectAPI().ListSandboxWorkspaces(cmd.Context(), branch.ID)
 			if err != nil {
 				return err
 			}
