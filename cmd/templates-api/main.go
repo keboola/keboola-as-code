@@ -123,6 +123,7 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 		ListenAddress:     cfg.API.Listen,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
+		EnableGzip:        true, // Enable gzip compression for responses
 		MiddlewareOptions: []middleware.Option{
 			middleware.WithRedactedHeader("X-StorageAPI-Token"),
 			middleware.WithPropagators(propagation.TraceContext{}),
