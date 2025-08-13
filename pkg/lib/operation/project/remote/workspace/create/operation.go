@@ -70,6 +70,16 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 			workspace.Details.Connection.Schema,
 			workspace.Details.Connection.Warehouse,
 		)
+	case keboola.SandboxWorkspaceTypeBigQuery:
+		logger.Infof(
+			ctx,
+			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s",
+			workspace.Host,
+			workspace.User,
+			workspace.Password,
+			workspace.Details.Connection.Database,
+			workspace.Details.Connection.Schema,
+		)
 	case keboola.SandboxWorkspaceTypePython:
 		fallthrough
 	case keboola.SandboxWorkspaceTypeR:

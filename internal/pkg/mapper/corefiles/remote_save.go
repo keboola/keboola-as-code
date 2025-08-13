@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-// MapBeforeRemoteSave ensures configurations with rows trigger row synchronization
+// MapBeforeRemoteSave ensures configurations with rows trigger row synchronization.
 func (m *coreFilesMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Only handle Config objects
 	config, ok := recipe.Object.(*model.Config)
