@@ -55,6 +55,16 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 			w.Details.Connection.Schema,
 			w.Details.Connection.Warehouse,
 		)
+	case keboola.SandboxWorkspaceTypeBigQuery:
+		logger.Infof(
+			ctx,
+			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s",
+			w.Host,
+			w.User,
+			w.Password,
+			w.Details.Connection.Database,
+			w.Details.Connection.Schema,
+		)
 	case keboola.SandboxWorkspaceTypePython:
 		fallthrough
 	case keboola.SandboxWorkspaceTypeR:

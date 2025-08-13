@@ -498,7 +498,7 @@ func (c *ConfigWithRows) SortRows() {
 	})
 }
 
-// ToAPIObject converts ConfigWithRows to API object including rows
+// ToAPIObject converts ConfigWithRows to API object including rows.
 func (c *ConfigWithRows) ToAPIObject(changeDescription string, changedFields ChangedFields) (keboola.Object, []string) {
 	out := &keboola.ConfigWithRows{Config: &keboola.Config{}}
 	out.ChangeDescription = changeDescription
