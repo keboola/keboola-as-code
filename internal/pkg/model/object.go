@@ -498,6 +498,36 @@ func (c *ConfigWithRows) SortRows() {
 	})
 }
 
+// ToAPIObject converts ConfigWithRows to API object including rows.
+func (c *ConfigWithRows) ToAPIObject(changeDescription string, changedFields ChangedFields) (keboola.Object, []string) {
+	out := &keboola.ConfigWithRows{Config: &keboola.Config{}}
+	out.ChangeDescription = changeDescription
+	out.BranchID = c.BranchID
+	out.ComponentID = c.ComponentID
+	out.ID = c.ID
+	out.Name = c.Name
+	out.Description = c.Description
+	out.IsDisabled = c.IsDisabled
+	out.Content = c.Content
+
+	// Include rows in the API object
+	for _, row := range c.Rows {
+		apiRow := &keboola.ConfigRow{}
+		apiRow.ChangeDescription = changeDescription
+		apiRow.BranchID = row.BranchID
+		apiRow.ComponentID = row.ComponentID
+		apiRow.ConfigID = row.ConfigID
+		apiRow.ID = row.ID
+		apiRow.Name = row.Name
+		apiRow.Description = row.Description
+		apiRow.IsDisabled = row.IsDisabled
+		apiRow.Content = row.Content
+		out.Rows = append(out.Rows, apiRow)
+	}
+
+	return out, append(changedFields.Slice(), "changeDescription")
+}
+
 // ConfigRow https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type ConfigRow struct {
 	ConfigRowKey
