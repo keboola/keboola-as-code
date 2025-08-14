@@ -51,7 +51,10 @@ helm upgrade \
   --set "resources.requests.memory=$STREAM_ETCD_MEMORY" \
   --set "resources.limits.memory=$STREAM_ETCD_MEMORY" \
   --set "extraEnvVars[3].name=GOMEMLIMIT" \
-  --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY}B"
+  --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY}B" \
+  --set "image.registry=${ETCD_IMAGE_REGISTRY:-}" \
+  --set "image.repository=${ETCD_IMAGE_REPOSITORY:-bitnamilegacy/etcd}" \
+  ${ETCD_IMAGE_PULL_SECRETS:+--set "image.pullSecrets[0]=${ETCD_IMAGE_PULL_SECRETS}"}
 
 # API
 kubectl apply -f ./kubernetes/deploy/api/config-map.yaml

@@ -25,6 +25,9 @@ az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP"
 export ETCD_STORAGE_CLASS_NAME=
 export ETCD_SNAPSHOT_STORAGE_CLASS_NAME="stream-etcd-snapshots"
 export CLOUD_ENCRYPTION_PROVIDER="azure"
+export ETCD_IMAGE_REGISTRY="keboola.azurecr.io"
+export ETCD_IMAGE_REPOSITORY="bitnami-etcd"
+export ETCD_IMAGE_PULL_SECRETS="acr-secret"
 . ./common.sh
 
 # Azure specific part of the deploy

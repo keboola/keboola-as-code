@@ -3,6 +3,11 @@
 # Values can be overridden by Helm --set flag or by another --values files.
 # Chart default values: https://github.com/bitnami/charts/blob/master/bitnami/etcd/values.yaml
 
+# Required for using bitnamilegacy and other repositories - https://github.com/bitnami/containers/issues/83267
+global:
+  security:
+    allowInsecureImages: true
+
 # Keboola specific options
 commonLabels:
   app: "{{ tpl (.Release.Name) . }}"
