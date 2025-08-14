@@ -108,7 +108,10 @@ helm upgrade \
   --set "extraEnvVars[3].name=GOMEMLIMIT" \
   --set "extraEnvVars[3].value=${STREAM_ETCD_MEMORY_SOFT_LIMIT}B" \
   --set "extraEnvVars[4].name=ETCD_MAX_TXN_OPS" \
-  --set-string "extraEnvVars[4].value=${STREAM_ETCD_MAX_TXN_OPS}"
+  --set-string "extraEnvVars[4].value=${STREAM_ETCD_MAX_TXN_OPS}" \
+  --set "image.registry=${ETCD_IMAGE_REGISTRY:-}" \
+  --set "image.repository=${ETCD_IMAGE_REPOSITORY:-bitnamilegacy/etcd}" \
+  ${ETCD_IMAGE_PULL_SECRETS:+--set "image.pullSecrets[0]=${ETCD_IMAGE_PULL_SECRETS}"}
 
 # Config
 kubectl apply -f ./kubernetes/deploy/config/config-map.yaml
