@@ -9,8 +9,8 @@ replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
 require (
-	ariga.io/atlas v0.35.0
-	entgo.io/ent v0.14.4
+	ariga.io/atlas v0.36.1
+	entgo.io/ent v0.14.5
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/DataDog/dd-trace-go/v2 v2.1.0
@@ -21,7 +21,7 @@ require (
 	github.com/armon/go-radix v1.0.1-0.20221118154546-54df44f2176c
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/ccoveille/go-safecast v1.6.1
-	github.com/cenkalti/backoff/v5 v5.0.2
+	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/coder/websocket v1.8.13
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/dgraph-io/ristretto/v2 v2.2.0
@@ -42,21 +42,21 @@ require (
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250422071622-41a5d5547c43
-	github.com/keboola/go-utils v1.3.3
-	github.com/keboola/keboola-sdk-go/v2 v2.4.0
+	github.com/keboola/go-utils v1.4.0
+	github.com/keboola/keboola-sdk-go/v2 v2.5.0
 	github.com/klauspost/compress v1.18.0
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
-	github.com/lestrrat-go/strftime v1.1.0
-	github.com/mattn/go-sqlite3 v1.14.28
-	github.com/miekg/dns v1.1.67
+	github.com/lestrrat-go/strftime v1.1.1
+	github.com/mattn/go-sqlite3 v1.14.30
+	github.com/miekg/dns v1.1.68
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/oauth2-proxy/mockoidc v0.0.0-20240214162133-caebfff84d25
 	github.com/oauth2-proxy/oauth2-proxy/v7 v7.9.0
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/pquerna/cachecontrol v0.2.0
-	github.com/prometheus/client_golang v1.22.0
+	github.com/prometheus/client_golang v1.23.0
 	github.com/qiangxue/fasthttp-routing v0.0.0-20160225050629-6ccdc2a18d87
 	github.com/relvacode/iso8601 v1.6.0
 	github.com/rs/zerolog v1.34.0
@@ -74,27 +74,27 @@ require (
 	github.com/valyala/fasthttp v1.64.0
 	github.com/valyala/fastjson v1.6.4
 	github.com/writeas/go-strip-markdown/v2 v2.1.1
-	github.com/xtaci/kcp-go/v5 v5.6.22
-	go.etcd.io/etcd/api/v3 v3.6.2
-	go.etcd.io/etcd/client/v3 v3.6.2
-	go.etcd.io/etcd/tests/v3 v3.6.2
+	github.com/xtaci/kcp-go/v5 v5.6.24
+	go.etcd.io/etcd/api/v3 v3.6.4
+	go.etcd.io/etcd/client/v3 v3.6.4
+	go.etcd.io/etcd/tests/v3 v3.6.4
 	go.nhat.io/aferocopy/v2 v2.0.3
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.62.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.37.0
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/bridge/opencensus v1.37.0
-	go.opentelemetry.io/otel/exporters/prometheus v0.59.0
+	go.opentelemetry.io/otel/exporters/prometheus v0.59.1
 	go.opentelemetry.io/otel/metric v1.37.0
 	go.opentelemetry.io/otel/sdk v1.37.0
 	go.opentelemetry.io/otel/sdk/metric v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
 	go.uber.org/zap v1.27.0
-	goa.design/goa/v3 v3.21.1
-	goa.design/plugins/v3 v3.21.1
+	goa.design/goa/v3 v3.21.5
+	goa.design/plugins/v3 v3.21.5
 	golang.org/x/exp v0.0.0-20250717185816-542afb5b7346
 	golang.org/x/sync v0.16.0
-	google.golang.org/grpc v1.73.0
+	google.golang.org/grpc v1.74.2
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.21
 )
@@ -110,6 +110,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cheggaaa/pb/v3 v3.1.6 // indirect
 	github.com/go-test/deep v1.1.1 // indirect
+	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
 	github.com/icholy/gomajor v0.14.0 // indirect
@@ -117,11 +118,12 @@ require (
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect
 	github.com/onsi/gomega v1.37.0 // indirect
 	github.com/otiai10/mint v1.6.3 // indirect
+	github.com/prometheus/otlptranslator v0.0.0-20250717125610-8549f4ab4f8f // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.4 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
-	go.etcd.io/etcd/etcdctl/v3 v3.6.2 // indirect
+	go.etcd.io/etcd/etcdctl/v3 v3.6.4 // indirect
 	go.etcd.io/gofail v0.2.0 // indirect
 	go.etcd.io/raft/v3 v3.6.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.31.0 // indirect
@@ -161,16 +163,16 @@ require (
 	github.com/tinylib/msgp v1.2.5 // indirect
 	go.uber.org/atomic v1.11.0
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.40.0
-	golang.org/x/mod v0.26.0 // indirect
-	golang.org/x/net v0.42.0
-	golang.org/x/sys v0.34.0
-	golang.org/x/term v0.33.0
-	golang.org/x/text v0.27.0
+	golang.org/x/crypto v0.41.0
+	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/net v0.43.0
+	golang.org/x/sys v0.35.0
+	golang.org/x/term v0.34.0
+	golang.org/x/text v0.28.0
 	golang.org/x/time v0.11.0 // indirect
-	golang.org/x/tools v0.35.0
+	golang.org/x/tools v0.36.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.7
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
@@ -273,7 +275,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
-	github.com/go-chi/chi/v5 v5.2.1 // indirect
+	github.com/go-chi/chi/v5 v5.2.2 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -336,7 +338,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.65.0 // indirect
-	github.com/prometheus/procfs v0.16.1 // indirect
+	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/redis/go-redis/v9 v9.8.0 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
@@ -348,8 +350,6 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/tdewolff/parse/v2 v2.8.1 // indirect
-	github.com/templexxx/cpu v0.1.1 // indirect
-	github.com/templexxx/xorsimd v0.4.3 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
@@ -365,9 +365,9 @@ require (
 	github.com/zclconf/go-cty v1.16.2 // indirect
 	github.com/zclconf/go-cty-yaml v1.1.0 // indirect
 	go.etcd.io/bbolt v1.4.2 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.6.2 // indirect
-	go.etcd.io/etcd/pkg/v3 v3.6.2 // indirect
-	go.etcd.io/etcd/server/v3 v3.6.2 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.6.4 // indirect
+	go.etcd.io/etcd/pkg/v3 v3.6.4 // indirect
+	go.etcd.io/etcd/server/v3 v3.6.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component v1.31.0 // indirect
