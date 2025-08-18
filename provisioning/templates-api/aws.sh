@@ -17,6 +17,8 @@ aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
 # Common part of the deploy
 export ETCD_STORAGE_CLASS_NAME="etcd-gp3"
+export ETCD_IMAGE_REGISTRY="968984773589.dkr.ecr.us-east-1.amazonaws.com"
+export ETCD_IMAGE_REPOSITORY="bitnami-etcd"
 . ./common.sh
 
 # AWS specific part of the deploy
