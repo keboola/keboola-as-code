@@ -19,7 +19,7 @@ jobs:
         run: rm -rf /opt/hostedtoolcache
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -38,7 +38,7 @@ jobs:
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Check links in Markdown files
-        uses: lycheeverse/lychee-action@v2.4.1
+        uses: lycheeverse/lychee-action@v2.5.0
         with:
           fail: true
           args: |
