@@ -28,7 +28,7 @@ INFO	Created file ".github/workflows/pull.yml".
 INFO	CI workflows have been generated.
 INFO	Feel free to modify them.
 %A
-INFO	Please set the secret KBC_STORAGE_API_TOKEN in the GitHub settings.
+INFO	Please set the secret KBC_MASTER_TOKEN in the GitHub settings.
 INFO	See: https://docs.github.com/en/actions/reference/encrypted-secrets
 INFO	Init done.
 %A

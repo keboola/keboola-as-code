@@ -1,1 +1,1 @@
-init --allow-target-env --storage-api-host %%TEST_KBC_STORAGE_API_HOST%%  --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --branches "main"
+init --allow-target-env --storage-api-host %%TEST_KBC_STORAGE_API_HOST%%  --storage-api-token %%TEST_KBC_MASTER_TOKEN%% --branches "main"

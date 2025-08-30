@@ -1,1 +1,1 @@
-remote create branch --name "new branch" --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+remote create branch --name "new branch" --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

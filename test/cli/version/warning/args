@@ -1,1 +1,1 @@
-persist --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+persist --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

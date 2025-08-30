@@ -1,1 +1,1 @@
-remote workspace create --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --name foo --type snowflake --size small
+remote workspace create --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%% --name foo --type snowflake --size small

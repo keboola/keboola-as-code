@@ -1,1 +1,1 @@
-encrypt --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --dry-run
+encrypt --storage-api-token %%TEST_KBC_MASTER_TOKEN%% --dry-run

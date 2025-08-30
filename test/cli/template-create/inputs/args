@@ -1,1 +1,1 @@
-template create --branch foo --all-configs --all-inputs --id "my-template" --name "My Template" --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+template create --branch foo --all-configs --all-inputs --id "my-template" --name "My Template" --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

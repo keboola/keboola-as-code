@@ -2,7 +2,7 @@
 > %%TEST_KBC_STORAGE_API_HOST%%
 
 < Please enter Keboola Storage API token. The value will be hidden.
-> %%TEST_KBC_STORAGE_API_TOKEN%%
+> %%TEST_KBC_MASTER_TOKEN%%
 
 < Please enter target name.
 > target1

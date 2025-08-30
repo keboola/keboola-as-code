@@ -1,1 +1,1 @@
-persist --dry-run --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+persist --dry-run --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

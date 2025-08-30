@@ -1,1 +1,1 @@
-push --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --encrypt
+push --storage-api-token %%TEST_KBC_MASTER_TOKEN%% --encrypt

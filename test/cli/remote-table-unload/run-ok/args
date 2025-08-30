@@ -1,1 +1,1 @@
-remote table unload --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --order Id --format csv in.c-test.accounts
+remote table unload --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%% --order Id --format csv in.c-test.accounts

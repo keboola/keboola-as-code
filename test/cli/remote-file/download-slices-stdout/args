@@ -1,1 +1,1 @@
-remote file download %%TEST_FILE_TEST1_ID%% --output - --allow-sliced --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+remote file download %%TEST_FILE_TEST1_ID%% --output - --allow-sliced --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

@@ -1,1 +1,1 @@
-local create row --name "new row" --branch "main" --config "my" --verbose --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+local create row --name "new row" --branch "main" --config "my" --verbose --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

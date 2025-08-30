@@ -1,1 +1,1 @@
-remote job run --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% %%TEST_BRANCH_MAIN_ID%%/keboola.runner-config-test/%%TEST_BRANCH_MAIN_CONFIG_RUNNER_OK_ID%%@1.2.1
+remote job run --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%% %%TEST_BRANCH_MAIN_ID%%/keboola.runner-config-test/%%TEST_BRANCH_MAIN_CONFIG_RUNNER_OK_ID%%@1.2.1

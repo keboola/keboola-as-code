@@ -1,1 +1,1 @@
-remote workspace detail --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --workspace-id %%TEST_SANDBOX_FOO_ID%%
+remote workspace detail --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%% --workspace-id %%TEST_SANDBOX_FOO_ID%%

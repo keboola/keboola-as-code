@@ -1,1 +1,1 @@
-diff --details --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+diff --details --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

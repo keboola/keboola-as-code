@@ -2,6 +2,6 @@
   "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source/test",
   "method": "POST",
   "headers": {
-    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+    "X-StorageApi-Token": "%%TEST_KBC_MASTER_TOKEN%%"
   }
 }

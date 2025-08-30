@@ -80,7 +80,7 @@ func (g *generator) generateFiles(ctx context.Context) error {
 	g.logger.Info(ctx, "CI workflows have been generated.")
 	g.logger.Info(ctx, "Feel free to modify them.")
 	g.logger.Info(ctx, "")
-	g.logger.Info(ctx, "Please set the secret KBC_STORAGE_API_TOKEN in the GitHub settings.")
+	g.logger.Info(ctx, "Please set the secret KBC_MASTER_TOKEN in the GitHub settings.")
 	g.logger.Info(ctx, "See: https://docs.github.com/en/actions/reference/encrypted-secrets")
 	return nil
 }

@@ -5,7 +5,7 @@ on:
 permissions:
   contents: write
 env:
-  KBC_STORAGE_API_TOKEN: ${{ secrets.KBC_STORAGE_API_TOKEN }}
+  KBC_MASTER_TOKEN: ${{ secrets.KBC_MASTER_TOKEN }}
 jobs:
   kbc_pull:
     # Automatic pull can be canceled by push
