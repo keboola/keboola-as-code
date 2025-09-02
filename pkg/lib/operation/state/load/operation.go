@@ -23,7 +23,7 @@ type InvalidLocalStateError struct {
 }
 
 func (e InvalidRemoteStateError) Error() string {
-	return e.MainError().Error() + e.error.Error()
+	return e.MainError().Error() + ": " + e.error.Error()
 }
 
 func (e InvalidRemoteStateError) Unwrap() error {
@@ -39,7 +39,7 @@ func (e InvalidRemoteStateError) WrappedErrors() []error {
 }
 
 func (e InvalidLocalStateError) Error() string {
-	return e.MainError().Error() + e.error.Error()
+	return e.MainError().Error() + ": " + e.error.Error()
 }
 
 func (e InvalidLocalStateError) Unwrap() error {
