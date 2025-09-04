@@ -7,7 +7,7 @@ Generate workflows for Github Actions:
 
 You will be prompted which workflows you want to generate.
 
-The secret KBC_STORAGE_API_TOKEN must be added to the GitHub repository.
+The secret KBC_MASTER_TOKEN must be added to the GitHub repository.
 
 Usage:
   %s workflows [flags]

@@ -1,1 +1,1 @@
-remote table import in.c-test.accounts %%TEST_FILE_TEST1_ID%% --incremental-load --file-without-headers --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+remote table import in.c-test.accounts %%TEST_FILE_TEST1_ID%% --incremental-load --file-without-headers --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

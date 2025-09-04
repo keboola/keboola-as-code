@@ -1,1 +1,1 @@
-remote create table in.c-bucket.table1 --primary-key id --columns-from definition.json --options-from options.json --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+remote create table in.c-bucket.table1 --primary-key id --columns-from definition.json --options-from options.json --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

@@ -2,6 +2,6 @@
   "path": "<<004-poll-sink:response.outputs.url>>",
   "method": "GET",
   "headers": {
-    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+    "X-StorageApi-Token": "%%TEST_KBC_MASTER_TOKEN%%"
   }
 }

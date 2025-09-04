@@ -1,1 +1,1 @@
-local template delete --branch main --instance inst123 --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+local template delete --branch main --instance inst123 --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

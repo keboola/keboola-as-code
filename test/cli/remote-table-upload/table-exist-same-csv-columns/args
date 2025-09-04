@@ -1,1 +1,1 @@
-remote table upload --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --primary-key Id --file-name data.csv --file-tags test in.c-my-bucket.data data.csv
+remote table upload --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%% --primary-key Id --file-name data.csv --file-tags test in.c-my-bucket.data data.csv

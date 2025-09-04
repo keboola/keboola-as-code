@@ -1,1 +1,1 @@
-validate --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+validate --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

@@ -1,1 +1,1 @@
-local template rename --branch main --instance inst123 --new-name "New Name" --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+local template rename --branch main --instance inst123 --new-name "New Name" --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

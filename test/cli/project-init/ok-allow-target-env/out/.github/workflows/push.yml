@@ -4,7 +4,7 @@ on:
     branches:
       - 'main'
 env:
-  KBC_STORAGE_API_TOKEN: ${{ secrets.KBC_STORAGE_API_TOKEN }}
+  KBC_MASTER_TOKEN: ${{ secrets.KBC_MASTER_TOKEN }}
   COMMIT_REF: ${{ github.sha }}
   COMMIT_MSG: ${{ github.event.head_commit.message }}
 jobs:

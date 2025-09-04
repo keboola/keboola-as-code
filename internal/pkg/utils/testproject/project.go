@@ -114,7 +114,7 @@ func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (
 	p.setEnv(`TEST_KBC_PROJECT_ID`, cast.ToString(p.ID()))
 	p.setEnv(`TEST_KBC_PROJECT_STAGING_STORAGE`, p.StagingStorage())
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.StorageAPIHost())
-	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
+	p.setEnv(`TEST_KBC_MASTER_TOKEN`, p.Project.StorageAPIToken())
 	p.setEnv(`TEST_KBC_PROJECT_BACKEND`, p.Backend())
 	p.setEnv(`TEST_KBC_PROJECT_LEGACY_TRANSFORMATION`, strconv.FormatBool(p.LegacyTransformation()))
 	p.logf(`■ ️Initialization done.`)

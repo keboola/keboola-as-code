@@ -156,7 +156,7 @@ Example:
 > %%TEST_KBC_STORAGE_API_HOST%%
 
 < Please enter Keboola Storage API token. The value will be hidden.
-> %%TEST_KBC_STORAGE_API_TOKEN%%
+> %%TEST_KBC_MASTER_TOKEN%%
 
 < Please select project's branches you want to use with this CLI.
 # Select all branches
@@ -174,7 +174,7 @@ Format:
   "method": "POST",
   "headers": {
     "Content-Type": "application/json",
-    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+    "X-StorageApi-Token": "%%TEST_KBC_MASTER_TOKEN%%"
   },
   "body": {
     "id": "receiver-1"
@@ -200,7 +200,7 @@ Format:
   "path": "<<001-create:response.url>>",
   "method": "GET",
   "headers": {
-    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+    "X-StorageApi-Token": "%%TEST_KBC_MASTER_TOKEN%%"
   },
   "repeat": {
     "until": "isFinished == true",

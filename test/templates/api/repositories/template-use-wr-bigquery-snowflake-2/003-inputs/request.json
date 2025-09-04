@@ -3,6 +3,6 @@
   "method": "GET",
   "headers": {
     "Content-Type": "application/json",
-    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+    "X-StorageApi-Token": "%%TEST_KBC_MASTER_TOKEN%%"
   }
 }

@@ -1,7 +1,7 @@
 name: Validate
 on: push
 env:
-  KBC_STORAGE_API_TOKEN: ${{ secrets.KBC_STORAGE_API_TOKEN }}
+  KBC_MASTER_TOKEN: ${{ secrets.KBC_MASTER_TOKEN }}
 jobs:
   kbc-validate:
     runs-on: ubuntu-latest

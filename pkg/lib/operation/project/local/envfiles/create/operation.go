@@ -26,7 +26,7 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
 	// .env.local - with token value
 	envLocalMsg := " - it contains the API token, keep it local and secret"
 	envLocalLines := []filesystem.FileLine{
-		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, d.StorageAPIToken().Token)},
+		{Regexp: "^KBC_MASTER_TOKEN=", Line: fmt.Sprintf(`KBC_MASTER_TOKEN="%s"`, d.StorageAPIToken().Token)},
 	}
 	if err := createFile(ctx, logger, fs, ".env.local", envLocalMsg, envLocalLines); err != nil {
 		return err
@@ -35,7 +35,7 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
 	// .env.dist - with token template
 	envDistMsg := ` - an ".env.local" template`
 	envDistLines := []filesystem.FileLine{
-		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: `KBC_STORAGE_API_TOKEN=`},
+		{Regexp: "^KBC_MASTER_TOKEN=", Line: `KBC_MASTER_TOKEN=`},
 	}
 	if err := createFile(ctx, logger, fs, ".env.dist", envDistMsg, envDistLines); err != nil {
 		return err

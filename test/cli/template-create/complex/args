@@ -1,1 +1,1 @@
-template create --branch foo --all-configs --id "my-template" --used-components "keboola.ex-facebook,keboola.ex-aws-s3" --name "My Template" --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+template create --branch foo --all-configs --id "my-template" --used-components "keboola.ex-facebook,keboola.ex-aws-s3" --name "My Template" --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%%

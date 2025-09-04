@@ -2,7 +2,7 @@
   "path": "<<005-update-sink-1:response.url>>",
   "method": "GET",
   "headers": {
-    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+    "X-StorageApi-Token": "%%TEST_KBC_MASTER_TOKEN%%"
   },
   "repeat": {
     "until": "status != 'processing'",

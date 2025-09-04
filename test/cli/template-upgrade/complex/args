@@ -1,1 +1,1 @@
-local template upgrade -d ./project/main --branch main --instance V1StGXR8IZ5jdHi6BAmyT --inputs-file ./inputs.json --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% keboola/my-template-id/1.2.3
+local template upgrade -d ./project/main --branch main --instance V1StGXR8IZ5jdHi6BAmyT --inputs-file ./inputs.json --storage-api-token %%TEST_KBC_MASTER_TOKEN%% keboola/my-template-id/1.2.3

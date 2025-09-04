@@ -1,1 +1,1 @@
-remote create bucket --name bucket1 --stage in --description "Test description" --display-name Bucket1 --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+remote create bucket --name bucket1 --stage in --description "Test description" --display-name Bucket1 --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_MASTER_TOKEN%%
