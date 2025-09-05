@@ -67,7 +67,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 									// Do not snapshot configs which are later joined into a different resource.
 									// The component must still exist in `configsMap` so it can be joined later.
-									if component.ID != keboola.WorkspacesComponent {
+									if component.ID != keboola.SandboxWorkspacesComponent {
 										branch.Configs = append(branch.Configs, config)
 									}
 
@@ -138,11 +138,11 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return req.SendOrErr(ctx)
 	})
 
-	workspacesMap := make(map[string]*keboola.Workspace)
+	workspacesMap := make(map[string]*keboola.SandboxWorkspace)
 	grp.Go(func() error {
 		req := p.keboolaProjectAPI.
-			ListWorkspaceInstancesRequest().
-			WithOnSuccess(func(ctx context.Context, result *[]*keboola.Workspace) error {
+			ListSandboxWorkspaceInstancesRequest().
+			WithOnSuccess(func(ctx context.Context, result *[]*keboola.SandboxWorkspace) error {
 				for _, sandbox := range *result {
 					workspacesMap[sandbox.ID.String()] = sandbox
 				}
@@ -284,8 +284,8 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Join sandbox instances with config name
 	for _, config := range configsMap {
-		if config.ComponentID == keboola.WorkspacesComponent {
-			sandboxID, err := keboola.GetWorkspaceID(config.ToAPI().Config)
+		if config.ComponentID == keboola.SandboxWorkspacesComponent {
+			sandboxID, err := keboola.GetSandboxWorkspaceID(config.ToAPI().Config)
 			if err != nil {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"})
 				continue

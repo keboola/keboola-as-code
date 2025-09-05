@@ -46,7 +46,7 @@ type ObjectIsIgnoredError struct {
 
 // nolint: gochecknoglobals
 var alwaysIgnoredComponents = map[string]bool{
-	keboola.WorkspacesComponent: true,
+	keboola.SandboxWorkspacesComponent: true,
 }
 
 func DefaultAllowedBranches() AllowedBranches {
