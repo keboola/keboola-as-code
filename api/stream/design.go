@@ -773,7 +773,7 @@ var SinkKeyResponse = func() {
 
 // Common attributes --------------------------------------------------------------------------------------------------
 
-var tokenSecurity = APIKeySecurity("storage-api-token", func() {
+var tokenSecurity = APIKeySecurity("master-token", func() {
 	Description("Storage Api Token Authentication.")
 })
 

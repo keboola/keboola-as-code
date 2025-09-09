@@ -12,7 +12,7 @@ import (
 
 type Flags struct {
 	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
-	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	StorageAPIToken configmap.Value[string] `configKey:"master-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Description     configmap.Value[string] `configKey:"description" configUsage:"bucket description"`
 	DisplayName     configmap.Value[string] `configKey:"display-name" configUsage:"display name for the UI"`
 	Name            configmap.Value[string] `configKey:"name" configUsage:"name of the bucket"`

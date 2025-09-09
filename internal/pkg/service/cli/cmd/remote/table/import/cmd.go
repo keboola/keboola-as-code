@@ -16,7 +16,7 @@ import (
 
 type Flags struct {
 	StorageAPIHost     configmap.Value[string]   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	StorageAPIToken    configmap.Value[string]   `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	StorageAPIToken    configmap.Value[string]   `configKey:"master-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Columns            configmap.Value[[]string] `configKey:"columns" configUsage:"comma separated list of column names. If present, the first row in the CSV file is not treated as a header"`
 	IncrementalLoad    configmap.Value[bool]     `configKey:"incremental-load" configUsage:"data are either added to existing data in the table or replace the existing data"`
 	FileWithoutHeaders configmap.Value[bool]     `configKey:"file-without-headers" configUsage:"states if the CSV file contains headers on the first row or not"`

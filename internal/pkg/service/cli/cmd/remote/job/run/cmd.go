@@ -17,7 +17,7 @@ import (
 
 type Flags struct {
 	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	StorageAPIToken configmap.Value[string] `configKey:"master-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Async           configmap.Value[bool]   `configKey:"async" configUsage:"do not wait for job to finish"`
 	Timeout         configmap.Value[string] `configKey:"timeout" configUsage:"how long to wait for job to finish"`
 }

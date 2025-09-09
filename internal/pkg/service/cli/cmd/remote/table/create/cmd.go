@@ -13,7 +13,7 @@ import (
 
 type Flags struct {
 	StorageAPIHost  configmap.Value[string]   `configKey:"storage-api-host" configShorthand:"H" configUsage:"if command is run outside the project directory"`
-	StorageAPIToken configmap.Value[string]   `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	StorageAPIToken configmap.Value[string]   `configKey:"master-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Bucket          configmap.Value[string]   `configKey:"bucket" configUsage:"bucket ID (required if the tableId argument is empty)"`
 	Name            configmap.Value[string]   `configKey:"name" configUsage:"name of the table (required if the tableId argument is empty)"`
 	Columns         configmap.Value[[]string] `configKey:"columns" configUsage:"comma-separated list of column names"`

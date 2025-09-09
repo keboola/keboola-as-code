@@ -13,7 +13,7 @@ import (
 )
 
 func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *security.APIKeyScheme) (context.Context, error) {
-	if scheme.Name == "storage-api-token" {
+	if scheme.Name == "master-token" {
 		pubReqScp := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
 
 		// Setup project request scope, it includes authentication

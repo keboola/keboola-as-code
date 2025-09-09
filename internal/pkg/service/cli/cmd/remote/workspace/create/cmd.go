@@ -11,7 +11,7 @@ import (
 
 type Flags struct {
 	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	StorageAPIToken configmap.Value[string] `configKey:"master-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Name            configmap.Value[string] `configKey:"name" configUsage:"name of the workspace"`
 	Type            configmap.Value[string] `configKey:"type" configUsage:"type of the workspace"`
 	Size            configmap.Value[string] `configKey:"size" configUsage:"size of the workspace"`

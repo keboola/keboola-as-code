@@ -15,7 +15,7 @@ import (
 
 type Flags struct {
 	StorageAPIHost    configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	StorageAPIToken   configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	StorageAPIToken   configmap.Value[string] `configKey:"master-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Output            configmap.Value[string] `configKey:"output" configShorthand:"o" configUsage:"path to the destination file or directory"`
 	AllowSliced       configmap.Value[bool]   `configKey:"allow-sliced" configUsage:"output sliced files as a directory containing slices as individual files"`
 	WithoutDecompress configmap.Value[bool]   `configKey:"without-decompress" configUsage:"do not decompress the downloaded files or sliced files."`

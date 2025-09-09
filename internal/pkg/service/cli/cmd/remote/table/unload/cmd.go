@@ -18,7 +18,7 @@ import (
 
 type Flags struct {
 	StorageAPIHost  configmap.Value[string]   `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	StorageAPIToken configmap.Value[string]   `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	StorageAPIToken configmap.Value[string]   `configKey:"master-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	ChangedSince    configmap.Value[string]   `configKey:"changed-since" configUsage:"only export rows imported after this date"`
 	ChangedUntil    configmap.Value[string]   `configKey:"changed-until" configUsage:"only export rows imported before this date"`
 	Columns         configmap.Value[[]string] `configKey:"columns" configUsage:"comma-separated list of columns to export"`

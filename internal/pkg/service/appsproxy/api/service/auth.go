@@ -10,7 +10,7 @@ import (
 )
 
 func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *security.APIKeyScheme) (context.Context, error) {
-	if scheme.Name == "storage-api-token" {
+	if scheme.Name == "master-token" {
 		// Create project dependencies for the API request, it includes authentication
 		pubReqScp := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
 		prjReqScp, err := dependencies.NewProjectRequestScope(ctx, pubReqScp, tokenStr)
