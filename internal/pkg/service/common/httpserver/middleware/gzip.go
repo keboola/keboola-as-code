@@ -56,14 +56,18 @@ type GzipResponseWriter struct {
 }
 
 // NewGzipResponseWriter creates a new gzip response writer.
-func NewGzipResponseWriter(w http.ResponseWriter, level int) *GzipResponseWriter {
-	gzipWriter := gzip.NewWriter(w)
+func NewGzipResponseWriter(w http.ResponseWriter, level int) (*GzipResponseWriter, error) {
+	gzipWriter, err := gzip.NewWriterLevel(w, level)
+	if err != nil {
+		return nil, err
+	}
+
 	return &GzipResponseWriter{
 		ResponseWriter: w,
 		writer:         gzipWriter,
 		gzipWriter:     gzipWriter,
 		level:          level,
-	}
+	}, nil
 }
 
 // Write implements io.Writer interface.
@@ -181,10 +185,6 @@ func Gzip(opts ...func(*GzipConfig)) Middleware {
 				contentType = responseWriter.contentType
 			}
 
-			// Debug: log what we captured.
-			// fmt.Printf("DEBUG: Content-Type: %q, Status: %d, Body length: %d\n",
-			// 	contentType, responseWriter.statusCode, responseWriter.body.Len())
-
 			// Check if we should compress based on content type.
 			if !shouldCompressByContentType(contentType, config) {
 				// If we shouldn't compress, write the captured content directly.
@@ -202,7 +202,12 @@ func Gzip(opts ...func(*GzipConfig)) Middleware {
 			w.WriteHeader(responseWriter.statusCode)
 
 			// Compress and write the response.
-			gzipWriter := gzip.NewWriter(w)
+			gzipWriter, err := gzip.NewWriterLevel(w, config.Level)
+			if err != nil {
+				// Log error but can't do much more since headers may have been sent.
+				return
+			}
+
 			defer gzipWriter.Close()
 			if _, err := gzipWriter.Write([]byte(responseWriter.body.String())); err != nil {
 				// Log error but can't do much more since headers may have been sent.

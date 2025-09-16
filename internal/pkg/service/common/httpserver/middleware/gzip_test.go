@@ -128,11 +128,12 @@ func TestGzipResponseWriter(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Create gzip response writer.
-	gzipWriter := NewGzipResponseWriter(rr, 6)
+	gzipWriter, err := NewGzipResponseWriter(rr, 6)
+	require.NoError(t, err)
 
 	// Write some data.
 	testData := "This is test data that should be compressed"
-	_, err := gzipWriter.Write([]byte(testData))
+	_, err = gzipWriter.Write([]byte(testData))
 	require.NoError(t, err)
 
 	// Write header.
