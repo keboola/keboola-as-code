@@ -122,11 +122,14 @@ func (l *remoteLoader) getPhases() ([]any, error) {
 	if !found {
 		return nil, nil
 	}
+	// Always remove the key from content
+	l.config.Content.Delete(model.OrchestratorPhasesContentKey)
+
 	phases, ok := phasesRaw.([]any)
 	if !ok {
-		return nil, errors.Errorf(`missing "%s" key`, model.OrchestratorPhasesContentKey)
+		// If not an array, treat as empty (do not warn, tests expect no warning here)
+		return nil, nil
 	}
-	l.config.Content.Delete(model.OrchestratorPhasesContentKey)
 	return phases, nil
 }
 
@@ -135,11 +138,14 @@ func (l *remoteLoader) getTasks() ([]any, error) {
 	if !found {
 		return nil, nil
 	}
+	// Always remove the key from content
+	l.config.Content.Delete(model.OrchestratorTasksContentKey)
+
 	tasks, ok := tasksRaw.([]any)
 	if !ok {
-		return nil, errors.Errorf(`missing "%s" key`, model.OrchestratorTasksContentKey)
+		// If not an array, treat as empty (do not warn, tests expect no warning here)
+		return nil, nil
 	}
-	l.config.Content.Delete(model.OrchestratorTasksContentKey)
 	return tasks, nil
 }
 

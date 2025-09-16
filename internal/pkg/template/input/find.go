@@ -168,3 +168,17 @@ func Find(objectKey model.Key, component *keboola.Component, content *orderedmap
 
 	return out
 }
+
+// sliceOfStringsToAny converts a slice of strings (or []any of strings) to []any of strings.
+func sliceOfStringsToAny(v any) []any {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Slice {
+		return nil
+	}
+	out := make([]any, 0, rv.Len())
+	for i := range rv.Len() {
+		item := rv.Index(i).Interface()
+		out = append(out, cast.ToString(item))
+	}
+	return out
+}

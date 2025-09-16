@@ -2,6 +2,7 @@ package schema
 
 import (
 	"context"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -132,15 +133,28 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 			if _, ok := value.(bool); ok {
 				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
 					parentMap.Delete("required")
+				} else if parentStd, ok := parent.(map[string]any); ok {
+					delete(parentStd, "required")
 				}
 			}
 		}
 
 		// Empty enums are removed, we're using those for asynchronously loaded enums.
 		if path.Last() == orderedmap.MapStep("enum") {
+			isEmptySlice := false
 			if arr, ok := value.([]any); ok && len(arr) == 0 {
+				isEmptySlice = true
+			} else {
+				rv := reflect.ValueOf(value)
+				if rv.IsValid() && rv.Kind() == reflect.Slice && rv.Len() == 0 {
+					isEmptySlice = true
+				}
+			}
+			if isEmptySlice {
 				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
 					parentMap.Delete("enum")
+				} else if parentStd, ok := parent.(map[string]any); ok {
+					delete(parentStd, "enum")
 				}
 			}
 		}
