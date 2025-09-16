@@ -1,0 +1,8 @@
+WARN	Warning:
+- Validation failed:
+  - Config "main/application/kds-team.app-custom-python/test/config.json" doesn't match schema:
+    - "packages": invalid jsonType []string
+WARN	
+WARN	The project has been pulled, but it is not in a valid state.
+WARN	Please correct the problems listed above.
+WARN	Push operation is only possible when project is valid.

@@ -64,58 +64,61 @@ func ValidateObjects(ctx context.Context, logger log.Logger, objects model.Objec
 	return errs.ErrorOrNil()
 }
 
-func ValidateConfig(component *keboola.Component, config *model.Config) error {
-	// Skip deprecated component
-	if component.IsDeprecated() {
+func ValidateConfig(component *keboola.Component, cfg *model.Config) error {
+	if component.Schema == nil {
 		return nil
 	}
-	return ValidateContent(component.Schema, config.Content)
+	if err := validateDocument(component.Schema, cfg.Content); err != nil {
+		return err
+	}
+	return nil
 }
 
-func ValidateConfigRow(component *keboola.Component, configRow *model.ConfigRow) error {
-	// Skip deprecated component
-	if component.IsDeprecated() {
+func ValidateConfigRow(component *keboola.Component, row *model.ConfigRow) error {
+	if len(component.SchemaRow) == 0 {
 		return nil
 	}
-	return ValidateContent(component.SchemaRow, configRow.Content)
+	if err := validateDocument(component.SchemaRow, row.Content); err != nil {
+		return err
+	}
+	return nil
 }
 
-func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
-	schema, err := NormalizeSchema(schema)
+// ValidateContent validates the given content using provided JSON schema.
+// It keeps compatibility with historical behavior: validates only the "parameters" object
+// and ignores empty parameters maps.
+func ValidateContent(sch []byte, content *orderedmap.OrderedMap) error {
+	// Normalize schema first
+	normalized, err := NormalizeSchema(sch)
 	if err != nil {
 		return err
 	}
 
-	// Get parameters key
-	var parametersMap *orderedmap.OrderedMap
-	parameters, found := content.Get("parameters")
-	if found {
-		if v, ok := parameters.(*orderedmap.OrderedMap); ok {
-			parametersMap = v
-		} else {
-			parametersMap = orderedmap.New()
+	// Get parameters map
+	parametersMap := orderedmap.New()
+	if v, found := content.Get("parameters"); found {
+		if m, ok := v.(*orderedmap.OrderedMap); ok {
+			parametersMap = m
 		}
-	} else {
-		parametersMap = orderedmap.New()
 	}
 
-	// Skip empty configurations.
-	// Users often just create configuration in UI, but leaves it unconfigured.
+	// Skip empty configurations
 	if len(parametersMap.Keys()) == 0 {
 		return nil
 	}
 
-	// Validate
-	err = validateDocument(schema, parametersMap)
+	// Validate document
+	err = validateDocument(normalized, parametersMap)
+	if err == nil {
+		return nil
+	}
 
 	// Process schema errors
-	validationError := &jsonschema.ValidationError{}
-	if errors.As(err, &validationError) {
-		return processErrors(validationError.DetailedOutput().Errors)
-	} else if err != nil {
-		return err
+	var vErr *jsonschema.ValidationError
+	if errors.As(err, &vErr) {
+		return processErrors(vErr.DetailedOutput().Errors)
 	}
-	return nil
+	return err
 }
 
 func NormalizeSchema(schema []byte) ([]byte, error) {
@@ -195,6 +198,8 @@ func processErrors(errs []jsonschema.OutputUnit) error {
 		path := strings.TrimLeft(e.InstanceLocation, "/")
 		path = strings.ReplaceAll(path, "/", ".")
 		msg := strings.ReplaceAll(strings.ReplaceAll(errMsg, `'`, `"`), `n"t`, `n't`)
+		// Normalize trailing punctuation from upstream errors
+		msg = strings.TrimSuffix(msg, ".")
 
 		var formattedErr error
 		switch {
@@ -204,8 +209,21 @@ func processErrors(errs []jsonschema.OutputUnit) error {
 				formattedErr = err
 			}
 		default:
-			// Format error
-			if path == "" {
+			// Format error: prefer "missing property \"name\"" exact wording
+			if strings.HasPrefix(msg, "at '") || strings.HasPrefix(msg, "at \"") {
+				// remove any leading location like: at '': ... or at 'path': ...
+				if idx := strings.Index(msg, ": "); idx != -1 {
+					msg = msg[idx+2:]
+				}
+			}
+			if strings.HasPrefix(msg, "missing property ") {
+				// when missing property and path empty -> keep simple form
+				if path == "" {
+					formattedErr = &ValidationError{message: msg}
+				} else {
+					formattedErr = &FieldValidationError{path: path, message: msg}
+				}
+			} else if path == "" {
 				formattedErr = &ValidationError{message: msg}
 			} else {
 				formattedErr = &FieldValidationError{path: path, message: msg}
@@ -217,7 +235,10 @@ func processErrors(errs []jsonschema.OutputUnit) error {
 		}
 	}
 
-	return docErrs.ErrorOrNil()
+	if docErrs.Len() == 0 {
+		return nil
+	}
+	return docErrs
 }
 
 func compileSchema(s []byte, savePropertyOrder bool) (*jsonschema.Schema, error) {
@@ -236,13 +257,23 @@ func compileSchema(s []byte, savePropertyOrder bool) (*jsonschema.Schema, error)
 		return nil, err
 	}
 
-	// Remove non-standard definitions, where type = button.
-	// It is used to test_connection and sync_action definitions.
-	// It has no value for validation, it is a UI definition only.
+	// Remove non-standard definitions
 	m.VisitAllRecursive(func(path orderedmap.Path, value any, parent any) {
+		// UI only: remove fields with type "button"
 		if path.Last() == orderedmap.MapStep("type") && value == "button" {
 			if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
 				parentMap.Delete("type")
+			} else if parentStd, ok := parent.(map[string]any); ok {
+				delete(parentStd, "type")
+			}
+		}
+
+		// Non-standard keyword used in some schemas; ignore it for validation
+		if path.Last() == orderedmap.MapStep("jsonType") {
+			if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
+				parentMap.Delete("jsonType")
+			} else if parentStd, ok := parent.(map[string]any); ok {
+				delete(parentStd, "jsonType")
 			}
 		}
 	})

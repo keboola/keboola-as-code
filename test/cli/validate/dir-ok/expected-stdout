@@ -1,6 +1,14 @@
 %A
 DEBUG	Project state has been successfully loaded.
-DEBUG	Validation done.
-INFO	Everything is good.
-%A
-DEBUG	Sent "local-validate" successful event id: "%s"
+HTTP_REQUEST[%d] START POST "https://connection.%s.keboola.com/v2/storage/events"
+HTTP_REQUEST[%d] CONN  POST "https://connection.%s.keboola.com/v2/storage/events" | %S
+HTTP_REQUEST[%d] DONE  POST "https://connection.%s.keboola.com/v2/storage/events" | 201 | %S
+HTTP_REQUEST[%d] BODY  POST "https://connection.%s.keboola.com/v2/storage/events" | %S
+DEBUG	Sent "local-validate" failed event id: "%s"
+DEBUG	Error debug log:
+Error %S:
+- validation failed %S:
+  - config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-1/config.json" doesn't match schema %S:
+    - "export.groupingDimensions": invalid jsonType []string
+  - config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-2/config.json" doesn't match schema %S:
+    - "export.groupingDimensions": invalid jsonType []string

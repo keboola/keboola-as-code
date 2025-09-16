@@ -1,1 +1,1 @@
-# {{:codes/code-with-variables}}
+{{%S}}
