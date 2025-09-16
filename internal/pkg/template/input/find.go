@@ -111,7 +111,16 @@ func Find(objectKey model.Key, component *keboola.Component, content *orderedmap
 				})
 			}
 			if !isSecret && valRef.Len() > 0 {
-				defaultValue = value
+				// Normalize default to []any of strings for consistency across the codebase
+				defaults := make([]any, 0, valRef.Len())
+				for i := 0; i < valRef.Len(); i++ {
+					item := valRef.Index(i)
+					if item.Type().Kind() == reflect.Interface {
+						item = item.Elem()
+					}
+					defaults = append(defaults, item.String())
+				}
+				defaultValue = defaults
 			}
 		default:
 			return
@@ -166,19 +175,5 @@ func Find(objectKey model.Key, component *keboola.Component, content *orderedmap
 		})
 	})
 
-	return out
-}
-
-// sliceOfStringsToAny converts a slice of strings (or []any of strings) to []any of strings.
-func sliceOfStringsToAny(v any) []any {
-	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Slice {
-		return nil
-	}
-	out := make([]any, 0, rv.Len())
-	for i := range rv.Len() {
-		item := rv.Index(i).Interface()
-		out = append(out, cast.ToString(item))
-	}
 	return out
 }
