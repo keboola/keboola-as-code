@@ -1,0 +1,11 @@
+Created file ".env.local" - it contains the API token, keep it local and secret.
+Created file ".env.dist" - an ".env.local" template.
+Created file ".gitignore" - to keep ".env.local" local.
+Created metadata directory ".keboola".
+Created manifest file ".keboola/manifest.json".
+Init done.
+
+Running pull.
+Plan for "pull" operation:
+  + B main
+Pull done.
