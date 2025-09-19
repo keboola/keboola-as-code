@@ -50,7 +50,9 @@ func AskInitOptions(ctx context.Context, d *dialog.Dialogs, dep initDeps, f Flag
 	}
 
 	// Ask for workflows options
-	if f.CI.IsSet() {
+	if f.SkipWorkflows.Value {
+		d.Printf("Skipping GitHub workflow setup as requested by --skip-workflows flag.\n")
+	} else if f.CI.IsSet() {
 		if f.CIValidate.IsSet() || f.CIPush.IsSet() || f.CIPull.IsSet() {
 			return out, errors.New("`ci-*` flags may not be set if `ci` is set to `false`")
 		}
