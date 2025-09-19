@@ -26,6 +26,10 @@ const (
 	ModeAllBranches    = "all branches"
 	ModeSelectSpecific = "select branches"
 	ModeTypeList       = "type IDs or names"
+
+	WorkflowModeSkip     = "skip"
+	WorkflowModeSet      = "set"
+	WorkflowModeInteract = "interact"
 )
 
 type initDeps interface {
@@ -50,9 +54,10 @@ func AskInitOptions(ctx context.Context, d *dialog.Dialogs, dep initDeps, f Flag
 	}
 
 	// Ask for workflows options
-	if f.SkipWorkflows.Value {
+	switch determineWorkflowMode(f, d) {
+	case WorkflowModeSkip:
 		d.Printf("Skipping GitHub workflow setup as requested by --skip-workflows flag.\n")
-	} else if f.CI.IsSet() {
+	case WorkflowModeSet:
 		if f.CIValidate.IsSet() || f.CIPush.IsSet() || f.CIPull.IsSet() {
 			return out, errors.New("`ci-*` flags may not be set if `ci` is set to `false`")
 		}
@@ -63,7 +68,7 @@ func AskInitOptions(ctx context.Context, d *dialog.Dialogs, dep initDeps, f Flag
 			Pull:       f.CI.Value,
 			MainBranch: f.CIMainBranch.Value,
 		}
-	} else if d.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
+	case WorkflowModeInteract:
 		out.Workflows = workflow.AskWorkflowsOptions(workflow.Flags{
 			CI:           f.CI,
 			CIPush:       f.CIPush,
@@ -74,6 +79,19 @@ func AskInitOptions(ctx context.Context, d *dialog.Dialogs, dep initDeps, f Flag
 	}
 
 	return out, nil
+}
+
+func determineWorkflowMode(f Flags, d *dialog.Dialogs) string {
+	if f.SkipWorkflows.Value {
+		return WorkflowModeSkip
+	}
+	if f.CI.IsSet() {
+		return WorkflowModeSet
+	}
+	if d.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
+		return WorkflowModeInteract
+	}
+	return WorkflowModeSkip
 }
 
 type branchesDialog struct {
