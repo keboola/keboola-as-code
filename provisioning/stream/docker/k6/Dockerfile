@@ -1,14 +1,23 @@
-FROM grafana/xk6:latest AS build
+# Build xk6 from scratch using Go 1.24+ to ensure compatibility
+FROM golang:1.24-alpine AS build
 
+# Install necessary packages for building
+RUN apk add --no-cache git
+
+# Install xk6
+RUN go install go.k6.io/xk6/cmd/xk6@latest
+
+# Build k6 with the required extensions
 RUN xk6 build \
     --with github.com/LeonAdato/xk6-output-statsd@latest \
-    --with github.com/domsolutions/xk6-fasthttp@latest
+    --with github.com/domsolutions/xk6-fasthttp@latest \
+    --output /k6
 
 FROM golang:1.24-alpine
 
 RUN apk add --no-cache bash
 
-COPY --from=build /xk6/k6 /usr/bin/k6
+COPY --from=build /k6 /usr/bin/k6
 
 COPY scripts /scripts
 
