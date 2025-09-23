@@ -20,6 +20,7 @@ type Flags struct {
 	CIPull          configmap.Value[bool]   `configKey:"ci-pull" configUsage:"create workflow to sync main branch each hour"`
 	CIMainBranch    configmap.Value[string] `configKey:"ci-main-branch" configUsage:"name of the main branch for push/pull workflows"`
 	AllowTargetENV  configmap.Value[bool]   `configKey:"allow-target-env" configUsage:"allow usage of KBC_PROJECT_ID and KBC_BRANCH_ID envs for future operations"`
+	SkipWorkflows   configmap.Value[bool]   `configKey:"skip-workflows" configUsage:"skip the interactive GitHub workflow setup"`
 }
 
 func DefaultFlags() Flags {
@@ -31,6 +32,7 @@ func DefaultFlags() Flags {
 		CIPush:         configmap.NewValue(true),
 		CIMainBranch:   configmap.NewValue("main"),
 		AllowTargetENV: configmap.NewValue(false),
+		SkipWorkflows:  configmap.NewValue(false),
 	}
 }
 
