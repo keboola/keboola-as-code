@@ -210,6 +210,6 @@ func TestRenameCleanupOnDestinationExists(t *testing.T) {
 
 	// Logs capture: cleanup triggers a normal copy log sequence
 	logsStr := logger.AllMessages()
-	assert.Contains(t, logsStr, `Copied "src-dir" -> "dst-dir"`)
-	assert.Contains(t, logsStr, `Copied "src-file.txt" -> "dst-file.txt"`)
+	assert.Contains(t, logsStr, `Copied \"src-dir\" -> \"dst-dir\"`)
+	assert.Contains(t, logsStr, `Copied \"src-file.txt\" -> \"dst-file.txt\"`)
 }

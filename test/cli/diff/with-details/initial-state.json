@@ -33,7 +33,7 @@
         "python-transformation",
         "snowflake-transformation",
         "shared-codes",
-        "shared-codes-variables",
+        "shared-code-variables",
         "transformation-with-shared-code",
         "transformation-with-shared-code-variables"
       ]
