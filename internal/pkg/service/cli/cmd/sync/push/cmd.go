@@ -16,6 +16,7 @@ type Flags struct {
 	Force           configmap.Value[bool]   `configKey:"force" configUsage:"enable deleting of remote objects"`
 	DryRun          configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
 	Encrypt         configmap.Value[bool]   `configKey:"encrypt" configUsage:"encrypt unencrypted values before push"`
+	Validate        configmap.Value[bool]   `configKey:"validate" configUsage:"validate JSON schema before push"`
 }
 
 func DefaultFlags() Flags {
@@ -70,6 +71,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				AllowRemoteDelete: f.Force.Value,
 				LogUntrackedPaths: true,
 				ChangeDescription: changeDescription,
+				SkipValidation:    !f.Validate.Value,
 			}
 
 			// Send cmd successful/failed event
