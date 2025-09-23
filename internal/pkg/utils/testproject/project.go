@@ -624,7 +624,7 @@ func (p *Project) prepareConfigs(
 		newID := generator.NewULID()
 		configWithRows.BranchID = branch.ID
 		configWithRows.ID = keboola.ConfigID(newID)
-		p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, configFixture.Name), newID)
+		p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, strings.ToUpper(name)), newID)
 		p.logf("✔️ ID for config \"%s\".", configDesc)
 
 		// For each row

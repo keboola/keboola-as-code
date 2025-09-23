@@ -37,6 +37,7 @@ type UnitOfWork struct {
 	localObjects    model.Objects
 	changes         *model.LocalChanges
 	invoked         bool
+	renameCleanup   bool
 
 	lock    *sync.Mutex
 	workers *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
@@ -248,12 +249,16 @@ func (u *UnitOfWork) Rename(actions []model.RenameAction) {
 	u.
 		workersFor(1000). // rename at the end
 		AddWorker(func(ctx context.Context) error {
-			if err := u.rename(ctx, actions); err != nil {
+			if err := u.rename(ctx, actions, u.renameCleanup); err != nil {
 				return err
 			}
 			u.changes.AddRenamed(actions...)
 			return nil
 		})
+}
+
+func (u *UnitOfWork) EnableRenameCleanup() {
+	u.renameCleanup = true
 }
 
 func (u *UnitOfWork) Invoke() error {

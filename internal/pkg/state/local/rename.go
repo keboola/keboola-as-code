@@ -2,13 +2,14 @@ package local
 
 import (
 	"context"
+	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *Manager) rename(ctx context.Context, actions []model.RenameAction) error {
+func (m *Manager) rename(ctx context.Context, actions []model.RenameAction, cleanup bool) error {
 	// Nothing to do
 	if len(actions) == 0 {
 		return nil
@@ -25,7 +26,28 @@ func (m *Manager) rename(ctx context.Context, actions []model.RenameAction) erro
 		err := m.fs.Copy(ctx, action.RenameFrom, action.NewPath)
 
 		if err != nil {
-			errs.AppendWithPrefixf(err, `cannot copy "%s"`, action.Description)
+			// If destination exists and cleanup is enabled, attempt to remove and retry
+			if cleanup && strings.Contains(err.Error(), "destination exists") {
+				if rmErr := m.fs.Remove(ctx, action.NewPath); rmErr != nil {
+					errs.AppendWithPrefixf(rmErr, `cannot remove existing destination "%s"`, action.NewPath)
+				} else if retryErr := m.fs.Copy(ctx, action.RenameFrom, action.NewPath); retryErr != nil {
+					errs.AppendWithPrefixf(retryErr, `cannot copy "%s" after cleanup`, action.Description)
+				} else {
+					// proceed as success path
+					// Update manifest
+					if err := m.manifest.PersistRecord(action.Manifest); err != nil {
+						errs.AppendWithPrefixf(err, `cannot persist "%s"`, action.Manifest.Desc())
+					}
+					if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
+						action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
+					}
+					newPaths = append(newPaths, action.NewPath)
+					pathsToRemove = append(pathsToRemove, action.RenameFrom)
+					continue
+				}
+			} else {
+				errs.AppendWithPrefixf(err, `cannot copy "%s"`, action.Description)
+			}
 		} else {
 			// Update manifest
 			if err := m.manifest.PersistRecord(action.Manifest); err != nil {

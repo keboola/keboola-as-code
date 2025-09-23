@@ -41,7 +41,7 @@
     {
       "branchId": %%TEST_BRANCH_MAIN_ID%%,
       "componentId": "ex-generic-v2",
-      "id": "%%TEST_BRANCH_MAIN_CONFIG_TESTOVAC_KONFI_EK_ID%%",
+      "id": "%%TEST_BRANCH_MAIN_CONFIG_WITH_DIACRITICS_NAME_ID%%",
       "path": "extractor/ex-generic-v2/testovaci-konfizisek",
       "rows": []
     }

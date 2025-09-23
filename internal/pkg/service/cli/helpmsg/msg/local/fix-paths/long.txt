@@ -4,3 +4,5 @@ Manifest file ".keboola/manifest.json" contains a naming for all local paths.
 
 With this command you can rename all existing paths
 to match the configured naming (eg. if the naming has been changed).
+
+Use "--cleanup" to remove conflicting destination paths and retry renames when necessary.

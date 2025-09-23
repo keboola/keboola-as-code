@@ -266,7 +266,7 @@ func (t *Test) runCLIBinary(path string) {
 	cmd.Dir = t.workingDir
 
 	// Setup command input/output
-	cmdInOut, err := setupCmdInOut(t.ctx, t.t, t.envProvider, t.testDirFS, cmd)
+	cmdInOut, err := setupCmdInOut(t.ctx, t.t, t.envProvider, t.testDirFS, cmd, true)
 	if err != nil {
 		t.t.Fatal(err.Error())
 	}

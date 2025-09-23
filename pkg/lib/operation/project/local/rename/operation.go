@@ -15,6 +15,7 @@ import (
 type Options struct {
 	DryRun   bool
 	LogEmpty bool
+	Cleanup  bool
 }
 
 type dependencies interface {
@@ -48,7 +49,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil { // nolint: contextcheck
+		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager(), rename.WithCleanup(o.Cleanup)); err != nil { // nolint: contextcheck
 			return false, errors.PrefixError(err, "cannot rename objects")
 		}
 
