@@ -44,7 +44,7 @@ cat /tmp/response2.txt
 
 # Test 3: Test a specific endpoint that returns JSON
 echo -e "\nTest 3: Testing repositories endpoint with gzip"
-response3=$(curl -s -H "Accept-Encoding: gzip" -H "Accept: application/json" \
+response3=$(curl -s -H "Accept-Encoding: gzip" -H "Accept: application/json" -H "X-StorageAPI-Token: $KBC_STORAGE_API_TOKEN" \
   -w "HTTP_CODE:%{http_code}\nSIZE_DOWNLOAD:%{size_download}\n" \
   -D /tmp/headers3.txt \
   -o /tmp/response3.bin \
@@ -62,6 +62,72 @@ if grep -qi "content-encoding: gzip" /tmp/headers3.txt; then
 else
     echo "Content was not compressed:"
     cat /tmp/response3.bin
+fi
+
+echo -e "\nTest 4: Templates repo keboola/templates with provided headers"
+response4=$(curl -s \
+  -H 'accept: */*' \
+  -H 'accept-language: en-US,en;q=0.9' \
+  -H 'origin: https://connection.europe-west3.gcp.keboola.com' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://connection.europe-west3.gcp.keboola.com/' \
+  -H 'sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Linux"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-site' \
+  -H 'user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36' \
+  -H "x-storageapi-token: $KBC_STORAGE_API_TOKEN" \
+  -w "HTTP_CODE:%{http_code}\nSIZE_DOWNLOAD:%{size_download}\n" \
+  -D /tmp/headers4.txt \
+  -o /tmp/response4.bin \
+  http://localhost:8000/v1/repositories/keboola/templates)
+
+echo "Response 4:"
+echo "$response4"
+echo "Headers:"
+grep -i "content-encoding" /tmp/headers4.txt || echo "No Content-Encoding header found"
+
+if grep -qi "content-encoding: gzip" /tmp/headers4.txt; then
+    echo "Content was gzipped. Decompressed content:"
+    cat /tmp/response4.bin | gunzip
+else
+    echo "Content was not compressed:"
+    cat /tmp/response4.bin
+fi
+
+echo -e "\nTest 5: Project default instances with provided headers"
+response5=$(curl -s \
+  -H 'accept: */*' \
+  -H 'accept-language: en-US,en;q=0.9' \
+  -H 'origin: https://connection.europe-west3.gcp.keboola.com' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://connection.europe-west3.gcp.keboola.com/' \
+  -H 'sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Linux"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-site' \
+  -H 'user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36' \
+  -H "x-storageapi-token: $KBC_STORAGE_API_TOKEN" \
+  -w "HTTP_CODE:%{http_code}\nSIZE_DOWNLOAD:%{size_download}\n" \
+  -D /tmp/headers5.txt \
+  -o /tmp/response5.bin \
+  http://localhost:8000/v1/project/default/instances)
+
+echo "Response 5:"
+echo "$response5"
+echo "Headers:"
+grep -i "content-encoding" /tmp/headers5.txt || echo "No Content-Encoding header found"
+
+if grep -qi "content-encoding: gzip" /tmp/headers5.txt; then
+    echo "Content was gzipped. Decompressed content:"
+    cat /tmp/response5.bin | gunzip
+else
+    echo "Content was not compressed:"
+    cat /tmp/response5.bin
 fi
 
 echo -e "\nTest completed!" 
