@@ -122,6 +122,114 @@ func TestGzipMiddleware(t *testing.T) {
 	}
 }
 
+func TestGzipMiddleware_EmptyBodyPaths(t *testing.T) {
+	t.Parallel()
+
+	t.Run("compressible content-type, no body -> compressed {}", func(t *testing.T) {
+		t.Parallel()
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			// no body written
+		})
+		mw := Gzip()
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req.Header.Set("Accept-Encoding", "gzip")
+		rr := httptest.NewRecorder()
+		mw(handler).ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "gzip", rr.Header().Get("Content-Encoding"))
+		// Content-Type should remain as set by handler
+		assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+
+		// Body should be compressed {}
+		body := rr.Body.Bytes()
+		reader, err := gzip.NewReader(strings.NewReader(string(body)))
+		require.NoError(t, err)
+		defer reader.Close()
+		decompressed, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		assert.Equal(t, "{}", string(decompressed))
+	})
+
+	t.Run("non-compressible content-type, no body -> gzipped {}", func(t *testing.T) {
+		t.Parallel()
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "image/png")
+			// no body written
+		})
+		mw := Gzip()
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req.Header.Set("Accept-Encoding", "gzip")
+		rr := httptest.NewRecorder()
+		mw(handler).ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "gzip", rr.Header().Get("Content-Encoding"))
+		// Content-Type remains whatever handler set
+		assert.Equal(t, "image/png", rr.Header().Get("Content-Type"))
+		// Body should be compressed {}
+		body := rr.Body.Bytes()
+		reader, err := gzip.NewReader(strings.NewReader(string(body)))
+		require.NoError(t, err)
+		defer reader.Close()
+		decompressed, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		assert.Equal(t, "{}", string(decompressed))
+	})
+
+	t.Run("no content-type set, no body -> gzipped {} with application/json", func(t *testing.T) {
+		t.Parallel()
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// no headers, no body
+		})
+		mw := Gzip()
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req.Header.Set("Accept-Encoding", "gzip")
+		rr := httptest.NewRecorder()
+		mw(handler).ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "gzip", rr.Header().Get("Content-Encoding"))
+		assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+		body := rr.Body.Bytes()
+		reader, err := gzip.NewReader(strings.NewReader(string(body)))
+		require.NoError(t, err)
+		defer reader.Close()
+		decompressed, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		assert.Equal(t, "{}", string(decompressed))
+	})
+}
+
+func TestGzipMiddleware_GzipWriterInitFailureFallback(t *testing.T) {
+	t.Parallel()
+	// Force invalid gzip level via custom option to trigger NewWriterLevel error
+	mw := Gzip(func(c *GzipConfig) { c.Level = 99 })
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set compressible content type, but middleware will fail to init gzip writer
+		w.Header().Set("Content-Type", "application/json")
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	rr := httptest.NewRecorder()
+	mw(handler).ServeHTTP(rr, req)
+
+	// Should fallback to gzipped JSON {}
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "gzip", rr.Header().Get("Content-Encoding"))
+	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+	body := rr.Body.Bytes()
+	reader, err := gzip.NewReader(strings.NewReader(string(body)))
+	require.NoError(t, err)
+	defer reader.Close()
+	decompressed, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	assert.Equal(t, "{}", string(decompressed))
+}
+
 func TestGzipResponseWriter(t *testing.T) {
 	t.Parallel()
 	// Create a test response writer.

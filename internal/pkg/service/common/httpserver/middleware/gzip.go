@@ -5,6 +5,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -185,32 +188,88 @@ func Gzip(opts ...func(*GzipConfig)) Middleware {
 				contentType = responseWriter.contentType
 			}
 
+			// Normalize status code; if nothing was written, default to 200 OK.
+			statusCode := responseWriter.statusCode
+			if statusCode == 0 {
+				statusCode = http.StatusOK
+			}
+
+			// Safely access body; if nil, we'll decide a fallback below.
+			var bodyStr string
+			bodyNil := responseWriter.body == nil
+			if !bodyNil {
+				bodyStr = responseWriter.body.String()
+			}
+
 			// Check if we should compress based on content type.
 			if !shouldCompressByContentType(contentType, config) {
 				// If we shouldn't compress, write the captured content directly.
-				w.WriteHeader(responseWriter.statusCode)
-				if _, err := w.Write([]byte(responseWriter.body.String())); err != nil {
-					// Log error but can't do much more since headers may have been sent.
+				if bodyNil {
+					// No body was written by handler. Return gzipped empty JSON and log the reason.
+					if w.Header().Get("Content-Type") == "" {
+						w.Header().Set("Content-Type", "application/json")
+					}
+					if span, ok := RequestSpan(r.Context()); ok {
+						span.AddEvent("gzip: empty body fallback (forced)", trace.WithAttributes(attribute.String("reason", "handler wrote no body")))
+					}
+					w.Header().Set("Content-Encoding", "gzip")
+					w.Header().Del("Content-Length")
+					w.WriteHeader(statusCode)
+					gw := gzip.NewWriter(w)
+					defer gw.Close()
+					_, _ = gw.Write([]byte("{}"))
+					return
+				}
+
+				w.WriteHeader(statusCode)
+				if _, err := w.Write([]byte(bodyStr)); err != nil {
+					// Cannot do much more since headers may have been sent.
 					return
 				}
 				return
 			}
 
-			// Set gzip headers.
-			w.Header().Set("Content-Encoding", "gzip")
-			w.Header().Del("Content-Length")
-			w.WriteHeader(responseWriter.statusCode)
-
 			// Compress and write the response.
 			gzipWriter, err := gzip.NewWriterLevel(w, config.Level)
 			if err != nil {
-				// Log error but can't do much more since headers may have been sent.
+				// Fallback to default gzip writer and log the reason.
+				if span, ok := RequestSpan(r.Context()); ok {
+					span.AddEvent("gzip: writer init failed, using default", trace.WithAttributes(attribute.String("error", err.Error())))
+				}
+				w.Header().Set("Content-Encoding", "gzip")
+				w.Header().Del("Content-Length")
+				if bodyNil && w.Header().Get("Content-Type") == "" {
+					w.Header().Set("Content-Type", "application/json")
+				}
+				w.WriteHeader(statusCode)
+				gw := gzip.NewWriter(w)
+				defer gw.Close()
+				if bodyNil {
+					_, _ = gw.Write([]byte("{}"))
+					return
+				}
+				_, _ = gw.Write([]byte(bodyStr))
 				return
 			}
 
+			// Now that we have a gzip writer, set gzip headers and status.
+			w.Header().Set("Content-Encoding", "gzip")
+			w.Header().Del("Content-Length")
+			if bodyNil && w.Header().Get("Content-Type") == "" {
+				w.Header().Set("Content-Type", "application/json")
+			}
+			w.WriteHeader(statusCode)
+
 			defer gzipWriter.Close()
-			if _, err := gzipWriter.Write([]byte(responseWriter.body.String())); err != nil {
-				// Log error but can't do much more since headers may have been sent.
+			if bodyNil {
+				if span, ok := RequestSpan(r.Context()); ok {
+					span.AddEvent("gzip: empty body compressed", trace.WithAttributes(attribute.String("reason", "handler wrote no body")))
+				}
+				_, _ = gzipWriter.Write([]byte("{}"))
+				return
+			}
+			if _, err := gzipWriter.Write([]byte(bodyStr)); err != nil {
+				// Cannot do much more since headers may have been sent.
 				return
 			}
 		})
