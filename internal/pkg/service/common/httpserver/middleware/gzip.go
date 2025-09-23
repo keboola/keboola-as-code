@@ -195,8 +195,8 @@ func Gzip(opts ...func(*GzipConfig)) Middleware {
 			}
 
 			// Safely access body; if nil, we'll decide a fallback below.
-			var bodyStr string
 			bodyNil := responseWriter.body == nil
+			bodyStr := ""
 			if !bodyNil {
 				bodyStr = responseWriter.body.String()
 			}
@@ -206,9 +206,7 @@ func Gzip(opts ...func(*GzipConfig)) Middleware {
 				// If we shouldn't compress by content-type, do not apply gzip even for empty body.
 				if bodyNil {
 					// No body was written by handler. Return plain empty JSON and log the reason.
-					if w.Header().Get("Content-Type") == "" {
-						w.Header().Set("Content-Type", "application/json")
-					}
+					setJSONContentTypeIfEmpty(w)
 					if span, ok := RequestSpan(r.Context()); ok {
 						span.AddEvent("gzip: empty body fallback (no gzip)", trace.WithAttributes(attribute.String("reason", "handler wrote no body")))
 					}
@@ -236,8 +234,8 @@ func Gzip(opts ...func(*GzipConfig)) Middleware {
 				}
 				w.Header().Set("Content-Encoding", "gzip")
 				w.Header().Del("Content-Length")
-				if bodyNil && w.Header().Get("Content-Type") == "" {
-					w.Header().Set("Content-Type", "application/json")
+				if bodyNil {
+					setJSONContentTypeIfEmpty(w)
 				}
 				w.WriteHeader(statusCode)
 				gw := gzip.NewWriter(w)
@@ -253,8 +251,8 @@ func Gzip(opts ...func(*GzipConfig)) Middleware {
 			// Now that we have a gzip writer, set gzip headers and status.
 			w.Header().Set("Content-Encoding", "gzip")
 			w.Header().Del("Content-Length")
-			if bodyNil && w.Header().Get("Content-Type") == "" {
-				w.Header().Set("Content-Type", "application/json")
+			if bodyNil {
+				setJSONContentTypeIfEmpty(w)
 			}
 			w.WriteHeader(statusCode)
 
@@ -271,5 +269,13 @@ func Gzip(opts ...func(*GzipConfig)) Middleware {
 				return
 			}
 		})
+	}
+}
+
+// setJSONContentTypeIfEmpty ensures a sensible default content type when the handler
+// did not explicitly set any. It keeps the header untouched if already present.
+func setJSONContentTypeIfEmpty(w http.ResponseWriter) {
+	if w.Header().Get("Content-Type") == "" {
+		w.Header().Set("Content-Type", "application/json")
 	}
 }

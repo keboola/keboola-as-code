@@ -190,10 +190,12 @@ func TestGzipMiddleware_EmptyBodyPaths(t *testing.T) {
 	})
 }
 
+const invalidGzipLevelForTest = 99 // intentionally invalid to force NewWriterLevel error
+
 func TestGzipMiddleware_GzipWriterInitFailureFallback(t *testing.T) {
 	t.Parallel()
 	// Force invalid gzip level via custom option to trigger NewWriterLevel error
-	mw := Gzip(func(c *GzipConfig) { c.Level = 99 })
+	mw := Gzip(func(c *GzipConfig) { c.Level = invalidGzipLevelForTest })
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set compressible content type, but middleware will fail to init gzip writer
