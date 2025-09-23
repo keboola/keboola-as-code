@@ -152,7 +152,7 @@ func TestGzipMiddleware_EmptyBodyPaths(t *testing.T) {
 		assert.Equal(t, "{}", string(decompressed))
 	})
 
-	t.Run("non-compressible content-type, no body -> gzipped {}", func(t *testing.T) {
+	t.Run("non-compressible content-type, no body -> plain {} (no gzip)", func(t *testing.T) {
 		t.Parallel()
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "image/png")
@@ -165,20 +165,14 @@ func TestGzipMiddleware_EmptyBodyPaths(t *testing.T) {
 		mw(handler).ServeHTTP(rr, req)
 
 		assert.Equal(t, http.StatusOK, rr.Code)
-		assert.Equal(t, "gzip", rr.Header().Get("Content-Encoding"))
+		assert.Empty(t, rr.Header().Get("Content-Encoding"))
 		// Content-Type remains whatever handler set
 		assert.Equal(t, "image/png", rr.Header().Get("Content-Type"))
-		// Body should be compressed {}
-		body := rr.Body.Bytes()
-		reader, err := gzip.NewReader(strings.NewReader(string(body)))
-		require.NoError(t, err)
-		defer reader.Close()
-		decompressed, err := io.ReadAll(reader)
-		require.NoError(t, err)
-		assert.Equal(t, "{}", string(decompressed))
+		// Body should be plain {}
+		assert.Equal(t, "{}", rr.Body.String())
 	})
 
-	t.Run("no content-type set, no body -> gzipped {} with application/json", func(t *testing.T) {
+	t.Run("no content-type set, no body -> plain {} with application/json (no gzip)", func(t *testing.T) {
 		t.Parallel()
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// no headers, no body
@@ -190,15 +184,9 @@ func TestGzipMiddleware_EmptyBodyPaths(t *testing.T) {
 		mw(handler).ServeHTTP(rr, req)
 
 		assert.Equal(t, http.StatusOK, rr.Code)
-		assert.Equal(t, "gzip", rr.Header().Get("Content-Encoding"))
+		assert.Empty(t, rr.Header().Get("Content-Encoding"))
 		assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
-		body := rr.Body.Bytes()
-		reader, err := gzip.NewReader(strings.NewReader(string(body)))
-		require.NoError(t, err)
-		defer reader.Close()
-		decompressed, err := io.ReadAll(reader)
-		require.NoError(t, err)
-		assert.Equal(t, "{}", string(decompressed))
+		assert.Equal(t, "{}", rr.Body.String())
 	})
 }
 

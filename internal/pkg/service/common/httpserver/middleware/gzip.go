@@ -203,21 +203,19 @@ func Gzip(opts ...func(*GzipConfig)) Middleware {
 
 			// Check if we should compress based on content type.
 			if !shouldCompressByContentType(contentType, config) {
-				// If we shouldn't compress, write the captured content directly.
+				// If we shouldn't compress by content-type, do not apply gzip even for empty body.
 				if bodyNil {
-					// No body was written by handler. Return gzipped empty JSON and log the reason.
+					// No body was written by handler. Return plain empty JSON and log the reason.
 					if w.Header().Get("Content-Type") == "" {
 						w.Header().Set("Content-Type", "application/json")
 					}
 					if span, ok := RequestSpan(r.Context()); ok {
-						span.AddEvent("gzip: empty body fallback (forced)", trace.WithAttributes(attribute.String("reason", "handler wrote no body")))
+						span.AddEvent("gzip: empty body fallback (no gzip)", trace.WithAttributes(attribute.String("reason", "handler wrote no body")))
 					}
-					w.Header().Set("Content-Encoding", "gzip")
+					w.Header().Del("Content-Encoding")
 					w.Header().Del("Content-Length")
 					w.WriteHeader(statusCode)
-					gw := gzip.NewWriter(w)
-					defer gw.Close()
-					_, _ = gw.Write([]byte("{}"))
+					_, _ = w.Write([]byte("{}"))
 					return
 				}
 
