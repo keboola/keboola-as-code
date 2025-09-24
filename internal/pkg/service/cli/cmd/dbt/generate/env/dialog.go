@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 )
 
-func AskGenerateEnv(branchKey keboola.BranchKey, d *dialog.Dialogs, allWorkspaces []*keboola.WorkspaceWithConfig, f Flags) (env.Options, error) {
+func AskGenerateEnv(branchKey keboola.BranchKey, d *dialog.Dialogs, allWorkspaces []*keboola.SandboxWorkspaceWithConfig, f Flags) (env.Options, error) {
 	targetName, err := d.AskTargetName(f.TargetName)
 	if err != nil {
 		return env.Options{}, err
@@ -21,6 +21,6 @@ func AskGenerateEnv(branchKey keboola.BranchKey, d *dialog.Dialogs, allWorkspace
 	return env.Options{
 		BranchKey:  branchKey,
 		TargetName: targetName,
-		Workspace:  workspace.Workspace,
+		Workspace:  workspace.SandboxWorkspace,
 	}, nil
 }
