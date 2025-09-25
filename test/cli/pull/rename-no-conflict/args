@@ -1,0 +1,2 @@
+pull --merge-strategy theirs --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --force
+

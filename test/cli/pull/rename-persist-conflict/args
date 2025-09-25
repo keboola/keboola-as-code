@@ -1,0 +1,2 @@
+local persist --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+pull --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --force

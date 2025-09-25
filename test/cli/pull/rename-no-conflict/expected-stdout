@@ -1,0 +1,9 @@
+Plan for "pull" operation:
+  * B main | changed: description, metadata
+  * C main/extractor/ex-generic-v2/empty1 | changed: configuration, description, name
+  * C main/extractor/ex-generic-v2/emptys | changed: configuration
+Plan for "rename" operation:
+  - main/extractor/ex-generic-v2/{empty1 -> empty}
+  - main/extractor/ex-generic-v2/{emptys -> empty-001}
+Rename done.
+Pull done.
