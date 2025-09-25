@@ -48,7 +48,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		ctx,
 		branch.ID,
 		o.Name,
-		o.Type,
+		keboola.WorkspaceType(o.Type),
 		opts...,
 	)
 	if err != nil {
@@ -58,7 +58,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	workspace := w.Workspace
 
 	logger.Infof(ctx, `Created the new workspace "%s" (%s).`, o.Name, w.Config.ID)
-	switch workspace.Type {
+	switch keboola.WorkspaceType(workspace.Type) {
 	case keboola.WorkspaceTypeSnowflake:
 		logger.Infof(
 			ctx,
