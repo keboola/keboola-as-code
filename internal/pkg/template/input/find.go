@@ -111,7 +111,16 @@ func Find(objectKey model.Key, component *keboola.Component, content *orderedmap
 				})
 			}
 			if !isSecret && valRef.Len() > 0 {
-				defaultValue = value
+				// Normalize default to []any of strings for consistency across the codebase
+				defaults := make([]any, 0, valRef.Len())
+				for i := 0; i < valRef.Len(); i++ {
+					item := valRef.Index(i)
+					if item.Type().Kind() == reflect.Interface {
+						item = item.Elem()
+					}
+					defaults = append(defaults, item.String())
+				}
+				defaultValue = defaults
 			}
 		default:
 			return

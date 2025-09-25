@@ -60,29 +60,24 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 
 	// Get shared code config rows IDs
 	sharedCodeRowsIdsRaw, found := transformation.Content.Get(model.SharedCodeRowsIDContentKey)
-	v, ok := sharedCodeRowsIdsRaw.([]any)
 	if !found {
 		return nil
-	} else if !ok {
+	}
+
+	var idsAny []any
+	switch v := sharedCodeRowsIdsRaw.(type) {
+	case []any:
+		idsAny = v
+	default:
 		return errors.NewNestedError(
 			errors.Errorf(`invalid transformation %s`, transformation.Desc()),
 			errors.Errorf(`key "%s" should be array, found %T`, model.SharedCodeRowsIDContentKey, sharedCodeRowsIdsRaw),
 		)
 	}
 
-	// Replace ID placeholder with LinkScript struct
+	// Validate rows IDs and collect links
 	errs := errors.NewMultiError()
-	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
-		if _, v, err := m.parseIDPlaceholder(code, script, sharedCodeState); err != nil {
-			errs.Append(err)
-		} else if v != nil {
-			return v
-		}
-		return script
-	})
-
-	// Check rows IDs
-	for _, rowID := range v {
+	for _, rowID := range idsAny {
 		rowKey := model.ConfigRowKey{
 			BranchID:    linkToSharedCode.Config.BranchID,
 			ComponentID: linkToSharedCode.Config.ComponentID,
@@ -97,6 +92,19 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 				errors.Errorf(`referenced from %s`, transformation.Desc()),
 			))
 		}
+	}
+
+	// Replace ID placeholder with LinkScript struct only if there are no errors
+	if errs.Len() == 0 {
+		transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
+			if _, v, err := m.parseIDPlaceholder(code, script, sharedCodeState); err != nil {
+				// Collect error and keep the original script unchanged
+				errs.Append(err)
+			} else if v != nil {
+				return v
+			}
+			return script
+		})
 	}
 
 	return errs.ErrorOrNil()

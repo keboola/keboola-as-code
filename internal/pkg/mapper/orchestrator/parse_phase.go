@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
@@ -58,6 +59,8 @@ func (p *phaseParser) dependsOnIds() ([]string, error) {
 	if found {
 		if v, ok := raw.([]any); ok {
 			rawSlice = v
+		} else if v, ok := toAnySlice(raw); ok {
+			rawSlice = v
 		}
 	}
 
@@ -67,7 +70,9 @@ func (p *phaseParser) dependsOnIds() ([]string, error) {
 		switch v := itemRaw.(type) {
 		case string:
 			if len(v) == 0 {
-				return nil, errors.Errorf(`"dependsOn" cannot contain empty strings, found empty string at index %d`, i)
+				return nil, errors.Errorf(
+					`"dependsOn" cannot contain empty strings, found empty string at index %d`, i,
+				)
 			}
 			value = append(value, v)
 		case int:
@@ -75,7 +80,9 @@ func (p *phaseParser) dependsOnIds() ([]string, error) {
 		case float64:
 			value = append(value, fmt.Sprintf("%.0f", v))
 		default:
-			return nil, errors.Errorf(`"dependsOn" key must contain only strings or ints, found %T, index %d`, itemRaw, i)
+			return nil, errors.Errorf(
+				`"dependsOn" key must contain only strings or ints, found %T, index %d`, itemRaw, i,
+			)
 		}
 	}
 
@@ -88,6 +95,8 @@ func (p *phaseParser) dependsOnPaths() ([]string, error) {
 	raw, found := p.content.Get(`dependsOn`)
 	if found {
 		if v, ok := raw.([]any); ok {
+			rawSlice = v
+		} else if v, ok := toAnySlice(raw); ok {
 			rawSlice = v
 		}
 	}
@@ -103,7 +112,9 @@ func (p *phaseParser) dependsOnPaths() ([]string, error) {
 		case float64:
 			value = append(value, fmt.Sprintf("%.0f", v))
 		default:
-			return nil, errors.Errorf(`"dependsOn" key must contain only strings or ints, found %T, index %d`, item, i)
+			return nil, errors.Errorf(
+				`"dependsOn" key must contain only strings or ints, found %T, index %d`, item, i,
+			)
 		}
 	}
 
@@ -113,4 +124,18 @@ func (p *phaseParser) dependsOnPaths() ([]string, error) {
 
 func (p *phaseParser) additionalContent() *orderedmap.OrderedMap {
 	return p.content.Clone()
+}
+
+// toAnySlice attempts to convert any slice type to []any using reflection.
+// It returns false if the input is not a slice.
+func toAnySlice(v any) ([]any, bool) {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Slice {
+		return nil, false
+	}
+	res := make([]any, rv.Len())
+	for i := range rv.Len() {
+		res[i] = rv.Index(i).Interface()
+	}
+	return res, true
 }
