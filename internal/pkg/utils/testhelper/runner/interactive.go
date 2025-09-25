@@ -61,7 +61,7 @@ func setupCmdInOut(
 ) (*cmdInputOutput, error) {
 	t.Helper()
 	v := &cmdInputOutput{debugStdout: testhelper.VerboseStdout(), debugStderr: testhelper.VerboseStderr()}
-	if testDirFs.IsFile(ctx, interactionFilePath) {
+	if useInteraction && testDirFs.IsFile(ctx, interactionFilePath) {
 		// Read expectations
 		file, err := testDirFs.ReadFile(ctx, filesystem.NewFileDef(interactionFilePath))
 		if err != nil {
