@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/cachefile"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/ignore"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
@@ -104,6 +105,16 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		// Save project.json
 		if err := cachefile.New().Save(ctx, projectState.Fs(), d.ProjectBackends(), d.ProjectFeatures(), defaultBranch.ID); err != nil {
 			return err
+		}
+
+		// Reload local state so that the naming registry reflects deletions
+		// and freed paths before running path normalization. Without this the
+		// rename plan may see old paths as still occupied and append suffixes.
+		if ok, localErr, _ := projectState.Load(ctx, state.LoadOptions{LoadLocalState: true}); !ok {
+			if localErr != nil {
+				return localErr
+			}
+			return errors.New("failed to reload local state")
 		}
 
 		// Normalize paths
