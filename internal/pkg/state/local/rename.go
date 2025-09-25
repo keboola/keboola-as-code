@@ -65,8 +65,20 @@ func (m *Manager) rename(ctx context.Context, actions []model.RenameAction, clea
 
 	if errs.Len() == 0 {
 		// No error -> remove old paths
+		// Avoid removing a path that has become a destination in this batch (chained renames)
 		m.logger.Debug(ctx, "Removing old paths.")
+
+		// Build a set of all destinations created in this batch
+		newPathSet := make(map[string]struct{}, len(newPaths))
+		for _, p := range newPaths {
+			newPathSet[p] = struct{}{}
+		}
+
 		for _, oldPath := range pathsToRemove {
+			if _, isAlsoDestination := newPathSet[oldPath]; isAlsoDestination {
+				// Skip removal: this old path is also a destination of another rename in this batch
+				continue
+			}
 			if err := m.fs.Remove(ctx, oldPath); err != nil {
 				warnings.AppendWithPrefixf(err, `cannot remove \"%s\"`, oldPath)
 			}

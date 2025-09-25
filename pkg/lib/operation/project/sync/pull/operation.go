@@ -70,7 +70,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
-	// Get plan
 	plan, err := pull.NewPlan(results)
 	if err != nil {
 		return err
@@ -108,7 +107,8 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Normalize paths
-		if _, err := rename.Run(ctx, projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+		// Enable Cleanup to handle chained renames where destination temporarily exists
+		if _, err := rename.Run(ctx, projectState, renameOptions, d); err != nil {
 			return err
 		}
 
