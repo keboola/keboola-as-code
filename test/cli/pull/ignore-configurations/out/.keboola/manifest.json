@@ -69,7 +69,7 @@
     {
       "branchId": %%TEST_BRANCH_BAR_ID%%,
       "componentId": "keboola.variables",
-      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODES_VARIABLES_ID%%",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_SHARED_CODE_VARIABLES_ID%%",
       "path": "variables",
       "relations": [
         {

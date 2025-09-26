@@ -23,8 +23,9 @@ import (
 )
 
 type Options struct {
-	DryRun            bool
-	LogUntrackedPaths bool
+	DryRun                 bool
+	LogUntrackedPaths      bool
+	CleanupRenameConflicts bool
 }
 
 type dependencies interface {
@@ -71,6 +72,12 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
+	var renameOptions rename.Options
+	if o.CleanupRenameConflicts {
+		renameOptions.Cleanup = true
+	}
+
+	// Get plan
 	plan, err := pull.NewPlan(results)
 	if err != nil {
 		return err

@@ -6,17 +6,17 @@ Local files will be overwritten to match the project's state.
 You can use the "--dry-run" flag to see
 what needs to be done without modifying the files.
 
-Merge strategies:
-- --merge-strategy only-remote: apply only remote-originated changes, skip deletion of local-only changes
-- --merge-strategy theirs: prefer remote changes (default behavior)
+Rename conflict handling:
+- --cleanup-rename-conflicts: when renaming objects, remove conflicting destinations
+  to allow the rename to proceed (useful for chained renames)
 
 Usage:
   %s pull [flags]
 
 Flags:
+      --cleanup-rename-conflicts   enable cleanup mode for rename conflicts (removes conflicting destinations)
       --dry-run                    print what needs to be done
       --force                      ignore invalid local state
-      --merge-strategy string      merge strategy to resolve differences: only-remote | theirs
   -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
   -t, --storage-api-token string   storage API token from your project
 
