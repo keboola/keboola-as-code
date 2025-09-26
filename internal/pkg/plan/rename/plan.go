@@ -13,6 +13,14 @@ type Plan struct {
 	actions []model.RenameAction
 }
 
+type Options struct {
+	Cleanup bool
+}
+
+type Option func(*Options)
+
+func WithCleanup(v bool) Option { return func(o *Options) { o.Cleanup = v } }
+
 func (p *Plan) Empty() bool {
 	return len(p.actions) == 0
 }
@@ -33,6 +41,10 @@ func (p *Plan) Log(w io.Writer) {
 	}
 }
 
-func (p *Plan) Invoke(ctx context.Context, localManager *local.Manager) error {
-	return newRenameExecutor(ctx, localManager, p).invoke()
+func (p *Plan) Invoke(ctx context.Context, localManager *local.Manager, opts ...Option) error {
+	options := &Options{}
+	for _, o := range opts {
+		o(options)
+	}
+	return newRenameExecutor(ctx, localManager, p, *options).invoke()
 }

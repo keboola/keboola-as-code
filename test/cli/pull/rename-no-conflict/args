@@ -1,0 +1,2 @@
+pull --cleanup-rename-conflicts --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --force
+

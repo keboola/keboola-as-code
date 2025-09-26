@@ -55,7 +55,7 @@ func TestRename(t *testing.T) {
 	// NewPlan
 	projectState := state.NewRegistry(knownpaths.NewNop(ctx), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
-	executor := newRenameExecutor(t.Context(), localManager, plan)
+	executor := newRenameExecutor(t.Context(), localManager, plan, Options{})
 	require.NoError(t, executor.invoke())
 	logsStr := logger.AllMessages()
 	assert.NotContains(t, logsStr, `warn`)
@@ -125,7 +125,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	// NewPlan
 	projectState := state.NewRegistry(knownpaths.NewNop(ctx), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
-	executor := newRenameExecutor(t.Context(), localManager, plan)
+	executor := newRenameExecutor(t.Context(), localManager, plan, Options{})
 	err := executor.invoke()
 	require.Error(t, err)
 	logsStr := logger.AllMessages()
@@ -152,4 +152,64 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 {"level":"info","message":"Error occurred, the rename operation was reverted."}
 `
 	logger.AssertJSONMessages(t, expectedLog)
+}
+
+func TestRenameCleanupOnDestinationExists(t *testing.T) {
+	t.Parallel()
+	logger := log.NewDebugLogger()
+	validator := validatorPkg.New()
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
+	manifest := projectManifest.New(1, "foo")
+	ctx := t.Context()
+
+	// Prepare destination that conflicts with rename target
+	require.NoError(t, fs.Mkdir(ctx, `src-dir`))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`src-dir/file.txt`, `src`)))
+	require.NoError(t, fs.Mkdir(ctx, `dst-dir`))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`dst-dir/file.txt`, `dst`)))
+	// Also test file->file conflict
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`src-file.txt`, `src-file`)))
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`dst-file.txt`, `dst-file`)))
+	logger.Truncate()
+
+	plan := &Plan{
+		actions: []model.RenameAction{
+			{
+				Manifest:    &fixtures.MockedManifest{},
+				RenameFrom:  "src-dir",
+				NewPath:     "dst-dir",
+				Description: "src-dir -> dst-dir",
+			},
+			{
+				Manifest:    &fixtures.MockedManifest{},
+				RenameFrom:  "src-file.txt",
+				NewPath:     "dst-file.txt",
+				Description: "src-file.txt -> dst-file.txt",
+			},
+		},
+	}
+
+	projectState := state.NewRegistry(knownpaths.NewNop(ctx), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
+	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
+	executor := newRenameExecutor(t.Context(), localManager, plan, Options{Cleanup: true})
+	require.NoError(t, executor.invoke())
+
+	// After cleanup, destination should contain source content
+	assert.True(t, fs.IsFile(ctx, `dst-dir/file.txt`))
+	file, err := fs.ReadFile(ctx, filesystem.NewFileDef(`dst-dir/file.txt`))
+	require.NoError(t, err)
+	assert.Equal(t, "src", file.Content)
+
+	file2, err := fs.ReadFile(ctx, filesystem.NewFileDef(`dst-file.txt`))
+	require.NoError(t, err)
+	assert.Equal(t, "src-file", file2.Content)
+
+	// Old sources removed
+	assert.False(t, fs.Exists(ctx, `src-dir`))
+	assert.False(t, fs.Exists(ctx, `src-file.txt`))
+
+	// Logs capture: cleanup triggers a normal copy log sequence
+	logsStr := logger.AllMessages()
+	assert.Contains(t, logsStr, `Copied \"src-dir\" -> \"dst-dir\"`)
+	assert.Contains(t, logsStr, `Copied \"src-file.txt\" -> \"dst-file.txt\"`)
 }

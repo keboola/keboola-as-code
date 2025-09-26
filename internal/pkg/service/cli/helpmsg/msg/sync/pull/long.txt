@@ -5,3 +5,7 @@ Local files will be overwritten to match the project's state.
 
 You can use the "--dry-run" flag to see
 what needs to be done without modifying the files.
+
+Rename conflict handling:
+- --cleanup-rename-conflicts: when renaming objects, remove conflicting destinations
+  to allow the rename to proceed (useful for chained renames)

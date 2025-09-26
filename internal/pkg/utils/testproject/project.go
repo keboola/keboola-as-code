@@ -624,7 +624,9 @@ func (p *Project) prepareConfigs(
 		newID := generator.NewULID()
 		configWithRows.BranchID = branch.ID
 		configWithRows.ID = keboola.ConfigID(newID)
-		p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, configFixture.Name), newID)
+		// Normalize name for ENV: replace spaces/dashes with underscores and uppercase
+		sanitizedName := strings.ToUpper(strings.NewReplacer(" ", "_", "-", "_").Replace(name))
+		p.setEnv(fmt.Sprintf("%s_%s_ID", strings.ToUpper(envPrefix), sanitizedName), newID)
 		p.logf("✔️ ID for config \"%s\".", configDesc)
 
 		// For each row
@@ -705,6 +707,8 @@ func (p *Project) addBranch(branch *keboola.Branch) {
 func (p *Project) setEnv(key string, value string) {
 	// Normalize key
 	key = regexp.MustCompile(`[^a-zA-Z0-9]+`).ReplaceAllString(key, "_")
+	// Collapse multiple underscores possibly created by replacement
+	key = regexp.MustCompile(`_+`).ReplaceAllString(key, "_")
 	key = strings.ToUpper(key)
 	key = strings.Trim(key, "_")
 

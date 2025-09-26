@@ -1,0 +1,8 @@
+{
+  "parameters": {
+    "api": {
+      "baseUrl": "https://jsonplaceholder.typicode.com"
+    }
+  }
+}
+

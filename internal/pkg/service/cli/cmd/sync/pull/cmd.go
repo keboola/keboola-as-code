@@ -13,10 +13,11 @@ import (
 )
 
 type Flags struct {
-	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
-	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
-	Force           configmap.Value[bool]   `configKey:"force" configUsage:"ignore invalid local state"`
-	DryRun          configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
+	StorageAPIHost         configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
+	StorageAPIToken        configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
+	Force                  configmap.Value[bool]   `configKey:"force" configUsage:"ignore invalid local state"`
+	DryRun                 configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
+	CleanupRenameConflicts configmap.Value[bool]   `configKey:"cleanup-rename-conflicts" configUsage:"enable cleanup mode for rename conflicts (removes conflicting destinations)"`
 }
 
 func DefaultFlags() Flags {
@@ -70,8 +71,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := pull.Options{
-				DryRun:            f.DryRun.Value,
-				LogUntrackedPaths: true,
+				DryRun:                 f.DryRun.Value,
+				LogUntrackedPaths:      true,
+				CleanupRenameConflicts: f.CleanupRenameConflicts.Value,
 			}
 
 			// Send cmd successful/failed event

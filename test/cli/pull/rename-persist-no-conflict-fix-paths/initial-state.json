@@ -1,0 +1,12 @@
+{
+  "backend": { "type": "snowflake" },
+  "allBranchesConfigs": [
+    "without-rows",
+    "empty2"
+  ],
+  "branches": [
+    {
+      "branch": { "name": "Main", "isDefault": true }
+    }
+  ]
+}

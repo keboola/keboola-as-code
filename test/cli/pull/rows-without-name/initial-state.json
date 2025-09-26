@@ -4,7 +4,7 @@
   },
   "legacyTransformation": true,
   "allBranchesConfigs": [
-    "rows-without-name"
+    "legacy-transformation"
   ],
   "branches": [
     {

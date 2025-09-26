@@ -52,7 +52,7 @@
     {
       "branchId": %%TEST_BRANCH_FOO_ID%%,
       "componentId": "keboola.wr-db-mysql",
-      "id": "%%TEST_BRANCH_FOO_CONFIG_IM_DEFAULT_BUCKET_ID%%",
+      "id": "%%TEST_BRANCH_FOO_CONFIG_IM_DEFAULT_BUCKET_ROW_ID%%",
       "path": "writer/keboola.wr-db-mysql/im-default-bucket",
       "rows": [
         {

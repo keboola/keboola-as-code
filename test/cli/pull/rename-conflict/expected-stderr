@@ -1,0 +1,4 @@
+Error:
+- Cannot rename objects:
+  - Cannot copy "main/extractor/ex-generic-v2/{empty1 -> empty}":
+    - Cannot copy "main/extractor/ex-generic-v2/empty1" -> "main/extractor/ex-generic-v2/empty": destination exists.
