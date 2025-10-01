@@ -146,7 +146,7 @@ jobs:
           set -Eeuo pipefail
           export ETCD_ROOT_PASSWORD=$(kubectl get secret "$ETCD_RELEASE_NAME" -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
           kubectl run --attach --rm --restart=Never check-etcd-client \
-            --image docker.io/bitnami/etcd \
+            --image docker.io/bitnamilegacy/etcd \
             --labels="${ETCD_RELEASE_NAME}-client=true" \
             --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
             --env="ETCDCTL_ENDPOINTS=$ETCD_ENDPOINT" \
