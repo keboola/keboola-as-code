@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -246,80 +247,147 @@ func (t *Test) addEnvVarsFromFile() {
 }
 
 func (t *Test) runCLIBinary(path string) {
-	// Load command arguments from file
-	argsFile, err := t.TestDirFS().ReadFile(t.ctx, filesystem.NewFileDef("args"))
-	if err != nil {
-		t.T().Fatalf(`cannot open "%s" test file %s`, "args", err)
+	// Load and parse arguments from one or more files
+	commands := t.loadCLICommands()
+	if len(commands) == 0 {
+		t.t.Fatalf("no CLI commands found in args files")
 	}
 
-	// Load and parse command arguments
-	argsStr := strings.TrimSpace(argsFile.Content)
-	argsStr = testhelper.MustReplaceEnvsString(argsStr, t.EnvProvider())
-	args, err := shlex.Split(argsStr)
-	if err != nil {
-		t.T().Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
-	}
+	// Run all commands sequentially, aggregate outputs
+	aggStdout := &bytes.Buffer{}
+	aggStderr := &bytes.Buffer{}
+	lastExitCode := 0
 
-	// Prepare command
-	cmd := exec.CommandContext(t.ctx, path, args...) // nolint:gosec
-	cmd.Env = t.env.ToSlice()
-	cmd.Dir = t.workingDir
+	for i, args := range commands {
+		// Prepare command
+		cmd := exec.CommandContext(t.ctx, path, args...) // nolint:gosec
+		cmd.Env = t.env.ToSlice()
+		cmd.Dir = t.workingDir
 
-	// Setup command input/output
-	cmdInOut, err := setupCmdInOut(t.ctx, t.t, t.envProvider, t.testDirFS, cmd)
-	if err != nil {
-		t.t.Fatal(err.Error())
-	}
-
-	// Start command
-	if err := cmd.Start(); err != nil {
-		t.t.Fatalf("Cannot start command: %s", err)
-	}
-
-	// Always terminate the command
-	defer func() {
-		_ = cmd.Process.Kill()
-	}()
-
-	// Error handler for errors in interaction
-	interactionErrHandler := func(err error) {
+		// Use interaction only for the first command
+		useInteraction := i == 0
+		cmdInOut, err := setupCmdInOut(t.ctx, t.t, t.envProvider, t.testDirFS, cmd, useInteraction)
 		if err != nil {
-			t.t.Fatal(err)
+			t.t.Fatal(err.Error())
 		}
+
+		// Start command
+		if err := cmd.Start(); err != nil {
+			t.t.Fatalf("Cannot start command: %s", err)
+		}
+
+		// Always terminate the command
+		func() {
+			defer func() { _ = cmd.Process.Kill() }()
+			interactionErrHandler := func(err error) {
+				if err != nil {
+					t.t.Fatal(err)
+				}
+			}
+			// Wait for command
+			exitCode := 0
+			err = cmdInOut.InteractAndWait(t.ctx, cmd, interactionErrHandler)
+			if err != nil {
+				t.t.Logf(`cli command failed: %s`, err.Error())
+				var exitError *exec.ExitError
+				if errors.As(err, &exitError) {
+					exitCode = exitError.ExitCode()
+				} else {
+					t.t.Fatalf("Command failed: %s", err)
+				}
+			}
+
+			// Aggregate outputs
+			if s := cmdInOut.StdoutString(); s != "" {
+				_, _ = aggStdout.WriteString(s)
+				if i < len(commands)-1 {
+					_, _ = aggStdout.WriteString("\n")
+				}
+			}
+			if s := cmdInOut.StderrString(); s != "" {
+				_, _ = aggStderr.WriteString(s)
+				if i < len(commands)-1 {
+					_, _ = aggStderr.WriteString("\n")
+				}
+			}
+
+			lastExitCode = exitCode
+		}()
 	}
 
-	// Wait for command
-	exitCode := 0
-	err = cmdInOut.InteractAndWait(t.ctx, cmd, interactionErrHandler)
-	if err != nil {
-		t.t.Logf(`cli command failed: %s`, err.Error())
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
-			exitCode = exitError.ExitCode()
-		} else {
-			t.t.Fatalf("Command failed: %s", err)
-		}
-	}
-
-	// Get outputs
-	stdout := cmdInOut.StdoutString()
-	stderr := cmdInOut.StderrString()
-
+	// Assert aggregated results
 	expectedCode := cast.ToInt(t.ReadFileFromTestDir("expected-code"))
 	assert.Equal(
 		t.t,
 		expectedCode,
-		exitCode,
+		lastExitCode,
 		"Unexpected exit code.\nSTDOUT:\n%s\n\nSTDERR:\n%s\n\n",
-		stdout,
-		stderr,
+		aggStdout.String(),
+		aggStderr.String(),
 	)
 
 	expectedStdout := t.ReadFileFromTestDir("expected-stdout")
-	wildcards.Assert(t.t, expectedStdout, stdout, "Unexpected STDOUT.")
+	wildcards.Assert(t.t, expectedStdout, aggStdout.String(), "Unexpected STDOUT.")
 
 	expectedStderr := t.ReadFileFromTestDir("expected-stderr")
-	wildcards.Assert(t.t, expectedStderr, stderr, "Unexpected STDERR.")
+	wildcards.Assert(t.t, expectedStderr, aggStderr.String(), "Unexpected STDERR.")
+}
+
+// loadCLICommands reads commands from args files.
+// Backward compatible: a single file named "args" with one command.
+// Extended: multiple commands separated by newlines, and additional files matching "args*" are concatenated
+// in lexicographic order. Empty lines and lines starting with "#" are ignored.
+func (t *Test) loadCLICommands() [][]string {
+	// Collect files: prefer ordered list with base "args" first, then others matching args*
+	files := make([]string, 0)
+	hasBaseArgs := t.testDirFS.IsFile(t.ctx, "args")
+	if hasBaseArgs {
+		files = append(files, "args")
+	}
+	// Additional args files (e.g., args.2, args-1). Exclude the plain "args" to avoid duplication.
+	matches, _ := t.testDirFS.Glob(t.ctx, "args*")
+	sort.Strings(matches)
+	for _, f := range matches {
+		if f == "args" {
+			continue
+		}
+		files = append(files, f)
+	}
+
+	lines := make([]string, 0)
+	for _, f := range files {
+		file, err := t.testDirFS.ReadFile(t.ctx, filesystem.NewFileDef(f))
+		if err != nil {
+			t.T().Fatalf(`cannot open "%s" test file %s`, f, err)
+		}
+		content := testhelper.MustReplaceEnvsString(strings.TrimSpace(file.Content), t.EnvProvider())
+		for _, line := range strings.Split(content, "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			lines = append(lines, line)
+		}
+	}
+
+	// If no lines found: if base args exists, run once with no arguments (backward compatibility)
+	if len(lines) == 0 {
+		if hasBaseArgs {
+			return [][]string{{}}
+		}
+		return [][]string{}
+	}
+
+	// Parse each line with shlex
+	cmds := make([][]string, 0, len(lines))
+	for _, line := range lines {
+		args, err := shlex.Split(line)
+		if err != nil {
+			t.T().Fatalf(`Cannot parse args "%s": %s`, line, err)
+		}
+		cmds = append(cmds, args)
+	}
+	return cmds
 }
 
 type apiServerConfig struct {

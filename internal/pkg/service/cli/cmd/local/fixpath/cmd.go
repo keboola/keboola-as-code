@@ -14,6 +14,7 @@ type Flags struct {
 	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
 	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	DryRun          configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
+	Cleanup         configmap.Value[bool]   `configKey:"cleanup" configUsage:"remove conflicting destination paths during rename"`
 }
 
 func DefaultFlags() Flags {
@@ -48,6 +49,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			options := rename.Options{
 				DryRun:   f.DryRun.Value,
 				LogEmpty: true,
+				Cleanup:  f.Cleanup.Value,
 			}
 
 			// Send cmd successful/failed event

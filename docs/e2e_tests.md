@@ -32,6 +32,12 @@ after the execution. The test also compares exit code, stdout, and stderr.
 ```
 └─test-name
   ├─args                - file with command line arguments used when running the program
+  │                      Supports multiple commands separated by newlines. Lines starting with "#" are ignored.
+  │                      You can also add additional files matching `args*` (e.g., `args.2`, `args-extra`) which
+  │                      are read in lexicographic order after `args`. All commands run sequentially in the same cwd.
+  │                      The final exit code must be in `expected-code` and refers to the last command.
+  │                      `expected-stderr` should contain stderr of all commands concatenated. `expected-stdout`
+  │                      should contain stdout of all commands concatenated.
   ├─env                 - file with additional env vars to be injected to the program
   ├─expected-code       - file with expected exit code, eg. 0 for success
   ├─expected-stdout     - file with expected stdout

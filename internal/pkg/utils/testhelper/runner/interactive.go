@@ -51,10 +51,17 @@ type cmdInputOutput struct {
 
 type errorHandler func(err error)
 
-func setupCmdInOut(ctx context.Context, t *testing.T, envProvider testhelper.EnvProvider, testDirFs filesystem.Fs, cmd *exec.Cmd) (*cmdInputOutput, error) {
+func setupCmdInOut(
+	ctx context.Context,
+	t *testing.T,
+	envProvider testhelper.EnvProvider,
+	testDirFs filesystem.Fs,
+	cmd *exec.Cmd,
+	useInteraction bool,
+) (*cmdInputOutput, error) {
 	t.Helper()
 	v := &cmdInputOutput{debugStdout: testhelper.VerboseStdout(), debugStderr: testhelper.VerboseStderr()}
-	if testDirFs.IsFile(ctx, interactionFilePath) {
+	if useInteraction && testDirFs.IsFile(ctx, interactionFilePath) {
 		// Read expectations
 		file, err := testDirFs.ReadFile(ctx, filesystem.NewFileDef(interactionFilePath))
 		if err != nil {

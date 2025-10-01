@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/cachefile"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/ignore"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
@@ -22,8 +23,9 @@ import (
 )
 
 type Options struct {
-	DryRun            bool
-	LogUntrackedPaths bool
+	DryRun                 bool
+	LogUntrackedPaths      bool
+	CleanupRenameConflicts bool
 }
 
 type dependencies interface {
@@ -70,6 +72,11 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		return err
 	}
 
+	var renameOptions rename.Options
+	if o.CleanupRenameConflicts {
+		renameOptions.Cleanup = true
+	}
+
 	// Get plan
 	plan, err := pull.NewPlan(results)
 	if err != nil {
@@ -107,8 +114,19 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			return err
 		}
 
+		// Reload local state so that the naming registry reflects deletions
+		// and freed paths before running path normalization. Without this the
+		// rename plan may see old paths as still occupied and append suffixes.
+		if ok, localErr, _ := projectState.Load(ctx, state.LoadOptions{LoadLocalState: true}); !ok {
+			if localErr != nil {
+				return localErr
+			}
+			return errors.New("failed to reload local state")
+		}
+
 		// Normalize paths
-		if _, err := rename.Run(ctx, projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+		// Enable Cleanup to handle chained renames where destination temporarily exists
+		if _, err := rename.Run(ctx, projectState, renameOptions, d); err != nil {
 			return err
 		}
 

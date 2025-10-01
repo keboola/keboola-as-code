@@ -1,0 +1,18 @@
+Plan for "persist" operation:
+  + C main/extractor/ex-generic-v2/empty
+Plan for "rename" operation:
+  - main/extractor/ex-generic-v2/{empty1 -> empty-001}
+  - main/extractor/ex-generic-v2/{emptys -> empty-002}
+Rename done.
+Persist done.
+
+Plan for "pull" operation:
+  * B main | changed: description, metadata
+  × C main/extractor/ex-generic-v2/empty
+  * C main/extractor/ex-generic-v2/empty-001 | changed: description, name
+  * C main/extractor/ex-generic-v2/empty-002 | changed: configuration
+Plan for "rename" operation:
+  - main/extractor/ex-generic-v2/{empty-001 -> without-rows}
+  - main/extractor/ex-generic-v2/{empty-002 -> empty-001}
+Rename done.
+Pull done.
