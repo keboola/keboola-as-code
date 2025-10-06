@@ -96,7 +96,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Go, tools and caching
         uses: ./.github/actions/go-setup
@@ -146,15 +146,15 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download targets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: release-targets
 
       - name: Configure AWS Credentials to CLI Assets Account
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
@@ -242,10 +242,10 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download Homebrew formulae
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: homebrew-formulae
           path: target/homebrew
@@ -276,7 +276,7 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install GPG
         run: sudo apt-get update && sudo apt-get install -y gnupg
@@ -309,7 +309,7 @@ jobs:
         run: rm -rf ${HOME}/.aws
 
       - name: Configure AWS Credentials to CLI Assets Account
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_ROLE_REGION }}
@@ -335,7 +335,7 @@ jobs:
           APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
 
       - name: Download Scoop manifest
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: scoop-manifest
           path: target/scoop
@@ -366,7 +366,7 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install GitHub "hub" CLI
         uses: geertvdc/setup-hub@master
@@ -374,7 +374,7 @@ jobs:
           ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'  # allow add-path
 
       - name: Install Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'  # See 'Supported distributions' for available options
           java-version: '21'
@@ -471,7 +471,7 @@ jobs:
             $msi
 
       - name: Configure AWS Credentials to CLI Assets Account
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_ROLE_REGION }}
