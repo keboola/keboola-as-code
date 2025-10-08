@@ -6,8 +6,10 @@ Error:
     - "export": missing property "aggregation"
     - "export.groupingDimensions": got string, want array
   - Config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-2/config.json" doesn't match schema:
+    - "export.groupingDimensions": invalid jsonType []string
     - "export.type": value must be one of "ActualCost", "AmortizedCost", "Usage"
   - Config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-3/config.json" doesn't match schema:
+    - "export.groupingDimensions": invalid jsonType []string
     - "export.type": value must be one of "ActualCost", "AmortizedCost", "Usage"
   - Config "foo/extractor/ex-generic-v2/testUnencrypted/config.json" contains unencrypted values:
     - #unencrypedValue
