@@ -1,0 +1,3 @@
+# Ignore the "empty" extractor config
+# This should also cause the orchestrator that references it to be ignored during push
+ex-generic-v2/%%_%%

@@ -1,0 +1,4 @@
+# Ignore the "empty" extractor config
+# This should also cause the orchestrator that references it to be ignored
+ex-generic-v2/%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%
+
