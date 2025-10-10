@@ -5,18 +5,16 @@ on:
     types: [opened, synchronize, ready_for_review, labeled]
     # Optional: Only run on specific file changes
     # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    #   - "**/*.go"
+    #   - "go.mod"
+    #   - "go.sum"
 
 jobs:
   claude-review:
     # Skip review if PR has no "Claude review" label
     if: contains(github.event.pull_request.labels.*.name, 'Claude review')
 
-    runs-on:
-      group: 'UI runners'
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
