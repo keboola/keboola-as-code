@@ -22,9 +22,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Run Claude Code Review
         id: claude-review
