@@ -370,6 +370,7 @@ func (s *service) UseTemplateVersion(ctx context.Context, d dependencies.Project
 func (s *service) InstancesIndex(ctx context.Context, d dependencies.ProjectRequestScope, payload *InstancesIndexPayload) (res *Instances, err error) {
 	_, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.service.InstancesIndex")
 	defer span.End(&err)
+	defer d.Logger().Infof(ctx, "InstancesIndex executed")
 
 	branchKey, err := getBranch(ctx, d, payload.Branch)
 	if err != nil {
