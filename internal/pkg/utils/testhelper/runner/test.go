@@ -428,7 +428,7 @@ func (t *Test) runAPIServer(
 	})
 
 	// Start API server
-	cmd := exec.Command(path, args...)
+	cmd := exec.CommandContext(t.ctx, path, args...)
 	cmd.Env = envs.ToSlice()
 	cmd.Stdout = io.MultiWriter(stdout, testhelper.VerboseStdout())
 	cmd.Stderr = io.MultiWriter(stderr, testhelper.VerboseStderr())
