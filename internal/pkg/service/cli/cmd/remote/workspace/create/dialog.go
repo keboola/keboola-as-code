@@ -27,7 +27,7 @@ func AskCreateWorkspace(d *dialog.Dialogs, f Flags) (create.CreateOptions, error
 	}
 	opts.Type = typ
 
-	if keboola.WorkspaceSupportsSizes(typ) {
+	if keboola.WorkspaceSupportsSizes(keboola.WorkspaceType(typ)) {
 		size, err := askWorkspaceSize(d, f.Size)
 		if err != nil {
 			return opts, err
@@ -56,14 +56,14 @@ func askWorkspaceName(d *dialog.Dialogs, workspaceName configmap.Value[string]) 
 func askWorkspaceType(d *dialog.Dialogs, workspaceType configmap.Value[string]) (string, error) {
 	if workspaceType.IsSet() {
 		typ := workspaceType.Value
-		if !keboola.WorkspaceTypesMap()[typ] {
-			return "", errors.Errorf("invalid workspace type, must be one of: %s", strings.Join(keboola.WorkspaceTypesOrdered(), ", "))
+		if !keboola.WorkspaceTypesMap()[keboola.WorkspaceType(typ)] {
+			return "", errors.Errorf("invalid workspace type, must be one of: %s", strings.Join(workspaceTypesToStrings(keboola.WorkspaceTypesOrdered()), ", "))
 		}
 		return typ, nil
 	} else {
 		v, ok := d.Select(&prompt.Select{
 			Label:   "Select a type for the new workspace",
-			Options: keboola.WorkspaceTypesOrdered(),
+			Options: workspaceTypesToStrings(keboola.WorkspaceTypesOrdered()),
 		})
 		if !ok {
 			return "", errors.New("missing workspace type, please specify it")
@@ -89,4 +89,14 @@ func askWorkspaceSize(d *dialog.Dialogs, workspaceSize configmap.Value[string]) 
 		}
 		return v, nil
 	}
+}
+
+// workspaceTypesToStrings converts a slice of keboola.WorkspaceType to a slice of strings.
+// This is needed because keboola.WorkspaceType is a string type but the SDK returns []keboola.WorkspaceType.
+func workspaceTypesToStrings(types []keboola.WorkspaceType) []string {
+	result := make([]string, len(types))
+	for i, t := range types {
+		result[i] = string(t)
+	}
+	return result
 }
