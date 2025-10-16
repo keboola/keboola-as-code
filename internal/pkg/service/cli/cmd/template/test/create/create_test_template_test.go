@@ -61,7 +61,6 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("Default Group"))
 
 		require.NoError(t, console.ExpectString("Default Step"))

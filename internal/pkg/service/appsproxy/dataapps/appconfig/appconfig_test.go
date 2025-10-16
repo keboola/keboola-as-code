@@ -293,7 +293,6 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 	// Load configuration 10x in parallel
 	for range 10 {
 		wg.Go(func() {
-
 			cfg, _, err := loader.GetConfig(ctx, appID)
 			require.NoError(t, err)
 			assert.Equal(t, "http://app.local", cfg.UpstreamAppURL)

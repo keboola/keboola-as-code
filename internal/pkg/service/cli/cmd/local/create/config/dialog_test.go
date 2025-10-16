@@ -58,7 +58,6 @@ func TestAskCreateConfig(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("Select the target branch"))
 
 		require.NoError(t, console.SendEnter()) // enter - Main

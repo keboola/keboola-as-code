@@ -83,7 +83,6 @@ func TestManager_Notify_Race(t *testing.T) {
 	// Load configuration 10x in parallel
 	for range 10 {
 		wg.Go(func() {
-
 			err := manager.Notify(ctx, appID)
 			require.NoError(t, err)
 

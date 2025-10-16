@@ -27,7 +27,6 @@ func TestSelectBranchInteractive(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("LABEL:"))
 
 		require.NoError(t, console.ExpectString("Branch 1 (1)"))
@@ -125,7 +124,6 @@ func TestSelectBranchesInteractive(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("LABEL:"))
 
 		require.NoError(t, console.ExpectString("Branch 1 (1)"))

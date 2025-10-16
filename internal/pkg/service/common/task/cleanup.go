@@ -70,7 +70,6 @@ func StartCleaner(d cleanerDeps, interval time.Duration) error {
 
 	// Start ticker
 	wg.Go(func() {
-
 		ticker := c.clock.NewTicker(interval)
 		defer ticker.Stop()
 

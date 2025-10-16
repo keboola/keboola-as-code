@@ -19,7 +19,6 @@ func TestAskCreateWorkspace(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("Enter a name for the new workspace"))
 
 		require.NoError(t, console.SendLine("foo"))

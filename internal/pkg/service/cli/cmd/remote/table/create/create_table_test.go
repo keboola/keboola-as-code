@@ -98,7 +98,6 @@ func TestAskCreate(t *testing.T) {
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 		wg := sync.WaitGroup{}
 		wg.Go(func() {
-
 			require.NoError(t, console.ExpectString("Select a bucket:"))
 
 			require.NoError(t, console.Send("in.c-test_1214124"))
@@ -182,7 +181,6 @@ func TestAskCreate(t *testing.T) {
 
 		wg := sync.WaitGroup{}
 		wg.Go(func() {
-
 			require.NoError(t, console.ExpectString("Select a bucket:"))
 
 			require.NoError(t, console.Send("in.c-test_1214124"))
@@ -258,7 +256,6 @@ func TestAskCreate(t *testing.T) {
 
 		wg := sync.WaitGroup{}
 		wg.Go(func() {
-
 			require.NoError(t, console.ExpectString("Select a bucket:"))
 
 			require.NoError(t, console.Send("in.c-test_1214124"))
@@ -351,7 +348,6 @@ func TestAskCreate(t *testing.T) {
 
 		wg := sync.WaitGroup{}
 		wg.Go(func() {
-
 			require.NoError(t, console.ExpectString("Select a bucket:"))
 
 			require.NoError(t, console.Send("in.c-test_1214124"))

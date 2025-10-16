@@ -41,7 +41,6 @@ func newListeners(ctx context.Context, wg *sync.WaitGroup, cfg Config, logger lo
 	}
 
 	wg.Go(func() {
-
 		// If the interval > 0, then listeners are not triggered immediately on change,
 		// but all events within the groupInterval are processed at once.
 		// Otherwise, trigger is called immediately, see Notify method.

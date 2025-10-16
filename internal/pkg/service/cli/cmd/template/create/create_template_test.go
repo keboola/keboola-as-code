@@ -104,7 +104,6 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("Please enter a template public name for users."))
 
 		require.NoError(t, console.ExpectString("Template name:"))

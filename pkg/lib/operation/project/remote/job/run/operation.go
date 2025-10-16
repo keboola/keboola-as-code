@@ -138,9 +138,7 @@ func (q *JobQueue) finished(job *Job) {
 }
 
 func (q *JobQueue) dispatch(job *Job) {
-
 	q.wg.Go(func() {
-
 		if err := job.Start(q.ctx, q.api); err != nil {
 			q.err.Append(errors.Errorf("job \"%s\" failed to start: %s", job.Key(), err))
 			return

@@ -26,7 +26,6 @@ func TestSelectConfigInteractive(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("LABEL:"))
 
 		require.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))
@@ -124,7 +123,6 @@ func TestSelectConfigsInteractive(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("LABEL:"))
 
 		require.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))

@@ -36,7 +36,6 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("Select branch:"))
 
 		require.NoError(t, console.SendEnter()) // enter - Main

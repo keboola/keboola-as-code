@@ -108,7 +108,6 @@ func (c *WatchConsumer[T]) StartConsumer(ctx context.Context, wg *sync.WaitGroup
 	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", c.stream.WatchedPrefix()))
 
 	wg.Go(func() {
-
 		init := initErrCh
 
 		// The flag restart=true is send with the first events batch after the "restarted" event, see WatchConsumer.forEachFn.

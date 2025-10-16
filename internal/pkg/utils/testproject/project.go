@@ -375,7 +375,6 @@ func (p *Project) createFiles(files []*fixtures.File) error {
 
 	for _, fixture := range files {
 		wg.Go(func() {
-
 			opts := make([]keboola.CreateFileOption, 0)
 			opts = append(opts, keboola.WithIsPermanent(fixture.IsPermanent))
 			opts = append(opts, keboola.WithIsSliced(fixture.IsSliced))
@@ -435,7 +434,6 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 
 	for _, fixture := range sandboxes {
 		wg.Go(func() {
-
 			opts := make([]keboola.CreateWorkspaceOption, 0)
 			if keboola.WorkspaceSupportsSizes(fixture.Type) && len(fixture.Size) > 0 {
 				opts = append(opts, keboola.WithSize(fixture.Size))

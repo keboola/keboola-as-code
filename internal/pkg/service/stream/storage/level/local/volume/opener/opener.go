@@ -54,7 +54,6 @@ func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, volume
 		if parts := strings.Split(relPath, "/"); len(parts) == 2 {
 			// Open volume in parallel
 			wg.Go(func() {
-
 				// Create reference
 				typ, label := parts[0], parts[1]
 				typ = strings.ToLower(typ)

@@ -20,7 +20,6 @@ func TestAskCreateBranch(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("Enter a name for the new branch"))
 
 		require.NoError(t, console.SendLine(`Foo Bar`))

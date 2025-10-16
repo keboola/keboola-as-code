@@ -134,7 +134,6 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 		repoDef := repo.Unwrap().Definition()
 		oldValue := repo
 		wait.Go(func() {
-
 			// Update
 			startTime := time.Now()
 			newValue, changed, err := oldValue.update(ctx)

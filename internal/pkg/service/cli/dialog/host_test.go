@@ -18,7 +18,6 @@ func TestAskStorageAPIHost_HTTPS(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("API host: "))
 
 		require.NoError(t, console.SendLine(`https://foo.bar.com/`))
@@ -44,7 +43,6 @@ func TestAskStorageAPIHost_HTTP(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("API host: "))
 
 		require.NoError(t, console.SendLine(`http://foo.bar.com/`))

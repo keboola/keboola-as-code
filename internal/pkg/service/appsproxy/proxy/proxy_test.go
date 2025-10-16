@@ -1726,7 +1726,6 @@ func TestAppProxyRouter(t *testing.T) {
 				counter := atomic.NewInt64(0)
 				for range 100 {
 					wg.Go(func() {
-
 						m[0].QueueUser(&mockoidc.MockUser{
 							Email:         "admin@keboola.com",
 							EmailVerified: ptr.Ptr(true),

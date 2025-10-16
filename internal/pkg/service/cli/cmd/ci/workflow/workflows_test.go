@@ -22,7 +22,6 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString(`Generate "validate" workflow?`))
 
 		require.NoError(t, console.SendLine(`n`)) // no

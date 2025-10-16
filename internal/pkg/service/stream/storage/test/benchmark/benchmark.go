@@ -123,11 +123,9 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 	// Write data in parallel, see Parallelism option.
 	wg := &sync.WaitGroup{}
 	wg.Go(func() {
-
 		// Start wb.Parallelism goroutines
 		for range wb.Parallelism {
 			wg.Go(func() {
-
 				var failedCount int64
 				var latencySum float64
 				var latencyCount int64

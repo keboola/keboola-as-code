@@ -127,7 +127,6 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	// Interaction
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-
 		require.NoError(t, console.ExpectString("Please select which steps you want to fill."))
 
 		// Step 1 and 2 are pre-selected, because Input 1 and 2 have been found in config/row.

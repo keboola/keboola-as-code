@@ -86,7 +86,6 @@ func Start(d dependencies, cfg Config) error {
 
 	// Start timer
 	wg.Go(func() {
-
 		ticker := d.Clock().NewTicker(n.config.Interval)
 		defer ticker.Stop()
 
