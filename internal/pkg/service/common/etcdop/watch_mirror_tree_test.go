@@ -119,7 +119,7 @@ func TestMirrorTree(t *testing.T) {
 	// WaitForRevision - in the future
 	revInFuture := header.Revision + 1
 	wg.Go(func() {
-		assert.NoError(t, mirror.WaitForRevision(ctx, revInFuture))
+		require.NoError(t, mirror.WaitForRevision(ctx, revInFuture))
 		assert.Equal(t, map[string]int{
 			"Jacob Brown": 16, // <<<<<<<<
 			"Luke Blue":   30,
