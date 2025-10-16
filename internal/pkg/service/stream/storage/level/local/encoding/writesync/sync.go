@@ -173,9 +173,7 @@ func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
 	compressedSizeSnapshot := uint64(s.statistics.CompressedSize())
 
 	// Run sync in the background
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		defer s.syncLock.Unlock()
 
 		ctx := context.Background()
@@ -196,7 +194,7 @@ func (s *Syncer) TriggerSync(force bool) *notify.Notifier {
 
 		// Unblock waiting operations, see Notifier.Wait() method
 		notifier.Done(err)
-	}()
+	})
 
 	return notifier
 }
@@ -233,9 +231,7 @@ func (s *Syncer) isCancelled() bool {
 func (s *Syncer) syncLoop() {
 	ticker := s.clock.NewTicker(s.config.CheckInterval.Duration())
 
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		defer ticker.Stop()
 
 		// Periodically check the conditions and start synchronization if any condition is met
@@ -250,7 +246,7 @@ func (s *Syncer) syncLoop() {
 				}
 			}
 		}
-	}()
+	})
 }
 
 func (s *Syncer) checkSyncConditions() bool {

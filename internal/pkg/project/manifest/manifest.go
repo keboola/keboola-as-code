@@ -265,5 +265,5 @@ func (m *Manifest) TemplateRepository(name string) (repo model.TemplateRepositor
 			return r, true
 		}
 	}
-	return
+	return repo, found
 }

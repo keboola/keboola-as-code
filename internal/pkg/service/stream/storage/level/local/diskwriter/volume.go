@@ -263,13 +263,11 @@ func (v *Volume) Close(ctx context.Context) error {
 
 	// Close all slice writers
 	for _, w := range v.Writers() {
-		v.wg.Add(1)
-		go func() {
-			defer v.wg.Done()
+		v.wg.Go(func() {
 			if err := w.Close(ctx); err != nil {
 				errs.Append(errors.PrefixErrorf(err, `cannot close writer for slice "%s"`, w.SliceKey().String()))
 			}
-		}()
+		})
 	}
 
 	// Wait for writers closing and FS notifier stopping

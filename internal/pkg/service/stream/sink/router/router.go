@@ -175,9 +175,7 @@ func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context)
 	// Dispatching to all sources in all branches
 	for _, sourceKey := range sources {
 		r.wg.Add(1)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			defer r.wg.Done()
 
 			sourceResult := r.DispatchToSource(sourceKey, c)
@@ -193,7 +191,7 @@ func (r *Router) DispatchToSources(sources []key.SourceKey, c recordctx.Context)
 			result.AllSinks += sourceResult.AllSinks
 			result.SuccessfulSinks += sourceResult.SuccessfulSinks
 			result.FailedSinks += sourceResult.FailedSinks
-		}()
+		})
 	}
 
 	// Wait for all writes
@@ -227,9 +225,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 		}
 
 		r.wg.Add(1)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			defer r.wg.Done()
 
 			sinkResult := r.dispatchToSink(sink, c)
@@ -249,7 +245,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 			} else {
 				result.FailedSinks++
 			}
-		}()
+		})
 	}
 
 	// Wait for all writes
@@ -360,11 +356,9 @@ func (r *Router) closeAllPipelines(ctx context.Context, reason string) {
 	defer wg.Wait()
 
 	for _, p := range pipelines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			p.close(ctx, reason)
-		}()
+		})
 	}
 }
 

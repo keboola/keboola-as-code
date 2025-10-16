@@ -1,6 +1,7 @@
 package proxy_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -31,7 +32,7 @@ func newZeroPortManager() server.PortManager {
 	return &portManager{}
 }
 
-func (p portManager) GeneratePorts() {}
+func (p portManager) GeneratePorts(ctx context.Context) {}
 
 func (p portManager) GetFreePort() int {
 	return 0

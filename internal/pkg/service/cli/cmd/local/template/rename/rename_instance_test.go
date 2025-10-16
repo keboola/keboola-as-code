@@ -41,10 +41,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("Select branch:"))
 
 		require.NoError(t, console.SendEnter()) // enter - Main
@@ -60,7 +57,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 		require.NoError(t, console.SendLine("New Name"))
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	opts, err := AskRenameInstance(projectState, d, Flags{})

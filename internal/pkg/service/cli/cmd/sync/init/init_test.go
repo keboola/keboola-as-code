@@ -33,10 +33,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("Allowed project's branches:"))
 
 		require.NoError(t, console.SendEnter()) // enter, first option "only main branch"
@@ -62,7 +59,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 		require.NoError(t, console.SendEnter()) // enter - main
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	opts, err := AskInitOptions(t.Context(), d, deps, DefaultFlags())

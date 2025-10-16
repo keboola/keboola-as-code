@@ -122,11 +122,9 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 			// Write rows from the set in parallel
 			wg := &sync.WaitGroup{}
 			for _, record := range batch.Records {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					tc.assertResult(t, sinkRouter.DispatchToSource(sourceKey, record))
-				}()
+				})
 			}
 			go func() {
 				wg.Wait()

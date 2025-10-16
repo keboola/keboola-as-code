@@ -115,5 +115,5 @@ func parseTemplateArg(args []string) (repository string, template string, versio
 		version = parts[2]
 	}
 
-	return
+	return repository, template, version, err
 }

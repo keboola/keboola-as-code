@@ -1,6 +1,7 @@
 package primarykey
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,7 +57,8 @@ func customMutationTemplate() *gen.Template {
 	}
 
 	// Apply patch
-	cmd := exec.Command("git", "apply", "-v", "--recount", "--unsafe-paths", "--no-index", "mutation.tmpl.patch")
+	ctx := context.Background()
+	cmd := exec.CommandContext(ctx, "git", "apply", "-v", "--recount", "--unsafe-paths", "--no-index", "mutation.tmpl.patch")
 	cmd.Dir = tmpDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

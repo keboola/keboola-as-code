@@ -197,7 +197,7 @@ func (m *Manager) getConnections(
 		return strings.Compare(a.RemoteNodeID(), b.RemoteNodeID())
 	})
 
-	return
+	return toOpen, toClose
 }
 
 // writerNodes returns all active writer nodes.

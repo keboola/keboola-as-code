@@ -272,7 +272,7 @@ func TestDefaultRepositories(t *testing.T) {
 func runGitCommand(t *testing.T, dir string, args ...string) {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("git", args...)
+	cmd := exec.CommandContext(t.Context(), "git", args...)
 	cmd.Dir = dir
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

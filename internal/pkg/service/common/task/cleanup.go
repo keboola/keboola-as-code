@@ -69,10 +69,7 @@ func StartCleaner(d cleanerDeps, interval time.Duration) error {
 	})
 
 	// Start ticker
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		ticker := c.clock.NewTicker(interval)
 		defer ticker.Stop()
 
@@ -89,7 +86,7 @@ func StartCleaner(d cleanerDeps, interval time.Duration) error {
 				}
 			}
 		}
-	}()
+	})
 
 	c.logger.Info(ctx, "ready")
 	return nil

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Go 1.24+
+- Go 1.25+
 - ETCD v3.6
 - Git
 - Task
@@ -13,7 +13,7 @@
 ```bash
 # For Ubuntu/Debian
 sudo apt-get update
-sudo apt-get install golang-1.24
+sudo apt-get install golang-1.25
 
 # For Arch Linux
 sudo pacman -S go

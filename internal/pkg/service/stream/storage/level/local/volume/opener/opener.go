@@ -53,10 +53,7 @@ func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, volume
 		relPath := filepath.ToSlash(strings.TrimPrefix(path, volumesPath+string(filepath.Separator)))
 		if parts := strings.Split(relPath, "/"); len(parts) == 2 {
 			// Open volume in parallel
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-
+			wg.Go(func() {
 				// Create reference
 				typ, label := parts[0], parts[1]
 				typ = strings.ToLower(typ)
@@ -89,7 +86,7 @@ func OpenVolumes[V volume.Volume](ctx context.Context, logger log.Logger, volume
 				lock.Lock()
 				volumes = append(volumes, vol)
 				lock.Unlock()
-			}()
+			})
 
 			// Don't go deeper
 			return filepath.SkipDir

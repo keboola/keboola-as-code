@@ -57,7 +57,8 @@ func WaitForTCP(addr string, timeout time.Duration) (err error) {
 			}
 			return err
 		default:
-			conn, err = net.DialTimeout("tcp", addr, time.Second)
+			dialer := net.Dialer{Timeout: time.Second}
+			conn, err = dialer.DialContext(ctx, "tcp", addr)
 			if err == nil {
 				_ = conn.Close()
 				return nil

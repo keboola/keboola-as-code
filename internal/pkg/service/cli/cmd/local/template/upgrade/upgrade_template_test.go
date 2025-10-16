@@ -126,10 +126,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("Please select which steps you want to fill."))
 
 		// Step 1 and 2 are pre-selected, because Input 1 and 2 have been found in config/row.
@@ -184,7 +181,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		require.NoError(t, console.SendLine("value 4"))
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	output, err := AskUpgradeTemplateOptions(t.Context(), d, deps, projectState, branchKey, instance, stepsGroups, configmap.NewValue("input4"))
 	require.NoError(t, err)

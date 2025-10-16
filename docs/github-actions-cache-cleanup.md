@@ -80,7 +80,7 @@ OLD_CACHES=$(gh cache list --limit 100 | awk -v date="$CUTOFF_DATE" '$3 <= date 
 ### Cache Deduplication
 
 The workflow uses the following logic to identify and remove duplicate caches:
-1. Extracts key patterns (e.g., "linux-go-1.24-004-build-default")
+1. Extracts key patterns (e.g., "linux-go-1.25-004-build-default")
 2. For each pattern, finds all matching cache entries
 3. Sorts them by creation date (newest first)
 4. Keeps the newest cache, removes all others

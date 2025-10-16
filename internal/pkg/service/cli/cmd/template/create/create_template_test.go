@@ -103,10 +103,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("Please enter a template public name for users."))
 
 		require.NoError(t, console.ExpectString("Template name:"))
@@ -166,7 +163,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		require.NoError(t, console.SendEnter()) // enter
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	opts, err := AskCreateTemplateOpts(t.Context(), d, deps, Flags{})

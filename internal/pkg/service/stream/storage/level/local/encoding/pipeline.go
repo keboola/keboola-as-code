@@ -194,11 +194,9 @@ func newPipeline(
 
 		// Process each completed chunk.
 		// Block the close until all chunks are written to the network output.
-		p.chunksWg.Add(1)
-		go func() {
-			defer p.chunksWg.Done()
+		p.chunksWg.Go(func() {
 			p.processChunks(ctx, clk, encodingCfg)
-		}()
+		})
 	}
 
 	// Create empty chain of writers to the file

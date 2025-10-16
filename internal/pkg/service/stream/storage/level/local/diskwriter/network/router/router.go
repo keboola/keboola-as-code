@@ -192,14 +192,12 @@ func (r *Router) onSlicesModification(ctx context.Context, modifiedSinks []key.S
 
 	for _, sinkKey := range modifiedSinks {
 		if p := r.pipelines.Get(sinkKey); p != nil {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				slices := r.assignSinkSlices(sinkKey)
 				if err := p.UpdateSlicePipelines(ctx, slices); err != nil {
 					r.logger.Errorf(ctx, `cannot update sink slices pipelines: %s, sink %q`, err, sinkKey)
 				}
-			}()
+			})
 		}
 	}
 }

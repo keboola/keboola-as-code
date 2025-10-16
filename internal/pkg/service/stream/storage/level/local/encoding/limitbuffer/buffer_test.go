@@ -95,13 +95,11 @@ func TestBuffer_ParallelUsage(t *testing.T) {
 	data := []byte("12345")
 
 	for range numGoroutines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			n, err := buf.Write(data)
 			require.NoError(t, err)
 			assert.Equal(t, len(data), n)
-		}()
+		})
 	}
 
 	wg.Wait()

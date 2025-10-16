@@ -38,11 +38,9 @@ func TestPrefixT_Watch(t *testing.T) {
 	}, "watcher created timeout")
 
 	// CREATE key
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		require.NoError(t, pfx.Key("key1").Put(client, "foo").Do(ctx).Err())
-	}()
+	})
 
 	// Wait for CREATE event
 	assertDone(t, func() {
@@ -61,11 +59,9 @@ func TestPrefixT_Watch(t *testing.T) {
 	}, "CREATE timeout")
 
 	// UPDATE key
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		require.NoError(t, pfx.Key("key1").Put(client, "new").Do(ctx).Err())
-	}()
+	})
 
 	// Wait for UPDATE event
 	assertDone(t, func() {
@@ -84,13 +80,11 @@ func TestPrefixT_Watch(t *testing.T) {
 	}, "UPDATE timeout")
 
 	// DELETE key
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ok, err := pfx.Key("key1").Delete(client).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.True(t, ok)
-	}()
+	})
 
 	// Wait for DELETE event
 	assertDone(t, func() {
@@ -157,11 +151,9 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	}, "watcher created timeout")
 
 	// CREATE key2
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		require.NoError(t, pfx.Key("key2").Put(client, "foo2").Do(ctx).Err())
-	}()
+	})
 
 	// Wait for CREATE key1 event
 	assertDone(t, func() {
@@ -180,11 +172,9 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	}, "CREATE2 timeout")
 
 	// UPDATE key
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		require.NoError(t, pfx.Key("key2").Put(client, "new").Do(ctx).Err())
-	}()
+	})
 
 	// Wait for UPDATE event
 	assertDone(t, func() {
@@ -210,13 +200,11 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	}, "UPDATE timeout")
 
 	// DELETE key
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ok, err := pfx.Key("key1").Delete(client).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
 		assert.True(t, ok)
-	}()
+	})
 
 	// Wait for DELETE event
 	assertDone(t, func() {

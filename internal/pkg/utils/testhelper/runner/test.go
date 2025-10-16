@@ -361,7 +361,7 @@ func (t *Test) loadCLICommands() [][]string {
 			t.T().Fatalf(`cannot open "%s" test file %s`, f, err)
 		}
 		content := testhelper.MustReplaceEnvsString(strings.TrimSpace(file.Content), t.EnvProvider())
-		for _, line := range strings.Split(content, "\n") {
+		for line := range strings.SplitSeq(content, "\n") {
 			line = strings.TrimSpace(line)
 			if line == "" || strings.HasPrefix(line, "#") {
 				continue
@@ -428,7 +428,7 @@ func (t *Test) runAPIServer(
 	})
 
 	// Start API server
-	cmd := exec.Command(path, args...)
+	cmd := exec.CommandContext(t.ctx, path, args...)
 	cmd.Env = envs.ToSlice()
 	cmd.Stdout = io.MultiWriter(stdout, testhelper.VerboseStdout())
 	cmd.Stderr = io.MultiWriter(stderr, testhelper.VerboseStderr())

@@ -52,13 +52,11 @@ func newClientConnection(ctx context.Context, remoteNodeID, remoteAddr string, c
 	}
 
 	// Dial connection
-	c.wg.Add(1)
-	go func() {
-		defer c.wg.Done()
+	c.wg.Go(func() {
 		c.dialLoop(ctx, initDone)
 		c.client.unregisterConnection(ctx, c)
 		c.client.logger.Infof(ctx, `disk writer client closed connection to %q - %q`, c.remoteNodeID, c.remoteAddr)
-	}()
+	})
 
 	client.registerConnection(ctx, c)
 	return c, nil
@@ -126,13 +124,11 @@ func (c *ClientConnection) Close(ctx context.Context) error {
 	// Close streams
 	wg := &sync.WaitGroup{}
 	for _, s := range streams {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := s.Close(); err != nil {
 				c.client.logger.Errorf(ctx, "disk writer client cannot close stream to %q (%d)", c.remoteAddr, s.StreamID())
 			}
-		}()
+		})
 	}
 	wg.Wait()
 
@@ -166,7 +162,7 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 		c.client.logger.Infof(ctx, `disk writer client is connecting to %q - %q`, c.remoteNodeID, c.remoteAddr)
 
 		// Create session
-		sess, err := c.newSession()
+		sess, err := c.newSession(ctx)
 
 		// Update internal state
 		c.lock.Lock()
@@ -206,9 +202,9 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 	}
 }
 
-func (c *ClientConnection) newSession() (sess *yamux.Session, err error) {
+func (c *ClientConnection) newSession(ctx context.Context) (sess *yamux.Session, err error) {
 	// Create connection
-	conn, err := c.client.transport.Dial(c.remoteAddr)
+	conn, err := c.client.transport.Dial(ctx, c.remoteAddr)
 	if err != nil {
 		return nil, errors.PrefixErrorf(err, "cannot dial connection to %q -%q", c.remoteNodeID, c.remoteAddr)
 	}

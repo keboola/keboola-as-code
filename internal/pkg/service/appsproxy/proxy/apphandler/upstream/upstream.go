@@ -207,10 +207,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 
 func (u *AppUpstream) notify(ctx context.Context) {
 	// The request should not wait for the notification
-	u.manager.wg.Add(1)
-	go func() {
-		defer u.manager.wg.Done()
-
+	u.manager.wg.Go(func() {
 		notificationCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), notifyRequestTimeout, errors.New("upstream notification timeout"))
 		defer cancel()
 
@@ -220,15 +217,12 @@ func (u *AppUpstream) notify(ctx context.Context) {
 		// Error is already logged by the Notify method itself.
 		err := u.manager.notify.Notify(notificationCtx, u.app.ID) //nolint:contextcheck
 		span.End(&err)
-	}()
+	})
 }
 
 func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 	// The request should not wait for the wakeup request
-	u.manager.wg.Add(1)
-	go func() {
-		defer u.manager.wg.Done()
-
+	u.manager.wg.Go(func() {
 		wakeupCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), wakeupRequestTimeout, errors.New("upstream wakeup timeout"))
 		defer cancel()
 
@@ -239,7 +233,7 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 		// Error is already logged by the Wakeup method itself.
 		err := u.manager.wakeup.Wakeup(wakeupCtx, u.app.ID) //nolint:contextcheck
 		span.End(&err)
-	}()
+	})
 }
 
 func (u *AppUpstream) Cancel(err error) {

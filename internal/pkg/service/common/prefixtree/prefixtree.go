@@ -157,7 +157,7 @@ func (t *Tree[T]) FirstFromPrefix(key string) (value T, found bool) {
 		found = true
 		return true
 	})
-	return
+	return value, found
 }
 
 func (t *Tree[T]) LastFromPrefix(key string) (value T, found bool) {
@@ -166,7 +166,7 @@ func (t *Tree[T]) LastFromPrefix(key string) (value T, found bool) {
 		found = true
 		return false
 	})
-	return
+	return value, found
 }
 
 func (t *Tree[T]) Insert(key string, value T) {

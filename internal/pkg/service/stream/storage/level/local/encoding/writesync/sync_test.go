@@ -74,12 +74,10 @@ func TestSyncWriter_Write_Wait(t *testing.T) {
 
 	// Wait for the notifier
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 		tc.Logger.Info(ctx, "TEST: sync wait unblocked")
-	}()
+	})
 
 	// Wait for sync
 	require.NoError(t, syncerWriter.TriggerSync(false).Wait(ctx))
@@ -214,12 +212,10 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked - part 1")
-		}()
+		})
 	}
 
 	// Wait for sync 1
@@ -233,12 +229,10 @@ func TestSyncWriter_SyncToDisk_Wait_Ok(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked - part 2")
-		}()
+		})
 	}
 
 	// Wait for sync 2
@@ -304,14 +298,12 @@ func TestSyncWriter_SyncToDisk_Wait_Error(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := notifier.WaitWithTimeout(testWaitTimeout); assert.Error(t, err) {
 				assert.Equal(t, "some sync error", err.Error())
 			}
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
-		}()
+		})
 	}
 
 	// Wait for sync
@@ -476,12 +468,10 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked - part 1")
-		}()
+		})
 	}
 
 	// Wait for sync 1
@@ -495,12 +485,10 @@ func TestSyncWriter_SyncToCache_Wait_Ok(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked - part 2")
-		}()
+		})
 	}
 
 	// Wait for sync 2
@@ -566,14 +554,12 @@ func TestSyncWriter_SyncToCache_Wait_Error(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := notifier.WaitWithTimeout(testWaitTimeout); assert.Error(t, err) {
 				assert.Equal(t, "some flush error", err.Error())
 			}
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
-		}()
+		})
 	}
 
 	// Wait for sync
@@ -737,12 +723,10 @@ func TestSyncWriter_WriteDuringSync(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
-		}()
+		})
 	}
 
 	// Block sync completion
@@ -817,12 +801,10 @@ func TestSyncWriter_OnlyOneRunningSync(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
-		}()
+		})
 	}
 
 	// Trigger sync multiple times, but it should run only once
@@ -882,12 +864,10 @@ func TestSyncWriter_CountTrigger(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
-		}()
+		})
 	}
 
 	// Trigger sync by the records count
@@ -940,12 +920,10 @@ func TestSyncWriter_IntervalTrigger(t *testing.T) {
 		notifier := syncerWriter.Notifier(ctx)
 		assert.NotNil(t, notifier)
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			require.NoError(t, notifier.WaitWithTimeout(testWaitTimeout))
 			tc.Logger.Info(ctx, "TEST: sync wait unblocked")
-		}()
+		})
 	}
 
 	// Wait for sync
@@ -999,12 +977,10 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	assert.NotNil(t, notifier1)
 	require.NoError(t, err1)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		require.NoError(t, notifier1.WaitWithTimeout(testWaitTimeout))
 		tc.Logger.Info(ctx, "TEST: sync wait unblocked")
-	}()
+	})
 
 	// Write data over the limit + wait for sync
 	data2Len := int(tc.Config.UncompressedBytesTrigger - datasize.ByteSize(10))
@@ -1015,12 +991,10 @@ func TestSyncWriter_BytesTrigger(t *testing.T) {
 	assert.NotNil(t, notifier2)
 	require.NoError(t, err2)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		require.NoError(t, notifier2.WaitWithTimeout(testWaitTimeout))
 		tc.Logger.Info(ctx, "TEST: sync wait unblocked")
-	}()
+	})
 
 	// Wait for sync
 	tc.Clock.Advance(tc.Config.CheckInterval.Duration())
