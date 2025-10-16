@@ -29,7 +29,7 @@ func FieldMeta(schemaDef []byte, path orderedmap.Path) (out FieldMetadata, found
 
 	// Search for field
 	out, found = getFieldMeta(schema, path)
-	return
+	return out, found, err
 }
 
 func getFieldMeta(schema *jsonschema.Schema, path orderedmap.Path) (out FieldMetadata, found bool) {

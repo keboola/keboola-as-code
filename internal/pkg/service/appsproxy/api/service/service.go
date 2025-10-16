@@ -43,5 +43,5 @@ func (s *service) HealthCheck(context.Context, dependencies.PublicRequestScope) 
 }
 
 func (s *service) Validate(context.Context, dependencies.ProjectRequestScope, *ValidatePayload) (res *Validations, err error) {
-	return
+	return res, err
 }

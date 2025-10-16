@@ -340,7 +340,7 @@ func (m *MirrorTree[T, V]) startTelemetryCollection(ctx context.Context, wg *syn
 			m.recordMemoryTelemetry(ctx, tel)
 		case <-ctx.Done():
 			log.Debugf(ctx, "Telemetry collection for tree stopped: %v", ctx.Err())
-			return
+			return initErr
 		}
 	}
 }

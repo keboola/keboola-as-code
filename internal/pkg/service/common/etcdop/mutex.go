@@ -358,5 +358,5 @@ func (m *activeMutex) dbTryLock(ctx context.Context) (err error) {
 			return err
 		}
 	}
-	return
+	return err
 }
