@@ -51,13 +51,11 @@ func (r *Repository) Put(ctx context.Context, nodeID string, stats []statistics.
 	wg := &sync.WaitGroup{}
 	errs := errors.NewMultiError()
 	for _, txn := range allTxn {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := txn.Do(ctx).Err(); err != nil {
 				errs.Append(err)
 			}
-		}()
+		})
 	}
 
 	// Wait for all transactions

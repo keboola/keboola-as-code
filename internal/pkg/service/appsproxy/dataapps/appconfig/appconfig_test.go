@@ -292,15 +292,13 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 	counter := atomic.NewInt64(0)
 	// Load configuration 10x in parallel
 	for range 10 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			cfg, _, err := loader.GetConfig(ctx, appID)
 			require.NoError(t, err)
 			assert.Equal(t, "http://app.local", cfg.UpstreamAppURL)
 			counter.Add(1)
-		}()
+		})
 	}
 
 	// Wait for all requests

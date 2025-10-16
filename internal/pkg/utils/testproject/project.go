@@ -92,9 +92,7 @@ func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (
 	// Check token/project ID
 	errs := errors.NewMultiError()
 	initWg := &sync.WaitGroup{}
-	initWg.Add(1)
-	go func() {
-		defer initWg.Done()
+	initWg.Go(func() {
 		if token, err := p.keboolaProjectAPI.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx); err != nil {
 			errs.Append(errors.Errorf("invalid token for project %d: %w", p.ID(), err))
 		} else if p.ID() != token.ProjectID() {
@@ -102,7 +100,7 @@ func GetTestProject(path string, envs *env.Map, options ...testproject.Option) (
 		} else {
 			p.storageAPIToken = token
 		}
-	}()
+	})
 	initWg.Wait()
 	if errs.Len() > 0 {
 		cleanupFn()
@@ -376,9 +374,7 @@ func (p *Project) createFiles(files []*fixtures.File) error {
 	errs := errors.NewMultiError()
 
 	for _, fixture := range files {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			opts := make([]keboola.CreateFileOption, 0)
 			opts = append(opts, keboola.WithIsPermanent(fixture.IsPermanent))
@@ -419,7 +415,7 @@ func (p *Project) createFiles(files []*fixtures.File) error {
 
 			p.logf("✔️ File \"%s\"(%s).", file.Name, file.FileID)
 			p.setEnv(fmt.Sprintf("TEST_FILE_%s_ID", fixture.Name), file.FileID.String())
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -438,9 +434,7 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 	errs := errors.NewMultiError()
 
 	for _, fixture := range sandboxes {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			opts := make([]keboola.CreateWorkspaceOption, 0)
 			if keboola.WorkspaceSupportsSizes(fixture.Type) && len(fixture.Size) > 0 {
@@ -461,7 +455,7 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 			}
 			p.logf("✔️ Sandbox \"%s\"(%s).", sandbox.Config.Name, sandbox.Config.ID)
 			p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), sandbox.Config.ID.String())
-		}()
+		})
 	}
 
 	wg.Wait()

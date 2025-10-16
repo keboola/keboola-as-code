@@ -97,9 +97,7 @@ func TestAskCreate(t *testing.T) {
 		// Set fake file editor
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 		wg := sync.WaitGroup{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			require.NoError(t, console.ExpectString("Select a bucket:"))
 
@@ -136,7 +134,7 @@ func TestAskCreate(t *testing.T) {
 			require.NoError(t, console.SendEnter())
 
 			require.NoError(t, console.ExpectString("Select columns for primary key: id"))
-		}()
+		})
 
 		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, Flags{}, deps.ProjectBackends())
 		require.NoError(t, err)
@@ -183,9 +181,7 @@ func TestAskCreate(t *testing.T) {
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 		wg := sync.WaitGroup{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			require.NoError(t, console.ExpectString("Select a bucket:"))
 
@@ -224,7 +220,7 @@ func TestAskCreate(t *testing.T) {
 			require.NoError(t, console.SendEnter())
 
 			require.NoError(t, console.ExpectString("Select columns for primary key: id"))
-		}()
+		})
 
 		res, err := AskCreateTable(args, branch.BranchKey, buckets, d, Flags{}, deps.ProjectBackends())
 		require.NoError(t, err)
@@ -261,9 +257,7 @@ func TestAskCreate(t *testing.T) {
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 		wg := sync.WaitGroup{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			require.NoError(t, console.ExpectString("Select a bucket:"))
 
@@ -290,7 +284,7 @@ func TestAskCreate(t *testing.T) {
 			require.NoError(t, console.SendEnter())
 
 			require.NoError(t, console.ExpectString("Select columns for primary key: id"))
-		}()
+		})
 
 		tempDir := t.TempDir()
 
@@ -356,9 +350,7 @@ func TestAskCreate(t *testing.T) {
 		d.Prompt.(*interactive.Prompt).SetEditor(`true`)
 
 		wg := sync.WaitGroup{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			require.NoError(t, console.ExpectString("Select a bucket:"))
 
@@ -385,7 +377,7 @@ func TestAskCreate(t *testing.T) {
 			require.NoError(t, console.SendEnter())
 
 			require.NoError(t, console.ExpectString("Select columns for primary key: id"))
-		}()
+		})
 
 		// set flag --columns
 		f := Flags{

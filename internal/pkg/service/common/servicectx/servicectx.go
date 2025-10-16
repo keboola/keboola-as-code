@@ -168,11 +168,9 @@ func (v *Process) Shutdown(ctx context.Context, err error) {
 // The ctx parameter can be used to wait for the service termination.
 // The errCh parameter can be used to stop the service with an error.
 func (v *Process) Add(operation func(ShutdownFn)) {
-	v.wg.Add(1)
-	go func() {
-		defer v.wg.Done()
+	v.wg.Go(func() {
 		operation(v.Shutdown)
-	}()
+	})
 }
 
 // OnShutdown registers a callback that is invoked when the process is terminating.

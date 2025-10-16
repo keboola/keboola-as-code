@@ -25,9 +25,7 @@ func TestSelectConfigInteractive(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("LABEL:"))
 
@@ -42,7 +40,7 @@ func TestSelectConfigInteractive(t *testing.T) {
 		require.NoError(t, console.SendEnter())
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	out, err := dialog.SelectConfig(allConfigs, `LABEL`, configmap.NewValue(config2.String()))
@@ -125,9 +123,7 @@ func TestSelectConfigsInteractive(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("LABEL:"))
 
@@ -154,7 +150,7 @@ func TestSelectConfigsInteractive(t *testing.T) {
 		require.NoError(t, console.SendEnter()) // -> confirm
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	out, err := dialog.SelectConfigs(allConfigs, `LABEL`, configmap.Value[string]{Value: config2.Name + config4.Name, SetBy: configmap.SetByDefault})

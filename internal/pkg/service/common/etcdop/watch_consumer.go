@@ -107,9 +107,7 @@ func (c *WatchConsumer[T]) StartConsumer(ctx context.Context, wg *sync.WaitGroup
 
 	ctx = ctxattr.ContextWith(ctx, attribute.String("stream.prefix", c.stream.WatchedPrefix()))
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		init := initErrCh
 
@@ -192,7 +190,7 @@ func (c *WatchConsumer[T]) StartConsumer(ctx context.Context, wg *sync.WaitGroup
 		if c.onClose != nil {
 			c.onClose(closeErr)
 		}
-	}()
+	})
 
 	return initErrCh
 }

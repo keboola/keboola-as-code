@@ -40,9 +40,7 @@ func newListeners(ctx context.Context, wg *sync.WaitGroup, cfg Config, logger lo
 		listeners: make(map[listenerID]*Listener),
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		// If the interval > 0, then listeners are not triggered immediately on change,
 		// but all events within the groupInterval are processed at once.
@@ -85,7 +83,7 @@ func newListeners(ctx context.Context, wg *sync.WaitGroup, cfg Config, logger lo
 				v.lock.Unlock()
 			}
 		}
-	}()
+	})
 
 	return v
 }
@@ -163,14 +161,12 @@ func (l *Listener) trigger(events Events) {
 		return
 	}
 
-	l.wg.Add(1)
-	go func() {
-		defer l.wg.Done()
+	l.wg.Go(func() {
 		select {
 		case <-l.ctx.Done():
 			// stop goroutine on stop/shutdown
 		case l.c <- events:
 			// propagate events, wait for receiver side
 		}
-	}()
+	})
 }

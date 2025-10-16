@@ -227,13 +227,11 @@ func (v *Volume) Close(ctx context.Context) error {
 	// Close all slice readers
 	wg := &sync.WaitGroup{}
 	for _, r := range v.Readers() {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := r.Close(ctx); err != nil {
 				errs.Append(errors.PrefixErrorf(err, `cannot close reader for slice "%s"`, r.SliceKey().String()))
 			}
-		}()
+		})
 	}
 	wg.Wait()
 

@@ -52,13 +52,11 @@ func newClientConnection(ctx context.Context, remoteNodeID, remoteAddr string, c
 	}
 
 	// Dial connection
-	c.wg.Add(1)
-	go func() {
-		defer c.wg.Done()
+	c.wg.Go(func() {
 		c.dialLoop(ctx, initDone)
 		c.client.unregisterConnection(ctx, c)
 		c.client.logger.Infof(ctx, `disk writer client closed connection to %q - %q`, c.remoteNodeID, c.remoteAddr)
-	}()
+	})
 
 	client.registerConnection(ctx, c)
 	return c, nil
@@ -126,13 +124,11 @@ func (c *ClientConnection) Close(ctx context.Context) error {
 	// Close streams
 	wg := &sync.WaitGroup{}
 	for _, s := range streams {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := s.Close(); err != nil {
 				c.client.logger.Errorf(ctx, "disk writer client cannot close stream to %q (%d)", c.remoteAddr, s.StreamID())
 			}
-		}()
+		})
 	}
 	wg.Wait()
 

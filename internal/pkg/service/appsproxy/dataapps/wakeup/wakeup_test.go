@@ -82,15 +82,13 @@ func TestManager_Wakeup_Race(t *testing.T) {
 	counter := atomic.NewInt64(0)
 	// Load configuration 10x in parallel
 	for range 10 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			err := manager.Wakeup(ctx, appID)
 			require.NoError(t, err)
 
 			counter.Add(1)
-		}()
+		})
 	}
 
 	// Wait for all requests

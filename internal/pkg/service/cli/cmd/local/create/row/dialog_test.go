@@ -71,9 +71,7 @@ func TestAskCreateRow(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("Select the target branch"))
 
@@ -88,7 +86,7 @@ func TestAskCreateRow(t *testing.T) {
 		require.NoError(t, console.SendLine(`Foo Bar`))
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	opts, err := AskCreateRow(projectState, d, Flags{})

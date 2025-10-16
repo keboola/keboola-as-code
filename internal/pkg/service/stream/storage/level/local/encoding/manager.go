@@ -159,13 +159,11 @@ func (m *Manager) close(ctx context.Context) error {
 	errs := errors.NewMultiError()
 	wg := &sync.WaitGroup{}
 	for _, w := range m.Pipelines() {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := w.Close(ctx); err != nil {
 				errs.Append(err)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	return errs.ErrorOrNil()

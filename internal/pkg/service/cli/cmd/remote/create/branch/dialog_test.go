@@ -19,16 +19,14 @@ func TestAskCreateBranch(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("Enter a name for the new branch"))
 
 		require.NoError(t, console.SendLine(`Foo Bar`))
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	opts, err := AskCreateBranch(d, configmap.NewValue("Foo Bar"))

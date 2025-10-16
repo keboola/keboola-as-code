@@ -22,16 +22,14 @@ func TestPrompt_Select(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("My Select"))
 
 		require.NoError(t, console.SendEnter()) // enter - default value
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Show select
 	result, ok := p.Select(&prompt.Select{
@@ -59,16 +57,14 @@ func TestPrompt_SelectIndex(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("My Select"))
 
 		require.NoError(t, console.SendEnter()) // enter - default value
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Show select
 	result, ok := p.SelectIndex(&prompt.SelectIndex{
@@ -96,16 +92,14 @@ func TestPrompt_MultiSelect(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("My Select"))
 
 		require.NoError(t, console.SendEnter()) // enter - default value
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Show select
 	result, ok := p.MultiSelect(&prompt.MultiSelect{
@@ -132,16 +126,14 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("My Select"))
 
 		require.NoError(t, console.SendEnter()) // enter - default value
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Show select
 	result, ok := p.MultiSelectIndex(&prompt.MultiSelectIndex{
@@ -168,9 +160,7 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("My input"))
 
@@ -179,7 +169,7 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 		require.NoError(t, console.SendEnter()) // enter - default value
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Show select
 	result, ok := p.Ask(&prompt.Question{
@@ -208,9 +198,7 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("My input"))
 
@@ -219,7 +207,7 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 		require.NoError(t, console.ExpectEOF())
 
 		assert.NotContains(t, console.String(), "Leave blank for default value.")
-	}()
+	})
 
 	// Show select
 	result, ok := p.Ask(&prompt.Question{

@@ -15,16 +15,14 @@ func TestAskStorageApiToken(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("API token: "))
 
 		require.NoError(t, console.SendLine(`my-secret`))
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	out := dialog.AskStorageAPIToken()

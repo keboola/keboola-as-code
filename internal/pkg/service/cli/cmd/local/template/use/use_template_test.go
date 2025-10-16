@@ -39,9 +39,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("Select the target branch:"))
 
@@ -121,7 +119,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		require.NoError(t, console.SendEnter()) // -> confirm
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	inputs := []input.Input{
@@ -232,9 +230,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("Select the target branch:"))
 
@@ -257,7 +253,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 		require.NoError(t, console.SendLine("15"))
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	inputs := []input.Input{
@@ -426,9 +422,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString("Select the target branch:"))
 
@@ -467,7 +461,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		require.NoError(t, console.SendLine("value for input 4"))
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	f := Flags{
 		Branch:       configmap.Value[string]{Value: "My Instance", SetBy: configmap.SetByDefault},

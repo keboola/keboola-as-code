@@ -138,10 +138,8 @@ func (q *JobQueue) finished(job *Job) {
 }
 
 func (q *JobQueue) dispatch(job *Job) {
-	q.wg.Add(1)
 
-	go func() {
-		defer q.wg.Done()
+	q.wg.Go(func() {
 
 		if err := job.Start(q.ctx, q.api); err != nil {
 			q.err.Append(errors.Errorf("job \"%s\" failed to start: %s", job.Key(), err))
@@ -155,7 +153,7 @@ func (q *JobQueue) dispatch(job *Job) {
 			}
 			q.finished(job)
 		}
-	}()
+	})
 }
 
 func (q *JobQueue) wait() error {

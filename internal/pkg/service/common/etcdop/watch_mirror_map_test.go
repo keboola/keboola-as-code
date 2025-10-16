@@ -114,15 +114,13 @@ func TestMirrorMap(t *testing.T) {
 
 	// WaitForRevision - in the future
 	revInFuture := header.Revision + 1
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		assert.NoError(t, mirror.WaitForRevision(ctx, revInFuture))
 		assert.Equal(t, map[testUserFullName]int{
 			"Jacob Brown": 16, // <<<<<<<<
 			"Luke Blue":   30,
 		}, mirror.CloneMap())
-	}()
+	})
 	time.Sleep(50 * time.Millisecond)
 	header, err = pfx.Key("key1").Put(client, testUser{FirstName: "Jacob", LastName: "Brown", Age: 16}).Do(ctx).HeaderOrErr()
 	require.NoError(t, err)

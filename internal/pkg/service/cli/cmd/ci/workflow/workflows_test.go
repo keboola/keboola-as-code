@@ -21,9 +21,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		require.NoError(t, console.ExpectString(`Generate "validate" workflow?`))
 
@@ -42,7 +40,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 		require.NoError(t, console.SendEnter()) // enter - main
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	out := AskWorkflowsOptions(f, d)

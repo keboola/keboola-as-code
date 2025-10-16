@@ -41,9 +41,7 @@ func TestNodesDiscovery(t *testing.T) {
 	// Create nodes
 	wg := &sync.WaitGroup{}
 	for i := range nodesCount {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			node, d := createNode(t, ctx, clk, etcdCfg, fmt.Sprintf("node%d", i+1))
 			if node != nil {
 				lock.Lock()
@@ -52,7 +50,7 @@ func TestNodesDiscovery(t *testing.T) {
 				loggers[i] = d.DebugLogger()
 				lock.Unlock()
 			}
-		}()
+		})
 	}
 	wg.Wait()
 

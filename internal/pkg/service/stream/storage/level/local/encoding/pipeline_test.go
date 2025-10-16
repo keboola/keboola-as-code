@@ -219,26 +219,22 @@ func TestEncodingPipeline_Sync_Wait_ToDisk(t *testing.T) {
 	wg.Wait()
 
 	// Write one row and trigger sync
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		n, err := w.WriteRecord(tc.TestRecord("foo2"))
 		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
-	}()
+	})
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 	wg.Wait()
 
 	// Last write
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		n, err := w.WriteRecord(tc.TestRecord("foo3"))
 		require.NoError(t, err)
 		assert.Equal(t, 5, n)
-	}()
+	})
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
@@ -323,26 +319,22 @@ func TestEncodingPipeline_Sync_Wait_ToDiskCache(t *testing.T) {
 	wg.Wait()
 
 	// Write one row and trigger sync
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		n, err := w.WriteRecord(tc.TestRecord("foo2"))
 		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
-	}()
+	})
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 	wg.Wait()
 
 	// Last write
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		n, err := w.WriteRecord(tc.TestRecord("foo3"))
 		require.NoError(t, err)
 		assert.Equal(t, 5, n)
-	}()
+	})
 	tc.ExpectWritesCount(t, 1)
 
 	// Close writer - it triggers the last sync
@@ -581,19 +573,15 @@ func TestEncodingPipeline_TemporaryError(t *testing.T) {
 	tc.Output.WriteError = errors.New("some error")
 
 	// Write one row and trigger sync
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		n, err := w.WriteRecord(tc.TestRecord("foo2"))
 		require.NoError(t, err)
 		assert.Equal(t, 5, n)
-	}()
+	})
 	tc.ExpectWritesCount(t, 1)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		tc.TriggerSync(t)
-	}()
+	})
 
 	// Wait for error to be logged
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
@@ -607,14 +595,12 @@ func TestEncodingPipeline_TemporaryError(t *testing.T) {
 	tc.Clock.Advance(1 * time.Second)
 
 	// Another write
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		n, err := w.WriteRecord(tc.TestRecord("foo3"))
 		require.NoError(t, err)
 		assert.Equal(t, 5, n)
 		tc.Logger.Infof(ctx, "TEST: write unblocked")
-	}()
+	})
 	tc.ExpectWritesCount(t, 1)
 	tc.TriggerSync(t)
 
@@ -792,12 +778,10 @@ func (h *writerSyncHelper) TriggerSync(tb testing.TB) {
 
 	wg := &sync.WaitGroup{}
 	for _, s := range h.syncers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			notifier := s.TriggerSync(true)
 			assert.NoError(tb, notifier.Wait(tb.Context()))
-		}()
+		})
 	}
 	wg.Wait()
 

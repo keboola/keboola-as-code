@@ -55,13 +55,11 @@ func TestLazy_InitAndGet_Parallel(t *testing.T) {
 	// Call in parallel
 	wg := &sync.WaitGroup{}
 	for range 100 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			value, err := lazy.InitAndGet(initFn)
 			require.NoError(t, err)
 			assert.Equal(t, "abc", value)
-		}()
+		})
 	}
 	wg.Wait()
 	assert.Equal(t, int64(1), callCount.Load())

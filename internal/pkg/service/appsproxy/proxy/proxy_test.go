@@ -1725,9 +1725,7 @@ func TestAppProxyRouter(t *testing.T) {
 				wg := sync.WaitGroup{}
 				counter := atomic.NewInt64(0)
 				for range 100 {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
+					wg.Go(func() {
 
 						m[0].QueueUser(&mockoidc.MockUser{
 							Email:         "admin@keboola.com",
@@ -1744,7 +1742,7 @@ func TestAppProxyRouter(t *testing.T) {
 								counter.Add(1)
 							}
 						}
-					}()
+					})
 				}
 
 				// Wait for all requests

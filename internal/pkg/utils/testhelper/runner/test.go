@@ -361,7 +361,7 @@ func (t *Test) loadCLICommands() [][]string {
 			t.T().Fatalf(`cannot open "%s" test file %s`, f, err)
 		}
 		content := testhelper.MustReplaceEnvsString(strings.TrimSpace(file.Content), t.EnvProvider())
-		for _, line := range strings.Split(content, "\n") {
+		for line := range strings.SplitSeq(content, "\n") {
 			line = strings.TrimSpace(line)
 			if line == "" || strings.HasPrefix(line, "#") {
 				continue
