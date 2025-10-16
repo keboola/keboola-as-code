@@ -7,6 +7,7 @@
 package transport
 
 import (
+	"context"
 	"net"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
@@ -21,7 +22,7 @@ type Protocol interface {
 	// Accept new connection by the server.
 	Accept(listener net.Listener) (net.Conn, error)
 	// Dial a new connection from the client.
-	Dial(addr string) (net.Conn, error)
+	Dial(ctx context.Context, addr string) (net.Conn, error)
 }
 
 func NewProtocol(config network.Config) (Protocol, error) {

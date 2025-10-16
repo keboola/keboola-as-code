@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	"context"
 	"net"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
@@ -26,6 +27,7 @@ func (t *Protocol) Accept(listener net.Listener) (net.Conn, error) {
 	return listener.Accept()
 }
 
-func (t *Protocol) Dial(addr string) (net.Conn, error) {
-	return net.Dial("tcp", addr)
+func (t *Protocol) Dial(ctx context.Context, addr string) (net.Conn, error) {
+	dialer := net.Dialer{}
+	return dialer.DialContext(ctx, "tcp", addr)
 }
