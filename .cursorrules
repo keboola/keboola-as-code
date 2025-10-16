@@ -15,7 +15,7 @@
 - Focus on filesystem operations, git integration, and data streaming
 
 # Tech Stack
-- **Language**: Go 1.24+
+- **Language**: Go 1.25+
 - **Storage**: ETCD v3.6
 - **Key Libraries**:
   - `go.etcd.io/etcd/client/v3`: ETCD client
