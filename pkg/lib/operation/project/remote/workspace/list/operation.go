@@ -29,7 +29,7 @@ func Run(ctx context.Context, d dependencies) (err error) {
 	}
 
 	logger.Info(ctx, "Loading workspaces, please wait.")
-	workspaces, err := d.KeboolaProjectAPI().ListWorkspaces(ctx, branch.ID)
+	workspaces, err := d.KeboolaProjectAPI().ListSandboxWorkspaces(ctx, branch.ID)
 	if err != nil {
 		return err
 	}
@@ -37,10 +37,10 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger.Info(ctx, "Found workspaces:")
 	for _, workspace := range workspaces {
-		if keboola.WorkspaceSupportsSizes(workspace.Workspace.Type) {
-			logger.Infof(ctx, "  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type, workspace.Workspace.Size)
+		if keboola.SandboxWorkspaceSupportsSizes(keboola.SandboxWorkspaceType(workspace.SandboxWorkspace.Type)) {
+			logger.Infof(ctx, "  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.SandboxWorkspace.Type, workspace.SandboxWorkspace.Size)
 		} else {
-			logger.Infof(ctx, "  %s (ID: %s, Type: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type)
+			logger.Infof(ctx, "  %s (ID: %s, Type: %s)", workspace.Config.Name, workspace.Config.ID, workspace.SandboxWorkspace.Type)
 		}
 	}
 
