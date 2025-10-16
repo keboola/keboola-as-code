@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	rand "math/rand/v2"
 	"net"
 	"os"
@@ -17,7 +18,7 @@ const (
 )
 
 type PortManager interface {
-	GeneratePorts()
+	GeneratePorts(ctx context.Context)
 	GetFreePort() int
 }
 
@@ -50,18 +51,18 @@ func NewPortManager(t *testing.T, tempDir, subFolder string) (pm *portManager, e
 		mu:     &sync.Mutex{},
 		dir:    p,
 	}
-	pm.GeneratePorts()
+	pm.GeneratePorts(t.Context())
 	return pm, err
 }
 
-func (p portManager) GeneratePorts() {
+func (p portManager) GeneratePorts(ctx context.Context) {
 	// Generate ports (1024-65535)
 	// Ports above 50000 are intentionally avoided because their usage may cause this error on windows:
 	// bind: An attempt was made to access a socket in a way forbidden by its access permissions.
 	duplicates := make([]int, 0, numberOfPorts)
 	for i := range numberOfPorts {
 		port := p.random.IntN(50000-1024+1) + 1024
-		for IsPortOccupied(port) && slices.Contains(duplicates, port) {
+		for IsPortOccupied(ctx, port) && slices.Contains(duplicates, port) {
 			port = p.random.IntN(50000-1024+1) + 1024
 		}
 
@@ -106,8 +107,9 @@ func (p portManager) retryOnOccupiedPort(dir string, startPort int) (outDir stri
 	return outDir, finalPort
 }
 
-func IsPortOccupied(port int) bool {
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", strconv.FormatInt(int64(port), 10)), time.Second)
+func IsPortOccupied(ctx context.Context, port int) bool {
+	dialer := net.Dialer{Timeout: time.Second}
+	conn, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort("127.0.0.1", strconv.FormatInt(int64(port), 10)))
 	if err != nil {
 		return false
 	}
