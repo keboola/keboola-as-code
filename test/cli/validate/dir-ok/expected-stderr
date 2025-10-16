@@ -1,0 +1,6 @@
+Error:
+- Validation failed:
+  - Config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-1/config.json" doesn't match schema:
+    - "export.groupingDimensions": invalid jsonType []string
+  - Config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-2/config.json" doesn't match schema:
+    - "export.groupingDimensions": invalid jsonType []string
