@@ -19,8 +19,9 @@ func (t *Protocol) Type() network.TransportProtocol {
 	return network.TransportProtocolTCP
 }
 
-func (t *Protocol) Listen() (net.Listener, error) {
-	return net.Listen("tcp", t.config.Listen)
+func (t *Protocol) Listen(ctx context.Context) (net.Listener, error) {
+	var lc net.ListenConfig
+	return lc.Listen(ctx, "tcp", t.config.Listen)
 }
 
 func (t *Protocol) Accept(listener net.Listener) (net.Conn, error) {

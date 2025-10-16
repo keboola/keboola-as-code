@@ -23,7 +23,7 @@ func (t *Protocol) Type() network.TransportProtocol {
 	return network.TransportProtocolKCP
 }
 
-func (t *Protocol) Listen() (net.Listener, error) {
+func (t *Protocol) Listen(ctx context.Context) (net.Listener, error) {
 	listener, err := kcp.ListenWithOptions(t.config.Listen, nil, 0, 0)
 	if err != nil {
 		return nil, errors.PrefixError(err, "cannot create listener")

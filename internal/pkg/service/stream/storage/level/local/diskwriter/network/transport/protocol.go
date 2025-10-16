@@ -18,7 +18,7 @@ import (
 type Protocol interface {
 	Type() network.TransportProtocol
 	// Listen for connections by the server.
-	Listen() (net.Listener, error)
+	Listen(ctx context.Context) (net.Listener, error)
 	// Accept new connection by the server.
 	Accept(listener net.Listener) (net.Conn, error)
 	// Dial a new connection from the client.

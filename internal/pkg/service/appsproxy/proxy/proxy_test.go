@@ -2416,10 +2416,11 @@ func TestAppProxyRouter(t *testing.T) {
 
 			// Create a test server for the proxy handler
 			port := pm.GetFreePort()
-			l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+			var lc net.ListenConfig
+			l, err := lc.Listen(t.Context(), "tcp", fmt.Sprintf("127.0.0.1:%d", port))
 			for err != nil {
 				port = pm.GetFreePort()
-				l, err = net.Listen("tcp", fmt.Sprintf("[::1]:%d", port))
+				l, err = lc.Listen(t.Context(), "tcp", fmt.Sprintf("[::1]:%d", port))
 			}
 
 			proxySrv := &httptest.Server{

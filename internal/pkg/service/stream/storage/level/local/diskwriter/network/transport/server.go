@@ -178,7 +178,7 @@ func (s *Server) Port() string {
 }
 
 func (s *Server) listen(ctx context.Context) error {
-	listener, err := s.transport.Listen()
+	listener, err := s.transport.Listen(ctx)
 	if err != nil {
 		return err
 	}
