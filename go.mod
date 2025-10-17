@@ -63,12 +63,12 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/afero v1.14.0
-	github.com/spf13/cast v1.9.2
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/afero v1.15.0
+	github.com/spf13/cast v1.10.0
+	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
-	github.com/spf13/viper v1.20.1
-	github.com/stretchr/testify v1.10.0
+	github.com/spf13/viper v1.21.0
+	github.com/stretchr/testify v1.11.1
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	github.com/urfave/negroni/v3 v3.1.1
 	github.com/valyala/fasthttp v1.67.0
@@ -128,6 +128,7 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.125.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/tools/cmd/godoc v0.1.0-deprecated // indirect
 	golang.org/x/tools/godoc v0.1.0-deprecated // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
@@ -283,7 +284,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/inflect v0.21.2 // indirect
 	github.com/go-ozzo/ozzo-routing v2.1.4+incompatible // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gohugoio/hashstructure v0.5.0 // indirect
@@ -344,10 +345,10 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/sagikazarmark/locafero v0.9.0 // indirect
+	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
-	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/tdewolff/parse/v2 v2.8.1 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
