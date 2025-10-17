@@ -15,7 +15,9 @@ type FieldMetadata struct {
 	Required    bool
 }
 
-func FieldMeta(schemaDef []byte, path orderedmap.Path) (out FieldMetadata, found bool, err error) {
+func FieldMeta(schemaDef []byte, path orderedmap.Path) (FieldMetadata, bool, error) {
+	var out FieldMetadata
+
 	// Is schema empty?
 	if len(schemaDef) == 0 {
 		return out, false, nil
@@ -28,11 +30,13 @@ func FieldMeta(schemaDef []byte, path orderedmap.Path) (out FieldMetadata, found
 	}
 
 	// Search for field
-	out, found = getFieldMeta(schema, path)
+	out, found := getFieldMeta(schema, path)
 	return out, found, err
 }
 
-func getFieldMeta(schema *jsonschema.Schema, path orderedmap.Path) (out FieldMetadata, found bool) {
+func getFieldMeta(schema *jsonschema.Schema, path orderedmap.Path) (FieldMetadata, bool) {
+	var out FieldMetadata
+
 	// Skip first step: component schema starts at "properties"
 	if path.First() != orderedmap.MapStep("parameters") {
 		return out, false
