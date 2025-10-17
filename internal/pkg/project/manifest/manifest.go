@@ -259,11 +259,11 @@ func (m *Manifest) IsObjectIgnored(object model.Object) bool {
 	return m.filter.IsObjectIgnored(object)
 }
 
-func (m *Manifest) TemplateRepository(name string) (repo model.TemplateRepository, found bool) {
+func (m *Manifest) TemplateRepository(name string) (model.TemplateRepository, bool) {
 	for _, r := range m.repositories {
 		if r.Name == name {
 			return r, true
 		}
 	}
-	return repo, found
+	return model.TemplateRepository{}, false
 }
