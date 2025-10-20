@@ -638,7 +638,6 @@ foo3
 {"level":"warn","message":"chunks write failed: some error, waiting %s, chunks count = 1"}
 {"level":"debug","message":"chunk written, size \"5B\""}
 {"level":"debug","message":"sync to disk done"}
-{"level":"debug","message":"notifier obtained"}
 {"level":"debug","message":"starting sync to disk"}
 {"level":"debug","message":"flushing writers"}
 {"level":"debug","message":"chunk completed, aligned = true, size = \"5B\""}
