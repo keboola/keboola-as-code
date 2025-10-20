@@ -1,0 +1,3 @@
+WARN	Warning:
+- Invalid transformation config "branch:%d/component:keboola.python-transformation-v2/config:%S":
+  - Key "shared_code_row_ids" should be array, found []string.
