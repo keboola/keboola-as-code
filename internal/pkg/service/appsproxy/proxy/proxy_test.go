@@ -1725,10 +1725,7 @@ func TestAppProxyRouter(t *testing.T) {
 				wg := sync.WaitGroup{}
 				counter := atomic.NewInt64(0)
 				for range 100 {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-
+					wg.Go(func() {
 						m[0].QueueUser(&mockoidc.MockUser{
 							Email:         "admin@keboola.com",
 							EmailVerified: ptr.Ptr(true),
@@ -1744,7 +1741,7 @@ func TestAppProxyRouter(t *testing.T) {
 								counter.Add(1)
 							}
 						}
-					}()
+					})
 				}
 
 				// Wait for all requests
@@ -2419,10 +2416,11 @@ func TestAppProxyRouter(t *testing.T) {
 
 			// Create a test server for the proxy handler
 			port := pm.GetFreePort()
-			l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+			var lc net.ListenConfig
+			l, err := lc.Listen(t.Context(), "tcp", fmt.Sprintf("127.0.0.1:%d", port))
 			for err != nil {
 				port = pm.GetFreePort()
-				l, err = net.Listen("tcp", fmt.Sprintf("[::1]:%d", port))
+				l, err = lc.Listen(t.Context(), "tcp", fmt.Sprintf("[::1]:%d", port))
 			}
 
 			proxySrv := &httptest.Server{

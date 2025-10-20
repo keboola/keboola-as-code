@@ -1,5 +1,5 @@
-# Build xk6 from scratch using Go 1.24+ to ensure compatibility
-FROM golang:1.24-alpine AS build
+# Build xk6 from scratch using Go 1.25+ to ensure compatibility
+FROM golang:1.25-alpine AS build
 
 # Install necessary packages for building
 RUN apk add --no-cache git
@@ -13,7 +13,7 @@ RUN xk6 build \
     --with github.com/domsolutions/xk6-fasthttp@latest \
     --output /k6
 
-FROM golang:1.24-alpine
+FROM golang:1.25-alpine
 
 RUN apk add --no-cache bash
 

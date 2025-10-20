@@ -26,10 +26,7 @@ func TestSelectBranchInteractive(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("LABEL:"))
 
 		require.NoError(t, console.ExpectString("Branch 1 (1)"))
@@ -43,7 +40,7 @@ func TestSelectBranchInteractive(t *testing.T) {
 		require.NoError(t, console.SendEnter())
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	out, err := dialog.SelectBranch(allBranches, `LABEL`, configmap.NewValue(branch2.String()))
@@ -126,10 +123,7 @@ func TestSelectBranchesInteractive(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("LABEL:"))
 
 		require.NoError(t, console.ExpectString("Branch 1 (1)"))
@@ -155,7 +149,7 @@ func TestSelectBranchesInteractive(t *testing.T) {
 		require.NoError(t, console.SendEnter()) // -> confirm
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	out, err := syncInit.SelectBranches(allBranches, `LABEL`, dialog, syncInit.Flags{})

@@ -54,7 +54,7 @@ func CompileBinary(t *testing.T, binaryName string, taskCommand string) string {
 
 	// Build cmd
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("task", taskCommand)
+	cmd := exec.CommandContext(t.Context(), "task", taskCommand)
 	cmd.Dir = projectDir
 	cmd.Env = envs.ToSlice()
 	cmd.Stdout = io.MultiWriter(&stdout, VerboseStdout())

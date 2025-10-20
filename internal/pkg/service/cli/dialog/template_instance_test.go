@@ -35,10 +35,7 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("Select branch:"))
 
 		require.NoError(t, console.SendEnter()) // enter - Main
@@ -48,7 +45,7 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 		require.NoError(t, console.SendEnter()) // enter - tmpl1
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	branchKey, instance, err := dialog.AskTemplateInstance(projectState, configmap.NewValue(branch.String()), configmap.NewValue(instanceID))

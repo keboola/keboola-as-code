@@ -121,11 +121,9 @@ func (c *Collection[K, P]) Close(ctx context.Context, cause string) {
 	defer wg.Wait()
 
 	for _, p := range c.All() {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			p.Close(ctx, cause) // pipeline calls Unregister
-		}()
+		})
 	}
 }
 

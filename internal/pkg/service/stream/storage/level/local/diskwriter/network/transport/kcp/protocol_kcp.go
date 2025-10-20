@@ -1,6 +1,7 @@
 package kcp
 
 import (
+	"context"
 	"net"
 
 	"github.com/ccoveille/go-safecast"
@@ -22,7 +23,7 @@ func (t *Protocol) Type() network.TransportProtocol {
 	return network.TransportProtocolKCP
 }
 
-func (t *Protocol) Listen() (net.Listener, error) {
+func (t *Protocol) Listen(ctx context.Context) (net.Listener, error) {
 	listener, err := kcp.ListenWithOptions(t.config.Listen, nil, 0, 0)
 	if err != nil {
 		return nil, errors.PrefixError(err, "cannot create listener")
@@ -58,7 +59,7 @@ func (t *Protocol) Accept(listener net.Listener) (net.Conn, error) {
 	return conn, nil
 }
 
-func (t *Protocol) Dial(addr string) (net.Conn, error) {
+func (t *Protocol) Dial(ctx context.Context, addr string) (net.Conn, error) {
 	conn, err := kcp.DialWithOptions(addr, nil, 0, 0)
 	if err != nil {
 		return nil, err

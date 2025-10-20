@@ -62,11 +62,9 @@ func Listen(logger log.Logger, nodeID string, config network.Config, transport P
 	}
 
 	// Accept connections in background
-	s.listenWg.Add(1)
-	go func() {
-		defer s.listenWg.Done()
+	s.listenWg.Go(func() {
 		s.acceptConnectionsLoop(ctx)
-	}()
+	})
 
 	return s, nil
 }
@@ -132,14 +130,12 @@ func (s *Server) Close() error {
 		s.logger.Infof(ctx, "closing %d streams", len(streams))
 		wg := &sync.WaitGroup{}
 		for _, stream := range streams {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				if err := stream.Close(); err != nil {
 					err = errors.PrefixError(err, "cannot close server stream")
 					s.logger.Error(ctx, err.Error())
 				}
-			}()
+			})
 		}
 		wg.Wait()
 	}
@@ -152,14 +148,12 @@ func (s *Server) Close() error {
 		s.logger.Infof(ctx, "closing %d sessions", len(sessions))
 		wg := &sync.WaitGroup{}
 		for _, sess := range sessions {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				if err := sess.Close(); err != nil {
 					err = errors.PrefixError(err, "cannot close server session")
 					s.logger.Error(ctx, err.Error())
 				}
-			}()
+			})
 		}
 		wg.Wait()
 	}
@@ -184,7 +178,7 @@ func (s *Server) Port() string {
 }
 
 func (s *Server) listen(ctx context.Context) error {
-	listener, err := s.transport.Listen()
+	listener, err := s.transport.Listen(ctx)
 	if err != nil {
 		return err
 	}

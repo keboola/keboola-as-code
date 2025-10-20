@@ -60,10 +60,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("Default Group"))
 
 		require.NoError(t, console.ExpectString("Default Step"))
@@ -83,7 +80,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		require.NoError(t, console.SendLine(`VAR1`))
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	f := Flags{

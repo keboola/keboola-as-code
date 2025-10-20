@@ -124,9 +124,7 @@ func (b SessionBuilder) Start(ctx context.Context, wg *sync.WaitGroup, logger lo
 
 	s.mutexStore = newMutexStore(s)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		initDone := initDoneOut
 
 		for {
@@ -190,7 +188,7 @@ func (b SessionBuilder) Start(ctx context.Context, wg *sync.WaitGroup, logger lo
 				s.logger.Info(ctx, "etcd session canceled")
 			}
 		}
-	}()
+	})
 
 	return s, initDoneOut
 }

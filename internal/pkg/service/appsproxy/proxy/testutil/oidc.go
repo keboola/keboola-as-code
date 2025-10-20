@@ -20,10 +20,11 @@ func StartOIDCProviderServer(t *testing.T, pm server.PortManager) *mockoidc.Mock
 	}
 
 	port := pm.GetFreePort()
-	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	var lc net.ListenConfig
+	ln, err := lc.Listen(t.Context(), "tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	for err != nil {
 		port = pm.GetFreePort()
-		ln, err = net.Listen("tcp", fmt.Sprintf("[::1]:%d", port))
+		ln, err = lc.Listen(t.Context(), "tcp", fmt.Sprintf("[::1]:%d", port))
 	}
 
 	require.NoError(t, m.Start(ln, nil))

@@ -57,10 +57,7 @@ func TestAskCreateConfig(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("Select the target branch"))
 
 		require.NoError(t, console.SendEnter()) // enter - Main
@@ -74,7 +71,7 @@ func TestAskCreateConfig(t *testing.T) {
 		require.NoError(t, console.SendLine(`Foo Bar`))
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	opts, err := AskCreateConfig(projectState, d, deps, Flags{})

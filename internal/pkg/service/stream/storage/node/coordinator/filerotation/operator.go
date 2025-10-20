@@ -294,11 +294,9 @@ func (o *operator) checkFiles(ctx context.Context, wg *sync.WaitGroup) {
 	o.logger.Debugf(ctx, "checking files import conditions")
 
 	o.files.ForEach(func(_ model.FileKey, file *fileData) (stop bool) {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			o.checkFile(ctx, file)
-		}()
+		})
 		return false
 	})
 }

@@ -198,7 +198,8 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	proc := d.Process()
 	proc.Add(func(shutdown servicectx.ShutdownFn) {
 		// Create connection
-		conn, err := net.Listen("tcp4", cfg.Listen)
+		var lc net.ListenConfig
+		conn, err := lc.Listen(ctx, "tcp4", cfg.Listen)
 		if err != nil {
 			shutdown(context.WithoutCancel(ctx), err)
 			return

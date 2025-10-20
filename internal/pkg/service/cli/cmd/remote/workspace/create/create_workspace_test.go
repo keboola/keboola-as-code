@@ -18,10 +18,7 @@ func TestAskCreateWorkspace(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		require.NoError(t, console.ExpectString("Enter a name for the new workspace"))
 
 		require.NoError(t, console.SendLine("foo"))
@@ -36,7 +33,7 @@ func TestAskCreateWorkspace(t *testing.T) {
 		require.NoError(t, console.SendEnter()) // small
 
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	opts, err := AskCreateWorkspace(d, Flags{})

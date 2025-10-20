@@ -247,13 +247,11 @@ func (s *NetworkFileServer) terminate(ctx context.Context) {
 		s.logger.Errorf(ctx, "force closing %d disk writers", len(s.writers))
 		wg := &sync.WaitGroup{}
 		for _, w := range s.writers {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				if err := w.Close(ctx); err != nil {
 					s.logger.Errorf(ctx, "cannot close disk writer %q: %s", w.SliceKey(), err)
 				}
-			}()
+			})
 		}
 		wg.Wait()
 	}

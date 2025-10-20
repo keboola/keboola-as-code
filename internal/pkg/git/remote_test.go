@@ -69,7 +69,7 @@ func TestGit_Checkout(t *testing.T) {
 	// Check if the hash equals to a commit - the git command should return a "commit" message
 	hash := r.CommitHash()
 	var stdOut bytes.Buffer
-	cmd := exec.Command("git", "cat-file", "-t", hash)
+	cmd := exec.CommandContext(ctx, "git", "cat-file", "-t", hash)
 	cmd.Dir = fs1.BasePath()
 	cmd.Stdout = &stdOut
 	err = cmd.Run()
@@ -139,7 +139,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	// Check if the hash equals to a commit - the git command should return a "commit" message
 	hash := r.CommitHash()
 	var stdOut bytes.Buffer
-	cmd := exec.Command("git", "cat-file", "-t", hash)
+	cmd := exec.CommandContext(ctx, "git", "cat-file", "-t", hash)
 	cmd.Dir = fs1.BasePath()
 	cmd.Stdout = &stdOut
 	err = cmd.Run()

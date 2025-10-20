@@ -220,11 +220,9 @@ func (o *operator) checkSlices(ctx context.Context, wg *sync.WaitGroup) {
 	o.logger.Debugf(ctx, "checking slices upload conditions")
 
 	o.slices.ForEach(func(_ model.SliceKey, slice *sliceData) (stop bool) {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			o.checkSlice(ctx, slice)
-		}()
+		})
 		return false
 	})
 }

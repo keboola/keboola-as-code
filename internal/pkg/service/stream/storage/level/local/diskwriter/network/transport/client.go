@@ -108,15 +108,13 @@ func (c *Client) closeAllConnections(ctx context.Context) {
 	c.logger.Infof(ctx, "closing %d connections", len(connections))
 	wg := &sync.WaitGroup{}
 	for _, conn := range connections {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if !conn.isClosed() {
 				if err := conn.Close(ctx); err != nil {
 					c.logger.Error(ctx, err.Error())
 				}
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }

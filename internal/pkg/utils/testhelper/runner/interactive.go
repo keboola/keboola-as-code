@@ -110,10 +110,8 @@ func (v *cmdInputOutput) InteractAndWait(ctx context.Context, cmd *exec.Cmd, han
 	// Wait for the command to finish then close interaction
 	var cmdErr error
 	cmdWg := &sync.WaitGroup{}
-	cmdWg.Add(1)
-	go func() {
+	cmdWg.Go(func() {
 		// Wait for command
-		defer cmdWg.Done()
 		cmdErr = cmd.Wait()
 
 		// Use context error if any and cmdError is nil
@@ -128,7 +126,7 @@ func (v *cmdInputOutput) InteractAndWait(ctx context.Context, cmd *exec.Cmd, han
 
 		// Cancel interaction context
 		cancel(errors.New("command finished"))
-	}()
+	})
 
 	// Skip interaction if it is disabled
 	if v.console == nil {

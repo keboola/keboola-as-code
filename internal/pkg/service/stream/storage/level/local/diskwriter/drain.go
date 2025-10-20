@@ -38,10 +38,7 @@ func (v *Volume) watchDrainFile(ctx context.Context) error {
 		return nil
 	}
 
-	v.wg.Add(1)
-	go func() {
-		defer v.wg.Done()
-
+	v.wg.Go(func() {
 		defer func() {
 			if err := watcher.Close(); err != nil {
 				v.logger.Warnf(ctx, `cannot close FS watcher: %s`, err)
@@ -68,7 +65,7 @@ func (v *Volume) watchDrainFile(ctx context.Context) error {
 				v.logger.Errorf(ctx, `FS watcher error: %s`, err)
 			}
 		}
-	}()
+	})
 
 	return nil
 }

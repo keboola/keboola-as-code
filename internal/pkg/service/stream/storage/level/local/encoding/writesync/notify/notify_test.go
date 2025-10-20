@@ -64,13 +64,11 @@ func TestNotifier_Success(t *testing.T) {
 
 	n := New()
 	wait := func() {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			assert.NoError(t, n.WaitWithTimeout(testWaitTimeout))
 			assert.NoError(t, n.Wait(ctx))
 			_, _ = log.WriteString("wait finished\n")
-		}()
+		})
 	}
 
 	// Call Wait 5x before done
@@ -114,15 +112,13 @@ func TestNotifier_Error(t *testing.T) {
 
 	n := New()
 	wait := func() {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			err := n.WaitWithTimeout(testWaitTimeout)
 			if assert.Error(t, err) {
 				assert.Equal(t, "some error", err.Error())
 			}
 			_, _ = log.WriteString("wait finished\n")
-		}()
+		})
 	}
 
 	// Call Wait 5x before done

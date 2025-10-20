@@ -81,12 +81,10 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		selectOption(t, 1, console) // only main branch
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
@@ -114,12 +112,10 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		selectOption(t, 2, console) // all branches
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
@@ -152,9 +148,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		selectOption(t, 3, console) // selected branches
 		require.NoError(t, console.ExpectString(`Main (10)`))
 		require.NoError(t, console.ExpectString(`foo (20)`))
@@ -173,7 +167,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 		require.NoError(t, console.SendSpace())
 		require.NoError(t, console.SendEnter())
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
@@ -206,16 +200,14 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 
 	// Interaction
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		selectOption(t, 4, console) // type custom definitions
 		require.NoError(t, console.ExpectString("Please enter one branch definition per line."))
 		require.NoError(t, console.Send("f**\n"))
 		require.NoError(t, console.Send("b*z\n"))
 		require.NoError(t, console.Send("\n\n\n"))
 		require.NoError(t, console.ExpectEOF())
-	}()
+	})
 
 	// Run
 	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
