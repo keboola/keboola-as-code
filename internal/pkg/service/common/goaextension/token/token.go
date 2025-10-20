@@ -105,7 +105,7 @@ func AddTokenHeaderToPayloads(tokenScheme *expr.SchemeExpr, field, header string
 						}, method.Payload)
 
 						// Add header to the HTTP definition
-						endpoint := expr.Root.API.HTTP.ServiceFor(method.Service).EndpointFor(method.Name, method)
+						endpoint := expr.Root.API.HTTP.ServiceFor(method.Service, expr.Root.API.HTTP).EndpointFor(method)
 						httpFn := endpoint.DSLFunc
 						endpoint.DSLFunc = func() {
 							// Define the payload field by the header
