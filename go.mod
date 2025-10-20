@@ -9,7 +9,7 @@ replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
 require (
-	ariga.io/atlas v0.35.0
+	ariga.io/atlas v0.37.0
 	entgo.io/ent v0.14.5
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -24,7 +24,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/coder/websocket v1.8.14
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
-	github.com/dgraph-io/ristretto/v2 v2.2.0
+	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/fatih/color v1.18.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
@@ -58,7 +58,7 @@ require (
 	github.com/pquerna/cachecontrol v0.2.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/qiangxue/fasthttp-routing v0.0.0-20160225050629-6ccdc2a18d87
-	github.com/relvacode/iso8601 v1.6.0
+	github.com/relvacode/iso8601 v1.7.0
 	github.com/rs/zerolog v1.34.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/schollz/progressbar/v3 v3.18.0
@@ -112,7 +112,7 @@ require (
 	github.com/go-test/deep v1.1.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
-	github.com/icholy/gomajor v0.14.0 // indirect
+	github.com/icholy/gomajor v0.15.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect
 	github.com/onsi/gomega v1.37.0 // indirect
@@ -292,7 +292,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/gomarkdown/markdown v0.0.0-20250311123330-531bef5e742b // indirect
 	github.com/google/btree v1.1.3 // indirect
-	github.com/google/go-licenses/v2 v2.0.0-alpha.1 // indirect
+	github.com/google/go-licenses/v2 v2.0.1 // indirect
 	github.com/google/licenseclassifier/v2 v2.0.0 // indirect
 	github.com/google/pprof v0.0.0-20250501235452-c0086092b71a // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
@@ -323,7 +323,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/oligot/go-mod-upgrade v0.11.0 // indirect
+	github.com/oligot/go-mod-upgrade v0.12.0 // indirect
 	github.com/otiai10/copy v1.14.1 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
@@ -352,7 +352,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75 // indirect
-	github.com/urfave/cli/v2 v2.27.6 // indirect
+	github.com/urfave/cli/v2 v2.27.7 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
@@ -385,10 +385,10 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gotest.tools/gotestsum v1.12.3 // indirect
+	gotest.tools/gotestsum v1.13.0 // indirect
 	k8s.io/apimachinery v0.33.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	mvdan.cc/gofumpt v0.8.0 // indirect
+	mvdan.cc/gofumpt v0.9.1 // indirect
 )
 
 tool (
