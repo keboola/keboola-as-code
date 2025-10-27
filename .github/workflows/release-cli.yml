@@ -149,7 +149,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Download targets
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: release-targets
 
@@ -245,7 +245,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Download Homebrew formulae
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: homebrew-formulae
           path: target/homebrew
@@ -335,7 +335,7 @@ jobs:
           APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
 
       - name: Download Scoop manifest
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: scoop-manifest
           path: target/scoop
