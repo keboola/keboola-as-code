@@ -327,7 +327,7 @@ func (m *MirrorTree[T, V]) recordMemoryTelemetry(ctx context.Context, tel teleme
 
 // startTelemetryCollection begins periodic telemetry reporting for the MirrorTree, including memory usage and key count.
 // It runs until the given context is canceled and ensures the provided wait group is marked as done upon completion.
-func (m *MirrorTree[T, V]) startTelemetryCollection(ctx context.Context, wg *sync.WaitGroup, tel telemetry.Telemetry, log log.Logger, watchTelemetryInterval time.Duration) (initErr <-chan error) {
+func (m *MirrorTree[T, V]) startTelemetryCollection(ctx context.Context, wg *sync.WaitGroup, tel telemetry.Telemetry, log log.Logger, watchTelemetryInterval time.Duration) {
 	defer wg.Done()
 
 	ticker := time.NewTicker(watchTelemetryInterval)
@@ -340,7 +340,7 @@ func (m *MirrorTree[T, V]) startTelemetryCollection(ctx context.Context, wg *syn
 			m.recordMemoryTelemetry(ctx, tel)
 		case <-ctx.Done():
 			log.Debugf(ctx, "Telemetry collection for tree stopped: %v", ctx.Err())
-			return initErr
+			return
 		}
 	}
 }

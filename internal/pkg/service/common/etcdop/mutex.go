@@ -332,9 +332,10 @@ func (m *activeMutex) dbLock(ctx context.Context) (err error) {
 	return nil
 }
 
-func (m *activeMutex) dbTryLock(ctx context.Context) (err error) {
+func (m *activeMutex) dbTryLock(ctx context.Context) error {
 	// Get session at the first time
 	if m.dbSession == nil {
+		var err error
 		m.dbSession, err = m.store.session.Session()
 		if err != nil {
 			return err
@@ -354,9 +355,10 @@ func (m *activeMutex) dbTryLock(ctx context.Context) (err error) {
 	// Try to acquire the DB lock, at the first time
 	if m.dbMutex == nil {
 		m.dbMutex = concurrency.NewMutex(m.dbSession, m.name)
-		if err = m.dbMutex.TryLock(ctx); err != nil {
+		if err := m.dbMutex.TryLock(ctx); err != nil {
 			return err
 		}
 	}
-	return err
+
+	return nil
 }

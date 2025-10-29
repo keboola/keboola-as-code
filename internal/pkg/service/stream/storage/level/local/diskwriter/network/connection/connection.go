@@ -172,9 +172,12 @@ func (m *Manager) getConnections(
 	ctx context.Context,
 	activeNodes map[string]*nodeData,
 ) (
-	toOpen []*nodeData,
-	toClose []*transport.ClientConnection,
+	[]*nodeData,
+	[]*transport.ClientConnection,
 ) {
+	var toOpen []*nodeData
+	var toClose []*transport.ClientConnection
+
 	// Detect new nodes - to open connection
 	for _, node := range activeNodes {
 		if _, found := m.client.Connection(node.ID); !found {
