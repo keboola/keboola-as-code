@@ -11,7 +11,6 @@
           "componentId": "keboola.variables",
           "name": "Variables",
           "description": "test fixture",
-          "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {
             "variables": [
               {
@@ -24,7 +23,6 @@
             {
               "name": "Default values",
               "description": "test fixture",
-              "changeDescription": "Updated from #KeboolaCLI",
               "isDisabled": false,
               "configuration": {
                 "values": [
