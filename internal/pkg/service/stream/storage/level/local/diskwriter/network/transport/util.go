@@ -20,7 +20,7 @@ func streamKey(stream *ServerStream) string {
 }
 
 func multiplexerConfig(_ log.Logger, config network.Config) *yamux.Config {
-	maxWindowSize, err := safecast.ToUint32(config.StreamMaxWindow.Bytes())
+	maxWindowSize, err := safecast.Convert[uint32](config.StreamMaxWindow.Bytes())
 	if err != nil {
 		panic(err)
 	}

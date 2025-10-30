@@ -88,7 +88,7 @@ func (w *writer) WriteRow(cols *[]any) (int, error) {
 		}
 
 		// Check limit of single column
-		length, err := safecast.ToUint64(w.row.Len())
+		length, err := safecast.Convert[uint64](w.row.Len())
 		if err != nil {
 			return 0, err
 		}

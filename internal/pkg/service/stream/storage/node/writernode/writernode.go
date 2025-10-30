@@ -36,7 +36,7 @@ func Start(ctx context.Context, d dependencies.StorageWriterScope, cfg config.Co
 					continue
 				}
 
-				i, err := safecast.ToInt64(space)
+				i, err := safecast.Convert[int64](space)
 				if err != nil {
 					errs.Append(err)
 					continue
@@ -63,7 +63,7 @@ func Start(ctx context.Context, d dependencies.StorageWriterScope, cfg config.Co
 					continue
 				}
 
-				i, err := safecast.ToInt64(space)
+				i, err := safecast.Convert[int64](space)
 				if err != nil {
 					errs.Append(err)
 					continue
@@ -83,7 +83,7 @@ func Start(ctx context.Context, d dependencies.StorageWriterScope, cfg config.Co
 		func(ctx context.Context, observer metric.Int64Observer) error {
 			used, err := telemetry.UsedFileDescriptors()
 			if err == nil {
-				i, err := safecast.ToInt64(used)
+				i, err := safecast.Convert[int64](used)
 				if err == nil {
 					observer.Observe(i)
 				}
@@ -99,7 +99,7 @@ func Start(ctx context.Context, d dependencies.StorageWriterScope, cfg config.Co
 		func(ctx context.Context, observer metric.Int64Observer) error {
 			limit, err := telemetry.TotalFileDescriptors()
 			if err == nil {
-				i, err := safecast.ToInt64(limit)
+				i, err := safecast.Convert[int64](limit)
 				if err == nil {
 					observer.Observe(i)
 				}

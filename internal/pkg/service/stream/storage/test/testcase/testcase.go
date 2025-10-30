@@ -192,7 +192,7 @@ func (tc *WriterTestCase) Run(t *testing.T) {
 	// Check stats
 	if assert.NoError(t, statsErr) {
 		assert.Equal(t, sliceStats.Total.RecordsCount, rowsCount, "records count doesn't match")
-		size, err := safecast.ToUint64(fileStat.Size())
+		size, err := safecast.Convert[uint64](fileStat.Size())
 		assert.NoError(t, err)
 		assert.Equal(t, sliceStats.Total.CompressedSize.Bytes(), size, "compressed file size doesn't match")
 		assert.Equal(t, sliceStats.Total.UncompressedSize.Bytes(), uint64(len(content)), "uncompressed file size doesn't match")

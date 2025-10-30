@@ -179,10 +179,10 @@ func (wb *WriterBenchmark) Run(b *testing.B) {
 
 	// Check statistics
 	if assert.NoError(b, statsErr) {
-		count, err := safecast.ToUint64(b.N)
+		count, err := safecast.Convert[uint64](b.N)
 		assert.NoError(b, err)
 		assert.Equal(b, sliceStats.Total.RecordsCount, count, "records count doesn't match")
-		size, err := safecast.ToUint64(fileStat.Size())
+		size, err := safecast.Convert[uint64](fileStat.Size())
 		assert.NoError(b, err)
 		assert.Equal(b, sliceStats.Total.CompressedSize.Bytes(), size, "compressed file size doesn't match")
 	}

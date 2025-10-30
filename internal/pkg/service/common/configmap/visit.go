@@ -179,19 +179,19 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 	case reflect.Int:
 		return onLeaf(reflect.ValueOf(int(value.Int())))
 	case reflect.Int8:
-		i, err := safecast.ToInt8(value.Int())
+		i, err := safecast.Convert[int8](value.Int())
 		if err != nil {
 			return err
 		}
 		return onLeaf(reflect.ValueOf(i))
 	case reflect.Int16:
-		i, err := safecast.ToInt16(value.Int())
+		i, err := safecast.Convert[int16](value.Int())
 		if err != nil {
 			return err
 		}
 		return onLeaf(reflect.ValueOf(i))
 	case reflect.Int32:
-		i, err := safecast.ToInt32(value.Int())
+		i, err := safecast.Convert[int32](value.Int())
 		if err != nil {
 			return err
 		}
@@ -201,25 +201,25 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 	case reflect.Uint:
 		return onLeaf(reflect.ValueOf(uint(value.Uint())))
 	case reflect.Uint8:
-		i, err := safecast.ToUint8(value.Uint())
+		i, err := safecast.Convert[uint8](value.Uint())
 		if err != nil {
 			return err
 		}
 		return onLeaf(reflect.ValueOf(i))
 	case reflect.Uint16:
-		i, err := safecast.ToUint16(value.Uint())
+		i, err := safecast.Convert[uint16](value.Uint())
 		if err != nil {
 			return err
 		}
 		return onLeaf(reflect.ValueOf(i))
 	case reflect.Uint32:
-		i, err := safecast.ToUint32(value.Uint())
+		i, err := safecast.Convert[uint32](value.Uint())
 		if err != nil {
 			return err
 		}
 		return onLeaf(reflect.ValueOf(i))
 	case reflect.Uint64:
-		i, err := safecast.ToUint64(value.Uint())
+		i, err := safecast.Convert[uint64](value.Uint())
 		if err != nil {
 			return err
 		}

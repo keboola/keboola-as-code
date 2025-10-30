@@ -58,7 +58,7 @@ func newParallelGZIPWriter(w io.Writer, cfg compression.Config) (io.WriteCloser,
 		return nil, errors.Errorf(`cannot create parallel gzip writer: %w`, err)
 	}
 
-	bytes, err := safecast.ToInt(cfg.GZIP.BlockSize.Bytes())
+	bytes, err := safecast.Convert[int](cfg.GZIP.BlockSize.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func newZstdWriter(w io.Writer, cfg compression.Config) (io.WriteCloser, error) 
 		concurrency = runtime.GOMAXPROCS(0)
 	}
 
-	bytes, err := safecast.ToInt(cfg.ZSTD.WindowSize.Bytes())
+	bytes, err := safecast.Convert[int](cfg.ZSTD.WindowSize.Bytes())
 	if err != nil {
 		return nil, err
 	}

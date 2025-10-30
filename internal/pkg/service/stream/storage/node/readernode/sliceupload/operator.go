@@ -301,14 +301,14 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 	durationMs := float64(o.clock.Now().Sub(startTime)) / float64(time.Millisecond)
 	o.metrics.Duration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
 	if err == nil {
-		compressedSize, err := safecast.ToInt64(stats.CompressedSize)
+		compressedSize, err := safecast.Convert[int64](stats.CompressedSize)
 		if err != nil {
 			o.logger.Warnf(ctx, `Compressed size too high for metric: %s`, err)
 		} else {
 			o.metrics.Compressed.Add(finalizationCtx, compressedSize, metric.WithAttributes(attrs...))
 		}
 
-		uncompressedSize, err := safecast.ToInt64(stats.UncompressedSize)
+		uncompressedSize, err := safecast.Convert[int64](stats.UncompressedSize)
 		if err != nil {
 			o.logger.Warnf(ctx, `Uncompressed size too high for metric: %s`, err)
 		} else {

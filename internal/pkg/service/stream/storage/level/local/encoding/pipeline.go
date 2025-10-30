@@ -186,7 +186,7 @@ func newPipeline(
 
 	// Setup chunks sending to the network file
 	{
-		bytes, err := safecast.ToInt(encodingCfg.MaxChunkSize.Bytes())
+		bytes, err := safecast.Convert[int](encodingCfg.MaxChunkSize.Bytes())
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +227,7 @@ func newPipeline(
 			// Add a buffer before compression writer, if it is not included in the writer itself
 			if encodingCfg.InputBuffer > 0 && !encodingCfg.Compression.HasWriterInputBuffer() {
 				_, err = p.chain.PrependWriterOrErr(func(w io.Writer) (io.Writer, error) {
-					bytes, err := safecast.ToInt(encodingCfg.InputBuffer.Bytes())
+					bytes, err := safecast.Convert[int](encodingCfg.InputBuffer.Bytes())
 					if err != nil {
 						return nil, err
 					}
@@ -470,7 +470,7 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 				return errors.New("network is not ready")
 			}
 
-			length, err := safecast.ToUint64(chunk.Len())
+			length, err := safecast.Convert[uint64](chunk.Len())
 			if err != nil {
 				return err
 			}

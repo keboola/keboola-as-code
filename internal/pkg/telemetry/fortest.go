@@ -308,7 +308,7 @@ func (g *testIDGenerator) Reset() {
 
 func (g *testIDGenerator) NewIDs(ctx context.Context) (trace.TraceID, trace.SpanID) {
 	v := g.traceID.Add(1)
-	i, err := safecast.ToUint16(v)
+	i, err := safecast.Convert[uint16](v)
 	if err != nil {
 		panic(err)
 	}
@@ -319,7 +319,7 @@ func (g *testIDGenerator) NewIDs(ctx context.Context) (trace.TraceID, trace.Span
 
 func (g *testIDGenerator) NewSpanID(_ context.Context, _ trace.TraceID) trace.SpanID {
 	v := g.spanID.Add(1)
-	i, err := safecast.ToUint16(v)
+	i, err := safecast.Convert[uint16](v)
 	if err != nil {
 		panic(err)
 	}
