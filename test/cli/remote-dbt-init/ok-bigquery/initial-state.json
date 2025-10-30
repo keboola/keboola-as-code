@@ -1,0 +1,29 @@
+{
+  "backend": {
+    "type": "bigquery"
+  },
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      }
+    }
+  ],
+  "buckets": [
+    {
+      "id": "in.c-test",
+      "name": "test",
+      "stage": "in",
+      "tables": [
+        {
+          "id": "in.c-test.products",
+          "name": "products",
+          "primaryKey": ["id", "idCategory"],
+          "columns": ["id", "idCategory", "name", "price"]
+        }
+      ]
+    }
+  ]
+}

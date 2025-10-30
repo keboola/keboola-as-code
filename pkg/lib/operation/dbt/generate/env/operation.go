@@ -49,6 +49,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 
 	// Load workspace credentials
+	// TODO: update SDK to return `credentials` field
 	workspace, err := d.KeboolaProjectAPI().GetWorkspaceInstanceRequest(o.Workspace.ID).Send(ctx)
 	if err != nil {
 		return errors.Errorf("could not load workspace credentials: %w", err)
@@ -56,7 +57,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	targetUpper := strings.ToUpper(o.TargetName)
 	host := workspace.Host
-	if workspace.Type == keboola.WorkspaceTypeSnowflake {
+	if keboola.WorkspaceType(workspace.Type) == keboola.WorkspaceTypeSnowflake {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
 
