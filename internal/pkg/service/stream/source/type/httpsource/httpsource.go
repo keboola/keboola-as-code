@@ -149,15 +149,15 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	})
 
 	// Prepare HTTP server
-	readBufferSize, err := safecast.ToInt(cfg.ReadBufferSize.Bytes())
+	readBufferSize, err := safecast.Convert[int](cfg.ReadBufferSize.Bytes())
 	if err != nil {
 		return err
 	}
-	writeBufferSize, err := safecast.ToInt(cfg.WriteBufferSize.Bytes())
+	writeBufferSize, err := safecast.Convert[int](cfg.WriteBufferSize.Bytes())
 	if err != nil {
 		return err
 	}
-	maxRequestBodySize, err := safecast.ToInt(cfg.MaxRequestBodySize.Bytes())
+	maxRequestBodySize, err := safecast.Convert[int](cfg.MaxRequestBodySize.Bytes())
 	if err != nil {
 		return err
 	}

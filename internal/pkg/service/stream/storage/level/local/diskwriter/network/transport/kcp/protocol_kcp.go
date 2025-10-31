@@ -30,7 +30,7 @@ func (t *Protocol) Listen(ctx context.Context) (net.Listener, error) {
 	}
 
 	// Setup buffer sizes (reversed as on the client side)
-	inputBufferBytes, err := safecast.ToInt(t.config.KCPInputBuffer.Bytes())
+	inputBufferBytes, err := safecast.Convert[int](t.config.KCPInputBuffer.Bytes())
 	if err != nil {
 		return nil, errors.PrefixError(err, "read buffer size too large")
 	}
@@ -38,7 +38,7 @@ func (t *Protocol) Listen(ctx context.Context) (net.Listener, error) {
 		return nil, errors.PrefixError(err, "cannot set read buffer size")
 	}
 
-	responseBufferBytes, err := safecast.ToInt(t.config.KCPResponseBuffer.Bytes())
+	responseBufferBytes, err := safecast.Convert[int](t.config.KCPResponseBuffer.Bytes())
 	if err != nil {
 		return nil, errors.PrefixError(err, "write buffer size too large")
 	}
@@ -66,7 +66,7 @@ func (t *Protocol) Dial(ctx context.Context, addr string) (net.Conn, error) {
 	}
 
 	// Setup buffer sizes (reversed as on the server side)
-	responseBufferBytes, err := safecast.ToInt(t.config.KCPResponseBuffer.Bytes())
+	responseBufferBytes, err := safecast.Convert[int](t.config.KCPResponseBuffer.Bytes())
 	if err != nil {
 		return nil, errors.PrefixError(err, "read buffer size too large")
 	}
@@ -74,7 +74,7 @@ func (t *Protocol) Dial(ctx context.Context, addr string) (net.Conn, error) {
 		return nil, errors.PrefixError(err, "cannot set read buffer size")
 	}
 
-	inputBufferBytes, err := safecast.ToInt(t.config.KCPInputBuffer.Bytes())
+	inputBufferBytes, err := safecast.Convert[int](t.config.KCPInputBuffer.Bytes())
 	if err != nil {
 		return nil, errors.PrefixError(err, "write buffer size too large")
 	}

@@ -14,7 +14,7 @@ func (v *Volume) UsedSpace() (uint64, error) {
 		return 0, err
 	}
 
-	blockSize, err := safecast.ToUint64(stat.Bsize)
+	blockSize, err := safecast.Convert[uint64](stat.Bsize)
 	if err != nil {
 		return 0, err
 	}
@@ -29,7 +29,7 @@ func (v *Volume) TotalSpace() (uint64, error) {
 		return 0, err
 	}
 
-	blockSize, err := safecast.ToUint64(stat.Bsize)
+	blockSize, err := safecast.Convert[uint64](stat.Bsize)
 	if err != nil {
 		return 0, err
 	}
