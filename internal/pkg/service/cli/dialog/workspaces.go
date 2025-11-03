@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (p *Dialogs) AskWorkspace(allWorkspaces []*keboola.WorkspaceWithConfig, id configmap.Value[string]) (*keboola.WorkspaceWithConfig, error) {
+func (p *Dialogs) AskWorkspace(allWorkspaces []*keboola.SandboxWorkspaceWithConfig, id configmap.Value[string]) (*keboola.SandboxWorkspaceWithConfig, error) {
 	if id.IsSet() {
 		workspaceID := id.Value
 		for _, w := range allWorkspaces {

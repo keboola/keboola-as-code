@@ -26,6 +26,7 @@ func TestAskCreateWorkspace(t *testing.T) {
 		require.NoError(t, console.ExpectString("Select a type for the new workspace"))
 
 		require.NoError(t, console.SendDownArrow())
+		require.NoError(t, console.SendDownArrow())
 		require.NoError(t, console.SendEnter()) // python
 
 		require.NoError(t, console.ExpectString("Select a size for the new workspace"))

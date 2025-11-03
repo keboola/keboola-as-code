@@ -50,17 +50,17 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 
 	// Create workspace
 	d.Logger().Info(ctx, `Creating a new workspace, please wait.`)
-	w, err := d.KeboolaProjectAPI().CreateWorkspace(
+	w, err := d.KeboolaProjectAPI().CreateSandboxWorkspace(
 		ctx,
 		branch.ID,
 		o.WorkspaceName,
-		keboola.WorkspaceTypeSnowflake,
+		keboola.SandboxWorkspaceTypeSnowflake,
 	)
 	if err != nil {
 		return errors.Errorf("cannot create workspace: %w", err)
 	}
 	d.Logger().Infof(ctx, `Created the new workspace "%s".`, o.WorkspaceName)
-	workspace := w.Workspace
+	workspace := w.SandboxWorkspace
 
 	// List buckets
 	buckets, err := listbuckets.Run(ctx, listbuckets.Options{
