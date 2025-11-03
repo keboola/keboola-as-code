@@ -37,7 +37,7 @@ func AskCreateWorkspace(d *dialog.Dialogs, f Flags) (create.CreateOptions, error
 	}
 	opts.Type = typ
 
-	if keboola.SandboxWorkspaceSupportsSizes(keboola.SandboxWorkspaceType(typ)) {
+	if keboola.SandboxWorkspaceSupportsSizes(typ) {
 		size, err := askWorkspaceSize(d, f.Size)
 		if err != nil {
 			return opts, err
@@ -63,14 +63,14 @@ func askWorkspaceName(d *dialog.Dialogs, workspaceName configmap.Value[string]) 
 	}
 }
 
-func askWorkspaceType(d *dialog.Dialogs, workspaceType configmap.Value[string]) (string, error) {
+func askWorkspaceType(d *dialog.Dialogs, workspaceType configmap.Value[string]) (keboola.SandboxWorkspaceType, error) {
 	if workspaceType.IsSet() {
 		typ := workspaceType.Value
 		// Convert the string to SandboxWorkspaceType for map lookup
 		if !keboola.SandboxWorkspaceTypesMap()[keboola.SandboxWorkspaceType(typ)] {
 			return "", errors.Errorf("invalid workspace type, must be one of: %s", strings.Join(sandboxWorkspaceTypesToStrings(keboola.SandboxWorkspaceTypesOrdered()), ", "))
 		}
-		return typ, nil
+		return keboola.SandboxWorkspaceType(typ), nil
 	} else {
 		v, ok := d.Select(&prompt.Select{
 			Label:   "Select a type for the new workspace",
@@ -79,7 +79,7 @@ func askWorkspaceType(d *dialog.Dialogs, workspaceType configmap.Value[string]) 
 		if !ok {
 			return "", errors.New("missing workspace type, please specify it")
 		}
-		return v, nil
+		return keboola.SandboxWorkspaceType(v), nil
 	}
 }
 

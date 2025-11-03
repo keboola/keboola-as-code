@@ -56,7 +56,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	targetUpper := strings.ToUpper(o.TargetName)
 	host := workspace.Host
-	if workspace.Type == string(keboola.SandboxWorkspaceTypeSnowflake) {
+	if workspace.Type == keboola.SandboxWorkspaceTypeSnowflake {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
 
@@ -64,7 +64,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	var envContent strings.Builder
 	envVars := make(map[string]string)
 
-	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = workspace.Type
+	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = workspace.Type.String()
 	envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = workspace.Details.Connection.Schema
 	envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = workspace.Details.Connection.Warehouse
 	envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = workspace.Details.Connection.Database

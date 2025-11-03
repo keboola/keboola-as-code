@@ -435,7 +435,7 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 	for _, fixture := range sandboxes {
 		wg.Go(func() {
 			opts := make([]keboola.CreateSandboxWorkspaceOption, 0)
-			if keboola.SandboxWorkspaceSupportsSizes(keboola.SandboxWorkspaceType(fixture.Type)) && len(fixture.Size) > 0 {
+			if keboola.SandboxWorkspaceSupportsSizes(fixture.Type) && len(fixture.Size) > 0 {
 				opts = append(opts, keboola.WithSize(fixture.Size))
 			}
 
@@ -444,7 +444,7 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 				ctx,
 				defaultBranchID,
 				fixture.Name,
-				keboola.SandboxWorkspaceType(fixture.Type),
+				fixture.Type,
 				opts...,
 			)
 			if err != nil {
