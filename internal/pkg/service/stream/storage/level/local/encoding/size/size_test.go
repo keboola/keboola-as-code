@@ -186,8 +186,8 @@ func TestMeterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	clk.Advance(backupInterval)
 	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
 		content, err := os.ReadFile(backupPath)
-		require.NoError(t, err)
-		assert.Equal(t, "6", string(content))
+		require.NoError(collect, err)
+		assert.Equal(collect, "6", string(content))
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Data

@@ -153,8 +153,8 @@ func TestCounterWithBackup_SyncBackupPeriodically(t *testing.T) {
 	clk.Advance(backupInterval)
 	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
 		content, err := os.ReadFile(backupPath)
-		require.NoError(t, err)
-		assert.Equal(t, "5,2001-01-01T00:00:00.000Z,2002-01-01T00:00:00.000Z", string(content))
+		require.NoError(collect, err)
+		assert.Equal(collect, "5,2001-01-01T00:00:00.000Z,2002-01-01T00:00:00.000Z", string(content))
 	}, 5*time.Second, 10*time.Millisecond)
 
 	// Add 4
