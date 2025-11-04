@@ -13,7 +13,7 @@ import (
 
 type CreateOptions struct {
 	Name string
-	Type string
+	Type keboola.SandboxWorkspaceType
 	Size string
 }
 
@@ -48,7 +48,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		ctx,
 		branch.ID,
 		o.Name,
-		keboola.SandboxWorkspaceType(o.Type),
+		o.Type,
 		opts...,
 	)
 	if err != nil {
@@ -58,7 +58,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	workspace := w.SandboxWorkspace
 
 	logger.Infof(ctx, `Created the new workspace "%s" (%s).`, o.Name, w.Config.ID)
-	switch keboola.SandboxWorkspaceType(workspace.Type) {
+	switch workspace.Type {
 	case keboola.SandboxWorkspaceTypeSnowflake:
 		logger.Infof(
 			ctx,

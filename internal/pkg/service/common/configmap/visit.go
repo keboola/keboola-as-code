@@ -3,7 +3,7 @@ package configmap
 import (
 	"reflect"
 
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

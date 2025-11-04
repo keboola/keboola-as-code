@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 	"github.com/jonboulle/clockwork"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 	"github.com/xtaci/kcp-go/v5"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"

@@ -37,7 +37,7 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger.Info(ctx, "Found workspaces:")
 	for _, workspace := range workspaces {
-		if keboola.SandboxWorkspaceSupportsSizes(keboola.SandboxWorkspaceType(workspace.SandboxWorkspace.Type)) {
+		if keboola.SandboxWorkspaceSupportsSizes(workspace.SandboxWorkspace.Type) {
 			logger.Infof(ctx, "  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.SandboxWorkspace.Type, workspace.SandboxWorkspace.Size)
 		} else {
 			logger.Infof(ctx, "  %s (ID: %s, Type: %s)", workspace.Config.Name, workspace.Config.ID, workspace.SandboxWorkspace.Type)

@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 	"golang.org/x/sys/unix"
 )
 

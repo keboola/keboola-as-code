@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 	"github.com/jonboulle/clockwork"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"

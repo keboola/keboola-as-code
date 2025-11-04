@@ -48,9 +48,9 @@ type Schedule struct {
 }
 
 type Sandbox struct {
-	Name string `json:"name" validate:"required"`
-	Type string `json:"type" validate:"required"`
-	Size string `json:"size,omitempty"`
+	Name string                       `json:"name" validate:"required"`
+	Type keboola.SandboxWorkspaceType `json:"type" validate:"required"`
+	Size string                       `json:"size,omitempty"`
 }
 
 type Bucket struct {
@@ -172,7 +172,7 @@ func (r *ConfigRow) String() string {
 }
 
 func (s *Sandbox) String() string {
-	return s.Type + "_" + s.Size
+	return s.Type.String() + "_" + s.Size
 }
 
 func (b *Branch) ObjectName() string {
