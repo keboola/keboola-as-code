@@ -66,7 +66,7 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 
 	// Create metrics registry and exporter
 	registry := prometheus.NewRegistry()
-	exporter, err := export.New(export.WithRegisterer(registry), export.WithoutScopeInfo(), export.WithoutUnits())
+	exporter, err := export.New(export.WithRegisterer(registry), export.WithoutScopeInfo())
 	if err != nil {
 		return nil, err
 	}
