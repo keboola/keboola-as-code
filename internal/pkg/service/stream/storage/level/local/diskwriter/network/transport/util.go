@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 	"github.com/hashicorp/yamux"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"

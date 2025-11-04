@@ -6,7 +6,7 @@ import (
 	"io"
 	"runtime"
 
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 	fastGzip "github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"

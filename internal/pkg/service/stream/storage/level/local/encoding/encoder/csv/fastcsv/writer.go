@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/csvfmt"
 )
