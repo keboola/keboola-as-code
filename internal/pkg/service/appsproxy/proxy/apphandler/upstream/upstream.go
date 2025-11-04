@@ -205,6 +205,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 						u.manager.logger.Warnf(ctx, "upsream connect done with error: %v", err)
 					}
 
+					// app is not running, on K8S with kube-proxy
 					var opErr *net.OpError
 					if errors.As(err, &opErr) {
 						var syscallErr *os.SyscallError
@@ -213,6 +214,12 @@ func (u *AppUpstream) trace() chain.Middleware {
 								u.wakeup(ctx, err)
 							}
 						}
+					}
+
+					// app is not running, on K8S without kube-proxy
+					// this should be polished, app itself could also timeout
+					if ne, ok := err.(net.Error); ok && ne.Timeout() {
+						u.wakeup(ctx, err)
 					}
 				},
 			})
