@@ -51,6 +51,12 @@ func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, ap
 		}
 	}
 
+	if ne, ok := err.(net.Error); ok && ne.Timeout() {
+		pw.logger.Info(req.Context(), "app connection timeout, rendering spinner page")
+		pw.WriteSpinnerPage(w, req, app)
+		return
+	}
+
 	pw.WriteError(w, req, &app, svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed."))
 }
 
