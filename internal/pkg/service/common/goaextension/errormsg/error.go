@@ -8,6 +8,7 @@ import (
 
 	"github.com/umisama/go-regexpcache"
 	"goa.design/goa/v3/codegen"
+	"goa.design/goa/v3/codegen/service"
 	"goa.design/goa/v3/eval"
 	"goa.design/goa/v3/expr"
 	httpgen "goa.design/goa/v3/http/codegen"
@@ -22,10 +23,18 @@ func init() {
 
 func prepare(_ string, roots []eval.Root) error {
 	for _, root := range roots {
+		r, ok := root.(*expr.RootExpr)
+		if !ok {
+			continue // could be a plugin root expression
+		}
+
+		services := service.NewServicesData(r)
+		httpServices := httpgen.NewServicesData(services)
+
 		root.WalkSets(func(s eval.ExpressionSet) {
 			for _, e := range s {
 				if v, ok := e.(*expr.HTTPServiceExpr); ok {
-					httpData := httpgen.HTTPServices.Get(v.Name())
+					httpData := httpServices.Get(v.Name())
 
 					// Endpoint requests
 					for _, e := range httpData.Endpoints {
