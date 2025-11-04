@@ -25,7 +25,6 @@ type Config struct {
 	Upstream         Upstream          `configKey:"-" configUsage:"Configuration options for upstream"`
 	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
-	K8s              K8s               `configKey:"k8s"`
 }
 
 type API struct {
@@ -41,10 +40,6 @@ type SandboxesAPI struct {
 type Upstream struct {
 	HTTPTimeout time.Duration `configKey:"httpTimeout" configUsage:"Timeout for HTTP request on upstream"`
 	WsTimeout   time.Duration `configKey:"wsTimeout" configUsage:"Timeout for websocket request on upstream"`
-}
-
-type K8s struct {
-	Namespace string `configKey:"namespace" configUsage:"Kubernetes namespace for apps." validate:"required"`
 }
 
 func New() Config {
@@ -64,9 +59,6 @@ func New() Config {
 				Scheme: "http",
 				Host:   "localhost:8000",
 			},
-		},
-		K8s: K8s{
-			Namespace: "sandbox",
 		},
 	}
 }
