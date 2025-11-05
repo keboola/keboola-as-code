@@ -48,15 +48,19 @@ func New(ctx context.Context, d dependencies, cfg Config) *HTTPServer {
 	com.Use(middleware.OpenTelemetryExtractRoute())
 	tel := d.Telemetry()
 
-	// Build middleware chain
+	// Build middleware chain (server-level)
 	middlewares := []middleware.Middleware{
 		middleware.ContextTimeout(requestTimeout),
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
+	}
+	// Add service-specific middlewares before Logger so they can enrich context for logging.
+	middlewares = append(middlewares, cfg.BeforeLoggerMiddlewares...)
+	middlewares = append(middlewares,
 		middleware.Logger(server.logger),
 		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
 		middleware.OpenTelemetryApdex(tel.MeterProvider()),
-	}
+	)
 
 	// Add gzip compression if enabled
 	if cfg.EnableGzip {
@@ -64,8 +68,9 @@ func New(ctx context.Context, d dependencies, cfg Config) *HTTPServer {
 	}
 
 	handler := middleware.Wrap(com.Muxer, middlewares...)
-	// Mount endpoints
+	// Mount endpoints and service-specific middlewares
 	cfg.Mount(com)
+	server.logger.Infof(ctx, "mounted HTTP endpoints")
 	server.logger.Infof(ctx, "mounted HTTP endpoints")
 
 	// Prepare HTTP server

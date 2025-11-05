@@ -39,7 +39,9 @@ func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, cfg Config)
 
 			// Set additional request attributes
 			span.SetAttributes(spanRequestAttrs(&cfg, req)...)
-			ctx = context.WithValue(ctx, RequestCtxKey, req)
+			// Don't store req in RequestCtxKey here - let inner middlewares (ProjectAttributes, Telemetry)
+			// store the enriched request with all attributes. RequestInfo already set it initially.
+			// If inner middlewares don't set it, RequestInfo's original request will be used.
 			ctx = context.WithValue(ctx, RequestSpanCtxKey, span)
 
 			// Route and route params must be obtained by the OpenTelemetryRoute middleware registered to httptreemux.Muxer.

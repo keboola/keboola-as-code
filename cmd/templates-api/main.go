@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	templatesGenSvr "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/http/templates/server"
 	templatesGen "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
+	templatesMiddleware "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
@@ -131,16 +132,24 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 				return req.URL.Path != "/health-check"
 			}),
 		},
-		Mount: func(c httpserver.Components) {
-			// Create public request deps for each request
-			c.Muxer.Use(func(next http.Handler) http.Handler {
+		// Add service-specific middlewares before Logger so they can enrich context for logging.
+		// These middlewares run as server-level middlewares, before routing, so they enrich
+		// the context early. The Logger middleware then retrieves the enriched request from
+		// RequestCtxKey and includes the attributes in the log output.
+		BeforeLoggerMiddlewares: []middleware.Middleware{
+			// Inject PublicRequestScope early so Telemetry can use it.
+			func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					next.ServeHTTP(w, req.WithContext(context.WithValue(
 						req.Context(),
 						dependencies.PublicRequestScopeCtxKey, dependencies.NewPublicRequestScope(apiScp, req),
 					)))
 				})
-			})
+			},
+			templatesMiddleware.Telemetry(),
+		},
+		Mount: func(c httpserver.Components) {
+			// PublicRequestScope is now injected at server-level (BeforeLoggerMiddlewares).
 
 			// Create server with endpoints
 			docsFs := http.FS(openapi.Fs)

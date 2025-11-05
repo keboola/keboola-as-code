@@ -27,6 +27,14 @@ func Logger(baseLogger log.Logger) Middleware {
 			next.ServeHTTP(rw, req)
 
 			// Log
+			// Use updated request from context if available, to include ctxattrs injected by inner middlewares.
+			// Service-specific middlewares (e.g., Telemetry) store the enriched request
+			// in RequestCtxKey, allowing Logger to include those attributes in the log output.
+			ctx := req.Context()
+			if updatedReq, ok := RequestValue(ctx); ok && updatedReq != nil {
+				ctx = updatedReq.Context()
+			}
+
 			userAgent := req.Header.Get("User-Agent")
 			logger.
 				With(
@@ -36,7 +44,7 @@ func Logger(baseLogger log.Logger) Middleware {
 					attribute.String("http.client.ip", log.Sanitize(ip.From(req).String())),
 					attribute.String("http.client.agent", userAgent),
 				).
-				Infof(req.Context(), "req %d %s", rw.StatusCode, log.Sanitize(req.URL.String()))
+				Infof(ctx, "req %d %s", rw.StatusCode, log.Sanitize(req.URL.String()))
 		})
 	}
 }
