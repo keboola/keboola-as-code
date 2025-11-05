@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	apiServer "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/http/stream/server"
 	streamGen "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
+	streammw "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
@@ -40,17 +41,19 @@ func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) erro
 				return req.URL.Path != "/health-check"
 			}),
 		},
-		Mount: func(c httpserver.Components) {
-			// Create public request deps for each request
-			c.Muxer.Use(func(next http.Handler) http.Handler {
+		BeforeLoggerMiddlewares: []middleware.Middleware{
+			// Inject PublicRequestScope early so Telemetry can use it.
+			func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					next.ServeHTTP(w, req.WithContext(context.WithValue(
 						req.Context(),
 						dependencies.PublicRequestScopeCtxKey, dependencies.NewPublicRequestScope(d, req),
 					)))
 				})
-			})
-
+			},
+			streammw.Telemetry(),
+		},
+		Mount: func(c httpserver.Components) {
 			// Create server with endpoints
 			docsFs := http.FS(openapi.Fs)
 			swaggerFs := http.FS(swaggerui.SwaggerFS)
