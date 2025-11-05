@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 )
 
-const storageAPITokenHeader = "X-StorageAPI-Token"
+const storageAPITokenHeader = "X-StorageAPI-Token" //nolint:gosec // header name constant, not a credential
 
 // Telemetry enriches request context and active span with attributes used for observability.
 // It aims to run before access Logger so that logs include attributes.
@@ -59,22 +59,9 @@ func Telemetry() httpmw.Middleware {
 				}
 			}
 
-			// If no project scope yet, try to derive it early from token so access logger can include attrs.
-			if projectScope == nil {
-				token := req.Header.Get(storageAPITokenHeader)
-				if token != "" && publicScope != nil {
-					if prjScope, err := dependencies.NewProjectRequestScope(ctx, publicScope, token); err == nil {
-						projectScope = prjScope
-						// Store project scope in context so downstream code can use it.
-						ctx = context.WithValue(ctx, dependencies.ProjectRequestScopeCtxKey, prjScope)
-					}
-				}
-			}
-
 			// Collect attributes
 			var attrs []attribute.KeyValue
-			switch {
-			case projectScope != nil:
+			if projectScope != nil {
 				attrs = append(attrs, attribute.String("stream.projectId", projectScope.ProjectID().String()))
 			}
 

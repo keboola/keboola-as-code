@@ -13,7 +13,7 @@ import (
 	templatesDeps "github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 )
 
-const storageAPITokenHeader = "X-StorageAPI-Token"
+const storageAPITokenHeader = "X-StorageAPI-Token" //nolint:gosec // header name constant, not a credential
 
 // Telemetry returns an application middleware for the Templates service that enriches
 // request context and root span with internal attributes useful for observability/Datadog.
@@ -73,8 +73,7 @@ func Telemetry() httpmw.Middleware {
 			var attrs []attribute.KeyValue
 
 			// Request ID (available via RequestInfo in both scopes).
-			switch {
-			case projectScope != nil:
+			if projectScope != nil {
 				// Project specific attributes.
 				attrs = append(attrs, attribute.String("template.projectId", projectScope.ProjectID().String()))
 			}
