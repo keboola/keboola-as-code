@@ -8,9 +8,11 @@ import (
 
 	"github.com/umisama/go-regexpcache"
 	"goa.design/goa/v3/codegen"
+	"goa.design/goa/v3/codegen/generator"
 	"goa.design/goa/v3/codegen/service"
 	"goa.design/goa/v3/eval"
 	"goa.design/goa/v3/expr"
+	grpcgen "goa.design/goa/v3/grpc/codegen"
 	httpgen "goa.design/goa/v3/http/codegen"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -18,17 +20,38 @@ import (
 
 //nolint:gochecknoinits
 func init() {
-	codegen.RegisterPluginFirst("errormsg", "gen", prepare, generate)
+	generator.Generators = func(cmd string) ([]generator.Genfunc, error) {
+		switch cmd {
+		case "gen":
+			return []generator.Genfunc{generator.Service, Transport, generator.OpenAPI}, nil
+		case "example":
+			return []generator.Genfunc{generator.Example}, nil
+		default:
+			return nil, fmt.Errorf("unknown command %q", cmd)
+		}
+	}
+
+	codegen.RegisterPluginFirst("errormsg", "gen", nil, generate)
 }
 
-func prepare(_ string, roots []eval.Root) error {
+// Transport is a replacement for the default generator.Transport function.
+// Since Goa 3.21.0 there is no way to modify ValidateDef code using a plugin,
+// because the ServicesData instance which used to be global is now local to the
+// generator.Transport function. Because of that we have no choice but to replace it
+// with our own implementation which modifies httpServices before passing them to
+// httpgen.ServerFiles.
+func Transport(genpkg string, roots []eval.Root) ([]*codegen.File, error) {
+	var files []*codegen.File
 	for _, root := range roots {
 		r, ok := root.(*expr.RootExpr)
 		if !ok {
 			continue // could be a plugin root expression
 		}
 
+		// Create service data
 		services := service.NewServicesData(r)
+
+		// HTTP
 		httpServices := httpgen.NewServicesData(services)
 
 		root.WalkSets(func(s eval.ExpressionSet) {
@@ -50,8 +73,35 @@ func prepare(_ string, roots []eval.Root) error {
 				}
 			}
 		})
+
+		files = append(files, httpgen.ServerFiles(genpkg, httpServices)...)
+		files = append(files, httpgen.ClientFiles(genpkg, httpServices)...)
+		files = append(files, httpgen.ServerTypeFiles(genpkg, httpServices)...)
+		files = append(files, httpgen.ClientTypeFiles(genpkg, httpServices)...)
+		files = append(files, httpgen.PathFiles(httpServices)...)
+		files = append(files, httpgen.ClientCLIFiles(genpkg, httpServices)...)
+
+		// GRPC
+		grpcServices := grpcgen.NewServicesData(services)
+		files = append(files, grpcgen.ProtoFiles(genpkg, grpcServices)...)
+		files = append(files, grpcgen.ServerFiles(genpkg, grpcServices)...)
+		files = append(files, grpcgen.ClientFiles(genpkg, grpcServices)...)
+		files = append(files, grpcgen.ServerTypeFiles(genpkg, grpcServices)...)
+		files = append(files, grpcgen.ClientTypeFiles(genpkg, grpcServices)...)
+		files = append(files, grpcgen.ClientCLIFiles(genpkg, grpcServices)...)
+
+		// Add service data meta type imports
+		for _, f := range files {
+			if len(f.SectionTemplates) > 0 {
+				for _, s := range r.Services {
+					d := services.Get(s.Name)
+					service.AddServiceDataMetaTypeImports(f.SectionTemplates[0], s, d)
+					service.AddUserTypeImports(genpkg, f.SectionTemplates[0], d)
+				}
+			}
+		}
 	}
-	return nil
+	return files, nil
 }
 
 func generate(_ string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
