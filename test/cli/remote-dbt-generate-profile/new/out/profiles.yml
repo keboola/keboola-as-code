@@ -6,8 +6,9 @@ Profile1:
     target1:
       account: '{{ env_var("DBT_KBC_TARGET1_ACCOUNT") }}'
       database: '{{ env_var("DBT_KBC_TARGET1_DATABASE") }}'
-      password: '{{ env_var("DBT_KBC_TARGET1_PASSWORD") }}'
       schema: '{{ env_var("DBT_KBC_TARGET1_SCHEMA") }}'
       type: '{{ env_var("DBT_KBC_TARGET1_TYPE") }}'
       user: '{{ env_var("DBT_KBC_TARGET1_USER") }}'
       warehouse: '{{ env_var("DBT_KBC_TARGET1_WAREHOUSE") }}'
+      private_key: ""
+      password: '{{ env_var("DBT_KBC_TARGET1_PASSWORD") }}'

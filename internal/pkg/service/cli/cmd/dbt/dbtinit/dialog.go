@@ -20,10 +20,16 @@ func AskDbtInit(d *dialog.Dialogs, f Flags, branchKey keboola.BranchKey) (initOp
 		return initOp.DbtInitOptions{}, err
 	}
 
+	useKeyPair := true
+	if f.KeyPair.IsSet() {
+		useKeyPair = f.KeyPair.Value
+	}
+
 	return initOp.DbtInitOptions{
 		BranchKey:     branchKey,
 		TargetName:    targetName,
 		WorkspaceName: workspaceName,
+		UseKeyPair:    useKeyPair,
 	}, nil
 }
 

@@ -15,6 +15,7 @@ type Flags struct {
 	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	TargetName      configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
 	WorkspaceName   configmap.Value[string] `configKey:"workspace-name" configShorthand:"W" configUsage:"name of workspace to create"`
+	KeyPair         configmap.Value[bool]   `configKey:"key-pair" configUsage:"use Snowflake key-pair authentication (default: true)"`
 }
 
 func DefaultFlags() Flags {

@@ -2,6 +2,10 @@ package init
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -21,6 +25,7 @@ type DbtInitOptions struct {
 	BranchKey     keboola.BranchKey
 	TargetName    string
 	WorkspaceName string
+	UseKeyPair    bool
 }
 
 type dependencies interface {
@@ -48,13 +53,28 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("dbt init timeout"))
 	defer cancel()
 
+	// Optionally generate Snowflake key-pair
+	var privateKeyPEM string
+	var publicKeyPEM string
+	if o.UseKeyPair {
+		if privateKeyPEM, publicKeyPEM, err = generateRSAKeyPairPEM(); err != nil {
+			return errors.Errorf("cannot generate key-pair: %w", err)
+		}
+	}
+
 	// Create workspace
 	d.Logger().Info(ctx, `Creating a new workspace, please wait.`)
+	createOpts := make([]keboola.CreateSandboxWorkspaceOption, 0)
+	if o.UseKeyPair {
+		// Pass public key to enable key-pair authentication in the workspace
+		createOpts = append(createOpts, keboola.WithPublicKey(publicKeyPEM))
+	}
 	w, err := d.KeboolaProjectAPI().CreateSandboxWorkspace(
 		ctx,
 		branch.ID,
 		o.WorkspaceName,
 		keboola.SandboxWorkspaceTypeSnowflake,
+		createOpts...,
 	)
 	if err != nil {
 		return errors.Errorf("cannot create workspace: %w", err)
@@ -74,6 +94,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	// Generate profile
 	err = profile.Run(ctx, profile.Options{
 		TargetName: o.TargetName,
+		UseKeyPair: o.UseKeyPair,
 	}, d)
 	if err != nil {
 		return errors.Errorf("could not generate profile: %w", err)
@@ -94,6 +115,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		BranchKey:  o.BranchKey,
 		TargetName: o.TargetName,
 		Workspace:  workspace,
+		PrivateKey: privateKeyPEM,
 		Buckets:    buckets,
 	}, d)
 	if err != nil {
@@ -101,4 +123,30 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	}
 
 	return nil
+}
+
+// generateRSAKeyPairPEM generates a 2048-bit RSA key pair suitable for Snowflake key-pair auth.
+// The private key is encoded as PKCS#8 PEM without encryption, and the public key is PKIX PEM.
+func generateRSAKeyPairPEM() (string, string, error) {
+	// Generate private key
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Marshal private key to PKCS#8
+	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return "", "", err
+	}
+	privPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8Bytes})
+
+	// Marshal public key to PKIX
+	pubBytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	if err != nil {
+		return "", "", err
+	}
+	pubPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubBytes})
+
+	return string(privPEM), string(pubPEM), nil
 }
