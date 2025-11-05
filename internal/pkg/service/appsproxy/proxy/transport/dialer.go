@@ -6,7 +6,7 @@ import (
 )
 
 // DialTimeout specifies the default maximum connection initialization time.
-const DialTimeout = 2 * time.Second
+const DialTimeout = 100 * time.Millisecond
 
 // KeepAlive specifies the default interval between keep-alive probes.
 const KeepAlive = 15 * time.Second
