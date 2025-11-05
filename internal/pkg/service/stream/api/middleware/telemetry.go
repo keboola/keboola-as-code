@@ -76,7 +76,6 @@ func Telemetry() httpmw.Middleware {
 			switch {
 			case projectScope != nil:
 				attrs = append(attrs, attribute.String("stream.projectId", projectScope.ProjectID().String()))
-
 			}
 
 			// Try to add branch id if available after routing.
