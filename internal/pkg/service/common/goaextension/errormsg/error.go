@@ -15,6 +15,7 @@ import (
 	grpcgen "goa.design/goa/v3/grpc/codegen"
 	httpgen "goa.design/goa/v3/http/codegen"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -27,7 +28,7 @@ func init() {
 		case "example":
 			return []generator.Genfunc{generator.Example}, nil
 		default:
-			return nil, fmt.Errorf("unknown command %q", cmd)
+			return nil, errors.Errorf("unknown command %q", cmd)
 		}
 	}
 
