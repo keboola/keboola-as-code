@@ -63,9 +63,9 @@ func RegisterPlugin(cfg Config) {
 						// Import dependencies package
 						addPackageImport(s)
 					case "endpoint-method":
-						search := "{{- if .ServerStream }}\n"
-						replace := "deps := {{ dependenciesProvider . }}\n{{- if .ServerStream }}\n"
-						s.Source = strings.ReplaceAll(s.Source, search, replace)
+						search := "\n\n{{- if .ServerStream }}\n"
+						replace := "\ndeps := {{ dependenciesProvider . }}\n{{- if .ServerStream }}\n"
+						s.Source = strings.Replace(s.Source, search, replace, 1)
 						s.FuncMap["dependenciesProvider"] = cfg.DependenciesProviderFn
 
 						// Add dependencies to the service method call

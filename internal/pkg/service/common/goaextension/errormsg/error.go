@@ -14,6 +14,7 @@ import (
 	"goa.design/goa/v3/expr"
 	grpcgen "goa.design/goa/v3/grpc/codegen"
 	httpgen "goa.design/goa/v3/http/codegen"
+	jsonrpcgen "goa.design/goa/v3/jsonrpc/codegen"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -53,7 +54,7 @@ func Transport(genpkg string, roots []eval.Root) ([]*codegen.File, error) {
 		services := service.NewServicesData(r)
 
 		// HTTP
-		httpServices := httpgen.NewServicesData(services)
+		httpServices := httpgen.NewServicesData(services, r.API.HTTP)
 
 		root.WalkSets(func(s eval.ExpressionSet) {
 			for _, e := range s {
@@ -90,6 +91,16 @@ func Transport(genpkg string, roots []eval.Root) ([]*codegen.File, error) {
 		files = append(files, grpcgen.ServerTypeFiles(genpkg, grpcServices)...)
 		files = append(files, grpcgen.ClientTypeFiles(genpkg, grpcServices)...)
 		files = append(files, grpcgen.ClientCLIFiles(genpkg, grpcServices)...)
+
+		// JSON-RPC
+		jsonrpcServices := httpgen.NewServicesData(services, &r.API.JSONRPC.HTTPExpr)
+		files = append(files, jsonrpcgen.ServerFiles(genpkg, jsonrpcServices)...)
+		files = append(files, jsonrpcgen.ClientFiles(genpkg, jsonrpcServices)...)
+		files = append(files, jsonrpcgen.ServerTypeFiles(genpkg, jsonrpcServices)...)
+		files = append(files, jsonrpcgen.ClientTypeFiles(genpkg, jsonrpcServices)...)
+		files = append(files, jsonrpcgen.PathFiles(jsonrpcServices)...)
+		files = append(files, jsonrpcgen.ClientCLIFiles(genpkg, jsonrpcServices)...)
+		files = append(files, jsonrpcgen.SSEServerFiles(genpkg, jsonrpcServices)...)
 
 		// Add service data meta type imports
 		for _, f := range files {
