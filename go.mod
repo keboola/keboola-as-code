@@ -74,7 +74,7 @@ require (
 	github.com/valyala/fasthttp v1.68.0
 	github.com/valyala/fastjson v1.6.4
 	github.com/writeas/go-strip-markdown/v2 v2.1.1
-	github.com/xtaci/kcp-go/v5 v5.6.25
+	github.com/xtaci/kcp-go/v5 v5.6.26
 	go.etcd.io/etcd/api/v3 v3.6.5
 	go.etcd.io/etcd/client/v3 v3.6.5
 	go.etcd.io/etcd/tests/v3 v3.6.5
