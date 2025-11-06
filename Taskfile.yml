@@ -20,15 +20,15 @@ tasks:
 
   generate-appsproxy-api:
     cmds:
-      - SERVICE_NAME=appsproxy bash ./scripts/generate-api.sh
+      - SERVICE_NAME=appsproxy PACKAGE_NAME=apps_proxy bash ./scripts/generate-api.sh
 
   generate-templates-api:
     cmds:
-      - SERVICE_NAME=templates bash ./scripts/generate-api.sh
+      - SERVICE_NAME=templates PACKAGE_NAME=templates bash ./scripts/generate-api.sh
 
   generate-stream-api:
     cmds:
-      - SERVICE_NAME=stream bash ./scripts/generate-api.sh
+      - SERVICE_NAME=stream PACKAGE_NAME=stream bash ./scripts/generate-api.sh
 
   build:
     cmds:
