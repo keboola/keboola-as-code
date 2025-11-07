@@ -321,7 +321,12 @@ func (f *JsonnetFile) ToJSONRawFile() (*RawFile, error) {
 }
 
 func (f *JsonnetFile) ToRawFile() (*RawFile, error) {
-	file := NewRawFile(f.path, jsonnet.FormatAst(f.Content))
+	jsonContent, err := jsonnet.FormatNode(f.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	file := NewRawFile(f.path, jsonContent)
 	file.SetDescription(f.desc)
 	file.AddTag(f.AllTags()...)
 	return file, nil

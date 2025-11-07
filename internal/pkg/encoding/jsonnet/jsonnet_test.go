@@ -41,7 +41,7 @@ func TestFormat(t *testing.T) {
 	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetStr) //nolint: testifylint
 }
 
-func TestFormatAst(t *testing.T) {
+func TestFormatNode(t *testing.T) {
 	t.Parallel()
 	astNode := &ast.Object{
 		Fields: ast.ObjectFields{
@@ -53,7 +53,8 @@ func TestFormatAst(t *testing.T) {
 			},
 		},
 	}
-	jsonnetStr := FormatAst(astNode)
+	jsonnetStr, err := FormatNode(astNode)
+	require.NoError(t, err)
 	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetStr) //nolint: testifylint
 }
 

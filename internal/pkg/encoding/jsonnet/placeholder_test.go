@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConfigIdPlaceholder(t *testing.T) {
@@ -72,7 +73,8 @@ func TestReplaceFuncCallPlaceholders(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		replaced := FormatAst(ReplacePlaceholders(&ast.LiteralString{Value: c.input}))
+		replaced, err := FormatNode(ReplacePlaceholders(&ast.LiteralString{Value: c.input}))
+		require.NoError(t, err)
 		assert.Equal(t, c.expected+"\n", replaced, "%+v", i)
 	}
 }
