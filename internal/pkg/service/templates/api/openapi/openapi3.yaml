@@ -1,4 +1,3 @@
----
 openapi: 3.0.3
 info:
     title: Templates Service
@@ -116,13 +115,13 @@ paths:
                                       created:
                                         date: "2022-04-28T14:20:04+00:00"
                                         tokenId: "245941"
-                                      instanceId: abc123
+                                      instanceId: V1StGXR8IZ5jdHi6BAmyT
                                       mainConfig:
                                         componentId: keboola.orchestrator
                                         configId: "7954825835"
                                       name: My Instance
                                       repositoryName: keboola
-                                      templateId: aa
+                                      templateId: my-template
                                       updated:
                                         date: "2022-04-28T14:20:04+00:00"
                                         tokenId: "245941"
@@ -251,7 +250,7 @@ paths:
                                 created:
                                     date: "2022-04-28T14:20:04+00:00"
                                     tokenId: "245941"
-                                instanceId: abc123
+                                instanceId: V1StGXR8IZ5jdHi6BAmyT
                                 mainConfig:
                                     componentId: keboola.orchestrator
                                     configId: "7954825835"
@@ -264,7 +263,7 @@ paths:
                                     defaultVersion: v1.2.3
                                     deprecated: false
                                     description: Full workflow to load all user accounts from the Service.
-                                    id: aa
+                                    id: my-template
                                     name: My Template
                                 templateId: abc123
                                 updated:
@@ -339,7 +338,7 @@ paths:
                                 created:
                                     date: "2022-04-28T14:20:04+00:00"
                                     tokenId: "245941"
-                                instanceId: abc123
+                                instanceId: V1StGXR8IZ5jdHi6BAmyT
                                 mainConfig:
                                     componentId: keboola.orchestrator
                                     configId: "7954825835"
@@ -352,7 +351,7 @@ paths:
                                     defaultVersion: v1.2.3
                                     deprecated: false
                                     description: Full workflow to load all user accounts from the Service.
-                                    id: aa
+                                    id: my-template
                                     name: My Template
                                 templateId: abc123
                                 updated:

@@ -38,7 +38,7 @@ finalize() {
   rm -rf ./gen
   rm -rf ./goa*
   rm -rf ./$API_PKG/gen/http/cli
-  rm -rf ./$API_PKG/gen/http/$SERVICE_NAME/client
+  rm -rf ./$API_PKG/gen/http/$PACKAGE_NAME/client
 }
 
 echo "Generating $SERVICE_NAME API ..."
