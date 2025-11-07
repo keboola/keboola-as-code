@@ -1,6 +1,6 @@
 module github.com/keboola/keboola-as-code
 
-go 1.25.3
+go 1.25.4
 
 replace github.com/google/go-jsonnet => github.com/keboola/go-jsonnet v0.20.1-0.20251107122148-3958bfe6bade
 
