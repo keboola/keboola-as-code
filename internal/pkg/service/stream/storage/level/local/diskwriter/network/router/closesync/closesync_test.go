@@ -47,6 +47,22 @@ func TestSourceAndCoordinatorNodes(t *testing.T) {
 			etcdhelper.AssertKVsString(c, client, expected)
 		}, 10*time.Second, 10*time.Millisecond)
 	}
+	assertClosed := func(t *testing.T, ch <-chan struct{}) {
+		t.Helper()
+		select {
+		case <-ch:
+		case <-time.After(1 * time.Millisecond):
+			assert.Fail(t, "channel should be closed")
+		}
+	}
+	assertNotClosed := func(t *testing.T, ch <-chan struct{}) {
+		t.Helper()
+		select {
+		case <-ch:
+			assert.Fail(t, "channel shouldn't be closed")
+		default:
+		}
+	}
 
 	// Check initial etcd state
 	waitForEtcdState(t, `
@@ -96,69 +112,34 @@ runtime/closesync/source/node/source-node-3 (lease)
 `)
 
 	// Revisions <= 100 are unblocked
-	select {
-	case <-coordinator.WaitForRevisionChan(99):
-	default:
-		assert.Fail(t, "channel should be closed")
-	}
-	select {
-	case <-coordinator.WaitForRevisionChan(100):
-	default:
-		assert.Fail(t, "channel should be closed")
-	}
+	assertClosed(t, coordinator.WaitForRevisionChan(99))
+	assertClosed(t, coordinator.WaitForRevisionChan(100))
 
 	// Revisions > 100 are blocked
 	wait101 := coordinator.WaitForRevisionChan(101)
 	wait102 := coordinator.WaitForRevisionChan(102)
 	wait103 := coordinator.WaitForRevisionChan(103)
-	select {
-	case <-wait101:
-		assert.Fail(t, "channel shouldn't be closed")
-	case <-wait102:
-		assert.Fail(t, "channel shouldn't be closed")
-	case <-wait103:
-		assert.Fail(t, "channel shouldn't be closed")
-	default:
-	}
+	assertNotClosed(t, wait101)
+	assertNotClosed(t, wait102)
+	assertNotClosed(t, wait103)
 
 	// Unblock 101
 	require.NoError(t, s1.Notify(ctx, 200))
 	waitForMinRevInUse(t, 101)
-	select {
-	case <-wait101:
-	default:
-		assert.Fail(t, "channel should be closed")
-	}
-	select {
-	case <-wait102:
-		assert.Fail(t, "channel shouldn't be closed")
-	case <-wait103:
-		assert.Fail(t, "channel shouldn't be closed")
-	default:
-	}
+	assertClosed(t, wait101)
+	assertNotClosed(t, wait102)
+	assertNotClosed(t, wait103)
 
 	// Unblock 102
 	require.NoError(t, s2.Notify(ctx, 200))
 	waitForMinRevInUse(t, 102)
-	select {
-	case <-wait102:
-	default:
-		assert.Fail(t, "channel should be closed")
-	}
-	select {
-	case <-wait103:
-		assert.Fail(t, "channel shouldn't be closed")
-	default:
-	}
+	assertClosed(t, wait102)
+	assertNotClosed(t, wait103)
 
 	// Unblock 103
 	require.NoError(t, s3.Notify(ctx, 200))
 	waitForMinRevInUse(t, 200)
-	select {
-	case <-wait103:
-	default:
-		assert.Fail(t, "channel should be closed")
-	}
+	assertClosed(t, wait103)
 
 	// Shutdown
 	d.Process().Shutdown(ctx, errors.New("bye bye"))
