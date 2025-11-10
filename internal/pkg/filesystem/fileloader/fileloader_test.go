@@ -155,7 +155,8 @@ func (*testCases) TestFileLoader_ReadJsonnetFile(t *testing.T, fs filesystem.Fs,
 	file, err := fs.FileLoader().ReadJsonnetFile(context.Background(), filesystem.NewFileDef(filePath))
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
-	jsonnetCode := jsonnet.FormatAst(file.Content)
+	jsonnetCode, err := jsonnet.FormatNode(file.Content)
+	assert.NoError(t, err)
 	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetCode)
 	logger.AssertJSONMessages(t, `{"level":"debug","message":"Loaded \"file.txt\""}`)
 }

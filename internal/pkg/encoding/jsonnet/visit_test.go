@@ -55,5 +55,7 @@ func TestVisitAst(t *testing.T) {
 		}
 	})
 
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), FormatAst(node))
+	content, err := FormatNode(node)
+	require.NoError(t, err)
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), content)
 }

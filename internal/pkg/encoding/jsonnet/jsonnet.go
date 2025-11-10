@@ -74,13 +74,13 @@ func Format(code string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return FormatAst(node), nil
+	return FormatNode(node)
 }
 
-func FormatAst(node ast.Node) string {
+func FormatNode(node ast.Node) (string, error) {
 	node = ast.Clone(node)
 	ReplacePlaceholdersRecursive(node)
-	return formatter.FormatAst(node, nil, DefaultOptions())
+	return formatter.FormatNode(node, nil, DefaultOptions())
 }
 
 func ToAst(code, fileName string) (ast.Node, error) {

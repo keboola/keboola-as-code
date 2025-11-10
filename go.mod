@@ -1,10 +1,10 @@
 module github.com/keboola/keboola-as-code
 
-go 1.25.3
+go 1.25.4
 
-replace github.com/google/go-jsonnet => github.com/keboola/go-jsonnet v0.20.1-0.20240430105602-71646d8d4fa9
+replace github.com/google/go-jsonnet => github.com/keboola/go-jsonnet v0.20.1-0.20251107122148-3958bfe6bade
 
-replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-proxy/v7 v7.0.0-20250325124709-f4d482276c37
+replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-proxy/v7 v7.0.0-20251107090355-631a3f56b65f
 
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
@@ -53,7 +53,7 @@ require (
 	github.com/miekg/dns v1.1.68
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/oauth2-proxy/mockoidc v0.0.0-20240214162133-caebfff84d25
-	github.com/oauth2-proxy/oauth2-proxy/v7 v7.9.0
+	github.com/oauth2-proxy/oauth2-proxy/v7 v7.12.0
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/pquerna/cachecontrol v0.2.0
 	github.com/prometheus/client_golang v1.23.2
@@ -114,8 +114,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
 	github.com/icholy/gomajor v0.15.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/onsi/ginkgo/v2 v2.23.4 // indirect
-	github.com/onsi/gomega v1.37.0 // indirect
 	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
@@ -297,7 +295,7 @@ require (
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/go-licenses/v2 v2.0.1 // indirect
 	github.com/google/licenseclassifier/v2 v2.0.0 // indirect
-	github.com/google/pprof v0.0.0-20250501235452-c0086092b71a // indirect
+	github.com/google/pprof v0.0.0-20250630185457-6e76a2b096b5 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/wire v0.7.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
@@ -389,7 +387,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gotest.tools/gotestsum v1.13.0 // indirect
-	k8s.io/apimachinery v0.33.0 // indirect
+	k8s.io/apimachinery v0.33.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	mvdan.cc/gofumpt v0.9.2 // indirect
 )

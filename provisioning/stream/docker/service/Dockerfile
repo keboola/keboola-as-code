@@ -1,5 +1,5 @@
 # Build container
-FROM golang:1.25.3-alpine3.22 AS buildContainer
+FROM golang:1.25.4-alpine3.22 AS buildContainer
 RUN apk add -U --no-cache bash curl
 
 # Install Task
