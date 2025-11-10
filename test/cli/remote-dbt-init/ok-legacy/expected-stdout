@@ -1,0 +1,8 @@
+Creating a new workspace, please wait.
+Created the new workspace "dbt_source".
+Profile stored in "profiles.yml".
+Sources stored in "models/_sources" directory.
+Environment variables for dbt target "target1" have been written to ".env.local".
+To load the variables into your current shell session, run:
+  source .env.local
+Or use a tool like direnv.

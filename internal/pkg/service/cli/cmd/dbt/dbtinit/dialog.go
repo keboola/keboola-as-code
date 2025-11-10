@@ -20,10 +20,10 @@ func AskDbtInit(d *dialog.Dialogs, f Flags, branchKey keboola.BranchKey) (initOp
 		return initOp.DbtInitOptions{}, err
 	}
 
-	useKeyPair := true
-	if f.KeyPair.IsSet() {
-		useKeyPair = f.KeyPair.Value
-	}
+	// Use the flag value - default is set to true in DefaultFlags()
+	// If flag is explicitly set (including to false), IsSet() will be true and Value will reflect the user's choice
+	// If flag is not set, IsSet() will be false but Value will be true (the default)
+	useKeyPair := f.KeyPair.Value
 
 	return initOp.DbtInitOptions{
 		BranchKey:     branchKey,

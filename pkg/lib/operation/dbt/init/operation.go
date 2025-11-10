@@ -116,6 +116,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		TargetName: o.TargetName,
 		Workspace:  workspace,
 		PrivateKey: privateKeyPEM,
+		UseKeyPair: o.UseKeyPair,
 		Buckets:    buckets,
 	}, d)
 	if err != nil {

@@ -4,7 +4,7 @@ Usage:
   kbc dbt init [flags]
 
 Flags:
-      --key-pair                   use Snowflake key-pair authentication (default: true)
+      --key-pair                   use Snowflake key-pair authentication (default true)
   -H, --storage-api-host string    storage API host, eg. "connection.keboola.com"
   -t, --storage-api-token string   storage API token from your project
   -T, --target-name string         target name of the profile

@@ -22,5 +22,7 @@ func AskGenerateEnv(branchKey keboola.BranchKey, d *dialog.Dialogs, allWorkspace
 		BranchKey:  branchKey,
 		TargetName: targetName,
 		Workspace:  workspace.SandboxWorkspace,
+		UseKeyPair: false, // For existing workspaces, we don't have the private key
+		PrivateKey: "",    // Private key is only available when workspace is first created
 	}, nil
 }

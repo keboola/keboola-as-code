@@ -21,6 +21,7 @@ type Options struct {
 	TargetName string
 	Workspace  *keboola.SandboxWorkspace
 	PrivateKey string
+	UseKeyPair bool                 // Whether key-pair authentication was requested (only add private key if true)
 	Buckets    []listbuckets.Bucket // optional, set if the buckets have been loaded in a parent command
 }
 
@@ -84,7 +85,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 	envVars[fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper)] = host
 	envVars[fmt.Sprintf("DBT_KBC_%s_USER", targetUpper)] = workspace.User
-	if len(o.PrivateKey) > 0 {
+	// Only add private key if key-pair authentication was explicitly requested
+	// This ensures password-only workspaces don't get a private key in .env.local
+	if o.UseKeyPair && len(o.PrivateKey) > 0 {
 		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY", targetUpper)] = o.PrivateKey
 	}
 	if len(workspace.Password) > 0 {
