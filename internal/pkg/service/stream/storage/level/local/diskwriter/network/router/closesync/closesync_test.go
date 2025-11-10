@@ -51,7 +51,7 @@ func TestSourceAndCoordinatorNodes(t *testing.T) {
 		t.Helper()
 		select {
 		case <-ch:
-		default:
+		case <-time.After(1 * time.Millisecond):
 			assert.Fail(t, "channel should be closed")
 		}
 	}
