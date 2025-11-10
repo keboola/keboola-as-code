@@ -42,7 +42,7 @@ require (
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250422071622-41a5d5547c43
-	github.com/keboola/go-utils v1.4.0
+	github.com/keboola/go-utils v1.4.1
 	github.com/keboola/keboola-sdk-go/v2 v2.6.6
 	github.com/klauspost/compress v1.18.1
 	github.com/klauspost/pgzip v1.2.6
@@ -93,7 +93,7 @@ require (
 	goa.design/goa/v3 v3.22.6
 	goa.design/plugins/v3 v3.22.6
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
-	golang.org/x/sync v0.17.0
+	golang.org/x/sync v0.18.0
 	google.golang.org/grpc v1.76.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.21
@@ -167,7 +167,7 @@ require (
 	golang.org/x/crypto v0.43.0
 	golang.org/x/mod v0.29.0 // indirect
 	golang.org/x/net v0.46.0
-	golang.org/x/sys v0.37.0
+	golang.org/x/sys v0.38.0
 	golang.org/x/term v0.36.0
 	golang.org/x/text v0.30.0
 	golang.org/x/time v0.14.0 // indirect
