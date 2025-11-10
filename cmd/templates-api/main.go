@@ -8,6 +8,7 @@ import (
 
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/DataDog/dd-trace-go/v2/profiler"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -21,7 +22,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	templatesGenSvr "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/http/templates/server"
 	templatesGen "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
-	templatesMiddleware "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
@@ -137,7 +137,7 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 		// the context early. The Logger middleware then retrieves the enriched request from
 		// RequestCtxKey and includes the attributes in the log output.
 		BeforeLoggerMiddlewares: []middleware.Middleware{
-			// Inject PublicRequestScope early so Telemetry can use it.
+			// Inject PublicRequestScope early so ProjectScope middleware can use it.
 			func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					next.ServeHTTP(w, req.WithContext(context.WithValue(
@@ -146,7 +146,38 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 					)))
 				})
 			},
-			templatesMiddleware.Telemetry(),
+			// ProjectScope middleware: Creates ProjectRequestScope early from token header
+			// and enriches context with project-level attributes.
+			// This allows downstream middlewares (especially Logger) to access project attributes.
+			middleware.ProjectScope(middleware.ProjectScopeConfig{
+				ProjectScopeCtxKey: dependencies.ProjectRequestScopeCtxKey,
+				PublicScopeCtxKey:  dependencies.PublicRequestScopeCtxKey,
+				TokenHeader:        "X-StorageAPI-Token",
+				CreateProjectScope: func(ctx context.Context, publicScope any, token string) (any, error) {
+					pubScp, ok := publicScope.(dependencies.PublicRequestScope)
+					if !ok {
+						return nil, errors.New("invalid public scope type")
+					}
+					return dependencies.NewProjectRequestScope(ctx, pubScp, token)
+				},
+				AttributeExtractor: func(projectScope any) []attribute.KeyValue {
+					if ps, ok := projectScope.(dependencies.ProjectRequestScope); ok {
+						return []attribute.KeyValue{
+							attribute.String("template.projectId", ps.ProjectID().String()),
+						}
+					}
+					return nil
+				},
+			}),
+			// Telemetry middleware: Enriches context and span with route-specific attributes.
+			middleware.Telemetry(
+				middleware.RouteAttributes(
+					middleware.URLPathExtractor("/v1/project/", 0),
+					map[string]string{
+						"branchId": "template.branch.id",
+					},
+				),
+			),
 		},
 		Mount: func(c httpserver.Components) {
 			// PublicRequestScope is now injected at server-level (BeforeLoggerMiddlewares).

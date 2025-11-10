@@ -4,17 +4,18 @@ import (
 	"context"
 	"net/http"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	apiServer "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/http/stream/server"
 	streamGen "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
-	streammw "github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 
@@ -42,7 +43,7 @@ func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) erro
 			}),
 		},
 		BeforeLoggerMiddlewares: []middleware.Middleware{
-			// Inject PublicRequestScope early so Telemetry can use it.
+			// Inject PublicRequestScope early so ProjectScope middleware can use it.
 			func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					next.ServeHTTP(w, req.WithContext(context.WithValue(
@@ -51,7 +52,38 @@ func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) erro
 					)))
 				})
 			},
-			streammw.Telemetry(),
+			// ProjectScope middleware: Creates ProjectRequestScope early from token header
+			// and enriches context with project-level attributes.
+			// This allows downstream middlewares (especially Logger) to access project attributes.
+			middleware.ProjectScope(middleware.ProjectScopeConfig{
+				ProjectScopeCtxKey: dependencies.ProjectRequestScopeCtxKey,
+				PublicScopeCtxKey:  dependencies.PublicRequestScopeCtxKey,
+				TokenHeader:        "X-StorageAPI-Token",
+				CreateProjectScope: func(ctx context.Context, publicScope any, token string) (any, error) {
+					pubScp, ok := publicScope.(dependencies.PublicRequestScope)
+					if !ok {
+						return nil, errors.New("invalid public scope type")
+					}
+					return dependencies.NewProjectRequestScope(ctx, pubScp, token)
+				},
+				AttributeExtractor: func(projectScope any) []attribute.KeyValue {
+					if ps, ok := projectScope.(dependencies.ProjectRequestScope); ok {
+						return []attribute.KeyValue{
+							attribute.String("stream.projectId", ps.ProjectID().String()),
+						}
+					}
+					return nil
+				},
+			}),
+			// Telemetry middleware: Enriches context and span with route-specific attributes.
+			middleware.Telemetry(
+				middleware.RouteAttributes(
+					middleware.TreeMuxParamExtractor,
+					map[string]string{
+						"branchId": "stream.branch.id",
+					},
+				),
+			),
 		},
 		Mount: func(c httpserver.Components) {
 			// Create server with endpoints

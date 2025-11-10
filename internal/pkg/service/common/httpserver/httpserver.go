@@ -71,7 +71,6 @@ func New(ctx context.Context, d dependencies, cfg Config) *HTTPServer {
 	// Mount endpoints and service-specific middlewares
 	cfg.Mount(com)
 	server.logger.Infof(ctx, "mounted HTTP endpoints")
-	server.logger.Infof(ctx, "mounted HTTP endpoints")
 
 	// Prepare HTTP server
 	server.Server = &http.Server{
