@@ -1,0 +1,1 @@
+dbt generate env -T target1 --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --workspace-id %%TEST_SANDBOX_FOO_ID%%
