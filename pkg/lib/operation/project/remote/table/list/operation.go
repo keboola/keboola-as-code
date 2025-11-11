@@ -39,10 +39,7 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger.Info(ctx, "Found tables:")
 	for _, table := range tables {
-		bucketName := ""
-		if table.Bucket != nil {
-			bucketName = table.Bucket.BucketID.String()
-		}
+		bucketName := table.Bucket.BucketID.String()
 		logger.Infof(ctx, "  %s (Name: %s, Bucket: %s)", table.TableID, table.DisplayName, bucketName)
 	}
 
