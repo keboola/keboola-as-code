@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	spinnerRetryAfter = 5 * time.Second
-	spinnerJSRefresh  = 3 * time.Second
+	spinnerRetryAfter = 3 * time.Second
+	spinnerJSRefresh  = 1 * time.Second
 )
 
 type SpinnerPageData struct {
