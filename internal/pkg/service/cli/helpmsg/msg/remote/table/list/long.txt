@@ -1,0 +1,3 @@
+List all tables in the default branch of the project.
+
+Tables are displayed with their ID, name, and bucket information.
