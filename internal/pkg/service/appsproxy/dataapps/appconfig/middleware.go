@@ -49,12 +49,30 @@ func Middleware(configLoader Loader, host string) middleware.Middleware {
 
 				ctx = context.WithValue(ctx, appConfigCtxKey, result)
 				if err == nil {
-					ctx = ctxattr.ContextWith(ctx, appConfig.Telemetry()...)
+					// Enrich context with telemetry attributes for downstream operations.
+					telemetryAttrs := appConfig.Telemetry()
 					// Duplicate app ID in the event attributes under the same key as sandboxes service.
-					ctx = ctxattr.ContextWith(ctx, attribute.String("context.appId", string(appID)))
-				}
+					telemetryAttrs = append(telemetryAttrs, attribute.String("context.appId", string(appID)))
 
-				req = req.WithContext(ctx)
+					ctx = ctxattr.ContextWith(ctx, telemetryAttrs...)
+
+					// Enrich active request span if present.
+					if span, found := middleware.RequestSpan(ctx); found {
+						span.SetAttributes(telemetryAttrs...)
+					}
+
+					// Update request with enriched context.
+					req = req.WithContext(ctx)
+
+					// Make the updated request discoverable by outer middlewares (e.g., access logger).
+					// Store the FINAL updated request (after all context updates) in RequestCtxKey.
+					// This allows Logger middleware to retrieve the request with all attributes.
+					ctx = context.WithValue(ctx, middleware.RequestCtxKey, req)
+					req = req.WithContext(ctx)
+				} else {
+					// Even if there's an error, update the request with the result for error handling.
+					req = req.WithContext(ctx)
+				}
 			}
 
 			next.ServeHTTP(w, req)
