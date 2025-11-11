@@ -69,6 +69,9 @@ func Middleware(configLoader Loader, host string) middleware.Middleware {
 					// This allows Logger middleware to retrieve the request with all attributes.
 					ctx = context.WithValue(ctx, middleware.RequestCtxKey, req)
 					req = req.WithContext(ctx)
+				} else {
+					// Even if there's an error, update the request with the result for error handling.
+					req = req.WithContext(ctx)
 				}
 			}
 
