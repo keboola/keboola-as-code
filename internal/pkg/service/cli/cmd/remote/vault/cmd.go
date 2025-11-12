@@ -11,9 +11,10 @@ import (
 
 func Commands(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `vault`,
-		Short: helpmsg.Read(`remote/vault/short`),
-		Long:  helpmsg.Read(`remote/vault/long`),
+		Use:    `vault`,
+		Short:  helpmsg.Read(`remote/vault/short`),
+		Long:   helpmsg.Read(`remote/vault/long`),
+		Hidden: true,
 	}
 	cmd.AddCommand(
 		create.Command(p),
