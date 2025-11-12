@@ -76,7 +76,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				prj.Manifest().SetVaultVariables(*variables)
+				prj.ProjectManifest().SetVaultVariables(*variables)
 				logger.Infof(cmd.Context(), "Fetched %d vault variables", len(*variables))
 			}
 

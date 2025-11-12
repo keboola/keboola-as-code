@@ -52,16 +52,10 @@ func Command(p dependencies.Provider) *cobra.Command {
 			} else if f.Name.Value != "" {
 				variableName = f.Name.Value
 			} else {
-				variableName, err = d.Dialogs().Ask(&AskVariableName{})
-				if err != nil {
-					return err
-				}
+				variableName, _ = d.Dialogs().Ask(AskVariableName())
 			}
 
-			variableValue, err := d.Dialogs().Ask(&AskVariableValue{})
-			if err != nil {
-				return err
-			}
+			variableValue, _ := d.Dialogs().Ask(AskVariableValue())
 
 			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "remote-vault-create")
 
@@ -79,9 +73,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			logger.Infof(cmd.Context(), "Vault variable \"%s\" created with hash: %s", variableName, variable.Hash)
 
-			prj.Manifest().AddVaultVariable(variable)
+			prj.ProjectManifest().AddVaultVariable(variable)
 
-			if _, err := saveManifest.Run(cmd.Context(), prj.Manifest(), prj.Fs(), d); err != nil {
+			if _, err := saveManifest.Run(cmd.Context(), prj.ProjectManifest(), prj.Fs(), d); err != nil {
 				return errors.Errorf("failed to save manifest: %w", err)
 			}
 

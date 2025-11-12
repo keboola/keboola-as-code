@@ -52,10 +52,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			} else if f.Name.Value != "" {
 				variableName = f.Name.Value
 			} else {
-				variableName, err = d.Dialogs().Ask(&AskVariableName{})
-				if err != nil {
-					return err
-				}
+				variableName, _ = d.Dialogs().Ask(AskVariableName())
 			}
 
 			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "remote-vault-delete")
@@ -81,14 +78,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			logger.Infof(cmd.Context(), "Deleting vault variable \"%s\" (hash: %s)...", variableName, targetVariable.Hash)
 
-			if err := d.KeboolaProjectAPI().DeleteVariableRequest(targetVariable.Hash).Send(cmd.Context()); err != nil {
+			if _, err := d.KeboolaProjectAPI().DeleteVariableRequest(targetVariable.Hash).Send(cmd.Context()); err != nil {
 				return errors.Errorf("failed to delete vault variable: %w", err)
 			}
 
 			logger.Infof(cmd.Context(), "Vault variable \"%s\" deleted successfully.", variableName)
 
-			if prj.Manifest().RemoveVaultVariable(targetVariable.Hash) {
-				if _, err := saveManifest.Run(cmd.Context(), prj.Manifest(), prj.Fs(), d); err != nil {
+			if prj.ProjectManifest().RemoveVaultVariable(targetVariable.Hash) {
+				if _, err := saveManifest.Run(cmd.Context(), prj.ProjectManifest(), prj.Fs(), d); err != nil {
 					return errors.Errorf("failed to save manifest: %w", err)
 				}
 				logger.Info(cmd.Context(), "Manifest updated successfully.")
