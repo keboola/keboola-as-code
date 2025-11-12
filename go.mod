@@ -405,3 +405,5 @@ tool (
 	gotest.tools/gotestsum
 	mvdan.cc/gofumpt
 )
+
+replace github.com/keboola/keboola-sdk-go/v2 => github.com/keboola/keboola-sdk-go/v2 v2.6.7-0.20251112071047-336eaa503e98

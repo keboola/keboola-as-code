@@ -1,0 +1,7 @@
+Create a new vault variable in the project.
+
+The command will interactively prompt for the variable name and value,
+or you can provide the name as an argument.
+
+The variable will be created in Keboola Connection and automatically
+added to the local manifest file.

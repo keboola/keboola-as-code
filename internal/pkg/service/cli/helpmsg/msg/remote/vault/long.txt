@@ -1,0 +1,4 @@
+Manage vault variables in the project.
+
+Vault variables are secure key-value pairs stored in Keboola Connection
+that can be used across your project configurations.
