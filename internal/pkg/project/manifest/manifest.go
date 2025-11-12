@@ -46,11 +46,12 @@ type Manifest struct {
 	// allowTargetENV allows usage KBC_PROJECT_ID and KBC_BRANCH_ID envs to override manifest values
 	allowTargetENV bool
 	// mapping between manifest representation and memory representation
-	mapping      []mappingItem
-	project      Project
-	naming       naming.Template
-	filter       model.ObjectsFilter
-	repositories []model.TemplateRepository
+	mapping        []mappingItem
+	project        Project
+	naming         naming.Template
+	filter         model.ObjectsFilter
+	repositories   []model.TemplateRepository
+	vaultVariables []*keboola.VaultVariable
 }
 
 type Project struct {
@@ -157,6 +158,7 @@ func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Pro
 	m.filter.SetAllowedBranches(content.AllowedBranches)
 	m.filter.SetIgnoredComponents(content.IgnoredComponents)
 	m.repositories = content.Templates.Repositories
+	m.vaultVariables = content.Vault.Variables
 
 	// Set records
 	if err := m.SetRecords(content.records()); err != nil && !ignoreErrors {
@@ -176,6 +178,7 @@ func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 	content.AllowedBranches = m.filter.AllowedBranches()
 	content.IgnoredComponents = m.filter.IgnoredComponents()
 	content.Templates.Repositories = m.repositories
+	content.Vault.Variables = m.vaultVariables
 	content.setRecords(m.All())
 
 	// Map memory IDs to manifest IDs
@@ -266,4 +269,26 @@ func (m *Manifest) TemplateRepository(name string) (model.TemplateRepository, bo
 		}
 	}
 	return model.TemplateRepository{}, false
+}
+
+func (m *Manifest) VaultVariables() []*keboola.VaultVariable {
+	return m.vaultVariables
+}
+
+func (m *Manifest) SetVaultVariables(variables []*keboola.VaultVariable) {
+	m.vaultVariables = variables
+}
+
+func (m *Manifest) AddVaultVariable(variable *keboola.VaultVariable) {
+	m.vaultVariables = append(m.vaultVariables, variable)
+}
+
+func (m *Manifest) RemoveVaultVariable(hash keboola.VaultVariableHash) bool {
+	for i, v := range m.vaultVariables {
+		if v.Hash == hash {
+			m.vaultVariables = append(m.vaultVariables[:i], m.vaultVariables[i+1:]...)
+			return true
+		}
+	}
+	return false
 }

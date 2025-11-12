@@ -18,6 +18,7 @@ type Flags struct {
 	Force                  configmap.Value[bool]   `configKey:"force" configUsage:"ignore invalid local state"`
 	DryRun                 configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
 	CleanupRenameConflicts configmap.Value[bool]   `configKey:"cleanup-rename-conflicts" configUsage:"enable cleanup mode for rename conflicts (removes conflicting destinations)"`
+	VaultEnabled           configmap.Value[bool]   `configKey:"vault-enabled" configUsage:"fetch and update vault variables in manifest"`
 }
 
 func DefaultFlags() Flags {
@@ -67,6 +68,16 @@ func Command(p dependencies.Provider) *cobra.Command {
 					logger.Info(cmd.Context(), "Use --force to override the invalid local state.")
 				}
 				return err
+			}
+
+			if f.VaultEnabled.Value {
+				logger.Info(cmd.Context(), "Fetching vault variables...")
+				variables, err := d.KeboolaProjectAPI().ListVariablesRequest(nil).Send(cmd.Context())
+				if err != nil {
+					return err
+				}
+				prj.ProjectManifest().SetVaultVariables(*variables)
+				logger.Infof(cmd.Context(), "Fetched %d vault variables", len(*variables))
 			}
 
 			// Options
