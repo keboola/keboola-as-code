@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/detail"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/download"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/import"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/list"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/unload"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table/upload"
@@ -24,6 +25,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		create.Command(p),
 		detail.Command(p),
 		_import.Command(p),
+		list.Command(p),
 		preview.Command(p),
 		unload.Command(p),
 		upload.Command(p),
