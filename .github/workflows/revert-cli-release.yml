@@ -1,0 +1,265 @@
+---
+name: "Revert: CLI Release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to revert (e.g., 1.2.3)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run mode (only show what would be done)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  # S3 Repository in CLI Assets Account
+  BASE_URL: "https://cli-dist.keboola.com"
+  AWS_REGION: us-east-1
+  AWS_BUCKET_NAME: cli-dist-keboola-com
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::455460941449:role/cli-dist-release
+  AWS_ROLE_REGION: eu-central-1
+
+jobs:
+  validate-version:
+    name: "Validate Version"
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Validate version format
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          # Validate semantic versioning format
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?$ ]]; then
+            echo "Error: Invalid version format: $VERSION"
+            echo "Expected format: X.Y.Z or X.Y.Z-prerelease.1"
+            exit 1
+          fi
+          
+          # Determine tag format (with or without 'v' prefix)
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "✅ Version validated: ${VERSION} (tag: ${TAG})"
+
+  revert-s3:
+    name: "Remove from S3"
+    needs:
+      - validate-version
+    env:
+      VERSION: ${{ needs.validate-version.outputs.version }}
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+
+      - name: Configure AWS Credentials to CLI Assets Account
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Remove files from S3
+        shell: bash
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && 'true' || 'false' }}
+        run: |
+          chmod +x ./build/package/s3/unpublish.sh
+          ./build/package/s3/unpublish.sh "${{ env.VERSION }}" "$DRY_RUN"
+
+  reindex-linux-repos:
+    name: "Re-index Linux Repositories"
+    needs:
+      - validate-version
+      - revert-s3
+    if: ${{ github.event.inputs.dry_run != 'true' }}
+    env:
+      VERSION: ${{ needs.validate-version.outputs.version }}
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+
+      - name: Install GPG
+        run: sudo apt-get update && sudo apt-get install -y gnupg
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build DEB repo tools
+        uses: ./.github/actions/build-repo-tools
+        with:
+          type: deb
+
+      - name: Build RPM repo tools
+        uses: ./.github/actions/build-repo-tools
+        with:
+          type: rpm
+
+      - name: Build APK repo tools
+        uses: ./.github/actions/build-repo-tools
+        with:
+          type: apk
+
+      - name: Clean aws credentials file
+        run: rm -rf ${HOME}/.aws
+
+      - name: Configure AWS Credentials to CLI Assets Account
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_ROLE_REGION }}
+
+      - name: Mount CLI Assets S3 Bucket
+        uses: ./.github/actions/mount-s3
+        with:
+          mountedFolder: /s3bucket
+          awsRegion: ${{ env.AWS_REGION }}
+          awsBucketName: ${{ env.AWS_BUCKET_NAME }}
+          awsAccessKeyId: ${{ env.AWS_ACCESS_KEY_ID }}
+          awsSecretAccessKey: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          awsSessionToken: ${{ env.AWS_SESSION_TOKEN }}
+
+      - name: Re-index Linux packages in CLI Assets S3
+        run: ./build/package/linux/index.sh /s3bucket
+        env:
+          DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
+          RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
+          APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
+          DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
+          RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
+          APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
+
+  unpublish-github-release:
+    name: "Unpublish GitHub Release"
+    needs:
+      - validate-version
+    if: ${{ github.event.inputs.dry_run != 'true' }}
+    env:
+      VERSION: ${{ needs.validate-version.outputs.version }}
+      TAG: ${{ needs.validate-version.outputs.tag }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if release exists
+        id: check_release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = '${{ env.TAG }}';
+            try {
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              core.setOutput('exists', 'true');
+              core.setOutput('release_id', release.data.id);
+              core.setOutput('is_prerelease', release.data.prerelease);
+              console.log(`✅ Found release for tag ${tag}: ID ${release.data.id}`);
+            } catch (error) {
+              if (error.status === 404) {
+                core.setOutput('exists', 'false');
+                console.log(`ℹ️  No release found for tag ${tag}`);
+              } else {
+                throw error;
+              }
+            }
+
+      - name: Delete GitHub Release
+        if: steps.check_release.outputs.exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const releaseId = '${{ steps.check_release.outputs.release_id }}';
+            const tag = '${{ env.TAG }}';
+            
+            console.log(`🗑️  Deleting release ID ${releaseId} for tag ${tag}...`);
+            
+            await github.rest.repos.deleteRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId
+            });
+            
+            console.log(`✅ Release deleted successfully`);
+            
+            // Also delete the tag if it exists
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`
+              });
+              console.log(`✅ Tag ${tag} deleted successfully`);
+            } catch (error) {
+              if (error.status === 404) {
+                console.log(`ℹ️  Tag ${tag} not found (may have been deleted already)`);
+              } else {
+                console.log(`⚠️  Could not delete tag ${tag}: ${error.message}`);
+              }
+            }
+
+      - name: Release not found
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          echo "ℹ️  No GitHub release found for tag ${{ env.TAG }}"
+          echo "This is OK - the release may have already been deleted or never existed"
+
+  summary:
+    name: "Summary"
+    needs:
+      - validate-version
+      - revert-s3
+      - reindex-linux-repos
+      - unpublish-github-release
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print summary
+        run: |
+          echo "## Revert Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.validate-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ needs.validate-version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Dry Run:** ${{ github.event.inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Completed Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Version validated" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Files removed from S3" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.dry_run }}" != "true" ]; then
+            echo "- ✅ Linux repositories re-indexed" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ GitHub release unpublished" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Manual Steps Required:" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Revert PR in [keboola/homebrew-keboola-cli](https://github.com/keboola/homebrew-keboola-cli) that added version ${{ needs.validate-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Revert PR in [keboola/scoop-keboola-cli](https://github.com/keboola/scoop-keboola-cli) that added version ${{ needs.validate-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Check/close WinGet PR in [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs)" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Unlist Chocolatey package (if possible) at [community.chocolatey.org](https://community.chocolatey.org/packages/keboola-cli)" >> $GITHUB_STEP_SUMMARY
+
