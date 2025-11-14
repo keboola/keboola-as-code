@@ -201,7 +201,7 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-    # - /opt/datadog-agent/run:/opt/datadog-agent/run:rw
+      # - /opt/datadog-agent/run:/opt/datadog-agent/run:rw
 
   prometheus:
     image: prom/prometheus
