@@ -40,7 +40,7 @@ jobs:
             echo "Expected format: X.Y.Z or X.Y.Z-prerelease.1"
             exit 1
           fi
-          
+
           # Determine tag format (with or without 'v' prefix)
           TAG="v${VERSION}"
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
@@ -198,17 +198,17 @@ jobs:
           script: |
             const releaseId = '${{ steps.check_release.outputs.release_id }}';
             const tag = '${{ env.TAG }}';
-            
+
             console.log(`🗑️  Deleting release ID ${releaseId} for tag ${tag}...`);
-            
+
             await github.rest.repos.deleteRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: releaseId
             });
-            
+
             console.log(`✅ Release deleted successfully`);
-            
+
             // Also delete the tag if it exists
             try {
               await github.rest.git.deleteRef({
@@ -262,4 +262,3 @@ jobs:
           echo "- [ ] Revert PR in [keboola/scoop-keboola-cli](https://github.com/keboola/scoop-keboola-cli) that added version ${{ needs.validate-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- [ ] Check/close WinGet PR in [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs)" >> $GITHUB_STEP_SUMMARY
           echo "- [ ] Unlist Chocolatey package (if possible) at [community.chocolatey.org](https://community.chocolatey.org/packages/keboola-cli)" >> $GITHUB_STEP_SUMMARY
-
