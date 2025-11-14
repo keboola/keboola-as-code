@@ -48,9 +48,10 @@ type Schedule struct {
 }
 
 type Sandbox struct {
-	Name string                       `json:"name" validate:"required"`
-	Type keboola.SandboxWorkspaceType `json:"type" validate:"required"`
-	Size string                       `json:"size,omitempty"`
+	Name       string                       `json:"name" validate:"required"`
+	Type       keboola.SandboxWorkspaceType `json:"type" validate:"required"`
+	Size       string                       `json:"size,omitempty"`
+	UseKeyPair bool                         `json:"useKeyPair,omitempty"` // If true, create sandbox with key-pair authentication instead of password
 }
 
 type Bucket struct {

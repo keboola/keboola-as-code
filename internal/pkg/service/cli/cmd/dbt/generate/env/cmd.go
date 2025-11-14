@@ -63,7 +63,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				}
 			}
 
-			opts, err := AskGenerateEnv(branch.BranchKey, d.Dialogs(), snowflakeWorkspaces, f)
+			opts, err := AskGenerateEnv(branch.BranchKey, d.Dialogs(), snowflakeWorkspaces, f, p.BaseScope().Environment())
 			if err != nil {
 				return err
 			}

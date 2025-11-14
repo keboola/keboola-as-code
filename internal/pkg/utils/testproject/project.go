@@ -3,7 +3,11 @@ package testproject
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/csv"
+	"encoding/pem"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -439,6 +443,19 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 				opts = append(opts, keboola.WithSize(fixture.Size))
 			}
 
+			// Generate key-pair if requested
+			var privateKeyPEM string
+			if fixture.UseKeyPair {
+				var publicKeyPEM string
+				var err error
+				if privateKeyPEM, publicKeyPEM, err = generateRSAKeyPairPEM(); err != nil {
+					errs.Append(errors.Errorf("could not generate key-pair for sandbox \"%s\": %w", fixture.Name, err))
+					return
+				}
+				// Pass public key to enable key-pair authentication in the workspace
+				opts = append(opts, keboola.WithPublicKey(publicKeyPEM))
+			}
+
 			p.logf("▶ Sandbox \"%s\"...", fixture.Name)
 			sandbox, err := p.keboolaProjectAPI.CreateSandboxWorkspace(
 				ctx,
@@ -453,6 +470,10 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 			}
 			p.logf("✔️ Sandbox \"%s\"(%s).", sandbox.Config.Name, sandbox.Config.ID)
 			p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), sandbox.Config.ID.String())
+			// Store private key in environment variable if key-pair authentication was used
+			if len(privateKeyPEM) > 0 {
+				p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", fixture.Name), privateKeyPEM)
+			}
 		})
 	}
 
@@ -718,4 +739,31 @@ func (p *Project) logf(format string, a ...any) {
 	if testhelper.TestIsVerbose() && p.logFn != nil {
 		p.logFn(format, a...)
 	}
+}
+
+// generateRSAKeyPairPEM generates a 2048-bit RSA key pair suitable for Snowflake key-pair auth.
+// The private key is encoded as PKCS#8 PEM without encryption, and the public key is PKIX PEM.
+// Returns private key PEM, public key PEM, and error.
+func generateRSAKeyPairPEM() (string, string, error) {
+	// Generate private key
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Marshal private key to PKCS#8
+	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return "", "", err
+	}
+	privPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8Bytes})
+
+	// Marshal public key to PKIX
+	pubBytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	if err != nil {
+		return "", "", err
+	}
+	pubPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubBytes})
+
+	return string(privPEM), string(pubPEM), nil
 }

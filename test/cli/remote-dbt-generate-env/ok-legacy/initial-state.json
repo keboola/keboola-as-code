@@ -29,10 +29,6 @@
   "sandboxes": [
     {
       "name": "foo",
-      "type": "snowflake"
-    },
-    {
-      "name": "bar",
       "type": "snowflake",
       "useKeyPair": true
     }

@@ -20,6 +20,8 @@ type Options struct {
 	BranchKey  keboola.BranchKey
 	TargetName string
 	Workspace  *keboola.SandboxWorkspace
+	PrivateKey string
+	UseKeyPair bool                 // Whether key-pair authentication was requested (only add private key if true)
 	Buckets    []listbuckets.Bucket // optional, set if the buckets have been loaded in a parent command
 }
 
@@ -83,7 +85,14 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 	envVars[fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper)] = host
 	envVars[fmt.Sprintf("DBT_KBC_%s_USER", targetUpper)] = workspace.User
-	envVars[fmt.Sprintf("DBT_KBC_%s_PASSWORD", targetUpper)] = workspace.Password
+	// Only add private key if key-pair authentication was explicitly requested
+	// This ensures password-only workspaces don't get a private key in .env.local
+	if o.UseKeyPair && len(o.PrivateKey) > 0 {
+		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY", targetUpper)] = o.PrivateKey
+	}
+	if len(workspace.Password) > 0 {
+		envVars[fmt.Sprintf("DBT_KBC_%s_PASSWORD", targetUpper)] = workspace.Password
+	}
 
 	// Format KEY=VALUE pairs
 	// Sort keys for consistent order
@@ -95,10 +104,19 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	for _, k := range keys {
 		v := envVars[k]
-		// Basic quoting for values containing spaces or special characters, though passwords might still be tricky
-		// A more robust solution might involve dotenv-specific libraries if complex values are common.
-		if strings.ContainsAny(v, " #\"'\\") {
-			v = fmt.Sprintf(`\"%s\"`, strings.ReplaceAll(v, `\"`, `\\\"`))
+		// Normalize multiline/special values for dotenv compatibility:
+		// - Replace newlines and carriage returns by literal \n to keep a single line per var
+		// - Escape existing double quotes
+		// - Wrap in double quotes if any special characters present
+		hasSpecial := strings.ContainsAny(v, " #\"'\\\n\r\t")
+		if strings.Contains(v, "\n") || strings.Contains(v, "\r") {
+			v = strings.ReplaceAll(v, "\r\n", "\n")
+			v = strings.ReplaceAll(v, "\r", "\n")
+			v = strings.ReplaceAll(v, "\n", `\\n`)
+			hasSpecial = true
+		}
+		if hasSpecial {
+			v = "\"" + strings.ReplaceAll(v, "\"", `\\"`) + "\""
 		}
 		_, _ = fmt.Fprintf(&envContent, "%s=%s\n", k, v)
 	}
