@@ -1,0 +1,38 @@
+{
+  "branches": [
+    {
+      "id": "%%TEST_BRANCH_MAIN_ID%%",
+      "name": "Main",
+      "description": "",
+      "isDefault": true,
+      "metadata": {}
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": "%%TEST_BRANCH_MAIN_ID%%",
+      "componentId": "ex-generic-v2",
+      "id": "%%_%%",
+      "name": "without-rows",
+      "description": "",
+      "changeDescription": "",
+      "isDisabled": false,
+      "isDeleted": false,
+      "created": "%%_%%",
+      "version": 1,
+      "state": {},
+      "currentVersion": {
+        "changeDescription": "",
+        "created": "%%_%%",
+        "creatorToken": {
+          "id": "%%_%%",
+          "description": "test"
+        },
+        "version": 1,
+        "state": {}
+      },
+      "configuration": {}
+    }
+  ]
+}
+
