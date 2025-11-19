@@ -1,0 +1,53 @@
+[
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/apps/test/proxy-config"
+    },
+    "httpResponse": {
+      "body": {
+        "appId": "test",
+        "appName": "app",
+        "projectId": "11",
+        "upstreamAppUrl": "http://localhost:1235",
+        "authProviders": [
+          {
+            "type": "password",
+            "id": "simpleAuth",
+            "password": "a"
+          },
+          {
+            "type": "gitlab",
+            "id": "gitlab",
+            "clientId": "<client id>",
+            "clientSecret": "<client secret>",
+            "issuerUrl": "https://gitlab.com"
+          },
+          {
+            "type": "github",
+            "id": "github",
+            "clientId": "<client id>",
+            "clientSecret": "<client secret>",
+            "organization": "keboola",
+            "team": "",
+            "repository": "",
+            "token": "<github token>",
+            "users": []
+          }
+        ],
+        "authRules": [
+          {
+            "type": "pathPrefix",
+            "value": "/",
+            "auth": [
+              "simpleAuth",
+              "gitlab",
+              "github"
+            ]
+          }
+        ]
+      },
+      "statusCode": 200
+    }
+  }
+]
