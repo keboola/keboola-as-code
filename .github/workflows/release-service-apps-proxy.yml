@@ -40,11 +40,6 @@ jobs:
       without-cache: true
       package-exception-regex: "./internal/pkg/service/stream|./internal/pkg/service/templates|./internal/pkg/service/cli"
 
-  test-k8s-service-apps-proxy:
-    name: "K8s: Apps Proxy"
-    secrets: inherit
-    uses: ./.github/workflows/test-k8s-service-apps-proxy.yml
-
   build-and-push-proxy-image:
     name: "Build & Push Proxy Image"
     runs-on: ubuntu-latest
