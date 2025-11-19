@@ -13,38 +13,4 @@
 
 ## Operations
 
-In `/etc/hosts` add this:
-
-```
-127.0.0.1 test.hub.keboola.local
-127.0.0.1 hub.keboola.local
-```
-In project directory uncomment in [docker-compose.yml](../../docker-compose.yml) the `command` section and fill it with `apps-proxy` service. It should look like this
-```
-command: >
-    sh -c "git config --global --add safe.directory /code
-           task run-apps-proxy"
-```
-
-Then launch the dev container
-```
-docker compose up -d dev
-```
-
-There is a sandboxes service mock in place which returns configuration of data app. Simply adjust the [provisioning/apps-proxy/dev/sandboxesMock.json](../../provisioning/apps-proxy/dev/sandboxesMock.json) if you want to change received configuration by local testing.
-
-Next clone this repository: GitHub - [fsouza/docker-ssl-proxy](https://github.com/fsouza/docker-ssl-proxy)
-
-In its directory run this:
-
-```
-docker build -t https-proxy .
-```
-
-And then go back to the root repository and launch the https-proxy:
-
-```
-docker compose up https-proxy
-```
-
-Now the proxy should be available under https://test.hub.keboola.local/.
+**Note**: Apps Proxy provisioning has been migrated to GitOps (PAT-868). The legacy provisioning files in `provisioning/apps-proxy/` have been removed. For deployment and local development instructions, please refer to the platform GitOps repository.
