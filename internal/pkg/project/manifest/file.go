@@ -34,12 +34,17 @@ type file struct {
 	AllowedBranches   model.AllowedBranches           `json:"allowedBranches" validate:"required,min=1"`
 	IgnoredComponents model.ComponentIDs              `json:"ignoredComponents"`
 	Templates         Templates                       `json:"templates"`
+	Vault             Vault                           `json:"vault,omitempty"`
 	Branches          []*model.BranchManifest         `json:"branches" validate:"dive"`
 	Configs           []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
 }
 
 type Templates struct {
 	Repositories []model.TemplateRepository `json:"repositories,omitempty" validate:"dive"`
+}
+
+type Vault struct {
+	Variables []*keboola.VaultVariable `json:"variables,omitempty" validate:"dive"`
 }
 
 func newFile(projectID keboola.ProjectID, apiHost string) *file {

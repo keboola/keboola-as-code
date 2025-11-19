@@ -1,0 +1,7 @@
+Delete a vault variable from the project.
+
+The command will interactively prompt for the variable name,
+or you can provide the name as an argument.
+
+The variable will be deleted from Keboola Connection and automatically
+removed from the local manifest file if present.
