@@ -162,8 +162,6 @@ services:
       MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
       MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
       MOCKSERVER_INITIALIZATION_JSON_PATH: /config/sandboxesMock.json
-    volumes:
-      - ./provisioning/apps-proxy/dev/sandboxesMock.json:/config/sandboxesMock.json:Z
     networks:
       - apps-proxy
 
