@@ -85,8 +85,7 @@ tasks:
 
   run-apps-proxy:
     cmds:
-      - echo "Apps Proxy local run via provisioning has been migrated to GitOps; this task is deprecated (PAT-868)."
-      - exit 0
+      - go tool air -c ./provisioning/apps-proxy/dev/.air.toml
 
   tests:
     cmds:
