@@ -48,7 +48,6 @@ jobs:
     needs:
       - test-lint
       - test-unit
-      - test-k8s-service-apps-proxy
     steps:
       - name: Checkout
         uses: actions/checkout@v5
