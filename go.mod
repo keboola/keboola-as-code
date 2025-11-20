@@ -166,7 +166,7 @@ require (
 	github.com/tinylib/msgp v1.3.0 // indirect
 	go.uber.org/atomic v1.11.0
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.44.0
+	golang.org/x/crypto v0.45.0
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/net v0.47.0
 	golang.org/x/sys v0.38.0
