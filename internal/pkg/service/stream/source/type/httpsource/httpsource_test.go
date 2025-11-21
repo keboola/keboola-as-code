@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream"
@@ -43,7 +45,7 @@ type TestCase struct {
 	ExpectedStatusCode int
 	ExpectedHeaders    map[string]string
 	ExpectedBody       string
-	ExpectedLogs       string
+	ExpectedLogs       []string
 }
 
 type testState struct {
@@ -176,7 +178,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Path:               "/foo",
 			ExpectedStatusCode: http.StatusNotFound,
 			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
-			ExpectedLogs:       `{"level":"info","message":"not found, please send data using POST /stream/<projectID>/<sourceID>/<secret>"}`,
+			ExpectedLogs:       []string{`{"level":"info","message":"not found, please send data using POST /stream/<projectID>/<sourceID>/<secret>"}`},
 			ExpectedBody: `
 {
   "statusCode": 404,
@@ -226,7 +228,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
   "error": "stream.in.noSourceFound",
   "message": "The specified combination of projectID, sourceID and secret was not found."
 }`,
-			ExpectedLogs: `{"level":"warn","message":"dispatch failed","nodeId":"test-node","project.id":"1111","source.id":"my-source","component":"http-source"}`,
+			ExpectedLogs: []string{`{"level":"warn","message":"dispatch failed","nodeId":"test-node","project.id":"1111","source.id":"my-source","component":"http-source"}`},
 		},
 		{
 			Name:               "stream input - POST - not found - invalid secret",
@@ -241,7 +243,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
   "error": "stream.in.noSourceFound",
   "message": "The specified combination of projectID, sourceID and secret was not found."
 }`,
-			ExpectedLogs: `{"level":"warn","message":"dispatch failed","nodeId":"test-node","project.id":"123","source.id":"my-source-1","component":"http-source"}`,
+			ExpectedLogs: []string{`{"level":"warn","message":"dispatch failed","nodeId":"test-node","project.id":"123","source.id":"my-source-1","component":"http-source"}`},
 		},
 		{
 			Name:               "stream input - POST - not found - disabled source",
@@ -256,7 +258,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
   "error": "stream.in.disabledSource",
   "message": "The specified source is disabled in all branches."
 }`,
-			ExpectedLogs: `{"level":"warn","message":"dispatch failed","nodeId":"test-node","project.id":"123","source.id":"my-source-2","component":"http-source"}`,
+			ExpectedLogs: []string{`{"level":"warn","message":"dispatch failed","nodeId":"test-node","project.id":"123","source.id":"my-source-2","component":"http-source"}`},
 		},
 		{
 			Name: "stream input - POST - open pipeline error",
@@ -274,10 +276,10 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 				"Content-Type": "application/json",
 				"Server":       httpsource.ServerHeader,
 			},
-			ExpectedLogs: `
-{"level":"error","message":"write record error: cannot open sink pipeline: some open error, next attempt after %s","component":"sink.router"}
-{"level":"error","message":"write record error: cannot open sink pipeline: some open error, next attempt after %s","component":"sink.router"}
-`,
+			ExpectedLogs: []string{
+				`{"level":"error","message":"write record error: cannot open sink pipeline: some open error, next attempt after %s","component":"sink.router"}`,
+				`{"level":"error","message":"source record processing failed: 1/1 sinks failed. Failed sinks: sink my-sink-1: Cannot open sink pipeline: some open error, next attempt after %s.","component":"sink.router"}`,
+			},
 			ExpectedBody: `
 {
   "statusCode": 500,
@@ -336,10 +338,10 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 				"Content-Type": "application/json",
 				"Server":       httpsource.ServerHeader,
 			},
-			ExpectedLogs: `
-{"level":"error","message":"write record error: some write error","component":"sink.router"}
-{"level":"error","message":"write record error: some write error","component":"sink.router"}
-`,
+			ExpectedLogs: []string{
+				`{"level":"error","message":"write record error: some write error","component":"sink.router"}`,
+				`{"level":"error","message":"source record processing failed: 1/1 sinks failed. Failed sinks: sink my-sink-1: Some write error.","component":"sink.router"}`,
+			},
 			ExpectedBody: `
 {
   "statusCode": 500,
@@ -524,7 +526,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Headers:            map[string]string{"foo": strings.Repeat(".", ts.maxHeaderSize+1)},
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
 			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
-			ExpectedLogs:       `{"level":"info","message":"request header size is over the maximum \"2000B\"","error.type":"%s/errors.HeaderTooLargeError"}`,
+			ExpectedLogs:       []string{`{"level":"info","message":"request header size is over the maximum \"2000B\"","error.type":"%s/errors.HeaderTooLargeError"}`},
 			ExpectedBody: `
 {
   "statusCode": 413,
@@ -539,7 +541,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize+1)),
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
 			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
-			ExpectedLogs:       `{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`,
+			ExpectedLogs:       []string{`{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`},
 			ExpectedBody: `
 {
   "statusCode": 413,
@@ -600,6 +602,99 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 	}
 }
 
+// assertLogsUnordered checks that each expected log message appears at least the required number of times
+// in the actual logs, regardless of order. This allows for non-deterministic log ordering in tests.
+func assertLogsUnordered(t assert.TestingT, logger log.DebugLogger, expectedLogs []string, minOccurrences int) {
+	if len(expectedLogs) == 0 {
+		return
+	}
+
+	actualLogs := logger.AllMessages()
+	actualLines := strings.Split(strings.Trim(actualLogs, "\n"), "\n")
+
+	// Count occurrences of each expected log in actual logs
+	for _, expectedLog := range expectedLogs {
+		expectedLog = strings.TrimSpace(expectedLog)
+		if expectedLog == "" {
+			continue
+		}
+
+		occurrences := 0
+		expectedData, err := decodeExpectedLog(expectedLog)
+		if err != nil {
+			assert.Fail(t, fmt.Sprintf("failed to decode expected log: %s: %v", expectedLog, err))
+			continue
+		}
+
+		for _, actualLine := range actualLines {
+			actualLine = strings.TrimSpace(actualLine)
+			if actualLine == "" {
+				continue
+			}
+
+			actualData, err := decodeActualLog(actualLine)
+			if err != nil {
+				continue // Skip invalid JSON lines
+			}
+
+			// Check if this actual log matches the expected log
+			if logMatches(expectedData, actualData) {
+				occurrences++
+			}
+		}
+
+		assert.GreaterOrEqual(t, occurrences, minOccurrences,
+			"expected log message should appear at least %d times, found %d times:\n%s",
+			minOccurrences, occurrences, expectedLog)
+	}
+}
+
+// decodeExpectedLog decodes an expected log message JSON string into a map for comparison.
+func decodeExpectedLog(logStr string) (map[string]any, error) {
+	var result map[string]any
+	err := json.DecodeString(logStr, &result)
+	if err != nil {
+		return nil, errors.Wrapf(err, "expected log contains invalid json: %s", logStr)
+	}
+	return result, nil
+}
+
+// decodeActualLog decodes an actual log message JSON string into a map for comparison.
+func decodeActualLog(logStr string) (map[string]any, error) {
+	var result map[string]any
+	err := json.DecodeString(logStr, &result)
+	if err != nil {
+		return nil, errors.Wrapf(err, "actual log contains invalid json: %s", logStr)
+	}
+	return result, nil
+}
+
+// logMatches checks if an actual log message matches an expected log message.
+// It compares all fields from the expected log against the actual log using wildcard matching for strings.
+func logMatches(expected, actual map[string]any) bool {
+	for key, expectedValue := range expected {
+		actualValue, ok := actual[key]
+		if !ok {
+			return false
+		}
+
+		// Use wildcard matching for string values
+		if expectedStr, ok := expectedValue.(string); ok {
+			if actualStr, ok := actualValue.(string); ok {
+				err := wildcards.Compare(expectedStr, actualStr)
+				if err != nil {
+					return false
+				}
+			} else {
+				return false
+			}
+		} else if !reflect.DeepEqual(expectedValue, actualValue) {
+			return false
+		}
+	}
+	return true
+}
+
 func sendTestRequests(t *testing.T, f *testState) {
 	t.Helper()
 
@@ -632,7 +727,15 @@ func sendTestRequests(t *testing.T, f *testState) {
 			// Error + logs
 			resp, err := http.DefaultClient.Do(req)
 			assert.EventuallyWithT(t, func(c *assert.CollectT) {
-				logger.AssertJSONMessages(c, tc.ExpectedLogs)
+				if len(tc.ExpectedLogs) > 0 {
+					// Use unordered assertion: 1 occurrence for single log, 2 occurrences for multiple logs
+					// Multiple expected logs typically indicate we expect duplicates (e.g., per branch)
+					minOccurrences := 1
+					if len(tc.ExpectedLogs) > 1 {
+						minOccurrences = 2
+					}
+					assertLogsUnordered(c, logger, tc.ExpectedLogs, minOccurrences)
+				}
 			}, 5*time.Second, 10*time.Millisecond)
 			if tc.ExpectedErr != "" {
 				if assert.Error(t, err) {

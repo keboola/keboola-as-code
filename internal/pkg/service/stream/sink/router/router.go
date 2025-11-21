@@ -265,7 +265,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	r.metrics.sourceDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
 	r.metrics.sourceBytes.Add(finalizationCtx, int64(c.BodyLength()), metric.WithAttributes(attrs...))
 
-	// Log errors when has_error is true
+	// Log errors when has_error is true.
 	// This ensures that when the metric has_error:true is reported, there is a corresponding log entry in Datadog.
 	// This is important because some errors (e.g., 400 Bad Request) are not logged at the sink level,
 	// but they still set has_error:true in the metric.
@@ -298,7 +298,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 		).Error()
 
 		// Log with appropriate level based on status code
-		// Use Warn level for client errors (4xx), Error level for server errors (5xx)
+		// Use Error level for server errors (5xx), Warn level for client errors (4xx)
 		if result.StatusCode >= http.StatusInternalServerError {
 			r.logger.Errorf(finalizationCtx, logMsg)
 		} else {
