@@ -276,7 +276,9 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			},
 			ExpectedLogs: `
 {"level":"error","message":"write record error: cannot open sink pipeline: some open error, next attempt after %s","component":"sink.router"}
+{"level":"error","message":"source record processing failed: 1/1 sinks failed. Failed sinks: sink my-sink-1: Cannot open sink pipeline: some open error, next attempt after %s.","component":"sink.router"}
 {"level":"error","message":"write record error: cannot open sink pipeline: some open error, next attempt after %s","component":"sink.router"}
+{"level":"error","message":"source record processing failed: 1/1 sinks failed. Failed sinks: sink my-sink-1: Cannot open sink pipeline: some open error, next attempt after %s.","component":"sink.router"}
 `,
 			ExpectedBody: `
 {
@@ -338,7 +340,9 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			},
 			ExpectedLogs: `
 {"level":"error","message":"write record error: some write error","component":"sink.router"}
+{"level":"error","message":"source record processing failed: 1/1 sinks failed. Failed sinks: sink my-sink-1: Some write error.","component":"sink.router"}
 {"level":"error","message":"write record error: some write error","component":"sink.router"}
+{"level":"error","message":"source record processing failed: 1/1 sinks failed. Failed sinks: sink my-sink-1: Some write error.","component":"sink.router"}
 `,
 			ExpectedBody: `
 {
