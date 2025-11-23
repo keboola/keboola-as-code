@@ -161,7 +161,9 @@ To run Stream Worker locally:
 2. Set env var with Keboola stack: `export STREAM_WORKER_STORAGE_API_HOST=connection.keboola.com`
 3. In the container run `task run-stream-worker`
 
-See [provisioning/stream/README.md](../provisioning/stream/README.md) or [provisioning/templates-api/README.md](../provisioning/templates-api/README.md) for more details about etcd and running in Minikube.
+See [provisioning/templates-api/README.md](../provisioning/templates-api/README.md) for more details about etcd and running in Minikube.
+
+**Note:** Stream service production deployment is now managed via GitOps. Only `provisioning/stream/dev` and `provisioning/stream/docker` remain for local development.
 
 
 ### Inspecting OpenAPI documentation
