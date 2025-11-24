@@ -1,9 +1,0 @@
----
-defrag:
-  cronjob:
-    podLabels:
-      templates-api-etcd-client: "true"
-
-preUpgradeJob:
-  podLabels:
-    templates-api-etcd-client: "true"
