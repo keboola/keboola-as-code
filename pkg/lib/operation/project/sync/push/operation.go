@@ -78,11 +78,6 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 	}
 
-	// Ensure data-gateway workspaces exist before push
-	if err := ensureDataGatewayWorkspaces(ctx, projectState, d); err != nil {
-		return err
-	}
-
 	// Diff
 	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d, diff.WithIgnoreBranchName(projectState.ProjectManifest().AllowTargetENV()))
 	if err != nil {
