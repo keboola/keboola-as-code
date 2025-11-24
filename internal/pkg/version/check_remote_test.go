@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -82,6 +82,6 @@ func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
 	// Client with mocked http transport
 	logger := log.NewDebugLogger()
 	c := NewGitHubChecker(t.Context(), logger, false)
-	c.client = c.client.WithTransport(httpTransport).WithRetry(client.TestingRetry())
+	c.client = c.client.WithTransport(httpTransport).WithRetry(request.TestingRetry())
 	return c, logger
 }
