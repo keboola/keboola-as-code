@@ -1,0 +1,1 @@
+Manage vault variables in the project
