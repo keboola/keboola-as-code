@@ -161,6 +161,7 @@ To run Stream Worker locally:
 2. Set env var with Keboola stack: `export STREAM_WORKER_STORAGE_API_HOST=connection.keboola.com`
 3. In the container run `task run-stream-worker`
 
+**Note:** Templates API production deployment is now managed via GitOps. Only `provisioning/templates-api/dev` and `provisioning/templates-api/docker` remain for local development.
 **Note:** Stream service production deployment is now managed via GitOps. Only `provisioning/stream/dev` and `provisioning/stream/docker` remain for local development.
 
 
