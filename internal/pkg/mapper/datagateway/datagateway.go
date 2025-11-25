@@ -190,69 +190,6 @@ func setNestedIfDifferent(config *model.Config, path string, value any) bool {
 	return true
 }
 
-func hasWorkspaceID(config *model.Config) bool {
-	value, found, _ := config.Content.GetNested("parameters.db.workspaceId")
-	if !found || value == nil {
-		return false
-	}
-
-	switch v := value.(type) {
-	case json.Number:
-		return v != ""
-	case string:
-		v = strings.TrimSpace(v)
-		if v == "" {
-			return false
-		}
-		_, err := strconv.ParseFloat(v, 64)
-		return err == nil
-	case float64:
-		return !math.IsNaN(v)
-	case float32:
-		return !math.IsNaN(float64(v))
-	case int, int32, int64, uint, uint32, uint64:
-		return true
-	default:
-		return false
-	}
-}
-
-// logWorkspaceSnapshot prints workspace-related values along with their Go types.
-func (m *dataGatewayMapper) logWorkspaceSnapshot(ctx context.Context, label string, config *model.Config) {
-	if config == nil {
-		m.logger.Debugf(ctx, `DGW workspace snapshot "%s": config=nil`, label)
-		return
-	}
-
-	fields := []struct {
-		Name string
-		Path string
-	}{
-		{Name: "workspaceId", Path: "parameters.db.workspaceId"},
-		{Name: "host", Path: "parameters.db.host"},
-		{Name: "user", Path: "parameters.db.user"},
-		{Name: "database", Path: "parameters.db.database"},
-		{Name: "schema", Path: "parameters.db.schema"},
-		{Name: "warehouse", Path: "parameters.db.warehouse"},
-		{Name: "role", Path: "parameters.db.role"},
-		{Name: "account", Path: "parameters.db.account"},
-		{Name: "region", Path: "parameters.db.region"},
-		{Name: "loginType", Path: "parameters.db.loginType"},
-	}
-
-	values := make([]string, 0, len(fields))
-	for _, field := range fields {
-		value, found, _ := config.Content.GetNested(field.Path)
-		if !found {
-			values = append(values, fmt.Sprintf(`%s=<missing>`, field.Name))
-			continue
-		}
-		values = append(values, fmt.Sprintf(`%s=%v (%T)`, field.Name, value, value))
-	}
-
-	m.logger.Debugf(ctx, `DGW workspace snapshot "%s": %s`, label, strings.Join(values, ", "))
-}
-
 // needsWorkspaceDetails returns true when workspace metadata in configuration is missing/incomplete.
 func needsWorkspaceDetails(config *model.Config) bool {
 	requiredStringPaths := []string{
@@ -264,10 +201,6 @@ func needsWorkspaceDetails(config *model.Config) bool {
 		"parameters.db.role",
 		"parameters.db.account",
 		"parameters.db.region",
-	}
-
-	if !hasWorkspaceID(config) {
-		return true
 	}
 
 	loginTypeValue, found, _ := config.Content.GetNested("parameters.db.loginType")
@@ -299,6 +232,7 @@ func setWorkspaceID(config *model.Config, workspaceID uint64) bool {
 }
 
 // normalizeWorkspaceID rewrites workspaceId to json.Number when possible.
+// This ensures consistent type representation across different JSON parsing scenarios.
 func normalizeWorkspaceID(config *model.Config) bool {
 	value, found, _ := config.Content.GetNested("parameters.db.workspaceId")
 	if !found || value == nil {

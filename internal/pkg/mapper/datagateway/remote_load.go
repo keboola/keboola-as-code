@@ -2,7 +2,6 @@ package datagateway
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -76,14 +75,11 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 
 			// Update remote state with the updated config
 			configState.SetRemoteState(config)
-			m.logWorkspaceSnapshot(ctx, fmt.Sprintf(`remote-state-after-save/%s`, config.Name), configState.Remote)
 
 			// Sync workspace details to local state if it exists
 			if configState.Local != nil {
 				_ = configState.Local.Content.SetNested("parameters.db.workspaceId", workspaceID)
-				if normalizeWorkspaceID(configState.Local) {
-					m.logger.Debugf(ctx, `Normalized workspaceId type for config "%s" after save`, config.Name)
-				}
+				normalizeWorkspaceID(configState.Local)
 				// Also sync other workspace details
 				if host, found, _ := config.Content.GetNested("parameters.db.host"); found {
 					_ = configState.Local.Content.SetNested("parameters.db.host", host)
@@ -94,7 +90,6 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 				if database, found, _ := config.Content.GetNested("parameters.db.database"); found {
 					_ = configState.Local.Content.SetNested("parameters.db.database", database)
 				}
-				m.logWorkspaceSnapshot(ctx, fmt.Sprintf(`local-state-after-save/%s`, config.Name), configState.Local)
 				scheduleLocalSave(configState)
 			}
 		}
@@ -146,11 +141,8 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 		// Use the first workspace to backfill details
 		workspace := (*workspaces)[0]
 		m.logger.Debugf(ctx, `Backfilling workspace %d details for config "%s"`, workspace.ID, config.Name)
-		if backfillWorkspaceDetails(config, workspace) {
-			m.logWorkspaceSnapshot(ctx, fmt.Sprintf(`remote-state-backfill/%s`, config.Name), config)
-		}
+		backfillWorkspaceDetails(config, workspace)
 		if configState.Local != nil && backfillWorkspaceDetails(configState.Local, workspace) {
-			m.logWorkspaceSnapshot(ctx, fmt.Sprintf(`local-state-backfill/%s`, config.Name), configState.Local)
 			scheduleLocalSave(configState)
 		}
 	}
@@ -180,11 +172,7 @@ func (m *dataGatewayMapper) MapAfterRemoteLoad(ctx context.Context, recipe *mode
 	if config.ID == "" {
 		return nil
 	}
-	m.logWorkspaceSnapshot(ctx, fmt.Sprintf(`remote-load/before/%s`, config.Name), config)
-	if normalizeWorkspaceID(config) {
-		m.logger.Debugf(ctx, `Normalized workspaceId type for config "%s" during remote load`, config.Name)
-		m.logWorkspaceSnapshot(ctx, fmt.Sprintf(`remote-load/normalized/%s`, config.Name), config)
-	}
+	normalizeWorkspaceID(config)
 	if !needsWorkspaceDetails(config) {
 		m.logger.Debugf(ctx, `Config "%s" already has complete workspace details during remote load`, config.Name)
 		return nil
@@ -205,7 +193,6 @@ func (m *dataGatewayMapper) MapAfterRemoteLoad(ctx context.Context, recipe *mode
 	workspace := (*workspaces)[0]
 	if backfillWorkspaceDetails(config, workspace) {
 		m.logger.Debugf(ctx, `Backfilled workspace %d details for config "%s" during remote load`, workspace.ID, config.Name)
-		m.logWorkspaceSnapshot(ctx, fmt.Sprintf(`remote-load/after/%s`, config.Name), config)
 	}
 
 	return nil
@@ -225,10 +212,7 @@ func (m *dataGatewayMapper) MapAfterLocalLoad(ctx context.Context, recipe *model
 		return nil
 	}
 
-	if normalizeWorkspaceID(config) {
-		m.logger.Debugf(ctx, `Normalized workspaceId type for config "%s" during local load`, config.Name)
-		m.logWorkspaceSnapshot(ctx, fmt.Sprintf(`local-load/normalized/%s`, config.Name), config)
-	}
+	normalizeWorkspaceID(config)
 
 	return nil
 }
