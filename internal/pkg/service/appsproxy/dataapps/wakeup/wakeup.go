@@ -4,7 +4,6 @@ package wakeup
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Interval sets how often the proxy sends wakeup request to sandboxes service.
