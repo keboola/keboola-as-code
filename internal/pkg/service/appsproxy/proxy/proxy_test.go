@@ -1807,6 +1807,39 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
+			name: "restart-disabled",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				service.WakeUpOverrides["123"] = func(w http.ResponseWriter, req *http.Request) {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusBadRequest)
+					_, _ = fmt.Fprintln(w, `{
+	"code": 0,
+	"context": {
+		"code": "apps.restartDisabled"
+	},
+	"error": "App restart is disabled. Contact app maintainer.",
+	"exceptionId": "exception-208db995c92ed365d47bcc701ae4d802",
+	"status": "error"
+}`)
+				}
+				// Request to public app - fails because the app doesn't have a DNS record
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Starting your application...")
+
+				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
 			name: "private-one-provider-selector",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Request provider selector page - no auth provider
