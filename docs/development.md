@@ -84,7 +84,7 @@ services:
 
 This breaks usually the editor as the replace cannot be found in `/newpath`. Therefore be carefull that this works only with docker image and on local you could face issues.
 
-When in `.env` file there are multiple `TEST_KBC_PROJECTS` set up and you switch between the stacks, make sure that you rerun the 
+When in `.env` file there are multiple `TEST_KBC_PROJECTS` set up and you switch between the stacks, make sure that you rerun the
 
 ```
 docker compose run --rm -u "$UID:$GID" --service-ports dev bash
@@ -161,8 +161,7 @@ To run Stream Worker locally:
 2. Set env var with Keboola stack: `export STREAM_WORKER_STORAGE_API_HOST=connection.keboola.com`
 3. In the container run `task run-stream-worker`
 
-See [provisioning/templates-api/README.md](../provisioning/templates-api/README.md) for more details about etcd and running in Minikube.
-
+**Note:** Templates API production deployment is now managed via GitOps. Only `provisioning/templates-api/dev` and `provisioning/templates-api/docker` remain for local development.
 **Note:** Stream service production deployment is now managed via GitOps. Only `provisioning/stream/dev` and `provisioning/stream/docker` remain for local development.
 
 

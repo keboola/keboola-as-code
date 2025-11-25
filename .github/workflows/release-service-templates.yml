@@ -44,10 +44,6 @@ jobs:
     uses: ./.github/workflows/test-e2e-service-templates.yml
     with:
       without-cache: true
-  test-k8s-service-templates:
-    name: "K8S: Templates"
-    secrets: inherit
-    uses: ./.github/workflows/test-k8s-service-templates.yml
   build-and-push-api-image:
     name: "Build & Push API Image"
     runs-on: ubuntu-latest
@@ -57,7 +53,6 @@ jobs:
       - test-lint
       - test-unit
       - test-e2e-service-templates
-      - test-k8s-service-templates
     steps:
       - name: Checkout
         uses: actions/checkout@v5
