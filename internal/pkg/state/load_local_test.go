@@ -272,7 +272,9 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (d
 
 	// Load state
 	require.NoError(t, err)
-	state, err := New(t.Context(), project.NewWithManifest(t.Context(), fs, m), d)
+	p := project.NewWithManifest(t.Context(), fs, m)
+	p.SetDependencies(d)
+	state, err := New(t.Context(), p, d)
 	require.NoError(t, err)
 	filter := m.Filter()
 	_, localErr, remoteErr := state.Load(t.Context(), LoadOptions{LocalFilter: filter, LoadLocalState: true})

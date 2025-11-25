@@ -1,0 +1,5 @@
+Plan for "push" operation:
+  * C main/application/keboola.app-data-gateway/empty-data-gateway | changed: name
+Creating workspace for data-gateway config "test"...
+Created workspace %A for config "test"
+Push done.

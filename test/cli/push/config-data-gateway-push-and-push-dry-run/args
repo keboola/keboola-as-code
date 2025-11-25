@@ -1,0 +1,3 @@
+local create config --name "new config" --branch "main" --component-id "keboola.app-data-gateway" --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+push --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%
+push --dry-run --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%%

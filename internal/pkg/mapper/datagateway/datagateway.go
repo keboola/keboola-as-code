@@ -5,7 +5,13 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
+	"fmt"
+	"math"
+	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
@@ -71,39 +77,26 @@ func generateRSAKeyPairPEM() (privateKeyPEM string, publicKeyPEM string, err err
 }
 
 // backfillWorkspaceDetails updates the configuration content with workspace details from the API response.
-func backfillWorkspaceDetails(config *model.Config, workspace *keboola.StorageWorkspace) {
-	// Set workspace ID
-	_ = config.Content.SetNested("parameters.db.workspaceId", workspace.ID)
+// It returns true when at least one field has been updated.
+func backfillWorkspaceDetails(config *model.Config, workspace *keboola.StorageWorkspace) bool {
+	if config == nil || workspace == nil {
+		return false
+	}
 
-	// Set connection details from workspace
+	changed := setWorkspaceID(config, workspace.ID)
+
 	details := workspace.StorageWorkspaceDetails
-	if details.Host != nil && *details.Host != "" {
-		_ = config.Content.SetNested("parameters.db.host", *details.Host)
-	}
-	if details.User != nil && *details.User != "" {
-		_ = config.Content.SetNested("parameters.db.user", *details.User)
-	}
-	if details.Database != nil && *details.Database != "" {
-		_ = config.Content.SetNested("parameters.db.database", *details.Database)
-	}
-	if details.Schema != nil && *details.Schema != "" {
-		_ = config.Content.SetNested("parameters.db.schema", *details.Schema)
-	}
-	if details.Warehouse != nil && *details.Warehouse != "" {
-		_ = config.Content.SetNested("parameters.db.warehouse", *details.Warehouse)
-	}
-	if details.Role != nil && *details.Role != "" {
-		_ = config.Content.SetNested("parameters.db.role", *details.Role)
-	}
-	if details.Account != nil && *details.Account != "" {
-		_ = config.Content.SetNested("parameters.db.account", *details.Account)
-	}
-	if details.Region != nil && *details.Region != "" {
-		_ = config.Content.SetNested("parameters.db.region", *details.Region)
-	}
+	changed = setStringIfPresent(config, "parameters.db.host", details.Host) || changed
+	changed = setStringIfPresent(config, "parameters.db.user", details.User) || changed
+	changed = setStringIfPresent(config, "parameters.db.database", details.Database) || changed
+	changed = setStringIfPresent(config, "parameters.db.schema", details.Schema) || changed
+	changed = setStringIfPresent(config, "parameters.db.warehouse", details.Warehouse) || changed
+	changed = setStringIfPresent(config, "parameters.db.role", details.Role) || changed
+	changed = setStringIfPresent(config, "parameters.db.account", details.Account) || changed
+	changed = setStringIfPresent(config, "parameters.db.region", details.Region) || changed
 
-	// Set login type
-	_ = config.Content.SetNested("parameters.db.loginType", "snowflake-service-keypair")
+	changed = setNestedIfDifferent(config, "parameters.db.loginType", "snowflake-service-keypair") || changed
+	return changed
 }
 
 // ptr returns a pointer to the given value.
@@ -124,6 +117,13 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 	// List existing workspaces for this config
 	workspaces, err := api.ListConfigWorkspacesRequest(config.BranchID, config.ComponentID, config.ID).Send(ctx)
 	if err != nil {
+		// If configuration doesn't exist yet (not pushed to remote), skip workspace creation.
+		// The workspace will be created after the configuration is saved to remote.
+		var apiErr *keboola.StorageError
+		if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.configuration.notFound" {
+			m.logger.Debugf(ctx, `Config "%s" does not exist in remote yet, workspace will be created after config is saved`, config.Name)
+			return nil
+		}
 		return errors.Errorf(`cannot list workspaces for config "%s": %w`, config.Name, err)
 	}
 
@@ -145,14 +145,18 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 	}
 
 	// Create configuration workspace
+	// Data gateway workspaces require useCase to be set to "reader" for read-only access.
 	networkPolicy := "user"
-	payload := &keboola.StorageWorkspacePayload{
-		Backend:               keboola.StorageWorkspaceBackendSnowflake,
-		BackendSize:           ptr(keboola.StorageWorkspaceBackendSizeMedium),
-		NetworkPolicy:         &networkPolicy,
-		ReadOnlyStorageAccess: true,
-		LoginType:             keboola.StorageWorkspaceLoginTypeSnowflakeServiceKeypair,
-		PublicKey:             &publicKeyPEM,
+	payload := &keboola.StorageConfigWorkspacePayload{
+		StorageWorkspacePayload: keboola.StorageWorkspacePayload{
+			Backend:               keboola.StorageWorkspaceBackendSnowflake,
+			BackendSize:           ptr(keboola.StorageWorkspaceBackendSizeMedium),
+			NetworkPolicy:         &networkPolicy,
+			ReadOnlyStorageAccess: true,
+			LoginType:             keboola.StorageWorkspaceLoginTypeSnowflakeServiceKeypair,
+			PublicKey:             &publicKeyPEM,
+		},
+		UseCase: keboola.StorageWorkspaceUseCaseReader,
 	}
 
 	workspace, err := api.CreateConfigWorkspaceRequest(config.BranchID, config.ComponentID, config.ID, payload).Send(ctx)
@@ -166,4 +170,168 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 	backfillWorkspaceDetails(config, workspace)
 
 	return nil
+}
+
+// setStringIfPresent writes non-empty pointer values to the requested path.
+func setStringIfPresent(config *model.Config, path string, value *string) bool {
+	if value == nil || *value == "" {
+		return false
+	}
+	return setNestedIfDifferent(config, path, *value)
+}
+
+// setNestedIfDifferent writes the value only if it differs from the existing state.
+func setNestedIfDifferent(config *model.Config, path string, value any) bool {
+	current, found, _ := config.Content.GetNested(path)
+	if found && reflect.DeepEqual(current, value) {
+		return false
+	}
+	_ = config.Content.SetNested(path, value)
+	return true
+}
+
+func hasWorkspaceID(config *model.Config) bool {
+	value, found, _ := config.Content.GetNested("parameters.db.workspaceId")
+	if !found || value == nil {
+		return false
+	}
+
+	switch v := value.(type) {
+	case json.Number:
+		return v != ""
+	case string:
+		v = strings.TrimSpace(v)
+		if v == "" {
+			return false
+		}
+		_, err := strconv.ParseFloat(v, 64)
+		return err == nil
+	case float64:
+		return !math.IsNaN(v)
+	case float32:
+		return !math.IsNaN(float64(v))
+	case int, int32, int64, uint, uint32, uint64:
+		return true
+	default:
+		return false
+	}
+}
+
+// logWorkspaceSnapshot prints workspace-related values along with their Go types.
+func (m *dataGatewayMapper) logWorkspaceSnapshot(ctx context.Context, label string, config *model.Config) {
+	if config == nil {
+		m.logger.Debugf(ctx, `DGW workspace snapshot "%s": config=nil`, label)
+		return
+	}
+
+	fields := []struct {
+		Name string
+		Path string
+	}{
+		{Name: "workspaceId", Path: "parameters.db.workspaceId"},
+		{Name: "host", Path: "parameters.db.host"},
+		{Name: "user", Path: "parameters.db.user"},
+		{Name: "database", Path: "parameters.db.database"},
+		{Name: "schema", Path: "parameters.db.schema"},
+		{Name: "warehouse", Path: "parameters.db.warehouse"},
+		{Name: "role", Path: "parameters.db.role"},
+		{Name: "account", Path: "parameters.db.account"},
+		{Name: "region", Path: "parameters.db.region"},
+		{Name: "loginType", Path: "parameters.db.loginType"},
+	}
+
+	values := make([]string, 0, len(fields))
+	for _, field := range fields {
+		value, found, _ := config.Content.GetNested(field.Path)
+		if !found {
+			values = append(values, fmt.Sprintf(`%s=<missing>`, field.Name))
+			continue
+		}
+		values = append(values, fmt.Sprintf(`%s=%v (%T)`, field.Name, value, value))
+	}
+
+	m.logger.Debugf(ctx, `DGW workspace snapshot "%s": %s`, label, strings.Join(values, ", "))
+}
+
+// needsWorkspaceDetails returns true when workspace metadata in configuration is missing/incomplete.
+func needsWorkspaceDetails(config *model.Config) bool {
+	requiredStringPaths := []string{
+		"parameters.db.host",
+		"parameters.db.user",
+		"parameters.db.database",
+		"parameters.db.schema",
+		"parameters.db.warehouse",
+		"parameters.db.role",
+		"parameters.db.account",
+		"parameters.db.region",
+	}
+
+	if !hasWorkspaceID(config) {
+		return true
+	}
+
+	loginTypeValue, found, _ := config.Content.GetNested("parameters.db.loginType")
+	if !found || loginTypeValue == nil {
+		return true
+	}
+	if str, ok := loginTypeValue.(string); !ok || str != "snowflake-service-keypair" {
+		return true
+	}
+
+	for _, path := range requiredStringPaths {
+		value, found, _ := config.Content.GetNested(path)
+		if !found || value == nil {
+			return true
+		}
+		str, ok := value.(string)
+		if !ok || str == "" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// setWorkspaceID stores workspace ID as json.Number so it matches how local JSON is parsed.
+func setWorkspaceID(config *model.Config, workspaceID uint64) bool {
+	number := json.Number(strconv.FormatUint(workspaceID, 10))
+	return setNestedIfDifferent(config, "parameters.db.workspaceId", number)
+}
+
+// normalizeWorkspaceID rewrites workspaceId to json.Number when possible.
+func normalizeWorkspaceID(config *model.Config) bool {
+	value, found, _ := config.Content.GetNested("parameters.db.workspaceId")
+	if !found || value == nil {
+		return false
+	}
+
+	switch v := value.(type) {
+	case json.Number:
+		return false
+	case string:
+		trimmed := strings.TrimSpace(v)
+		if trimmed == "" {
+			return false
+		}
+		if _, err := strconv.ParseFloat(trimmed, 64); err != nil {
+			return false
+		}
+		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(trimmed))
+	case float64:
+		if math.IsNaN(v) {
+			return false
+		}
+		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(strconv.FormatFloat(v, 'f', -1, 64)))
+	case float32:
+		if math.IsNaN(float64(v)) {
+			return false
+		}
+		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(strconv.FormatFloat(float64(v), 'f', -1, 32)))
+	case int, int32, int64:
+		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(fmt.Sprintf("%d", v)))
+	case uint, uint32, uint64:
+		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(fmt.Sprintf("%d", v)))
+	default:
+		return false
+	}
 }

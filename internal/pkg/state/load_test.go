@@ -49,13 +49,15 @@ func TestLoadState(t *testing.T) {
 	// Container
 	m, fs := loadTestManifest(t, envs, "minimal")
 	d := dependencies.NewMocked(t, ctx, dependencies.WithTestProject(testProject))
+	p := project.NewWithManifest(t.Context(), fs, m)
+	p.SetDependencies(d)
 
 	// Load
 	options := LoadOptions{
 		LoadLocalState:  true,
 		LoadRemoteState: true,
 	}
-	state, err := New(t.Context(), project.NewWithManifest(t.Context(), fs, m), d)
+	state, err := New(t.Context(), p, d)
 	require.NoError(t, err)
 	ok, localErr, remoteErr := state.Load(t.Context(), options)
 
