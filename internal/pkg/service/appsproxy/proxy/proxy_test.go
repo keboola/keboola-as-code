@@ -1829,10 +1829,10 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				require.Equal(t, http.StatusBadRequest, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Starting your application...")
+				assert.Contains(t, string(body), "Application Disabled")
 
 				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},
