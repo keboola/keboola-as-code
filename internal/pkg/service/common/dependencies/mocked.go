@@ -15,6 +15,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
 	"github.com/stretchr/testify/require"
 	etcdPkg "go.etcd.io/etcd/client/v3"
 
@@ -450,7 +451,7 @@ func defaultMockedResponses(cfg *MockedConfig) (client.Client, *httpmock.MockTra
 
 	httpClient, mockedHTTPTransport := client.NewMockedClient()
 
-	httpClient = httpClient.WithRetry(client.TestingRetry())
+	httpClient = httpClient.WithRetry(request.TestingRetry())
 
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
