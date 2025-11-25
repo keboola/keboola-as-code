@@ -37,12 +37,8 @@ func (e *Error) HasRestartDisabled(code string) bool {
 	if e.Context == nil {
 		return false
 	}
-	c, ok := e.Context["code"].(string)
-	if !ok {
-		return false
-	}
-
-	return c == code
+	contextCode, ok := e.Context["code"].(string)
+	return ok && contextCode == code
 }
 
 // StatusCode returns HTTP status code.

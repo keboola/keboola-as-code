@@ -14,7 +14,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const ExceptionIDPrefix = "keboola-appsproxy-"
+const (
+	HasRestartDisabled = "apps.restartDisabled"
+	ExceptionIDPrefix  = "keboola-appsproxy-"
+)
 
 type errorPageData struct {
 	App         *AppData
@@ -31,6 +34,14 @@ func (pw *Writer) ProxyErrorHandlerFor(app api.AppConfig) func(w http.ResponseWr
 }
 
 func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, app api.AppConfig, err error) {
+	// Check for restart disabled error
+	var apiError *api.Error
+	if errors.As(err, &apiError) && apiError.HasRestartDisabled(HasRestartDisabled) {
+		pw.logger.Info(req.Context(), "app has restart disabled, rendering restart disabled page")
+		pw.WriteRestartDisabledPage(w, req, app)
+		return
+	}
+
 	var dnsError *net.DNSError
 	if errors.As(err, &dnsError) {
 		pw.logger.Info(req.Context(), "app is not running, rendering spinner page")
