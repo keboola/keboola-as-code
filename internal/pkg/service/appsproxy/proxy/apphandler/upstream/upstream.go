@@ -49,13 +49,14 @@ type Manager struct {
 }
 
 type AppUpstream struct {
-	manager       *Manager
-	app           api.AppConfig
-	target        *url.URL
-	handler       *chain.Chain
-	wsHandler     *chain.Chain
-	cancelWs      context.CancelCauseFunc
-	activeWsCount atomic.Int64
+	manager         *Manager
+	app             api.AppConfig
+	target          *url.URL
+	handler         *chain.Chain
+	wsHandler       *chain.Chain
+	cancelWs        context.CancelCauseFunc
+	activeWsCount   atomic.Int64
+	restartDisabled atomic.Bool
 }
 
 type dependencies interface {
@@ -141,7 +142,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
+	proxy.ErrorHandler = u.wrapErrorHandler(u.manager.pageWriter.ProxyErrorHandlerFor(u.app))
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -160,7 +161,7 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
+	proxy.ErrorHandler = u.wrapErrorHandler(u.manager.pageWriter.ProxyErrorHandlerFor(u.app))
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -183,6 +184,16 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 		)
 }
 
+func (u *AppUpstream) wrapErrorHandler(originalErrorHandler func(w http.ResponseWriter, req *http.Request, err error)) func(w http.ResponseWriter, req *http.Request, err error) {
+	return func(w http.ResponseWriter, r *http.Request, err error) {
+		if u.restartDisabled.Load() {
+			u.manager.pageWriter.WriteRestartDisabledPage(w, r, u.app)
+			return
+		}
+		originalErrorHandler(w, r, err)
+	}
+}
+
 func (u *AppUpstream) trace() chain.Middleware {
 	return func(next chain.Handler) chain.Handler {
 		return chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -195,7 +206,10 @@ func (u *AppUpstream) trace() chain.Middleware {
 				},
 				DNSDone: func(info httptrace.DNSDoneInfo) {
 					if info.Err != nil {
-						u.wakeup(ctx, info.Err)
+						// Skip wakeup if we already know the app is disabled
+						if !u.restartDisabled.Load() {
+							u.wakeup(ctx, info.Err)
+						}
 					}
 				},
 			})
@@ -232,6 +246,13 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 
 		// Error is already logged by the Wakeup method itself.
 		err := u.manager.wakeup.Wakeup(wakeupCtx, u.app.ID) //nolint:contextcheck
+
+		// Check for restart disabled error
+		var apiErr *api.Error
+		if errors.As(err, &apiErr) && apiErr.HasRestartDisabled() {
+			u.restartDisabled.Store(true)
+		}
+
 		span.End(&err)
 	})
 }

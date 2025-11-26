@@ -1829,10 +1829,26 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusBadRequest, response.StatusCode)
+				// First request returns 503 Service Unavailable (Spinner) because wakeup is async
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Application Disabled")
+				assert.Contains(t, string(body), "Starting your application...")
+
+				// Wait for async wakeup to complete
+				assert.Eventually(t, func() bool {
+					// Second request should return 400 Bad Request (Restart Disabled)
+					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+					require.NoError(t, err)
+					response, err := client.Do(request)
+					require.NoError(t, err)
+					if response.StatusCode == http.StatusBadRequest {
+						body, err := io.ReadAll(response.Body)
+						require.NoError(t, err)
+						return strings.Contains(string(body), "Application Disabled")
+					}
+					return false
+				}, 5*time.Second, 100*time.Millisecond)
 
 				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},

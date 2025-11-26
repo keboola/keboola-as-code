@@ -76,7 +76,7 @@ func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
 
 	// Check if it's a restart disabled error via context code
 	var apiErr *api.Error
-	if errors.As(err, &apiErr) && apiErr.HasRestartDisabled("apps.restartDisabled") {
+	if errors.As(err, &apiErr) && apiErr.HasRestartDisabled() {
 		// This is expected for apps with restart disabled, don't log as error
 		l.logger.Infof(ctx, `app "%s" has restart disabled`, appID)
 		return err // Still return the error so it can be handled by the proxy
