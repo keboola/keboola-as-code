@@ -15,8 +15,7 @@ import (
 )
 
 const (
-	HasRestartDisabled = "apps.restartDisabled"
-	ExceptionIDPrefix  = "keboola-appsproxy-"
+	ExceptionIDPrefix = "keboola-appsproxy-"
 )
 
 type errorPageData struct {
@@ -36,7 +35,7 @@ func (pw *Writer) ProxyErrorHandlerFor(app api.AppConfig) func(w http.ResponseWr
 func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, app api.AppConfig, err error) {
 	// Check for restart disabled error
 	var apiError *api.Error
-	if errors.As(err, &apiError) && apiError.HasRestartDisabled(HasRestartDisabled) {
+	if errors.As(err, &apiError) && apiError.HasRestartDisabled() {
 		pw.logger.Info(req.Context(), "app has restart disabled, rendering restart disabled page")
 		pw.WriteRestartDisabledPage(w, req, app)
 		return

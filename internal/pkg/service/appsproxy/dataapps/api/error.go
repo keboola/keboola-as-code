@@ -5,6 +5,10 @@ import (
 	"net/http"
 )
 
+const (
+	ContextCodeRestartDisabled = "apps.restartDisabled"
+)
+
 // Error represents the structure of Sandboxes API error.
 type Error struct {
 	Message     string         `json:"error"`
@@ -33,12 +37,12 @@ func (e *Error) ErrorExceptionID() string {
 	return e.ExceptionID
 }
 
-func (e *Error) HasRestartDisabled(code string) bool {
+func (e *Error) HasRestartDisabled() bool {
 	if e.Context == nil {
 		return false
 	}
 	contextCode, ok := e.Context["code"].(string)
-	return ok && contextCode == code
+	return ok && contextCode == ContextCodeRestartDisabled
 }
 
 // StatusCode returns HTTP status code.
