@@ -9,14 +9,18 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -139,9 +143,15 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 	m.logger.Infof(ctx, `Creating workspace for data-gateway config "%s"...`, config.Name)
 
 	// Generate keypair
-	_, publicKeyPEM, err := generateRSAKeyPairPEM()
+	privateKeyPEM, publicKeyPEM, err := generateRSAKeyPairPEM()
 	if err != nil {
 		return errors.Errorf(`cannot generate keypair for config "%s": %w`, config.Name, err)
+	}
+
+	// Store private key to /tmp/<project_id>/<configuration-id>
+	if err := m.storePrivateKey(ctx, config, privateKeyPEM); err != nil {
+		m.logger.Warnf(ctx, `Cannot store private key for config "%s": %s`, config.Name, err.Error())
+		// Continue with workspace creation even if key storage fails
 	}
 
 	// Create configuration workspace
@@ -229,6 +239,70 @@ func needsWorkspaceDetails(config *model.Config) bool {
 func setWorkspaceID(config *model.Config, workspaceID uint64) bool {
 	number := json.Number(strconv.FormatUint(workspaceID, 10))
 	return setNestedIfDifferent(config, "parameters.db.workspaceId", number)
+}
+
+// storePrivateKey saves the private key to /tmp/<project_id>/<configuration-id>/private_key.pem.
+// The directory structure is created if it doesn't exist.
+func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.Config, privateKeyPEM string) error {
+	// Get project ID from manifest
+	// Type assert to project.Manifest to access ProjectID() method
+	projectManifest, ok := m.state.Manifest().(*project.Manifest)
+	if !ok {
+		return errors.New("cannot get project manifest from state")
+	}
+	projectID := projectManifest.ProjectID()
+	if projectID == 0 {
+		return errors.New("cannot get project ID from manifest")
+	}
+
+	// Get configuration ID
+	configID := config.ID
+	if configID == "" {
+		return errors.New("config ID is empty")
+	}
+
+	// Create OS filesystem instance for /tmp
+	// Use aferofs.NewLocalFs to get a proper filesystem.Fs interface
+	tmpFs, err := aferofs.NewLocalFs("/tmp")
+	if err != nil {
+		return errors.Errorf("cannot create filesystem for /tmp: %w", err)
+	}
+
+	// Build relative directory path: <project_id>/<configuration-id>
+	// Use filesystem.Join for filesystem operations (uses forward slashes)
+	projectDirPath := filesystem.Join(fmt.Sprintf("%d", projectID))
+	relativeDirPath := filesystem.Join(projectDirPath, string(configID))
+
+	// Create project directory if it doesn't exist
+	if !tmpFs.Exists(ctx, projectDirPath) {
+		if err := tmpFs.Mkdir(ctx, projectDirPath); err != nil {
+			absProjectPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID))
+			return errors.Errorf("cannot create project directory %s: %w", absProjectPath, err)
+		}
+	}
+
+	// Create configuration directory if it doesn't exist
+	if !tmpFs.Exists(ctx, relativeDirPath) {
+		if err := tmpFs.Mkdir(ctx, relativeDirPath); err != nil {
+			// Use filepath.Join for absolute path in error message (OS-specific)
+			absDirPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID))
+			return errors.Errorf("cannot create directory %s: %w", absDirPath, err)
+		}
+		absDirPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID))
+		m.logger.Debugf(ctx, `Created directory "%s" for private key storage`, absDirPath)
+	}
+
+	// Write private key file
+	privateKeyPath := filesystem.Join(relativeDirPath, "private_key.pem")
+	privateKeyFile := filesystem.NewRawFile(privateKeyPath, privateKeyPEM)
+	if err := tmpFs.WriteFile(ctx, privateKeyFile); err != nil {
+		absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		return errors.Errorf("cannot write private key to %s: %w", absKeyPath, err)
+	}
+
+	absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+	m.logger.Infof(ctx, `Stored private key for config "%s" to "%s"`, config.Name, absKeyPath)
+	return nil
 }
 
 // normalizeWorkspaceID rewrites workspaceId to json.Number when possible.
