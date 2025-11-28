@@ -103,7 +103,7 @@ func Start(d dependencies, cfg Config) error {
 	})
 
 	n.sinks = etcdop.SetupMirrorMap[definition.Sink, key.SinkKey, *sinkData](
-		n.definitionRepository.Sink().GetActivePlusDeletedAndWatch(ctx),
+		n.definitionRepository.Sink().GetAllIncludeDeletedAndWatch(ctx),
 		func(_ string, sink definition.Sink) key.SinkKey {
 			return sink.SinkKey
 		},
