@@ -196,10 +196,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 				},
 				DNSDone: func(info httptrace.DNSDoneInfo) {
 					if info.Err != nil {
-						// Skip wakeup if we already know the app is disabled
-						if !u.restartDisabled.Load() {
-							u.wakeup(ctx, info.Err)
-						}
+						u.wakeup(ctx, info.Err)
 					}
 				},
 			})
