@@ -6,6 +6,7 @@ on:
     tags:
       - 'production-apps-proxy-v**'
       - 'dev-apps-proxy-v**'
+      - 'canary-*-apps-proxy-v**'
 
 env:
   # DockerHub login

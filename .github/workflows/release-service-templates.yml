@@ -6,6 +6,7 @@ on:
     tags:
       - 'production-templates-api-v**'
       - 'dev-templates-api-v**'
+      - 'canary-*-templates-api-v**'
 
 env:
   # DockerHub login
