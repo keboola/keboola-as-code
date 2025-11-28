@@ -1,0 +1,16 @@
+{
+  "parameters": {
+    "db": {
+      "workspaceId": %A,
+      "host": %A,
+      "user": %A,
+      "database": %A,
+      "schema": %A,
+      "warehouse": %A,
+      "role": %A,
+      "account": %A,
+      "region": %A,
+      "loginType": "snowflake-service-keypair"
+    }
+  }
+}

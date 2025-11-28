@@ -90,6 +90,12 @@ func (p *Project) Ctx() context.Context {
 	return p.ctx
 }
 
+// SetDependencies sets the dependencies for the project.
+// This is needed when creating a state directly (e.g., in tests) without using LoadState.
+func (p *Project) SetDependencies(d dependencies) {
+	p.deps = d
+}
+
 func (p *Project) MappersFor(state *state.State) (mapper.Mappers, error) {
 	return MappersFor(state, p.deps)
 }

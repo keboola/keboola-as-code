@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/codemapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/configmetadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/datagateway"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/ignore"
@@ -31,6 +32,7 @@ func MappersFor(s *state.State, d dependencies) (mapper.Mappers, error) {
 		// Special components
 		scheduler.NewMapper(s, d),
 		orchestrator.NewMapper(s),
+		datagateway.NewMapper(s, d),
 		// AES codes
 		transformation.NewMapper(s),
 		sharedcode.NewCodesMapper(s),
