@@ -1837,12 +1837,12 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Wait for async wakeup to complete
 				assert.Eventually(t, func() bool {
-					// Second request should return 400 Bad Request (Restart Disabled)
+					// Second request should return 404 Not Found (Restart Disabled)
 					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 					require.NoError(t, err)
 					response, err := client.Do(request)
 					require.NoError(t, err)
-					if response.StatusCode == http.StatusBadRequest {
+					if response.StatusCode == http.StatusNotFound {
 						body, err := io.ReadAll(response.Body)
 						require.NoError(t, err)
 						return strings.Contains(string(body), "Application Disabled")

@@ -142,7 +142,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.wrapErrorHandler(u.manager.pageWriter.ProxyErrorHandlerFor(u.app))
+	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app, &u.restartDisabled)
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -161,7 +161,7 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.wrapErrorHandler(u.manager.pageWriter.ProxyErrorHandlerFor(u.app))
+	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app, &u.restartDisabled)
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -182,16 +182,6 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 			// Trace connection events
 			u.trace(),
 		)
-}
-
-func (u *AppUpstream) wrapErrorHandler(originalErrorHandler func(w http.ResponseWriter, req *http.Request, err error)) func(w http.ResponseWriter, req *http.Request, err error) {
-	return func(w http.ResponseWriter, r *http.Request, err error) {
-		if u.restartDisabled.Load() {
-			u.manager.pageWriter.WriteRestartDisabledPage(w, r, u.app)
-			return
-		}
-		originalErrorHandler(w, r, err)
-	}
 }
 
 func (u *AppUpstream) trace() chain.Middleware {
