@@ -1,0 +1,112 @@
+{
+  "version": 2,
+  "project": {
+    "id": %%TEST_KBC_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "allowTargetEnv": false,
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}",
+    "dataAppConfig": "app/{component_id}/{config_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "templates": {
+    "repositories": [
+      {
+        "type": "git",
+        "name": "keboola",
+        "url": "https://github.com/keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_BAR_ID%%,
+      "path": "bar"
+    },
+    {
+      "id": %%TEST_BRANCH_FOO_ID%%,
+      "path": "foo"
+    },
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
+      "path": "extractor/ex-generic-v2/empty",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ID%%",
+      "path": "extractor/keboola.ex-db-mysql/with-rows",
+      "rows": [
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ROW_DISABLED_ID%%",
+          "path": "rows/disabled"
+        },
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID%%",
+          "path": "rows/test-view"
+        },
+        {
+          "id": "%%TEST_BRANCH_BAR_CONFIG_WITH_ROWS_ROW_USERS_ID%%",
+          "path": "rows/users"
+        }
+      ]
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_PYTHON_TRANSFORMATION_ID%%",
+      "path": "transformation/keboola.python-transformation-v2/python-transformation",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_BAR_ID%%,
+      "componentId": "keboola.snowflake-transformation",
+      "id": "%%TEST_BRANCH_BAR_CONFIG_SNOWFLAKE_TRANSFORMATION_ID%%",
+      "path": "transformation/keboola.snowflake-transformation/snowflake-transformation",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_EMPTY_ID%%",
+      "path": "extractor/ex-generic-v2/empty",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_FOO_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_FOO_CONFIG_WITHOUT_ROWS_ID%%",
+      "path": "extractor/ex-generic-v2/without-rows",
+      "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "keboola.data-apps",
+      "id": "%%TEST_BRANCH_MAIN_CONFIG_DATA_APP_ID%%",
+      "path": "app/keboola.data-apps/data-app",
+      "rows": []
+    }
+  ]
+}
