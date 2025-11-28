@@ -101,7 +101,7 @@ func Start(d dependencies, cfg Config) error {
 	})
 
 	n.sinks = etcdop.SetupMirrorMap[definition.Sink, key.SinkKey, *sinkData](
-		n.definitionRepository.Sink().GetAllAndWatch(ctx),
+		n.definitionRepository.Sink().GetActivePlusDeletedAndWatch(ctx),
 		func(_ string, sink definition.Sink) key.SinkKey {
 			return sink.SinkKey
 		},
@@ -165,10 +165,6 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 
 	// Process all sink keys
 	n.sinks.ForEach(func(sinkKey key.SinkKey, sink *sinkData) (stop bool) {
-		if !sink.Enabled {
-			return false
-		}
-
 		grp.Go(func() error {
 			// There can be several cleanup nodes, each node processes an own part.
 			owner, err := n.dist.IsOwner(sinkKey.ProjectID.String())

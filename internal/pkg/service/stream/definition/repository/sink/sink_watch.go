@@ -12,3 +12,7 @@ import (
 func (r *Repository) GetAllAndWatch(ctx context.Context, opts ...etcd.OpOption) *etcdop.RestartableWatchStreamT[definition.Sink] {
 	return r.schema.Active().GetAllAndWatch(ctx, r.client, opts...)
 }
+
+func (r *Repository) GetActivePlusDeletedAndWatch(ctx context.Context, opts ...etcd.OpOption) *etcdop.RestartableWatchStreamT[definition.Sink] {
+	return r.schema.GetAllAndWatch(ctx, r.client, opts...)
+}
