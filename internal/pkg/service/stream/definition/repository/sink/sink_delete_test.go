@@ -136,7 +136,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 		var err error
 		sink1, err = repo.SoftDelete(sinkKey1, now, by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink1.IsDeleted())
+		require.True(t, sink1.IsDeleted())
 		assert.Equal(t, now, sink1.DeletedAt().Time())
 	}
 
@@ -213,7 +213,7 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteBranch(t *testing.T) {
 		var err error
 		sink1, err = repo.SoftDelete(sinkKey1, now, by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, sink1.IsDeleted())
+		require.True(t, sink1.IsDeleted())
 		assert.Equal(t, now, sink1.DeletedAt().Time())
 	}
 
