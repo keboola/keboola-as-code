@@ -6,6 +6,7 @@ on:
     tags:
       - 'production-stream-v**'
       - 'dev-stream-v**'
+      - 'canary-*-stream-v**'
 
 env:
   # DockerHub login

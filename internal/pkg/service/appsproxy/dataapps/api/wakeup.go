@@ -21,7 +21,7 @@ func (a *API) WakeupApp(appID AppID) request.APIRequest[request.NoResult] {
 				attribute.Int(attrSandboxesServiceStatusCode, response.StatusCode()),
 			}
 			span.SetAttributes(attrs...)
-			return nil
+			return err
 		}).
 		WithPatch("apps/{appId}").
 		AndPathParam("appId", appID.String()).

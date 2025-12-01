@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Interval sets how often the proxy sends wakeup request to sandboxes service.
@@ -72,6 +73,15 @@ func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
 
 	// Send the notification
 	_, err := l.api.WakeupApp(appID).Send(ctx)
+
+	// Check if it's a restart disabled error via context code
+	var apiErr *api.Error
+	if errors.As(err, &apiErr) && apiErr.HasRestartDisabled() {
+		// This is expected for apps with restart disabled, don't log as error
+		l.logger.Infof(ctx, `app "%s" has restart disabled`, appID)
+		return err // Still return the error so it can be handled by the proxy
+	}
+
 	// If it does not succeed but app is currently stopping do not log it as error, log only other errors
 	// Instead of implementing state machine as in sandboxes service, we want to skip valid state that the
 	// pod is deallocating, and we want to wait till pod is `stopped` and we can `start` the pod again.
