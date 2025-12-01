@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // AfterRemoteOperation handles workspace creation and backfilling for data-gateway configs after remote operations.
@@ -18,6 +19,8 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 		localWork.SaveObject(configState, configState.Local, model.NewChangedFields("configuration"))
 		localChangesScheduled = true
 	}
+
+	errs := errors.NewMultiError()
 
 	// Process saved configs - create workspaces for configs that were just created/updated
 	for _, objectState := range changes.Saved() {
@@ -54,7 +57,7 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 		// This handles the case where a new config was created and pushed, but workspace wasn't created yet
 		m.logger.Debugf(ctx, `Config "%s" is missing workspaceId after save, ensuring workspace exists...`, config.Name)
 		if err := m.ensureWorkspaceForConfig(ctx, config); err != nil {
-			m.logger.Warnf(ctx, `Cannot ensure workspace for config "%s": %s`, config.Name, err.Error())
+			errs.Append(errors.PrefixErrorf(err, `cannot ensure workspace for config "%s"`, config.Name))
 			continue
 		}
 
@@ -62,13 +65,18 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 		workspaceID, found, _ = config.Content.GetNested("parameters.db.workspaceId")
 		if found && workspaceID != nil && workspaceID != "" {
 			// Update the configuration in remote with workspace details
+			// If this update fails, the workspace exists but the config doesn't reference it.
+			// This creates an inconsistent state, so we return the error to prevent silent failures.
 			api := m.KeboolaProjectAPI()
 			changedFields := model.NewChangedFields()
 			changedFields.Add("configuration")
 			apiObject, apiChangedFields := config.ToAPIObject("Workspace created and configuration updated", changedFields)
 			_, err := api.UpdateRequest(apiObject, apiChangedFields).Send(ctx)
 			if err != nil {
-				m.logger.Warnf(ctx, `Cannot update configuration "%s" with workspace details: %s`, config.Name, err.Error())
+				// Return error instead of logging and continuing.
+				// The workspace has been created and should be used, but the config update failed.
+				// This error must be propagated to prevent inconsistent state.
+				errs.Append(errors.Errorf(`cannot update configuration "%s" with workspace details: %w`, config.Name, err))
 				continue
 			}
 			m.logger.Debugf(ctx, `Updated configuration "%s" with workspace details`, config.Name)
@@ -150,11 +158,11 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 
 	if localChangesScheduled {
 		if err := localWork.Invoke(); err != nil {
-			return err
+			errs.Append(err)
 		}
 	}
 
-	return nil
+	return errs.ErrorOrNil()
 }
 
 // MapAfterRemoteLoad normalizes remote configs so diff sees current workspace details.
