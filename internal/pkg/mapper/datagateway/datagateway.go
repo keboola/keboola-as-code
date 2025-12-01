@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -108,10 +107,8 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 	}
 
 	// Cache project ID from workspace response if available and not yet cached
-	if m.projectID == 0 && len(*workspaces) > 0 {
-		// Workspaces don't directly expose project ID, so we'll need to get it another way
-		// We'll extract it from the API response or get it from the branch
-	}
+	// Note: Workspaces don't directly expose project ID, so we rely on the manifest
+	// which is checked earlier in this function.
 
 	// If workspace already exists, use it
 	if len(*workspaces) > 0 {
@@ -273,7 +270,7 @@ func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.C
 	// Create project directory if it doesn't exist
 	if !tmpFs.Exists(ctx, projectDirPath) {
 		if err := tmpFs.Mkdir(ctx, projectDirPath); err != nil {
-			absProjectPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID))
+			absProjectPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID))
 			return errors.Errorf("cannot create project directory %s: %w", absProjectPath, err)
 		}
 	}
@@ -281,11 +278,10 @@ func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.C
 	// Create configuration directory if it doesn't exist
 	if !tmpFs.Exists(ctx, relativeDirPath) {
 		if err := tmpFs.Mkdir(ctx, relativeDirPath); err != nil {
-			// Use filepath.Join for absolute path in error message (OS-specific)
-			absDirPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID))
+			absDirPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID))
 			return errors.Errorf("cannot create directory %s: %w", absDirPath, err)
 		}
-		absDirPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID))
+		absDirPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID))
 		m.logger.Debugf(ctx, `Created directory "%s" for private key storage`, absDirPath)
 	}
 
@@ -295,20 +291,20 @@ func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.C
 	// Use OpenFile directly to set restrictive permissions (0600) instead of default 0644
 	fd, err := tmpFs.OpenFile(ctx, privateKeyPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
-		absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		absKeyPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
 		return errors.Errorf("cannot open private key file %s: %w", absKeyPath, err)
 	}
 	if _, err := fd.WriteString(privateKeyPEM); err != nil {
-		absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		absKeyPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
 		_ = fd.Close()
 		return errors.Errorf("cannot write private key to %s: %w", absKeyPath, err)
 	}
 	if err := fd.Close(); err != nil {
-		absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		absKeyPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
 		return errors.Errorf("cannot close private key file %s: %w", absKeyPath, err)
 	}
 
-	absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+	absKeyPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
 	m.logger.Infof(ctx, `Stored private key for config "%s" to "%s"`, config.Name, absKeyPath)
 	return nil
 }

@@ -33,4 +33,3 @@ func GenerateRSAKeyPairPEM() (privateKeyPEM string, publicKeyPEM string, err err
 
 	return string(privPEM), string(pubPEM), nil
 }
-

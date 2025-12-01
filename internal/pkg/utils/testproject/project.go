@@ -737,4 +737,3 @@ func (p *Project) logf(format string, a ...any) {
 		p.logFn(format, a...)
 	}
 }
-
