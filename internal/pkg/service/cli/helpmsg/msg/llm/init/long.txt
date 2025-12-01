@@ -1,0 +1,11 @@
+Command "llm init"
+
+Initialize LLM context for a project
+and make first sync from the Keboola Connection.
+
+You will be prompted to define:
+- storage API host
+- storage API token of your project
+
+You can also enter these values
+by flags or environment variables.
