@@ -1,6 +1,6 @@
 Plan for "push" operation:
   * C main/application/keboola.app-data-gateway/empty-data-gateway | changed: name
 Creating workspace for data-gateway config "test"...
-Stored private key for config "new config" to "/tmp/%A/private_key.pem"
+Stored private key for config "test" to "/tmp/%A/private_key.pem"
 Created workspace %A for config "test"
 Push done.
