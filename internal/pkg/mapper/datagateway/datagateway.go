@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -74,11 +75,6 @@ func backfillWorkspaceDetails(config *model.Config, workspace *keboola.StorageWo
 	return changed
 }
 
-// ptr returns a pointer to the given value.
-func ptr[T any](v T) *T {
-	return &v
-}
-
 // ensureWorkspaceForConfig ensures a workspace exists for the given config, creating one if necessary.
 func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config *model.Config) error {
 	api := m.KeboolaProjectAPI()
@@ -135,16 +131,16 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 	}
 
 	// Store private key to /tmp/<project_id>/<configuration-id>
-	// Project ID should be available from the manifest, but if it's not, skip storing the key
+	// Private key storage is critical for workspace functionality.
+	// If project ID is not available, fail immediately to prevent creating an unusable workspace.
 	if m.projectID == 0 {
-		m.logger.Debugf(ctx, `Project ID not available for config "%s", private key will not be stored to filesystem`, config.Name)
-	} else {
-		// Private key storage is critical for workspace functionality.
-		// If storage fails, the workspace will be created but won't be usable.
-		// Fail the operation to prevent creating an unusable workspace.
-		if err := m.storePrivateKey(ctx, config, privateKeyPEM); err != nil {
-			return errors.Errorf(`cannot store private key for config "%s": %w`, config.Name, err)
-		}
+		return errors.Errorf(`project ID not available for config "%s", cannot store private key - workspace would be unusable`, config.Name)
+	}
+
+	// If storage fails, the workspace will be created but won't be usable.
+	// Fail the operation to prevent creating an unusable workspace.
+	if err := m.storePrivateKey(ctx, config, privateKeyPEM); err != nil {
+		return errors.Errorf(`cannot store private key for config "%s": %w`, config.Name, err)
 	}
 
 	// Create configuration workspace
@@ -247,33 +243,6 @@ func setWorkspaceID(config *model.Config, workspaceID uint64) bool {
 	return setNestedIfDifferent(config, "parameters.db.workspaceId", number)
 }
 
-// getProjectID gets the project ID, caching it after the first API call.
-// We get it from a lightweight API call to avoid import cycle with project package.
-func (m *dataGatewayMapper) getProjectID(ctx context.Context) (keboola.ProjectID, error) {
-	// Return cached project ID if available
-	if m.projectID != 0 {
-		return m.projectID, nil
-	}
-
-	// Get project ID from the API by extracting it from the workspace API response
-	// Since workspaces are scoped to a project, we can get project ID from the API response
-	// We'll make a lightweight call to get default branch and extract project ID from response
-	// Get project ID from the API response when we access workspaces
-	// The workspace API includes project context, but we need to extract it
-	// For now, we'll get it from the branch API response metadata
-	// Since branches don't expose ProjectID directly, we'll need to get it from the API client
-	// or from the workspace response headers/metadata
-
-	// Simple solution: get it from the API by making a call that returns project info
-	// Since we can't easily get it, we'll require it to be set before use
-	return 0, errors.New("project ID must be set via setProjectID before use")
-}
-
-// setProjectID caches the project ID for future use.
-func (m *dataGatewayMapper) setProjectID(projectID keboola.ProjectID) {
-	m.projectID = projectID
-}
-
 // storePrivateKey saves the private key to /tmp/<project_id>/<configuration-id>/private_key.pem.
 // The directory structure is created if it doesn't exist.
 func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.Config, privateKeyPEM string) error {
@@ -320,12 +289,23 @@ func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.C
 		m.logger.Debugf(ctx, `Created directory "%s" for private key storage`, absDirPath)
 	}
 
-	// Write private key file
+	// Write private key file with restrictive permissions (0600 - owner read/write only)
+	// This ensures the private key is not readable by other users on the system.
 	privateKeyPath := filesystem.Join(relativeDirPath, "private_key.pem")
-	privateKeyFile := filesystem.NewRawFile(privateKeyPath, privateKeyPEM)
-	if err := tmpFs.WriteFile(ctx, privateKeyFile); err != nil {
+	// Use OpenFile directly to set restrictive permissions (0600) instead of default 0644
+	fd, err := tmpFs.OpenFile(ctx, privateKeyPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
 		absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		return errors.Errorf("cannot open private key file %s: %w", absKeyPath, err)
+	}
+	if _, err := fd.WriteString(privateKeyPEM); err != nil {
+		absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		_ = fd.Close()
 		return errors.Errorf("cannot write private key to %s: %w", absKeyPath, err)
+	}
+	if err := fd.Close(); err != nil {
+		absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		return errors.Errorf("cannot close private key file %s: %w", absKeyPath, err)
 	}
 
 	absKeyPath := filepath.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")

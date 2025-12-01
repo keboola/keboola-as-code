@@ -86,17 +86,25 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 
 			// Sync workspace details to local state if it exists
 			if configState.Local != nil {
-				_ = configState.Local.Content.SetNested("parameters.db.workspaceId", workspaceID)
+				if err := configState.Local.Content.SetNested("parameters.db.workspaceId", workspaceID); err != nil {
+					m.logger.Warnf(ctx, `Failed to sync workspaceId to local state for config "%s": %s`, config.Name, err.Error())
+				}
 				normalizeWorkspaceID(configState.Local)
 				// Also sync other workspace details
 				if host, found, _ := config.Content.GetNested("parameters.db.host"); found {
-					_ = configState.Local.Content.SetNested("parameters.db.host", host)
+					if err := configState.Local.Content.SetNested("parameters.db.host", host); err != nil {
+						m.logger.Warnf(ctx, `Failed to sync host to local state for config "%s": %s`, config.Name, err.Error())
+					}
 				}
 				if user, found, _ := config.Content.GetNested("parameters.db.user"); found {
-					_ = configState.Local.Content.SetNested("parameters.db.user", user)
+					if err := configState.Local.Content.SetNested("parameters.db.user", user); err != nil {
+						m.logger.Warnf(ctx, `Failed to sync user to local state for config "%s": %s`, config.Name, err.Error())
+					}
 				}
 				if database, found, _ := config.Content.GetNested("parameters.db.database"); found {
-					_ = configState.Local.Content.SetNested("parameters.db.database", database)
+					if err := configState.Local.Content.SetNested("parameters.db.database", database); err != nil {
+						m.logger.Warnf(ctx, `Failed to sync database to local state for config "%s": %s`, config.Name, err.Error())
+					}
 				}
 				scheduleLocalSave(configState)
 			}
