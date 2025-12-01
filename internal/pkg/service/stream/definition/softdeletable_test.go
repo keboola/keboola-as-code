@@ -26,7 +26,7 @@ func TestSoftDeletable(t *testing.T) {
 	assert.True(t, v.IsDeleted())
 	assert.False(t, v.IsDeletedDirectly())
 	assert.Nil(t, v.UndeletedBy())
-	assert.Zero(t, v.UndeletedAt())
+	assert.Nil(t, v.UndeletedAt())
 	assert.Equal(t, &by, v.DeletedBy())
 	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.DeletedAt().String())
 
@@ -42,7 +42,7 @@ func TestSoftDeletable(t *testing.T) {
 	assert.True(t, v.IsDeleted())
 	assert.True(t, v.IsDeletedDirectly())
 	assert.Nil(t, v.UndeletedBy())
-	assert.Zero(t, v.UndeletedAt())
+	assert.Nil(t, v.UndeletedAt())
 	assert.Equal(t, &by, v.DeletedBy())
 	assert.Equal(t, "2006-01-02T15:04:05.000Z", v.DeletedAt().String())
 }
