@@ -127,7 +127,7 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 		return errors.Errorf(`cannot generate keypair for config "%s": %w`, config.Name, err)
 	}
 
-	// Store private key to /tmp/<project_id>/<configuration-id>
+	// Store private key to tempDir/<project_id>/<configuration-id>
 	// Private key storage is critical for workspace functionality.
 	// If project ID is not available, fail immediately to prevent creating an unusable workspace.
 	if m.projectID == 0 {
@@ -240,7 +240,7 @@ func setWorkspaceID(config *model.Config, workspaceID uint64) bool {
 	return setNestedIfDifferent(config, "parameters.db.workspaceId", number)
 }
 
-// storePrivateKey saves the private key to /tmp/<project_id>/<configuration-id>/private_key.pem.
+// storePrivateKey saves the private key to tempDir/<project_id>/<configuration-id>/private_key.pem.
 // The directory structure is created if it doesn't exist.
 func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.Config, privateKeyPEM string) error {
 	// Get cached project ID (must be set before calling this method)
@@ -255,11 +255,13 @@ func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.C
 		return errors.New("config ID is empty")
 	}
 
-	// Create OS filesystem instance for /tmp
+	// Create OS filesystem instance for system temporary directory.
+	// os.TempDir returns an OS-agnostic path, so the mapper works on Linux, macOS and Windows.
 	// Use aferofs.NewLocalFs to get a proper filesystem.Fs interface
-	tmpFs, err := aferofs.NewLocalFs("/tmp")
+	tmpDir := os.TempDir()
+	tmpFs, err := aferofs.NewLocalFs(tmpDir)
 	if err != nil {
-		return errors.Errorf("cannot create filesystem for /tmp: %w", err)
+		return errors.Errorf("cannot create filesystem for temp dir %s: %w", tmpDir, err)
 	}
 
 	// Build relative directory path: <project_id>/<configuration-id>
@@ -270,7 +272,7 @@ func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.C
 	// Create project directory if it doesn't exist
 	if !tmpFs.Exists(ctx, projectDirPath) {
 		if err := tmpFs.Mkdir(ctx, projectDirPath); err != nil {
-			absProjectPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID))
+			absProjectPath := filesystem.Join(tmpDir, fmt.Sprintf("%d", projectID))
 			return errors.Errorf("cannot create project directory %s: %w", absProjectPath, err)
 		}
 	}
@@ -278,10 +280,10 @@ func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.C
 	// Create configuration directory if it doesn't exist
 	if !tmpFs.Exists(ctx, relativeDirPath) {
 		if err := tmpFs.Mkdir(ctx, relativeDirPath); err != nil {
-			absDirPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID))
+			absDirPath := filesystem.Join(tmpDir, fmt.Sprintf("%d", projectID), string(configID))
 			return errors.Errorf("cannot create directory %s: %w", absDirPath, err)
 		}
-		absDirPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID))
+		absDirPath := filesystem.Join(tmpDir, fmt.Sprintf("%d", projectID), string(configID))
 		m.logger.Debugf(ctx, `Created directory "%s" for private key storage`, absDirPath)
 	}
 
@@ -291,20 +293,20 @@ func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.C
 	// Use OpenFile directly to set restrictive permissions (0600) instead of default 0644
 	fd, err := tmpFs.OpenFile(ctx, privateKeyPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
-		absKeyPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		absKeyPath := filesystem.Join(tmpDir, fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
 		return errors.Errorf("cannot open private key file %s: %w", absKeyPath, err)
 	}
 	if _, err := fd.WriteString(privateKeyPEM); err != nil {
-		absKeyPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		absKeyPath := filesystem.Join(tmpDir, fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
 		_ = fd.Close()
 		return errors.Errorf("cannot write private key to %s: %w", absKeyPath, err)
 	}
 	if err := fd.Close(); err != nil {
-		absKeyPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+		absKeyPath := filesystem.Join(tmpDir, fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
 		return errors.Errorf("cannot close private key file %s: %w", absKeyPath, err)
 	}
 
-	absKeyPath := filesystem.Join("/tmp", fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
+	absKeyPath := filesystem.Join(tmpDir, fmt.Sprintf("%d", projectID), string(configID), "private_key.pem")
 	m.logger.Infof(ctx, `Stored private key for config "%s" to "%s"`, config.Name, absKeyPath)
 	return nil
 }
