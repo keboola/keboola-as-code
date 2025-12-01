@@ -96,7 +96,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Go, tools and caching
         uses: ./.github/actions/go-setup
@@ -146,7 +146,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download targets
         uses: actions/download-artifact@v6
@@ -242,7 +242,7 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download Homebrew formulae
         uses: actions/download-artifact@v6
@@ -276,7 +276,7 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install GPG
         run: sudo apt-get update && sudo apt-get install -y gnupg
@@ -366,7 +366,7 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install GitHub "hub" CLI
         uses: geertvdc/setup-hub@master
