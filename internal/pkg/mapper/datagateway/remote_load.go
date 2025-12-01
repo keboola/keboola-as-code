@@ -140,8 +140,9 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 
 		// Use the first workspace to backfill details
 		workspace := (*workspaces)[0]
-		m.logger.Debugf(ctx, `Backfilling workspace %d details for config "%s"`, workspace.ID, config.Name)
-		backfillWorkspaceDetails(config, workspace)
+		if backfillWorkspaceDetails(config, workspace) {
+			m.logger.Debugf(ctx, `Backfilled workspace %d details for config "%s"`, workspace.ID, config.Name)
+		}
 		if configState.Local != nil && backfillWorkspaceDetails(configState.Local, workspace) {
 			scheduleLocalSave(configState)
 		}

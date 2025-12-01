@@ -2,10 +2,6 @@ package init
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -14,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/crypto"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/profile"
@@ -57,7 +54,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	var privateKeyPEM string
 	var publicKeyPEM string
 	if o.UseKeyPair {
-		if privateKeyPEM, publicKeyPEM, err = generateRSAKeyPairPEM(); err != nil {
+		if privateKeyPEM, publicKeyPEM, err = crypto.GenerateRSAKeyPairPEM(); err != nil {
 			return errors.Errorf("cannot generate key-pair: %w", err)
 		}
 	}
@@ -124,30 +121,4 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	}
 
 	return nil
-}
-
-// generateRSAKeyPairPEM generates a 2048-bit RSA key pair suitable for Snowflake key-pair auth.
-// The private key is encoded as PKCS#8 PEM without encryption, and the public key is PKIX PEM.
-func generateRSAKeyPairPEM() (string, string, error) {
-	// Generate private key
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return "", "", err
-	}
-
-	// Marshal private key to PKCS#8
-	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		return "", "", err
-	}
-	privPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8Bytes})
-
-	// Marshal public key to PKIX
-	pubBytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
-	if err != nil {
-		return "", "", err
-	}
-	pubPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubBytes})
-
-	return string(privPEM), string(pubPEM), nil
 }

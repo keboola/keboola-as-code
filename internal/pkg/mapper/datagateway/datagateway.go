@@ -2,11 +2,7 @@ package datagateway
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"math"
 	"path/filepath"
@@ -20,7 +16,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/crypto"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -51,33 +49,6 @@ func (m *dataGatewayMapper) isDataGatewayConfigKey(key model.Key) bool {
 		return false
 	}
 	return configKey.ComponentID == dataGatewayComponentID
-}
-
-// generateRSAKeyPairPEM generates a 2048-bit RSA key pair suitable for Snowflake key-pair auth.
-// The private key is encoded as PKCS#8 PEM without encryption, and the public key is PKIX PEM.
-// This is copied from pkg/lib/operation/dbt/init/operation.go to avoid circular dependencies.
-func generateRSAKeyPairPEM() (privateKeyPEM string, publicKeyPEM string, err error) {
-	// Generate private key
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return "", "", err
-	}
-
-	// Marshal private key to PKCS#8
-	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		return "", "", err
-	}
-	privPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8Bytes})
-
-	// Marshal public key to PKIX
-	pubBytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
-	if err != nil {
-		return "", "", err
-	}
-	pubPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubBytes})
-
-	return string(privPEM), string(pubPEM), nil
 }
 
 // backfillWorkspaceDetails updates the configuration content with workspace details from the API response.
@@ -118,13 +89,13 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 		return nil
 	}
 
-	// Cache project ID from the first workspace API call if not already cached
-	// We extract it from the API response when we access workspaces
+	// Cache project ID from manifest if not already cached
+	// The project ID is available in the manifest, so we can get it from there
 	if m.projectID == 0 {
-		// Get project ID from the API by making a lightweight call
-		// We'll get it from the default branch API response or from the workspace response
-		// Since branches don't expose ProjectID directly, we'll extract it from the API response
-		// For now, we'll get it when we create the workspace and cache it then
+		manifest := m.state.Manifest()
+		if projectManifest, ok := manifest.(*projectManifest.Manifest); ok {
+			m.projectID = projectManifest.ProjectID()
+		}
 	}
 
 	// List existing workspaces for this config
@@ -158,31 +129,29 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 	m.logger.Infof(ctx, `Creating workspace for data-gateway config "%s"...`, config.Name)
 
 	// Generate keypair
-	privateKeyPEM, publicKeyPEM, err := generateRSAKeyPairPEM()
+	privateKeyPEM, publicKeyPEM, err := crypto.GenerateRSAKeyPairPEM()
 	if err != nil {
 		return errors.Errorf(`cannot generate keypair for config "%s": %w`, config.Name, err)
 	}
 
 	// Store private key to /tmp/<project_id>/<configuration-id>
-	// Note: We'll get project ID after workspace creation and store the key then if needed
-	// For now, we'll skip storing it if project ID is not available
+	// Project ID should be available from the manifest, but if it's not, skip storing the key
 	if m.projectID == 0 {
-		m.logger.Warnf(ctx, `Project ID not available for config "%s", private key will not be stored to filesystem`, config.Name)
+		m.logger.Debugf(ctx, `Project ID not available for config "%s", private key will not be stored to filesystem`, config.Name)
 	} else {
+		// Private key storage is critical for workspace functionality.
+		// If storage fails, the workspace will be created but won't be usable.
+		// Fail the operation to prevent creating an unusable workspace.
 		if err := m.storePrivateKey(ctx, config, privateKeyPEM); err != nil {
-			m.logger.Warnf(ctx, `Cannot store private key for config "%s": %s`, config.Name, err.Error())
-			// Continue with workspace creation even if key storage fails
+			return errors.Errorf(`cannot store private key for config "%s": %w`, config.Name, err)
 		}
 	}
 
 	// Create configuration workspace
 	// Data gateway workspaces require useCase to be set to "reader" for read-only access.
-	networkPolicy := "user"
 	payload := &keboola.StorageConfigWorkspacePayload{
 		StorageWorkspacePayload: keboola.StorageWorkspacePayload{
 			Backend:               keboola.StorageWorkspaceBackendSnowflake,
-			BackendSize:           ptr(keboola.StorageWorkspaceBackendSizeMedium),
-			NetworkPolicy:         &networkPolicy,
 			ReadOnlyStorageAccess: true,
 			LoginType:             keboola.StorageWorkspaceLoginTypeSnowflakeServiceKeypair,
 			PublicKey:             &publicKeyPEM,
@@ -195,24 +164,12 @@ func (m *dataGatewayMapper) ensureWorkspaceForConfig(ctx context.Context, config
 		return errors.Errorf(`cannot create workspace for config "%s": %w`, config.Name, err)
 	}
 
-	// Cache project ID from workspace response if not already cached
-	// We extract it from the API response when creating the workspace
-	// Since the workspace is created successfully, we know the project ID exists
-	// We'll get it from the API by making a lightweight call to get project info
+	// Project ID should already be cached from manifest at the start of this function
+	// If it's still not set, try to get it from the manifest again as a fallback
 	if m.projectID == 0 {
-		// Get project ID from the API response
-		// The workspace creation was successful, so we can extract project ID from the response
-		// Since workspaces don't directly expose project ID, we'll get it from the branch
-		// We'll use the config's branch ID to get the branch and extract project ID
-		branch, err := api.GetBranchRequest(keboola.BranchKey{ID: config.BranchID}).Send(ctx)
-		if err == nil {
-			// Try to get project ID from branch response
-			// If branch doesn't expose it, we'll need to get it from the API response metadata
-			// For now, we'll extract it from the API response URL or get it from the workspace
-			_ = branch
-			// Since branch doesn't expose ProjectID, we'll get it from the API response
-			// We'll parse it from the API URL or get it from the response headers
-			// For now, we'll skip and get it when we actually need it
+		manifest := m.state.Manifest()
+		if projectManifest, ok := manifest.(*projectManifest.Manifest); ok {
+			m.projectID = projectManifest.ProjectID()
 		}
 	}
 
@@ -233,12 +190,19 @@ func setStringIfPresent(config *model.Config, path string, value *string) bool {
 }
 
 // setNestedIfDifferent writes the value only if it differs from the existing state.
+// Returns true if the value was set successfully, false if unchanged or if setting failed.
+// If SetNested fails, returns false to prevent incorrectly reporting success.
+// Note: The error from SetNested is not surfaced to callers due to function signature limitations.
 func setNestedIfDifferent(config *model.Config, path string, value any) bool {
 	current, found, _ := config.Content.GetNested(path)
 	if found && reflect.DeepEqual(current, value) {
 		return false
 	}
-	_ = config.Content.SetNested(path, value)
+	// Handle SetNested error to prevent silent failures.
+	// If the set operation fails, return false to indicate no change was made.
+	if err := config.Content.SetNested(path, value); err != nil {
+		return false
+	}
 	return true
 }
 

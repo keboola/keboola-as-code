@@ -3,11 +3,7 @@ package testproject
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/csv"
-	"encoding/pem"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -28,6 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/crypto"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
@@ -448,7 +445,7 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 			if fixture.UseKeyPair {
 				var publicKeyPEM string
 				var err error
-				if privateKeyPEM, publicKeyPEM, err = generateRSAKeyPairPEM(); err != nil {
+				if privateKeyPEM, publicKeyPEM, err = crypto.GenerateRSAKeyPairPEM(); err != nil {
 					errs.Append(errors.Errorf("could not generate key-pair for sandbox \"%s\": %w", fixture.Name, err))
 					return
 				}
@@ -741,29 +738,3 @@ func (p *Project) logf(format string, a ...any) {
 	}
 }
 
-// generateRSAKeyPairPEM generates a 2048-bit RSA key pair suitable for Snowflake key-pair auth.
-// The private key is encoded as PKCS#8 PEM without encryption, and the public key is PKIX PEM.
-// Returns private key PEM, public key PEM, and error.
-func generateRSAKeyPairPEM() (string, string, error) {
-	// Generate private key
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return "", "", err
-	}
-
-	// Marshal private key to PKCS#8
-	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		return "", "", err
-	}
-	privPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8Bytes})
-
-	// Marshal public key to PKIX
-	pubBytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
-	if err != nil {
-		return "", "", err
-	}
-	pubPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubBytes})
-
-	return string(privPEM), string(pubPEM), nil
-}
