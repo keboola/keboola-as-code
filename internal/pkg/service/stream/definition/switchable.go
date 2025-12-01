@@ -83,16 +83,14 @@ func (v *Switchable) DisabledBy() *By {
 	if v.Disabled == nil {
 		return nil
 	}
-	value := v.Disabled.By
-	return &value
+	return &v.Disabled.By
 }
 
 func (v *Switchable) DisabledAt() *utctime.UTCTime {
 	if v.Disabled == nil {
 		return nil
 	}
-	value := v.Disabled.At
-	return &value
+	return &v.Disabled.At
 }
 
 func (v *Switchable) DisabledReason() string {
@@ -106,14 +104,12 @@ func (v *Switchable) EnabledBy() *By {
 	if v.Enabled == nil {
 		return nil
 	}
-	value := v.Enabled.By
-	return &value
+	return &v.Enabled.By
 }
 
 func (v *Switchable) EnabledAt() *utctime.UTCTime {
 	if v.Enabled == nil {
 		return nil
 	}
-	value := v.Enabled.At
-	return &value
+	return &v.Enabled.At
 }
