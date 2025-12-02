@@ -62,6 +62,15 @@ func (pw *Writer) MountAssets(mux *http.ServeMux) {
 }
 
 func (pw *Writer) writePage(w http.ResponseWriter, req *http.Request, page string, status int, data any) {
+	// Streamlit health checks expect plain text responses, not HTML
+	if IsStreamlitHealthCheck(req.URL.Path) {
+		plainText := renderPlainText(page, status)
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(plainText))
+		return
+	}
+
 	var buf bytes.Buffer
 
 	// Render template
