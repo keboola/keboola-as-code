@@ -1,5 +1,7 @@
 package pagewriter
 
+import "strings"
+
 func IsStreamlitHealthCheck(path string) bool {
-	return path == "/_stcore/health" || path == "/_stcore/host-config"
+	return strings.HasSuffix(path, "/_stcore/health") || strings.HasSuffix(path, "/_stcore/host-config")
 }
