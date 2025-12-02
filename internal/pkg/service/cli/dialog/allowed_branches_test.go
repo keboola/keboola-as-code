@@ -1,4 +1,4 @@
-package init
+package dialog_test
 
 import (
 	"sync"
@@ -28,15 +28,9 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 		deps.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
-	// o.SetDefault(`branches`, `*`)
-	// o.Set(`branches`, `foo, bar`)
-
-	f := Flags{
-		Branches: configmap.NewValueWithOrigin("foo, bar", configmap.SetByFlag),
-	}
 
 	// No interaction expected
-	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, f)
+	allowedBranches, err := d.AskAllowedBranches(t.Context(), deps, configmap.NewValueWithOrigin("foo, bar", configmap.SetByFlag), configmap.NewValue(false))
 	require.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{"foo", "bar"}, allowedBranches)
 	require.NoError(t, console.Tty().Close())
@@ -56,12 +50,8 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 
-	f := Flags{
-		Branches: configmap.NewValueWithOrigin("*", configmap.SetByFlag),
-	}
-
 	// No interaction expected
-	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, f)
+	allowedBranches, err := d.AskAllowedBranches(t.Context(), deps, configmap.NewValueWithOrigin("*", configmap.SetByFlag), configmap.NewValue(false))
 	require.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{model.AllBranchesDef}, allowedBranches)
 }
@@ -87,7 +77,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	})
 
 	// Run
-	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
+	allowedBranches, err := d.AskAllowedBranches(t.Context(), deps, configmap.NewValue(""), configmap.NewValue(false))
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -118,7 +108,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	})
 
 	// Run
-	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
+	allowedBranches, err := d.AskAllowedBranches(t.Context(), deps, configmap.NewValue(""), configmap.NewValue(false))
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -170,7 +160,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	})
 
 	// Run
-	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
+	allowedBranches, err := d.AskAllowedBranches(t.Context(), deps, configmap.NewValue(""), configmap.NewValue(false))
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -210,7 +200,7 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	})
 
 	// Run
-	allowedBranches, err := AskAllowedBranches(t.Context(), deps, d, Flags{})
+	allowedBranches, err := d.AskAllowedBranches(t.Context(), deps, configmap.NewValue(""), configmap.NewValue(false))
 	require.NoError(t, err)
 	require.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -225,10 +215,10 @@ func selectOption(t *testing.T, option int, c terminal.Console) {
 	t.Helper()
 
 	require.NoError(t, c.ExpectString("Allowed project's branches:"))
-	require.NoError(t, c.ExpectString(ModeMainBranch))
-	require.NoError(t, c.ExpectString(ModeAllBranches))
-	require.NoError(t, c.ExpectString(ModeSelectSpecific))
-	require.NoError(t, c.ExpectString(ModeTypeList))
+	require.NoError(t, c.ExpectString(dialog.ModeMainBranch))
+	require.NoError(t, c.ExpectString(dialog.ModeAllBranches))
+	require.NoError(t, c.ExpectString(dialog.ModeSelectSpecific))
+	require.NoError(t, c.ExpectString(dialog.ModeTypeList))
 	for i := 1; i < option; i++ {
 		require.NoError(t, c.SendDownArrow())
 	}
