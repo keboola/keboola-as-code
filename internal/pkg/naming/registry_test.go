@@ -45,3 +45,41 @@ func TestNamingPathsStorage(t *testing.T) {
 	assert.Len(t, s.byPath, 2)
 	assert.Len(t, s.byKey, 2)
 }
+
+func TestMakeUniquePathTruncatesLongFilenames(t *testing.T) {
+	t.Parallel()
+	s := NewRegistry()
+
+	// Create a very long filename that exceeds 255 bytes
+	longName := ""
+	for i := 0; i < 300; i++ {
+		longName += "a"
+	}
+
+	key1 := ConfigRowKey{BranchID: 123, ComponentID: "test.component", ConfigID: "456", ID: "row1"}
+	path1 := NewAbsPath("", "codes/"+longName)
+	result1 := s.ensureUniquePath(key1, path1)
+
+	// The filename component should be truncated to fit within 255 bytes
+	relativePath := result1.GetRelativePath()
+	// Extract filename from "codes/filename"
+	filename := relativePath
+	if len(relativePath) > len("codes/") {
+		filename = relativePath[len("codes/"):]
+	}
+	assert.LessOrEqual(t, len(filename), maxFilenameLength, "Filename should be truncated to max length")
+
+	// Create another path with the same long name - should get a unique suffix
+	key2 := ConfigRowKey{BranchID: 123, ComponentID: "test.component", ConfigID: "456", ID: "row2"}
+	path2 := NewAbsPath("", "codes/"+longName)
+	result2 := s.ensureUniquePath(key2, path2)
+
+	// The second path should also be truncated and have a suffix
+	relativePath2 := result2.GetRelativePath()
+	filename2 := relativePath2
+	if len(relativePath2) > len("codes/") {
+		filename2 = relativePath2[len("codes/"):]
+	}
+	assert.LessOrEqual(t, len(filename2), maxFilenameLength, "Filename with suffix should fit within max length")
+	assert.NotEqual(t, result1.Path(), result2.Path(), "Paths should be unique")
+}
