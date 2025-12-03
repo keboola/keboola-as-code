@@ -1842,7 +1842,7 @@ func TestAppProxyRouter(t *testing.T) {
 					require.NoError(t, err)
 					response, err := client.Do(request)
 					require.NoError(t, err)
-					if response.StatusCode == http.StatusNotFound {
+					if response.StatusCode == http.StatusServiceUnavailable {
 						body, err := io.ReadAll(response.Body)
 						require.NoError(t, err)
 						return strings.Contains(string(body), "Application Disabled")
