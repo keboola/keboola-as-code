@@ -1,0 +1,12 @@
+Created new config "main/application/keboola.app-data-gateway/new-config"
+
+Plan for "push" operation:
+  * B main | changed: description
+  + C main/application/keboola.app-data-gateway/new-config
+Creating workspace for data-gateway config "new config"...
+Stored private key for config "new config" to "/tmp/%A/private_key.pem"
+Created workspace %A for config "new config"
+Push done.
+
+Plan for "push" operation:
+  no difference

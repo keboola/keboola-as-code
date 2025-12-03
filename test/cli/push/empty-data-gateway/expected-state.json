@@ -1,0 +1,37 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "my description",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "keboola.app-data-gateway",
+          "name": "test",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "parameters": {
+              "db": {
+                "workspaceId": %A,
+                "host": %A,
+                "user": %A,
+                "database": %A,
+                "schema": %A,
+                "warehouse": %A,
+                "role": %A,
+                "account": %A,
+                "region": %A,
+                "loginType": "snowflake-service-keypair"
+              }
+            }
+          },
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}

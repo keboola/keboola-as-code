@@ -104,7 +104,7 @@ func newProjectScope(ctx context.Context, prjScp projectScopeDeps, token keboola
 	}
 
 	httpClient := prjScp.HTTPClient()
-	api, err := keboola.NewAuthorizedAPI(ctx, prjScp.StorageAPIHost(), token.Token, keboola.WithClient(&httpClient), keboola.WithOnSuccessTimeout(1*time.Minute))
+	api, err := keboola.NewAuthorizedAPI(ctx, prjScp.StorageAPIHost(), token.Token, keboola.WithClient(&httpClient), keboola.WithOnSuccessTimeout(3*time.Minute))
 	if err != nil {
 		return nil, err
 	}

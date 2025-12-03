@@ -1,0 +1,9 @@
+{
+    "componentId": "keboola.app-data-gateway",
+    "name": "empty-data-gateway",
+    "configuration": {
+      "parameters": {
+      }
+    },
+    "rows": null
+}
