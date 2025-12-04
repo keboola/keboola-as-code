@@ -197,6 +197,8 @@ func (u *AppUpstream) trace() chain.Middleware {
 				DNSDone: func(info httptrace.DNSDoneInfo) {
 					if info.Err != nil {
 						u.wakeup(ctx, info.Err)
+					} else {
+						u.restartDisabled.Store(false)
 					}
 				},
 			})
