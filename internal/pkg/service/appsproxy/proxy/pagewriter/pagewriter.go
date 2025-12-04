@@ -62,7 +62,11 @@ func (pw *Writer) MountAssets(mux *http.ServeMux) {
 }
 
 func (pw *Writer) writePage(w http.ResponseWriter, req *http.Request, page string, status int, data any) {
-	// Streamlit health checks expect plain text responses, not HTML
+	// WORKAROUND for AJDA-1935: Return plain text for Streamlit health checks.
+	// Streamlit displays error responses in a modal that doesn't properly render HTML,
+	// resulting in broken/escaped HTML being shown to users. This returns plain text
+	// for known Streamlit internal endpoints to provide a better user experience.
+	// See IsStreamlitHealthCheck() for full documentation and limitations.
 	if IsStreamlitHealthCheck(req.URL.Path) {
 		plainText := renderPlainText(page, status)
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
