@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -16,6 +17,37 @@ type Error struct {
 	Context     map[string]any `json:"context,omitempty"`
 	request     *http.Request
 	response    *http.Response
+}
+
+// UnmarshalJSON implements custom unmarshalling to handle cases where context is an empty array instead of an object.
+func (e *Error) UnmarshalJSON(data []byte) error {
+	type Alias Error
+	aux := &struct {
+		Context json.RawMessage `json:"context,omitempty"`
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Handle context field - it can be an object, null, or sometimes an empty array
+	if len(aux.Context) > 0 {
+		// Check if it's an array (starts with '[')
+		if aux.Context[0] == '[' {
+			// It's an array, treat as empty context
+			e.Context = nil
+		} else {
+			// It's an object or null, unmarshal normally
+			if err := json.Unmarshal(aux.Context, &e.Context); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (e *Error) Error() string {
