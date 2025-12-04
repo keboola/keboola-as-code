@@ -52,7 +52,7 @@ func TestMakeUniquePathTruncatesLongFilenames(t *testing.T) {
 
 	// Create a very long filename that exceeds 255 bytes
 	longName := ""
-	for i := 0; i < 300; i++ {
+	for range 300 {
 		longName += "a"
 	}
 

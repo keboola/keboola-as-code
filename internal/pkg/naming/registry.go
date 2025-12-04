@@ -117,16 +117,25 @@ func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 
 		suffix++
 		suffixStr := fmt.Sprintf(`-%03d`, suffix)
-		newFile := strhelper.NormalizeName(file + suffixStr)
+		normalized := strhelper.NormalizeName(file + suffixStr)
 
-		// Ensure the filename with suffix doesn't exceed the maximum length
-		if len(newFile) > maxFilenameLength {
-			// Truncate the file part to make room for the suffix
-			truncatedFile := file[:maxFilenameLength-len(suffixStr)]
-			newFile = strhelper.NormalizeName(truncatedFile + suffixStr)
+		// Ensure the normalized filename with suffix doesn't exceed the maximum length
+		if len(normalized) > maxFilenameLength {
+			// Truncate the normalized filename to make room for the suffix
+			// Ensure the suffix is preserved at the end
+			maxBaseLen := maxFilenameLength - len(suffixStr)
+			// Remove the suffix from normalized, truncate, then add suffix back
+			baseNormalized := normalized
+			if len(normalized) > len(suffixStr) && normalized[len(normalized)-len(suffixStr):] == suffixStr {
+				baseNormalized = normalized[:len(normalized)-len(suffixStr)]
+			}
+			if len(baseNormalized) > maxBaseLen {
+				baseNormalized = baseNormalized[:maxBaseLen]
+			}
+			normalized = baseNormalized + suffixStr
 		}
 
-		p.SetRelativePath(filesystem.Join(dir, newFile))
+		p.SetRelativePath(filesystem.Join(dir, normalized))
 	}
 	return p
 }
