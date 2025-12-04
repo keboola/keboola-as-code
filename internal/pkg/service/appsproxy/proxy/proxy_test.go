@@ -1856,6 +1856,70 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedWakeUps:       map[string]int{},
 		},
 		{
+			name: "restart-disabled-flag-reset-on-dns-success",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				// Phase 1: Set restart disabled state
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				service.WakeUpOverrides["123"] = func(w http.ResponseWriter, req *http.Request) {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusBadRequest)
+					_, _ = fmt.Fprintln(w, `{
+	"code": 0,
+	"context": {
+		"code": "apps.restartDisabled"
+	},
+	"error": "App restart is disabled. Contact app maintainer.",
+	"exceptionId": "exception-208db995c92ed365d47bcc701ae4d802",
+	"status": "error"
+}`)
+				}
+
+				// Request to public app - fails because the app doesn't have a DNS record
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				// First request returns 503 Service Unavailable (Spinner) because wakeup is async
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				// Wait for async wakeup to complete and flag to be set
+				assert.Eventually(t, func() bool {
+					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+					require.NoError(t, err)
+					response, err := client.Do(request)
+					require.NoError(t, err)
+					body, err := io.ReadAll(response.Body)
+					require.NoError(t, err)
+					return response.StatusCode == http.StatusServiceUnavailable && strings.Contains(string(body), "Application Disabled")
+				}, 5*time.Second, 100*time.Millisecond)
+
+				// Phase 2: Simulate app becoming available (restart enabled)
+				// Add DNS record back and remove wakeup override
+				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+				delete(service.WakeUpOverrides, "123")
+
+				// Request should now succeed - DNS resolution succeeds, flag gets reset
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Hello, client")
+
+				// Verify flag stays reset - subsequent requests should continue to work
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+			},
+			expectedNotifications: map[string]int{"123": 1},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
 			name: "private-one-provider-selector",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Request provider selector page - no auth provider
