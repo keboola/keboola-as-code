@@ -1899,6 +1899,9 @@ func TestAppProxyRouter(t *testing.T) {
 				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
 				delete(service.WakeUpOverrides, "123")
 
+				// Wait for DNS to propagate (especially important on MacOS)
+				time.Sleep(100 * time.Millisecond)
+
 				// Request should now succeed - DNS resolution succeeds, flag gets reset
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
