@@ -51,23 +51,29 @@ APIs are designed using Goa DSL in `/api/` directory. After modifying the design
 
 ## Common Development Commands
 
-### Building
+### Building (Local Development)
 - `task build-local` - Build CLI for current platform (output: `./target`)
-- `task build` - Build CLI for all architectures
 - `task build-templates-api` - Build Templates API service
 - `task build-stream-service` - Build Stream service
 - `task build-apps-proxy` - Build Apps Proxy service
 
-### Testing
-- `task ci` - Run linting and all tests (most common for CI)
-- `task tests` - Run all tests
-- `task tests-unit` - Run all unit tests in `internal/pkg/`
-- `task tests-cli` - Run CLI E2E tests
-- `task tests-templates-api` - Run Templates API E2E tests
-- `task tests-stream-service` - Run Stream service tests
-- `task e2e -- test/cli/path/to/test` - Run specific E2E test
+**CI/CD only** (avoid locally - slow):
+- `task build` - Build CLI for all architectures (use only in CI/CD)
+- `task ci` - Run linting and all tests (use only in CI/CD)
 
-**Verbose testing** (shows HTTP requests, ENVs):
+### Testing (Run Specific Tests)
+
+**Run specific test** (recommended approach for local development):
+```bash
+# Run specific test by name
+go test -race -v ./path/to/pkg... -run TestName
+go test -race -v ./path/to/pkg... -run TestName/SubTest
+
+# Run specific E2E test
+task e2e -- test/cli/path/to/test
+```
+
+**Verbose testing** (shows HTTP requests, ENVs, etcd operations):
 ```bash
 TEST_VERBOSE=true go test -race -v -p 1 ./path/to/pkg... -run TestName/SubTest
 TEST_HTTP_CLIENT_VERBOSE=true TEST_VERBOSE=true go test -race -v -p 1 ./path/to/pkg...
