@@ -87,14 +87,22 @@ internal/pkg/service/cli/
 - Handle flag binding via ConfigBinder
 - Obtain appropriate dependency scope
 - Call dialog functions for interactive input
-- Delegate to operations for business logic
+- Delegate to operations for workflow orchestration
 - Send telemetry events
 
 **Operations** (`/pkg/lib/operation/**`):
-- Pure business logic, reusable outside CLI
+- Workflow orchestration and coordination
+- Options structs and simple control flow
 - Minimal dependency interfaces
-- Testable with mocked dependencies
+- Delegates actual work to `internal/pkg/`
+- Reusable outside CLI
 - No Cobra or CLI-specific code
+
+**Implementation** (`/internal/pkg/**`):
+- Actual business logic and heavy lifting
+- State management, validation, API calls
+- Domain models, mappers, encoders
+- Not meant to be used as public library
 
 **Example: `sync init` command flow**:
 ```go
