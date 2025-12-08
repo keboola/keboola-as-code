@@ -176,7 +176,12 @@ Staging storage can be `s3`, `abs`, or `gcs`.
 ## Where to Add New Features
 
 - **CLI command?** → `/internal/pkg/service/cli/cmd/` + operation in `/pkg/lib/operation/`
+  - See [CLI_CONTEXT.md](internal/pkg/service/cli/CLI_CONTEXT.md) for detailed CLI architecture and patterns
 - **API endpoint?** → Modify `/api/<service>/design.go`, run `task generate-<service>-api`
 - **Business logic?** → Create operation in `/pkg/lib/operation/` or internal service package
 - **Distributed coordination?** → Use etcdop framework in `/internal/pkg/service/common/etcdop/`
 - **New dependency?** → Update appropriate scope in `/internal/pkg/service/<service>/dependencies/`
+
+## Service-Specific Documentation
+
+- **CLI Service**: [internal/pkg/service/cli/CLI_CONTEXT.md](internal/pkg/service/cli/CLI_CONTEXT.md) - Comprehensive guide to CLI architecture, command patterns, dependency injection, dialogs, and state management
