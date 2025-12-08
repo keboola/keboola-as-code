@@ -10,6 +10,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+const (
+	// maxFilenameLength is the maximum length for a filename component on most filesystems.
+	// This is 255 bytes on Linux/Unix filesystems (ext4, XFS, etc.).
+	maxFilenameLength = 255
+	// suffixReservedLength reserves space for uniqueness suffix like "-999".
+	suffixReservedLength = 4
+)
+
 type Registry struct {
 	lock   *sync.Mutex
 	byPath map[string]model.Key     // path -> object key
@@ -92,6 +100,13 @@ func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 
 	dir, file := filesystem.Split(p.GetRelativePath())
 
+	// Truncate the filename if it exceeds the maximum length, leaving room for suffix
+	if len(file) > maxFilenameLength-suffixReservedLength {
+		file = file[:maxFilenameLength-suffixReservedLength]
+		// Update the path with the truncated filename
+		p.SetRelativePath(filesystem.Join(dir, file))
+	}
+
 	// Add a suffix to the path if it is not unique
 	suffix := 0
 	for {
@@ -101,7 +116,17 @@ func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 		}
 
 		suffix++
-		p.SetRelativePath(filesystem.Join(dir, strhelper.NormalizeName(file+"-"+fmt.Sprintf(`%03d`, suffix))))
+		suffixStr := fmt.Sprintf(`-%03d`, suffix)
+		newFile := strhelper.NormalizeName(file + suffixStr)
+
+		// Ensure the filename with suffix doesn't exceed the maximum length
+		if len(newFile) > maxFilenameLength {
+			// Truncate the file part to make room for the suffix
+			truncatedFile := file[:maxFilenameLength-len(suffixStr)]
+			newFile = strhelper.NormalizeName(truncatedFile + suffixStr)
+		}
+
+		p.SetRelativePath(filesystem.Join(dir, newFile))
 	}
 	return p
 }
