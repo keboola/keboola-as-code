@@ -128,7 +128,7 @@ func TestSourceRepository_DeleteSourcesOnBranchDelete(t *testing.T) {
 		var err error
 		source1, err = repo.SoftDelete(sourceKey1, now, by).Do(ctx).ResultOrErr()
 		require.NoError(t, err)
-		assert.True(t, source1.IsDeleted())
+		require.True(t, source1.IsDeleted())
 		assert.Equal(t, now, source1.DeletedAt().Time())
 	}
 

@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
@@ -61,8 +62,9 @@ type Node struct {
 }
 
 type sinkData struct {
-	SinkKey key.SinkKey
-	Enabled bool
+	SinkKey    key.SinkKey
+	DeletedAt  *utctime.UTCTime
+	DisabledAt *utctime.UTCTime
 }
 
 func Start(d dependencies, cfg Config) error {
@@ -101,14 +103,15 @@ func Start(d dependencies, cfg Config) error {
 	})
 
 	n.sinks = etcdop.SetupMirrorMap[definition.Sink, key.SinkKey, *sinkData](
-		n.definitionRepository.Sink().GetActivePlusDeletedAndWatch(ctx),
+		n.definitionRepository.Sink().GetAllIncludeDeletedAndWatch(ctx),
 		func(_ string, sink definition.Sink) key.SinkKey {
 			return sink.SinkKey
 		},
 		func(_ string, sink definition.Sink, rawValue *op.KeyValue, oldValue **sinkData) *sinkData {
 			return &sinkData{
-				SinkKey: sink.SinkKey,
-				Enabled: sink.IsEnabled(),
+				SinkKey:    sink.SinkKey,
+				DisabledAt: sink.DisabledAt(),
+				DeletedAt:  sink.DeletedAt(),
 			}
 		},
 	).BuildMirror()
@@ -163,8 +166,22 @@ func (n *Node) cleanMetadata(ctx context.Context) (err error) {
 	// Error counter, we suppress the first few errors to not cancel all goroutines if just one fails.
 	var errCount atomic.Uint32
 
+	// We want to ignore sinks that were deleted/disabled a while ago and are already empty.
+	// However, the time needs to be a little longer than just ArchivedFileExpiration so ActiveFileExpiration is added.
+	duration := n.config.ArchivedFileExpiration + n.config.ActiveFileExpiration
+
 	// Process all sink keys
 	n.sinks.ForEach(func(sinkKey key.SinkKey, sink *sinkData) (stop bool) {
+		// Skip deleted sinks.
+		if sink.DeletedAt != nil && n.clock.Since(sink.DeletedAt.Time()) > duration {
+			return false
+		}
+
+		// Skip disabled sinks.
+		if sink.DisabledAt != nil && n.clock.Since(sink.DisabledAt.Time()) > duration {
+			return false
+		}
+
 		grp.Go(func() error {
 			// There can be several cleanup nodes, each node processes an own part.
 			owner, err := n.dist.IsOwner(sinkKey.ProjectID.String())
@@ -250,8 +267,9 @@ func (n *Node) cleanFile(ctx context.Context, file model.File, fileCount int) (e
 	}()
 
 	// Delete the file
-	if err = n.storageRepository.File().Delete(file.FileKey, n.clock.Now()).RequireLock(mutex).Do(ctx).Err(); err != nil {
-		err = errors.PrefixErrorf(err, `cannot delete expired file "%s"`, file.FileKey)
+	deleteErr := n.storageRepository.File().Delete(file.FileKey, n.clock.Now()).RequireLock(mutex).Do(ctx).Err()
+	if deleteErr != nil {
+		err = errors.PrefixErrorf(deleteErr, `cannot delete expired file "%s"`, file.FileKey)
 		n.logger.Error(ctx, err.Error())
 		return err, false
 	}

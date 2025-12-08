@@ -3,7 +3,6 @@ package definition
 import (
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
@@ -21,9 +20,9 @@ type SoftDeletableInterface interface {
 	// IsDeletedDirectly returns true if the entity has been deleted directly, not together with its parent.
 	IsDeletedDirectly() bool
 	DeletedBy() *By
-	DeletedAt() utctime.UTCTime
+	DeletedAt() *utctime.UTCTime
 	UndeletedBy() *By
-	UndeletedAt() utctime.UTCTime
+	UndeletedAt() *utctime.UTCTime
 }
 
 type SoftDeletable struct {
@@ -70,14 +69,14 @@ func (v *SoftDeletable) DeletedBy() *By {
 	if v.Deleted == nil {
 		return nil
 	}
-	return ptr.Ptr(v.Deleted.By)
+	return &v.Deleted.By
 }
 
-func (v *SoftDeletable) DeletedAt() utctime.UTCTime {
+func (v *SoftDeletable) DeletedAt() *utctime.UTCTime {
 	if v.Deleted == nil {
-		return utctime.UTCTime{}
+		return nil
 	}
-	return v.Deleted.At
+	return &v.Deleted.At
 }
 
 func (v *SoftDeletable) IsUndeleted() bool {
@@ -92,12 +91,12 @@ func (v *SoftDeletable) UndeletedBy() *By {
 	if v.Undeleted == nil {
 		return nil
 	}
-	return ptr.Ptr(v.Undeleted.By)
+	return &v.Undeleted.By
 }
 
-func (v *SoftDeletable) UndeletedAt() utctime.UTCTime {
+func (v *SoftDeletable) UndeletedAt() *utctime.UTCTime {
 	if v.Undeleted == nil {
-		return utctime.UTCTime{}
+		return nil
 	}
-	return v.Undeleted.At
+	return &v.Undeleted.At
 }
