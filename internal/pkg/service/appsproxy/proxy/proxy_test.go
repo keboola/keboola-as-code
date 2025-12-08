@@ -1811,7 +1811,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
 
-				service.WakeUpOverrides["123"] = func(w http.ResponseWriter, req *http.Request) {
+				service.SetWakeUpOverride("123", func(w http.ResponseWriter, req *http.Request) {
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusBadRequest)
 					_, _ = fmt.Fprintln(w, `{
@@ -1823,7 +1823,7 @@ func TestAppProxyRouter(t *testing.T) {
 	"exceptionId": "exception-208db995c92ed365d47bcc701ae4d802",
 	"status": "error"
 }`)
-				}
+				})
 				// Request to public app - fails because the app doesn't have a DNS record
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -1861,7 +1861,7 @@ func TestAppProxyRouter(t *testing.T) {
 				// Phase 1: Set restart disabled state
 				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
 
-				service.WakeUpOverrides["123"] = func(w http.ResponseWriter, req *http.Request) {
+				service.SetWakeUpOverride("123", func(w http.ResponseWriter, req *http.Request) {
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusBadRequest)
 					_, _ = fmt.Fprintln(w, `{
@@ -1897,7 +1897,7 @@ func TestAppProxyRouter(t *testing.T) {
 				// Phase 2: Simulate app becoming available (restart enabled)
 				// Add DNS record back and remove wakeup override
 				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
-				delete(service.WakeUpOverrides, "123")
+				service.DeleteWakeUpOverride("123")
 
 				// Wait for DNS to propagate (especially important on MacOS)
 				time.Sleep(100 * time.Millisecond)
@@ -2558,8 +2558,9 @@ func TestAppProxyRouter(t *testing.T) {
 			d.Process().Shutdown(t.Context(), errors.New("bye bye"))
 			d.Process().WaitForShutdown()
 
-			assert.Equal(t, tc.expectedNotifications, appsAPI.Notifications)
-			assert.Equal(t, tc.expectedWakeUps, appsAPI.WakeUps)
+			notifications, wakeups := appsAPI.GetCounts()
+			assert.Equal(t, tc.expectedNotifications, notifications)
+			assert.Equal(t, tc.expectedWakeUps, wakeups)
 			assert.Empty(t, mocked.DebugLogger().ErrorMessages())
 		})
 	}
