@@ -1,6 +1,7 @@
 package naming
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -92,12 +93,12 @@ func TestMakeUniquePathNormalizesAfterTruncation(t *testing.T) {
 	// Create a long filename with special characters (uppercase, spaces, underscores)
 	// In real usage, names are normalized before entering makeUniquePath
 	// This tests that normalization + truncation + suffix work correctly together
-	longNameRaw := ""
+	var longNameRaw strings.Builder
 	for range 60 {
-		longNameRaw += "MyFile_Name "
+		longNameRaw.WriteString("MyFile_Name ")
 	}
 	// Normalize as happens in real code (e.g., from user-provided sink name)
-	longNameNormalized := strhelper.NormalizeName(longNameRaw)
+	longNameNormalized := strhelper.NormalizeName(longNameRaw.String())
 	// Total after normalization: 60 * 13 = 780 chars ("my-file-name-" repeated)
 
 	key1 := ConfigRowKey{BranchID: 123, ComponentID: "test.component", ConfigID: "456", ID: "row1"}
