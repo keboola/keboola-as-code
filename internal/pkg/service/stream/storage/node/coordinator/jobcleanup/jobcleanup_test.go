@@ -399,7 +399,7 @@ func TestJobCleanupProcessingJobsErrorTolerance(t *testing.T) {
 			messages := logger.AllMessages()
 			assert.True(c, strings.Contains(messages, `context canceled`) || strings.Contains(messages, `canceled after`))
 			actual := strings.Count(messages, `"message":"cannot get keboola storage job \"123/456/my-source/my-sink/job`)
-			assert.GreaterOrEqual(c, actual, 5)
+			assert.GreaterOrEqual(c, actual, 4) // ErrorTolerance(3) + 1 = minimum errors before cleanup stops
 			assert.LessOrEqual(c, actual, 6)
 		}, 2*time.Second, 100*time.Millisecond)
 	}
