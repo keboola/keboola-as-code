@@ -1,0 +1,23 @@
+{
+  "_comment": "GENERATION: Inferred from bucket names + GET /v2/storage components",
+  "_purpose": "Registry of data sources with bucket and table counts",
+  "_update_frequency": "Every sync",
+  "sources": [
+    {
+      "id": "ecommerce",
+      "name": "E-Commerce Platform",
+      "type": "extractor",
+      "instances": 1,
+      "total_tables": 1,
+      "buckets": ["raw"]
+    },
+    {
+      "id": "transformation",
+      "name": "Transformation Output",
+      "type": "internal",
+      "instances": 1,
+      "total_tables": 1,
+      "buckets": ["processed"]
+    }
+  ]
+}

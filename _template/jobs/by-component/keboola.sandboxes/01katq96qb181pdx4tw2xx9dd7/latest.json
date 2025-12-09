@@ -1,0 +1,13 @@
+{
+  "_comment": "GENERATION: Aggregate from jobs list for this component+config",
+  "_purpose": "Latest job status per component configuration",
+  "_update_frequency": "On job completion for this component",
+  "componentId": "keboola.sandboxes",
+  "configurationId": "01katq96qb181pdx4tw2xx9dd7",
+  "latestJobId": 55422188,
+  "latestJobStatus": "success",
+  "latestJobTime": "2025-11-24T11:42:20+0100",
+  "successCount": 45,
+  "errorCount": 2,
+  "lastError": null
+}

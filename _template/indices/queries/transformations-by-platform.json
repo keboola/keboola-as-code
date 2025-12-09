@@ -1,0 +1,9 @@
+{
+  "snowflake": [
+    {
+      "uid": "transform:orders_clean",
+      "name": "orders_clean",
+      "is_disabled": false
+    }
+  ]
+}

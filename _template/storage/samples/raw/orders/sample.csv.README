@@ -1,0 +1,58 @@
+# storage/samples/{bucket}/{table}/sample.csv Generation Instructions
+
+**Purpose:** Actual data sample (first 100 rows) for AI analysis and debugging
+
+**Data Source:** `GET /v2/storage/tables/{table_id}/data-preview?limit=100`
+
+**API Endpoint:**
+```
+GET /v2/storage/tables/{table_id}/data-preview?limit=100
+```
+
+**Response Format:** RFC 4180 CSV with UTF-8 encoding
+
+**Generation Logic:**
+
+1. **Check security config:**
+   ```python
+   if security_config['isPublicRepo']:
+       return None  # NEVER export to public repos
+   if not security_config['exportDataSamples']:
+       return None  # Disabled by admin
+   ```
+
+2. **Fetch sample:**
+   ```python
+   response = requests.get(
+       f"{API_BASE}/v2/storage/tables/{table_id}/data-preview?limit=100",
+       headers={'X-StorageApi-Token': token}
+   )
+   ```
+
+3. **Save as CSV:**
+   - Response is already in CSV format
+   - No transformation needed
+   - Write directly to file
+
+4. **Create metadata.json:**
+   - Record sample timestamp
+   - Record row count
+   - Record total table rows
+
+**Update Frequency:** Daily or on-demand
+
+**Security:**
+- MUST check `isPublicRepo` - never export if true
+- MUST respect `exportDataSamples` setting
+- TODO: Exclude PII columns (not implemented)
+
+**File Format:** RFC 4180 CSV
+- UTF-8 encoding
+- Header row required
+- Quoted fields with commas or newlines
+- Max 100 data rows (+ 1 header)
+
+**Purpose for AI Agents:**
+- See actual data examples
+- Debug data quality issues
+- Generate sample-based insights

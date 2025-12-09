@@ -1,0 +1,15 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/tables/{table_id}?include=columns,metadata + computed dependencies",
+  "_purpose": "Complete table schema, metadata, and lineage",
+  "_update_frequency": "On table structure changes",
+  "uid": "table:raw/orders",
+  "name": "orders",
+  "type": "table",
+  "bucket": "raw",
+  "source": "ecommerce",
+  "description": "Order transactions from e-commerce platform",
+  "dependencies": {
+    "consumed_by": ["transform:orders_clean"],
+    "produced_by": []
+  }
+}
