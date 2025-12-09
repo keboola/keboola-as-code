@@ -1,6 +1,7 @@
 Plan for "push" operation:
   * B bar | changed: description
   * C bar/extractor/ex-generic-v2/empty | changed: name
+  * C bar/transformation/keboola.python-transformation-v2/python-transformation | changed: configuration
   × C main/extractor/ex-generic-v2/empty - SKIPPED
 Skipped remote objects deletion, use "--force" to delete them.
 Dry run, nothing changed.

@@ -3,7 +3,19 @@
   "name": "empty-transformation",
   "configuration": {
     "parameters": {
-      "blocks": [],
+      "blocks": [
+        {
+          "name": "Block 1",
+          "codes": [
+            {
+              "name": "Code 1",
+              "script": [
+                "print('hello')"
+              ]
+            }
+          ]
+        }
+      ],
       "packages": [
         "xgboost"
       ]

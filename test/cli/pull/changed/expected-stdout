@@ -1,6 +1,6 @@
 Plan for "pull" operation:
   * C bar/extractor/ex-generic-v2/empty | changed: configuration
   * R bar/extractor/keboola.ex-db-mysql/with-rows/rows/disabled | changed: configuration, isDisabled
-  * C bar/transformation/keboola.python-transformation-v2/python-transformation | changed: description, transformation
+  * C bar/transformation/keboola.python-transformation-v2/python-transformation | changed: configuration, description, transformation
   * B main | changed: name
 Pull done.
