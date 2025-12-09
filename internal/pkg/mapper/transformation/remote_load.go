@@ -34,6 +34,36 @@ func (m *transformationMapper) MapAfterRemoteLoad(ctx context.Context, recipe *m
 		blocks = v
 	}
 
+	// Normalize block field order: ensure "name" comes before "codes"
+	// This fixes the order when blocks come from Jsonnet (which outputs fields alphabetically)
+	for _, blockRaw := range blocks {
+		if blockMap, ok := blockRaw.(*orderedmap.OrderedMap); ok {
+			// Get current values
+			name, hasName := blockMap.Get("name")
+			codes, hasCodes := blockMap.Get("codes")
+
+			// Recreate with correct order
+			if hasName && hasCodes {
+				normalizedBlock := orderedmap.New()
+				normalizedBlock.Set("name", name)
+				normalizedBlock.Set("codes", codes)
+				// Copy any other fields
+				for _, key := range blockMap.Keys() {
+					if key != "name" && key != "codes" {
+						if val, ok := blockMap.Get(key); ok {
+							normalizedBlock.Set(key, val)
+						}
+					}
+				}
+				// Replace in parameters
+				*blockMap = *normalizedBlock
+			}
+		}
+	}
+	// Update parameters with normalized blocks before removing
+	parameters.Set("blocks", blocks)
+	config.Content.Set(`parameters`, parameters)
+
 	// Remove blocks from config.json
 	parameters.Delete(`blocks`)
 	config.Content.Set(`parameters`, parameters)

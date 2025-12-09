@@ -21,11 +21,46 @@ func (m *transformationMapper) MapBeforeLocalSave(ctx context.Context, recipe *m
 		return nil
 	}
 
+	config := recipe.Object.(*model.Config)
+
+	// Normalize block field order in config.Content before saving
+	// This fixes the order when blocks come from Jsonnet (which outputs fields alphabetically)
+	if parameters, _, _ := config.Content.GetNestedMap(`parameters`); parameters != nil {
+		if blocksRaw, _ := parameters.Get(`blocks`); blocksRaw != nil {
+			if blocks, ok := blocksRaw.([]any); ok {
+				for _, blockRaw := range blocks {
+					if blockMap, ok := blockRaw.(*orderedmap.OrderedMap); ok {
+						// Get current values
+						name, hasName := blockMap.Get("name")
+						codes, hasCodes := blockMap.Get("codes")
+
+						// Recreate with correct order: "name" before "codes"
+						if hasName && hasCodes {
+							normalizedBlock := orderedmap.New()
+							normalizedBlock.Set("name", name)
+							normalizedBlock.Set("codes", codes)
+							// Copy any other fields
+							for _, key := range blockMap.Keys() {
+								if key != "name" && key != "codes" {
+									if val, ok := blockMap.Get(key); ok {
+										normalizedBlock.Set(key, val)
+									}
+								}
+							}
+							// Replace in place
+							*blockMap = *normalizedBlock
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Create local writer
 	w := &localWriter{
 		State:           m.state,
 		LocalSaveRecipe: recipe,
-		config:          recipe.Object.(*model.Config),
+		config:          config,
 		errors:          errors.NewMultiError(),
 	}
 

@@ -5,6 +5,7 @@
     "parameters": {
       "blocks": [
         {
+          "name": "Block 1",
           "codes": [
             {
               "name": "Code X",
@@ -21,10 +22,10 @@
                 "CREATE TABLE \"test2\" AS SELECT $1, $2\nFROM VALUES( 1, 'two' ), ( 3, 'four' ), ( 5, 'six' );"
               ]
             }
-          ],
-          "name": "Block 1"
+          ]
         },
         {
+          "name": "Block 2 - my name",
           "codes": [
             {
               "name": "Code Z",
@@ -32,8 +33,7 @@
                 "CREATE TABLE \"test3\" AS SELECT $1, $2\nFROM VALUES( 123, 'x' ), ( 345, 'y' );"
               ]
             }
-          ],
-          "name": "Block 2 - my name"
+          ]
         }
       ]
     }

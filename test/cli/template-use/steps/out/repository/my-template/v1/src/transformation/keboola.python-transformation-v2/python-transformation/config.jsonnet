@@ -1,5 +1,18 @@
 {
   parameters: {
+    blocks: [
+      {
+        "name": "abc",
+        "codes": [
+          {
+            "name": "Code 1",
+            "script": [
+              "dwdwadwa"
+            ]
+          }
+        ]
+      }
+    ],
     packages: [
       "xgboost",
     ],
