@@ -1,0 +1,50 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/jobs/{job_id} + compute duration",
+  "_purpose": "Complete job execution details for debugging and analysis",
+  "_update_frequency": "On job completion",
+  "_retention": "Keep last 100 jobs",
+  "id": 55789432,
+  "runId": "150234567",
+  "status": "success",
+  "operationName": "transformationRun",
+  "operationParams": {
+    "queue": "main",
+    "backend": "snowflake",
+    "branchId": 1236,
+    "componentId": "keboola.snowflake-transformation",
+    "configurationId": "orders_clean",
+    "transformationType": "snowflake"
+  },
+  "createdTime": "2025-11-28T14:31:30+0100",
+  "startTime": "2025-11-28T14:31:32+0100",
+  "endTime": "2025-11-28T14:32:15+0100",
+  "durationSeconds": 45,
+  "creatorToken": {
+    "id": "14302",
+    "description": "david@keboola.com"
+  },
+  "metrics": {
+    "inBytes": 52428800,
+    "inBytesUncompressed": 104857600,
+    "outBytes": 41943040,
+    "outBytesUncompressed": 83886080
+  },
+  "results": {
+    "input": {
+      "tables": [
+        {
+          "id": "in.c-raw.orders",
+          "name": "orders"
+        }
+      ]
+    },
+    "output": {
+      "tables": [
+        {
+          "id": "out.c-processed.orders_clean",
+          "name": "orders_clean"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "_comment": "GENERATION: From transformation config + platform detection + computed dependencies + job queue status",
+  "_purpose": "Complete transformation configuration and data flow dependencies",
+  "_update_frequency": "On transformation config changes and job completion",
+  "uid": "transform:orders_clean",
+  "name": "orders_clean",
+  "type": "transformation",
+  "platform": "snowflake",
+  "component_id": "keboola.snowflake-transformation",
+  "is_disabled": false,
+  "description": "Clean and standardize order data",
+  "original_path": "transformation/keboola.snowflake-transformation/orders_clean",
+  "dependencies": {
+    "consumes": ["table:raw/orders"],
+    "produces": ["table:processed/orders_clean"]
+  },
+  "job_execution": {
+    "last_run_time": "2025-11-28T14:32:15+0100",
+    "last_run_status": "success",
+    "job_reference": "55789432",
+    "duration_seconds": 45,
+    "last_error": null
+  }
+}

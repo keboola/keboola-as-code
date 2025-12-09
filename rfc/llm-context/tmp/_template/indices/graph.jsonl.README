@@ -1,0 +1,42 @@
+# indices/graph.jsonl Generation Instructions
+
+**Purpose:** Complete data lineage graph showing table → transformation → table relationships
+
+**Data Source:** Computed from transformation storage mappings
+
+**API Endpoints:** None (computed from transformation configs)
+
+**File Format:** JSONL (JSON Lines)
+- Line 1: `_meta` object with statistics
+- Lines 2+: Individual edges (one JSON object per line)
+
+**Generation Logic:**
+
+1. **Scan all transformations** for storage mappings:
+   - `storage.input.tables[]` → input edges
+   - `storage.output.tables[]` → output edges
+
+2. **Create edges:**
+   - Input: `{source: "table:bucket/name", target: "transform:name", type: "consumed_by"}`
+   - Output: `{source: "transform:name", target: "table:bucket/name", type: "produces"}`
+
+3. **Compute metadata:**
+   - Count total edges
+   - Count unique nodes (tables + transformations)
+   - Count by type (tables vs transformations)
+   - Add timestamp
+
+4. **Write JSONL:**
+   - First line: _meta object
+   - Remaining lines: one edge per line
+
+**Update Frequency:** On transformation config changes
+
+**Example Content:**
+```jsonl
+{"_meta":{"total_edges":741,"total_nodes":767,"total_tables":458,"total_transformations":309,"sources":10,"updated":"2025-11-24T10:00:00Z"}}
+{"source":"table:raw/orders","target":"transform:orders_clean","type":"consumed_by"}
+{"source":"transform:orders_clean","target":"table:processed/orders_clean","type":"produces"}
+```
+
+**Purpose for AI Agents:** Trace data flow, understand dependencies, impact analysis

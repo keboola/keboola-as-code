@@ -1,0 +1,9 @@
+twin_version: 1
+project_id: example
+security:
+  encryptSecrets: true
+  isPublicRepo: false
+  exportDataSamples: true
+retention:
+  jobs: 100
+  sampleRows: 100
