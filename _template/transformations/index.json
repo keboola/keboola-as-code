@@ -1,0 +1,22 @@
+{
+  "_comment": "GENERATION: Scan transformation configs + group by platform",
+  "_purpose": "Catalog of all transformations grouped by platform",
+  "_update_frequency": "Every sync",
+  "total_transformations": 1,
+  "by_platform": {
+    "snowflake": 1
+  },
+  "transformations": [
+    {
+      "uid": "transform:orders_clean",
+      "name": "orders_clean",
+      "platform": "snowflake",
+      "is_disabled": false,
+      "input_count": 1,
+      "output_count": 1,
+      "last_run_time": "2025-11-28T14:32:15+0100",
+      "last_run_status": "success",
+      "job_reference": "55789432"
+    }
+  ]
+}

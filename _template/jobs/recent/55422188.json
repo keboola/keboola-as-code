@@ -1,0 +1,37 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/jobs/{job_id} + compute duration",
+  "_purpose": "Complete job execution details for debugging and analysis",
+  "_update_frequency": "On job completion",
+  "_retention": "Keep last 100 jobs",
+  "id": 55422188,
+  "runId": "149879288",
+  "status": "success",
+  "operationName": "workspaceCreate",
+  "operationParams": {
+    "queue": "main",
+    "backend": "snowflake",
+    "branchId": 1236,
+    "componentId": "keboola.sandboxes",
+    "configurationId": "01katq96qb181pdx4tw2xx9dd7",
+    "backendSize": "small"
+  },
+  "createdTime": "2025-11-24T11:42:03+0100",
+  "startTime": "2025-11-24T11:42:03+0100",
+  "endTime": "2025-11-24T11:42:20+0100",
+  "durationSeconds": 17,
+  "creatorToken": {
+    "id": "14302",
+    "description": "david@keboola.com"
+  },
+  "metrics": {
+    "inBytes": 0,
+    "inBytesUncompressed": 0,
+    "outBytes": 0,
+    "outBytesUncompressed": 0
+  },
+  "results": {
+    "id": 104160028,
+    "type": "workspace",
+    "backend": "snowflake"
+  }
+}

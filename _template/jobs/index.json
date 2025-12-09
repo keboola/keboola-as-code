@@ -1,0 +1,40 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/jobs?limit=100 + aggregate statistics",
+  "_purpose": "Job execution statistics and summary",
+  "_update_frequency": "Every hour or on job completion",
+  "total_jobs": 100,
+  "recent_jobs_count": 100,
+  "by_status": {
+    "success": 85,
+    "error": 10,
+    "cancelled": 3,
+    "processing": 2
+  },
+  "by_operation": {
+    "workspaceCreate": 15,
+    "tableImport": 40,
+    "tableExport": 25,
+    "transformationRun": 20
+  },
+  "transformations": {
+    "_comment": "Track transformation executions separately",
+    "total_runs": 20,
+    "by_platform": {
+      "snowflake": 20
+    },
+    "recent_transformations": [
+      {
+        "job_id": 55789432,
+        "transformation": "orders_clean",
+        "component_id": "keboola.snowflake-transformation",
+        "status": "success",
+        "completed_time": "2025-11-28T14:32:15+0100",
+        "duration_seconds": 45
+      }
+    ]
+  },
+  "retention_policy": {
+    "recent_jobs": "Last 100 jobs",
+    "by_component": "Latest job per component configuration"
+  }
+}

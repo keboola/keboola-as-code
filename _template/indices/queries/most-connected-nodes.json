@@ -1,0 +1,28 @@
+{
+  "nodes": [
+    {
+      "uid": "transform:orders_clean",
+      "name": "orders_clean",
+      "type": "transformation",
+      "connections": 2,
+      "input_count": 1,
+      "output_count": 1
+    },
+    {
+      "uid": "table:raw/orders",
+      "name": "orders",
+      "type": "table",
+      "connections": 1,
+      "consumed_by_count": 1,
+      "produced_by_count": 0
+    },
+    {
+      "uid": "table:processed/orders_clean",
+      "name": "orders_clean",
+      "type": "table",
+      "connections": 1,
+      "consumed_by_count": 0,
+      "produced_by_count": 1
+    }
+  ]
+}

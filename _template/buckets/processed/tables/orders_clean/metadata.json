@@ -1,0 +1,15 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/tables/{table_id}?include=columns,metadata + computed dependencies",
+  "_purpose": "Table metadata for transformation output",
+  "_update_frequency": "On table structure changes",
+  "uid": "table:processed/orders_clean",
+  "name": "orders_clean",
+  "type": "table",
+  "bucket": "processed",
+  "source": "transformation",
+  "description": "Cleaned order data produced by transformation",
+  "dependencies": {
+    "consumed_by": [],
+    "produced_by": ["transform:orders_clean"]
+  }
+}

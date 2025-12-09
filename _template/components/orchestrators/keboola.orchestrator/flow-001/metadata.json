@@ -1,0 +1,48 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/components/{component_id}/configs/{config_id}",
+  "_purpose": "Orchestrator/flow configuration with task dependencies and schedule",
+  "_update_frequency": "On orchestrator config changes",
+  "uid": "component:orchestrator:keboola.orchestrator:flow-001",
+  "componentId": "keboola.orchestrator",
+  "configurationId": "flow-001",
+  "name": "Daily ETL Pipeline",
+  "type": "orchestrator",
+  "description": "Orchestrates daily data pipeline: extract → transform → load",
+  "isDisabled": false,
+  "created": "2025-01-05T12:00:00Z",
+  "lastModified": "2025-01-22T09:00:00Z",
+  "version": 15,
+  "configuration": {
+    "tasks": [
+      {
+        "id": "extract-shopify",
+        "component": "keboola.ex-shopify",
+        "config": "config-001",
+        "enabled": true
+      },
+      {
+        "id": "transform-orders",
+        "component": "keboola.snowflake-transformation",
+        "config": "orders_clean",
+        "enabled": true,
+        "dependsOn": ["extract-shopify"]
+      },
+      {
+        "id": "write-to-warehouse",
+        "component": "keboola.wr-snowflake",
+        "config": "writer-001",
+        "enabled": true,
+        "dependsOn": ["transform-orders"]
+      }
+    ],
+    "schedule": {
+      "enabled": true,
+      "cron": "0 2 * * *",
+      "timezone": "UTC"
+    },
+    "notifications": {
+      "email": ["data-team@company.com"],
+      "onError": true
+    }
+  }
+}

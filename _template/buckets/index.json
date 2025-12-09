@@ -1,0 +1,30 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/buckets - aggregate all buckets",
+  "_purpose": "Catalog of all buckets for fast lookup without scanning directories",
+  "_update_frequency": "Every sync",
+  "total_buckets": 2,
+  "by_source": {
+    "ecommerce": {
+      "count": 1,
+      "total_tables": 1
+    },
+    "transformation": {
+      "count": 1,
+      "total_tables": 1
+    }
+  },
+  "buckets": [
+    {
+      "name": "raw",
+      "source": "ecommerce",
+      "table_count": 1,
+      "tables": ["orders"]
+    },
+    {
+      "name": "processed",
+      "source": "transformation",
+      "table_count": 1,
+      "tables": ["orders_clean"]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "_comment": "GENERATION: Aggregate from jobs list for this component+config",
+  "_purpose": "Latest job status per component configuration",
+  "_update_frequency": "On job completion for this component",
+  "componentId": "keboola.snowflake-transformation",
+  "configurationId": "orders_clean",
+  "latestJobId": 55789432,
+  "latestJobStatus": "success",
+  "latestJobTime": "2025-11-28T14:32:15+0100",
+  "successCount": 142,
+  "errorCount": 3,
+  "lastError": null
+}

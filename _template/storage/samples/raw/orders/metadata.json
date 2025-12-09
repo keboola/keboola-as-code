@@ -1,0 +1,12 @@
+{
+  "_comment": "GENERATION: Generated when creating sample.csv",
+  "_purpose": "Sample metadata with timestamp for freshness checking",
+  "_update_frequency": "Same as sample.csv",
+  "table_id": "table:raw/orders",
+  "sample_size": 100,
+  "sample_date": "2025-11-24T10:00:00Z",
+  "total_rows_in_table": 15420,
+  "format": "csv",
+  "columns": ["id", "customer", "amount", "date"],
+  "note": "First 100 rows. Data may have changed since sample was taken."
+}

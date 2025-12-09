@@ -1,0 +1,32 @@
+{
+  "_comment": "GENERATION: Computed from tables + security config",
+  "_purpose": "Catalog of data samples with security metadata",
+  "_update_frequency": "Daily or on-demand",
+  "_security": "Disabled automatically for public repositories",
+  "enabled": true,
+  "limit": 100,
+  "isPublicRepo": false,
+  "total_samples": 2,
+  "last_updated": "2025-11-24T10:00:00Z",
+  "samples": [
+    {
+      "bucket": "raw",
+      "table": "orders",
+      "rows": 100,
+      "columns": ["id", "customer", "amount", "date"],
+      "sample_file": "raw/orders/sample.csv"
+    },
+    {
+      "bucket": "processed",
+      "table": "orders_clean",
+      "rows": 100,
+      "columns": ["id", "customer", "amount", "date"],
+      "sample_file": "processed/orders_clean/sample.csv"
+    }
+  ],
+  "security": {
+    "disabled_for_public_repos": true,
+    "pii_columns_excluded": false,
+    "note": "Samples are first 100 rows. May not reflect current data."
+  }
+}
