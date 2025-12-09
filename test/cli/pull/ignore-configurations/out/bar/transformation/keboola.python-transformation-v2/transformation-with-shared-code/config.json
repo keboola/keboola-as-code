@@ -1,4 +1,21 @@
 {
-  "parameters": {},
+  "parameters": {
+    "blocks": [
+      {
+        "name": "Block 1",
+        "codes": [
+          {
+            "name": "Shared Code Used",
+            "script": [
+              "{{%%TEST_SHARED_CODE_ROW_ID%%}}"
+            ]
+          }
+        ]
+      }
+    ],
+    "packages": [
+      "xgboost"
+    ]
+  },
   "shared_code_path": "_shared/keboola.python-transformation-v2"
 }

@@ -5,9 +5,38 @@
         "name": "Block 1",
         "codes": [
           {
-            "name": "Code 1",
+            "name": "Code X",
             "script": [
-              "print('Hello from code')"
+              "print(123)\n"
+            ]
+          },
+          {
+            "name": "Code Y",
+            "script": [
+              "print(200)\n\t"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Block 2",
+        "codes": [
+          {
+            "name": "Code Z",
+            "script": [
+              "# Sum of natural numbers up to num",
+              "",
+              "num = 16",
+              "",
+              "if num < 0:",
+              "    print(\"Enter a positive number\")",
+              "else:",
+              "    sum = 0",
+              "    # use while loop to iterate until zero",
+              "    while (num > 0):",
+              "        sum += num",
+              "        num -= 1",
+              "    print(\"The sum is\", sum)"
             ]
           }
         ]

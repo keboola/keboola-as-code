@@ -15,6 +15,9 @@
             }
           ]
         }
+      ],
+      "packages": [
+        "xgboost"
       ]
     },
     "shared_code_id": "%%TEST_SHARED_CODE_ID%%",

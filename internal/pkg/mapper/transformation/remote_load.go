@@ -60,12 +60,14 @@ func (m *transformationMapper) MapAfterRemoteLoad(ctx context.Context, recipe *m
 			}
 		}
 	}
-	// Update parameters with normalized blocks before removing
-	parameters.Set("blocks", blocks)
-	config.Content.Set(`parameters`, parameters)
-
-	// Remove blocks from config.json
-	parameters.Delete(`blocks`)
+	// Update parameters with normalized blocks
+	// For Python transformations, keep blocks in config.json for JSON schema validation
+	// For other transformations (like Snowflake), remove blocks from config.json
+	if config.ComponentID == "keboola.python-transformation-v2" {
+		parameters.Set("blocks", blocks)
+	} else {
+		parameters.Delete("blocks")
+	}
 	config.Content.Set(`parameters`, parameters)
 
 	// Convert map to Block structs
