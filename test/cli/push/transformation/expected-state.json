@@ -14,9 +14,6 @@
           "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {
             "parameters": {
-              "packages": [
-                "xgboost"
-              ],
               "blocks": [
                 {
                   "name": "Block 1",
@@ -46,6 +43,9 @@
                     }
                   ]
                 }
+              ],
+              "packages": [
+                "xgboost"
               ]
             }
           },

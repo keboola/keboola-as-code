@@ -5,6 +5,7 @@
     "parameters": {
       "blocks": [
         {
+          "name": "Block 1",
           "codes": [
             {
               "name": "Shared Code Used",
@@ -12,9 +13,11 @@
                 "{{%%TEST_SHARED_CODE_ROW_ID%%}}"
               ]
             }
-          ],
-          "name": "Block 1"
+          ]
         }
+      ],
+      "packages": [
+        "xgboost"
       ]
     },
     "shared_code_id": "%%TEST_SHARED_CODE_ID%%",

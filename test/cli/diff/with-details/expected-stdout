@@ -26,7 +26,7 @@ Diff:
   sharedCode:
     - # This program prints Hello, world!
     + # This program prints some text
-%w
+    
     - print('Hello, world!')
     + print('Changed text!')
 * C bar/extractor/ex-generic-v2/empty
@@ -41,6 +41,30 @@ Diff:
   name:
     - empty
     + new name
+* C bar/transformation/keboola.python-transformation-v2/python-transformation
+  configuration:
+  - parameters.blocks:
+  -   [map[codes:[map[name:Code X script:[print(100)
+  -   ]] map[name:Code Y script:[print(200)
+  -   	]]] name:Block 1] map[codes:[map[name:Code Z script:[# Sum of natural numbers up to num
+  -   
+  -   num = 16
+  -   
+  -   if num < 0:
+  -       print("Enter a positive number")
+  -   else:
+  -       sum = 0
+  -       # use while loop to iterate until zero
+  -       while (num > 0):
+  -           sum += num
+  -           num -= 1
+  -       print("The sum is", sum)]]] name:Block 2]]
+* C bar/transformation/keboola.python-transformation-v2/transformation-with-shared-code
+  configuration:
+  - parameters.blocks:
+  -   [map[codes:[map[name:Shared Code Used script:[{{%%TEST_SHARED_CODE_ROW_ID%%}}]]] name:Block 1]]
+  - parameters.packages:
+  -   [xgboost]
 * C bar/transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables
   configuration:
     variables.0.name:

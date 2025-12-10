@@ -5,6 +5,7 @@ DEBUG	Validation done.
 Plan for "push" operation:
   * B bar | changed: description
   * C bar/extractor/ex-generic-v2/empty | changed: isDisabled, name
+  * C bar/transformation/keboola.python-transformation-v2/python-transformation | changed: configuration
   * B main | changed: metadata
   * C main/app/keboola.data-apps/data-app | changed: configuration
   × C main/extractor/ex-generic-v2/empty

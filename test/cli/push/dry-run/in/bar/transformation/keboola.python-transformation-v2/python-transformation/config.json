@@ -1,5 +1,18 @@
 {
   "parameters": {
+    "blocks": [
+      {
+        "name": "Block 1",
+        "codes": [
+          {
+            "name": "Code 1",
+            "script": [
+              "print('Hello from code')"
+            ]
+          }
+        ]
+      }
+    ],
     "packages": [
       "xgboost"
     ]

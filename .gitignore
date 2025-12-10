@@ -51,6 +51,8 @@ vendor/*
 
 # CPU profiles
 /**/*.prof
+/**/*.claude
+
 
 # Certificates
 /ca

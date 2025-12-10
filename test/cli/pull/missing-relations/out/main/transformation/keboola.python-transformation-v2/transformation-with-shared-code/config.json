@@ -1,3 +1,20 @@
 {
-  "parameters": {}
+  "parameters": {
+    "blocks": [
+      {
+        "name": "Block 1",
+        "codes": [
+          {
+            "name": "Shared Code Used",
+            "script": [
+              "{{543}}"
+            ]
+          }
+        ]
+      }
+    ],
+    "packages": [
+      "xgboost"
+    ]
+  }
 }
