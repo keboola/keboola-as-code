@@ -8,6 +8,7 @@ Diff:
 * C bar/extractor/keboola.ex-db-mysql/with-rows | changed: configuration
 * R bar/extractor/keboola.ex-db-mysql/with-rows/rows/users | changed: configuration
 + C bar/extractor/keboola.ex-db-mysql/xyz
+* C bar/transformation/keboola.python-transformation-v2/python-transformation | changed: configuration
 - C main/extractor/ex-generic-v2/empty
 
 Use --details flag to list the changed fields.
