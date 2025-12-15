@@ -60,18 +60,12 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 	firstType := getFirstType(schema)
 	switch firstType {
 	case `array`:
-		// Generate array with one item of each allowed type
+		// Generate empty array by default
+		// Functions like ensureMinimalBlocks handle adding required items for specific use cases
 		values := make([]any, 0)
 		switch v := schema.Items.(type) {
 		case *jsonschema.Schema:
-			// Respect minItems constraint if present
-			minItems := 0
-			if schema.MinItems != nil {
-				minItems = *schema.MinItems
-			}
-			for i := 0; i < minItems; i++ {
-				values = append(values, getDefaultValueFor(v, level+1))
-			}
+			// Don't add any items - keep array empty
 		case []*jsonschema.Schema:
 			for _, item := range v {
 				values = append(values, getDefaultValueFor(item, level+1))

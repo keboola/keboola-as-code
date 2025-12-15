@@ -264,7 +264,7 @@ func TestLocalCreateTransformationWithBlocks(t *testing.T) {
 	// Verify Transformation field is initialized (blocks will be populated by MapBeforeLocalSave)
 	require.NotNil(t, config.Transformation)
 	// Blocks are empty here - they will be parsed from config.Content by MapBeforeLocalSave when saving
-	assert.Equal(t, 0, len(config.Transformation.Blocks))
+	assert.Empty(t, config.Transformation.Blocks)
 }
 
 func TestLocalCreateTransformationWithBlocksAndEmptySchema(t *testing.T) {
@@ -301,7 +301,7 @@ func TestLocalCreateTransformationWithBlocksAndEmptySchema(t *testing.T) {
 
 	// Verify Transformation field is initialized
 	require.NotNil(t, config.Transformation)
-	assert.Equal(t, 0, len(config.Transformation.Blocks))
+	assert.Empty(t, config.Transformation.Blocks)
 }
 
 func getTestComponent() *keboola.Component {
