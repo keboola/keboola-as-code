@@ -64,7 +64,14 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 		values := make([]any, 0)
 		switch v := schema.Items.(type) {
 		case *jsonschema.Schema:
-			values = append(values, getDefaultValueFor(v, level+1))
+			// Respect minItems constraint if present
+			minItems := 0
+			if schema.MinItems != nil {
+				minItems = *schema.MinItems
+			}
+			for i := 0; i < minItems; i++ {
+				values = append(values, getDefaultValueFor(v, level+1))
+			}
 		case []*jsonschema.Schema:
 			for _, item := range v {
 				values = append(values, getDefaultValueFor(item, level+1))

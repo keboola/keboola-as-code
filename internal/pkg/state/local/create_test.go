@@ -188,6 +188,122 @@ func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 	assert.Equal(t, expectedContent, json.MustEncodeString(row.Content, false))
 }
 
+func TestLocalCreateTransformationWithBlocks(t *testing.T) {
+	t.Parallel()
+
+	// Mocked component - Python transformation v2
+	component := &keboola.Component{
+		ComponentKey:   keboola.ComponentKey{ID: `keboola.python-transformation-v2`},
+		Type:           `transformation`,
+		Flags:          []string{`genericCodeBlocksUI`},
+		EmptyConfig:    orderedmap.New(),
+		EmptyConfigRow: orderedmap.New(),
+	}
+
+	// Schema with blocks but WITHOUT minItems (simulating real API schema)
+	component.Schema = jsonlib.RawMessage(`{
+		"$schema": "http://json-schema.org/draft-07/schema#",
+		"type": "object",
+		"properties": {
+			"blocks": {
+				"type": "array",
+				"items": {
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string"
+						},
+						"codes": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"name": {
+										"type": "string"
+									},
+									"script": {
+										"type": "array",
+										"items": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"packages": {
+				"type": "array",
+				"items": {
+					"type": "string"
+				}
+			}
+		}
+	}`)
+
+	// Create
+	manager := newTestLocalManager(t, []*keboola.Component{component})
+	key := model.ConfigKey{
+		BranchID:    123,
+		ComponentID: `keboola.python-transformation-v2`,
+		ID:          "456",
+	}
+	object, err := manager.createObject(key, "New Transformation")
+	require.NoError(t, err)
+
+	// Assert
+	config := object.(*model.Config)
+	assert.Equal(t, key, config.Key())
+	assert.Equal(t, "New Transformation", config.Name)
+
+	// Verify config content has at least one block and one code (ensured by ensureMinimalBlocks)
+	expectedContent := `{"parameters":{"blocks":[{"name":"Block 1","codes":[{"name":"Code","script":[""]}]}],"packages":[]}}`
+	assert.JSONEq(t, expectedContent, json.MustEncodeString(config.Content, false))
+
+	// Verify Transformation field is initialized (blocks will be populated by MapBeforeLocalSave)
+	require.NotNil(t, config.Transformation)
+	// Blocks are empty here - they will be parsed from config.Content by MapBeforeLocalSave when saving
+	assert.Equal(t, 0, len(config.Transformation.Blocks))
+}
+
+func TestLocalCreateTransformationWithBlocksAndEmptySchema(t *testing.T) {
+	t.Parallel()
+
+	// Mocked component - Python transformation v2 with empty schema
+	component := &keboola.Component{
+		ComponentKey:   keboola.ComponentKey{ID: `keboola.python-transformation-v2`},
+		Type:           `transformation`,
+		Flags:          []string{`genericCodeBlocksUI`},
+		EmptyConfig:    orderedmap.New(),
+		EmptyConfigRow: orderedmap.New(),
+		Schema:         jsonlib.RawMessage(`{}`), // Empty schema
+	}
+
+	// Create
+	manager := newTestLocalManager(t, []*keboola.Component{component})
+	key := model.ConfigKey{
+		BranchID:    123,
+		ComponentID: `keboola.python-transformation-v2`,
+		ID:          "456",
+	}
+	object, err := manager.createObject(key, "New Transformation")
+	require.NoError(t, err)
+
+	// Assert
+	config := object.(*model.Config)
+	assert.Equal(t, key, config.Key())
+	assert.Equal(t, "New Transformation", config.Name)
+
+	// Even with empty schema, should have at least one block and one code
+	expectedContent := `{"parameters":{"blocks":[{"name":"Block 1","codes":[{"name":"Code","script":[""]}]}]}}`
+	assert.JSONEq(t, expectedContent, json.MustEncodeString(config.Content, false))
+
+	// Verify Transformation field is initialized
+	require.NotNil(t, config.Transformation)
+	assert.Equal(t, 0, len(config.Transformation.Blocks))
+}
+
 func getTestComponent() *keboola.Component {
 	return &keboola.Component{
 		ComponentKey:   keboola.ComponentKey{ID: `keboola.foo`},

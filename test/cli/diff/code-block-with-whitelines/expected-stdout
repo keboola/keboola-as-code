@@ -1,1 +1,23 @@
-No difference.
+* changed
+- remote state
++ local state
+
+Diff:
+* C main/transformation/keboola.python-transformation-v2/python-transformation
+  configuration:
+  - parameters.blocks:
+  -   [map[codes:[map[name:Code X script:[print(100)
+  -   ]] map[name:Code Y script:[print(200)
+  -   	]]] name:Block 1] map[codes:[map[name:Code Z script:[# Sum of natural numbers up to num
+  -   
+  -   num = 16
+  -   
+  -   if num < 0:
+  -       print("Enter a positive number")
+  -   else:
+  -       sum = 0
+  -       # use while loop to iterate until zero
+  -       while (num > 0):
+  -           sum += num
+  -           num -= 1
+  -       print("The sum is", sum)]]] name:Block 2]]

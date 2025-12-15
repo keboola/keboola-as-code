@@ -23,6 +23,21 @@ func (m *transformationMapper) MapBeforeLocalSave(ctx context.Context, recipe *m
 
 	config := recipe.Object.(*model.Config)
 
+	// If Transformation.Blocks is empty but config.Content has blocks,
+	// parse the blocks from config.Content first (e.g., when creating a new config from schema)
+	if config.Transformation != nil && len(config.Transformation.Blocks) == 0 {
+		if parameters, _, _ := config.Content.GetNestedMap(`parameters`); parameters != nil {
+			if blocksRaw, _ := parameters.Get(`blocks`); blocksRaw != nil {
+				if blocks, ok := blocksRaw.([]any); ok && len(blocks) > 0 {
+					// Parse blocks from content to populate Transformation.Blocks
+					if err := m.ParseBlocksFromContent(config, recipe.Path()); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
 	// Normalize block field order in config.Content before saving
 	// This fixes the order when blocks come from Jsonnet (which outputs fields alphabetically)
 	if parameters, _, _ := config.Content.GetNestedMap(`parameters`); parameters != nil {
