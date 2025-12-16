@@ -20,18 +20,6 @@ import (
 // pseudoSchemaFile - the validated schema is registered as this resource.
 const pseudoSchemaFile = "file:///schema.json"
 
-// skipSchemaValidation returns true for components where schema validation should be skipped.
-func skipSchemaValidation(componentID keboola.ComponentID) bool {
-	switch componentID {
-	case "keboola.python-transformation-v2",
-		"keboola.snowflake-transformation",
-		"keboola.google-bigquery-transformation":
-		return true
-	default:
-		return false
-	}
-}
-
 func ValidateObjects(ctx context.Context, logger log.Logger, objects model.ObjectStates) error {
 	errs := errors.NewMultiError()
 	for _, config := range objects.Configs() {
@@ -268,4 +256,16 @@ func compileSchema(s []byte, savePropertyOrder bool) (*jsonschema.Schema, error)
 	}
 
 	return schema, nil
+}
+
+// skipSchemaValidation returns true for components where schema validation should be skipped.
+func skipSchemaValidation(componentID keboola.ComponentID) bool {
+	switch componentID {
+	case "keboola.python-transformation-v2",
+		"keboola.snowflake-transformation",
+		"keboola.google-bigquery-transformation":
+		return true
+	default:
+		return false
+	}
 }
