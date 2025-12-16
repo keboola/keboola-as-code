@@ -181,7 +181,8 @@ func (d *inputsDetailDialog) parse(ctx context.Context, result string) (input.St
 
 func (d *inputsDetailDialog) defaultValue() string {
 	// File header - info for user
-	fileHeader := `
+	var fileHeader strings.Builder
+	fileHeader.WriteString(`
 <!--
 Please complete definition of the user inputs.
 Edit lines below "## Input ...".
@@ -227,26 +228,26 @@ Options format:
      options: {"value1":"Label 1","value2":"Label 2","value3":"Label 3"}
 
 Preview of steps and groups you created:
-`
+`)
 	var defaultStepID string
 	for _, group := range d.stepsGroups {
-		fileHeader += fmt.Sprintf("- Group %d: %s\n", group.GroupIndex+1, group.Description)
+		fileHeader.WriteString(fmt.Sprintf("- Group %d: %s\n", group.GroupIndex+1, group.Description))
 		for _, step := range group.Steps {
-			fileHeader += fmt.Sprintf("  - Step \"%s\": %s - %s\n", step.ID, step.Name, step.Description)
+			fileHeader.WriteString(fmt.Sprintf("  - Step \"%s\": %s - %s\n", step.ID, step.Name, step.Description))
 			if step.GroupIndex == 0 && step.StepIndex == 0 {
 				defaultStepID = step.ID
 			}
 		}
 	}
-	fileHeader += `
+	fileHeader.WriteString(`
 -->
 
 
-`
+`)
 
 	// Add definitions
 	var lines strings.Builder
-	lines.WriteString(fileHeader)
+	lines.WriteString(fileHeader.String())
 	for _, inputID := range d.inputs.Ids() {
 		i, _ := d.inputs.Get(inputID)
 		lines.WriteString(fmt.Sprintf("## Input \"%s\" (%s)\n", i.ID, i.Type))

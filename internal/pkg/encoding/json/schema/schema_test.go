@@ -384,6 +384,55 @@ func testInvalidComponentSchema(t *testing.T, invalidSchema []byte, expectedLogs
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessagesTxt())
 }
 
+func TestValidateConfig_SkipTransformationComponents(t *testing.T) {
+	t.Parallel()
+
+	// Schema that requires "firstName" field
+	schema := getTestSchema()
+
+	// Content that violates the schema (missing required "firstName")
+	invalidContent := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "lastName", Value: "Brown"},
+			}),
+		},
+	})
+
+	// Test that validation is skipped for transformation components
+	transformationComponents := []keboola.ComponentID{
+		"keboola.python-transformation-v2",
+		"keboola.snowflake-transformation",
+		"keboola.google-bigquery-transformation",
+	}
+
+	for _, componentID := range transformationComponents {
+		component := &keboola.Component{
+			ComponentKey: keboola.ComponentKey{ID: componentID},
+			Type:         "transformation",
+			Name:         "Test Transformation",
+			Schema:       schema,
+		}
+		config := &model.Config{Content: invalidContent}
+
+		// Should return nil because validation is skipped for transformation components
+		err := ValidateConfig(component, config)
+		require.NoError(t, err, "validation should be skipped for component %s", componentID)
+	}
+
+	// Verify that a regular component still gets validated
+	regularComponent := &keboola.Component{
+		ComponentKey: keboola.ComponentKey{ID: "keboola.ex-generic"},
+		Type:         "extractor",
+		Name:         "Generic Extractor",
+		Schema:       schema,
+	}
+	config := &model.Config{Content: invalidContent}
+	err := ValidateConfig(regularComponent, config)
+	require.Error(t, err, "validation should NOT be skipped for regular component")
+}
+
 func TestNormalizeSchema_RequiredTrue(t *testing.T) {
 	t.Parallel()
 

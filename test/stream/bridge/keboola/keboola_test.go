@@ -816,7 +816,7 @@ func (ts *testState) testSlicesUpload(t *testing.T, ctx context.Context, expecta
 
 	// Check content of slices in the staging storage
 	ts.logSection(t, "checking slices content in the staging storage")
-	var allSlicesContent string
+	var allSlicesContent strings.Builder
 	for _, slice := range slicesList {
 		rawReader, err := keboola.DownloadSliceReader(ctx, downloadCred, slice)
 		require.NoError(t, err)
@@ -826,12 +826,12 @@ func (ts *testState) testSlicesUpload(t *testing.T, ctx context.Context, expecta
 		require.NoError(t, err)
 		sliceContent := string(sliceContentBytes)
 		assert.Equal(t, expectations.records.count/2, strings.Count(sliceContent, "\n"))
-		allSlicesContent += sliceContent
+		allSlicesContent.WriteString(sliceContent)
 		require.NoError(t, gzipReader.Close())
 		require.NoError(t, rawReader.Close())
 	}
 	for i := range expectations.records.count {
-		assert.Contains(t, allSlicesContent, fmt.Sprintf(`,"foo%d"`, expectations.records.startID+i))
+		assert.Contains(t, allSlicesContent.String(), fmt.Sprintf(`,"foo%d"`, expectations.records.startID+i))
 	}
 }
 

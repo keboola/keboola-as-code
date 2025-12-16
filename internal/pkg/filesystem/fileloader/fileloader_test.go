@@ -57,7 +57,7 @@ type testCases struct {
 func (tc *testCases) runTests(t *testing.T) {
 	t.Helper()
 	// Call all Test* methods
-	tp := reflect.TypeOf(tc)
+	tp := reflect.TypeFor[*testCases]()
 	prefix := `Test`
 	for i := range tp.NumMethod() {
 		method := tp.Method(i)

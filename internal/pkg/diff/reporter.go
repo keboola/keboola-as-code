@@ -99,7 +99,7 @@ func (r *Reporter) Paths() []string {
 }
 
 func (r *Reporter) relationsDiff(remoteValue, localValue reflect.Value) ([]string, bool) {
-	relationsType := reflect.TypeOf((*model.Relations)(nil)).Elem()
+	relationsType := reflect.TypeFor[model.Relations]()
 	if remoteValue.IsValid() && localValue.IsValid() && remoteValue.Type().ConvertibleTo(relationsType) && localValue.Type().ConvertibleTo(relationsType) {
 		onlyInRemote, onlyInLocal := remoteValue.Interface().(model.Relations).Diff(localValue.Interface().(model.Relations))
 		var out []string

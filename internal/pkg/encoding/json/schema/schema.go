@@ -68,12 +68,20 @@ func ValidateConfig(component *keboola.Component, config *model.Config) error {
 	if component.IsDeprecated() {
 		return nil
 	}
+	// Skip components with custom schema handling
+	if skipSchemaValidation(component.ID) {
+		return nil
+	}
 	return ValidateContent(component.Schema, config.Content)
 }
 
 func ValidateConfigRow(component *keboola.Component, configRow *model.ConfigRow) error {
 	// Skip deprecated component
 	if component.IsDeprecated() {
+		return nil
+	}
+	// Skip components with custom schema handling
+	if skipSchemaValidation(component.ID) {
 		return nil
 	}
 	return ValidateContent(component.SchemaRow, configRow.Content)
@@ -248,4 +256,16 @@ func compileSchema(s []byte, savePropertyOrder bool) (*jsonschema.Schema, error)
 	}
 
 	return schema, nil
+}
+
+// skipSchemaValidation returns true for components where schema validation should be skipped.
+func skipSchemaValidation(componentID keboola.ComponentID) bool {
+	switch componentID {
+	case "keboola.python-transformation-v2",
+		"keboola.snowflake-transformation",
+		"keboola.google-bigquery-transformation":
+		return true
+	default:
+		return false
+	}
 }
