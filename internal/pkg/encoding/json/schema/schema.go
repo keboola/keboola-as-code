@@ -20,11 +20,16 @@ import (
 // pseudoSchemaFile - the validated schema is registered as this resource.
 const pseudoSchemaFile = "file:///schema.json"
 
-// Components with schema validation skipped
-var skipSchemaValidationComponents = map[keboola.ComponentID]bool{
-	"keboola.python-transformation-v2":       true,
-	"keboola.snowflake-transformation":       true,
-	"keboola.google-bigquery-transformation": true,
+// skipSchemaValidation returns true for components where schema validation should be skipped.
+func skipSchemaValidation(componentID keboola.ComponentID) bool {
+	switch componentID {
+	case "keboola.python-transformation-v2",
+		"keboola.snowflake-transformation",
+		"keboola.google-bigquery-transformation":
+		return true
+	default:
+		return false
+	}
 }
 
 func ValidateObjects(ctx context.Context, logger log.Logger, objects model.ObjectStates) error {
@@ -76,7 +81,7 @@ func ValidateConfig(component *keboola.Component, config *model.Config) error {
 		return nil
 	}
 	// Skip components with custom schema handling
-	if skipSchemaValidationComponents[component.ID] {
+	if skipSchemaValidation(component.ID) {
 		return nil
 	}
 	return ValidateContent(component.Schema, config.Content)
@@ -88,7 +93,7 @@ func ValidateConfigRow(component *keboola.Component, configRow *model.ConfigRow)
 		return nil
 	}
 	// Skip components with custom schema handling
-	if skipSchemaValidationComponents[component.ID] {
+	if skipSchemaValidation(component.ID) {
 		return nil
 	}
 	return ValidateContent(component.SchemaRow, configRow.Content)

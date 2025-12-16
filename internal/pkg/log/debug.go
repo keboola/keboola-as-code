@@ -142,7 +142,7 @@ func (l *debugLogger) AllMessagesTxt() string {
 	allMessages := l.all.String()
 	scanner := bufio.NewScanner(strings.NewReader(strings.Trim(allMessages, "\n")))
 
-	output := ""
+	var output strings.Builder
 	for scanner.Scan() {
 		message := scanner.Text()
 		var messageData map[string]any
@@ -161,10 +161,10 @@ func (l *debugLogger) AllMessagesTxt() string {
 			panic(errors.New("log message is a json but does not have a \"level\" field"))
 		}
 
-		output += strings.ToUpper(level) + "  " + message + "\n"
+		output.WriteString(strings.ToUpper(level) + "  " + message + "\n")
 	}
 
-	return output
+	return output.String()
 }
 
 // CompareJSONMessages checks that expected json messages appear in actual in the same order.
