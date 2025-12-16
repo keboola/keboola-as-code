@@ -20,6 +20,13 @@ import (
 // pseudoSchemaFile - the validated schema is registered as this resource.
 const pseudoSchemaFile = "file:///schema.json"
 
+// Components with schema validation skipped
+var skipSchemaValidationComponents = map[keboola.ComponentID]bool{
+	"keboola.python-transformation-v2":       true,
+	"keboola.snowflake-transformation":       true,
+	"keboola.google-bigquery-transformation": true,
+}
+
 func ValidateObjects(ctx context.Context, logger log.Logger, objects model.ObjectStates) error {
 	errs := errors.NewMultiError()
 	for _, config := range objects.Configs() {
@@ -68,12 +75,20 @@ func ValidateConfig(component *keboola.Component, config *model.Config) error {
 	if component.IsDeprecated() {
 		return nil
 	}
+	// Skip components with custom schema handling
+	if skipSchemaValidationComponents[component.ID] {
+		return nil
+	}
 	return ValidateContent(component.Schema, config.Content)
 }
 
 func ValidateConfigRow(component *keboola.Component, configRow *model.ConfigRow) error {
 	// Skip deprecated component
 	if component.IsDeprecated() {
+		return nil
+	}
+	// Skip components with custom schema handling
+	if skipSchemaValidationComponents[component.ID] {
 		return nil
 	}
 	return ValidateContent(component.SchemaRow, configRow.Content)
