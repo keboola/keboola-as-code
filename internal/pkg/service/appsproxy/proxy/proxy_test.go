@@ -1904,6 +1904,7 @@ func TestAppProxyRouter(t *testing.T) {
 					require.NoError(t, err)
 					response, err := client.Do(request)
 					require.NoError(t, err)
+					_, _ = io.ReadAll(response.Body)
 					return response.StatusCode == http.StatusOK
 				}, 5*time.Second, 100*time.Millisecond)
 
