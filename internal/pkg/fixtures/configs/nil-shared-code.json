@@ -1,5 +1,5 @@
 {
-    "componentId": "keboola.shared-code",
-    "name": "Broken Shared Code",
-    "configuration": {}
+  "componentId": "keboola.shared-code",
+  "name": "Broken Shared Code",
+  "configuration": {}
 }
