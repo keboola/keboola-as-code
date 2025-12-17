@@ -1897,6 +1897,18 @@ func TestAppProxyRouter(t *testing.T) {
 				// Phase 2: Simulate app becoming available (restart enabled)
 				// Add DNS record back and remove wakeup override
 				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+
+				// Wait for DNS to be fully propagated before removing override
+				assert.Eventually(t, func() bool {
+					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+					require.NoError(t, err)
+					response, err := client.Do(request)
+					require.NoError(t, err)
+					_, _ = io.ReadAll(response.Body)
+					return response.StatusCode == http.StatusOK
+				}, 5*time.Second, 100*time.Millisecond)
+
+				// Now safe to remove override
 				delete(service.WakeUpOverrides, "123")
 
 				// Request should now succeed - DNS resolution succeeds, flag gets reset
