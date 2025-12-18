@@ -1,0 +1,38 @@
+{
+  "_comment": "GENERATION: GET /v2/storage + GET /v2/storage/components/{id}/configs",
+  "_purpose": "Catalog of all component configurations (extractors, writers, orchestrators)",
+  "_update_frequency": "Every sync",
+  "total_components": 3,
+  "by_type": {
+    "extractors": 1,
+    "writers": 1,
+    "transformations": 1,
+    "orchestrators": 1
+  },
+  "components": [
+    {
+      "type": "extractor",
+      "id": "keboola.ex-shopify",
+      "name": "Shopify Extractor",
+      "configs": ["config-001"]
+    },
+    {
+      "type": "writer",
+      "id": "keboola.wr-snowflake",
+      "name": "Snowflake Writer",
+      "configs": ["writer-001"]
+    },
+    {
+      "type": "transformation",
+      "id": "keboola.snowflake-transformation",
+      "name": "Snowflake Transformation",
+      "configs": ["orders_clean"]
+    },
+    {
+      "type": "orchestrator",
+      "id": "keboola.orchestrator",
+      "name": "Orchestrator",
+      "configs": ["flow-001"]
+    }
+  ]
+}

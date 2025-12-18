@@ -1,0 +1,36 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/tokens/verify + computed statistics",
+  "_purpose": "Complete project overview in one file for fast AI analysis",
+  "_update_frequency": "Every sync",
+  "project_id": "example",
+  "twin_version": 1,
+  "format_version": 2,
+  "updated": "2025-01-20T10:00:00Z",
+  "statistics": {
+    "total_buckets": 2,
+    "total_tables": 2,
+    "total_transformations": 1,
+    "total_edges": 2
+  },
+  "sources": [
+    {
+      "id": "ecommerce",
+      "name": "E-Commerce Platform",
+      "type": "extractor",
+      "instances": 1,
+      "total_tables": 1,
+      "buckets": ["raw"]
+    },
+    {
+      "id": "transformation",
+      "name": "Transformation Output",
+      "type": "internal",
+      "instances": 1,
+      "total_tables": 1,
+      "buckets": ["processed"]
+    }
+  ],
+  "transformation_platforms": {
+    "snowflake": 1
+  }
+}

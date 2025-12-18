@@ -1,0 +1,32 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/components/{component_id}/configs/{config_id} + encrypt secrets",
+  "_purpose": "Writer configuration with encrypted credentials",
+  "_update_frequency": "On writer config changes",
+  "_security": "All # fields encrypted, input tables tracked",
+  "uid": "component:writer:keboola.wr-snowflake:writer-001",
+  "componentId": "keboola.wr-snowflake",
+  "configurationId": "writer-001",
+  "name": "Export to Snowflake",
+  "type": "writer",
+  "description": "Writes processed data to external Snowflake database",
+  "isDisabled": false,
+  "created": "2025-01-10T08:00:00Z",
+  "lastModified": "2025-01-18T16:00:00Z",
+  "version": 8,
+  "configuration": {
+    "parameters": {
+      "host": "company.snowflakecomputing.com",
+      "database": "ANALYTICS",
+      "schema": "PUBLIC",
+      "warehouse": "COMPUTE_WH",
+      "#password": "***ENCRYPTED***",
+      "user": "keboola_writer"
+    }
+  },
+  "inputs": {
+    "tables": [
+      "out.c-processed.orders_clean",
+      "out.c-processed.customers_enriched"
+    ]
+  }
+}

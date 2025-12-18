@@ -1,0 +1,36 @@
+{
+  "_comment": "GENERATION: GET /v2/storage/components/{component_id}/configs/{config_id} + encrypt secrets",
+  "_purpose": "Complete component configuration with encrypted secrets",
+  "_update_frequency": "On component config changes",
+  "_security": "All fields starting with # are encrypted to ***ENCRYPTED***",
+  "uid": "component:extractor:keboola.ex-shopify:config-001",
+  "componentId": "keboola.ex-shopify",
+  "configurationId": "config-001",
+  "name": "Shopify Store Data",
+  "type": "extractor",
+  "description": "Extracts orders, customers, and products from Shopify store",
+  "isDisabled": false,
+  "created": "2025-01-15T10:00:00Z",
+  "lastModified": "2025-01-20T14:30:00Z",
+  "version": 12,
+  "configuration": {
+    "parameters": {
+      "shop": "my-store.myshopify.com",
+      "#api_key": "***ENCRYPTED***",
+      "datasets": ["orders", "customers", "products"],
+      "incremental": true,
+      "since": "30 days ago"
+    }
+  },
+  "outputs": {
+    "tables": [
+      "out.c-shopify.orders",
+      "out.c-shopify.customers",
+      "out.c-shopify.products"
+    ]
+  },
+  "schedule": {
+    "enabled": true,
+    "cron": "0 */6 * * *"
+  }
+}

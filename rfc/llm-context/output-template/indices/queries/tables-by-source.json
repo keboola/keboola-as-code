@@ -1,0 +1,16 @@
+{
+  "ecommerce": [
+    {
+      "uid": "table:raw/orders",
+      "name": "orders",
+      "bucket": "raw"
+    }
+  ],
+  "transformation": [
+    {
+      "uid": "table:processed/orders_clean",
+      "name": "orders_clean",
+      "bucket": "processed"
+    }
+  ]
+}
