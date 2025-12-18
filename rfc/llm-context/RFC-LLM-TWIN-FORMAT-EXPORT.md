@@ -10,6 +10,29 @@ Implement `kbc llm export` command that transforms Keboola project data into an 
 
 ---
 
+## Prerequisites
+
+### Branch Workflow
+
+1. **This RFC branch** (`vb/llm-context/rfc`) will be merged to `main` first
+2. **Rebase `jt-llm-init`** on top of `main` after merge
+3. **Finish `kbc llm init`** - Complete the `jt-llm-init` branch (PR #1)
+4. **Implement `kbc llm export`** - Create PRs in a PR-train on top of `jt-llm-init`
+
+### Dependencies
+
+- `kbc llm init` command must exist before `kbc llm export` (provides project context)
+- `keboola-sdk-go` - If SDK lacks required endpoints, implement them in the SDK repo first
+  - SDK Repository: `github.com/keboola/keboola-sdk-go`
+  - Create SDK PR, get it merged, then use in this codebase
+
+### Reference Materials
+
+- `rfc/llm-context/output-template/` - Canonical output format specification (all JSON files have inline documentation)
+- `rfc/llm-context/DATA-SOURCE-MAPPING.md` - Source inference patterns
+
+---
+
 ## 1. Problem Statement
 
 Current state:
@@ -29,9 +52,9 @@ Goal:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    kbc llm export                                │
-│                                                                   │
-│  CLI Command → Dialog → Operation → Twin Format Generator        │
+│                    kbc llm export                               │
+│                                                                 │
+│  CLI Command → Dialog → Operation → Twin Format Generator       │
 └─────────────────────────────────────────────────────────────────┘
 
 Flow:
@@ -103,7 +126,9 @@ There are **two separate job systems** in Keboola:
 
 **Purpose**: Tracks user-initiated component runs (transformations, extractors, writers)
 
-**Endpoint**: `GET https://queue.STACK.com/search/jobs` (search/list jobs)
+**Endpoint**: `GET https://queue.{STACK}/search/jobs?branchId={branchId}&limit={limit}`
+
+**Example**: `GET https://queue.us-east4.gcp.keboola.com/search/jobs?branchId=10336&limit=100`
 
 **What it tracks**:
 - Transformation executions (Snowflake, Python, dbt, etc.)
@@ -240,189 +265,279 @@ if len(conflicts) > 0 {
 
 ---
 
-## 6. Implementation Plan
+## 6. Implementation Plan (PR Train)
 
-### Phase 1: Foundation (Week 1)
+Implementation follows a PR-train approach. Each PR should include tests for the work done.
 
-**Goal**: Basic scaffolding and API integration
+---
+
+### PR 1: Complete `kbc llm init` (branch: `jt-llm-init`)
+
+**Prerequisite PR** - Complete the existing `jt-llm-init` branch.
+
+**Scope**:
+- Finish any remaining work on `kbc llm init` command
+- Ensure project initialization creates `.keboola/manifest.json` and `.env.local`
+- Merge to `main`
+
+**Tests**: E2E test for `kbc llm init` happy path
+
+---
+
+### PR 2: CLI Scaffolding (+ SDK PR if needed)
+
+**Goal**: Command structure ready, SDK has required endpoints
 
 **Tasks**:
-1. Create package structure:
-   - `internal/pkg/llm/twinformat/` - Core logic
-   - `pkg/lib/operation/llm/export/` - Operation layer
-   - `internal/pkg/service/cli/cmd/llm/export/` - CLI command
+1. **SDK Extensions** (separate PR to `github.com/keboola/keboola-sdk-go` if needed):
+   - Check if Jobs Queue API exists in SDK
+   - If not, create PR to add: `GET https://queue.{STACK}/search/jobs?branchId={branchId}&limit={limit}`
+   - Get SDK PR merged before continuing with this PR
 
-2. Implement directory validation:
+2. **CLI Command Skeleton**:
+   - `internal/pkg/service/cli/cmd/llm/export/cmd.go` - Command definition
+   - `internal/pkg/service/cli/cmd/llm/export/flags.go` - Flag definitions
+   - Register in `cmd/llm/cmd.go`
+   - Help messages (`helpmsg/msg/llm/export/short.txt`, `long.txt`)
+
+3. **Operation Skeleton**:
+   - `pkg/lib/operation/llm/export/operation.go` - Main operation
+   - `pkg/lib/operation/llm/export/options.go` - Options struct
+
+4. **Directory Validation**:
    - Check if current directory is suitable for export
-   - Allow `.keboola/manifest.json` and `.env*` files (ignore these)
-   - Warn if other files exist (buckets/, transformations/, etc.)
-   - Prompt for confirmation in interactive mode
+   - Allow `.keboola/`, `.env*`, `.gitignore` (ignore these)
+   - Warn if other files exist, prompt for confirmation
    - `--force` flag to skip confirmation
 
-3. Implement `Fetcher`:
-   - `FetchProjectMetadata()` - `GET https://connection.STACK.com/v2/storage/tokens/verify`
-   - `FetchTables()` - `GET https://connection.STACK.com/v2/storage/buckets?include=...`
-   - `FetchJobsQueue()` - **PRIMARY**: `GET https://queue.STACK.com/search/jobs` (transformation runs)
-   - `FetchStorageJobs()` - **SECONDARY**: `GET https://connection.STACK.com/v2/storage/jobs?limit=100` (optional)
-   - Retry logic with exponential backoff
+**Files**:
+```
+internal/pkg/service/cli/cmd/llm/export/cmd.go (NEW)
+internal/pkg/service/cli/cmd/llm/export/flags.go (NEW)
+internal/pkg/service/cli/cmd/llm/cmd.go (MODIFY - add export subcommand)
+internal/pkg/service/cli/helpmsg/msg/llm/export/short.txt (NEW)
+internal/pkg/service/cli/helpmsg/msg/llm/export/long.txt (NEW)
+pkg/lib/operation/llm/export/operation.go (NEW)
+pkg/lib/operation/llm/export/options.go (NEW)
+```
 
-4. CLI command skeleton:
-   - Register `kbc llm export` command
-   - Define flags (output-dir, samples, limits, force)
-   - Basic validation
-
-5. Unit tests for fetcher and validation
-
-**Deliverable**: Can fetch data from API, directory validation works, no file generation yet
-
-**Critical Files**:
-- `internal/pkg/llm/twinformat/fetcher.go` (NEW)
-- `internal/pkg/llm/twinformat/types.go` (NEW)
-- `pkg/lib/operation/llm/export/operation.go` (NEW)
-- `internal/pkg/service/cli/cmd/llm/export/cmd.go` (NEW)
+**Tests**:
+- Unit tests for directory validation logic
+- E2E test: `kbc llm export --help` works
 
 ---
 
-### Phase 2: Processing & Lineage (Week 2)
+### PR 3: Fetcher + Core Types
 
-**Goal**: Transform API data into twin format structures
+**Goal**: Fetch all required data from Keboola APIs
 
 **Tasks**:
-1. Implement `Processor`:
-   - Convert API tables to `TwinTable` structs
-   - Scan local transformations from filesystem
-   - Build lineage graph (edges: consumed_by, produces)
-   - Compute bidirectional dependencies
+1. **Core Types**:
+   - `internal/pkg/llm/twinformat/types.go` - Data structures (TwinTable, TwinTransformation, etc.)
 
-2. Platform detection:
-   - `DetectPlatform()` - Identify Snowflake, Python, dbt, etc.
-   - Pattern matching on component IDs
+2. **Fetcher Implementation**:
+   - `internal/pkg/llm/twinformat/fetcher.go`
+   - `FetchProjectMetadata()` - `GET /v2/storage/tokens/verify`
+   - `FetchBucketsWithTables()` - `GET /v2/storage/buckets?include=tables,columns,metadata`
+   - `FetchJobsQueue()` - `GET https://queue.{STACK}/search/jobs?branchId=...&limit=100`
+   - Retry logic with exponential backoff (if not in SDK)
+
+3. **Integration with Operation**:
+   - Wire fetcher into `pkg/lib/operation/llm/export/operation.go`
+   - Command now fetches data but doesn't generate files yet
+
+**Files**:
+```
+internal/pkg/llm/twinformat/types.go (NEW)
+internal/pkg/llm/twinformat/fetcher.go (NEW)
+pkg/lib/operation/llm/export/operation.go (MODIFY)
+```
+
+**Tests**:
+- Unit tests for fetcher with mocked HTTP responses
+- E2E test: `kbc llm export` fetches data without error (empty output)
+
+---
+
+### PR 4: Processor + Lineage
+
+**Goal**: Transform fetched data, build lineage graph
+
+**Tasks**:
+1. **Local Transformation Scanner**:
+   - `internal/pkg/llm/twinformat/scanner.go`
+   - Scan `main/transformation/` directory
+   - Read `config.json`, `meta.json`, `description.md`
+   - Extract storage mappings (input/output tables)
+
+2. **Platform Detection**:
+   - `internal/pkg/llm/twinformat/platform.go`
+   - `DetectPlatform(componentId)` → snowflake, python, dbt, etc.
    - Target: 0 unknown platforms
 
-3. Source inference:
-   - `InferSourceFromBucket()` - shopify, hubspot, analytics, etc.
-   - Pattern matching on bucket names
+3. **Source Inference**:
+   - `internal/pkg/llm/twinformat/source.go`
+   - `InferSourceFromBucket(bucketName)` → shopify, hubspot, etc.
 
-4. Job linking:
+4. **Lineage Builder**:
+   - `internal/pkg/llm/twinformat/lineage.go`
+   - Build graph edges (consumed_by, produces)
+   - Compute bidirectional dependencies
+
+5. **Job Linking**:
    - Map jobs to transformations by componentId + configId
-   - Extract last run status, time, duration
-   - Handle missing jobs gracefully
+   - Extract last run status, time, duration, error
 
-5. Comprehensive unit tests
+6. **Processor Orchestration**:
+   - `internal/pkg/llm/twinformat/processor.go`
+   - Orchestrate all processing steps
 
-**Deliverable**: Can process data, build lineage, compute dependencies
+**Files**:
+```
+internal/pkg/llm/twinformat/scanner.go (NEW)
+internal/pkg/llm/twinformat/platform.go (NEW)
+internal/pkg/llm/twinformat/source.go (NEW)
+internal/pkg/llm/twinformat/lineage.go (NEW)
+internal/pkg/llm/twinformat/processor.go (NEW)
+```
 
-**Critical Files**:
-- `internal/pkg/llm/twinformat/processor.go` (NEW)
-- `internal/pkg/llm/twinformat/lineage.go` (NEW)
-- `internal/pkg/llm/twinformat/platform.go` (NEW)
-- `internal/pkg/llm/twinformat/source.go` (NEW)
-- `internal/pkg/llm/twinformat/scanner.go` (NEW)
+**Tests**:
+- Unit tests for platform detection (all platforms)
+- Unit tests for source inference (all patterns)
+- Unit tests for lineage edge creation
+- E2E test: processor builds correct lineage for test project
 
 ---
 
-### Phase 3: File Generation (Week 3)
+### PR 5: Generator (Core Output)
 
-**Goal**: Generate complete twin format directory
+**Goal**: Generate twin format directory structure (without samples)
 
 **Tasks**:
-1. Implement `Generator`:
-   - `generateBuckets()` - buckets/ + index.json
-   - `generateTransformations()` - transformations/ + index.json
-   - `generateJobs()` - jobs/ + recent/ + by-component/
+1. **Documentation Fields Helper**:
+   - `internal/pkg/llm/twinformat/docfields.go`
+   - `AddDocFields()` - Inject `_comment`, `_purpose`, `_update_frequency`
+
+2. **Writers**:
+   - `internal/pkg/llm/twinformat/writer/json.go` - Ordered JSON (use existing encoding/json)
+   - `internal/pkg/llm/twinformat/writer/jsonl.go` - JSONL for graph
+   - `internal/pkg/llm/twinformat/writer/markdown.go` - README/guides
+
+3. **Generator Implementation**:
+   - `internal/pkg/llm/twinformat/generator.go`
+   - `generateBuckets()` - buckets/index.json + per-table metadata
+   - `generateTransformations()` - transformations/index.json + per-transform metadata
+   - `generateComponents()` - components/index.json + per-component metadata
+   - `generateJobs()` - jobs/index.json + recent/ + by-component/
    - `generateIndices()` - graph.jsonl, sources.json, queries/
    - `generateRootFiles()` - manifest.yaml, manifest-extended.json, README.md
    - `generateAIGuide()` - ai/README.md with real project data
 
-2. Documentation fields helper:
-   - `AddDocFields()` - Inject `_comment`, `_purpose`, `_update_frequency`
-   - Preserve field order for AI readability
+4. **Wire Everything**:
+   - Complete `pkg/lib/operation/llm/export/operation.go`
+   - Command now produces full output
 
-3. File writers:
-   - Ordered JSON writer (use existing `internal/pkg/encoding/json`)
-   - JSONL writer for graph (first line = metadata, rest = edges)
-   - Markdown writer for README/guides
+**Files**:
+```
+internal/pkg/llm/twinformat/docfields.go (NEW)
+internal/pkg/llm/twinformat/writer/json.go (NEW)
+internal/pkg/llm/twinformat/writer/jsonl.go (NEW)
+internal/pkg/llm/twinformat/writer/markdown.go (NEW)
+internal/pkg/llm/twinformat/generator.go (NEW)
+pkg/lib/operation/llm/export/operation.go (MODIFY)
+```
 
-4. Integration tests with mocked API
-
-**Deliverable**: Full twin format generation working (without samples)
-
-**Critical Files**:
-- `internal/pkg/llm/twinformat/generator.go` (NEW)
-- `internal/pkg/llm/twinformat/docfields.go` (NEW)
-- `internal/pkg/llm/twinformat/writer/json.go` (NEW)
-- `internal/pkg/llm/twinformat/writer/jsonl.go` (NEW)
-- `internal/pkg/llm/twinformat/writer/markdown.go` (NEW)
+**Tests**:
+- Unit tests for doc fields injection
+- Unit tests for JSONL writer
+- E2E test: `kbc llm export` produces correct directory structure
+- E2E test: All JSON files have `_comment`, `_purpose`, `_update_frequency`
+- E2E test: Lineage graph is correct
 
 ---
 
-### Phase 4: Samples & Security (Week 4)
+### PR 6: Samples + Security
 
 **Goal**: Add sample export with security controls
 
 **Tasks**:
-1. Sample fetcher:
-   - `FetchTableSample()` - `GET /v2/storage/tables/{id}/data-preview?limit=N`
-   - CSV writer for samples
-   - Sample metadata tracking
+1. **Sample Fetcher**:
+   - Extend fetcher with `FetchTableSample(tableId, limit)`
+   - `GET /v2/storage/tables/{id}/data-preview?limit=N`
 
-2. Security layer:
+2. **CSV Writer**:
+   - `internal/pkg/llm/twinformat/writer/csv.go`
+
+3. **Security Layer**:
+   - `internal/pkg/llm/twinformat/security.go`
    - `IsPublicRepository()` - Detect public Git repos
-   - `EncryptSecrets()` - Mask fields starting with `#`
+   - `EncryptSecrets()` - Mask fields starting with `#` → `***ENCRYPTED***`
    - Auto-disable samples for public repos
 
-3. Dialog implementation:
-   - `AskExportOptions()` - Interactive prompts
+4. **Dialog Implementation**:
+   - `internal/pkg/service/cli/cmd/llm/export/dialog.go`
+   - `AskExportOptions()` - Interactive prompts for samples
    - Auto-detect public repo and suggest samples=off
-   - Confirm sample export in interactive mode
 
-4. Flags:
+5. **Sample Generation**:
+   - Extend generator with `generateSamples()`
+   - `storage/samples/index.json` + per-table sample.csv + metadata.json
+
+6. **Flags**:
    - `--with-samples` / `--without-samples`
    - `--sample-limit=N` (default: 100, max: 1000)
    - `--max-samples=N` (default: 50, total tables to sample)
 
-5. E2E tests with real project
+**Files**:
+```
+internal/pkg/llm/twinformat/security.go (NEW)
+internal/pkg/llm/twinformat/writer/csv.go (NEW)
+internal/pkg/service/cli/cmd/llm/export/dialog.go (NEW)
+internal/pkg/llm/twinformat/fetcher.go (MODIFY - add sample fetching)
+internal/pkg/llm/twinformat/generator.go (MODIFY - add samples generation)
+internal/pkg/service/cli/cmd/llm/export/flags.go (MODIFY - add sample flags)
+```
 
-**Deliverable**: Complete MVP with samples and security
-
-**Critical Files**:
-- `internal/pkg/llm/twinformat/security.go` (NEW)
-- `internal/pkg/llm/twinformat/writer/csv.go` (NEW)
-- `internal/pkg/service/cli/cmd/llm/export/dialog.go` (NEW)
-- `internal/pkg/service/cli/cmd/llm/export/flags.go` (NEW)
+**Tests**:
+- Unit tests for secret encryption
+- Unit tests for public repo detection
+- E2E test: `kbc llm export --with-samples` produces samples
+- E2E test: `kbc llm export --without-samples` produces no samples
+- E2E test: Public repo auto-disables samples
+- E2E test: Secrets are encrypted in output
 
 ---
 
-### Phase 5: Polish & Documentation (Week 5)
+### PR 7: Polish + Performance
 
-**Goal**: Production-ready
+**Goal**: Production-ready quality
 
 **Tasks**:
-1. Error handling:
+1. **Error Handling**:
    - Graceful degradation on API failures
    - User-friendly error messages
    - Partial export support (log warnings, continue)
 
-2. Performance:
+2. **Performance**:
    - Parallel API calls (semaphore pattern)
    - Progress reporting (spinners for each phase)
    - Memory optimization for large projects
 
-3. Documentation:
-   - Help messages (`helpmsg/msg/llm/export/short.txt`, `long.txt`)
-   - Update main README
-   - Code examples in help text
+3. **Edge Cases**:
+   - Empty project (0 tables, 0 transformations)
+   - Large project (1000+ tables)
+   - Missing/deleted tables (404 from API)
+   - Malformed transformation configs
 
-4. Code review & testing:
-   - Full test coverage (unit, integration, E2E)
-   - Manual testing checklist
-   - Security audit (secret handling, public repos)
+**Files**:
+```
+(Various files modified for error handling and performance)
+```
 
-**Deliverable**: Production-ready `kbc llm export` command
-
-**Critical Files**:
-- `internal/pkg/service/cli/helpmsg/msg/llm/export/short.txt` (NEW)
-- `internal/pkg/service/cli/helpmsg/msg/llm/export/long.txt` (NEW)
+**Tests**:
+- E2E test: Empty project produces valid output
+- E2E test: API error doesn't crash, produces partial output with warnings
+- E2E test: Progress is reported during export
 
 ---
 
@@ -510,45 +625,37 @@ Must achieve **0 unknown platforms**. Supported platforms:
 
 ---
 
-## 9. Critical Files to Create/Modify
+## 9. Package Structure
 
-### Create (22 new files)
+**Note**: Detailed file lists per PR are in Section 6 (Implementation Plan).
 
-**Core Logic**:
-1. `internal/pkg/llm/twinformat/transformer.go` - Main orchestrator
-2. `internal/pkg/llm/twinformat/fetcher.go` - API data fetching
-3. `internal/pkg/llm/twinformat/processor.go` - Data transformation
-4. `internal/pkg/llm/twinformat/generator.go` - File generation
-5. `internal/pkg/llm/twinformat/lineage.go` - Lineage graph building
-6. `internal/pkg/llm/twinformat/scanner.go` - Local transformation scan
-7. `internal/pkg/llm/twinformat/platform.go` - Platform detection
-8. `internal/pkg/llm/twinformat/source.go` - Source inference
-9. `internal/pkg/llm/twinformat/security.go` - Security controls
-10. `internal/pkg/llm/twinformat/docfields.go` - Documentation fields
-11. `internal/pkg/llm/twinformat/types.go` - Core data structures
+```
+internal/pkg/llm/twinformat/        # Core twin format logic
+├── types.go                        # Data structures
+├── fetcher.go                      # API data fetching
+├── scanner.go                      # Local transformation scan
+├── processor.go                    # Data transformation orchestration
+├── platform.go                     # Platform detection
+├── source.go                       # Source inference
+├── lineage.go                      # Lineage graph building
+├── generator.go                    # File generation
+├── docfields.go                    # Documentation fields helper
+├── security.go                     # Security controls
+└── writer/
+    ├── json.go                     # Ordered JSON
+    ├── jsonl.go                    # JSONL graph
+    ├── csv.go                      # CSV samples
+    └── markdown.go                 # README/guides
 
-**Writers**:
-12. `internal/pkg/llm/twinformat/writer/json.go` - Ordered JSON
-13. `internal/pkg/llm/twinformat/writer/jsonl.go` - JSONL graph
-14. `internal/pkg/llm/twinformat/writer/csv.go` - CSV samples
-15. `internal/pkg/llm/twinformat/writer/markdown.go` - README/guides
+pkg/lib/operation/llm/export/       # Operation layer
+├── operation.go
+└── options.go
 
-**Operation Layer**:
-16. `pkg/lib/operation/llm/export/operation.go` - Main operation
-17. `pkg/lib/operation/llm/export/options.go` - Options + validation
-
-**CLI Command**:
-18. `internal/pkg/service/cli/cmd/llm/export/cmd.go` - Command definition
-19. `internal/pkg/service/cli/cmd/llm/export/dialog.go` - Interactive prompts
-20. `internal/pkg/service/cli/cmd/llm/export/flags.go` - Flag definitions
-
-**Help Messages**:
-21. `internal/pkg/service/cli/helpmsg/msg/llm/export/short.txt`
-22. `internal/pkg/service/cli/helpmsg/msg/llm/export/long.txt`
-
-### Modify (1 file)
-
-23. `internal/pkg/service/cli/cmd/llm/cmd.go` - Add `llmExport.Command(p)` to command list
+internal/pkg/service/cli/cmd/llm/export/  # CLI command
+├── cmd.go
+├── dialog.go
+└── flags.go
+```
 
 ---
 
@@ -556,56 +663,58 @@ Must achieve **0 unknown platforms**. Supported platforms:
 
 | Purpose | Endpoint | Priority | Frequency |
 |---------|----------|----------|-----------|
-| Project metadata | `GET https://connection.STACK.com/v2/storage/tokens/verify` | HIGH | Once per export |
-| Buckets & tables | `GET https://connection.STACK.com/v2/storage/buckets?include=tables,columns,metadata` | HIGH | Once per export |
-| **Jobs Queue (transformations)** | `GET https://queue.STACK.com/search/jobs` | **PRIMARY** | Once per export |
-| Storage API jobs | `GET https://connection.STACK.com/v2/storage/jobs?limit=100` | SECONDARY | Once per export (optional) |
-| Table sample | `GET https://connection.STACK.com/v2/storage/tables/{id}/data-preview?limit=N` | MEDIUM | Per table (if enabled) |
+| Project metadata | `GET https://connection.{STACK}/v2/storage/tokens/verify` | HIGH | Once per export |
+| Buckets & tables | `GET https://connection.{STACK}/v2/storage/buckets?include=tables,columns,metadata` | HIGH | Once per export |
+| **Jobs Queue** | `GET https://queue.{STACK}/search/jobs?branchId={branchId}&limit=100` | **PRIMARY** | Once per export |
+| Storage API jobs | `GET https://connection.{STACK}/v2/storage/jobs?limit=100` | SECONDARY | Once per export (optional) |
+| Table sample | `GET https://connection.{STACK}/v2/storage/tables/{id}/data-preview?limit=N` | MEDIUM | Per table (if enabled) |
 
 **Notes**:
-- **STACK** = Your Keboola stack region (e.g., `north-europe.azure`, `us-east-1`, etc.)
-- Jobs Queue API (`queue.STACK.com`) is the primary source for transformation execution data
-- Storage API jobs (`connection.STACK.com`) are less critical but can be included for completeness
-- Check if `keboola-sdk-go` has these methods. If not, implement custom HTTP requests.
+- **STACK** = Your Keboola stack (e.g., `us-east4.gcp.keboola.com`, `north-europe.azure.keboola.com`)
+- **Example Jobs Queue**: `https://queue.us-east4.gcp.keboola.com/search/jobs?branchId=10336&limit=100`
+- Jobs Queue API (`queue.{STACK}`) is the primary source for transformation execution data
+- Storage API jobs (`connection.{STACK}`) are less critical but can be included for completeness
+- If `keboola-sdk-go` lacks required methods, implement them in the SDK first (repo: `github.com/keboola/keboola-sdk-go`)
 
 ---
 
 ## 11. Testing Strategy
 
-### Unit Tests (Coverage target: 80%)
-- Platform detection (all platforms)
-- Source inference (all patterns)
-- Documentation fields injection
-- Table reference parsing
-- Lineage edge creation
-- Job linking logic
-- Secret encryption
-- Public repo detection
+**Principle**: Each PR includes tests for the work done. Focus on E2E tests that cover happy paths and edge cases.
 
-### Integration Tests (Mocked API)
-- Full export with mocked responses
-- Export with samples enabled/disabled
-- Export to custom directory
-- API error handling
-- Empty project handling
-- Large project (100+ tables)
+### Unit Tests (Per PR)
+Tests are included in each PR for:
+- Platform detection (all platforms) - PR 4
+- Source inference (all patterns) - PR 4
+- Documentation fields injection - PR 5
+- Lineage edge creation - PR 4
+- Secret encryption - PR 6
+- Public repo detection - PR 6
 
-### E2E Tests (Real Project)
-- Export after `llm init`
-- Verify all files created
-- Verify JSON structure correctness
-- Verify JSONL graph format
-- Verify samples CSV format
-- Verify AI guide content
+### E2E Tests (Critical Path)
+
+**Happy Path Tests**:
+- `kbc llm export` produces correct directory structure
+- All JSON files have `_comment`, `_purpose`, `_update_frequency`
+- Lineage graph contains correct edges
+- Jobs are linked to transformations
+- `--with-samples` produces sample files
+- `--without-samples` omits sample files
+
+**Edge Case Tests**:
+- Empty project (0 tables, 0 transformations) → valid output
+- API error during fetch → partial output with warnings
+- Public repo detected → samples auto-disabled
+- Secrets in config → encrypted in output
+- Missing/deleted table → graceful skip with warning
+- Directory not empty → prompts for confirmation (or `--force`)
 
 ### Manual Testing Checklist
-- Interactive mode prompts
-- Non-interactive mode (CI/CD)
-- Public repo (samples auto-disabled)
-- Private repo (samples enabled)
-- Progress reporting visible
-- Error messages user-friendly
-- Help text clear and accurate
+- Interactive mode prompts work correctly
+- Non-interactive mode works for CI/CD
+- Progress reporting visible during export
+- Error messages are user-friendly
+- Help text is clear and accurate
 
 ---
 
@@ -704,26 +813,23 @@ Must achieve **0 unknown platforms**. Supported platforms:
 
 ---
 
-## 15. Open Questions & Decisions
+## 15. Decisions
 
-### Q1: SDK Support for Jobs API
-**Status**: TBD
-**Action**: Check if `keboola-sdk-go` has Jobs Queue and Storage API endpoints. If not, implement custom HTTP requests.
+### D1: SDK Support for Jobs API
+**Decision**: If `keboola-sdk-go` lacks Jobs Queue API support, create a PR to the SDK repo first.
+- SDK Repository: `github.com/keboola/keboola-sdk-go`
+- Endpoint: `GET https://queue.{STACK}/search/jobs?branchId={branchId}&limit={limit}`
 
-### Q2: Retry Logic Location
-**Status**: TBD
-**Action**: Check if SDK has built-in retry. If not, implement in fetcher with exponential backoff.
+### D2: Retry Logic
+**Decision**: Use SDK retry mechanism. SDK should handle retries with exponential backoff.
 
-### Q3: Progress Reporting Style
-**Status**: TBD
-**Decision**: Use existing CLI patterns (spinner or progress bar). Look at `dbt/generate` for reference.
+### D3: Progress Reporting
+**Decision**: Use existing CLI patterns. Reference `dbt/generate` command for spinner implementation.
 
-### Q4: Job Storage Retention
-**Status**: Decided
+### D4: Job Storage Retention
 **Decision**: Keep last 100 jobs in `jobs/recent/`. No auto-cleanup.
 
-### Q5: Sample Export Default
-**Status**: Decided
+### D5: Sample Export Default
 **Decision**: Auto-detect (enabled for private repos, disabled for public). User can override with flags.
 
 ---
@@ -735,9 +841,6 @@ Must achieve **0 unknown platforms**. Supported platforms:
   - *Mitigation*: Implement retry with backoff, configurable limits
 
 ### Medium Risk
-- **SDK Missing Endpoints**: Jobs or preview APIs may not exist in SDK
-  - *Mitigation*: Implement custom HTTP requests, contribute back to SDK
-
 - **Large Projects**: 1000+ tables could be slow
   - *Mitigation*: Parallel fetching, progress reporting, configurable limits
 
@@ -752,11 +855,10 @@ Must achieve **0 unknown platforms**. Supported platforms:
 
 ## 17. Next Steps
 
-1. **Approval**: Review and approve this RFC
-2. **Sprint Planning**: Allocate 5 weeks (one phase per week)
-3. **Setup**: Create package structure skeleton
-4. **Phase 1 Start**: Begin with fetcher implementation
-5. **Weekly Reviews**: Check progress against phase deliverables
+1. **Merge this RFC** to `main`
+2. **Rebase `jt-llm-init`** on `main`
+3. **PR 1**: Complete `kbc llm init` (from `jt-llm-init`)
+4. **PR 2-7**: Implement in PR train as described in Section 6
 
 ---
 
