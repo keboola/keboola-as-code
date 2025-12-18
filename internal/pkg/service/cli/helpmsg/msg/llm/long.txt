@@ -1,0 +1,2 @@
+Commands from the "llm" context generate AI-optimized
+project context for use with AI assistants and LLMs.
