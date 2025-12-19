@@ -773,15 +773,16 @@ for job in transformation_jobs[:20]:  # Recent 20 transformation jobs
 ### Job Queue API - Create and Run Job
 
 **Location:** API - Job Queue
-**Endpoint:** `POST https://queue.keboola.com/jobs`
+**Endpoint:** `POST https://queue.{STACK}/jobs`
 **Reference:** See `KEBOOLA_JOBS_API.md` for complete documentation
 **How to Use:**
 ```python
 import requests
 
 # Create and run a job (e.g., transformation)
+# Replace {STACK} with your stack (e.g., us-east4.gcp.keboola.com)
 response = requests.post(
-    "https://queue.keboola.com/jobs",
+    "https://queue.{STACK}/jobs",
     headers={
         "X-StorageApi-Token": token,
         "Content-Type": "application/json"
@@ -802,9 +803,10 @@ job_result = response.json()
 - `config`: Configuration ID (transformation name or config ID)
 
 **Important Notes:**
-- Use correct endpoint for your Stack (connection URL)
+- Use correct endpoint for your Stack (e.g., `queue.us-east4.gcp.keboola.com`)
+- For searching jobs, use `GET /search/jobs` endpoint (see RFC-LLM-TWIN-FORMAT-EXPORT.md)
 - Token must have permissions for the component
-- Job ID can be used to track execution via `/v2/storage/jobs/{job_id}`
+- Job ID can be used to track execution via Queue API or Storage API
 
 **Used For:**
 - Triggering transformation runs
@@ -1309,7 +1311,7 @@ retention = {
 | **Table Details** | API | Storage API | `GET /v2/storage/tables/{id}?include=columns,metadata` |
 | **Table Samples** | API | Storage API | `GET /v2/storage/tables/{id}/data-preview?limit=100` |
 | **Jobs List** | API | Storage API | `GET /v2/storage/jobs?limit=100` |
-| **Create Job** | API | Job Queue | `POST https://queue.keboola.com/jobs` |
+| **Create Job** | API | Job Queue | `POST https://queue.{STACK}/jobs` |
 | **Transformation Jobs** | Computed | Jobs list | Filter by `operationName: "transformationRun"` |
 | **Transformation Execution** | Computed | Jobs + Transforms | Map jobs to transformations by component+config |
 | **Components** | API | Storage API | `GET /v2/storage?exclude=componentDetails` |
