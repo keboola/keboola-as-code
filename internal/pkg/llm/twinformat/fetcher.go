@@ -183,6 +183,74 @@ type componentsResult struct {
 	ComponentConfigs []*configparser.ComponentConfig
 }
 
+// TableSample represents a sample of table data.
+type TableSample struct {
+	TableID  keboola.TableID
+	Columns  []string
+	Rows     [][]string
+	RowCount int
+}
+
+// FetchTableSample fetches a sample of data from a table.
+func (f *Fetcher) FetchTableSample(ctx context.Context, tableKey keboola.TableKey, limit uint) (sample *TableSample, err error) {
+	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchTableSample")
+	defer span.End(&err)
+
+	f.logger.Debugf(ctx, "Fetching sample for table %s (limit: %d)", tableKey.TableID, limit)
+
+	// Fetch table preview using the SDK.
+	preview, err := f.api.PreviewTableRequest(tableKey, keboola.WithLimitRows(limit)).Send(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sample = &TableSample{
+		TableID:  tableKey.TableID,
+		Columns:  preview.Columns,
+		Rows:     preview.Rows,
+		RowCount: len(preview.Rows),
+	}
+
+	f.logger.Debugf(ctx, "Fetched %d rows for table %s", sample.RowCount, tableKey.TableID)
+
+	return sample, nil
+}
+
+// FetchTableSamples fetches samples for multiple tables.
+func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table, branchID keboola.BranchID, limit uint, maxTables int) (samples []*TableSample, err error) {
+	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchTableSamples")
+	defer span.End(&err)
+
+	f.logger.Infof(ctx, "Fetching samples for up to %d tables (limit: %d rows each)", maxTables, limit)
+
+	samples = make([]*TableSample, 0, maxTables)
+	count := 0
+
+	for _, table := range tables {
+		if count >= maxTables {
+			break
+		}
+
+		tableKey := keboola.TableKey{
+			BranchID: branchID,
+			TableID:  table.TableID,
+		}
+
+		sample, err := f.FetchTableSample(ctx, tableKey, limit)
+		if err != nil {
+			f.logger.Warnf(ctx, "Failed to fetch sample for table %s: %v", table.TableID, err)
+			continue
+		}
+
+		samples = append(samples, sample)
+		count++
+	}
+
+	f.logger.Infof(ctx, "Fetched samples for %d tables", len(samples))
+
+	return samples, nil
+}
+
 // fetchAllComponents fetches all components and extracts transformation and component configs.
 // This makes a single API call and returns all data needed for processing.
 func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.BranchID) (result *componentsResult, err error) {

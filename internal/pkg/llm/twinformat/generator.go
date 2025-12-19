@@ -39,6 +39,7 @@ type Generator struct {
 	jsonWriter  *writer.JSONWriter
 	jsonlWriter *writer.JSONLWriter
 	mdWriter    *writer.MarkdownWriter
+	csvWriter   *writer.CSVWriter
 	outputDir   string
 }
 
@@ -51,6 +52,7 @@ func NewGenerator(d GeneratorDependencies, outputDir string) *Generator {
 		jsonWriter:  writer.NewJSONWriter(fs),
 		jsonlWriter: writer.NewJSONLWriter(fs),
 		mdWriter:    writer.NewMarkdownWriter(fs),
+		csvWriter:   writer.NewCSVWriter(fs),
 		outputDir:   outputDir,
 	}
 }
@@ -110,6 +112,7 @@ func (g *Generator) createDirectories(ctx context.Context) error {
 		filesystem.Join(g.outputDir, "indices"),
 		filesystem.Join(g.outputDir, "indices", "queries"),
 		filesystem.Join(g.outputDir, "ai"),
+		filesystem.Join(g.outputDir, "samples"),
 	}
 
 	for _, dir := range dirs {
@@ -1204,4 +1207,90 @@ func (g *Generator) generateAIGuide(ctx context.Context, _ *ProcessedData) error
 	}
 
 	return nil
+}
+
+// GenerateSamples generates sample CSV files for tables.
+func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, samples []*TableSample) error {
+	g.logger.Infof(ctx, "Generating samples for %d tables", len(samples))
+
+	if len(samples) == 0 {
+		g.logger.Info(ctx, "No samples to generate")
+		return nil
+	}
+
+	// Generate samples index.
+	if err := g.generateSamplesIndex(ctx, data, samples); err != nil {
+		return errors.Errorf("failed to generate samples index: %w", err)
+	}
+
+	// Generate individual sample files.
+	for _, sample := range samples {
+		if err := g.generateSampleFile(ctx, sample); err != nil {
+			g.logger.Warnf(ctx, "Failed to generate sample for table %s: %v", sample.TableID, err)
+			continue
+		}
+	}
+
+	g.logger.Infof(ctx, "Generated samples for %d tables", len(samples))
+	return nil
+}
+
+// generateSamplesIndex generates the samples/index.json file.
+func (g *Generator) generateSamplesIndex(ctx context.Context, data *ProcessedData, samples []*TableSample) error {
+	type sampleEntry struct {
+		TableID   string `json:"tableId"`
+		RowCount  int    `json:"rowCount"`
+		Columns   int    `json:"columns"`
+		SampleDir string `json:"sampleDir"`
+	}
+
+	entries := make([]sampleEntry, 0, len(samples))
+	for _, sample := range samples {
+		entries = append(entries, sampleEntry{
+			TableID:   sample.TableID.String(),
+			RowCount:  sample.RowCount,
+			Columns:   len(sample.Columns),
+			SampleDir: sample.TableID.String(),
+		})
+	}
+
+	index := map[string]any{
+		"_comment":          "Index of table samples",
+		"_purpose":          "Lists all tables with sample data available",
+		"_update_frequency": "Generated on export",
+		"projectId":         data.ProjectID.String(),
+		"totalSamples":      len(samples),
+		"samples":           entries,
+	}
+
+	indexPath := filesystem.Join(g.outputDir, "samples", "index.json")
+	return g.jsonWriter.Write(ctx, indexPath, index)
+}
+
+// generateSampleFile generates a sample CSV file and metadata for a table.
+func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample) error {
+	// Create table-specific directory.
+	tableDir := filesystem.Join(g.outputDir, "samples", sample.TableID.String())
+	if err := g.fs.Mkdir(ctx, tableDir); err != nil {
+		return errors.Errorf("failed to create sample directory: %w", err)
+	}
+
+	// Write CSV file.
+	csvPath := filesystem.Join(tableDir, "sample.csv")
+	if err := g.csvWriter.Write(ctx, csvPath, sample.Columns, sample.Rows); err != nil {
+		return errors.Errorf("failed to write sample CSV: %w", err)
+	}
+
+	// Write metadata.
+	metadata := map[string]any{
+		"_comment":          "Sample data metadata",
+		"_purpose":          "Describes the sample data for this table",
+		"_update_frequency": "Generated on export",
+		"table_id":          sample.TableID.String(),
+		"columns":           sample.Columns,
+		"row_count":         sample.RowCount,
+	}
+
+	metadataPath := filesystem.Join(tableDir, "metadata.json")
+	return g.jsonWriter.Write(ctx, metadataPath, metadata)
 }
