@@ -8,6 +8,8 @@ replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-
 
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
+replace github.com/keboola/keboola-sdk-go/v2 => github.com/keboola/keboola-sdk-go/v2 v2.8.2-0.20251219002715-6ff4851f2a2a
+
 require (
 	ariga.io/atlas v0.38.0
 	entgo.io/ent v0.14.5
