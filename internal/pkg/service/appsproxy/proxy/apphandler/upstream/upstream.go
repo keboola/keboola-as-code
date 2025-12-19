@@ -3,6 +3,7 @@ package upstream
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -103,7 +104,7 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 	defer span.End(&err)
 
 	// Parse target
-	target, err := url.Parse(app.UpstreamAppURL)
+	target, err := url.Parse(fmt.Sprintf("http://app-%s.sandbox.svc.cluster.local", app.ID))
 	if err != nil {
 		return nil, svcErrors.NewServiceUnavailableError(errors.PrefixErrorf(err,
 			`unable to parse upstream url for app "%s"`, app.IdAndName(),
