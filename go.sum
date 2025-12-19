@@ -589,8 +589,8 @@ github.com/keboola/go-oauth2-proxy/v7 v7.13.1-0.20251120082210-251fbcb18c16 h1:m
 github.com/keboola/go-oauth2-proxy/v7 v7.13.1-0.20251120082210-251fbcb18c16/go.mod h1:2KeAM0/QPbyUAoky+PXVgQDt/5m0qNcn30z9jh4ig8A=
 github.com/keboola/go-utils v1.4.0 h1:WTyj95yrr8O8HxtC8TSTyUcElZiRGDeEdVvDpFo6HUo=
 github.com/keboola/go-utils v1.4.0/go.mod h1:IopwJzFz2gh0Yj3fUbIe2eamRoDKzbXvjqFjQyw3ZdQ=
-github.com/keboola/keboola-sdk-go/v2 v2.8.1 h1:pSgHG9LKUG6Us713r4NvktTHjBG7X911I0BodA6RkLU=
-github.com/keboola/keboola-sdk-go/v2 v2.8.1/go.mod h1:N/PkJnEHcyHMbVjHPjTdQwj5b9Iajl7PEaFUVtywHKU=
+github.com/keboola/keboola-sdk-go/v2 v2.8.2-0.20251219002715-6ff4851f2a2a h1:Bk2+zVjCriV8OEyTYQBDLvWzcDfhKO/ZRmXUmwHJ+OA=
+github.com/keboola/keboola-sdk-go/v2 v2.8.2-0.20251219002715-6ff4851f2a2a/go.mod h1:N/PkJnEHcyHMbVjHPjTdQwj5b9Iajl7PEaFUVtywHKU=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
