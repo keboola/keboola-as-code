@@ -1,4 +1,4 @@
-package sync
+package llm
 
 import (
 	"github.com/spf13/cobra"
