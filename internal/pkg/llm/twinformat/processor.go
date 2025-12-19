@@ -84,6 +84,7 @@ type ProcessingStatistics struct {
 	ByPlatform           map[string]int
 	BySource             map[string]int
 	ByJobStatus          map[string]int
+	SourceCounts         map[string]int
 }
 
 // ProcessorDependencies defines dependencies for the Processor.
@@ -126,9 +127,10 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 		Host:        fetchedData.Host,
 		ProcessedAt: time.Now().UTC(),
 		Statistics: &ProcessingStatistics{
-			ByPlatform:  make(map[string]int),
-			BySource:    make(map[string]int),
-			ByJobStatus: make(map[string]int),
+			ByPlatform:   make(map[string]int),
+			BySource:     make(map[string]int),
+			ByJobStatus:  make(map[string]int),
+			SourceCounts: make(map[string]int),
 		},
 	}
 
@@ -188,6 +190,7 @@ func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucke
 	for _, bucket := range buckets {
 		source := InferSourceFromBucket(bucket.BucketID.String())
 		stats.BySource[source]++
+		stats.SourceCounts[source]++
 
 		tableNames := bucketTables[bucket.BucketID.String()]
 		processed = append(processed, &ProcessedBucket{
