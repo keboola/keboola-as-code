@@ -62,9 +62,14 @@ func Run(ctx context.Context, _ Options, d dependencies) (err error) {
 		processedData.Statistics.TotalTransformations,
 		processedData.Statistics.TotalEdges)
 
-	// Implementation will be added in subsequent PRs:
-	// - PR 5 (DMD-921): Generator to write twin_format/ directory
+	// Generate twin format output
+	outputDir := filesystem.Join(d.Fs().BasePath(), "twin_format")
+	generator := twinformat.NewGenerator(d, outputDir)
+	if err := generator.Generate(ctx, processedData); err != nil {
+		return err
+	}
 
+	logger.Infof(ctx, "Twin format exported to: %s", outputDir)
 	logger.Info(ctx, "Export done.")
 
 	return nil
