@@ -1,0 +1,21 @@
+package llm
+
+import (
+	"github.com/spf13/cobra"
+
+	llmInit "github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/llm/init"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+)
+
+func Commands(p dependencies.Provider) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   `llm`,
+		Short: helpmsg.Read(`llm/short`),
+		Long:  helpmsg.Read(`llm/long`),
+	}
+	cmd.AddCommand(
+		llmInit.Command(p),
+	)
+	return cmd
+}
