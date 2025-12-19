@@ -1363,7 +1363,7 @@ func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample)
 		return errors.Errorf("failed to write sample CSV: %w", err)
 	}
 
-	// Calculate data quality metrics.
+// Calculate data quality metrics.
 	dataQuality := g.calculateDataQuality(sample)
 
 	// Write metadata.
@@ -1371,7 +1371,7 @@ func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample)
 		"_comment":          "Sample data metadata",
 		"_purpose":          "Describes the sample data for this table",
 		"_update_frequency": "Generated on export",
-		"columns":           sample.Columns,
+"columns":           sample.Columns,
 		"data_quality":      dataQuality,
 		"row_count":         sample.RowCount(),
 		"table_id":          sample.TableID.String(),

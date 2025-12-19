@@ -18,6 +18,8 @@ type Options struct {
 	Force bool
 	// WithSamples enables table data samples in export.
 	WithSamples bool
+	// WithoutSamples disables table data samples in export.
+	WithoutSamples bool
 	// SampleLimit is the maximum number of rows per table sample.
 	SampleLimit int
 	// MaxSamples is the maximum number of tables to sample.
@@ -26,6 +28,9 @@ type Options struct {
 
 // ShouldIncludeSamples returns true if samples should be included in the export.
 func (o Options) ShouldIncludeSamples() bool {
+	if o.WithoutSamples {
+		return false
+	}
 	return o.WithSamples
 }
 
