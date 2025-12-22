@@ -1,0 +1,13 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "nil-shared-code"
+      ]
+    }
+  ]
+}
