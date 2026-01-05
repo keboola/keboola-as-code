@@ -3,6 +3,7 @@ package naming
 import (
 	"fmt"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -100,9 +101,10 @@ func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 
 	dir, file := filesystem.Split(p.GetRelativePath())
 
-	// Truncate the filename if it exceeds the maximum length, leaving room for suffix
+	// Truncate the filename if it exceeds the maximum length, leaving room for suffix.
+	// Use UTF-8 safe truncation to avoid splitting multibyte characters.
 	if len(file) > maxFilenameLength-suffixReservedLength {
-		file = file[:maxFilenameLength-suffixReservedLength]
+		file = truncateUTF8(file, maxFilenameLength-suffixReservedLength)
 		// Update the path with the truncated filename
 		p.SetRelativePath(filesystem.Join(dir, file))
 	}
@@ -117,16 +119,40 @@ func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 
 		suffix++
 		suffixStr := fmt.Sprintf(`-%03d`, suffix)
-		newFile := strhelper.NormalizeName(file + suffixStr)
+
+		// Normalize the filename when adding a suffix.
+		// Normalize first, then truncate to ensure final length is within limits.
+		normalized := strhelper.NormalizeName(file + suffixStr)
 
 		// Ensure the filename with suffix doesn't exceed the maximum length
-		if len(newFile) > maxFilenameLength {
-			// Truncate the file part to make room for the suffix
-			truncatedFile := file[:maxFilenameLength-len(suffixStr)]
-			newFile = strhelper.NormalizeName(truncatedFile + suffixStr)
+		if len(normalized) > maxFilenameLength {
+			// Truncate the file part first, then add suffix and normalize
+			maxBaseLen := maxFilenameLength - len(suffixStr)
+			truncatedFile := truncateUTF8(file, maxBaseLen)
+			normalized = strhelper.NormalizeName(truncatedFile + suffixStr)
+
+			// If still too long after normalization, truncate the final result
+			if len(normalized) > maxFilenameLength {
+				normalized = truncateUTF8(normalized, maxFilenameLength)
+			}
 		}
 
-		p.SetRelativePath(filesystem.Join(dir, newFile))
+		p.SetRelativePath(filesystem.Join(dir, normalized))
 	}
 	return p
+}
+
+// truncateUTF8 truncates a string to at most maxBytes bytes,
+// ensuring we don't split a multibyte UTF-8 character.
+func truncateUTF8(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+
+	// Find the last valid UTF-8 boundary at or before maxBytes
+	for maxBytes > 0 && !utf8.RuneStart(s[maxBytes]) {
+		maxBytes--
+	}
+
+	return s[:maxBytes]
 }
