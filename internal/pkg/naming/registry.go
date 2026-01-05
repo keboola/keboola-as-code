@@ -144,7 +144,12 @@ func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 
 // truncateUTF8 truncates a string to at most maxBytes bytes,
 // ensuring we don't split a multibyte UTF-8 character.
+// Note: The suffix format is limited to -999 (3 digits). If more than 999 paths
+// collide, subsequent paths will continue incrementing but may exceed the limit.
 func truncateUTF8(s string, maxBytes int) string {
+	if maxBytes <= 0 {
+		return ""
+	}
 	if len(s) <= maxBytes {
 		return s
 	}

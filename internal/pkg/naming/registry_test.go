@@ -3,6 +3,7 @@ package naming
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -167,7 +168,7 @@ func TestMakeUniquePathUTF8Safety(t *testing.T) {
 
 	// Verify the filename is within limits and is valid UTF-8
 	assert.LessOrEqual(t, len(filename), maxFilenameLength, "Filename should be truncated to max length")
-	assert.True(t, isValidUTF8(filename), "Truncated filename should be valid UTF-8")
+	assert.True(t, utf8.ValidString(filename), "Truncated filename should be valid UTF-8")
 
 	// Create another path to test suffix with UTF-8
 	key2 := ConfigRowKey{BranchID: 123, ComponentID: "test.component", ConfigID: "456", ID: "utf8row2"}
@@ -181,7 +182,7 @@ func TestMakeUniquePathUTF8Safety(t *testing.T) {
 	}
 
 	assert.LessOrEqual(t, len(filename2), maxFilenameLength, "Filename with suffix should fit within max length")
-	assert.True(t, isValidUTF8(filename2), "Truncated filename with suffix should be valid UTF-8")
+	assert.True(t, utf8.ValidString(filename2), "Truncated filename with suffix should be valid UTF-8")
 	assert.NotEqual(t, result1.Path(), result2.Path(), "Paths should be unique")
 }
 
@@ -191,14 +192,14 @@ func TestMakeUniquePathUTF8BoundaryTruncation(t *testing.T) {
 
 	// Create a filename where truncation point would fall in the middle of a multibyte char
 	// Fill most of the space with ASCII, then add multibyte chars at the boundary
-	// maxFilenameLength - suffixReservedLength = 255 - 5 = 250 bytes
+	// maxFilenameLength - suffixReservedLength = 255 - 4 = 251 bytes
 	var boundaryName strings.Builder
-	// Write 248 ASCII bytes
-	for range 248 {
+	// Write 249 ASCII bytes
+	for range 249 {
 		boundaryName.WriteString("a")
 	}
-	// Add a 4-byte UTF-8 character - truncation at 250 would split it
-	boundaryName.WriteString("🎉") // This makes total 252 bytes
+	// Add a 4-byte UTF-8 character - truncation at 251 would split it
+	boundaryName.WriteString("🎉") // This makes total 253 bytes
 
 	key1 := ConfigRowKey{BranchID: 123, ComponentID: "test.component", ConfigID: "456", ID: "boundary1"}
 	path1 := NewAbsPath("", "codes/"+boundaryName.String())
@@ -212,49 +213,5 @@ func TestMakeUniquePathUTF8BoundaryTruncation(t *testing.T) {
 
 	// The truncation should not split the emoji
 	assert.LessOrEqual(t, len(filename), maxFilenameLength, "Filename should be truncated to max length")
-	assert.True(t, isValidUTF8(filename), "Filename should be valid UTF-8 even at boundary")
-}
-
-func isValidUTF8(s string) bool {
-	for i := 0; i < len(s); {
-		r, size := rune(s[i]), 1
-		if s[i] >= 0x80 {
-			r, size = decodeRune(s[i:])
-		}
-		if r == 0xFFFD && size == 1 {
-			return false // Invalid UTF-8 sequence
-		}
-		i += size
-	}
-	return true
-}
-
-func decodeRune(s string) (rune, int) {
-	if len(s) == 0 {
-		return 0xFFFD, 0
-	}
-	// Simple UTF-8 decode for validation
-	b := s[0]
-	if b < 0x80 {
-		return rune(b), 1
-	}
-	if b < 0xC0 {
-		return 0xFFFD, 1
-	}
-	if b < 0xE0 {
-		if len(s) < 2 {
-			return 0xFFFD, 1
-		}
-		return rune(b&0x1F)<<6 | rune(s[1]&0x3F), 2
-	}
-	if b < 0xF0 {
-		if len(s) < 3 {
-			return 0xFFFD, 1
-		}
-		return rune(b&0x0F)<<12 | rune(s[1]&0x3F)<<6 | rune(s[2]&0x3F), 3
-	}
-	if len(s) < 4 {
-		return 0xFFFD, 1
-	}
-	return rune(b&0x07)<<18 | rune(s[1]&0x3F)<<12 | rune(s[2]&0x3F)<<6 | rune(s[3]&0x3F), 4
+	assert.True(t, utf8.ValidString(filename), "Filename should be valid UTF-8 even at boundary")
 }
