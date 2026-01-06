@@ -87,7 +87,7 @@ Available Commands:
 
   llm                       LLM context commands for AI-assisted project understanding.
   llm export                Export project data to AI-optimized twin format directory structure.
-  llm init                  Initialize a new local directory and run "llm refresh".
+  llm init                  Initialize a new local directory for LLM export.
 
   help                      Help about any command
 
