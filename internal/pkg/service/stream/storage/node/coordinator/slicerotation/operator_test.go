@@ -77,11 +77,21 @@ func TestSliceRotation(t *testing.T) {
 			logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"storage.node.operator.slice.rotation"}`)
 		}, 5*time.Second, 10*time.Millisecond)
 	}
-	waitForStatsSync := func(t *testing.T) {
+	waitForStatsSync := func(t *testing.T, sliceKey model.SliceKey, expectedRecords uint64) {
 		t.Helper()
+		// First wait for the L1 cache mirror to sync
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			logger.AssertJSONMessages(c, `{"level":"debug","message":"watch stream mirror synced to revision %d","component":"stats.cache.L1"}`)
 		}, 5*time.Second, 10*time.Millisecond)
+		// Then verify the aggregated statistics are actually available
+		// This ensures the cache tree is fully updated before proceeding
+		if expectedRecords > 0 {
+			assert.EventuallyWithT(t, func(c *assert.CollectT) {
+				stats, err := d.StatisticsL1Cache().SliceStats(ctx, sliceKey)
+				assert.NoError(c, err)
+				assert.GreaterOrEqual(c, stats.Local.RecordsCount, expectedRecords, "expected records count not yet available in cache")
+			}, 5*time.Second, 10*time.Millisecond)
+		}
 	}
 	triggerCheck := func(t *testing.T, expectEntityModification bool, expectedLogs string) {
 		t.Helper()
@@ -138,7 +148,7 @@ func TestSliceRotation(t *testing.T) {
 			CompressedSize:   10 * datasize.B,
 		},
 	}))
-	waitForStatsSync(t)
+	waitForStatsSync(t, slice.SliceKey, uploadTrigger.Count+2)
 
 	// Trigger check - records count trigger
 	triggerCheck(t, true, ` 
@@ -177,7 +187,7 @@ func TestSliceRotation(t *testing.T) {
 			CompressedSize:   uploadTrigger.Size/2 + 1,
 		},
 	}))
-	waitForStatsSync(t)
+	waitForStatsSync(t, slice.SliceKey, 2)
 
 	// Trigger check - compressed size trigger
 	triggerCheck(t, true, `
