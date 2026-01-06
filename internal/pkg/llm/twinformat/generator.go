@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -975,35 +976,33 @@ func (g *Generator) generateREADME(ctx context.Context, data *ProcessedData) err
 	return g.mdWriter.Write(ctx, readmePath, content)
 }
 
-// generateAIGuide generates ai/README.md.
-func (g *Generator) generateAIGuide(ctx context.Context, data *ProcessedData) error {
-	g.logger.Debugf(ctx, "Generating AI guide")
+// generateAIGuide generates ai/ files from embedded templates.
+func (g *Generator) generateAIGuide(ctx context.Context, _ *ProcessedData) error {
+	g.logger.Debugf(ctx, "Generating AI guide from templates")
 
-	stats := writer.ProjectStats{
-		TotalBuckets:         data.Statistics.TotalBuckets,
-		TotalTables:          data.Statistics.TotalTables,
-		TotalTransformations: data.Statistics.TotalTransformations,
-		TotalEdges:           data.Statistics.TotalEdges,
+	// List all files in the embedded ai/ directory.
+	entries, err := templates.AITemplates.ReadDir("ai")
+	if err != nil {
+		return errors.Errorf("failed to read embedded ai templates directory: %w", err)
 	}
 
-	// Build platform counts.
-	platformCounts := make(map[string]int)
-	for _, transform := range data.Transformations {
-		platformCounts[transform.Platform]++
-	}
+	// Copy all embedded templates to output directory.
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
 
-	// Build sources list.
-	sources := make([]string, 0)
-	sourceSet := make(map[string]bool)
-	for _, bucket := range data.Buckets {
-		if !sourceSet[bucket.Source] {
-			sourceSet[bucket.Source] = true
-			sources = append(sources, formatSourceName(bucket.Source))
+		templateFile := "ai/" + entry.Name()
+		content, err := templates.AITemplates.ReadFile(templateFile)
+		if err != nil {
+			return errors.Errorf("failed to read embedded template %s: %w", templateFile, err)
+		}
+
+		outputPath := filesystem.Join(g.outputDir, templateFile)
+		if err := g.mdWriter.Write(ctx, outputPath, string(content)); err != nil {
+			return errors.Errorf("failed to write %s: %w", outputPath, err)
 		}
 	}
 
-	content := writer.GenerateAIGuide(data.ProjectID.String(), stats, platformCounts, sources)
-
-	guidePath := filesystem.Join(g.outputDir, "ai", "README.md")
-	return g.mdWriter.Write(ctx, guidePath, content)
+	return nil
 }
