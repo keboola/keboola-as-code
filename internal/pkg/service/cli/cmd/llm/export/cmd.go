@@ -14,7 +14,6 @@ type Flags struct {
 	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Force           configmap.Value[bool]   `configKey:"force" configShorthand:"f" configUsage:"skip confirmation when directory contains existing files"`
 	WithSamples     configmap.Value[bool]   `configKey:"with-samples" configUsage:"include table data samples in export"`
-	WithoutSamples  configmap.Value[bool]   `configKey:"without-samples" configUsage:"exclude table data samples from export"`
 	SampleLimit     configmap.Value[int]    `configKey:"sample-limit" configUsage:"maximum number of rows per table sample (default: 100, max: 1000)"`
 	MaxSamples      configmap.Value[int]    `configKey:"max-samples" configUsage:"maximum number of tables to sample (default: 50)"`
 }
@@ -50,11 +49,10 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Build options
 			options := exportOp.Options{
-				Force:          f.Force.Value,
-				WithSamples:    f.WithSamples.Value,
-				WithoutSamples: f.WithoutSamples.Value,
-				SampleLimit:    f.SampleLimit.Value,
-				MaxSamples:     f.MaxSamples.Value,
+				Force:       f.Force.Value,
+				WithSamples: f.WithSamples.Value,
+				SampleLimit: f.SampleLimit.Value,
+				MaxSamples:  f.MaxSamples.Value,
 			}
 
 			// Send cmd successful/failed event
