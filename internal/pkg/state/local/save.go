@@ -116,7 +116,8 @@ func (w *modelWriter) softDelete(path string) error {
 	}
 
 	// Remove existing .old file if it exists from a previous failed operation
-	if w.fs.IsFile(w.ctx, dst) && err := w.fs.Remove(w.ctx, dst); err != nil {
+	if w.fs.IsFile(w.ctx, dst) {
+		if err := w.fs.Remove(w.ctx, dst); err != nil {
 			return err
 		}
 	}

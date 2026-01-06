@@ -104,7 +104,7 @@ func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 	// Truncate the filename if it exceeds the maximum length, leaving room for suffix.
 	// Use UTF-8 safe truncation to avoid splitting multibyte characters.
 	if len(file) > maxFilenameLength-suffixReservedLength {
-		file = truncateUTF8(file, maxFilenameLength-suffixReservedLength)
+		file = truncateToBytes(file, maxFilenameLength-suffixReservedLength)
 		// Update the path with the truncated filename
 		p.SetRelativePath(filesystem.Join(dir, file))
 	}
@@ -128,12 +128,12 @@ func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 		if len(normalized) > maxFilenameLength {
 			// Truncate the file part first, then add suffix and normalize
 			maxBaseLen := maxFilenameLength - len(suffixStr)
-			truncatedFile := truncateUTF8(file, maxBaseLen)
+			truncatedFile := truncateToBytes(file, maxBaseLen)
 			normalized = strhelper.NormalizeName(truncatedFile + suffixStr)
 
 			// If still too long after normalization, truncate the final result
 			if len(normalized) > maxFilenameLength {
-				normalized = truncateUTF8(normalized, maxFilenameLength)
+				normalized = truncateToBytes(normalized, maxFilenameLength)
 			}
 		}
 
@@ -142,11 +142,11 @@ func (r Registry) makeUniquePath(key model.Key, p model.AbsPath) model.AbsPath {
 	return p
 }
 
-// truncateUTF8 truncates a string to at most maxBytes bytes,
-// ensuring we don't split a multibyte UTF-8 character.
+// truncateToBytes truncates a string to at most maxBytes bytes,
+// respecting rune boundaries to avoid splitting multibyte characters.
 // Note: The suffix format is limited to -999 (3 digits). If more than 999 paths
 // collide, subsequent paths will continue incrementing but may exceed the limit.
-func truncateUTF8(s string, maxBytes int) string {
+func truncateToBytes(s string, maxBytes int) string {
 	if maxBytes <= 0 {
 		return ""
 	}
