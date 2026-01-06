@@ -16,9 +16,10 @@ func newDialer() *net.Dialer {
 	return &net.Dialer{
 		Timeout:   DialTimeout,
 		KeepAlive: KeepAlive,
-		Resolver: &net.Resolver{
-			PreferGo:     true,
-			StrictErrors: true,
-		},
+		// TEMPORARY: Use default resolver (no custom config) to match debug behavior
+		// Resolver: &net.Resolver{
+		// 	PreferGo:     true,
+		// 	StrictErrors: true,
+		// },
 	}
 }
