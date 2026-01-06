@@ -180,7 +180,8 @@ func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucke
 	// Build a map of bucket ID to tables
 	bucketTables := make(map[string][]string)
 	for _, table := range tables {
-		bucketID := table.Bucket.BucketID.String()
+		// Use TableID.BucketID instead of Bucket.BucketID since Bucket can be nil
+		bucketID := table.TableID.BucketID.String()
 		bucketTables[bucketID] = append(bucketTables[bucketID], table.Name)
 	}
 
@@ -207,15 +208,16 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 	processed := make([]*ProcessedTable, 0, len(tables))
 
 	for _, table := range tables {
-		// Build table UID
-		bucketName := extractBucketName(table.Bucket.BucketID.String())
+		// Build table UID - use TableID.BucketID since Bucket can be nil
+		bucketID := table.TableID.BucketID.String()
+		bucketName := extractBucketName(bucketID)
 		uid := BuildTableUIDFromParts(bucketName, table.Name)
 
 		// Get dependencies from lineage graph
 		deps := p.lineageBuilder.GetTableDependencies(graph, uid)
 
 		// Infer source from bucket
-		source := InferSourceFromBucket(table.Bucket.BucketID.String())
+		source := InferSourceFromBucket(bucketID)
 
 		processed = append(processed, &ProcessedTable{
 			Table:        table,
