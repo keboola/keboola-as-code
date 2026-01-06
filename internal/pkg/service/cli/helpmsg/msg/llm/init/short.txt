@@ -1,1 +1,1 @@
-Initialize a new local directory and run "llm refresh".
+Initialize a new local directory for LLM export.
