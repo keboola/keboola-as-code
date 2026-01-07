@@ -3,6 +3,7 @@ package twinformat
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -135,6 +136,8 @@ func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.B
 			for colName := range t.ColumnMetadata {
 				t.Columns = append(t.Columns, colName)
 			}
+			// Sort column names for deterministic output
+			sort.Strings(t.Columns)
 		}
 	}
 
