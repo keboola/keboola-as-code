@@ -1,0 +1,17 @@
+%A
+DEBUG	Storage API token is valid.
+DEBUG	Project id: "%%TEST_KBC_PROJECT_ID%%", project name: "%s".
+%A
+DEBUG	Saved ".env.local"
+INFO	Created file ".env.local" - it contains the API token, keep it local and secret.
+DEBUG	Saved ".env.dist"
+INFO	Created file ".env.dist" - an ".env.local" template.
+DEBUG	Saved ".gitignore"
+INFO	Created file ".gitignore" - to keep ".env.local" local.
+DEBUG	Created directory ".keboola"
+INFO	Created metadata directory ".keboola".
+DEBUG	Saved ".keboola/manifest.json"
+INFO	Created manifest file ".keboola/manifest.json".
+INFO	Init done.
+%A
+DEBUG	Sent "llm-init" successful event id: "%s"

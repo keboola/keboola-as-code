@@ -85,6 +85,9 @@ Available Commands:
   template test create      Create template test.
   template test run         Run template test.
 
+  llm                       LLM context commands for AI-assisted project understanding.
+  llm init                  Initialize a new local directory for LLM export.
+
   help                      Help about any command
 
 Aliases:

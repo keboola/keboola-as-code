@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/dbt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/llm"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/sync"
@@ -215,6 +216,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 		remote.Commands(p),
 		dbt.Commands(p),
 		template.Commands(p),
+		llm.Commands(p),
 	)
 
 	// Get all sub-commands by full path, for example "sync init"
