@@ -73,6 +73,10 @@ func (g *Generator) Generate(ctx context.Context, data *ProcessedData) error {
 		return errors.Errorf("failed to generate jobs: %w", err)
 	}
 
+	if err := g.generateComponents(ctx, data); err != nil {
+		return errors.Errorf("failed to generate components: %w", err)
+	}
+
 	if err := g.generateIndices(ctx, data); err != nil {
 		return errors.Errorf("failed to generate indices: %w", err)
 	}
@@ -660,6 +664,114 @@ func (g *Generator) generateJobFile(ctx context.Context, job *ProcessedJob) erro
 	}
 
 	return nil
+}
+
+// generateComponents generates components/index.json and per-component config files.
+func (g *Generator) generateComponents(ctx context.Context, data *ProcessedData) error {
+	g.logger.Debugf(ctx, "Generating components index and configs")
+
+	if len(data.ComponentConfigs) == 0 {
+		g.logger.Debugf(ctx, "No component configs to generate")
+		return nil
+	}
+
+	// Build components index
+	componentsIndex := g.buildComponentsIndex(data)
+
+	// Write components/index.json
+	indexPath := filesystem.Join(g.outputDir, "components", "index.json")
+	if err := g.jsonWriter.Write(ctx, indexPath, componentsIndex); err != nil {
+		return err
+	}
+
+	// Generate per-component config files
+	for _, config := range data.ComponentConfigs {
+		if err := g.generateComponentConfig(ctx, config); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// buildComponentsIndex builds the components index structure.
+func (g *Generator) buildComponentsIndex(data *ProcessedData) map[string]any {
+	// Count by component type
+	byType := make(map[string]int)
+	for _, config := range data.ComponentConfigs {
+		byType[config.ComponentType]++
+	}
+
+	// Build components list
+	components := make([]map[string]any, 0, len(data.ComponentConfigs))
+	for _, config := range data.ComponentConfigs {
+		entry := map[string]any{
+			"id":             config.ID,
+			"name":           config.Name,
+			"component_id":   config.ComponentID,
+			"component_type": config.ComponentType,
+			"is_disabled":    config.IsDisabled,
+		}
+		if config.Description != "" {
+			entry["description"] = config.Description
+		}
+		if config.LastRun != "" {
+			entry["last_run"] = config.LastRun
+		}
+		if config.Status != "" {
+			entry["status"] = config.Status
+		}
+		components = append(components, entry)
+	}
+
+	return map[string]any{
+		"_comment":          "GENERATION: List of non-transformation component configurations",
+		"_purpose":          "Overview of extractors, writers, and other components in the project",
+		"_update_frequency": "Every sync",
+		"total_components":  len(data.ComponentConfigs),
+		"by_type":           byType,
+		"components":        components,
+	}
+}
+
+// generateComponentConfig generates a component config.json file.
+func (g *Generator) generateComponentConfig(ctx context.Context, config *ComponentConfig) error {
+	// Create component directory structure: components/{component_id}/{config_id}/
+	configDir := filesystem.Join(g.outputDir, "components", config.ComponentID, config.ID)
+	if err := g.fs.Mkdir(ctx, configDir); err != nil {
+		return errors.Errorf("failed to create component config directory %s: %w", configDir, err)
+	}
+
+	configData := map[string]any{
+		"_comment":          "GENERATION: Component configuration from Keboola",
+		"_purpose":          "Configuration details for this component",
+		"_update_frequency": "Every sync",
+		"id":                config.ID,
+		"name":              config.Name,
+		"component_id":      config.ComponentID,
+		"component_type":    config.ComponentType,
+		"is_disabled":       config.IsDisabled,
+		"version":           config.Version,
+	}
+
+	if config.Description != "" {
+		configData["description"] = config.Description
+	}
+	if config.Created != "" {
+		configData["created"] = config.Created
+	}
+	if config.LastRun != "" {
+		configData["last_run"] = config.LastRun
+	}
+	if config.Status != "" {
+		configData["status"] = config.Status
+	}
+	if config.Configuration != nil {
+		configData["configuration"] = config.Configuration
+	}
+
+	configPath := filesystem.Join(configDir, "config.json")
+	return g.jsonWriter.Write(ctx, configPath, configData)
 }
 
 // generateIndices generates indices/graph.jsonl, sources.json, and query files.
