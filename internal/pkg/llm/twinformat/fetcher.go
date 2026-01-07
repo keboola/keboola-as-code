@@ -127,6 +127,17 @@ func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.B
 
 	f.logger.Infof(ctx, "Found %d tables", len(tables))
 
+	// Extract column names from ColumnMetadata if Columns is empty
+	// (API sometimes returns only columnMetadata without columns array)
+	for _, t := range tables {
+		if len(t.Columns) == 0 && len(t.ColumnMetadata) > 0 {
+			t.Columns = make([]string, 0, len(t.ColumnMetadata))
+			for colName := range t.ColumnMetadata {
+				t.Columns = append(t.Columns, colName)
+			}
+		}
+	}
+
 	// Debug: Log column info for first few tables
 	for i, t := range tables {
 		if i < 3 {
@@ -182,11 +193,12 @@ func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboo
 		}
 
 		for _, cfg := range comp.Configs {
-			config := f.parseTransformationConfig(comp.ID.String(), cfg)
+			debug := debugCount < 3
+			config := f.parseTransformationConfig(comp.ID.String(), cfg, debug, f.logger, ctx)
 			if config != nil {
 				configs = append(configs, config)
 				// Debug: Log parsing results for first few configs
-				if debugCount < 3 {
+				if debug {
 					codeCount := 0
 					for _, b := range config.Blocks {
 						codeCount += len(b.Codes)
@@ -204,7 +216,7 @@ func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboo
 }
 
 // parseTransformationConfig parses a Config into TransformationConfig.
-func (f *Fetcher) parseTransformationConfig(componentID string, cfg *keboola.ConfigWithRows) *TransformationConfig {
+func (f *Fetcher) parseTransformationConfig(componentID string, cfg *keboola.ConfigWithRows, debug bool, logger log.Logger, ctx context.Context) *TransformationConfig {
 	config := &TransformationConfig{
 		ID:          cfg.ID.String(),
 		Name:        cfg.Name,
@@ -217,9 +229,17 @@ func (f *Fetcher) parseTransformationConfig(componentID string, cfg *keboola.Con
 
 	// Parse configuration content for input/output tables and blocks
 	if cfg.Content != nil {
+		// Debug: log available keys
+		if debug {
+			logger.Debugf(ctx, "Config %s keys: %v", cfg.Name, cfg.Content.Keys())
+		}
+
 		// Parse storage.input.tables and storage.output.tables
 		if storage, ok := cfg.Content.Get("storage"); ok {
 			if storageMap, ok := storage.(map[string]any); ok {
+				if debug {
+					logger.Debugf(ctx, "Config %s storage keys: %v", cfg.Name, getMapKeys(storageMap))
+				}
 				config.InputTables = f.parseStorageMappings(storageMap, "input")
 				config.OutputTables = f.parseStorageMappings(storageMap, "output")
 			}
@@ -228,12 +248,24 @@ func (f *Fetcher) parseTransformationConfig(componentID string, cfg *keboola.Con
 		// Parse parameters.blocks for transformation code
 		if params, ok := cfg.Content.Get("parameters"); ok {
 			if paramsMap, ok := params.(map[string]any); ok {
+				if debug {
+					logger.Debugf(ctx, "Config %s parameters keys: %v", cfg.Name, getMapKeys(paramsMap))
+				}
 				config.Blocks = f.parseCodeBlocks(paramsMap)
 			}
 		}
 	}
 
 	return config
+}
+
+// getMapKeys returns the keys of a map for debugging.
+func getMapKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // parseStorageMappings parses input or output table mappings from storage config.
