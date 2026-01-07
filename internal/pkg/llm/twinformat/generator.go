@@ -443,8 +443,85 @@ func (g *Generator) generateTransformationMetadata(ctx context.Context, transfor
 		metadata["job_execution"] = jobExecution
 	}
 
+	// Add code block summary to metadata
+	if len(transform.CodeBlocks) > 0 {
+		codeInfo := make([]map[string]any, 0, len(transform.CodeBlocks))
+		for _, block := range transform.CodeBlocks {
+			blockInfo := map[string]any{
+				"name":       block.Name,
+				"language":   block.Language,
+				"code_count": len(block.Codes),
+			}
+			codeInfo = append(codeInfo, blockInfo)
+		}
+		metadata["code_blocks"] = codeInfo
+	}
+
 	metadataPath := filesystem.Join(transformDir, "metadata.json")
-	return g.jsonWriter.Write(ctx, metadataPath, metadata)
+	if err := g.jsonWriter.Write(ctx, metadataPath, metadata); err != nil {
+		return err
+	}
+
+	// Generate code files if code blocks exist
+	if len(transform.CodeBlocks) > 0 {
+		if err := g.generateTransformationCode(ctx, transformDir, transform); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// generateTransformationCode writes transformation code blocks to files.
+func (g *Generator) generateTransformationCode(ctx context.Context, transformDir string, transform *ProcessedTransformation) error {
+	codeDir := filesystem.Join(transformDir, "code")
+	if err := g.fs.Mkdir(ctx, codeDir); err != nil {
+		return errors.Errorf("failed to create code directory %s: %w", codeDir, err)
+	}
+
+	blockNum := 0
+	for _, block := range transform.CodeBlocks {
+		for _, code := range block.Codes {
+			blockNum++
+			// Create filename: 01-block-name.sql
+			ext := languageToExtension(block.Language)
+			filename := fmt.Sprintf("%02d-%s%s", blockNum, sanitizeFilename(code.Name), ext)
+			filePath := filesystem.Join(codeDir, filename)
+
+			if err := g.mdWriter.Write(ctx, filePath, code.Script); err != nil {
+				return errors.Errorf("failed to write code file %s: %w", filePath, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// languageToExtension converts a language to a file extension.
+func languageToExtension(language string) string {
+	switch language {
+	case PlatformPython:
+		return ".py"
+	case PlatformR:
+		return ".r"
+	default:
+		return ".sql"
+	}
+}
+
+// sanitizeFilename removes or replaces characters that are not safe for filenames.
+func sanitizeFilename(name string) string {
+	// Replace spaces and special characters with hyphens
+	result := make([]byte, 0, len(name))
+	for i := range len(name) {
+		c := name[i]
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' {
+			result = append(result, c)
+		} else if c == ' ' {
+			result = append(result, '-')
+		}
+	}
+	return string(result)
 }
 
 // generateJobs generates jobs/index.json and job detail files.
