@@ -127,6 +127,14 @@ func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.B
 
 	f.logger.Infof(ctx, "Found %d tables", len(tables))
 
+	// Debug: Log column info for first few tables
+	for i, t := range tables {
+		if i < 3 {
+			f.logger.Debugf(ctx, "Table %s: %d columns, %d column metadata entries",
+				t.TableID, len(t.Columns), len(t.ColumnMetadata))
+		}
+	}
+
 	return buckets, tables, nil
 }
 
@@ -166,6 +174,7 @@ func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboo
 	}
 
 	configs = make([]*TransformationConfig, 0)
+	debugCount := 0
 	for _, comp := range *components {
 		// Only process transformation components
 		if !comp.IsTransformation() {
@@ -176,6 +185,16 @@ func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboo
 			config := f.parseTransformationConfig(comp.ID.String(), cfg)
 			if config != nil {
 				configs = append(configs, config)
+				// Debug: Log parsing results for first few configs
+				if debugCount < 3 {
+					codeCount := 0
+					for _, b := range config.Blocks {
+						codeCount += len(b.Codes)
+					}
+					f.logger.Debugf(ctx, "Transformation %s: %d inputs, %d outputs, %d blocks, %d codes",
+						config.Name, len(config.InputTables), len(config.OutputTables), len(config.Blocks), codeCount)
+					debugCount++
+				}
 			}
 		}
 	}
