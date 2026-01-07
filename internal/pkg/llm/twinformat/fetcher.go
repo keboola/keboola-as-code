@@ -2,6 +2,7 @@ package twinformat
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -116,9 +117,9 @@ func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.B
 
 	f.logger.Infof(ctx, "Found %d buckets", len(buckets))
 
-	// Fetch tables for all buckets
-	f.logger.Info(ctx, "Fetching tables...")
-	tablesResult, err := f.api.ListTablesRequest(branchID).Send(ctx)
+	// Fetch tables for all buckets with column metadata
+	f.logger.Info(ctx, "Fetching tables with column metadata...")
+	tablesResult, err := f.api.ListTablesRequest(branchID, keboola.WithColumnMetadata()).Send(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -293,6 +294,24 @@ func (f *Fetcher) parseCodeBlocks(params map[string]any) []*CodeBlock {
 						blocks = append(blocks, block)
 					}
 				}
+			}
+		}
+	}
+
+	// Handle Snowflake/SQL transformations that use "queries" instead of "blocks"
+	if queriesRaw, ok := params["queries"]; ok {
+		if queriesSlice, ok := queriesRaw.([]any); ok {
+			block := &CodeBlock{Name: "queries"}
+			for i, q := range queriesSlice {
+				if queryStr, ok := q.(string); ok {
+					block.Codes = append(block.Codes, &Code{
+						Name:   fmt.Sprintf("query_%d", i+1),
+						Script: queryStr,
+					})
+				}
+			}
+			if len(block.Codes) > 0 {
+				blocks = append(blocks, block)
 			}
 		}
 	}
