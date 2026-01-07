@@ -344,20 +344,13 @@ func (p *Processor) convertCodeBlocks(blocks []*CodeBlock, platform string) []*P
 }
 
 // platformToLanguage converts a platform name to a code language.
+// Only Python and R have different code languages, everything else is SQL.
 func platformToLanguage(platform string) string {
 	switch platform {
-	case PlatformSnowflake:
-		return PlatformSQL
 	case PlatformPython:
 		return PlatformPython
 	case PlatformR:
 		return PlatformR
-	case PlatformSynapse:
-		return PlatformSQL
-	case PlatformBigQuery:
-		return PlatformSQL
-	case PlatformRedshift:
-		return PlatformSQL
 	default:
 		return PlatformSQL
 	}
