@@ -255,7 +255,7 @@ func (f *Fetcher) parseTransformationConfig(componentID string, cfg *keboola.Con
 				if debug {
 					logger.Debugf(ctx, "Config %s parameters keys: %v", cfg.Name, getMapKeys(paramsMap))
 				}
-				config.Blocks = f.parseCodeBlocks(paramsMap)
+				config.Blocks = f.parseCodeBlocks(paramsMap, debug, logger, ctx)
 			} else if debug {
 				logger.Debugf(ctx, "Config %s parameters type: %T", cfg.Name, params)
 			}
@@ -329,7 +329,7 @@ func (f *Fetcher) parseStorageMappings(storage map[string]any, key string) []Sto
 }
 
 // parseCodeBlocks parses code blocks from transformation parameters.
-func (f *Fetcher) parseCodeBlocks(params map[string]any) []*CodeBlock {
+func (f *Fetcher) parseCodeBlocks(params map[string]any, debug bool, logger log.Logger, ctx context.Context) []*CodeBlock {
 	blocks := make([]*CodeBlock, 0)
 
 	if blocksRaw, ok := params["blocks"]; ok {
@@ -340,6 +340,9 @@ func (f *Fetcher) parseCodeBlocks(params map[string]any) []*CodeBlock {
 					block := &CodeBlock{}
 					if name, ok := blockMap["name"].(string); ok {
 						block.Name = name
+					}
+					if debug {
+						logger.Debugf(ctx, "Block %s keys: %v", block.Name, getMapKeys(blockMap))
 					}
 
 					// Parse codes within the block
@@ -352,11 +355,24 @@ func (f *Fetcher) parseCodeBlocks(params map[string]any) []*CodeBlock {
 									if name, ok := codeMap["name"].(string); ok {
 										code.Name = name
 									}
+									if debug {
+										logger.Debugf(ctx, "Code %s keys: %v", code.Name, getMapKeys(codeMap))
+									}
 									// Script can be in different fields depending on transformation type
+									// Handle both string and array formats for "script" field
 									if script, ok := codeMap["script"].(string); ok {
 										code.Script = script
+									} else if scriptSlice, ok := codeMap["script"].([]any); ok {
+										// API returns script as array of strings
+										var scriptParts []string
+										for _, s := range scriptSlice {
+											if str, ok := s.(string); ok {
+												scriptParts = append(scriptParts, str)
+											}
+										}
+										code.Script = joinScripts(scriptParts)
 									} else if scripts, ok := codeMap["scripts"].([]any); ok {
-										// Some transformations use scripts array
+										// Some transformations use "scripts" (plural) field
 										var scriptParts []string
 										for _, s := range scripts {
 											if str, ok := s.(string); ok {
@@ -364,6 +380,9 @@ func (f *Fetcher) parseCodeBlocks(params map[string]any) []*CodeBlock {
 											}
 										}
 										code.Script = joinScripts(scriptParts)
+									}
+									if debug {
+										logger.Debugf(ctx, "Code %s script length: %d", code.Name, len(code.Script))
 									}
 									if code.Name != "" || code.Script != "" {
 										block.Codes = append(block.Codes, code)
