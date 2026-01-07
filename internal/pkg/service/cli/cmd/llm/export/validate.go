@@ -18,7 +18,7 @@ type validateDependencies interface {
 // isAllowedFile checks if a file is allowed to exist in the directory without prompting.
 func isAllowedFile(name string) bool {
 	switch name {
-	case ".keboola", ".env", ".env.local", ".gitignore", ".git":
+	case ".keboola", ".gitignore", ".git":
 		return true
 	}
 	return strings.HasPrefix(name, ".env")
@@ -55,9 +55,10 @@ func validateDirectory(ctx context.Context, d validateDependencies, f Flags) err
 		return nil
 	}
 
-	// Prompt for confirmation
+	// Prompt for confirmation, including the list of conflicting files
+	label := "Directory contains existing files: " + strings.Join(conflicts, ", ") + ". Do you want to continue?"
 	confirmed := d.Dialogs().Confirm(&prompt.Confirm{
-		Label:   "Directory contains existing files. Do you want to continue?",
+		Label:   label,
 		Default: false,
 	})
 
