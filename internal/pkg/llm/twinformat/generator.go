@@ -1230,7 +1230,7 @@ func (g *Generator) generateDataDictionary(ctx context.Context, data *ProcessedD
 			"name":         table.Name,
 			"bucket":       table.BucketName,
 			"source":       table.Source,
-			"row_count":    table.RowsCount,
+			"rows_count":   table.RowsCount,
 			"column_count": len(table.Columns),
 		}
 
