@@ -102,12 +102,78 @@ func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, transformations 
 	return graph, nil
 }
 
+// BuildLineageGraphFromAPI builds the lineage graph from API-fetched transformation configs.
+func (b *LineageBuilder) BuildLineageGraphFromAPI(ctx context.Context, configs []*TransformationConfig) (graph *LineageGraph, err error) {
+	ctx, span := b.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.lineage.BuildLineageGraphFromAPI")
+	defer span.End(&err)
+
+	graph = &LineageGraph{
+		Edges:      make([]*LineageEdge, 0),
+		TableNodes: make(map[string]bool),
+		TransNodes: make(map[string]bool),
+	}
+
+	for _, cfg := range configs {
+		transformUID := b.buildTransformationUIDFromConfig(cfg)
+		graph.TransNodes[transformUID] = true
+
+		// Build input edges: table -> transformation (consumed_by)
+		for _, input := range cfg.InputTables {
+			tableUID := b.buildTableUID(input.Source)
+			graph.TableNodes[tableUID] = true
+
+			edge := &LineageEdge{
+				Source: tableUID,
+				Target: transformUID,
+				Type:   EdgeTypeConsumedBy,
+			}
+			graph.Edges = append(graph.Edges, edge)
+		}
+
+		// Build output edges: transformation -> table (produces)
+		for _, output := range cfg.OutputTables {
+			tableUID := b.buildTableUID(output.Destination)
+			graph.TableNodes[tableUID] = true
+
+			edge := &LineageEdge{
+				Source: transformUID,
+				Target: tableUID,
+				Type:   EdgeTypeProduces,
+			}
+			graph.Edges = append(graph.Edges, edge)
+		}
+	}
+
+	// Calculate node count
+	graph.NodeCount = len(graph.TableNodes) + len(graph.TransNodes)
+
+	// Build metadata
+	graph.Meta = &LineageMetaData{
+		TotalEdges: len(graph.Edges),
+		TotalNodes: graph.NodeCount,
+		Updated:    time.Now().UTC().Format(time.RFC3339),
+	}
+
+	b.logger.Infof(ctx, "Built lineage graph from API with %d edges and %d nodes", len(graph.Edges), graph.NodeCount)
+
+	return graph, nil
+}
+
 // buildTransformationUID builds a UID for a transformation.
 // Format: transform:{name}.
 func (b *LineageBuilder) buildTransformationUID(t *ScannedTransformation) string {
 	name := t.Name
 	if name == "" {
 		name = t.ConfigID
+	}
+	return fmt.Sprintf("transform:%s", sanitizeUID(name))
+}
+
+// buildTransformationUIDFromConfig builds a UID for a transformation from API config.
+func (b *LineageBuilder) buildTransformationUIDFromConfig(cfg *TransformationConfig) string {
+	name := cfg.Name
+	if name == "" {
+		name = cfg.ID
 	}
 	return fmt.Sprintf("transform:%s", sanitizeUID(name))
 }

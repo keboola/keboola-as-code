@@ -52,11 +52,38 @@ type ProcessedTable struct {
 
 // ProcessedTransformation represents a transformation with computed data.
 type ProcessedTransformation struct {
+	// Embedded scanned transformation (may be nil if only API data available)
 	*ScannedTransformation
-	UID          string
-	Platform     string
+	// Basic metadata
+	UID         string
+	Name        string
+	ComponentID string
+	ConfigID    string
+	Description string
+	IsDisabled  bool
+	Platform    string
+	Path        string
+	// Dependencies and job execution
 	Dependencies *TransformationDependencies
 	JobExecution *JobExecution
+	// Code blocks (from local or API)
+	CodeBlocks []*ProcessedCodeBlock
+	// Data source flag
+	FromAPI bool
+}
+
+// ProcessedCodeBlock represents a code block ready for output.
+type ProcessedCodeBlock struct {
+	Name     string
+	Language string
+	Codes    []*ProcessedCode
+}
+
+// ProcessedCode represents a single code script.
+type ProcessedCode struct {
+	Name     string
+	Language string
+	Script   string
 }
 
 // ProcessedBucket represents a bucket with source inference.
@@ -132,31 +159,24 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 		},
 	}
 
-	// Step 1: Scan local transformations
-	scannedTransformations, err := p.scanner.ScanTransformations(ctx, projectDir)
-	if err != nil {
-		p.logger.Warnf(ctx, "Failed to scan local transformations: %v", err)
-		scannedTransformations = []*ScannedTransformation{}
-	}
-
-	// Step 2: Build lineage graph
-	lineageGraph, err := p.lineageBuilder.BuildLineageGraph(ctx, scannedTransformations)
+	// Step 1: Build lineage graph from API-fetched transformation configs
+	lineageGraph, err := p.lineageBuilder.BuildLineageGraphFromAPI(ctx, fetchedData.TransformationConfigs)
 	if err != nil {
 		return nil, err
 	}
 	processed.LineageGraph = lineageGraph
 	processed.Statistics.TotalEdges = len(lineageGraph.Edges)
 
-	// Step 3: Process buckets with source inference
+	// Step 2: Process buckets with source inference
 	processed.Buckets = p.processBuckets(ctx, fetchedData.Buckets, fetchedData.Tables, processed.Statistics)
 
-	// Step 4: Process tables with lineage
+	// Step 3: Process tables with lineage
 	processed.Tables = p.processTables(ctx, fetchedData.Tables, lineageGraph)
 
-	// Step 5: Process transformations with platform detection and job linking
-	processed.Transformations = p.processTransformations(ctx, scannedTransformations, fetchedData.Jobs, lineageGraph, processed.Statistics)
+	// Step 4: Process transformations from API data with platform detection and job linking
+	processed.Transformations = p.processTransformationsFromAPI(ctx, fetchedData.TransformationConfigs, fetchedData.Jobs, lineageGraph, processed.Statistics)
 
-	// Step 6: Process jobs
+	// Step 5: Process jobs
 	processed.Jobs = p.processJobs(ctx, fetchedData.Jobs, processed.Statistics)
 
 	// Update final statistics
@@ -232,22 +252,22 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 	return processed
 }
 
-// processTransformations processes transformations with platform detection and job linking.
-func (p *Processor) processTransformations(ctx context.Context, transformations []*ScannedTransformation, jobs []*keboola.QueueJob, graph *LineageGraph, stats *ProcessingStatistics) []*ProcessedTransformation {
+// processTransformationsFromAPI processes transformations from API-fetched configs.
+func (p *Processor) processTransformationsFromAPI(ctx context.Context, configs []*TransformationConfig, jobs []*keboola.QueueJob, graph *LineageGraph, stats *ProcessingStatistics) []*ProcessedTransformation {
 	// Build a map of component+config to latest job
 	jobMap := buildJobMap(jobs)
 
-	processed := make([]*ProcessedTransformation, 0, len(transformations))
+	processed := make([]*ProcessedTransformation, 0, len(configs))
 
-	for _, t := range transformations {
+	for _, cfg := range configs {
 		// Detect platform
-		platform := DetectPlatform(t.ComponentID)
+		platform := DetectPlatform(cfg.ComponentID)
 		stats.ByPlatform[platform]++
 
 		// Build transformation UID
-		name := t.Name
+		name := cfg.Name
 		if name == "" {
-			name = t.ConfigID
+			name = cfg.ID
 		}
 		uid := BuildTransformationUIDFromName(name)
 
@@ -256,7 +276,7 @@ func (p *Processor) processTransformations(ctx context.Context, transformations 
 
 		// Link to latest job
 		var jobExec *JobExecution
-		jobKey := t.ComponentID + ":" + t.ConfigID
+		jobKey := cfg.ComponentID + ":" + cfg.ID
 		if job, ok := jobMap[jobKey]; ok {
 			jobExec = &JobExecution{
 				LastRunTime:     formatJobTimePtr(job.StartTime),
@@ -269,17 +289,78 @@ func (p *Processor) processTransformations(ctx context.Context, transformations 
 			}
 		}
 
+		// Convert code blocks from API format to processed format
+		codeBlocks := p.convertCodeBlocks(cfg.Blocks, platform)
+
 		processed = append(processed, &ProcessedTransformation{
-			ScannedTransformation: t,
-			UID:                   uid,
-			Platform:              platform,
-			Dependencies:          deps,
-			JobExecution:          jobExec,
+			UID:          uid,
+			Name:         cfg.Name,
+			ComponentID:  cfg.ComponentID,
+			ConfigID:     cfg.ID,
+			Description:  cfg.Description,
+			IsDisabled:   cfg.IsDisabled,
+			Platform:     platform,
+			Dependencies: deps,
+			JobExecution: jobExec,
+			CodeBlocks:   codeBlocks,
+			FromAPI:      true,
 		})
 	}
 
-	p.logger.Infof(ctx, "Processed %d transformations", len(processed))
+	p.logger.Infof(ctx, "Processed %d transformations from API", len(processed))
 	return processed
+}
+
+// convertCodeBlocks converts API code blocks to processed format.
+func (p *Processor) convertCodeBlocks(blocks []*CodeBlock, platform string) []*ProcessedCodeBlock {
+	if len(blocks) == 0 {
+		return nil
+	}
+
+	language := platformToLanguage(platform)
+	result := make([]*ProcessedCodeBlock, 0, len(blocks))
+
+	for _, block := range blocks {
+		processedBlock := &ProcessedCodeBlock{
+			Name:     block.Name,
+			Language: language,
+			Codes:    make([]*ProcessedCode, 0, len(block.Codes)),
+		}
+
+		for _, code := range block.Codes {
+			processedBlock.Codes = append(processedBlock.Codes, &ProcessedCode{
+				Name:     code.Name,
+				Language: language,
+				Script:   code.Script,
+			})
+		}
+
+		if len(processedBlock.Codes) > 0 {
+			result = append(result, processedBlock)
+		}
+	}
+
+	return result
+}
+
+// platformToLanguage converts a platform name to a code language.
+func platformToLanguage(platform string) string {
+	switch platform {
+	case PlatformSnowflake:
+		return PlatformSQL
+	case PlatformPython:
+		return PlatformPython
+	case PlatformR:
+		return PlatformR
+	case PlatformSynapse:
+		return PlatformSQL
+	case PlatformBigQuery:
+		return PlatformSQL
+	case PlatformRedshift:
+		return PlatformSQL
+	default:
+		return PlatformSQL
+	}
 }
 
 // processJobs processes jobs.

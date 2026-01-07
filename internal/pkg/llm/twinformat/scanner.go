@@ -21,12 +21,20 @@ type ScannedTransformation struct {
 	Path         string
 	InputTables  []StorageMapping
 	OutputTables []StorageMapping
+	Blocks       []*ScannedBlock // Code blocks from local files
 }
 
-// StorageMapping represents an input or output table mapping.
-type StorageMapping struct {
-	Source      string `json:"source"`
-	Destination string `json:"destination"`
+// ScannedBlock represents a code block scanned from local files.
+type ScannedBlock struct {
+	Name  string
+	Codes []*ScannedCode
+}
+
+// ScannedCode represents a code script within a block.
+type ScannedCode struct {
+	Name     string
+	Language string // sql, python, r
+	Script   string
 }
 
 // ScannerDependencies defines dependencies for the Scanner.
@@ -144,10 +152,134 @@ func (s *Scanner) scanTransformation(ctx context.Context, componentID, configPat
 		}
 	}
 
+	// Scan code blocks
+	blocksDir := filesystem.Join(configPath, "blocks")
+	if s.fs.Exists(ctx, blocksDir) {
+		blocks, err := s.scanCodeBlocks(ctx, blocksDir)
+		if err != nil {
+			s.logger.Warnf(ctx, "Failed to scan code blocks at %s: %v", blocksDir, err)
+		} else {
+			transformation.Blocks = blocks
+		}
+	}
+
 	// Extract config ID from path (last directory name)
 	transformation.ConfigID = filesystem.Base(configPath)
 
 	return transformation, nil
+}
+
+// scanCodeBlocks scans the blocks/ subdirectory for code blocks.
+func (s *Scanner) scanCodeBlocks(ctx context.Context, blocksDir string) ([]*ScannedBlock, error) {
+	blockDirs, err := s.fs.ReadDir(ctx, blocksDir)
+	if err != nil {
+		return nil, errors.Errorf("failed to read blocks directory: %w", err)
+	}
+
+	blocks := make([]*ScannedBlock, 0)
+
+	for _, blockDir := range blockDirs {
+		if !blockDir.IsDir() {
+			continue
+		}
+
+		blockPath := filesystem.Join(blocksDir, blockDir.Name())
+		block := &ScannedBlock{
+			Name:  blockDir.Name(),
+			Codes: make([]*ScannedCode, 0),
+		}
+
+		// Read block name from meta.json if it exists
+		blockMetaFile := filesystem.Join(blockPath, "meta.json")
+		if s.fs.Exists(ctx, blockMetaFile) {
+			if name, err := s.readBlockName(ctx, blockMetaFile); err == nil && name != "" {
+				block.Name = name
+			}
+		}
+
+		// Scan codes within the block
+		codeDirs, err := s.fs.ReadDir(ctx, blockPath)
+		if err != nil {
+			s.logger.Warnf(ctx, "Failed to read block directory %s: %v", blockPath, err)
+			continue
+		}
+
+		for _, codeDir := range codeDirs {
+			if !codeDir.IsDir() {
+				continue
+			}
+
+			codePath := filesystem.Join(blockPath, codeDir.Name())
+			code := s.scanCode(ctx, codePath, codeDir.Name())
+			if code != nil {
+				block.Codes = append(block.Codes, code)
+			}
+		}
+
+		if len(block.Codes) > 0 {
+			blocks = append(blocks, block)
+		}
+	}
+
+	return blocks, nil
+}
+
+// scanCode scans a single code directory for the script file.
+func (s *Scanner) scanCode(ctx context.Context, codePath, defaultName string) *ScannedCode {
+	code := &ScannedCode{
+		Name: defaultName,
+	}
+
+	// Read code name from meta.json if it exists
+	codeMetaFile := filesystem.Join(codePath, "meta.json")
+	if s.fs.Exists(ctx, codeMetaFile) {
+		if name, err := s.readBlockName(ctx, codeMetaFile); err == nil && name != "" {
+			code.Name = name
+		}
+	}
+
+	// Look for code file (code.sql, code.py, code.r)
+	codeFiles := []struct {
+		file     string
+		language string
+	}{
+		{"code.sql", "sql"},
+		{"code.py", "python"},
+		{"code.r", "r"},
+	}
+
+	for _, cf := range codeFiles {
+		codeFile := filesystem.Join(codePath, cf.file)
+		if s.fs.Exists(ctx, codeFile) {
+			content, err := s.fs.ReadFile(ctx, filesystem.NewFileDef(codeFile))
+			if err != nil {
+				continue
+			}
+			code.Script = content.Content
+			code.Language = cf.language
+			return code
+		}
+	}
+
+	// No code file found
+	return nil
+}
+
+// readBlockName reads the name from a meta.json file.
+func (s *Scanner) readBlockName(ctx context.Context, path string) (string, error) {
+	content, err := s.fs.ReadFile(ctx, filesystem.NewFileDef(path))
+	if err != nil {
+		return "", err
+	}
+
+	var meta struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal([]byte(content.Content), &meta); err != nil {
+		return "", err
+	}
+
+	return meta.Name, nil
 }
 
 // configJSON represents the structure of config.json.
