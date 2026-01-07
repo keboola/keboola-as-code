@@ -1,0 +1,52 @@
+{
+  "path": "/v1/repositories/keboola/templates/my-template-id/1.2.3/preview",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "branch": "default",
+    "name": "inst-001",
+    "steps": [
+      {
+        "id": "g01-s01",
+        "inputs": [
+          {
+            "id": "shopify-token",
+            "value": "token"
+          },
+          {
+            "id": "oauth2",
+            "value": {
+              "id": "98765",
+              "version": 3
+            }
+          },
+          {
+            "id": "oauth2Accounts",
+            "value": {
+              "accounts": {
+                "123456789101112": {
+                  "category": "Musician/Band",
+                  "fb_page_id": "1234",
+                  "id": "4567",
+                  "name": "Foo"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "g01-s02",
+        "inputs": [
+          {
+            "id": "data-app-param1",
+            "value": "value1"
+          }
+        ]
+      }
+    ]
+  }
+}

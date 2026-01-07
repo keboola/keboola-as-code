@@ -164,6 +164,9 @@ func PrepareTemplate(ctx context.Context, d dependencies, o ExtendedOptions) (pl
 	sharedCodes := make(map[keboola.ComponentID]*model.ConfigState)
 	for _, config := range o.ProjectState.ConfigsFrom(o.TargetBranch) {
 		if config.ComponentID == keboola.SharedCodeComponentID {
+			if config.Local.SharedCode == nil {
+				continue
+			}
 			sharedCodes[config.Local.SharedCode.Target] = config
 			existingObjects[config.Key()] = true
 		}
