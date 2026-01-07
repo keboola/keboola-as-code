@@ -86,6 +86,7 @@ Available Commands:
   template test run         Run template test.
 
   llm                       LLM context commands for AI-assisted project understanding.
+  llm export                Export project data to AI-optimized twin format directory structure.
   llm init                  Initialize a new local directory for LLM export.
 
   help                      Help about any command

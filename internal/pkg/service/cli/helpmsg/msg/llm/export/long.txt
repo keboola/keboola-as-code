@@ -1,0 +1,21 @@
+Export project data to an AI-optimized "twin format" directory structure.
+
+The twin format is designed for AI assistants to understand and work with
+Keboola projects directly from Git repositories. It includes:
+
+  - Bucket and table metadata with schema information
+  - Transformation configurations with platform detection
+  - Component configurations organized by type
+  - Job execution history and statistics
+  - Lineage graph showing data flow dependencies
+  - Optional data samples (controlled by flags)
+
+The export creates a "twin_format/" directory containing JSON files with
+inline documentation (_comment, _purpose, _update_frequency fields).
+
+Security features:
+  - Automatic detection of public Git repositories
+  - Sample export disabled by default for public repos
+  - Secrets (fields starting with #) are encrypted
+
+Use "kbc llm init" first to initialize the project directory.
