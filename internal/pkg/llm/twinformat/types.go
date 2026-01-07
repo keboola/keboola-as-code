@@ -21,7 +21,8 @@ type ProjectData struct {
 }
 
 // TwinTable represents a table in the twin format output.
-// nolint:tagliatelle // RFC specifies snake_case for JSON output.
+//
+//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TwinTable struct {
 	UID           string             `json:"uid"`
 	Name          string             `json:"name"`
@@ -37,14 +38,16 @@ type TwinTable struct {
 }
 
 // TableDependencies represents lineage dependencies for a table.
-// nolint:tagliatelle // RFC specifies snake_case for JSON output.
+//
+//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TableDependencies struct {
 	ConsumedBy []string `json:"consumed_by"`
 	ProducedBy []string `json:"produced_by"`
 }
 
 // TwinTransformation represents a transformation in the twin format output.
-// nolint:tagliatelle // RFC specifies snake_case for JSON output.
+//
+//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TwinTransformation struct {
 	UID          string                      `json:"uid"`
 	Name         string                      `json:"name"`
@@ -66,7 +69,8 @@ type TransformationDependencies struct {
 }
 
 // JobExecution represents the last job execution status for a transformation.
-// nolint:tagliatelle // RFC specifies snake_case for JSON output.
+//
+//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type JobExecution struct {
 	LastRunTime     string `json:"last_run_time,omitempty"`
 	LastRunStatus   string `json:"last_run_status,omitempty"`
