@@ -215,7 +215,8 @@ func (g *Generator) generateTableMetadata(ctx context.Context, table *ProcessedT
 	}
 
 	if len(table.Columns) > 0 {
-		metadata["columns"] = table.Columns
+		columns := g.buildColumnDetails(table)
+		metadata["columns"] = columns
 	}
 
 	if len(table.PrimaryKey) > 0 {
@@ -251,6 +252,41 @@ func (g *Generator) generateTableMetadata(ctx context.Context, table *ProcessedT
 
 	metadataPath := filesystem.Join(tableDir, "metadata.json")
 	return g.jsonWriter.Write(ctx, metadataPath, metadata)
+}
+
+// buildColumnDetails builds detailed column information including metadata.
+func (g *Generator) buildColumnDetails(table *ProcessedTable) []map[string]any {
+	columns := make([]map[string]any, 0, len(table.Columns))
+
+	for _, colName := range table.Columns {
+		col := map[string]any{
+			"name": colName,
+		}
+
+		// Extract column metadata if available
+		if table.Table != nil && table.ColumnMetadata != nil {
+			if colMeta, ok := table.ColumnMetadata[colName]; ok {
+				for _, meta := range colMeta {
+					switch meta.Key {
+					case "KBC.datatype.basetype":
+						col["base_type"] = meta.Value
+					case "KBC.datatype.type":
+						col["type"] = meta.Value
+					case "KBC.datatype.nullable":
+						col["nullable"] = meta.Value == "1" || meta.Value == "true"
+					case "KBC.datatype.length":
+						col["length"] = meta.Value
+					case "KBC.description":
+						col["description"] = meta.Value
+					}
+				}
+			}
+		}
+
+		columns = append(columns, col)
+	}
+
+	return columns
 }
 
 // generateTransformations generates transformations/index.json and per-transformation metadata files.
