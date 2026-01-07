@@ -236,22 +236,28 @@ func (f *Fetcher) parseTransformationConfig(componentID string, cfg *keboola.Con
 
 		// Parse storage.input.tables and storage.output.tables
 		if storage, ok := cfg.Content.Get("storage"); ok {
-			if storageMap, ok := storage.(map[string]any); ok {
+			storageMap := toStringMap(storage)
+			if storageMap != nil {
 				if debug {
 					logger.Debugf(ctx, "Config %s storage keys: %v", cfg.Name, getMapKeys(storageMap))
 				}
 				config.InputTables = f.parseStorageMappings(storageMap, "input")
 				config.OutputTables = f.parseStorageMappings(storageMap, "output")
+			} else if debug {
+				logger.Debugf(ctx, "Config %s storage type: %T", cfg.Name, storage)
 			}
 		}
 
 		// Parse parameters.blocks for transformation code
 		if params, ok := cfg.Content.Get("parameters"); ok {
-			if paramsMap, ok := params.(map[string]any); ok {
+			paramsMap := toStringMap(params)
+			if paramsMap != nil {
 				if debug {
 					logger.Debugf(ctx, "Config %s parameters keys: %v", cfg.Name, getMapKeys(paramsMap))
 				}
 				config.Blocks = f.parseCodeBlocks(paramsMap)
+			} else if debug {
+				logger.Debugf(ctx, "Config %s parameters type: %T", cfg.Name, params)
 			}
 		}
 	}
@@ -268,16 +274,40 @@ func getMapKeys(m map[string]any) []string {
 	return keys
 }
 
+// toStringMap converts various map types to map[string]any.
+// Handles both map[string]any and *orderedmap.OrderedMap from the SDK.
+func toStringMap(v any) map[string]any {
+	if m, ok := v.(map[string]any); ok {
+		return m
+	}
+	// Handle orderedmap.OrderedMap (used by Keboola SDK)
+	if om, ok := v.(interface {
+		Keys() []string
+		Get(key string) (any, bool)
+	}); ok {
+		result := make(map[string]any)
+		for _, key := range om.Keys() {
+			if val, ok := om.Get(key); ok {
+				result[key] = val
+			}
+		}
+		return result
+	}
+	return nil
+}
+
 // parseStorageMappings parses input or output table mappings from storage config.
 func (f *Fetcher) parseStorageMappings(storage map[string]any, key string) []StorageMapping {
 	mappings := make([]StorageMapping, 0)
 
 	if section, ok := storage[key]; ok {
-		if sectionMap, ok := section.(map[string]any); ok {
+		sectionMap := toStringMap(section)
+		if sectionMap != nil {
 			if tables, ok := sectionMap["tables"]; ok {
 				if tablesSlice, ok := tables.([]any); ok {
 					for _, t := range tablesSlice {
-						if tableMap, ok := t.(map[string]any); ok {
+						tableMap := toStringMap(t)
+						if tableMap != nil {
 							mapping := StorageMapping{}
 							if src, ok := tableMap["source"].(string); ok {
 								mapping.Source = src
@@ -305,7 +335,8 @@ func (f *Fetcher) parseCodeBlocks(params map[string]any) []*CodeBlock {
 	if blocksRaw, ok := params["blocks"]; ok {
 		if blocksSlice, ok := blocksRaw.([]any); ok {
 			for _, b := range blocksSlice {
-				if blockMap, ok := b.(map[string]any); ok {
+				blockMap := toStringMap(b)
+				if blockMap != nil {
 					block := &CodeBlock{}
 					if name, ok := blockMap["name"].(string); ok {
 						block.Name = name
@@ -315,7 +346,8 @@ func (f *Fetcher) parseCodeBlocks(params map[string]any) []*CodeBlock {
 					if codesRaw, ok := blockMap["codes"]; ok {
 						if codesSlice, ok := codesRaw.([]any); ok {
 							for _, c := range codesSlice {
-								if codeMap, ok := c.(map[string]any); ok {
+								codeMap := toStringMap(c)
+								if codeMap != nil {
 									code := &Code{}
 									if name, ok := codeMap["name"].(string); ok {
 										code.Name = name
