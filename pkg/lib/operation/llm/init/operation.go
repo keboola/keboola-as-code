@@ -13,12 +13,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/metadir/create"
-	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
 type Options struct {
 	ManifestOptions createManifest.Options
-	Workflows       genWorkflows.Options
 }
 
 type dependencies interface {

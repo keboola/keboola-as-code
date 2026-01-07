@@ -1,7 +1,7 @@
 Command "llm init"
 
 Initialize LLM context for a project
-and make first sync from the Keboola Connection.
+by creating the local manifest and metadata directory (no data is pulled from Keboola Connection).
 
 You will be prompted to define:
 - storage API host
