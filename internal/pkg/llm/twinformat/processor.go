@@ -200,6 +200,10 @@ func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucke
 	bucketTables := make(map[string][]string)
 	for _, table := range tables {
 		// Use TableID.BucketID instead of Bucket.BucketID since Bucket can be nil
+		// Skip tables with incomplete identification to avoid panics
+		if table == nil || table.TableID.BucketID.String() == "" {
+			continue
+		}
 		bucketID := table.TableID.BucketID.String()
 		bucketTables[bucketID] = append(bucketTables[bucketID], table.Name)
 	}
