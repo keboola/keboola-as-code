@@ -280,6 +280,7 @@ func (s *Scanner) scanCode(ctx context.Context, codePath, defaultName string) *S
 		if s.fs.Exists(ctx, codeFile) {
 			content, err := s.fs.ReadFile(ctx, filesystem.NewFileDef(codeFile))
 			if err != nil {
+				s.logger.Debugf(ctx, "Code file %s exists but could not be read: %v", codeFile, err)
 				continue
 			}
 			code.Script = content.Content
@@ -288,7 +289,8 @@ func (s *Scanner) scanCode(ctx context.Context, codePath, defaultName string) *S
 		}
 	}
 
-	// No code file found
+	// No code file found - this is normal for empty code blocks
+	s.logger.Debugf(ctx, "No code file found in %s (expected code.sql, code.py, or code.r)", codePath)
 	return nil
 }
 
