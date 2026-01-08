@@ -540,19 +540,7 @@ func joinScriptSlice(slice []any) string {
 			parts = append(parts, str)
 		}
 	}
-	return joinScripts(parts)
-}
-
-// joinScripts joins script parts with newlines.
-func joinScripts(scripts []string) string {
-	var result strings.Builder
-	for i, s := range scripts {
-		if i > 0 {
-			result.WriteString("\n")
-		}
-		result.WriteString(s)
-	}
-	return result.String()
+	return strings.Join(parts, "\n")
 }
 
 // FetchComponentConfigs fetches non-transformation component configurations from the API.
