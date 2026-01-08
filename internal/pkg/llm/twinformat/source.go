@@ -148,6 +148,29 @@ func getSourceMappings() []sourceMapping {
 
 // InferSourceFromBucket infers the data source from a bucket name.
 // Returns the source name (e.g., "shopify", "hubspot", "transformed").
+//
+// # Matching Strategy
+//
+// The function uses a two-pass matching strategy to balance detection accuracy
+// with false positive prevention:
+//
+//  1. First pass (prefix matching): Patterns must appear at the start of the
+//     bucket name. This catches standard naming like "shopify-orders" or "mysql-backup".
+//
+//  2. Second pass (contains matching): For patterns unlikely to cause false
+//     positives, matches anywhere in the name. Generic patterns (databases,
+//     warehouses, cloud storage) are skipped in this pass.
+//
+// # Intentional Limitations
+//
+// Buckets with prefixed names like "backup-s3" or "archive-mysql" will return
+// SourceUnknown. This is intentional: the first pass won't match (pattern not
+// at start), and the second pass skips these generic patterns to avoid false
+// positives like "my-s3-project" incorrectly matching S3.
+//
+// For accurate source detection, use standard Keboola naming conventions where
+// the source name appears at the beginning of the bucket name (e.g., "s3-backup"
+// instead of "backup-s3").
 func InferSourceFromBucket(bucketName string) string {
 	if bucketName == "" {
 		return SourceUnknown
