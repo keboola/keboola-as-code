@@ -406,10 +406,18 @@ func buildJobMap(jobs []*keboola.QueueJob) map[string]*keboola.QueueJob {
 }
 
 // isJobNewer returns true if job is newer than existing.
+// Jobs without start times are treated as older than jobs with start times.
+// If both jobs lack start times, the existing job is preferred (returns false).
 func isJobNewer(job, existing *keboola.QueueJob) bool {
+	// Both nil: keep existing
+	if job.StartTime == nil && existing.StartTime == nil {
+		return false
+	}
+	// Job has no timestamp: treat as older
 	if job.StartTime == nil {
 		return false
 	}
+	// Existing has no timestamp: job is newer
 	if existing.StartTime == nil {
 		return true
 	}
