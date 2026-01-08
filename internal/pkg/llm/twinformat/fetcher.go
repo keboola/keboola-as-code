@@ -190,19 +190,24 @@ func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboo
 		for _, cfg := range comp.Configs {
 			debug := debugCount < 3
 			config := f.parseTransformationConfig(comp.ID.String(), cfg, debug, f.logger, ctx)
-			if config != nil {
-				configs = append(configs, config)
-				// Debug: Log parsing results for first few configs
-				if debug {
-					codeCount := 0
-					for _, b := range config.Blocks {
-						codeCount += len(b.Codes)
-					}
-					f.logger.Debugf(ctx, "Transformation %s: %d inputs, %d outputs, %d blocks, %d codes",
-						config.Name, len(config.InputTables), len(config.OutputTables), len(config.Blocks), codeCount)
-					debugCount++
-				}
+			if config == nil {
+				continue
 			}
+
+			configs = append(configs, config)
+
+			// Debug: Log parsing results for first few configs
+			if !debug {
+				continue
+			}
+
+			codeCount := 0
+			for _, b := range config.Blocks {
+				codeCount += len(b.Codes)
+			}
+			f.logger.Debugf(ctx, "Transformation %s: %d inputs, %d outputs, %d blocks, %d codes",
+				config.Name, len(config.InputTables), len(config.OutputTables), len(config.Blocks), codeCount)
+			debugCount++
 		}
 	}
 
@@ -222,42 +227,65 @@ func (f *Fetcher) parseTransformationConfig(componentID string, cfg *keboola.Con
 		Created:     cfg.Created.String(),
 	}
 
-	// Parse configuration content for input/output tables and blocks
-	if cfg.Content != nil {
-		// Debug: log available keys
-		if debug {
-			logger.Debugf(ctx, "Config %s keys: %v", cfg.Name, cfg.Content.Keys())
-		}
-
-		// Parse storage.input.tables and storage.output.tables
-		if storage, ok := cfg.Content.Get("storage"); ok {
-			storageMap := toStringMap(storage)
-			if storageMap != nil {
-				if debug {
-					logger.Debugf(ctx, "Config %s storage keys: %v", cfg.Name, getMapKeys(storageMap))
-				}
-				config.InputTables = f.parseStorageMappings(storageMap, "input")
-				config.OutputTables = f.parseStorageMappings(storageMap, "output")
-			} else if debug {
-				logger.Debugf(ctx, "Config %s storage type: %T", cfg.Name, storage)
-			}
-		}
-
-		// Parse parameters.blocks for transformation code
-		if params, ok := cfg.Content.Get("parameters"); ok {
-			paramsMap := toStringMap(params)
-			if paramsMap != nil {
-				if debug {
-					logger.Debugf(ctx, "Config %s parameters keys: %v", cfg.Name, getMapKeys(paramsMap))
-				}
-				config.Blocks = f.parseCodeBlocks(paramsMap, debug, logger, ctx)
-			} else if debug {
-				logger.Debugf(ctx, "Config %s parameters type: %T", cfg.Name, params)
-			}
-		}
+	if cfg.Content == nil {
+		return config
 	}
 
+	// Debug: log available keys
+	if debug {
+		logger.Debugf(ctx, "Config %s keys: %v", cfg.Name, cfg.Content.Keys())
+	}
+
+	// Parse storage.input.tables and storage.output.tables
+	f.parseStorageSection(config, cfg, debug, logger, ctx)
+
+	// Parse parameters.blocks for transformation code
+	f.parseParametersSection(config, cfg, debug, logger, ctx)
+
 	return config
+}
+
+// parseStorageSection parses the storage section of a transformation config.
+func (f *Fetcher) parseStorageSection(config *TransformationConfig, cfg *keboola.ConfigWithRows, debug bool, logger log.Logger, ctx context.Context) {
+	storage, ok := cfg.Content.Get("storage")
+	if !ok {
+		return
+	}
+
+	storageMap := toStringMap(storage)
+	if storageMap == nil {
+		if debug {
+			logger.Debugf(ctx, "Config %s storage type: %T", cfg.Name, storage)
+		}
+		return
+	}
+
+	if debug {
+		logger.Debugf(ctx, "Config %s storage keys: %v", cfg.Name, getMapKeys(storageMap))
+	}
+	config.InputTables = f.parseStorageMappings(storageMap, "input")
+	config.OutputTables = f.parseStorageMappings(storageMap, "output")
+}
+
+// parseParametersSection parses the parameters section of a transformation config.
+func (f *Fetcher) parseParametersSection(config *TransformationConfig, cfg *keboola.ConfigWithRows, debug bool, logger log.Logger, ctx context.Context) {
+	params, ok := cfg.Content.Get("parameters")
+	if !ok {
+		return
+	}
+
+	paramsMap := toStringMap(params)
+	if paramsMap == nil {
+		if debug {
+			logger.Debugf(ctx, "Config %s parameters type: %T", cfg.Name, params)
+		}
+		return
+	}
+
+	if debug {
+		logger.Debugf(ctx, "Config %s parameters keys: %v", cfg.Name, getMapKeys(paramsMap))
+	}
+	config.Blocks = f.parseCodeBlocks(paramsMap, debug, logger, ctx)
 }
 
 // getMapKeys returns the keys of a map for debugging.
