@@ -177,6 +177,9 @@ func (s *Scanner) ScanTransformations(ctx context.Context, projectDir string) (r
 	s.logger.Infof(ctx, "Scanned %d transformations from local files", len(result.Transformations))
 	if len(result.Failures) > 0 {
 		s.logger.Warnf(ctx, "Failed to scan %d transformations", len(result.Failures))
+		for _, failure := range result.Failures {
+			s.logger.Warnf(ctx, "  - %s: %v", failure.Path, failure.Error)
+		}
 	}
 	return result, nil
 }
