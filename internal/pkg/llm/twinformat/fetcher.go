@@ -18,8 +18,6 @@ type FetcherDependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
 	Logger() log.Logger
 	ProjectID() keboola.ProjectID
-	StorageAPIHost() string
-	StorageAPIToken() keboola.Token
 	Telemetry() telemetry.Telemetry
 }
 
@@ -28,8 +26,6 @@ type Fetcher struct {
 	api       *keboola.AuthorizedAPI
 	logger    log.Logger
 	projectID keboola.ProjectID
-	host      string
-	token     keboola.Token
 	telemetry telemetry.Telemetry
 }
 
@@ -39,8 +35,6 @@ func NewFetcher(d FetcherDependencies) *Fetcher {
 		api:       d.KeboolaProjectAPI(),
 		logger:    d.Logger(),
 		projectID: d.ProjectID(),
-		host:      d.StorageAPIHost(),
-		token:     d.StorageAPIToken(),
 		telemetry: d.Telemetry(),
 	}
 }
@@ -55,8 +49,6 @@ func (f *Fetcher) FetchAll(ctx context.Context, branchID keboola.BranchID) (data
 	data = &ProjectData{
 		ProjectID: f.projectID,
 		BranchID:  branchID,
-		Host:      f.host,
-		Token:     f.token,
 		FetchedAt: time.Now().UTC(),
 	}
 

@@ -10,8 +10,6 @@ import (
 type ProjectData struct {
 	ProjectID             keboola.ProjectID
 	BranchID              keboola.BranchID
-	Host                  string
-	Token                 keboola.Token
 	Buckets               []*keboola.Bucket
 	Tables                []*keboola.Table
 	Jobs                  []*keboola.QueueJob
