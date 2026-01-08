@@ -165,7 +165,24 @@ func InferSourceFromBucket(bucketName string) string {
 	cleanName = strings.TrimPrefix(cleanName, "in.c-")
 	cleanName = strings.TrimPrefix(cleanName, "out.c-")
 
+	// First pass: match patterns that start at the beginning of the bucket name
+	// This avoids false positives like "my-processed-data" matching "processed"
 	for _, mapping := range getSourceMappings() {
+		if strings.HasPrefix(cleanName, mapping.pattern) {
+			return mapping.source
+		}
+	}
+
+	// Second pass: match patterns anywhere in the name (for compound names like "shopify-orders")
+	// Skip generic patterns that could cause false positives
+	genericPatterns := map[string]bool{
+		"processed": true, "transformed": true, "staging": true,
+		"manual": true, "upload": true,
+	}
+	for _, mapping := range getSourceMappings() {
+		if genericPatterns[mapping.pattern] {
+			continue // Skip generic patterns in second pass
+		}
 		if strings.Contains(cleanName, mapping.pattern) {
 			return mapping.source
 		}
