@@ -135,8 +135,7 @@ func getSourceMappings() []sourceMapping {
 		{"mixpanel", SourceMixpanel},
 		{"amplitude", SourceAmplitude},
 
-		// Keboola-specific patterns
-		{"out.c-", SourceTransformed}, // Output buckets are typically transformed data
+		// Keboola-specific patterns (note: "out.c-" is handled separately via early return)
 		{"processed", SourceTransformed},
 		{"transformed", SourceTransformed},
 		{"staging", SourceTransformed},
