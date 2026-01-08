@@ -62,7 +62,7 @@ func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, transformations 
 
 		// Build input edges: table -> transformation (consumed_by)
 		for _, input := range t.InputTables {
-			tableUID := b.buildTableUID(input.Source)
+			tableUID := b.buildTableUID(ctx, input.Source)
 			graph.TableNodes[tableUID] = true
 
 			edge := &LineageEdge{
@@ -75,7 +75,7 @@ func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, transformations 
 
 		// Build output edges: transformation -> table (produces)
 		for _, output := range t.OutputTables {
-			tableUID := b.buildTableUID(output.Destination)
+			tableUID := b.buildTableUID(ctx, output.Destination)
 			graph.TableNodes[tableUID] = true
 
 			edge := &LineageEdge{
@@ -119,7 +119,7 @@ func (b *LineageBuilder) BuildLineageGraphFromAPI(ctx context.Context, configs [
 
 		// Build input edges: table -> transformation (consumed_by)
 		for _, input := range cfg.InputTables {
-			tableUID := b.buildTableUID(input.Source)
+			tableUID := b.buildTableUID(ctx, input.Source)
 			graph.TableNodes[tableUID] = true
 
 			edge := &LineageEdge{
@@ -132,7 +132,7 @@ func (b *LineageBuilder) BuildLineageGraphFromAPI(ctx context.Context, configs [
 
 		// Build output edges: transformation -> table (produces)
 		for _, output := range cfg.OutputTables {
-			tableUID := b.buildTableUID(output.Destination)
+			tableUID := b.buildTableUID(ctx, output.Destination)
 			graph.TableNodes[tableUID] = true
 
 			edge := &LineageEdge{
@@ -181,11 +181,12 @@ func (b *LineageBuilder) buildTransformationUIDFromConfig(cfg *TransformationCon
 // buildTableUID builds a UID for a table from a table reference.
 // Input format: "in.c-bucket.table" or "out.c-bucket.table".
 // Output format: "table:bucket/table".
-func (b *LineageBuilder) buildTableUID(tableRef string) string {
+func (b *LineageBuilder) buildTableUID(ctx context.Context, tableRef string) string {
 	// Parse table reference
 	parts := strings.Split(tableRef, ".")
 	if len(parts) < 3 {
 		// Fallback: use the whole reference
+		b.logger.Debugf(ctx, "Malformed table reference %q (expected format: stage.bucket.table), using fallback UID", tableRef)
 		return fmt.Sprintf("table:%s", sanitizeUID(tableRef))
 	}
 
