@@ -441,19 +441,45 @@ func isJobNewer(job, existing *keboola.QueueJob) bool {
 }
 
 // extractBucketName extracts the bucket name from a bucket ID.
-// Input: "in.c-bucket" -> "bucket".
+//
+// Expected inputs and outputs:
+//   - "in.c-bucket" -> "bucket"
+//   - "out.c-bucket" -> "bucket"
+//   - "in.bucket"   -> "bucket"
+//   - "bucket"      -> "bucket"
+//
+// For unexpected or malformed formats, the original bucketID is returned.
 func extractBucketName(bucketID string) string {
+	// Normalize whitespace-only input
+	bucketID = strings.TrimSpace(bucketID)
+	if bucketID == "" {
+		return bucketID
+	}
+
 	// Split by "." to get stage and bucket parts
 	parts := strings.Split(bucketID, ".")
-	if len(parts) >= 2 {
-		// Remove "c-" prefix if present
-		bucket := parts[1]
-		if len(bucket) > 2 && bucket[:2] == "c-" {
-			return bucket[2:]
-		}
-		return bucket
+	if len(parts) < 2 {
+		// No stage/bucket separator, return as-is (e.g., "bucket")
+		return bucketID
 	}
-	return bucketID
+
+	// parts[0] is stage, parts[1] is bucket identifier
+	bucket := parts[1]
+	if bucket == "" {
+		// Missing bucket part (e.g., "in."), treat as malformed and return original ID
+		return bucketID
+	}
+
+	// Remove "c-" prefix if present and followed by a non-empty name
+	if strings.HasPrefix(bucket, "c-") {
+		if len(bucket) == 2 {
+			// "c-" without an actual name is considered malformed
+			return bucketID
+		}
+		return bucket[2:]
+	}
+
+	return bucket
 }
 
 // formatJobTimePtr formats a job time pointer for output.

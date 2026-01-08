@@ -49,8 +49,10 @@ func TestExtractBucketName(t *testing.T) {
 		{name: "complex bucket name", bucketID: "in.c-google-ads-data", expected: "google-ads-data"},
 		{name: "single part", bucketID: "bucket", expected: "bucket"},
 		{name: "empty string", bucketID: "", expected: ""},
-		{name: "short c- prefix", bucketID: "in.c-", expected: "c-"}, // c- alone is too short to strip
+		{name: "malformed c- only", bucketID: "in.c-", expected: "in.c-"}, // c- without name returns original
 		{name: "three parts", bucketID: "in.c-bucket.extra", expected: "bucket"},
+		{name: "missing bucket part", bucketID: "in.", expected: "in."}, // malformed returns original
+		{name: "whitespace only", bucketID: "   ", expected: ""},
 	}
 
 	for _, tc := range tests {
