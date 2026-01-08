@@ -199,14 +199,28 @@ func (b *LineageBuilder) buildTableUID(ctx context.Context, tableRef string) str
 }
 
 // sanitizeUID sanitizes a string for use in a UID.
+//
 // Transformation rules:
 //   - Spaces are replaced with underscores
 //   - Hyphens are replaced with underscores
 //   - All characters are lowercased
 //
-// Note: This may cause collisions (e.g., "my-table" and "my_table" both become "my_table").
-// In practice, collisions are rare since Keboola bucket/table names typically follow
-// consistent naming conventions within a project.
+// # Collision Warning
+//
+// This sanitization may cause UID collisions. Examples of inputs that produce
+// the same output:
+//   - "my-table" and "my_table" both become "my_table"
+//   - "My Table" and "my_table" both become "my_table"
+//   - "data-2024" and "data_2024" both become "data_2024"
+//
+// In the context of data lineage tracking, collisions could cause:
+//   - Incorrect dependency relationships between tables/transformations
+//   - Missing or merged lineage edges in the graph
+//
+// In practice, collisions are rare because Keboola bucket/table names typically
+// follow consistent naming conventions within a project (either hyphens or
+// underscores, not both). If collision detection is needed, callers should
+// track sanitized UIDs and check for duplicates.
 func sanitizeUID(s string) string {
 	s = strings.ReplaceAll(s, " ", "_")
 	s = strings.ReplaceAll(s, "-", "_")
