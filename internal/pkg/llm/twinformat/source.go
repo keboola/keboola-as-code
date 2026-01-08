@@ -7,10 +7,12 @@ import (
 // Source constants for data sources.
 const (
 	SourceShopify         = "shopify"
+	SourceWooCommerce     = "woocommerce"
 	SourceHubspot         = "hubspot"
 	SourceSalesforce      = "salesforce"
 	SourceZendesk         = "zendesk"
 	SourceStripe          = "stripe"
+	SourcePayPal          = "paypal"
 	SourceGoogleAds       = "google-ads"
 	SourceFacebookAds     = "facebook-ads"
 	SourceLinkedInAds     = "linkedin-ads"
@@ -60,7 +62,7 @@ func getSourceMappings() []sourceMapping {
 	return []sourceMapping{
 		// E-commerce
 		{"shopify", SourceShopify},
-		{"woocommerce", SourceShopify}, // Similar category
+		{"woocommerce", SourceWooCommerce},
 
 		// CRM
 		{"hubspot", SourceHubspot},
@@ -70,7 +72,7 @@ func getSourceMappings() []sourceMapping {
 
 		// Payments
 		{"stripe", SourceStripe},
-		{"paypal", SourceStripe}, // Similar category
+		{"paypal", SourcePayPal},
 
 		// Advertising
 		{"google-ads", SourceGoogleAds},
@@ -196,6 +198,8 @@ func GetSourceDisplayName(source string) string {
 	switch source {
 	case SourceShopify:
 		return "Shopify"
+	case SourceWooCommerce:
+		return "WooCommerce"
 	case SourceHubspot:
 		return "HubSpot"
 	case SourceSalesforce:
@@ -204,6 +208,8 @@ func GetSourceDisplayName(source string) string {
 		return "Zendesk"
 	case SourceStripe:
 		return "Stripe"
+	case SourcePayPal:
+		return "PayPal"
 	case SourceGoogleAds:
 		return "Google Ads"
 	case SourceFacebookAds:
@@ -280,11 +286,11 @@ func GetSourceDisplayName(source string) string {
 // GetSourceType returns the type category for a source.
 func GetSourceType(source string) string {
 	switch source {
-	case SourceShopify:
+	case SourceShopify, SourceWooCommerce:
 		return "e-commerce"
 	case SourceHubspot, SourceSalesforce, SourceZendesk, SourceIntercom:
 		return "crm"
-	case SourceStripe:
+	case SourceStripe, SourcePayPal:
 		return "payments"
 	case SourceGoogleAds, SourceFacebookAds, SourceLinkedInAds:
 		return "advertising"
