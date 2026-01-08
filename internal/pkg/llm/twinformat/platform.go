@@ -89,9 +89,8 @@ func getPlatformMappings() []platformMapping {
 		{"postgresql", PlatformPostgreSQL},
 		{"postgres", PlatformPostgreSQL},
 
-		// Generic SQL (fallback for SQL-like transformations)
-		{"keboola.sql-transformation", PlatformSQL},
-		{"-transformation", PlatformSQL}, // Catch-all for other transformations
+		// Generic SQL (fallback for Keboola transformation components only)
+		{"keboola.sql-transformation", PlatformSQL}
 	}
 }
 
@@ -109,6 +108,11 @@ func DetectPlatform(componentID string) string {
 		if strings.Contains(componentIDLower, mapping.pattern) {
 			return mapping.platform
 		}
+	}
+
+	// Fallback: treat unknown Keboola transformation components as SQL
+	if strings.HasPrefix(componentIDLower, "keboola.") && strings.Contains(componentIDLower, "-transformation") {
+		return PlatformSQL
 	}
 
 	return PlatformUnknown
