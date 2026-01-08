@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"golang.org/x/exp/maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -261,7 +262,7 @@ func (f *Fetcher) parseStorageSection(config *TransformationConfig, cfg *keboola
 	}
 
 	if debug {
-		logger.Debugf(ctx, "Config %s storage keys: %v", cfg.Name, getMapKeys(storageMap))
+		logger.Debugf(ctx, "Config %s storage keys: %v", cfg.Name, maps.Keys(storageMap))
 	}
 	config.InputTables = f.parseStorageMappings(storageMap, "input")
 	config.OutputTables = f.parseStorageMappings(storageMap, "output")
@@ -283,18 +284,9 @@ func (f *Fetcher) parseParametersSection(config *TransformationConfig, cfg *kebo
 	}
 
 	if debug {
-		logger.Debugf(ctx, "Config %s parameters keys: %v", cfg.Name, getMapKeys(paramsMap))
+		logger.Debugf(ctx, "Config %s parameters keys: %v", cfg.Name, maps.Keys(paramsMap))
 	}
 	config.Blocks = f.parseCodeBlocks(paramsMap, debug, logger, ctx)
-}
-
-// getMapKeys returns the keys of a map for debugging.
-func getMapKeys(m map[string]any) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
 }
 
 // toStringMap converts various map types to map[string]any.
@@ -365,7 +357,7 @@ func (f *Fetcher) parseCodeBlocks(params map[string]any, debug bool, logger log.
 						block.Name = name
 					}
 					if debug {
-						logger.Debugf(ctx, "Block %s keys: %v", block.Name, getMapKeys(blockMap))
+						logger.Debugf(ctx, "Block %s keys: %v", block.Name, maps.Keys(blockMap))
 					}
 
 					// Parse codes within the block
@@ -379,7 +371,7 @@ func (f *Fetcher) parseCodeBlocks(params map[string]any, debug bool, logger log.
 										code.Name = name
 									}
 									if debug {
-										logger.Debugf(ctx, "Code %s keys: %v", code.Name, getMapKeys(codeMap))
+										logger.Debugf(ctx, "Code %s keys: %v", code.Name, maps.Keys(codeMap))
 									}
 									// Script can be in different fields depending on transformation type
 									// Handle both string and array formats for "script" field
