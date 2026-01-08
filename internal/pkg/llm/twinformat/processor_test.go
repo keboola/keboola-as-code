@@ -367,13 +367,15 @@ func TestProcessor_Process_Integration(t *testing.T) {
 	// Verify tables were processed
 	require.Len(t, result.Tables, 2)
 
-	// Verify buckets were processed with source inference
+	// Verify buckets were processed with component-based source detection
 	require.Len(t, result.Buckets, 2)
 	for _, bucket := range result.Buckets {
 		if bucket.BucketID.Stage == "in" {
-			assert.Equal(t, SourceShopify, bucket.Source)
+			// Input bucket has no known source (tables not produced by transformation)
+			assert.Equal(t, SourceUnknown, bucket.Source)
 		} else {
-			assert.Equal(t, SourceTransformed, bucket.Source)
+			// Output bucket source is derived from transformation that produces its tables
+			assert.Equal(t, "keboola.snowflake-transformation", bucket.Source)
 		}
 	}
 }

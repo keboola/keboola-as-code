@@ -158,7 +158,10 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 		},
 	}
 
-	// Step 1: Build lineage graph from API-fetched transformation configs
+	// Step 1: Build component registry from fetched components
+	componentRegistry := p.buildComponentRegistry(ctx, fetchedData.Components)
+
+	// Step 2: Build lineage graph from API-fetched transformation configs
 	lineageGraph, err := p.lineageBuilder.BuildLineageGraphFromAPI(ctx, fetchedData.TransformationConfigs)
 	if err != nil {
 		return nil, err
@@ -166,16 +169,19 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 	processed.LineageGraph = lineageGraph
 	processed.Statistics.TotalEdges = len(lineageGraph.Edges)
 
-	// Step 2: Process buckets with source inference
-	processed.Buckets = p.processBuckets(ctx, fetchedData.Buckets, fetchedData.Tables, processed.Statistics)
+	// Step 3: Build table source registry from transformation outputs
+	tableSourceRegistry := p.buildTableSourceRegistry(ctx, fetchedData.TransformationConfigs, componentRegistry)
 
-	// Step 3: Process tables with lineage
-	processed.Tables = p.processTables(ctx, fetchedData.Tables, lineageGraph)
+	// Step 4: Process tables with lineage and component-based source
+	processed.Tables = p.processTables(ctx, fetchedData.Tables, lineageGraph, tableSourceRegistry)
 
-	// Step 4: Process transformations from API data with platform detection and job linking
+	// Step 5: Process buckets with source derived from tables
+	processed.Buckets = p.processBuckets(ctx, fetchedData.Buckets, fetchedData.Tables, tableSourceRegistry, processed.Statistics)
+
+	// Step 6: Process transformations from API data with platform detection and job linking
 	processed.Transformations = p.processTransformationsFromAPI(ctx, fetchedData.TransformationConfigs, fetchedData.Jobs, lineageGraph, processed.Statistics)
 
-	// Step 5: Process jobs
+	// Step 7: Process jobs
 	processed.Jobs = p.processJobs(ctx, fetchedData.Jobs, processed.Statistics)
 
 	// Update final statistics
@@ -194,10 +200,50 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 	return processed, nil
 }
 
-// processBuckets processes buckets with source inference.
-func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucket, tables []*keboola.Table, stats *ProcessingStatistics) []*ProcessedBucket {
-	// Build a map of bucket ID to tables
-	bucketTables := make(map[string][]string)
+// buildComponentRegistry builds a registry of all components from fetched data.
+func (p *Processor) buildComponentRegistry(ctx context.Context, components []*keboola.ComponentWithConfigs) *ComponentRegistry {
+	registry := NewComponentRegistry()
+	for _, comp := range components {
+		registry.Register(comp)
+	}
+	p.logger.Infof(ctx, "Built component registry with %d components", len(components))
+	return registry
+}
+
+// buildTableSourceRegistry builds a registry mapping tables to their source components.
+func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfigs []*TransformationConfig, componentRegistry *ComponentRegistry) *TableSourceRegistry {
+	registry := NewTableSourceRegistry()
+
+	for _, cfg := range transformConfigs {
+		compType := componentRegistry.GetType(cfg.ComponentID)
+		if compType == "" {
+			compType = "transformation" // fallback
+		}
+
+		for _, output := range cfg.OutputTables {
+			// The destination is the output table ID (e.g., "out.c-bucket.table")
+			tableID := output.Destination
+			if tableID == "" {
+				continue
+			}
+			registry.Register(tableID, TableSource{
+				ComponentID:   cfg.ComponentID,
+				ComponentType: compType,
+				ConfigID:      cfg.ID,
+				ConfigName:    cfg.Name,
+			})
+		}
+	}
+
+	p.logger.Infof(ctx, "Built table source registry with %d table mappings", len(registry.tableToSource))
+	return registry
+}
+
+// processBuckets processes buckets with source derived from tables.
+func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucket, tables []*keboola.Table, sourceRegistry *TableSourceRegistry, stats *ProcessingStatistics) []*ProcessedBucket {
+	// Build maps of bucket ID to table names and full table IDs
+	bucketTableNames := make(map[string][]string)
+	bucketTableIDs := make(map[string][]string)
 	for _, table := range tables {
 		// Use TableID.BucketID instead of Bucket.BucketID since Bucket can be nil.
 		// Note: TableID is a value type (embedded via TableKey), not a pointer,
@@ -207,15 +253,20 @@ func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucke
 			continue
 		}
 		bucketID := table.TableID.BucketID.String()
-		bucketTables[bucketID] = append(bucketTables[bucketID], table.Name)
+		bucketTableNames[bucketID] = append(bucketTableNames[bucketID], table.Name)
+		bucketTableIDs[bucketID] = append(bucketTableIDs[bucketID], table.TableID.String())
 	}
 
 	processed := make([]*ProcessedBucket, 0, len(buckets))
 	for _, bucket := range buckets {
-		source := InferSourceFromBucket(bucket.BucketID.String())
+		bucketID := bucket.BucketID.String()
+		tableNames := bucketTableNames[bucketID]
+		tableIDs := bucketTableIDs[bucketID]
+
+		// Get dominant source from tables in this bucket
+		source := sourceRegistry.GetDominantSourceForBucket(bucketID, tableIDs)
 		stats.BySource[source]++
 
-		tableNames := bucketTables[bucket.BucketID.String()]
 		processed = append(processed, &ProcessedBucket{
 			Bucket:     bucket,
 			Source:     source,
@@ -228,8 +279,8 @@ func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucke
 	return processed
 }
 
-// processTables processes tables with lineage dependencies.
-func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, graph *LineageGraph) []*ProcessedTable {
+// processTables processes tables with lineage dependencies and component-based source.
+func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, graph *LineageGraph, sourceRegistry *TableSourceRegistry) []*ProcessedTable {
 	processed := make([]*ProcessedTable, 0, len(tables))
 
 	for _, table := range tables {
@@ -248,8 +299,9 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 		// Get dependencies from lineage graph
 		deps := p.lineageBuilder.GetTableDependencies(graph, uid)
 
-		// Infer source from bucket
-		source := InferSourceFromBucket(bucketID)
+		// Get source from component-based registry
+		tableID := table.TableID.String()
+		source := sourceRegistry.GetSource(tableID)
 
 		processed = append(processed, &ProcessedTable{
 			Table:        table,

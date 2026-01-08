@@ -27,6 +27,7 @@ type ProjectData struct {
 	Jobs                  []*keboola.QueueJob
 	TransformationConfigs []*configparser.TransformationConfig
 	ComponentConfigs      []*configparser.ComponentConfig
+	Components            []*keboola.ComponentWithConfigs // All components with their metadata
 	FetchedAt             time.Time
 }
 
