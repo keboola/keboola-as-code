@@ -37,6 +37,18 @@ type ScannedCode struct {
 	Script   string
 }
 
+// ScanResult holds the result of scanning transformations.
+type ScanResult struct {
+	Transformations []*ScannedTransformation
+	Failures        []ScanFailure
+}
+
+// ScanFailure represents a failed scan attempt.
+type ScanFailure struct {
+	Path  string
+	Error string
+}
+
 // ScannerDependencies defines dependencies for the Scanner.
 type ScannerDependencies interface {
 	Logger() log.Logger
@@ -61,16 +73,22 @@ func NewScanner(d ScannerDependencies) *Scanner {
 }
 
 // ScanTransformations scans the main/transformation/ directory for transformations.
-func (s *Scanner) ScanTransformations(ctx context.Context, projectDir string) (transformations []*ScannedTransformation, err error) {
+// Returns a ScanResult containing both successful scans and any failures.
+func (s *Scanner) ScanTransformations(ctx context.Context, projectDir string) (result *ScanResult, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.scanner.ScanTransformations")
 	defer span.End(&err)
+
+	result = &ScanResult{
+		Transformations: make([]*ScannedTransformation, 0),
+		Failures:        make([]ScanFailure, 0),
+	}
 
 	transformationDir := filesystem.Join(projectDir, "main", "transformation")
 
 	// Check if transformation directory exists
 	if !s.fs.Exists(ctx, transformationDir) {
 		s.logger.Info(ctx, "No transformation directory found")
-		return []*ScannedTransformation{}, nil
+		return result, nil
 	}
 
 	// List component directories (e.g., keboola.snowflake-transformation)
@@ -78,8 +96,6 @@ func (s *Scanner) ScanTransformations(ctx context.Context, projectDir string) (t
 	if err != nil {
 		return nil, errors.Errorf("failed to read transformation directory: %w", err)
 	}
-
-	transformations = make([]*ScannedTransformation, 0)
 
 	for _, componentDir := range componentDirs {
 		if !componentDir.IsDir() {
@@ -92,6 +108,10 @@ func (s *Scanner) ScanTransformations(ctx context.Context, projectDir string) (t
 		// List config directories within the component
 		configDirs, err := s.fs.ReadDir(ctx, componentPath)
 		if err != nil {
+			result.Failures = append(result.Failures, ScanFailure{
+				Path:  componentPath,
+				Error: err.Error(),
+			})
 			s.logger.Warnf(ctx, "Failed to read component directory %s: %v", componentID, err)
 			continue
 		}
@@ -104,18 +124,25 @@ func (s *Scanner) ScanTransformations(ctx context.Context, projectDir string) (t
 			configPath := filesystem.Join(componentPath, configDir.Name())
 			transformation, err := s.scanTransformation(ctx, componentID, configPath)
 			if err != nil {
+				result.Failures = append(result.Failures, ScanFailure{
+					Path:  configPath,
+					Error: err.Error(),
+				})
 				s.logger.Warnf(ctx, "Failed to scan transformation at %s: %v", configPath, err)
 				continue
 			}
 
 			if transformation != nil {
-				transformations = append(transformations, transformation)
+				result.Transformations = append(result.Transformations, transformation)
 			}
 		}
 	}
 
-	s.logger.Infof(ctx, "Scanned %d transformations from local files", len(transformations))
-	return transformations, nil
+	s.logger.Infof(ctx, "Scanned %d transformations from local files", len(result.Transformations))
+	if len(result.Failures) > 0 {
+		s.logger.Warnf(ctx, "Failed to scan %d transformations", len(result.Failures))
+	}
+	return result, nil
 }
 
 // scanTransformation scans a single transformation directory.
