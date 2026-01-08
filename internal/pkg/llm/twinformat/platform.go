@@ -90,7 +90,7 @@ func getPlatformMappings() []platformMapping {
 		{"postgres", PlatformPostgreSQL},
 
 		// Generic SQL (fallback for Keboola transformation components only)
-		{"keboola.sql-transformation", PlatformSQL}
+		{"keboola.sql-transformation", PlatformSQL},
 	}
 }
 
