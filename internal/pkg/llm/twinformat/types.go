@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/configparser"
 )
 
 // ProjectData holds all fetched data from Keboola APIs.
@@ -14,8 +16,8 @@ type ProjectData struct {
 	Buckets               []*keboola.Bucket
 	Tables                []*keboola.Table
 	Jobs                  []*keboola.QueueJob
-	TransformationConfigs []*TransformationConfig
-	ComponentConfigs      []*ComponentConfig
+	TransformationConfigs []*configparser.TransformationConfig
+	ComponentConfigs      []*configparser.ComponentConfig
 	FetchedAt             time.Time
 }
 
@@ -218,51 +220,21 @@ type LineageMetaData struct {
 	Updated    string `json:"updated"`
 }
 
-// TransformationConfig represents a transformation configuration fetched from API.
-type TransformationConfig struct {
-	ID           string           `json:"id"`
-	Name         string           `json:"name"`
-	ComponentID  string           `json:"component_id"`
-	Description  string           `json:"description,omitempty"`
-	IsDisabled   bool             `json:"is_disabled"`
-	InputTables  []StorageMapping `json:"input_tables,omitempty"`
-	OutputTables []StorageMapping `json:"output_tables,omitempty"`
-	Blocks       []*CodeBlock     `json:"blocks,omitempty"`
-	Version      int              `json:"version"`
-	Created      string           `json:"created,omitempty"`
-}
+// Type aliases for types defined in configparser package.
+type (
+	TransformationConfig = configparser.TransformationConfig
+	StorageMapping       = configparser.StorageMapping
+	CodeBlock            = configparser.CodeBlock
+	Code                 = configparser.Code
+	ComponentConfig      = configparser.ComponentConfig
+)
 
-// StorageMapping represents an input or output table mapping.
-type StorageMapping struct {
-	Source      string `json:"source"`
-	Destination string `json:"destination"`
-}
-
-// CodeBlock represents a block of code in a transformation.
-type CodeBlock struct {
-	Name  string  `json:"name"`
-	Codes []*Code `json:"codes,omitempty"`
-}
-
-// Code represents a single code script within a block.
-type Code struct {
-	Name   string `json:"name"`
-	Script string `json:"script"`
-}
-
-// ComponentConfig represents a non-transformation component configuration.
-type ComponentConfig struct {
-	ID            string         `json:"id"`
-	Name          string         `json:"name"`
-	ComponentID   string         `json:"component_id"`
-	ComponentType string         `json:"component_type"`
-	Description   string         `json:"description,omitempty"`
-	IsDisabled    bool           `json:"is_disabled"`
-	Configuration map[string]any `json:"configuration,omitempty"`
-	LastRun       string         `json:"last_run,omitempty"`
-	Status        string         `json:"status,omitempty"`
-	Version       int            `json:"version"`
-	Created       string         `json:"created,omitempty"`
+// DataQuality holds data quality indicators computed from sample data.
+type DataQuality struct {
+	Completeness   map[string]float64 `json:"completeness"`    // Column -> % non-null
+	NullCounts     map[string]int     `json:"null_counts"`     // Column -> null count
+	DistinctCounts map[string]int     `json:"distinct_counts"` // Column -> distinct values
+	SampleSize     int                `json:"sample_size"`     // Number of rows analyzed
 }
 
 // DocFields represents the standard documentation fields for JSON files.

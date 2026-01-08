@@ -1,4 +1,4 @@
-package twinformat
+package configparser
 
 import (
 	"context"
@@ -11,8 +11,6 @@ import (
 
 func TestParseStorageMappings(t *testing.T) {
 	t.Parallel()
-
-	f := &Fetcher{}
 
 	tests := []struct {
 		name     string
@@ -235,7 +233,7 @@ func TestParseStorageMappings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			result := f.parseStorageMappings(tt.storage, tt.key)
+			result := ParseStorageMappings(tt.storage, tt.key)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -244,7 +242,6 @@ func TestParseStorageMappings(t *testing.T) {
 func TestParseCodeBlocks(t *testing.T) {
 	t.Parallel()
 
-	f := &Fetcher{}
 	ctx := context.Background()
 	logger := log.NewNopLogger()
 
@@ -577,7 +574,7 @@ func TestParseCodeBlocks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			result := f.parseCodeBlocks(tt.params, false, logger, ctx)
+			result := ParseCodeBlocks(tt.params, false, logger, ctx)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
