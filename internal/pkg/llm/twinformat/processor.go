@@ -342,16 +342,23 @@ func (p *Processor) convertCodeBlocks(blocks []*CodeBlock, platform string) []*P
 	return result
 }
 
+// Language constants for code languages (separate from platform constants).
+const (
+	LanguagePython = "python"
+	LanguageR      = "r"
+	LanguageSQL    = "sql"
+)
+
 // platformToLanguage converts a transformation platform to its underlying code language.
 // Python and R use their own languages; DBT and other platforms use SQL as the underlying language.
 func platformToLanguage(platform string) string {
 	switch platform {
 	case PlatformPython:
-		return PlatformPython
+		return LanguagePython
 	case PlatformR:
-		return PlatformR
+		return LanguageR
 	default:
-		return PlatformSQL
+		return LanguageSQL
 	}
 }
 
