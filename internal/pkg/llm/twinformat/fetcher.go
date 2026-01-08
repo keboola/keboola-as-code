@@ -370,93 +370,177 @@ func (f *Fetcher) parseTableMapping(t any) (StorageMapping, bool) {
 func (f *Fetcher) parseCodeBlocks(params map[string]any, debug bool, logger log.Logger, ctx context.Context) []*CodeBlock {
 	blocks := make([]*CodeBlock, 0)
 
-	if blocksRaw, ok := params["blocks"]; ok {
-		if blocksSlice, ok := blocksRaw.([]any); ok {
-			for _, b := range blocksSlice {
-				blockMap := toStringMap(b)
-				if blockMap != nil {
-					block := &CodeBlock{}
-					if name, ok := blockMap["name"].(string); ok {
-						block.Name = name
-					}
-					if debug {
-						logger.Debugf(ctx, "Block %s keys: %v", block.Name, maps.Keys(blockMap))
-					}
-
-					// Parse codes within the block
-					if codesRaw, ok := blockMap["codes"]; ok {
-						if codesSlice, ok := codesRaw.([]any); ok {
-							for _, c := range codesSlice {
-								codeMap := toStringMap(c)
-								if codeMap != nil {
-									code := &Code{}
-									if name, ok := codeMap["name"].(string); ok {
-										code.Name = name
-									}
-									if debug {
-										logger.Debugf(ctx, "Code %s keys: %v", code.Name, maps.Keys(codeMap))
-									}
-									// Script can be in different fields depending on transformation type
-									// Handle both string and array formats for "script" field
-									if script, ok := codeMap["script"].(string); ok {
-										code.Script = script
-									} else if scriptSlice, ok := codeMap["script"].([]any); ok {
-										// API returns script as array of strings
-										var scriptParts []string
-										for _, s := range scriptSlice {
-											if str, ok := s.(string); ok {
-												scriptParts = append(scriptParts, str)
-											}
-										}
-										code.Script = joinScripts(scriptParts)
-									} else if scripts, ok := codeMap["scripts"].([]any); ok {
-										// Some transformations use "scripts" (plural) field
-										var scriptParts []string
-										for _, s := range scripts {
-											if str, ok := s.(string); ok {
-												scriptParts = append(scriptParts, str)
-											}
-										}
-										code.Script = joinScripts(scriptParts)
-									}
-									if debug {
-										logger.Debugf(ctx, "Code %s script length: %d", code.Name, len(code.Script))
-									}
-									if code.Name != "" || code.Script != "" {
-										block.Codes = append(block.Codes, code)
-									}
-								}
-							}
-						}
-					}
-
-					if block.Name != "" || len(block.Codes) > 0 {
-						blocks = append(blocks, block)
-					}
-				}
-			}
-		}
-	}
+	// Parse standard blocks format
+	blocks = append(blocks, f.parseBlocks(params, debug, logger, ctx)...)
 
 	// Handle Snowflake/SQL transformations that use "queries" instead of "blocks"
-	if queriesRaw, ok := params["queries"]; ok {
-		if queriesSlice, ok := queriesRaw.([]any); ok {
-			block := &CodeBlock{Name: "queries"}
-			for i, q := range queriesSlice {
-				if queryStr, ok := q.(string); ok {
-					block.Codes = append(block.Codes, &Code{
-						Name:   fmt.Sprintf("query_%d", i+1),
-						Script: queryStr,
-					})
-				}
-			}
-			if len(block.Codes) > 0 {
-				blocks = append(blocks, block)
-			}
+	if queryBlock := f.parseQueries(params); queryBlock != nil {
+		blocks = append(blocks, queryBlock)
+	}
+
+	return blocks
+}
+
+// parseBlocks parses the "blocks" section from transformation parameters.
+func (f *Fetcher) parseBlocks(params map[string]any, debug bool, logger log.Logger, ctx context.Context) []*CodeBlock {
+	blocks := make([]*CodeBlock, 0)
+
+	blocksRaw, ok := params["blocks"]
+	if !ok {
+		return blocks
+	}
+
+	blocksSlice, ok := blocksRaw.([]any)
+	if !ok {
+		return blocks
+	}
+
+	for _, b := range blocksSlice {
+		if block := f.parseBlock(b, debug, logger, ctx); block != nil {
+			blocks = append(blocks, block)
 		}
 	}
 
 	return blocks
+}
+
+// parseBlock parses a single block from the configuration.
+func (f *Fetcher) parseBlock(b any, debug bool, logger log.Logger, ctx context.Context) *CodeBlock {
+	blockMap := toStringMap(b)
+	if blockMap == nil {
+		return nil
+	}
+
+	block := &CodeBlock{}
+	if name, ok := blockMap["name"].(string); ok {
+		block.Name = name
+	}
+
+	if debug {
+		logger.Debugf(ctx, "Block %s keys: %v", block.Name, maps.Keys(blockMap))
+	}
+
+	block.Codes = f.parseCodes(blockMap, debug, logger, ctx)
+
+	if block.Name == "" && len(block.Codes) == 0 {
+		return nil
+	}
+
+	return block
+}
+
+// parseCodes parses the codes within a block.
+func (f *Fetcher) parseCodes(blockMap map[string]any, debug bool, logger log.Logger, ctx context.Context) []*Code {
+	codesRaw, ok := blockMap["codes"]
+	if !ok {
+		return nil
+	}
+
+	codesSlice, ok := codesRaw.([]any)
+	if !ok {
+		return nil
+	}
+
+	var codes []*Code
+	for _, c := range codesSlice {
+		if code := f.parseCode(c, debug, logger, ctx); code != nil {
+			codes = append(codes, code)
+		}
+	}
+
+	return codes
+}
+
+// parseCode parses a single code entry from a block.
+func (f *Fetcher) parseCode(c any, debug bool, logger log.Logger, ctx context.Context) *Code {
+	codeMap := toStringMap(c)
+	if codeMap == nil {
+		return nil
+	}
+
+	code := &Code{}
+	if name, ok := codeMap["name"].(string); ok {
+		code.Name = name
+	}
+
+	if debug {
+		logger.Debugf(ctx, "Code %s keys: %v", code.Name, maps.Keys(codeMap))
+	}
+
+	code.Script = f.parseScript(codeMap)
+
+	if debug {
+		logger.Debugf(ctx, "Code %s script length: %d", code.Name, len(code.Script))
+	}
+
+	if code.Name == "" && code.Script == "" {
+		return nil
+	}
+
+	return code
+}
+
+// parseScript extracts the script content from a code map.
+// Handles string, array of strings, and "scripts" (plural) field formats.
+func (f *Fetcher) parseScript(codeMap map[string]any) string {
+	// Try "script" as string
+	if script, ok := codeMap["script"].(string); ok {
+		return script
+	}
+
+	// Try "script" as array of strings
+	if scriptSlice, ok := codeMap["script"].([]any); ok {
+		return joinScriptSlice(scriptSlice)
+	}
+
+	// Try "scripts" (plural) field
+	if scripts, ok := codeMap["scripts"].([]any); ok {
+		return joinScriptSlice(scripts)
+	}
+
+	return ""
+}
+
+// parseQueries parses the "queries" section for SQL transformations.
+func (f *Fetcher) parseQueries(params map[string]any) *CodeBlock {
+	queriesRaw, ok := params["queries"]
+	if !ok {
+		return nil
+	}
+
+	queriesSlice, ok := queriesRaw.([]any)
+	if !ok {
+		return nil
+	}
+
+	block := &CodeBlock{Name: "queries"}
+	for i, q := range queriesSlice {
+		queryStr, ok := q.(string)
+		if !ok {
+			continue
+		}
+		block.Codes = append(block.Codes, &Code{
+			Name:   fmt.Sprintf("query_%d", i+1),
+			Script: queryStr,
+		})
+	}
+
+	if len(block.Codes) == 0 {
+		return nil
+	}
+
+	return block
+}
+
+// joinScriptSlice joins a slice of any to a string, filtering for strings only.
+func joinScriptSlice(slice []any) string {
+	var parts []string
+	for _, s := range slice {
+		if str, ok := s.(string); ok {
+			parts = append(parts, str)
+		}
+	}
+	return joinScripts(parts)
 }
 
 // joinScripts joins script parts with newlines.
