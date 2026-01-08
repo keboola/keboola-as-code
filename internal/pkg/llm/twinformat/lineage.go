@@ -45,6 +45,40 @@ type LineageGraph struct {
 	TransNodes map[string]bool // Set of transformation node IDs
 }
 
+// uidTracker tracks original inputs to sanitized UIDs for collision detection.
+type uidTracker struct {
+	tableUIDs     map[string]string // sanitized UID -> original input
+	transformUIDs map[string]string // sanitized UID -> original input
+}
+
+// newUIDTracker creates a new UID tracker.
+func newUIDTracker() *uidTracker {
+	return &uidTracker{
+		tableUIDs:     make(map[string]string),
+		transformUIDs: make(map[string]string),
+	}
+}
+
+// trackTableUID tracks a table UID and returns true if a collision is detected.
+// If a collision is detected, it returns the previous original input.
+func (t *uidTracker) trackTableUID(uid, original string) (collision bool, previousOriginal string) {
+	if prev, exists := t.tableUIDs[uid]; exists && prev != original {
+		return true, prev
+	}
+	t.tableUIDs[uid] = original
+	return false, ""
+}
+
+// trackTransformUID tracks a transformation UID and returns true if a collision is detected.
+// If a collision is detected, it returns the previous original input.
+func (t *uidTracker) trackTransformUID(uid, original string) (collision bool, previousOriginal string) {
+	if prev, exists := t.transformUIDs[uid]; exists && prev != original {
+		return true, prev
+	}
+	t.transformUIDs[uid] = original
+	return false, ""
+}
+
 // BuildLineageGraph builds the lineage graph from scanned transformations.
 func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, transformations []*ScannedTransformation) (graph *LineageGraph, err error) {
 	ctx, span := b.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.lineage.BuildLineageGraph")
@@ -56,13 +90,26 @@ func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, transformations 
 		TransNodes: make(map[string]bool),
 	}
 
+	// Track UIDs for collision detection
+	tracker := newUIDTracker()
+
 	for _, t := range transformations {
 		transformUID := b.buildTransformationUID(t)
+		originalName := t.Name
+		if originalName == "" {
+			originalName = t.ConfigID
+		}
+		if collision, prev := tracker.trackTransformUID(transformUID, originalName); collision {
+			b.logger.Warnf(ctx, "UID collision detected: transformations %q and %q both map to UID %q", prev, originalName, transformUID)
+		}
 		graph.TransNodes[transformUID] = true
 
 		// Build input edges: table -> transformation (consumed_by)
 		for _, input := range t.InputTables {
 			tableUID := b.buildTableUID(ctx, input.Source)
+			if collision, prev := tracker.trackTableUID(tableUID, input.Source); collision {
+				b.logger.Warnf(ctx, "UID collision detected: tables %q and %q both map to UID %q", prev, input.Source, tableUID)
+			}
 			graph.TableNodes[tableUID] = true
 
 			edge := &LineageEdge{
@@ -76,6 +123,9 @@ func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, transformations 
 		// Build output edges: transformation -> table (produces)
 		for _, output := range t.OutputTables {
 			tableUID := b.buildTableUID(ctx, output.Destination)
+			if collision, prev := tracker.trackTableUID(tableUID, output.Destination); collision {
+				b.logger.Warnf(ctx, "UID collision detected: tables %q and %q both map to UID %q", prev, output.Destination, tableUID)
+			}
 			graph.TableNodes[tableUID] = true
 
 			edge := &LineageEdge{
@@ -113,13 +163,26 @@ func (b *LineageBuilder) BuildLineageGraphFromAPI(ctx context.Context, configs [
 		TransNodes: make(map[string]bool),
 	}
 
+	// Track UIDs for collision detection
+	tracker := newUIDTracker()
+
 	for _, cfg := range configs {
 		transformUID := b.buildTransformationUIDFromConfig(cfg)
+		originalName := cfg.Name
+		if originalName == "" {
+			originalName = cfg.ID
+		}
+		if collision, prev := tracker.trackTransformUID(transformUID, originalName); collision {
+			b.logger.Warnf(ctx, "UID collision detected: transformations %q and %q both map to UID %q", prev, originalName, transformUID)
+		}
 		graph.TransNodes[transformUID] = true
 
 		// Build input edges: table -> transformation (consumed_by)
 		for _, input := range cfg.InputTables {
 			tableUID := b.buildTableUID(ctx, input.Source)
+			if collision, prev := tracker.trackTableUID(tableUID, input.Source); collision {
+				b.logger.Warnf(ctx, "UID collision detected: tables %q and %q both map to UID %q", prev, input.Source, tableUID)
+			}
 			graph.TableNodes[tableUID] = true
 
 			edge := &LineageEdge{
@@ -133,6 +196,9 @@ func (b *LineageBuilder) BuildLineageGraphFromAPI(ctx context.Context, configs [
 		// Build output edges: transformation -> table (produces)
 		for _, output := range cfg.OutputTables {
 			tableUID := b.buildTableUID(ctx, output.Destination)
+			if collision, prev := tracker.trackTableUID(tableUID, output.Destination); collision {
+				b.logger.Warnf(ctx, "UID collision detected: tables %q and %q both map to UID %q", prev, output.Destination, tableUID)
+			}
 			graph.TableNodes[tableUID] = true
 
 			edge := &LineageEdge{
