@@ -341,8 +341,8 @@ func (p *Processor) convertCodeBlocks(blocks []*CodeBlock, platform string) []*P
 	return result
 }
 
-// platformToLanguage converts a platform name to a code language.
-// Only Python and R have different code languages, everything else is SQL.
+// platformToLanguage converts a transformation platform to its underlying code language.
+// Python and R use their own languages; DBT and other platforms use SQL as the underlying language.
 func platformToLanguage(platform string) string {
 	switch platform {
 	case PlatformPython:
