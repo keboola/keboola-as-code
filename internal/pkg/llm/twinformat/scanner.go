@@ -56,7 +56,39 @@ type ScannerDependencies interface {
 	Fs() filesystem.Fs
 }
 
-// Scanner scans local transformation files.
+// Scanner scans local transformation files from a Keboola project directory.
+//
+// The scanner looks for transformations in the following directory structure:
+//
+//	{projectDir}/main/transformation/{componentID}/{configID}/
+//
+// Where:
+//   - componentID is a Keboola component ID (e.g., "keboola.snowflake-transformation")
+//   - configID is a unique configuration identifier
+//
+// # Metadata Files
+//
+// For each transformation, the scanner reads:
+//   - config.json: Contains storage mappings (input/output tables)
+//   - meta.json: Contains name and isDisabled flag
+//   - description.md: Optional description in Markdown format
+//
+// # Code Blocks
+//
+// Code blocks are scanned from the blocks/ subdirectory:
+//
+//	{configPath}/blocks/{blockDir}/{codeDir}/
+//
+// Supported code file types:
+//   - code.sql: SQL transformations
+//   - code.py: Python transformations
+//   - code.r: R transformations
+//
+// # Error Handling
+//
+// The scanner collects failures in ScanResult.Failures rather than failing the entire
+// scan. This allows partial results when some transformations have issues (e.g., invalid
+// JSON in config files).
 type Scanner struct {
 	logger    log.Logger
 	telemetry telemetry.Telemetry
@@ -73,7 +105,11 @@ func NewScanner(d ScannerDependencies) *Scanner {
 }
 
 // ScanTransformations scans the main/transformation/ directory for transformations.
-// Returns a ScanResult containing both successful scans and any failures.
+//
+// The method walks through all component directories and config directories,
+// collecting transformation metadata, storage mappings, and code blocks.
+// Failures for individual transformations are collected in ScanResult.Failures
+// rather than causing the entire scan to fail.
 func (s *Scanner) ScanTransformations(ctx context.Context, projectDir string) (result *ScanResult, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.scanner.ScanTransformations")
 	defer span.End(&err)
