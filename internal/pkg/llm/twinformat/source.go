@@ -1,372 +1,144 @@
 package twinformat
 
 import (
-	"strings"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 )
 
-// Source constants for data sources.
+// Source constants for basic source types.
 const (
-	SourceShopify         = "shopify"
-	SourceWooCommerce     = "woocommerce"
-	SourceHubspot         = "hubspot"
-	SourceSalesforce      = "salesforce"
-	SourceZendesk         = "zendesk"
-	SourceStripe          = "stripe"
-	SourcePayPal          = "paypal"
-	SourceGoogleAds       = "google-ads"
-	SourceFacebookAds     = "facebook-ads"
-	SourceLinkedInAds     = "linkedin-ads"
-	SourceGoogleSheets    = "google-sheets"
-	SourceMySQL           = "mysql"
-	SourcePostgreSQL      = "postgresql"
-	SourceMSSQL           = "mssql"
-	SourceOracle          = "oracle"
-	SourceMongoDB         = "mongodb"
-	SourceSnowflake       = "snowflake"
-	SourceBigQuery        = "bigquery"
-	SourceRedshift        = "redshift"
-	SourceS3              = "s3"
-	SourceGCS             = "gcs"
-	SourceAzureBlob       = "azure-blob"
-	SourceFTP             = "ftp"
-	SourceSFTP            = "sftp"
-	SourceHTTP            = "http"
-	SourceEmail           = "email"
-	SourceSlack           = "slack"
-	SourceJira            = "jira"
-	SourceAsana           = "asana"
-	SourceAirtable        = "airtable"
-	SourceNotion          = "notion"
-	SourceIntercom        = "intercom"
-	SourceMailchimp       = "mailchimp"
-	SourceTwilio          = "twilio"
-	SourceSegment         = "segment"
-	SourceMixpanel        = "mixpanel"
-	SourceAmplitude       = "amplitude"
-	SourceGA4             = "ga4"
-	SourceGoogleAnalytics = "google-analytics"
-	SourceTransformed     = "transformed"
-	SourceManual          = "manual"
-	SourceUnknown         = "unknown"
+	SourceUnknown = "unknown"
 )
 
-// sourceMapping represents a mapping from bucket name pattern to source.
-type sourceMapping struct {
-	pattern string
-	source  string
+// ComponentInfo holds metadata about a Keboola component.
+type ComponentInfo struct {
+	ID   string // Component ID (e.g., "kds-team.app-custom-python")
+	Type string // Component type ("extractor", "transformation", "application", "writer")
+	Name string // Human-readable name (e.g., "Custom Python")
 }
 
-// getSourceMappings returns the source mappings.
-// Order matters - more specific patterns should come first.
-func getSourceMappings() []sourceMapping {
-	return []sourceMapping{
-		// E-commerce
-		{"shopify", SourceShopify},
-		{"woocommerce", SourceWooCommerce},
+// ComponentRegistry maps component IDs to their metadata.
+type ComponentRegistry struct {
+	components map[string]ComponentInfo
+}
 
-		// CRM
-		{"hubspot", SourceHubspot},
-		{"salesforce", SourceSalesforce},
-		{"zendesk", SourceZendesk},
-		{"intercom", SourceIntercom},
-
-		// Payments
-		{"stripe", SourceStripe},
-		{"paypal", SourcePayPal},
-
-		// Advertising
-		{"google-ads", SourceGoogleAds},
-		{"googleads", SourceGoogleAds},
-		{"adwords", SourceGoogleAds},
-		{"facebook-ads", SourceFacebookAds},
-		{"facebookads", SourceFacebookAds},
-		{"fb-ads", SourceFacebookAds},
-		{"linkedin-ads", SourceLinkedInAds},
-		{"linkedinads", SourceLinkedInAds},
-
-		// Google Services
-		{"google-sheets", SourceGoogleSheets},
-		{"googlesheets", SourceGoogleSheets},
-		{"gsheet", SourceGoogleSheets},
-		{"ga4", SourceGA4},
-		{"google-analytics", SourceGoogleAnalytics},
-		{"googleanalytics", SourceGoogleAnalytics},
-
-		// Databases
-		{"mysql", SourceMySQL},
-		{"postgresql", SourcePostgreSQL},
-		{"postgres", SourcePostgreSQL},
-		{"mssql", SourceMSSQL},
-		{"sqlserver", SourceMSSQL},
-		{"oracle", SourceOracle},
-		{"mongodb", SourceMongoDB},
-		{"mongo", SourceMongoDB},
-
-		// Data Warehouses
-		{"snowflake", SourceSnowflake},
-		{"bigquery", SourceBigQuery},
-		{"redshift", SourceRedshift},
-
-		// Cloud Storage
-		{"s3", SourceS3},
-		{"aws-s3", SourceS3},
-		{"gcs", SourceGCS},
-		{"google-cloud-storage", SourceGCS},
-		{"azure-blob", SourceAzureBlob},
-		{"azureblob", SourceAzureBlob},
-
-		// File Transfer
-		{"ftp", SourceFTP},
-		{"sftp", SourceSFTP},
-		{"http", SourceHTTP},
-
-		// Communication
-		{"email", SourceEmail},
-		{"slack", SourceSlack},
-		{"mailchimp", SourceMailchimp},
-		{"twilio", SourceTwilio},
-
-		// Project Management
-		{"jira", SourceJira},
-		{"asana", SourceAsana},
-		{"airtable", SourceAirtable},
-		{"notion", SourceNotion},
-
-		// Analytics
-		{"segment", SourceSegment},
-		{"mixpanel", SourceMixpanel},
-		{"amplitude", SourceAmplitude},
-
-		// Keboola-specific patterns (note: "out.c-" is handled separately via early return)
-		{"processed", SourceTransformed},
-		{"transformed", SourceTransformed},
-		{"staging", SourceTransformed},
-		{"manual", SourceManual},
-		{"upload", SourceManual},
+// NewComponentRegistry creates a new ComponentRegistry.
+func NewComponentRegistry() *ComponentRegistry {
+	return &ComponentRegistry{
+		components: make(map[string]ComponentInfo),
 	}
 }
 
-// InferSourceFromBucket infers the data source from a bucket name.
-// Returns the source name (e.g., "shopify", "hubspot", "transformed").
-//
-// # Matching Strategy
-//
-// The function uses a two-pass matching strategy to balance detection accuracy
-// with false positive prevention:
-//
-//  1. First pass (prefix matching): Patterns must appear at the start of the
-//     bucket name. This catches standard naming like "shopify-orders" or "mysql-backup".
-//
-//  2. Second pass (contains matching): For patterns unlikely to cause false
-//     positives, matches anywhere in the name. Generic patterns (databases,
-//     warehouses, cloud storage) are skipped in this pass.
-//
-// # Intentional Limitations
-//
-// Buckets with prefixed names like "backup-s3" or "archive-mysql" will return
-// SourceUnknown. This is intentional: the first pass won't match (pattern not
-// at start), and the second pass skips these generic patterns to avoid false
-// positives like "my-s3-project" incorrectly matching S3.
-//
-// For accurate source detection, use standard Keboola naming conventions where
-// the source name appears at the beginning of the bucket name (e.g., "s3-backup"
-// instead of "backup-s3").
-func InferSourceFromBucket(bucketName string) string {
-	if bucketName == "" {
-		return SourceUnknown
+// Register adds a component to the registry.
+func (r *ComponentRegistry) Register(comp *keboola.ComponentWithConfigs) {
+	if comp == nil {
+		return
 	}
-
-	bucketNameLower := strings.ToLower(bucketName)
-
-	// Check for output bucket pattern first (out.c-*)
-	if strings.HasPrefix(bucketNameLower, "out.c-") {
-		return SourceTransformed
+	r.components[comp.ID.String()] = ComponentInfo{
+		ID:   comp.ID.String(),
+		Type: comp.Type,
+		Name: comp.Name,
 	}
+}
 
-	// Remove common prefixes for better matching
-	cleanName := bucketNameLower
-	cleanName = strings.TrimPrefix(cleanName, "in.c-")
-	cleanName = strings.TrimPrefix(cleanName, "out.c-")
-
-	// First pass: match patterns that start at the beginning of the bucket name
-	// This avoids false positives like "my-processed-data" matching "processed"
-	for _, mapping := range getSourceMappings() {
-		if strings.HasPrefix(cleanName, mapping.pattern) {
-			return mapping.source
-		}
+// GetType returns the type for a component ID.
+// Returns empty string if component not found.
+func (r *ComponentRegistry) GetType(componentID string) string {
+	if info, ok := r.components[componentID]; ok {
+		return info.Type
 	}
+	return ""
+}
 
-	// Second pass: match patterns anywhere in the name (for compound names like "shopify-orders")
-	// Skip patterns that could cause false positives when appearing mid-string.
-	// These include:
-	// - Generic patterns: processed, transformed, staging, manual, upload
-	// - Single-word database/warehouse names that commonly appear in compound names
-	//   (e.g., "my-snowflake-backup" shouldn't match "snowflake" source)
-	skipInSecondPass := map[string]bool{
-		// Generic patterns
-		"processed": true, "transformed": true, "staging": true,
-		"manual": true, "upload": true,
-		// Database names (could appear in backup/archive bucket names)
-		"mysql": true, "postgres": true, "postgresql": true,
-		"oracle": true, "mongodb": true, "mongo": true,
-		// Data warehouse names
-		"snowflake": true, "bigquery": true, "redshift": true,
-		// Cloud storage (too generic)
-		"s3": true, "gcs": true, "ftp": true, "sftp": true, "http": true,
+// GetName returns the human-readable name for a component ID.
+// Returns empty string if component not found.
+func (r *ComponentRegistry) GetName(componentID string) string {
+	if info, ok := r.components[componentID]; ok {
+		return info.Name
 	}
-	for _, mapping := range getSourceMappings() {
-		if skipInSecondPass[mapping.pattern] {
-			continue // Skip patterns prone to false positives in second pass
-		}
-		if strings.Contains(cleanName, mapping.pattern) {
-			return mapping.source
-		}
-	}
+	return ""
+}
 
+// Get returns the ComponentInfo for a component ID.
+// Returns empty ComponentInfo if not found.
+func (r *ComponentRegistry) Get(componentID string) (ComponentInfo, bool) {
+	info, ok := r.components[componentID]
+	return info, ok
+}
+
+// TableSource represents the source of a table.
+type TableSource struct {
+	ComponentID   string // Component ID that created this table (e.g., "kds-team.app-custom-python")
+	ComponentType string // Component type ("extractor", "transformation", "application")
+	ConfigID      string // Configuration ID
+	ConfigName    string // Configuration name
+}
+
+// TableSourceRegistry maps table IDs to their source components.
+type TableSourceRegistry struct {
+	tableToSource map[string]TableSource
+}
+
+// NewTableSourceRegistry creates a new TableSourceRegistry.
+func NewTableSourceRegistry() *TableSourceRegistry {
+	return &TableSourceRegistry{
+		tableToSource: make(map[string]TableSource),
+	}
+}
+
+// Register adds a table source mapping.
+func (r *TableSourceRegistry) Register(tableID string, source TableSource) {
+	if tableID == "" {
+		return
+	}
+	r.tableToSource[tableID] = source
+}
+
+// GetSource returns the source ComponentID for a table.
+// Returns SourceUnknown if table not found.
+func (r *TableSourceRegistry) GetSource(tableID string) string {
+	if source, ok := r.tableToSource[tableID]; ok {
+		return source.ComponentID
+	}
 	return SourceUnknown
 }
 
-// InferSourceFromTableID infers the data source from a full table ID.
-// Table ID format: "stage.bucket.table" (e.g., "in.c-shopify.orders").
-func InferSourceFromTableID(tableID string) string {
-	if tableID == "" {
+// GetSourceInfo returns the full TableSource for a table.
+// Returns empty TableSource and false if not found.
+func (r *TableSourceRegistry) GetSourceInfo(tableID string) (TableSource, bool) {
+	source, ok := r.tableToSource[tableID]
+	return source, ok
+}
+
+// GetDominantSourceForBucket returns the most common source ComponentID
+// among tables in the given bucket.
+// Returns SourceUnknown if no tables found.
+func (r *TableSourceRegistry) GetDominantSourceForBucket(bucketID string, tableIDs []string) string {
+	if len(tableIDs) == 0 {
 		return SourceUnknown
 	}
 
-	// Parse table ID to extract bucket
-	parts := strings.Split(tableID, ".")
-	if len(parts) < 2 {
+	// Count sources
+	sourceCounts := make(map[string]int)
+	for _, tableID := range tableIDs {
+		source := r.GetSource(tableID)
+		if source != SourceUnknown {
+			sourceCounts[source]++
+		}
+	}
+
+	if len(sourceCounts) == 0 {
 		return SourceUnknown
 	}
 
-	// Reconstruct bucket name (first two parts)
-	bucketName := strings.Join(parts[:2], ".")
-
-	return InferSourceFromBucket(bucketName)
-}
-
-// GetSourceDisplayName returns a human-readable display name for a source.
-func GetSourceDisplayName(source string) string {
-	switch source {
-	case SourceShopify:
-		return "Shopify"
-	case SourceWooCommerce:
-		return "WooCommerce"
-	case SourceHubspot:
-		return "HubSpot"
-	case SourceSalesforce:
-		return "Salesforce"
-	case SourceZendesk:
-		return "Zendesk"
-	case SourceStripe:
-		return "Stripe"
-	case SourcePayPal:
-		return "PayPal"
-	case SourceGoogleAds:
-		return "Google Ads"
-	case SourceFacebookAds:
-		return "Facebook Ads"
-	case SourceLinkedInAds:
-		return "LinkedIn Ads"
-	case SourceGoogleSheets:
-		return "Google Sheets"
-	case SourceMySQL:
-		return "MySQL"
-	case SourcePostgreSQL:
-		return "PostgreSQL"
-	case SourceMSSQL:
-		return "MS SQL Server"
-	case SourceOracle:
-		return "Oracle"
-	case SourceMongoDB:
-		return "MongoDB"
-	case SourceSnowflake:
-		return "Snowflake"
-	case SourceBigQuery:
-		return "BigQuery"
-	case SourceRedshift:
-		return "Redshift"
-	case SourceS3:
-		return "Amazon S3"
-	case SourceGCS:
-		return "Google Cloud Storage"
-	case SourceAzureBlob:
-		return "Azure Blob Storage"
-	case SourceFTP:
-		return "FTP"
-	case SourceSFTP:
-		return "SFTP"
-	case SourceHTTP:
-		return "HTTP"
-	case SourceEmail:
-		return "Email"
-	case SourceSlack:
-		return "Slack"
-	case SourceJira:
-		return "Jira"
-	case SourceAsana:
-		return "Asana"
-	case SourceAirtable:
-		return "Airtable"
-	case SourceNotion:
-		return "Notion"
-	case SourceIntercom:
-		return "Intercom"
-	case SourceMailchimp:
-		return "Mailchimp"
-	case SourceTwilio:
-		return "Twilio"
-	case SourceSegment:
-		return "Segment"
-	case SourceMixpanel:
-		return "Mixpanel"
-	case SourceAmplitude:
-		return "Amplitude"
-	case SourceGA4:
-		return "Google Analytics 4"
-	case SourceGoogleAnalytics:
-		return "Google Analytics"
-	case SourceTransformed:
-		return "Transformed"
-	case SourceManual:
-		return "Manual Upload"
-	default:
-		return "Unknown"
+	// Find dominant source
+	var dominantSource string
+	var maxCount int
+	for source, count := range sourceCounts {
+		if count > maxCount {
+			maxCount = count
+			dominantSource = source
+		}
 	}
-}
 
-// GetSourceType returns the type category for a source.
-func GetSourceType(source string) string {
-	switch source {
-	case SourceShopify, SourceWooCommerce:
-		return "e-commerce"
-	case SourceHubspot, SourceSalesforce, SourceZendesk, SourceIntercom:
-		return "crm"
-	case SourceStripe, SourcePayPal:
-		return "payments"
-	case SourceGoogleAds, SourceFacebookAds, SourceLinkedInAds:
-		return "advertising"
-	case SourceGoogleSheets, SourceAirtable, SourceNotion:
-		return "productivity"
-	case SourceMySQL, SourcePostgreSQL, SourceMSSQL, SourceOracle, SourceMongoDB:
-		return "database"
-	case SourceSnowflake, SourceBigQuery, SourceRedshift:
-		return "data-warehouse"
-	case SourceS3, SourceGCS, SourceAzureBlob:
-		return "cloud-storage"
-	case SourceFTP, SourceSFTP, SourceHTTP:
-		return "file-transfer"
-	case SourceEmail, SourceSlack, SourceMailchimp, SourceTwilio:
-		return "communication"
-	case SourceJira, SourceAsana:
-		return "project-management"
-	case SourceSegment, SourceMixpanel, SourceAmplitude, SourceGA4, SourceGoogleAnalytics:
-		return "analytics"
-	case SourceTransformed:
-		return "transformed"
-	case SourceManual:
-		return "manual"
-	default:
-		return "unknown"
-	}
+	return dominantSource
 }
