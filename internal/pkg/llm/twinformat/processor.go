@@ -199,8 +199,10 @@ func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucke
 	// Build a map of bucket ID to tables
 	bucketTables := make(map[string][]string)
 	for _, table := range tables {
-		// Use TableID.BucketID instead of Bucket.BucketID since Bucket can be nil
-		// Skip tables with incomplete identification to avoid panics
+		// Use TableID.BucketID instead of Bucket.BucketID since Bucket can be nil.
+		// Note: TableID is a value type (embedded via TableKey), not a pointer,
+		// so nil checks are not needed - checking for empty string handles
+		// zero-value cases where the table identification is incomplete.
 		if table == nil || table.TableID.BucketID.String() == "" {
 			continue
 		}
@@ -231,7 +233,10 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 	processed := make([]*ProcessedTable, 0, len(tables))
 
 	for _, table := range tables {
-		// Skip tables with nil or incomplete identification to avoid panics
+		// Skip tables with nil or incomplete identification to avoid panics.
+		// Note: TableID is a value type (embedded via TableKey), not a pointer,
+		// so nil checks are not needed - checking for empty string handles
+		// zero-value cases where the table identification is incomplete.
 		if table == nil || table.TableID.BucketID.String() == "" {
 			continue
 		}
