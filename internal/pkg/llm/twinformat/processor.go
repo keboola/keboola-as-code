@@ -297,7 +297,7 @@ func (p *Processor) processTransformationsFromAPI(ctx context.Context, configs [
 		}
 
 		// Convert code blocks from API format to processed format
-		codeBlocks := p.convertCodeBlocks(cfg.Blocks, platform)
+		codeBlocks := p.convertCodeBlocks(ctx, cfg.Blocks, platform)
 
 		processed = append(processed, &ProcessedTransformation{
 			UID:          uid,
@@ -319,7 +319,7 @@ func (p *Processor) processTransformationsFromAPI(ctx context.Context, configs [
 }
 
 // convertCodeBlocks converts API code blocks to processed format.
-func (p *Processor) convertCodeBlocks(blocks []*CodeBlock, platform string) []*ProcessedCodeBlock {
+func (p *Processor) convertCodeBlocks(ctx context.Context, blocks []*CodeBlock, platform string) []*ProcessedCodeBlock {
 	if len(blocks) == 0 {
 		return nil
 	}
@@ -344,6 +344,8 @@ func (p *Processor) convertCodeBlocks(blocks []*CodeBlock, platform string) []*P
 
 		if len(processedBlock.Codes) > 0 {
 			result = append(result, processedBlock)
+		} else {
+			p.logger.Debugf(ctx, "Skipping empty code block %q (no codes after processing)", block.Name)
 		}
 	}
 
