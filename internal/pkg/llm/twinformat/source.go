@@ -174,14 +174,26 @@ func InferSourceFromBucket(bucketName string) string {
 	}
 
 	// Second pass: match patterns anywhere in the name (for compound names like "shopify-orders")
-	// Skip generic patterns that could cause false positives
-	genericPatterns := map[string]bool{
+	// Skip patterns that could cause false positives when appearing mid-string.
+	// These include:
+	// - Generic patterns: processed, transformed, staging, manual, upload
+	// - Single-word database/warehouse names that commonly appear in compound names
+	//   (e.g., "my-snowflake-backup" shouldn't match "snowflake" source)
+	skipInSecondPass := map[string]bool{
+		// Generic patterns
 		"processed": true, "transformed": true, "staging": true,
 		"manual": true, "upload": true,
+		// Database names (could appear in backup/archive bucket names)
+		"mysql": true, "postgres": true, "postgresql": true,
+		"oracle": true, "mongodb": true, "mongo": true,
+		// Data warehouse names
+		"snowflake": true, "bigquery": true, "redshift": true,
+		// Cloud storage (too generic)
+		"s3": true, "gcs": true, "ftp": true, "sftp": true, "http": true,
 	}
 	for _, mapping := range getSourceMappings() {
-		if genericPatterns[mapping.pattern] {
-			continue // Skip generic patterns in second pass
+		if skipInSecondPass[mapping.pattern] {
+			continue // Skip patterns prone to false positives in second pass
 		}
 		if strings.Contains(cleanName, mapping.pattern) {
 			return mapping.source

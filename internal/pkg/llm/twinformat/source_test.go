@@ -71,6 +71,16 @@ func TestInferSourceFromBucket(t *testing.T) {
 
 		// Case insensitivity
 		{name: "uppercase shopify", bucketName: "in.c-SHOPIFY", expected: SourceShopify},
+
+		// False positive prevention - patterns should NOT match mid-string
+		{name: "snowflake in compound name", bucketName: "in.c-my-snowflake-backup", expected: SourceUnknown},
+		{name: "mysql in compound name", bucketName: "in.c-old-mysql-data", expected: SourceUnknown},
+		{name: "s3 in compound name", bucketName: "in.c-archive-s3-files", expected: SourceUnknown},
+		{name: "bigquery in compound name", bucketName: "in.c-legacy-bigquery-export", expected: SourceUnknown},
+
+		// But prefix matches should still work
+		{name: "shopify with suffix still matches", bucketName: "in.c-shopify-backup", expected: SourceShopify},
+		{name: "hubspot with suffix still matches", bucketName: "in.c-hubspot-archive", expected: SourceHubspot},
 	}
 
 	for _, tc := range tests {
