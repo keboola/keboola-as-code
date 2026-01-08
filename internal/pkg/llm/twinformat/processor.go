@@ -231,6 +231,10 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 	processed := make([]*ProcessedTable, 0, len(tables))
 
 	for _, table := range tables {
+		// Skip tables with nil or incomplete identification to avoid panics
+		if table == nil || table.TableID.BucketID.String() == "" {
+			continue
+		}
 		// Build table UID - use TableID.BucketID since Bucket can be nil
 		bucketID := table.TableID.BucketID.String()
 		bucketName := extractBucketName(bucketID)
