@@ -2,6 +2,7 @@ package twinformat
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -411,8 +412,8 @@ func isJobNewer(job, existing *keboola.QueueJob) bool {
 // extractBucketName extracts the bucket name from a bucket ID.
 // Input: "in.c-bucket" -> "bucket".
 func extractBucketName(bucketID string) string {
-	// Remove stage prefix (in. or out.)
-	parts := splitBucketID(bucketID)
+	// Split by "." to get stage and bucket parts
+	parts := strings.Split(bucketID, ".")
 	if len(parts) >= 2 {
 		// Remove "c-" prefix if present
 		bucket := parts[1]
@@ -422,27 +423,6 @@ func extractBucketName(bucketID string) string {
 		return bucket
 	}
 	return bucketID
-}
-
-// splitBucketID splits a bucket ID into parts.
-func splitBucketID(bucketID string) []string {
-	// Split by "." but handle the "c-" prefix
-	parts := make([]string, 0)
-	current := ""
-	for _, c := range bucketID {
-		if c == '.' {
-			if current != "" {
-				parts = append(parts, current)
-			}
-			current = ""
-		} else {
-			current += string(c)
-		}
-	}
-	if current != "" {
-		parts = append(parts, current)
-	}
-	return parts
 }
 
 // formatJobTimePtr formats a job time pointer for output.
