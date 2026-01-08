@@ -198,8 +198,15 @@ func (b *LineageBuilder) buildTableUID(tableRef string) string {
 }
 
 // sanitizeUID sanitizes a string for use in a UID.
+// Transformation rules:
+//   - Spaces are replaced with underscores
+//   - Hyphens are replaced with underscores
+//   - All characters are lowercased
+//
+// Note: This may cause collisions (e.g., "my-table" and "my_table" both become "my_table").
+// In practice, collisions are rare since Keboola bucket/table names typically follow
+// consistent naming conventions within a project.
 func sanitizeUID(s string) string {
-	// Replace spaces and special characters with underscores
 	s = strings.ReplaceAll(s, " ", "_")
 	s = strings.ReplaceAll(s, "-", "_")
 	return strings.ToLower(s)
