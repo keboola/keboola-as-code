@@ -17,7 +17,6 @@ type ProcessedData struct {
 	// Project metadata
 	ProjectID keboola.ProjectID
 	BranchID  keboola.BranchID
-	Host      string
 
 	// Processed tables with lineage
 	Tables []*ProcessedTable
@@ -150,7 +149,6 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 	processed = &ProcessedData{
 		ProjectID:   fetchedData.ProjectID,
 		BranchID:    fetchedData.BranchID,
-		Host:        fetchedData.Host,
 		ProcessedAt: time.Now().UTC(),
 		Statistics: &ProcessingStatistics{
 			ByPlatform:  make(map[string]int),
