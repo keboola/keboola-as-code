@@ -229,14 +229,6 @@ type (
 	ComponentConfig      = configparser.ComponentConfig
 )
 
-// DataQuality holds data quality indicators computed from sample data.
-type DataQuality struct {
-	Completeness   map[string]float64 `json:"completeness"`    // Column -> % non-null
-	NullCounts     map[string]int     `json:"null_counts"`     // Column -> null count
-	DistinctCounts map[string]int     `json:"distinct_counts"` // Column -> distinct values
-	SampleSize     int                `json:"sample_size"`     // Number of rows analyzed
-}
-
 // DocFields represents the standard documentation fields for JSON files.
 type DocFields struct {
 	Comment         string `json:"_comment"`
