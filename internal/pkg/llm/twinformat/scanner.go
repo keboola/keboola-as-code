@@ -307,7 +307,7 @@ func (s *Scanner) readConfigJSON(ctx context.Context, path string, t *ScannedTra
 
 	var config configJSON
 	if err := json.Unmarshal([]byte(content.Content), &config); err != nil {
-		return errors.Errorf("failed to parse config.json: %w", err)
+		return errors.Errorf("failed to parse config.json at %s (check for syntax errors such as trailing commas or invalid encoding): %w", path, err)
 	}
 
 	if config.Storage != nil {
