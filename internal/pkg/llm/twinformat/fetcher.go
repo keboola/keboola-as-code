@@ -315,32 +315,55 @@ func toStringMap(v any) map[string]any {
 func (f *Fetcher) parseStorageMappings(storage map[string]any, key string) []StorageMapping {
 	mappings := make([]StorageMapping, 0)
 
-	if section, ok := storage[key]; ok {
-		sectionMap := toStringMap(section)
-		if sectionMap != nil {
-			if tables, ok := sectionMap["tables"]; ok {
-				if tablesSlice, ok := tables.([]any); ok {
-					for _, t := range tablesSlice {
-						tableMap := toStringMap(t)
-						if tableMap != nil {
-							mapping := StorageMapping{}
-							if src, ok := tableMap["source"].(string); ok {
-								mapping.Source = src
-							}
-							if dst, ok := tableMap["destination"].(string); ok {
-								mapping.Destination = dst
-							}
-							if mapping.Source != "" || mapping.Destination != "" {
-								mappings = append(mappings, mapping)
-							}
-						}
-					}
-				}
-			}
+	section, ok := storage[key]
+	if !ok {
+		return mappings
+	}
+
+	sectionMap := toStringMap(section)
+	if sectionMap == nil {
+		return mappings
+	}
+
+	tables, ok := sectionMap["tables"]
+	if !ok {
+		return mappings
+	}
+
+	tablesSlice, ok := tables.([]any)
+	if !ok {
+		return mappings
+	}
+
+	for _, t := range tablesSlice {
+		if mapping, ok := f.parseTableMapping(t); ok {
+			mappings = append(mappings, mapping)
 		}
 	}
 
 	return mappings
+}
+
+// parseTableMapping parses a single table mapping from the configuration.
+func (f *Fetcher) parseTableMapping(t any) (StorageMapping, bool) {
+	tableMap := toStringMap(t)
+	if tableMap == nil {
+		return StorageMapping{}, false
+	}
+
+	mapping := StorageMapping{}
+	if src, ok := tableMap["source"].(string); ok {
+		mapping.Source = src
+	}
+	if dst, ok := tableMap["destination"].(string); ok {
+		mapping.Destination = dst
+	}
+
+	if mapping.Source == "" && mapping.Destination == "" {
+		return StorageMapping{}, false
+	}
+
+	return mapping, true
 }
 
 // parseCodeBlocks parses code blocks from transformation parameters.
