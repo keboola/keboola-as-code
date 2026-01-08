@@ -269,6 +269,9 @@ func (p *Processor) processTransformationsFromAPI(ctx context.Context, configs [
 	for _, cfg := range configs {
 		// Detect platform
 		platform := DetectPlatform(cfg.ComponentID)
+		if platform == PlatformUnknown {
+			p.logger.Warnf(ctx, "Unknown platform for component %q, using fallback", cfg.ComponentID)
+		}
 		stats.ByPlatform[platform]++
 
 		// Build transformation UID
@@ -381,6 +384,9 @@ func (p *Processor) processJobs(ctx context.Context, jobs []*keboola.QueueJob, s
 
 		// Detect platform from component ID
 		platform := DetectPlatform(job.ComponentID.String())
+		if platform == PlatformUnknown && IsTransformationComponent(job.ComponentID.String()) {
+			p.logger.Debugf(ctx, "Unknown platform for transformation job component %q", job.ComponentID.String())
+		}
 
 		// Build transformation UID if this is a transformation job
 		var transformUID string
