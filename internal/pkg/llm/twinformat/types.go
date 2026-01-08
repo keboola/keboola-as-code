@@ -1,3 +1,4 @@
+//nolint:tagliatelle // RFC specifies snake_case for JSON output in twin format.
 package twinformat
 
 import (
@@ -19,8 +20,6 @@ type ProjectData struct {
 }
 
 // TwinTable represents a table in the twin format output.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TwinTable struct {
 	UID           string             `json:"uid"`
 	Name          string             `json:"name"`
@@ -36,16 +35,12 @@ type TwinTable struct {
 }
 
 // TableDependencies represents lineage dependencies for a table.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TableDependencies struct {
 	ConsumedBy []string `json:"consumed_by"`
 	ProducedBy []string `json:"produced_by"`
 }
 
 // TwinTransformation represents a transformation in the twin format output.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TwinTransformation struct {
 	UID          string                      `json:"uid"`
 	Name         string                      `json:"name"`
@@ -67,8 +62,6 @@ type TransformationDependencies struct {
 }
 
 // JobExecution represents the last job execution status for a transformation.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type JobExecution struct {
 	LastRunTime     string `json:"last_run_time,omitempty"`
 	LastRunStatus   string `json:"last_run_status,omitempty"`
@@ -78,8 +71,6 @@ type JobExecution struct {
 }
 
 // TwinJob represents a job in the twin format output.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TwinJob struct {
 	ID              string `json:"id"`
 	Status          string `json:"status"`
@@ -93,8 +84,6 @@ type TwinJob struct {
 }
 
 // TwinBucket represents a bucket in the twin format output.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TwinBucket struct {
 	Name       string   `json:"name"`
 	Source     string   `json:"source"`
@@ -103,8 +92,6 @@ type TwinBucket struct {
 }
 
 // BucketIndex represents the buckets/index.json structure.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type BucketIndex struct {
 	Comment         string                  `json:"_comment"`
 	Purpose         string                  `json:"_purpose"`
@@ -115,16 +102,12 @@ type BucketIndex struct {
 }
 
 // SourceStats represents statistics for a source.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type SourceStats struct {
 	Count       int `json:"count"`
 	TotalTables int `json:"total_tables"`
 }
 
 // TransformationIndex represents the transformations/index.json structure.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TransformationIndex struct {
 	Comment              string                      `json:"_comment"`
 	Purpose              string                      `json:"_purpose"`
@@ -135,8 +118,6 @@ type TransformationIndex struct {
 }
 
 // TransformationIndexEntry represents a transformation entry in the index.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TransformationIndexEntry struct {
 	UID           string `json:"uid"`
 	Name          string `json:"name"`
@@ -150,8 +131,6 @@ type TransformationIndexEntry struct {
 }
 
 // JobsIndex represents the jobs/index.json structure.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type JobsIndex struct {
 	Comment         string                  `json:"_comment"`
 	Purpose         string                  `json:"_purpose"`
@@ -165,8 +144,6 @@ type JobsIndex struct {
 }
 
 // TransformationJobStats represents transformation job statistics.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TransformationJobStats struct {
 	Comment               string                     `json:"_comment,omitempty"`
 	TotalRuns             int                        `json:"total_runs"`
@@ -175,8 +152,6 @@ type TransformationJobStats struct {
 }
 
 // RecentTransformationJob represents a recent transformation job.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type RecentTransformationJob struct {
 	JobID           string `json:"job_id"`
 	Transformation  string `json:"transformation"`
@@ -187,16 +162,12 @@ type RecentTransformationJob struct {
 }
 
 // RetentionPolicy represents the retention policy for jobs.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type RetentionPolicy struct {
 	RecentJobs  string `json:"recent_jobs"`
 	ByComponent string `json:"by_component"`
 }
 
 // ManifestExtended represents the manifest-extended.json structure.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type ManifestExtended struct {
 	Comment                 string             `json:"_comment"`
 	Purpose                 string             `json:"_purpose"`
@@ -211,8 +182,6 @@ type ManifestExtended struct {
 }
 
 // ProjectStatistics represents project-level statistics.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type ProjectStatistics struct {
 	TotalBuckets         int `json:"total_buckets"`
 	TotalTables          int `json:"total_tables"`
@@ -221,8 +190,6 @@ type ProjectStatistics struct {
 }
 
 // SourceInfo represents information about a data source.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type SourceInfo struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
@@ -240,15 +207,11 @@ type LineageEdge struct {
 }
 
 // LineageMeta represents metadata for the lineage graph.
-//
-//nolint:tagliatelle // RFC specifies underscore prefix for metadata fields.
 type LineageMeta struct {
 	Meta *LineageMetaData `json:"_meta"`
 }
 
 // LineageMetaData represents the metadata content.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type LineageMetaData struct {
 	TotalEdges int    `json:"total_edges"`
 	TotalNodes int    `json:"total_nodes"`
@@ -256,8 +219,6 @@ type LineageMetaData struct {
 }
 
 // TransformationConfig represents a transformation configuration fetched from API.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type TransformationConfig struct {
 	ID           string           `json:"id"`
 	Name         string           `json:"name"`
@@ -272,8 +233,6 @@ type TransformationConfig struct {
 }
 
 // StorageMapping represents an input or output table mapping.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type StorageMapping struct {
 	Source      string `json:"source"`
 	Destination string `json:"destination"`
@@ -292,8 +251,6 @@ type Code struct {
 }
 
 // ComponentConfig represents a non-transformation component configuration.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type ComponentConfig struct {
 	ID            string         `json:"id"`
 	Name          string         `json:"name"`
@@ -309,8 +266,6 @@ type ComponentConfig struct {
 }
 
 // DocFields represents the standard documentation fields for JSON files.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 type DocFields struct {
 	Comment         string `json:"_comment"`
 	Purpose         string `json:"_purpose"`
