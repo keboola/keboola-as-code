@@ -25,6 +25,7 @@ type FetcherDependencies interface {
 type Fetcher struct {
 	api       *keboola.AuthorizedAPI
 	logger    log.Logger
+	parser    *configparser.Parser
 	projectID keboola.ProjectID
 	telemetry telemetry.Telemetry
 }
@@ -34,6 +35,7 @@ func NewFetcher(d FetcherDependencies) *Fetcher {
 	return &Fetcher{
 		api:       d.KeboolaProjectAPI(),
 		logger:    d.Logger(),
+		parser:    configparser.NewParser(d.Logger()),
 		projectID: d.ProjectID(),
 		telemetry: d.Telemetry(),
 	}
@@ -201,7 +203,6 @@ func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.Branc
 	transformConfigs = make([]*configparser.TransformationConfig, 0)
 	componentConfigs = make([]*configparser.ComponentConfig, 0)
 
-	debugCount := 0
 	for _, comp := range *result {
 		// Store all components for the registry
 		components = append(components, comp)
@@ -209,23 +210,11 @@ func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.Branc
 		// Process transformation components
 		if comp.IsTransformation() {
 			for _, cfg := range comp.Configs {
-				debug := debugCount < 3
-				config := configparser.ParseTransformationConfig(comp.ID.String(), cfg, debug, f.logger, ctx)
+				config := f.parser.ParseTransformationConfig(ctx, comp.ID.String(), cfg)
 				if config == nil {
 					continue
 				}
 				transformConfigs = append(transformConfigs, config)
-
-				// Debug: Log parsing results for first few configs
-				if debug {
-					codeCount := 0
-					for _, b := range config.Blocks {
-						codeCount += len(b.Codes)
-					}
-					f.logger.Debugf(ctx, "Transformation %s: %d inputs, %d outputs, %d blocks, %d codes",
-						config.Name, len(config.InputTables), len(config.OutputTables), len(config.Blocks), codeCount)
-					debugCount++
-				}
 			}
 			continue
 		}

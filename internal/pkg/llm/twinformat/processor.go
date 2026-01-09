@@ -206,15 +206,12 @@ func (p *Processor) buildComponentRegistry(ctx context.Context, components []*ke
 
 // buildTableSourceRegistry builds a registry mapping tables to their source components.
 // It processes transformation configs, component configs, and job output tables.
-// Priority: transformation outputs > component config outputs > job outputs (most recent wins).
+// Priority: config storage mappings (most reliable) > job outputs (fallback for unknown tables).
 func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfigs []*TransformationConfig, componentConfigs []*ComponentConfig, jobs []*keboola.QueueJobDetail, componentRegistry *ComponentRegistry) *TableSourceRegistry {
 	registry := NewTableSourceRegistry()
 
-	// First, register tables from job outputs (these are actual runtime outputs)
-	// Job outputs are the most reliable source of truth for what component wrote to what table
-	jobOutputCount := p.registerTablesFromJobs(ctx, jobs, componentRegistry, registry)
-
-	// Register tables from transformation outputs (config-declared outputs)
+	// PRIORITY 1: Transformation config output mappings (most reliable)
+	// Configuration storage.output.tables declares what tables the transformation produces
 	for _, cfg := range transformConfigs {
 		compType := componentRegistry.GetType(cfg.ComponentID)
 		if compType == "" {
@@ -227,19 +224,17 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 			if tableID == "" {
 				continue
 			}
-			// Only register if not already registered from jobs
-			if registry.GetSource(tableID) == SourceUnknown {
-				registry.Register(tableID, TableSource{
-					ComponentID:   cfg.ComponentID,
-					ComponentType: compType,
-					ConfigID:      cfg.ID,
-					ConfigName:    cfg.Name,
-				})
-			}
+			registry.Register(tableID, TableSource{
+				ComponentID:   cfg.ComponentID,
+				ComponentType: compType,
+				ConfigID:      cfg.ID,
+				ConfigName:    cfg.Name,
+			})
 		}
 	}
 
-	// Register tables from component outputs (extractors, applications, writers)
+	// PRIORITY 2: Component config output mappings (extractors, applications, writers)
+	// These also declare output tables in their storage configuration
 	for _, cfg := range componentConfigs {
 		compType := cfg.ComponentType
 		if compType == "" {
@@ -252,7 +247,7 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 			if tableID == "" {
 				continue
 			}
-			// Only register if not already registered
+			// Only register if not already registered from transformation configs
 			if registry.GetSource(tableID) == SourceUnknown {
 				registry.Register(tableID, TableSource{
 					ComponentID:   cfg.ComponentID,
@@ -264,7 +259,11 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 		}
 	}
 
-	p.logger.Infof(ctx, "Built table source registry with %d table mappings (%d from jobs)", len(registry.tableToSource), jobOutputCount)
+	// PRIORITY 3: Job outputs (fallback for tables not declared in configurations)
+	// Job results provide runtime data for tables not found in config mappings
+	jobOutputCount := p.registerTablesFromJobs(ctx, jobs, componentRegistry, registry)
+
+	p.logger.Infof(ctx, "Built table source registry with %d table mappings (%d from jobs as fallback)", len(registry.tableToSource), jobOutputCount)
 	return registry
 }
 
