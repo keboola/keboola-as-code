@@ -589,7 +589,7 @@ func TestLineageBuilder_GetDependencies(t *testing.T) {
 	assert.NotEmpty(t, outputDeps.ProducedBy, "output table should be produced by transformation")
 
 	// Test GetTransformationDependencies
-	transformUID := "transform:process"
+	transformUID := "transform:Process"
 	transformDeps := builder.GetTransformationDependencies(graph, transformUID)
 	assert.NotEmpty(t, transformDeps.Consumes, "transformation should consume input table")
 	assert.NotEmpty(t, transformDeps.Produces, "transformation should produce output table")
@@ -605,8 +605,8 @@ func TestBuildTableUID(t *testing.T) {
 		expected string
 	}{
 		{name: "simple", bucket: "shopify", table: "orders", expected: "table:shopify/orders"},
-		{name: "with dash", bucket: "google-ads", table: "campaigns", expected: "table:google_ads/campaigns"},
-		{name: "complex bucket", bucket: "my bucket", table: "my table", expected: "table:my_bucket/my_table"},
+		{name: "with dash", bucket: "google-ads", table: "campaigns", expected: "table:google-ads/campaigns"},
+		{name: "with space", bucket: "my bucket", table: "my table", expected: "table:my bucket/my table"},
 	}
 
 	for _, tc := range tests {
@@ -626,8 +626,8 @@ func TestBuildTransformationUID(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{name: "simple", input: "process-orders", expected: "transform:process_orders"},
-		{name: "with space", input: "Process Orders", expected: "transform:process_orders"},
+		{name: "simple", input: "process-orders", expected: "transform:process-orders"},
+		{name: "with space", input: "Process Orders", expected: "transform:Process Orders"},
 	}
 
 	for _, tc := range tests {

@@ -2,7 +2,6 @@ package twinformat
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -158,7 +157,7 @@ func (b *LineageBuilder) buildTransformationUIDFromConfig(cfg *TransformationCon
 	if name == "" {
 		name = cfg.ID
 	}
-	return fmt.Sprintf("transform:%s", sanitizeUID(name))
+	return "transform:" + name
 }
 
 // buildTableUID builds a UID for a table from a table reference.
@@ -170,7 +169,7 @@ func (b *LineageBuilder) buildTableUID(ctx context.Context, tableRef string) str
 	if len(parts) < 3 {
 		// Fallback: use the whole reference
 		b.logger.Debugf(ctx, "Malformed table reference %q (expected format: stage.bucket.table), using fallback UID", tableRef)
-		return fmt.Sprintf("table:%s", sanitizeUID(tableRef))
+		return "table:" + tableRef
 	}
 
 	// Extract bucket and table name
@@ -178,36 +177,7 @@ func (b *LineageBuilder) buildTableUID(ctx context.Context, tableRef string) str
 	bucket := strings.TrimPrefix(parts[1], "c-")
 	table := strings.Join(parts[2:], ".")
 
-	return fmt.Sprintf("table:%s/%s", sanitizeUID(bucket), sanitizeUID(table))
-}
-
-// sanitizeUID sanitizes a string for use in a UID.
-//
-// Transformation rules:
-//   - Spaces are replaced with underscores
-//   - Hyphens are replaced with underscores
-//   - All characters are lowercased
-//
-// # Collision Warning
-//
-// This sanitization may cause UID collisions. Examples of inputs that produce
-// the same output:
-//   - "my-table" and "my_table" both become "my_table"
-//   - "My Table" and "my_table" both become "my_table"
-//   - "data-2024" and "data_2024" both become "data_2024"
-//
-// In the context of data lineage tracking, collisions could cause:
-//   - Incorrect dependency relationships between tables/transformations
-//   - Missing or merged lineage edges in the graph
-//
-// In practice, collisions are rare because Keboola bucket/table names typically
-// follow consistent naming conventions within a project (either hyphens or
-// underscores, not both). If collision detection is needed, callers should
-// track sanitized UIDs and check for duplicates.
-func sanitizeUID(s string) string {
-	s = strings.ReplaceAll(s, " ", "_")
-	s = strings.ReplaceAll(s, "-", "_")
-	return strings.ToLower(s)
+	return "table:" + bucket + "/" + table
 }
 
 // GetTableDependencies returns the dependencies for a specific table.
