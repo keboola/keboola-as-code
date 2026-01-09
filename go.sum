@@ -591,6 +591,8 @@ github.com/keboola/go-utils v1.4.0 h1:WTyj95yrr8O8HxtC8TSTyUcElZiRGDeEdVvDpFo6HU
 github.com/keboola/go-utils v1.4.0/go.mod h1:IopwJzFz2gh0Yj3fUbIe2eamRoDKzbXvjqFjQyw3ZdQ=
 github.com/keboola/keboola-sdk-go/v2 v2.9.0 h1:6yE/A9UMa/DRZzOjZvLlYvQ0/g2nK102vMdlkzph3S8=
 github.com/keboola/keboola-sdk-go/v2 v2.9.0/go.mod h1:N/PkJnEHcyHMbVjHPjTdQwj5b9Iajl7PEaFUVtywHKU=
+github.com/keboola/keboola-sdk-go/v2 v2.11.0 h1:QBqH9pHdtbpuRuNq8rvMF7Xku/UxDgRqKQlQRY0Umtc=
+github.com/keboola/keboola-sdk-go/v2 v2.11.0/go.mod h1:N/PkJnEHcyHMbVjHPjTdQwj5b9Iajl7PEaFUVtywHKU=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
