@@ -9,59 +9,38 @@ import (
 func TestDetectPlatform(t *testing.T) {
 	t.Parallel()
 
+	// Only real Keboola transformation component IDs are supported.
+	// Format: "keboola.{platform}-transformation[-v2]"
 	tests := []struct {
 		name        string
 		componentID string
 		expected    string
 	}{
-		// Snowflake
+		// SQL platforms
 		{name: "snowflake transformation", componentID: "keboola.snowflake-transformation", expected: PlatformSnowflake},
-		{name: "snowflake generic", componentID: "keboola.snowflake", expected: PlatformSnowflake},
-		{name: "snowflake shorthand", componentID: "snowflake", expected: PlatformSnowflake},
-
-		// Redshift
 		{name: "redshift transformation", componentID: "keboola.redshift-transformation", expected: PlatformRedshift},
-		{name: "redshift generic", componentID: "keboola.redshift", expected: PlatformRedshift},
-
-		// BigQuery
 		{name: "bigquery transformation", componentID: "keboola.bigquery-transformation", expected: PlatformBigQuery},
-		{name: "bigquery generic", componentID: "keboola.bigquery", expected: PlatformBigQuery},
-
-		// Synapse
 		{name: "synapse transformation", componentID: "keboola.synapse-transformation", expected: PlatformSynapse},
-
-		// DuckDB
 		{name: "duckdb transformation", componentID: "keboola.duckdb-transformation", expected: PlatformDuckDB},
-
-		// Python
-		{name: "python transformation v2", componentID: "keboola.python-transformation-v2", expected: PlatformPython},
-		{name: "python transformation", componentID: "keboola.python-transformation", expected: PlatformPython},
-		{name: "python generic", componentID: "keboola.python", expected: PlatformPython},
-
-		// R
-		{name: "r transformation", componentID: "keboola.r-transformation", expected: PlatformR},
-		{name: "r generic", componentID: "keboola.r", expected: PlatformR},
-
-		// dbt
-		{name: "dbt transformation", componentID: "keboola.dbt-transformation", expected: PlatformDBT},
-		{name: "dbt generic", componentID: "keboola.dbt", expected: PlatformDBT},
-
-		// Oracle
 		{name: "oracle transformation", componentID: "keboola.oracle-transformation", expected: PlatformOracle},
-
-		// MySQL
 		{name: "mysql transformation", componentID: "keboola.mysql-transformation", expected: PlatformMySQL},
-
-		// PostgreSQL
 		{name: "postgresql transformation", componentID: "keboola.postgresql-transformation", expected: PlatformPostgreSQL},
 		{name: "postgres transformation", componentID: "keboola.postgres-transformation", expected: PlatformPostgreSQL},
+
+		// Non-SQL platforms
+		{name: "python transformation v2", componentID: "keboola.python-transformation-v2", expected: PlatformPython},
+		{name: "python transformation", componentID: "keboola.python-transformation", expected: PlatformPython},
+		{name: "r transformation", componentID: "keboola.r-transformation", expected: PlatformR},
+		{name: "dbt transformation", componentID: "keboola.dbt-transformation", expected: PlatformDBT},
 
 		// Case insensitivity
 		{name: "uppercase snowflake", componentID: "KEBOOLA.SNOWFLAKE-TRANSFORMATION", expected: PlatformSnowflake},
 
-		// Unknown
+		// Unknown (non-transformation components)
 		{name: "empty component", componentID: "", expected: PlatformUnknown},
-		{name: "unknown component", componentID: "keboola.extractor-generic", expected: PlatformUnknown},
+		{name: "extractor component", componentID: "keboola.ex-db-mysql", expected: PlatformUnknown},
+		{name: "writer component", componentID: "keboola.wr-db-snowflake", expected: PlatformUnknown},
+		{name: "application component", componentID: "kds-team.app-custom-python", expected: PlatformUnknown},
 	}
 
 	for _, tc := range tests {
