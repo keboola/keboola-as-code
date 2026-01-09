@@ -10,7 +10,7 @@ replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.
 
 // TODO: Remove after SDK PR #70 is merged: https://github.com/keboola/keboola-sdk-go/pull/70
 // (PR #70 includes PR #69 - table events and QueueJobDetail)
-replace github.com/keboola/keboola-sdk-go/v2 => github.com/keboola/keboola-sdk-go/v2 v2.9.1-0.20260109013640-dc95ce9195d6
+replace github.com/keboola/keboola-sdk-go/v2 => github.com/keboola/keboola-sdk-go/v2 v2.9.1-0.20260109014800-d596b2c092e2
 
 require (
 	ariga.io/atlas v0.38.0
@@ -47,7 +47,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250422071622-41a5d5547c43
 	github.com/keboola/go-utils v1.4.0
-	github.com/keboola/keboola-sdk-go/v2 v2.11.0
+	github.com/keboola/keboola-sdk-go/v2 v2.9.1-0.20260109014800-d596b2c092e2
 	github.com/klauspost/compress v1.18.1
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0
