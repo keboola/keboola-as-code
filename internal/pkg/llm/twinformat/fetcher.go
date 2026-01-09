@@ -25,7 +25,6 @@ type FetcherDependencies interface {
 type Fetcher struct {
 	api       *keboola.AuthorizedAPI
 	logger    log.Logger
-	parser    *configparser.Parser
 	projectID keboola.ProjectID
 	telemetry telemetry.Telemetry
 }
@@ -35,7 +34,6 @@ func NewFetcher(d FetcherDependencies) *Fetcher {
 	return &Fetcher{
 		api:       d.KeboolaProjectAPI(),
 		logger:    d.Logger(),
-		parser:    configparser.NewParser(d.Logger()),
 		projectID: d.ProjectID(),
 		telemetry: d.Telemetry(),
 	}
@@ -62,11 +60,13 @@ func (f *Fetcher) FetchAll(ctx context.Context, branchID keboola.BranchID) (data
 	data.Buckets = buckets
 	data.Tables = tables
 
-	// Fetch jobs from Queue API
-	data.Jobs, err = f.fetchJobsQueue(ctx, branchID)
+	// Fetch jobs from Queue API with detailed result data (including input/output tables)
+	jobs, err := f.fetchJobsQueue(ctx, branchID)
 	if err != nil {
 		f.logger.Warnf(ctx, "Failed to fetch jobs from Queue API: %v", err)
-		data.Jobs = []*keboola.QueueJob{}
+		data.Jobs = []*keboola.QueueJobDetail{}
+	} else {
+		data.Jobs = jobs
 	}
 
 	// Fetch all components with configs (single API call)
@@ -139,15 +139,15 @@ func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.B
 	return buckets, tables, nil
 }
 
-// fetchJobsQueue fetches jobs from the Jobs Queue API.
-func (f *Fetcher) fetchJobsQueue(ctx context.Context, branchID keboola.BranchID) (jobs []*keboola.QueueJob, err error) {
+// fetchJobsQueue fetches jobs from the Jobs Queue API with detailed result data.
+func (f *Fetcher) fetchJobsQueue(ctx context.Context, branchID keboola.BranchID) (jobs []*keboola.QueueJobDetail, err error) {
 	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.fetchJobsQueue")
 	defer span.End(&err)
 
 	f.logger.Info(ctx, "Fetching jobs from Queue API...")
 
-	// Search for jobs in the branch with limit of 100
-	jobsResult, err := f.api.SearchJobsRequest(
+	// Search for jobs in the branch with limit of 100, using detail request to get input/output tables
+	jobsResult, err := f.api.SearchJobsDetailRequest(
 		keboola.WithSearchJobsBranch(branchID),
 		keboola.WithSearchJobsLimit(100),
 	).Send(ctx)
@@ -156,7 +156,24 @@ func (f *Fetcher) fetchJobsQueue(ctx context.Context, branchID keboola.BranchID)
 	}
 
 	jobs = *jobsResult
-	f.logger.Infof(ctx, "Found %d jobs", len(jobs))
+
+	// Log summary of output tables found
+	totalOutputTables := 0
+	for _, job := range jobs {
+		if job.Result.Output != nil {
+			totalOutputTables += len(job.Result.Output.Tables)
+		}
+		// Also count tables from flow tasks
+		for _, task := range job.Result.Tasks {
+			for _, result := range task.Results {
+				if result.Result.Output != nil {
+					totalOutputTables += len(result.Result.Output.Tables)
+				}
+			}
+		}
+	}
+
+	f.logger.Infof(ctx, "Found %d jobs with %d output tables", len(jobs), totalOutputTables)
 
 	return jobs, nil
 }
@@ -184,6 +201,7 @@ func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.Branc
 	transformConfigs = make([]*configparser.TransformationConfig, 0)
 	componentConfigs = make([]*configparser.ComponentConfig, 0)
 
+	debugCount := 0
 	for _, comp := range *result {
 		// Store all components for the registry
 		components = append(components, comp)
@@ -191,11 +209,23 @@ func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.Branc
 		// Process transformation components
 		if comp.IsTransformation() {
 			for _, cfg := range comp.Configs {
-				config := f.parser.ParseTransformationConfig(ctx, comp.ID.String(), cfg)
+				debug := debugCount < 3
+				config := configparser.ParseTransformationConfig(comp.ID.String(), cfg, debug, f.logger, ctx)
 				if config == nil {
 					continue
 				}
 				transformConfigs = append(transformConfigs, config)
+
+				// Debug: Log parsing results for first few configs
+				if debug {
+					codeCount := 0
+					for _, b := range config.Blocks {
+						codeCount += len(b.Codes)
+					}
+					f.logger.Debugf(ctx, "Transformation %s: %d inputs, %d outputs, %d blocks, %d codes",
+						config.Name, len(config.InputTables), len(config.OutputTables), len(config.Blocks), codeCount)
+					debugCount++
+				}
 			}
 			continue
 		}

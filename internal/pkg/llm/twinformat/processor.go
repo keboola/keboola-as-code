@@ -92,7 +92,7 @@ type ProcessedBucket struct {
 
 // ProcessedJob represents a processed job.
 type ProcessedJob struct {
-	*keboola.QueueJob
+	*keboola.QueueJobDetail
 	TransformationUID string
 	Platform          string
 }
@@ -163,8 +163,8 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 	processed.LineageGraph = lineageGraph
 	processed.Statistics.TotalEdges = len(lineageGraph.Edges)
 
-	// Step 3: Build table source registry from transformation and component outputs
-	tableSourceRegistry := p.buildTableSourceRegistry(ctx, fetchedData.TransformationConfigs, fetchedData.ComponentConfigs, componentRegistry)
+	// Step 3: Build table source registry from transformation outputs, component outputs, and job outputs
+	tableSourceRegistry := p.buildTableSourceRegistry(ctx, fetchedData.TransformationConfigs, fetchedData.ComponentConfigs, fetchedData.Jobs, componentRegistry)
 
 	// Step 4: Process tables with lineage and component-based source
 	processed.Tables = p.processTables(ctx, fetchedData.Tables, lineageGraph, tableSourceRegistry)
@@ -205,11 +205,16 @@ func (p *Processor) buildComponentRegistry(ctx context.Context, components []*ke
 }
 
 // buildTableSourceRegistry builds a registry mapping tables to their source components.
-// It processes both transformation configs and component configs (extractors, applications, writers).
-func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfigs []*TransformationConfig, componentConfigs []*ComponentConfig, componentRegistry *ComponentRegistry) *TableSourceRegistry {
+// It processes transformation configs, component configs, and job output tables.
+// Priority: transformation outputs > component config outputs > job outputs (most recent wins).
+func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfigs []*TransformationConfig, componentConfigs []*ComponentConfig, jobs []*keboola.QueueJobDetail, componentRegistry *ComponentRegistry) *TableSourceRegistry {
 	registry := NewTableSourceRegistry()
 
-	// Register tables from transformation outputs
+	// First, register tables from job outputs (these are actual runtime outputs)
+	// Job outputs are the most reliable source of truth for what component wrote to what table
+	jobOutputCount := p.registerTablesFromJobs(ctx, jobs, componentRegistry, registry)
+
+	// Register tables from transformation outputs (config-declared outputs)
 	for _, cfg := range transformConfigs {
 		compType := componentRegistry.GetType(cfg.ComponentID)
 		if compType == "" {
@@ -222,12 +227,15 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 			if tableID == "" {
 				continue
 			}
-			registry.Register(tableID, TableSource{
-				ComponentID:   cfg.ComponentID,
-				ComponentType: compType,
-				ConfigID:      cfg.ID,
-				ConfigName:    cfg.Name,
-			})
+			// Only register if not already registered from jobs
+			if registry.GetSource(tableID) == SourceUnknown {
+				registry.Register(tableID, TableSource{
+					ComponentID:   cfg.ComponentID,
+					ComponentType: compType,
+					ConfigID:      cfg.ID,
+					ConfigName:    cfg.Name,
+				})
+			}
 		}
 	}
 
@@ -244,7 +252,7 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 			if tableID == "" {
 				continue
 			}
-			// Only register if not already registered (transformations take precedence)
+			// Only register if not already registered
 			if registry.GetSource(tableID) == SourceUnknown {
 				registry.Register(tableID, TableSource{
 					ComponentID:   cfg.ComponentID,
@@ -256,8 +264,61 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 		}
 	}
 
-	p.logger.Infof(ctx, "Built table source registry with %d table mappings", len(registry.tableToSource))
+	p.logger.Infof(ctx, "Built table source registry with %d table mappings (%d from jobs)", len(registry.tableToSource), jobOutputCount)
 	return registry
+}
+
+// registerTablesFromJobs extracts table sources from job output data.
+// Returns the number of tables registered from jobs.
+func (p *Processor) registerTablesFromJobs(ctx context.Context, jobs []*keboola.QueueJobDetail, componentRegistry *ComponentRegistry, registry *TableSourceRegistry) int {
+	count := 0
+
+	for _, job := range jobs {
+		if job.Status != "success" {
+			continue // Only process successful jobs
+		}
+
+		// Process direct job outputs
+		count += p.registerTablesFromJobResult(job.ComponentID.String(), job.ConfigID.String(), &job.Result, componentRegistry, registry)
+
+		// Process flow/orchestration task outputs
+		for _, task := range job.Result.Tasks {
+			for _, result := range task.Results {
+				count += p.registerTablesFromJobResult(task.Component, "", &result.Result, componentRegistry, registry)
+			}
+		}
+	}
+
+	return count
+}
+
+// registerTablesFromJobResult registers tables from a single job result.
+func (p *Processor) registerTablesFromJobResult(componentID, configID string, result *keboola.JobResultExtended, componentRegistry *ComponentRegistry, registry *TableSourceRegistry) int {
+	if result == nil || result.Output == nil {
+		return 0
+	}
+
+	count := 0
+	compType := componentRegistry.GetType(componentID)
+
+	for _, table := range result.Output.Tables {
+		if table.ID == "" {
+			continue
+		}
+
+		// Only register if not already registered (first job wins - jobs are returned in reverse chronological order)
+		if registry.GetSource(table.ID) == SourceUnknown {
+			registry.Register(table.ID, TableSource{
+				ComponentID:   componentID,
+				ComponentType: compType,
+				ConfigID:      configID,
+				ConfigName:    "", // Job results don't include config name
+			})
+			count++
+		}
+	}
+
+	return count
 }
 
 // processBuckets processes buckets with source derived from tables.
@@ -338,7 +399,7 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 }
 
 // processTransformations processes transformation configs.
-func (p *Processor) processTransformations(ctx context.Context, configs []*TransformationConfig, jobs []*keboola.QueueJob, graph *LineageGraph, stats *ProcessingStatistics) []*ProcessedTransformation {
+func (p *Processor) processTransformations(ctx context.Context, configs []*TransformationConfig, jobs []*keboola.QueueJobDetail, graph *LineageGraph, stats *ProcessingStatistics) []*ProcessedTransformation {
 	// Build a map of component+config to latest job
 	jobMap := buildJobMap(jobs)
 
@@ -453,7 +514,7 @@ func platformToLanguage(platform string) string {
 }
 
 // processJobs processes jobs.
-func (p *Processor) processJobs(ctx context.Context, jobs []*keboola.QueueJob, stats *ProcessingStatistics) []*ProcessedJob {
+func (p *Processor) processJobs(ctx context.Context, jobs []*keboola.QueueJobDetail, stats *ProcessingStatistics) []*ProcessedJob {
 	processed := make([]*ProcessedJob, 0, len(jobs))
 
 	for _, job := range jobs {
@@ -472,7 +533,7 @@ func (p *Processor) processJobs(ctx context.Context, jobs []*keboola.QueueJob, s
 		}
 
 		processed = append(processed, &ProcessedJob{
-			QueueJob:          job,
+			QueueJobDetail:    job,
 			TransformationUID: transformUID,
 			Platform:          platform,
 		})
@@ -483,8 +544,8 @@ func (p *Processor) processJobs(ctx context.Context, jobs []*keboola.QueueJob, s
 }
 
 // buildJobMap builds a map of component+config to latest job.
-func buildJobMap(jobs []*keboola.QueueJob) map[string]*keboola.QueueJob {
-	jobMap := make(map[string]*keboola.QueueJob)
+func buildJobMap(jobs []*keboola.QueueJobDetail) map[string]*keboola.QueueJobDetail {
+	jobMap := make(map[string]*keboola.QueueJobDetail)
 
 	for _, job := range jobs {
 		key := job.ComponentID.String() + ":" + job.ConfigID.String()
@@ -501,7 +562,7 @@ func buildJobMap(jobs []*keboola.QueueJob) map[string]*keboola.QueueJob {
 // isJobNewer returns true if job is newer than existing.
 // Jobs without start times are treated as older than jobs with start times.
 // If both jobs lack start times, the existing job is preferred (returns false).
-func isJobNewer(job, existing *keboola.QueueJob) bool {
+func isJobNewer(job, existing *keboola.QueueJobDetail) bool {
 	// Both nil: keep existing
 	if job.StartTime == nil && existing.StartTime == nil {
 		return false
