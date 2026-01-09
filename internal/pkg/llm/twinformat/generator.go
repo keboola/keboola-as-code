@@ -839,6 +839,11 @@ func (g *Generator) generateSourcesIndex(ctx context.Context, data *ProcessedDat
 	docFields := SourcesIndexDocFields()
 	sources := buildSourcesList(data.Buckets)
 
+	// Sort sources by ID for deterministic output.
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i]["id"].(string) < sources[j]["id"].(string)
+	})
+
 	sourcesIndex := map[string]any{
 		"_comment":          docFields.Comment,
 		"_purpose":          docFields.Purpose,
@@ -882,6 +887,8 @@ func buildSourcesList(buckets []*ProcessedBucket) []map[string]any {
 
 	sources := make([]map[string]any, 0, len(sourceMap))
 	for _, info := range sourceMap {
+		// Sort buckets for deterministic output.
+		sort.Strings(info.Buckets)
 		sources = append(sources, map[string]any{
 			"id":           info.ID,
 			"name":         info.Name,
@@ -1112,6 +1119,11 @@ func (g *Generator) generateRootFiles(ctx context.Context, data *ProcessedData) 
 func (g *Generator) generateManifestExtended(ctx context.Context, data *ProcessedData) error {
 	docFields := ManifestExtendedDocFields()
 	sources := buildSourcesList(data.Buckets)
+
+	// Sort sources by ID for deterministic output.
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i]["id"].(string) < sources[j]["id"].(string)
+	})
 
 	// Build platform counts.
 	platformCounts := make(map[string]int)
