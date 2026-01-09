@@ -146,6 +146,7 @@ Services auto-reload on code changes using Air.
 - Coverage target: 80%
 - E2E tests use real etcd and mocked HTTP clients
 - Test projects configured via `.env` file pointing to `projects.json`
+- **Use `t.Context()` instead of `context.Background()`** - Go 1.21+ provides test context via `t.Context()` which is automatically cancelled when the test ends
 
 ## State Management Architecture
 
