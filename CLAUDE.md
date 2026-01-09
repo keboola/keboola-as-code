@@ -49,6 +49,19 @@ APIs are designed using Goa DSL in `/api/` directory. After modifying the design
 - Run `task generate-<service>-api` to regenerate server code, OpenAPI specs, and types
 - Never hand-edit generated code
 
+## Docker Development
+
+If Go is not available locally, use Docker Compose to run all commands:
+
+```bash
+# Start a shell in the dev container
+docker-compose run --rm -u "$UID:$GID" --service-ports dev bash
+
+# Then run commands inside the container
+task lint
+task tests
+```
+
 ## Common Development Commands
 
 ### Building (Local Development)
@@ -146,6 +159,7 @@ Services auto-reload on code changes using Air.
 - Coverage target: 80%
 - E2E tests use real etcd and mocked HTTP clients
 - Test projects configured via `.env` file pointing to `projects.json`
+- **Use `t.Context()` instead of `context.Background()`** - Go 1.21+ provides test context via `t.Context()` which is automatically cancelled when the test ends
 
 ## State Management Architecture
 
