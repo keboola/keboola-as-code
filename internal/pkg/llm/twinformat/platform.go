@@ -21,82 +21,11 @@ const (
 	PlatformUnknown    = "unknown"
 )
 
-// platformMapping represents a mapping from component ID pattern to platform.
-type platformMapping struct {
-	pattern  string
-	platform string
-}
-
-// getPlatformMappings returns the platform mappings.
-// Order matters - more specific patterns should come first.
-func getPlatformMappings() []platformMapping {
-	return []platformMapping{
-		// Snowflake
-		{"keboola.snowflake-transformation", PlatformSnowflake},
-		{"keboola.snowflake", PlatformSnowflake},
-		{"snowflake", PlatformSnowflake},
-
-		// Redshift
-		{"keboola.redshift-transformation", PlatformRedshift},
-		{"keboola.redshift", PlatformRedshift},
-		{"redshift", PlatformRedshift},
-
-		// BigQuery
-		{"keboola.bigquery-transformation", PlatformBigQuery},
-		{"keboola.bigquery", PlatformBigQuery},
-		{"bigquery", PlatformBigQuery},
-
-		// Synapse
-		{"keboola.synapse-transformation", PlatformSynapse},
-		{"keboola.synapse", PlatformSynapse},
-		{"synapse", PlatformSynapse},
-
-		// DuckDB
-		{"keboola.duckdb-transformation", PlatformDuckDB},
-		{"keboola.duckdb", PlatformDuckDB},
-		{"duckdb", PlatformDuckDB},
-
-		// Python
-		{"keboola.python-transformation-v2", PlatformPython},
-		{"keboola.python-transformation", PlatformPython},
-		{"keboola.python", PlatformPython},
-		{"python", PlatformPython},
-
-		// R
-		{"keboola.r-transformation", PlatformR},
-		{"keboola.r", PlatformR},
-
-		// dbt
-		{"keboola.dbt-transformation", PlatformDBT},
-		{"keboola.dbt", PlatformDBT},
-		{"dbt", PlatformDBT},
-
-		// Oracle
-		{"keboola.oracle-transformation", PlatformOracle},
-		{"keboola.oracle", PlatformOracle},
-		{"oracle", PlatformOracle},
-
-		// MySQL
-		{"keboola.mysql-transformation", PlatformMySQL},
-		{"keboola.mysql", PlatformMySQL},
-		{"mysql", PlatformMySQL},
-
-		// PostgreSQL
-		{"keboola.postgresql-transformation", PlatformPostgreSQL},
-		{"keboola.postgresql", PlatformPostgreSQL},
-		{"keboola.postgres-transformation", PlatformPostgreSQL},
-		{"keboola.postgres", PlatformPostgreSQL},
-		{"postgresql", PlatformPostgreSQL},
-		{"postgres", PlatformPostgreSQL},
-
-		// Generic SQL (fallback for Keboola transformation components only)
-		{"keboola.sql-transformation", PlatformSQL},
-	}
-}
-
-// DetectPlatform detects the platform from a component ID.
-// Returns the platform name (e.g., "snowflake", "python", "dbt").
-// Target: 0 unknown platforms.
+// DetectPlatform extracts the platform from a component ID.
+// Component IDs follow the pattern: "keboola.{platform}-transformation[-v2]"
+// Examples:
+//   - "keboola.snowflake-transformation" -> "snowflake"
+//   - "keboola.python-transformation-v2" -> "python"
 func DetectPlatform(componentID string) string {
 	if componentID == "" {
 		return PlatformUnknown
@@ -104,15 +33,19 @@ func DetectPlatform(componentID string) string {
 
 	componentIDLower := strings.ToLower(componentID)
 
-	for _, mapping := range getPlatformMappings() {
-		if strings.Contains(componentIDLower, mapping.pattern) {
-			return mapping.platform
-		}
-	}
-
-	// Fallback: treat unknown Keboola transformation components as SQL
+	// Extract platform from "keboola.{platform}-transformation" pattern
 	if strings.HasPrefix(componentIDLower, "keboola.") && strings.Contains(componentIDLower, "-transformation") {
-		return PlatformSQL
+		// Remove "keboola." prefix
+		withoutPrefix := strings.TrimPrefix(componentIDLower, "keboola.")
+		// Extract platform (everything before "-transformation")
+		if idx := strings.Index(withoutPrefix, "-transformation"); idx > 0 {
+			platform := withoutPrefix[:idx]
+			// Normalize postgres -> postgresql
+			if platform == "postgres" {
+				return PlatformPostgreSQL
+			}
+			return platform
+		}
 	}
 
 	return PlatformUnknown
