@@ -1,0 +1,80 @@
+/code
+Running go mod tidy ...
+Running go mod vendor ...
+Running gofumpt ...
+Running gci ...
+Running modernize ...
+Running golangci-lint ...
+../../internal/pkg/mapper/datagateway/remote_load.go:66:1: `if found && workspaceID != nil && workspaceID != ""` has complex nested blocks (complexity: 19) (nestif)
+		if found && workspaceID != nil && workspaceID != "" {
+^
+../../internal/pkg/project/manifest/manifest.go:88:1: `if content.AllowTargetENV` has complex nested blocks (complexity: 18) (nestif)
+	if content.AllowTargetENV {
+^
+../../internal/pkg/service/common/configmap/bind.go:372:1: `if ok` has complex nested blocks (complexity: 9) (nestif)
+		if fieldPath, ok := flagToField(flag); ok {
+^
+../../internal/pkg/service/common/configmap/visit.go:105:1: `if typ.Kind() == reflect.Struct` has complex nested blocks (complexity: 13) (nestif)
+	if typ.Kind() == reflect.Struct {
+^
+../../internal/pkg/service/common/httpserver/middleware/otel_route.go:28:1: `if routerData != nil` has complex nested blocks (complexity: 8) (nestif)
+			if routerData := httptreemux.ContextData(req.Context()); routerData != nil {
+^
+../../internal/pkg/service/common/task/cleanup.go:131:1: `if t.IsProcessing()` has complex nested blocks (complexity: 8) (nestif)
+	if t.IsProcessing() {
+^
+../../internal/pkg/service/common/task/node.go:324:1: `if result.Error == nil` has complex nested blocks (complexity: 7) (nestif)
+	if result.Error == nil {
+^
+../../internal/pkg/service/stream/api/service/auth.go:16:1: `if scheme.Name == "storage-api-token"` has complex nested blocks (complexity: 13) (nestif)
+	if scheme.Name == "storage-api-token" {
+^
+../../internal/pkg/service/stream/storage/level/local/diskreader/reader.go:107:1: `if localCompression.Type != targetCompression.Type` has complex nested blocks (complexity: 10) (nestif)
+	if localCompression.Type != targetCompression.Type {
+^
+../../internal/pkg/service/stream/storage/level/local/encoding/count/counter.go:77:1: `if content != ""` has complex nested blocks (complexity: 9) (nestif)
+	if content != "" {
+^
+../../internal/pkg/service/stream/storage/level/local/encoding/pipeline.go:218:1: `if encodingCfg.Compression.Type != compression.TypeNone` has complex nested blocks (complexity: 7) (nestif)
+		if encodingCfg.Compression.Type != compression.TypeNone {
+^
+../../internal/pkg/service/stream/storage/test/testcase/testcase.go:210:1: `if assert.Empty(t, result.ErrorName, result.Message)` has complex nested blocks (complexity: 7) (nestif)
+	if assert.Empty(t, result.ErrorName, result.Message) {
+^
+../../internal/pkg/state/local/manager.go:137:1: `if err != nil` has complex nested blocks (complexity: 7) (nestif)
+			if parentKey, err := manifest.Key().ParentKey(); err != nil {
+^
+../../internal/pkg/state/local/rename.go:28:1: `if err != nil` has complex nested blocks (complexity: 15) (nestif)
+		if err != nil {
+^
+../../internal/pkg/utils/etcdhelper/assert.go:204:1: `if wildcards.Compare(expected.Key, actual.Key) == nil` has complex nested blocks (complexity: 7) (nestif)
+			if wildcards.Compare(expected.Key, actual.Key) == nil {
+^
+../../internal/pkg/utils/etcdlogger/etcdlogger.go:162:1: `if key != ""` has complex nested blocks (complexity: 7) (nestif)
+	if key != "" {
+^
+../../internal/pkg/utils/testproject/project.go:307:1: `if err == nil` has complex nested blocks (complexity: 15) (nestif)
+				if err == nil {
+^
+../../internal/pkg/utils/testproject/project.go:489:1: `if fixture.IsDefault` has complex nested blocks (complexity: 7) (nestif)
+	if fixture.IsDefault {
+^
+../../internal/pkg/utils/url/url.go:42:1: `if sliceAppend` has complex nested blocks (complexity: 10) (nestif)
+		if sliceAppend {
+^
+../../pkg/lib/operation/project/remote/file/download/operation.go:95:1: `if d.options.ToStdout() || !d.options.AllowSliced || !d.options.File.IsSliced` has complex nested blocks (complexity: 8) (nestif)
+	if d.options.ToStdout() || !d.options.AllowSliced || !d.options.File.IsSliced {
+^
+../../pkg/lib/operation/project/remote/file/download/operation.go:177:1: `if !d.options.WithOutDecompress.IsSet()` has complex nested blocks (complexity: 7) (nestif)
+	if !d.options.WithOutDecompress.IsSet() {
+^
+../../pkg/lib/operation/project/remote/file/upload/operation.go:45:1: `if o.Input != "-"` has complex nested blocks (complexity: 9) (nestif)
+	if o.Input != "-" {
+^
+../../pkg/lib/operation/project/sync/pull/operation.go:95:1: `if !plan.Empty()` has complex nested blocks (complexity: 9) (nestif)
+	if !plan.Empty() {
+^
+23 issues:
+* nestif: 23
+Some errors ^^^ cannot be fixed. Please fix them manually.
+
