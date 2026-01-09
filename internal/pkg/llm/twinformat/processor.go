@@ -290,7 +290,7 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 		// Build table UID - use TableID.BucketID since Bucket can be nil
 		bucketID := table.TableID.BucketID.String()
 		bucketName := extractBucketName(bucketID)
-		uid := BuildTableUIDFromParts(bucketName, table.Name)
+		uid := buildTableUID(bucketName, table.Name)
 
 		// Get dependencies from lineage graph
 		deps := p.lineageBuilder.GetTableDependencies(graph, uid)
@@ -332,7 +332,7 @@ func (p *Processor) processTransformationsFromAPI(ctx context.Context, configs [
 		if name == "" {
 			name = cfg.ID
 		}
-		uid := BuildTransformationUIDFromName(name)
+		uid := buildTransformationUID(name)
 
 		// Get dependencies from lineage graph
 		deps := p.lineageBuilder.GetTransformationDependencies(graph, uid)
@@ -444,7 +444,7 @@ func (p *Processor) processJobs(ctx context.Context, jobs []*keboola.QueueJob, s
 		// Build transformation UID if this is a transformation job
 		var transformUID string
 		if IsTransformationComponent(job.ComponentID.String()) {
-			transformUID = BuildTransformationUIDFromName(job.ConfigID.String())
+			transformUID = buildTransformationUID(job.ConfigID.String())
 		}
 
 		processed = append(processed, &ProcessedJob{
@@ -541,4 +541,16 @@ func formatJobTimePtr(t *iso8601.Time) string {
 		return ""
 	}
 	return t.Time.UTC().Format(time.RFC3339)
+}
+
+// buildTableUID builds a table UID from bucket and table name.
+// Uses sanitizeUID from lineage.go for consistent UID format.
+func buildTableUID(bucket, table string) string {
+	return "table:" + sanitizeUID(bucket) + "/" + sanitizeUID(table)
+}
+
+// buildTransformationUID builds a transformation UID from a name.
+// Uses sanitizeUID from lineage.go for consistent UID format.
+func buildTransformationUID(name string) string {
+	return "transform:" + sanitizeUID(name)
 }

@@ -251,13 +251,3 @@ func (b *LineageBuilder) GetTransformationDependencies(graph *LineageGraph, tran
 
 	return deps
 }
-
-// BuildTableUIDFromParts builds a table UID from bucket and table name.
-func BuildTableUIDFromParts(bucket, table string) string {
-	return fmt.Sprintf("table:%s/%s", sanitizeUID(bucket), sanitizeUID(table))
-}
-
-// BuildTransformationUIDFromName builds a transformation UID from a name.
-func BuildTransformationUIDFromName(name string) string {
-	return fmt.Sprintf("transform:%s", sanitizeUID(name))
-}

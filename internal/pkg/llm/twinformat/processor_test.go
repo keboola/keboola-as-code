@@ -595,3 +595,47 @@ func TestLineageBuilder_GetDependencies(t *testing.T) {
 	assert.NotEmpty(t, transformDeps.Consumes, "transformation should consume input table")
 	assert.NotEmpty(t, transformDeps.Produces, "transformation should produce output table")
 }
+
+func TestBuildTableUID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		bucket   string
+		table    string
+		expected string
+	}{
+		{name: "simple", bucket: "shopify", table: "orders", expected: "table:shopify/orders"},
+		{name: "with dash", bucket: "google-ads", table: "campaigns", expected: "table:google_ads/campaigns"},
+		{name: "complex bucket", bucket: "my bucket", table: "my table", expected: "table:my_bucket/my_table"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result := buildTableUID(tc.bucket, tc.table)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestBuildTransformationUID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{name: "simple", input: "process-orders", expected: "transform:process_orders"},
+		{name: "with space", input: "Process Orders", expected: "transform:process_orders"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result := buildTransformationUID(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
