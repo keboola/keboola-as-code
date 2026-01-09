@@ -87,7 +87,7 @@ func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Pro
 	var mapping []mappingItem
 	if content.AllowTargetENV {
 		var err error
-		mapping, err = m.processTargetENVOverrides(ctx, content, envs)
+		mapping, err = processTargetENVOverrides(ctx, logger, content, envs)
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +227,7 @@ func (m *Manifest) TemplateRepository(name string) (model.TemplateRepository, bo
 }
 
 // processTargetENVOverrides processes PROJECT_ID and BRANCH_ID environment variable overrides.
-func (m *Manifest) processTargetENVOverrides(ctx context.Context, content *content, envs *env.Map) ([]mappingItem, error) {
+func processTargetENVOverrides(ctx context.Context, logger log.Logger, content *file, envs env.Provider) ([]mappingItem, error) {
 	var mapping []mappingItem
 
 	projectIDStr := envs.Get(ProjectIDOverrideENV)
@@ -238,7 +238,7 @@ func (m *Manifest) processTargetENVOverrides(ctx context.Context, content *conte
 	}
 
 	if projectIDStr != "" {
-		projectMapping, err := m.processProjectIDOverride(ctx, content, projectIDStr)
+		projectMapping, err := processProjectIDOverride(ctx, logger, content, projectIDStr)
 		if err != nil {
 			return nil, err
 		}
@@ -248,7 +248,7 @@ func (m *Manifest) processTargetENVOverrides(ctx context.Context, content *conte
 	}
 
 	if branchIDStr != "" {
-		branchMappings, err := m.processBranchIDOverride(ctx, content, branchIDStr)
+		branchMappings, err := processBranchIDOverride(ctx, logger, content, branchIDStr)
 		if err != nil {
 			return nil, err
 		}
@@ -259,7 +259,7 @@ func (m *Manifest) processTargetENVOverrides(ctx context.Context, content *conte
 }
 
 // processProjectIDOverride processes PROJECT_ID environment variable override.
-func (m *Manifest) processProjectIDOverride(ctx context.Context, content *content, projectIDStr string) (*mappingItem, error) {
+func processProjectIDOverride(ctx context.Context, logger log.Logger, content *file, projectIDStr string) (*mappingItem, error) {
 	projectIDInt, err := strconv.Atoi(projectIDStr)
 	if err != nil {
 		return nil, errors.Errorf(`env %s=%s is not valid project ID`, ProjectIDOverrideENV, projectIDStr)
@@ -270,7 +270,7 @@ func (m *Manifest) processProjectIDOverride(ctx context.Context, content *conten
 		return nil, nil
 	}
 
-	m.logger.Infof(ctx, `Overriding the project ID by the environment variable %s=%v`, ProjectIDOverrideENV, projectID)
+	logger.Infof(ctx, `Overriding the project ID by the environment variable %s=%v`, ProjectIDOverrideENV, projectID)
 	return &mappingItem{
 		ManifestValue: content.Project.ID,
 		MemoryValue:   projectID,
@@ -278,7 +278,7 @@ func (m *Manifest) processProjectIDOverride(ctx context.Context, content *conten
 }
 
 // processBranchIDOverride processes BRANCH_ID environment variable override.
-func (m *Manifest) processBranchIDOverride(ctx context.Context, content *content, branchIDStr string) ([]mappingItem, error) {
+func processBranchIDOverride(ctx context.Context, logger log.Logger, content *file, branchIDStr string) ([]mappingItem, error) {
 	branchIDInt, err := strconv.Atoi(branchIDStr)
 	if err != nil {
 		return nil, errors.Errorf(`env %s=%s is not valid branch ID`, BranchIDOverrideENV, branchIDStr)
@@ -295,7 +295,7 @@ func (m *Manifest) processBranchIDOverride(ctx context.Context, content *content
 		return nil, nil
 	}
 
-	m.logger.Infof(ctx, `Overriding the branch ID by the environment variable %s=%v`, BranchIDOverrideENV, replacedBranchID)
+	logger.Infof(ctx, `Overriding the branch ID by the environment variable %s=%v`, BranchIDOverrideENV, replacedBranchID)
 
 	// Map branch ID in all objects
 	mapping := []mappingItem{

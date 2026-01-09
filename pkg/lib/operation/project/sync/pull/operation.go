@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/plan/diffop"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/cachefile"
@@ -123,8 +124,8 @@ func ignoreConfigsAndRows(projectState *project.State) {
 // executePullPlan executes the pull plan and performs all post-processing steps.
 func (o *Options) executePullPlan(
 	ctx context.Context,
-	plan *pull.Plan,
-	projectState *state.State,
+	plan *diffop.Plan,
+	projectState *project.State,
 	defaultBranchID keboola.BranchID,
 	renameOptions rename.Options,
 	d dependencies,

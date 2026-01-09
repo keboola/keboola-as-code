@@ -202,7 +202,7 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 }
 
 // createFieldContext creates a VisitContext for a struct field with all metadata populated.
-func (cfg *Config) createFieldContext(parentCtx *VisitContext, structField reflect.StructField, parentValue reflect.Value, fieldIndex int) *VisitContext {
+func (cfg *VisitConfig) createFieldContext(parentCtx *VisitContext, structField reflect.StructField, parentValue reflect.Value, fieldIndex int) *VisitContext {
 	field := &VisitContext{}
 	field.StructField = structField
 	field.OriginalPath = append(field.OriginalPath, parentCtx.OriginalPath...)
