@@ -1,7 +1,6 @@
 package configparser
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -242,7 +241,7 @@ func TestParseStorageMappings(t *testing.T) {
 func TestParseCodeBlocks(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	logger := log.NewNopLogger()
 
 	tests := []struct {
