@@ -550,3 +550,130 @@ func TestFetchAll_JobsFailure_ReturnsEmptyJobs(t *testing.T) {
 	// Jobs failure should not cause overall failure
 	assert.Empty(t, data.Jobs)
 }
+
+func TestExtractComponentFromUserAgent(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		userAgent string
+		want      string
+	}{
+		{
+			name:      "standard keboola client format",
+			userAgent: "Keboola Storage API PHP Client/14 kds-team.app-custom-python",
+			want:      "kds-team.app-custom-python",
+		},
+		{
+			name:      "transformation component",
+			userAgent: "Keboola Storage API PHP Client/14 keboola.snowflake-transformation",
+			want:      "keboola.snowflake-transformation",
+		},
+		{
+			name:      "empty user agent",
+			userAgent: "",
+			want:      "",
+		},
+		{
+			name:      "single word",
+			userAgent: "keboola.component",
+			want:      "keboola.component",
+		},
+		{
+			name:      "client only no component",
+			userAgent: "Keboola Storage API PHP Client/14",
+			want:      "Client/14",
+		},
+		{
+			name:      "with multiple spaces",
+			userAgent: "Keboola  Storage  API  keboola.extractor",
+			want:      "keboola.extractor",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := extractComponentFromUserAgent(tt.userAgent)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestFetchTableLastImporter(t *testing.T) {
+	t.Parallel()
+
+	fetcher, transport := newTestFetcher(t)
+
+	tableID := keboola.TableID{
+		BucketID:  keboola.BucketID{Stage: keboola.BucketStageOut, BucketName: "test"},
+		TableName: "mytable",
+	}
+
+	// Mock table events response
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/tables/out.test.mytable/events`,
+		httpmock.NewJsonResponderOrPanic(200, []*keboola.TableEvent{
+			{
+				ID:    "event-1",
+				Event: "storage.tableDataLoaded",
+				Context: keboola.TableEventContext{
+					UserAgent: "Keboola Storage API PHP Client/14 keboola.snowflake-transformation",
+				},
+			},
+			{
+				ID:    "event-2",
+				Event: "storage.tableImportDone",
+				Context: keboola.TableEventContext{
+					UserAgent: "Keboola Storage API PHP Client/14 kds-team.app-custom-python",
+				},
+			},
+			{
+				ID:    "event-3",
+				Event: "storage.tableCreated",
+				Context: keboola.TableEventContext{
+					UserAgent: "Keboola Storage API PHP Client/14 keboola.ex-db-mysql",
+				},
+			},
+		}),
+	)
+
+	componentID, err := fetcher.FetchTableLastImporter(t.Context(), tableID)
+	require.NoError(t, err)
+
+	// Should return the component from the first tableImportDone event
+	assert.Equal(t, "kds-team.app-custom-python", componentID)
+}
+
+func TestFetchTableLastImporter_NoImportEvents(t *testing.T) {
+	t.Parallel()
+
+	fetcher, transport := newTestFetcher(t)
+
+	tableID := keboola.TableID{
+		BucketID:  keboola.BucketID{Stage: keboola.BucketStageOut, BucketName: "test"},
+		TableName: "mytable",
+	}
+
+	// Mock table events response with no import events
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/tables/out.test.mytable/events`,
+		httpmock.NewJsonResponderOrPanic(200, []*keboola.TableEvent{
+			{
+				ID:    "event-1",
+				Event: "storage.tableCreated",
+				Context: keboola.TableEventContext{
+					UserAgent: "Keboola Storage API PHP Client/14 keboola.component",
+				},
+			},
+		}),
+	)
+
+	componentID, err := fetcher.FetchTableLastImporter(t.Context(), tableID)
+	require.NoError(t, err)
+
+	// No import events, should return empty
+	assert.Empty(t, componentID)
+}
