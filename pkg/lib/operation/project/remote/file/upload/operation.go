@@ -43,29 +43,11 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 	var fr *os.File
 	var fi os.FileInfo
 	if o.Input != "-" {
-		fr, err = os.Open(o.Input) // nolint: forbidigo
+		fr, fi, err = o.checkAndOpenFile()
 		if err != nil {
-			if os.IsNotExist(err) {
-				return nil, errors.Errorf("file %s not found", o.Input)
-			}
-			return nil, errors.Errorf(`error reading file "%s": %w`, o.Input, err)
+			return nil, err
 		}
-		fi, err = fr.Stat()
-		if err != nil {
-			return nil, errors.Errorf(`error reading file "%s": %w`, o.Input, err)
-		}
-
 		if fi.IsDir() {
-			files, err := os.ReadDir(o.Input)
-			if err != nil {
-				return nil, errors.Errorf(`error reading files in folder "%s": %w`, o.Input, err)
-			}
-			for _, f := range files {
-				_, err := f.Info()
-				if err != nil {
-					return nil, errors.Errorf(`error reading file "%s" in folder "%s": %w`, f.Name(), o.Input, err)
-				}
-			}
 			opts = append(opts, keboola.WithIsSliced(true))
 		}
 	}
@@ -141,4 +123,39 @@ func upload(ctx context.Context, file *keboola.FileUploadCredentials, reader io.
 		return err
 	}
 	return nil
+}
+
+// checkAndOpenFile opens and validates the input file or directory.
+// Returns the file reader, file info, and any error encountered.
+func (o *Options) checkAndOpenFile() (*os.File, os.FileInfo, error) {
+	fr, err := os.Open(o.Input) // nolint: forbidigo
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil, errors.Errorf("file %s not found", o.Input)
+		}
+		return nil, nil, errors.Errorf(`error reading file "%s": %w`, o.Input, err)
+	}
+
+	fi, err := fr.Stat()
+	if err != nil {
+		return nil, nil, errors.Errorf(`error reading file "%s": %w`, o.Input, err)
+	}
+
+	if !fi.IsDir() {
+		return fr, fi, nil
+	}
+
+	// Validate all files in directory
+	files, err := os.ReadDir(o.Input)
+	if err != nil {
+		return nil, nil, errors.Errorf(`error reading files in folder "%s": %w`, o.Input, err)
+	}
+
+	for _, f := range files {
+		if _, err := f.Info(); err != nil {
+			return nil, nil, errors.Errorf(`error reading file "%s" in folder "%s": %w`, f.Name(), o.Input, err)
+		}
+	}
+
+	return fr, fi, nil
 }

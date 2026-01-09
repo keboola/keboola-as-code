@@ -1,0 +1,34 @@
+/code
+Running go mod tidy ...
+Running go mod vendor ...
+Running gofumpt ...
+Running gci ...
+Running modernize ...
+/code/internal/pkg/service/common/configmap/visit.go:205:12: undefined: Config
+/code/internal/pkg/service/common/configmap/visit.go:113:17: cfg.createFieldContext undefined (type VisitConfig has no field or method createFieldContext)
+/code/internal/pkg/project/manifest/manifest.go:230:76: undefined: content
+/code/internal/pkg/project/manifest/manifest.go:262:75: undefined: content
+/code/internal/pkg/project/manifest/manifest.go:281:74: undefined: content
+/code/internal/pkg/project/manifest/manifest.go:90:18: undefined: m
+/code/internal/pkg/project/manifest/manifest.go:273:4: m.logger undefined (type *Manifest has no field or method logger)
+/code/internal/pkg/project/manifest/manifest.go:298:4: m.logger undefined (type *Manifest has no field or method logger)
+/code/pkg/lib/operation/project/sync/pull/operation.go:126:13: undefined: pull.Plan
+/code/pkg/lib/operation/project/sync/pull/operation.go:96:42: cannot use projectState (variable of type *project.State) as *"github.com/keboola/keboola-as-code/internal/pkg/state".State value in argument to o.executePullPlan
+/code/pkg/lib/operation/project/sync/pull/operation.go:146:50: projectState.ProjectManifest undefined (type *"github.com/keboola/keboola-as-code/internal/pkg/state".State has no field or method ProjectManifest)
+/code/pkg/lib/operation/project/sync/pull/operation.go:146:82: projectState.Fs undefined (type *"github.com/keboola/keboola-as-code/internal/pkg/state".State has no field or method Fs)
+/code/pkg/lib/operation/project/sync/pull/operation.go:151:51: projectState.Fs undefined (type *"github.com/keboola/keboola-as-code/internal/pkg/state".State has no field or method Fs)
+/code/pkg/lib/operation/project/sync/pull/operation.go:167:31: cannot use projectState (variable of type *"github.com/keboola/keboola-as-code/internal/pkg/state".State) as *project.State value in argument to rename.Run
+/code/pkg/lib/operation/project/sync/pull/operation.go:172:30: cannot use projectState (variable of type *"github.com/keboola/keboola-as-code/internal/pkg/state".State) as *project.State value in argument to validate.Run
+/code/internal/pkg/project/manifest/manifest.go:230:76: undefined: content
+/code/internal/pkg/project/manifest/manifest.go:262:75: undefined: content
+/code/internal/pkg/project/manifest/manifest.go:281:74: undefined: content
+/code/internal/pkg/project/manifest/manifest.go:90:18: undefined: m
+/code/internal/pkg/project/manifest/manifest.go:273:4: m.logger undefined (type *Manifest has no field or method logger)
+/code/internal/pkg/project/manifest/manifest.go:298:4: m.logger undefined (type *Manifest has no field or method logger)
+/code/internal/pkg/service/common/configmap/visit.go:205:12: undefined: Config
+/code/internal/pkg/service/common/configmap/visit.go:113:17: cfg.createFieldContext undefined (type VisitConfig has no field or method createFieldContext)
+modernize: omitzero@github.com/keboola/keboola-as-code/internal/pkg/platform/model: ignoring alternative fix "Replace omitempty with omitzero (behavior change)"
+modernize: omitzero@github.com/keboola/keboola-as-code/internal/pkg/platform/model: ignoring alternative fix "Replace omitempty with omitzero (behavior change)"
+modernize: omitzero@github.com/keboola/keboola-as-code/internal/pkg/platform/model: ignoring alternative fix "Replace omitempty with omitzero (behavior change)"
+exit status 1
+task: Failed to run task "fix": exit status 1

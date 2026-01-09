@@ -370,17 +370,8 @@ func collectValues(cfg BindConfig, flagToField FlagToFieldFn) (*orderedmap.Order
 	// Bind flags and ENVs, flags have priority
 	cfg.Flags.VisitAll(func(flag *pflag.Flag) {
 		if fieldPath, ok := flagToField(flag); ok {
-			if flag.Changed {
-				if err := values.SetNestedPath(fieldPath, fieldValue{Value: flag.Value.String(), SetBy: SetByFlag}); err != nil {
-					errs.Append(err)
-				}
-			} else if cfg.EnvNaming != nil && cfg.Envs != nil {
-				envName := cfg.EnvNaming.FlagToEnv(flag.Name)
-				if envValue, found := cfg.Envs.Lookup(envName); found {
-					if err := values.SetNestedPath(fieldPath, fieldValue{Value: envValue, SetBy: SetByEnv}); err != nil {
-						errs.Append(err)
-					}
-				}
+			if err := cfg.processFlagOrEnv(flag, fieldPath, values); err != nil {
+				errs.Append(err)
 			}
 		}
 	})
@@ -469,4 +460,23 @@ func unmarshalHook(hooks *mapstructure.DecodeHookFunc) mapstructure.DecodeHookFu
 		// Fallback
 		return from.Interface(), nil
 	}
+}
+
+// processFlagOrEnv processes a flag by setting its value if changed, or checking for ENV value as fallback.
+func (cfg *BindConfig) processFlagOrEnv(flag *pflag.Flag, fieldPath orderedmap.Path, values *orderedmap.OrderedMap) error {
+	if flag.Changed {
+		return values.SetNestedPath(fieldPath, fieldValue{Value: flag.Value.String(), SetBy: SetByFlag})
+	}
+
+	if cfg.EnvNaming == nil || cfg.Envs == nil {
+		return nil
+	}
+
+	envName := cfg.EnvNaming.FlagToEnv(flag.Name)
+	envValue, found := cfg.Envs.Lookup(envName)
+	if !found {
+		return nil
+	}
+
+	return values.SetNestedPath(fieldPath, fieldValue{Value: envValue, SetBy: SetByEnv})
 }

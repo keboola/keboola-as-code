@@ -75,25 +75,8 @@ func NewCounterWithBackup(ctx context.Context, clk clockwork.Clock, logger log.L
 	// Parse values
 	content := string(buffer[0:n])
 	if content != "" {
-		errs := errors.NewMultiError()
-		parts := strings.Split(content, ",")
-		if len(parts) != 3 {
-			errs.Append(errors.Errorf(`expected 3 comma-separated values, found %d`, len(parts)))
-		} else {
-			if c.count, err = strconv.ParseUint(strings.TrimSpace(parts[0]), 10, 64); err != nil {
-				errs.Append(errors.Errorf(`invalid count "%s"`, parts[0]))
-			}
-			if c.firstAt, err = utctime.Parse(parts[1]); err != nil {
-				errs.Append(errors.Errorf(`invalid firstAt time "%s"`, parts[1]))
-			}
-			if c.lastAt, err = utctime.Parse(parts[2]); err != nil {
-				errs.Append(errors.Errorf(`invalid lastAt time "%s"`, parts[2]))
-			}
-		}
-
-		if err := errs.ErrorOrNil(); err != nil {
-			content = strhelper.Truncate(content, 20, "...")
-			return nil, errors.Errorf(`content "%s" of the backup file is not valid: %w`, content, err)
+		if err := c.parseBackupContent(content); err != nil {
+			return nil, err
 		}
 	}
 
@@ -205,6 +188,34 @@ func (c *CounterWithBackup) Close() error {
 	}
 
 	c.backup = nil
+
+	return nil
+}
+
+// parseBackupContent parses comma-separated values from backup file content.
+func (c *Counter) parseBackupContent(content string) error {
+	errs := errors.NewMultiError()
+	parts := strings.Split(content, ",")
+
+	if len(parts) != 3 {
+		errs.Append(errors.Errorf(`expected 3 comma-separated values, found %d`, len(parts)))
+	} else {
+		var err error
+		if c.count, err = strconv.ParseUint(strings.TrimSpace(parts[0]), 10, 64); err != nil {
+			errs.Append(errors.Errorf(`invalid count "%s"`, parts[0]))
+		}
+		if c.firstAt, err = utctime.Parse(parts[1]); err != nil {
+			errs.Append(errors.Errorf(`invalid firstAt time "%s"`, parts[1]))
+		}
+		if c.lastAt, err = utctime.Parse(parts[2]); err != nil {
+			errs.Append(errors.Errorf(`invalid lastAt time "%s"`, parts[2]))
+		}
+	}
+
+	if err := errs.ErrorOrNil(); err != nil {
+		content = strhelper.Truncate(content, 20, "...")
+		return errors.Errorf(`content "%s" of the backup file is not valid: %w`, content, err)
+	}
 
 	return nil
 }
