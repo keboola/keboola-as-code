@@ -840,7 +840,28 @@ func (g *Generator) generateLineageGraph(ctx context.Context, data *ProcessedDat
 func (g *Generator) generateSourcesIndex(ctx context.Context, data *ProcessedData) error {
 	docFields := SourcesIndexDocFields()
 
-	// Build sources list from bucket data.
+	sourcesIndex := map[string]any{
+		"_comment":          docFields.Comment,
+		"_purpose":          docFields.Purpose,
+		"_update_frequency": docFields.UpdateFrequency,
+		"sources":           g.buildSourcesList(data),
+	}
+
+	sourcesPath := filesystem.Join(g.outputDir, "indices", "sources.json")
+	return g.jsonWriter.Write(ctx, sourcesPath, sourcesIndex)
+}
+
+type sourceInfo struct {
+	ID        string
+	Name      string
+	Type      string
+	Instances int
+	Tables    int
+	Buckets   []string
+}
+
+// buildSourcesList builds a sorted list of sources from bucket data.
+func (g *Generator) buildSourcesList(data *ProcessedData) []map[string]any {
 	sourceMap := make(map[string]*sourceInfo)
 	for _, bucket := range data.Buckets {
 		source := bucket.Source
@@ -859,10 +880,8 @@ func (g *Generator) generateSourcesIndex(ctx context.Context, data *ProcessedDat
 		sourceMap[source].Buckets = append(sourceMap[source].Buckets, bucket.DisplayName)
 	}
 
-	// Convert to list.
 	sources := make([]map[string]any, 0, len(sourceMap))
 	for _, info := range sourceMap {
-		// Sort buckets for deterministic output.
 		sort.Strings(info.Buckets)
 		sources = append(sources, map[string]any{
 			"id":           info.ID,
@@ -874,29 +893,11 @@ func (g *Generator) generateSourcesIndex(ctx context.Context, data *ProcessedDat
 		})
 	}
 
-	// Sort sources by ID for deterministic output.
 	sort.Slice(sources, func(i, j int) bool {
 		return sources[i]["id"].(string) < sources[j]["id"].(string)
 	})
 
-	sourcesIndex := map[string]any{
-		"_comment":          docFields.Comment,
-		"_purpose":          docFields.Purpose,
-		"_update_frequency": docFields.UpdateFrequency,
-		"sources":           sources,
-	}
-
-	sourcesPath := filesystem.Join(g.outputDir, "indices", "sources.json")
-	return g.jsonWriter.Write(ctx, sourcesPath, sourcesIndex)
-}
-
-type sourceInfo struct {
-	ID        string
-	Name      string
-	Type      string
-	Instances int
-	Tables    int
-	Buckets   []string
+	return sources
 }
 
 // formatSourceName converts a source ID to a human-readable name.
@@ -1115,44 +1116,6 @@ func (g *Generator) generateRootFiles(ctx context.Context, data *ProcessedData) 
 func (g *Generator) generateManifestExtended(ctx context.Context, data *ProcessedData) error {
 	docFields := ManifestExtendedDocFields()
 
-	// Build sources list.
-	sourceMap := make(map[string]*sourceInfo)
-	for _, bucket := range data.Buckets {
-		source := bucket.Source
-		if _, ok := sourceMap[source]; !ok {
-			sourceMap[source] = &sourceInfo{
-				ID:        source,
-				Name:      formatSourceName(source),
-				Type:      inferSourceType(source),
-				Instances: 0,
-				Tables:    0,
-				Buckets:   []string{},
-			}
-		}
-		sourceMap[source].Instances++
-		sourceMap[source].Tables += bucket.TableCount
-		sourceMap[source].Buckets = append(sourceMap[source].Buckets, bucket.DisplayName)
-	}
-
-	sources := make([]map[string]any, 0, len(sourceMap))
-	for _, info := range sourceMap {
-		// Sort buckets for deterministic output.
-		sort.Strings(info.Buckets)
-		sources = append(sources, map[string]any{
-			"id":           info.ID,
-			"name":         info.Name,
-			"type":         info.Type,
-			"instances":    info.Instances,
-			"total_tables": info.Tables,
-			"buckets":      info.Buckets,
-		})
-	}
-
-	// Sort sources by ID for deterministic output.
-	sort.Slice(sources, func(i, j int) bool {
-		return sources[i]["id"].(string) < sources[j]["id"].(string)
-	})
-
 	// Build platform counts.
 	platformCounts := make(map[string]int)
 	for _, transform := range data.Transformations {
@@ -1173,7 +1136,7 @@ func (g *Generator) generateManifestExtended(ctx context.Context, data *Processe
 			"total_transformations": data.Statistics.TotalTransformations,
 			"total_edges":           data.Statistics.TotalEdges,
 		},
-		"sources":                  sources,
+		"sources":                  g.buildSourcesList(data),
 		"transformation_platforms": platformCounts,
 	}
 
