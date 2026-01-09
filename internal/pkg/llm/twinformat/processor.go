@@ -541,13 +541,11 @@ func formatJobTimePtr(t *iso8601.Time) string {
 }
 
 // buildTableUID builds a table UID from bucket and table name.
-// Uses sanitizeUID from lineage.go for consistent UID format.
 func buildTableUID(bucket, table string) string {
-	return "table:" + sanitizeUID(bucket) + "/" + sanitizeUID(table)
+	return "table:" + bucket + "/" + table
 }
 
 // buildTransformationUID builds a transformation UID from a name.
-// Uses sanitizeUID from lineage.go for consistent UID format.
 func buildTransformationUID(name string) string {
-	return "transform:" + sanitizeUID(name)
+	return "transform:" + name
 }
