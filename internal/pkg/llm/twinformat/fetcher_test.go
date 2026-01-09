@@ -479,14 +479,37 @@ func TestFetchAll(t *testing.T) {
 	data, err := fetcher.FetchAll(t.Context(), branchID)
 	require.NoError(t, err)
 
-	assert.Equal(t, keboola.ProjectID(12345), data.ProjectID)
-	assert.Equal(t, branchID, data.BranchID)
+	// Verify FetchedAt is set (can't compare exactly due to runtime value)
 	assert.NotZero(t, data.FetchedAt)
-	assert.Len(t, data.Buckets, 1)
-	assert.Len(t, data.Tables, 1)
-	assert.Empty(t, data.Jobs)
-	assert.Empty(t, data.TransformationConfigs)
-	assert.Empty(t, data.ComponentConfigs)
+
+	expectedData := &ProjectData{
+		ProjectID: 12345,
+		BranchID:  branchID,
+		FetchedAt: data.FetchedAt, // Copy actual value for comparison
+		Buckets: []*keboola.Bucket{
+			{
+				BucketKey: keboola.BucketKey{
+					BranchID: branchID,
+					BucketID: keboola.BucketID{Stage: keboola.BucketStageIn, BucketName: "bucket"},
+				},
+			},
+		},
+		Tables: []*keboola.Table{
+			{
+				TableKey: keboola.TableKey{
+					BranchID: branchID,
+					TableID: keboola.TableID{
+						BucketID:  keboola.BucketID{Stage: keboola.BucketStageIn, BucketName: "bucket"},
+						TableName: "table1",
+					},
+				},
+			},
+		},
+		Jobs:                  []*keboola.QueueJob{},
+		TransformationConfigs: []*TransformationConfig{},
+		ComponentConfigs:      []*ComponentConfig{},
+	}
+	assert.Equal(t, expectedData, data)
 }
 
 func TestFetchAll_JobsFailure_ReturnsEmptyJobs(t *testing.T) {
