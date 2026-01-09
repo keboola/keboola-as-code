@@ -79,9 +79,9 @@ func (t *uidTracker) trackTransformUID(uid, original string) (collision bool, pr
 	return false, ""
 }
 
-// BuildLineageGraphFromAPI builds the lineage graph from API-fetched transformation configs.
-func (b *LineageBuilder) BuildLineageGraphFromAPI(ctx context.Context, configs []*TransformationConfig) (graph *LineageGraph, err error) {
-	ctx, span := b.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.lineage.BuildLineageGraphFromAPI")
+// BuildLineageGraph builds the lineage graph from transformation configs.
+func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, configs []*TransformationConfig) (graph *LineageGraph, err error) {
+	ctx, span := b.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.lineage.BuildLineageGraph")
 	defer span.End(&err)
 
 	graph = &LineageGraph{

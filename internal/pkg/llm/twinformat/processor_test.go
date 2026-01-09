@@ -352,7 +352,6 @@ func TestProcessor_Process_Integration(t *testing.T) {
 	transform := result.Transformations[0]
 	assert.Equal(t, "Process Orders", transform.Name)
 	assert.Equal(t, PlatformSnowflake, transform.Platform)
-	assert.True(t, transform.FromAPI)
 
 	// Verify code blocks were converted
 	require.Len(t, transform.CodeBlocks, 1)
@@ -478,7 +477,7 @@ func newTestLineageBuilder(t *testing.T) *LineageBuilder {
 	return NewLineageBuilder(deps)
 }
 
-func TestLineageBuilder_BuildLineageGraphFromAPI_Integration(t *testing.T) {
+func TestLineageBuilder_BuildLineageGraph_Integration(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -511,7 +510,7 @@ func TestLineageBuilder_BuildLineageGraphFromAPI_Integration(t *testing.T) {
 		},
 	}
 
-	graph, err := builder.BuildLineageGraphFromAPI(ctx, configs)
+	graph, err := builder.BuildLineageGraph(ctx, configs)
 	require.NoError(t, err)
 	require.NotNil(t, graph)
 
@@ -574,7 +573,7 @@ func TestLineageBuilder_GetDependencies(t *testing.T) {
 		},
 	}
 
-	graph, err := builder.BuildLineageGraphFromAPI(ctx, configs)
+	graph, err := builder.BuildLineageGraph(ctx, configs)
 	require.NoError(t, err)
 
 	// Test GetTableDependencies for input table
