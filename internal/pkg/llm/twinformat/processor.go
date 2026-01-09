@@ -64,10 +64,8 @@ type ProcessedTransformation struct {
 	// Dependencies and job execution
 	Dependencies *TransformationDependencies
 	JobExecution *JobExecution
-	// Code blocks (from local or API)
+	// Code blocks
 	CodeBlocks []*ProcessedCodeBlock
-	// Data source flag
-	FromAPI bool
 }
 
 // ProcessedCodeBlock represents a code block ready for output.
@@ -158,7 +156,7 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 	componentRegistry := p.buildComponentRegistry(ctx, fetchedData.Components)
 
 	// Step 2: Build lineage graph from API-fetched transformation configs
-	lineageGraph, err := p.lineageBuilder.BuildLineageGraphFromAPI(ctx, fetchedData.TransformationConfigs)
+	lineageGraph, err := p.lineageBuilder.BuildLineageGraph(ctx, fetchedData.TransformationConfigs)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +173,7 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 	processed.Buckets = p.processBuckets(ctx, fetchedData.Buckets, fetchedData.Tables, tableSourceRegistry, processed.Statistics)
 
 	// Step 6: Process transformations from API data with platform detection and job linking
-	processed.Transformations = p.processTransformationsFromAPI(ctx, fetchedData.TransformationConfigs, fetchedData.Jobs, lineageGraph, processed.Statistics)
+	processed.Transformations = p.processTransformations(ctx, fetchedData.TransformationConfigs, fetchedData.Jobs, lineageGraph, processed.Statistics)
 
 	// Step 7: Process jobs
 	processed.Jobs = p.processJobs(ctx, fetchedData.Jobs, processed.Statistics)
@@ -312,8 +310,8 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 	return processed
 }
 
-// processTransformationsFromAPI processes transformations from API-fetched configs.
-func (p *Processor) processTransformationsFromAPI(ctx context.Context, configs []*TransformationConfig, jobs []*keboola.QueueJob, graph *LineageGraph, stats *ProcessingStatistics) []*ProcessedTransformation {
+// processTransformations processes transformation configs.
+func (p *Processor) processTransformations(ctx context.Context, configs []*TransformationConfig, jobs []*keboola.QueueJob, graph *LineageGraph, stats *ProcessingStatistics) []*ProcessedTransformation {
 	// Build a map of component+config to latest job
 	jobMap := buildJobMap(jobs)
 
@@ -366,11 +364,10 @@ func (p *Processor) processTransformationsFromAPI(ctx context.Context, configs [
 			Dependencies: deps,
 			JobExecution: jobExec,
 			CodeBlocks:   codeBlocks,
-			FromAPI:      true,
 		})
 	}
 
-	p.logger.Infof(ctx, "Processed %d transformations from API", len(processed))
+	p.logger.Infof(ctx, "Processed %d transformations", len(processed))
 	return processed
 }
 
