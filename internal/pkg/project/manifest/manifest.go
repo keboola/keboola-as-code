@@ -86,52 +86,10 @@ func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Pro
 	// Override ProjectID and BranchID by ENVs, if enabled
 	var mapping []mappingItem
 	if content.AllowTargetENV {
-		projectIDStr := envs.Get(ProjectIDOverrideENV)
-		branchIDStr := envs.Get(BranchIDOverrideENV)
-
-		if branchIDStr != "" && len(content.Branches) != 1 {
-			return nil, errors.Errorf(`env %s=%s can be used if there is one branch in the manifest, found %d branches`, BranchIDOverrideENV, branchIDStr, len(content.Branches))
-		}
-
-		if projectIDStr != "" {
-			if projectIDInt, err := strconv.Atoi(projectIDStr); err == nil {
-				projectID := keboola.ProjectID(projectIDInt)
-				if projectID != content.Project.ID {
-					logger.Infof(ctx, `Overriding the project ID by the environment variable %s=%v`, ProjectIDOverrideENV, projectID)
-					mapping = append(mapping, mappingItem{
-						ManifestValue: content.Project.ID,
-						MemoryValue:   projectID,
-					})
-				}
-			} else {
-				return nil, errors.Errorf(`env %s=%s is not valid project ID`, ProjectIDOverrideENV, projectIDStr)
-			}
-		}
-
-		if branchIDStr != "" {
-			if branchIDInt, err := strconv.Atoi(branchIDStr); err == nil {
-				originalBranchID := content.Branches[0].ID
-				replacedBranchID := keboola.BranchID(branchIDInt)
-				if replacedBranchID != content.Branches[0].ID {
-					logger.Infof(ctx, `Overriding the branch ID by the environment variable %s=%v`, BranchIDOverrideENV, replacedBranchID)
-					// Map branch ID in all objects
-					mapping = append(mapping, mappingItem{
-						ManifestValue: originalBranchID,
-						MemoryValue:   replacedBranchID,
-					})
-					// Map allowed branches filter
-					mapping = append(mapping, mappingItem{
-						ManifestValue: model.AllowedBranch(originalBranchID.String()),
-						MemoryValue:   model.AllowedBranch(replacedBranchID.String()),
-					})
-				}
-				// Replace main branch in the filter, with branch ID, if needed
-				if len(content.AllowedBranches) == 1 && content.AllowedBranches[0] == model.MainBranchDef {
-					content.AllowedBranches[0] = model.AllowedBranch(replacedBranchID.String())
-				}
-			} else {
-				return nil, errors.Errorf(`env %s=%s is not valid branch ID`, BranchIDOverrideENV, branchIDStr)
-			}
+		var err error
+		mapping, err = m.processTargetENVOverrides(ctx, content, envs)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -266,4 +224,96 @@ func (m *Manifest) TemplateRepository(name string) (model.TemplateRepository, bo
 		}
 	}
 	return model.TemplateRepository{}, false
+}
+
+// processTargetENVOverrides processes PROJECT_ID and BRANCH_ID environment variable overrides.
+func (m *Manifest) processTargetENVOverrides(ctx context.Context, content *content, envs *env.Map) ([]mappingItem, error) {
+	var mapping []mappingItem
+
+	projectIDStr := envs.Get(ProjectIDOverrideENV)
+	branchIDStr := envs.Get(BranchIDOverrideENV)
+
+	if branchIDStr != "" && len(content.Branches) != 1 {
+		return nil, errors.Errorf(`env %s=%s can be used if there is one branch in the manifest, found %d branches`, BranchIDOverrideENV, branchIDStr, len(content.Branches))
+	}
+
+	if projectIDStr != "" {
+		projectMapping, err := m.processProjectIDOverride(ctx, content, projectIDStr)
+		if err != nil {
+			return nil, err
+		}
+		if projectMapping != nil {
+			mapping = append(mapping, *projectMapping)
+		}
+	}
+
+	if branchIDStr != "" {
+		branchMappings, err := m.processBranchIDOverride(ctx, content, branchIDStr)
+		if err != nil {
+			return nil, err
+		}
+		mapping = append(mapping, branchMappings...)
+	}
+
+	return mapping, nil
+}
+
+// processProjectIDOverride processes PROJECT_ID environment variable override.
+func (m *Manifest) processProjectIDOverride(ctx context.Context, content *content, projectIDStr string) (*mappingItem, error) {
+	projectIDInt, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		return nil, errors.Errorf(`env %s=%s is not valid project ID`, ProjectIDOverrideENV, projectIDStr)
+	}
+
+	projectID := keboola.ProjectID(projectIDInt)
+	if projectID == content.Project.ID {
+		return nil, nil
+	}
+
+	m.logger.Infof(ctx, `Overriding the project ID by the environment variable %s=%v`, ProjectIDOverrideENV, projectID)
+	return &mappingItem{
+		ManifestValue: content.Project.ID,
+		MemoryValue:   projectID,
+	}, nil
+}
+
+// processBranchIDOverride processes BRANCH_ID environment variable override.
+func (m *Manifest) processBranchIDOverride(ctx context.Context, content *content, branchIDStr string) ([]mappingItem, error) {
+	branchIDInt, err := strconv.Atoi(branchIDStr)
+	if err != nil {
+		return nil, errors.Errorf(`env %s=%s is not valid branch ID`, BranchIDOverrideENV, branchIDStr)
+	}
+
+	originalBranchID := content.Branches[0].ID
+	replacedBranchID := keboola.BranchID(branchIDInt)
+
+	if replacedBranchID == originalBranchID {
+		// Replace main branch in the filter, with branch ID, if needed
+		if len(content.AllowedBranches) == 1 && content.AllowedBranches[0] == model.MainBranchDef {
+			content.AllowedBranches[0] = model.AllowedBranch(replacedBranchID.String())
+		}
+		return nil, nil
+	}
+
+	m.logger.Infof(ctx, `Overriding the branch ID by the environment variable %s=%v`, BranchIDOverrideENV, replacedBranchID)
+
+	// Map branch ID in all objects
+	mapping := []mappingItem{
+		{
+			ManifestValue: originalBranchID,
+			MemoryValue:   replacedBranchID,
+		},
+		// Map allowed branches filter
+		{
+			ManifestValue: model.AllowedBranch(originalBranchID.String()),
+			MemoryValue:   model.AllowedBranch(replacedBranchID.String()),
+		},
+	}
+
+	// Replace main branch in the filter, with branch ID, if needed
+	if len(content.AllowedBranches) == 1 && content.AllowedBranches[0] == model.MainBranchDef {
+		content.AllowedBranches[0] = model.AllowedBranch(replacedBranchID.String())
+	}
+
+	return mapping, nil
 }

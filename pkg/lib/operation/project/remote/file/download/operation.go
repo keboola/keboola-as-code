@@ -93,33 +93,10 @@ func (d *downloader) Download(ctx context.Context) (returnErr error) {
 
 	// Download
 	if d.options.ToStdout() || !d.options.AllowSliced || !d.options.File.IsSliced {
-		// Download all slices into single file
-		if output, err := d.openOutput(""); err != nil {
-			return err
-		} else if err := d.readMergedSlicesTo(ctx, output); err != nil {
-			return err
-		} else if err := output.Close(); err != nil {
-			return err
-		}
-	} else {
-		// Create output directory
-		if err := os.MkdirAll(d.options.Output, 0o700); err != nil {
-			return err
-		}
-
-		// Download all slices as separate files
-		for _, slice := range d.slices {
-			if output, err := d.openOutput(slice); err != nil {
-				return err
-			} else if err := d.readSliceTo(ctx, slice, output); err != nil {
-				return err
-			} else if err := output.Close(); err != nil {
-				return err
-			}
-		}
+		return d.downloadSingleFile(ctx)
 	}
 
-	return nil
+	return d.downloadSlicedFiles(ctx)
 }
 
 type nopCloser struct {
@@ -127,6 +104,42 @@ type nopCloser struct {
 }
 
 func (n *nopCloser) Close() error {
+	return nil
+}
+
+// downloadSingleFile downloads all slices into a single file.
+func (d *downloader) downloadSingleFile(ctx context.Context) error {
+	output, err := d.openOutput("")
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+
+	return d.readMergedSlicesTo(ctx, output)
+}
+
+// downloadSlicedFiles downloads all slices as separate files into a directory.
+func (d *downloader) downloadSlicedFiles(ctx context.Context) error {
+	// Create output directory
+	if err := os.MkdirAll(d.options.Output, 0o700); err != nil {
+		return err
+	}
+
+	// Download all slices as separate files
+	for _, slice := range d.slices {
+		output, err := d.openOutput(slice)
+		if err != nil {
+			return err
+		}
+		if err := d.readSliceTo(ctx, slice, output); err != nil {
+			output.Close()
+			return err
+		}
+		if err := output.Close(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -176,16 +189,16 @@ func (d *downloader) readSliceTo(ctx context.Context, slice string, writer io.Wr
 	// Add decompression reader
 	if !d.options.WithOutDecompress.IsSet() {
 		if strings.HasSuffix(slice, GZIPFileExt) || (slice == "" && strings.HasSuffix(d.options.File.Name, GZIPFileExt)) {
-			if gzipReader, err := pgzip.NewReader(reader); err == nil {
-				defer func() {
-					if closeErr := gzipReader.Close(); returnErr == nil && closeErr != nil {
-						returnErr = closeErr
-					}
-				}()
-				reader = gzipReader
-			} else {
+			gzipReader, err := pgzip.NewReader(reader)
+			if err != nil {
 				return errors.Errorf(`cannot create gzip reader: %w`, err)
 			}
+			defer func() {
+				if closeErr := gzipReader.Close(); returnErr == nil && closeErr != nil {
+					returnErr = closeErr
+				}
+			}()
+			reader = gzipReader
 		}
 	}
 

@@ -24,43 +24,17 @@ func (m *Manager) rename(ctx context.Context, actions []model.RenameAction, clea
 	for _, action := range actions {
 		// Deep copy
 		err := m.fs.Copy(ctx, action.RenameFrom, action.NewPath)
-
 		if err != nil {
 			// If destination exists and cleanup is enabled, attempt to remove and retry
-			if cleanup && strings.Contains(err.Error(), "destination exists") {
-				if rmErr := m.fs.Remove(ctx, action.NewPath); rmErr != nil {
-					errs.AppendWithPrefixf(rmErr, `cannot remove existing destination "%s"`, action.NewPath)
-				} else if retryErr := m.fs.Copy(ctx, action.RenameFrom, action.NewPath); retryErr != nil {
-					errs.AppendWithPrefixf(retryErr, `cannot copy "%s" after cleanup`, action.Description)
-				} else {
-					// proceed as success path
-					// Update manifest
-					if err := m.manifest.PersistRecord(action.Manifest); err != nil {
-						errs.AppendWithPrefixf(err, `cannot persist "%s"`, action.Manifest.Desc())
-					}
-					if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
-						action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
-					}
-					newPaths = append(newPaths, action.NewPath)
-					pathsToRemove = append(pathsToRemove, action.RenameFrom)
-					continue
-				}
-			} else {
+			handled := m.handleCopyErrorWithCleanup(ctx, action, err, cleanup, &newPaths, &pathsToRemove, errs)
+			if !handled {
 				errs.AppendWithPrefixf(err, `cannot copy "%s"`, action.Description)
 			}
-		} else {
-			// Update manifest
-			if err := m.manifest.PersistRecord(action.Manifest); err != nil {
-				errs.AppendWithPrefixf(err, `cannot persist "%s"`, action.Manifest.Desc())
-			}
-			if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
-				action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
-			}
-
-			// Remove old path
-			newPaths = append(newPaths, action.NewPath)
-			pathsToRemove = append(pathsToRemove, action.RenameFrom)
+			continue
 		}
+
+		// Update manifest and track paths on successful copy
+		m.updateManifestAndTrackPaths(action, &newPaths, &pathsToRemove, errs)
 	}
 
 	if errs.Len() == 0 {
@@ -101,4 +75,43 @@ func (m *Manager) rename(ctx context.Context, actions []model.RenameAction, clea
 	}
 
 	return errs.ErrorOrNil()
+}
+
+// handleCopyErrorWithCleanup handles copy errors by attempting cleanup and retry if applicable.
+// Returns true if the error was handled successfully (including retry success), false otherwise.
+func (m *Manager) handleCopyErrorWithCleanup(ctx context.Context, action model.RenameAction, copyErr error, cleanup bool, newPaths, pathsToRemove *[]string, errs errors.MultiError) bool {
+	if !cleanup || !strings.Contains(copyErr.Error(), "destination exists") {
+		return false
+	}
+
+	// Try to remove existing destination
+	if rmErr := m.fs.Remove(ctx, action.NewPath); rmErr != nil {
+		errs.AppendWithPrefixf(rmErr, `cannot remove existing destination "%s"`, action.NewPath)
+		return false
+	}
+
+	// Retry copy after cleanup
+	if retryErr := m.fs.Copy(ctx, action.RenameFrom, action.NewPath); retryErr != nil {
+		errs.AppendWithPrefixf(retryErr, `cannot copy "%s" after cleanup`, action.Description)
+		return false
+	}
+
+	// Copy succeeded after cleanup - update manifest and track paths
+	m.updateManifestAndTrackPaths(action, newPaths, pathsToRemove, errs)
+	return true
+}
+
+// updateManifestAndTrackPaths updates the manifest and tracks paths for a successful copy operation.
+func (m *Manager) updateManifestAndTrackPaths(action model.RenameAction, newPaths, pathsToRemove *[]string, errs errors.MultiError) {
+	// Update manifest
+	if err := m.manifest.PersistRecord(action.Manifest); err != nil {
+		errs.AppendWithPrefixf(err, `cannot persist "%s"`, action.Manifest.Desc())
+	}
+	if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
+		action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
+	}
+
+	// Track paths
+	*newPaths = append(*newPaths, action.NewPath)
+	*pathsToRemove = append(*pathsToRemove, action.RenameFrom)
 }

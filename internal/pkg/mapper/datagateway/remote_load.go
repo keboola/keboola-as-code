@@ -63,51 +63,14 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 
 		// Check if workspace was created and details were set
 		workspaceID, found, _ = config.Content.GetNested("parameters.db.workspaceId")
-		if found && workspaceID != nil && workspaceID != "" {
-			// Update the configuration in remote with workspace details
-			// If this update fails, the workspace exists but the config doesn't reference it.
-			// This creates an inconsistent state, so we return the error to prevent silent failures.
-			api := m.KeboolaProjectAPI()
-			changedFields := model.NewChangedFields()
-			changedFields.Add("configuration")
-			apiObject, apiChangedFields := config.ToAPIObject("Workspace created and configuration updated", changedFields)
-			_, err := api.UpdateRequest(apiObject, apiChangedFields).Send(ctx)
-			if err != nil {
-				// Return error instead of logging and continuing.
-				// The workspace has been created and should be used, but the config update failed.
-				// This error must be propagated to prevent inconsistent state.
-				errs.Append(errors.Errorf(`cannot update configuration "%s" with workspace details: %w`, config.Name, err))
-				continue
-			}
-			m.logger.Debugf(ctx, `Updated configuration "%s" with workspace details`, config.Name)
+		if !found || workspaceID == nil || workspaceID == "" {
+			continue
+		}
 
-			// Update remote state with the updated config
-			configState.SetRemoteState(config)
-
-			// Sync workspace details to local state if it exists
-			if configState.Local != nil {
-				if err := configState.Local.Content.SetNested("parameters.db.workspaceId", workspaceID); err != nil {
-					m.logger.Warnf(ctx, `Failed to sync workspaceId to local state for config "%s": %s`, config.Name, err.Error())
-				}
-				normalizeWorkspaceID(configState.Local)
-				// Also sync other workspace details
-				if host, found, _ := config.Content.GetNested("parameters.db.host"); found {
-					if err := configState.Local.Content.SetNested("parameters.db.host", host); err != nil {
-						m.logger.Warnf(ctx, `Failed to sync host to local state for config "%s": %s`, config.Name, err.Error())
-					}
-				}
-				if user, found, _ := config.Content.GetNested("parameters.db.user"); found {
-					if err := configState.Local.Content.SetNested("parameters.db.user", user); err != nil {
-						m.logger.Warnf(ctx, `Failed to sync user to local state for config "%s": %s`, config.Name, err.Error())
-					}
-				}
-				if database, found, _ := config.Content.GetNested("parameters.db.database"); found {
-					if err := configState.Local.Content.SetNested("parameters.db.database", database); err != nil {
-						m.logger.Warnf(ctx, `Failed to sync database to local state for config "%s": %s`, config.Name, err.Error())
-					}
-				}
-				scheduleLocalSave(configState)
-			}
+		// Update workspace details in remote and sync to local
+		if err := m.updateConfigWithWorkspaceDetails(ctx, configState, scheduleLocalSave); err != nil {
+			errs.Append(err)
+			continue
 		}
 	}
 
@@ -232,4 +195,65 @@ func (m *dataGatewayMapper) MapAfterLocalLoad(ctx context.Context, recipe *model
 	normalizeWorkspaceID(config)
 
 	return nil
+}
+
+// updateConfigWithWorkspaceDetails updates the configuration in remote with workspace details
+// and syncs those details to the local state if it exists.
+func (m *dataGatewayMapper) updateConfigWithWorkspaceDetails(ctx context.Context, configState *model.ConfigState, scheduleLocalSave func(*model.ConfigState)) error {
+	config := configState.Remote
+	if config == nil {
+		return nil
+	}
+
+	// Update the configuration in remote with workspace details
+	// If this update fails, the workspace exists but the config doesn't reference it.
+	// This creates an inconsistent state, so we return the error to prevent silent failures.
+	api := m.KeboolaProjectAPI()
+	changedFields := model.NewChangedFields()
+	changedFields.Add("configuration")
+	apiObject, apiChangedFields := config.ToAPIObject("Workspace created and configuration updated", changedFields)
+	_, err := api.UpdateRequest(apiObject, apiChangedFields).Send(ctx)
+	if err != nil {
+		// Return error instead of logging and continuing.
+		// The workspace has been created and should be used, but the config update failed.
+		// This error must be propagated to prevent inconsistent state.
+		return errors.Errorf(`cannot update configuration "%s" with workspace details: %w`, config.Name, err)
+	}
+	m.logger.Debugf(ctx, `Updated configuration "%s" with workspace details`, config.Name)
+
+	// Update remote state with the updated config
+	configState.SetRemoteState(config)
+
+	// Sync workspace details to local state if it exists
+	if configState.Local != nil {
+		m.syncWorkspaceDetailsToLocal(ctx, config, configState.Local)
+		scheduleLocalSave(configState)
+	}
+
+	return nil
+}
+
+// syncWorkspaceDetailsToLocal syncs workspace details from remote config to local config.
+func (m *dataGatewayMapper) syncWorkspaceDetailsToLocal(ctx context.Context, remoteConfig, localConfig *model.Config) {
+	workspaceID, found, _ := remoteConfig.Content.GetNested("parameters.db.workspaceId")
+	if found {
+		if err := localConfig.Content.SetNested("parameters.db.workspaceId", workspaceID); err != nil {
+			m.logger.Warnf(ctx, `Failed to sync workspaceId to local state for config "%s": %s`, remoteConfig.Name, err.Error())
+		}
+	}
+	normalizeWorkspaceID(localConfig)
+
+	// Also sync other workspace details
+	m.syncNestedField(ctx, remoteConfig, localConfig, "parameters.db.host", "host")
+	m.syncNestedField(ctx, remoteConfig, localConfig, "parameters.db.user", "user")
+	m.syncNestedField(ctx, remoteConfig, localConfig, "parameters.db.database", "database")
+}
+
+// syncNestedField syncs a single nested field from remote to local config.
+func (m *dataGatewayMapper) syncNestedField(ctx context.Context, remoteConfig, localConfig *model.Config, fieldPath, fieldName string) {
+	if value, found, _ := remoteConfig.Content.GetNested(fieldPath); found {
+		if err := localConfig.Content.SetNested(fieldPath, value); err != nil {
+			m.logger.Warnf(ctx, `Failed to sync %s to local state for config "%s": %s`, fieldName, remoteConfig.Name, err.Error())
+		}
+	}
 }

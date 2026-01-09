@@ -93,50 +93,8 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	plan.Log(d.Stdout())
 
 	if !plan.Empty() {
-		// Dry run?
-		if o.DryRun {
-			logger.Info(ctx, "Dry run, nothing changed.")
-			return nil
-		}
-
-		// Invoke
-		if err := plan.Invoke(logger, projectState.Ctx(), projectState.LocalManager(), projectState.RemoteManager(), ``); err != nil { // nolint: contextcheck
+		if err := o.executePullPlan(ctx, plan, projectState, defaultBranch.ID, renameOptions, d); err != nil {
 			return err
-		}
-
-		// Save manifest
-		if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
-			return err
-		}
-
-		// Save project.json
-		if err := cachefile.New().Save(ctx, projectState.Fs(), d.ProjectBackends(), d.ProjectFeatures(), defaultBranch.ID); err != nil {
-			return err
-		}
-
-		// Reload local state so that the naming registry reflects deletions
-		// and freed paths before running path normalization. Without this the
-		// rename plan may see old paths as still occupied and append suffixes.
-		if ok, localErr, _ := projectState.Load(ctx, state.LoadOptions{LoadLocalState: true}); !ok {
-			if localErr != nil {
-				return localErr
-			}
-			return errors.New("failed to reload local state")
-		}
-
-		// Normalize paths
-		// Enable Cleanup to handle chained renames where destination temporarily exists
-		if _, err := rename.Run(ctx, projectState, renameOptions, d); err != nil {
-			return err
-		}
-
-		// Validate schemas and encryption
-		if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJSONSchema: true}, d); err != nil {
-			logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
-			logger.Warn(ctx, "")
-			logger.Warn(ctx, `The project has been pulled, but it is not in a valid state.`)
-			logger.Warn(ctx, `Please correct the problems listed above.`)
-			logger.Warn(ctx, `Push operation is only possible when project is valid.`)
 		}
 	}
 
@@ -160,4 +118,64 @@ func ignoreConfigsAndRows(projectState *project.State) {
 	for _, v := range projectState.IgnoredConfigs() {
 		v.SetRemoteState(nil)
 	}
+}
+
+// executePullPlan executes the pull plan and performs all post-processing steps.
+func (o *Options) executePullPlan(
+	ctx context.Context,
+	plan *pull.Plan,
+	projectState *state.State,
+	defaultBranchID keboola.BranchID,
+	renameOptions rename.Options,
+	d dependencies,
+) error {
+	logger := d.Logger()
+
+	// Dry run?
+	if o.DryRun {
+		logger.Info(ctx, "Dry run, nothing changed.")
+		return nil
+	}
+
+	// Invoke
+	if err := plan.Invoke(logger, projectState.Ctx(), projectState.LocalManager(), projectState.RemoteManager(), ``); err != nil { // nolint: contextcheck
+		return err
+	}
+
+	// Save manifest
+	if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+		return err
+	}
+
+	// Save project.json
+	if err := cachefile.New().Save(ctx, projectState.Fs(), d.ProjectBackends(), d.ProjectFeatures(), defaultBranchID); err != nil {
+		return err
+	}
+
+	// Reload local state so that the naming registry reflects deletions
+	// and freed paths before running path normalization. Without this the
+	// rename plan may see old paths as still occupied and append suffixes.
+	if ok, localErr, _ := projectState.Load(ctx, state.LoadOptions{LoadLocalState: true}); !ok {
+		if localErr != nil {
+			return localErr
+		}
+		return errors.New("failed to reload local state")
+	}
+
+	// Normalize paths
+	// Enable Cleanup to handle chained renames where destination temporarily exists
+	if _, err := rename.Run(ctx, projectState, renameOptions, d); err != nil {
+		return err
+	}
+
+	// Validate schemas and encryption
+	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJSONSchema: true}, d); err != nil {
+		logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+		logger.Warn(ctx, "")
+		logger.Warn(ctx, `The project has been pulled, but it is not in a valid state.`)
+		logger.Warn(ctx, `Please correct the problems listed above.`)
+		logger.Warn(ctx, `Push operation is only possible when project is valid.`)
+	}
+
+	return nil
 }
