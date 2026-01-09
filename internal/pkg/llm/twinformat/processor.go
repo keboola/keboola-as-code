@@ -52,8 +52,6 @@ type ProcessedTable struct {
 
 // ProcessedTransformation represents a transformation with computed data.
 type ProcessedTransformation struct {
-	// Embedded scanned transformation (may be nil if only API data available)
-	*ScannedTransformation
 	// Basic metadata
 	UID         string
 	Name        string
@@ -125,7 +123,6 @@ type Processor struct {
 	logger         log.Logger
 	telemetry      telemetry.Telemetry
 	fs             filesystem.Fs
-	scanner        *Scanner
 	lineageBuilder *LineageBuilder
 }
 
@@ -135,7 +132,6 @@ func NewProcessor(d ProcessorDependencies) *Processor {
 		logger:         d.Logger(),
 		telemetry:      d.Telemetry(),
 		fs:             d.Fs(),
-		scanner:        NewScanner(d),
 		lineageBuilder: NewLineageBuilder(d),
 	}
 }
