@@ -573,7 +573,7 @@ func TestParseCodeBlocks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			result := ParseCodeBlocks(tt.params, false, logger, ctx)
+			result := ParseCodeBlocks(ctx, tt.params, logger)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

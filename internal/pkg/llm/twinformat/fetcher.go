@@ -179,7 +179,6 @@ func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboo
 	}
 
 	configs = make([]*configparser.TransformationConfig, 0)
-	debugCount := 0
 	for _, comp := range *components {
 		// Only process transformation components
 		if !comp.IsTransformation() {
@@ -187,26 +186,12 @@ func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboo
 		}
 
 		for _, cfg := range comp.Configs {
-			debug := debugCount < 3
-			config := configparser.ParseTransformationConfig(comp.ID.String(), cfg, debug, f.logger, ctx)
+			config := configparser.ParseTransformationConfig(ctx, comp.ID.String(), cfg, f.logger)
 			if config == nil {
 				continue
 			}
 
 			configs = append(configs, config)
-
-			// Debug: Log parsing results for first few configs
-			if !debug {
-				continue
-			}
-
-			codeCount := 0
-			for _, b := range config.Blocks {
-				codeCount += len(b.Codes)
-			}
-			f.logger.Debugf(ctx, "Transformation %s: %d inputs, %d outputs, %d blocks, %d codes",
-				config.Name, len(config.InputTables), len(config.OutputTables), len(config.Blocks), codeCount)
-			debugCount++
 		}
 	}
 
