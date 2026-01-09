@@ -23,7 +23,7 @@ type dependencies interface {
 	Stdout() io.Writer
 }
 
-func Run(ctx context.Context, _ Options, d dependencies) (err error) {
+func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.llm.export")
 	defer span.End(&err)
 
@@ -67,6 +67,19 @@ func Run(ctx context.Context, _ Options, d dependencies) (err error) {
 	generator := twinformat.NewGenerator(d, outputDir)
 	if err := generator.Generate(ctx, processedData); err != nil {
 		return err
+	}
+
+	// Fetch and generate samples if requested
+	if opts.ShouldIncludeSamples() {
+		logger.Info(ctx, "Fetching table samples...")
+		samples, err := fetcher.FetchTableSamples(ctx, projectData.Tables, branch.ID, opts.GetSampleLimit(), opts.GetMaxSamples())
+		if err != nil {
+			logger.Warnf(ctx, "Failed to fetch samples: %v", err)
+		} else if len(samples) > 0 {
+			if err := generator.GenerateSamples(ctx, processedData, samples); err != nil {
+				logger.Warnf(ctx, "Failed to generate samples: %v", err)
+			}
+		}
 	}
 
 	logger.Infof(ctx, "Twin format exported to: %s", d.Fs().BasePath())
