@@ -79,79 +79,6 @@ func (t *uidTracker) trackTransformUID(uid, original string) (collision bool, pr
 	return false, ""
 }
 
-// BuildLineageGraph builds the lineage graph from scanned transformations.
-func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, transformations []*ScannedTransformation) (graph *LineageGraph, err error) {
-	ctx, span := b.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.lineage.BuildLineageGraph")
-	defer span.End(&err)
-
-	graph = &LineageGraph{
-		Edges:      make([]*LineageEdge, 0),
-		TableNodes: make(map[string]bool),
-		TransNodes: make(map[string]bool),
-	}
-
-	// Track UIDs for collision detection
-	tracker := newUIDTracker()
-
-	for _, t := range transformations {
-		transformUID := b.buildTransformationUID(t)
-		originalName := t.Name
-		if originalName == "" {
-			originalName = t.ConfigID
-		}
-		if collision, prev := tracker.trackTransformUID(transformUID, originalName); collision {
-			b.logger.Warnf(ctx, "UID collision detected: transformations %q and %q both map to UID %q", prev, originalName, transformUID)
-		}
-		graph.TransNodes[transformUID] = true
-
-		// Build input edges: table -> transformation (consumed_by)
-		for _, input := range t.InputTables {
-			tableUID := b.buildTableUID(ctx, input.Source)
-			if collision, prev := tracker.trackTableUID(tableUID, input.Source); collision {
-				b.logger.Warnf(ctx, "UID collision detected: tables %q and %q both map to UID %q", prev, input.Source, tableUID)
-			}
-			graph.TableNodes[tableUID] = true
-
-			edge := &LineageEdge{
-				Source: tableUID,
-				Target: transformUID,
-				Type:   EdgeTypeConsumedBy,
-			}
-			graph.Edges = append(graph.Edges, edge)
-		}
-
-		// Build output edges: transformation -> table (produces)
-		for _, output := range t.OutputTables {
-			tableUID := b.buildTableUID(ctx, output.Destination)
-			if collision, prev := tracker.trackTableUID(tableUID, output.Destination); collision {
-				b.logger.Warnf(ctx, "UID collision detected: tables %q and %q both map to UID %q", prev, output.Destination, tableUID)
-			}
-			graph.TableNodes[tableUID] = true
-
-			edge := &LineageEdge{
-				Source: transformUID,
-				Target: tableUID,
-				Type:   EdgeTypeProduces,
-			}
-			graph.Edges = append(graph.Edges, edge)
-		}
-	}
-
-	// Calculate node count
-	graph.NodeCount = len(graph.TableNodes) + len(graph.TransNodes)
-
-	// Build metadata
-	graph.Meta = &LineageMetaData{
-		TotalEdges: len(graph.Edges),
-		TotalNodes: graph.NodeCount,
-		Updated:    time.Now().UTC().Format(time.RFC3339),
-	}
-
-	b.logger.Infof(ctx, "Built lineage graph with %d edges and %d nodes", len(graph.Edges), graph.NodeCount)
-
-	return graph, nil
-}
-
 // BuildLineageGraphFromAPI builds the lineage graph from API-fetched transformation configs.
 func (b *LineageBuilder) BuildLineageGraphFromAPI(ctx context.Context, configs []*TransformationConfig) (graph *LineageGraph, err error) {
 	ctx, span := b.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.lineage.BuildLineageGraphFromAPI")
@@ -223,16 +150,6 @@ func (b *LineageBuilder) BuildLineageGraphFromAPI(ctx context.Context, configs [
 	b.logger.Infof(ctx, "Built lineage graph from API with %d edges and %d nodes", len(graph.Edges), graph.NodeCount)
 
 	return graph, nil
-}
-
-// buildTransformationUID builds a UID for a transformation.
-// Format: transform:{name}.
-func (b *LineageBuilder) buildTransformationUID(t *ScannedTransformation) string {
-	name := t.Name
-	if name == "" {
-		name = t.ConfigID
-	}
-	return fmt.Sprintf("transform:%s", sanitizeUID(name))
 }
 
 // buildTransformationUIDFromConfig builds a UID for a transformation from API config.
