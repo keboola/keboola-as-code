@@ -261,26 +261,3 @@ func BuildTableUIDFromParts(bucket, table string) string {
 func BuildTransformationUIDFromName(name string) string {
 	return fmt.Sprintf("transform:%s", sanitizeUID(name))
 }
-
-// ParseTableUID parses a table UID into bucket and table name.
-// Input format: "table:bucket/table".
-// Returns: bucket, table.
-func ParseTableUID(uid string) (bucket, table string) {
-	// Remove "table:" prefix
-	uid = strings.TrimPrefix(uid, "table:")
-
-	// Split by "/"
-	parts := strings.SplitN(uid, "/", 2)
-	if len(parts) == 2 {
-		return parts[0], parts[1]
-	}
-
-	return uid, ""
-}
-
-// ParseTransformationUID parses a transformation UID into name.
-// Input format: "transform:name".
-// Returns: name.
-func ParseTransformationUID(uid string) string {
-	return strings.TrimPrefix(uid, "transform:")
-}
