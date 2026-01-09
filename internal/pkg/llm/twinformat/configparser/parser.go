@@ -344,8 +344,15 @@ func ParseComponentConfig(comp *keboola.ComponentWithConfigs, cfg *keboola.Confi
 		Created:       cfg.Created.String(),
 	}
 
-	// Convert configuration content to map
+	// Parse storage.output.tables for output mappings (applications/extractors write to tables too)
 	if cfg.Content != nil {
+		if storage, ok := cfg.Content.Get("storage"); ok {
+			if storageMap := toStringMap(storage); storageMap != nil {
+				config.OutputTables = ParseStorageMappings(storageMap, "output")
+			}
+		}
+
+		// Convert configuration content to map
 		config.Configuration = make(map[string]any)
 		for _, key := range cfg.Content.Keys() {
 			if val, ok := cfg.Content.Get(key); ok {
