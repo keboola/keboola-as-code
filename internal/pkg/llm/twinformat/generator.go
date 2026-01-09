@@ -862,6 +862,8 @@ func (g *Generator) generateSourcesIndex(ctx context.Context, data *ProcessedDat
 	// Convert to list.
 	sources := make([]map[string]any, 0, len(sourceMap))
 	for _, info := range sourceMap {
+		// Sort buckets for deterministic output.
+		sort.Strings(info.Buckets)
 		sources = append(sources, map[string]any{
 			"id":           info.ID,
 			"name":         info.Name,
@@ -871,6 +873,11 @@ func (g *Generator) generateSourcesIndex(ctx context.Context, data *ProcessedDat
 			"buckets":      info.Buckets,
 		})
 	}
+
+	// Sort sources by ID for deterministic output.
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i]["id"].(string) < sources[j]["id"].(string)
+	})
 
 	sourcesIndex := map[string]any{
 		"_comment":          docFields.Comment,
@@ -1129,6 +1136,8 @@ func (g *Generator) generateManifestExtended(ctx context.Context, data *Processe
 
 	sources := make([]map[string]any, 0, len(sourceMap))
 	for _, info := range sourceMap {
+		// Sort buckets for deterministic output.
+		sort.Strings(info.Buckets)
 		sources = append(sources, map[string]any{
 			"id":           info.ID,
 			"name":         info.Name,
@@ -1138,6 +1147,11 @@ func (g *Generator) generateManifestExtended(ctx context.Context, data *Processe
 			"buckets":      info.Buckets,
 		})
 	}
+
+	// Sort sources by ID for deterministic output.
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i]["id"].(string) < sources[j]["id"].(string)
+	})
 
 	// Build platform counts.
 	platformCounts := make(map[string]int)
