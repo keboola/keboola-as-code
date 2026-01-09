@@ -1052,7 +1052,11 @@ func (g *Generator) generateMostConnectedNodes(ctx context.Context, data *Proces
 	}
 
 	sort.Slice(nodes, func(i, j int) bool {
-		return nodes[i].Connections > nodes[j].Connections
+		if nodes[i].Connections != nodes[j].Connections {
+			return nodes[i].Connections > nodes[j].Connections
+		}
+		// Secondary sort by UID for deterministic order when connections are equal.
+		return nodes[i].UID < nodes[j].UID
 	})
 
 	// Take top 20.
