@@ -242,7 +242,7 @@ func TestParseCodeBlocks(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	logger := log.NewNopLogger()
+	parser := NewParser(log.NewNopLogger())
 
 	tests := []struct {
 		name     string
@@ -573,7 +573,7 @@ func TestParseCodeBlocks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			result := ParseCodeBlocks(ctx, tt.params, logger)
+			result := parser.ParseCodeBlocks(ctx, tt.params)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

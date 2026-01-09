@@ -11,8 +11,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
+// Parser parses Keboola configuration data into structured types.
+type Parser struct {
+	logger log.Logger
+}
+
+// NewParser creates a new Parser instance.
+func NewParser(logger log.Logger) *Parser {
+	return &Parser{logger: logger}
+}
+
 // ParseTransformationConfig parses a Config into TransformationConfig.
-func ParseTransformationConfig(ctx context.Context, componentID string, cfg *keboola.ConfigWithRows, logger log.Logger) *TransformationConfig {
+func (p *Parser) ParseTransformationConfig(ctx context.Context, componentID string, cfg *keboola.ConfigWithRows) *TransformationConfig {
 	config := &TransformationConfig{
 		ID:          cfg.ID.String(),
 		Name:        cfg.Name,
@@ -27,19 +37,19 @@ func ParseTransformationConfig(ctx context.Context, componentID string, cfg *keb
 		return config
 	}
 
-	logger.Debugf(ctx, "Config %s keys: %v", cfg.Name, cfg.Content.Keys())
+	p.logger.Debugf(ctx, "Config %s keys: %v", cfg.Name, cfg.Content.Keys())
 
 	// Parse storage.input.tables and storage.output.tables
-	parseStorageSection(ctx, config, cfg, logger)
+	p.parseStorageSection(ctx, config, cfg)
 
 	// Parse parameters.blocks for transformation code
-	parseParametersSection(ctx, config, cfg, logger)
+	p.parseParametersSection(ctx, config, cfg)
 
 	return config
 }
 
 // parseStorageSection parses the storage section of a transformation config.
-func parseStorageSection(ctx context.Context, config *TransformationConfig, cfg *keboola.ConfigWithRows, logger log.Logger) {
+func (p *Parser) parseStorageSection(ctx context.Context, config *TransformationConfig, cfg *keboola.ConfigWithRows) {
 	storage, ok := cfg.Content.Get("storage")
 	if !ok {
 		return
@@ -47,17 +57,17 @@ func parseStorageSection(ctx context.Context, config *TransformationConfig, cfg 
 
 	storageMap := toStringMap(storage)
 	if storageMap == nil {
-		logger.Debugf(ctx, "Config %s storage type: %T", cfg.Name, storage)
+		p.logger.Debugf(ctx, "Config %s storage type: %T", cfg.Name, storage)
 		return
 	}
 
-	logger.Debugf(ctx, "Config %s storage keys: %v", cfg.Name, maps.Keys(storageMap))
+	p.logger.Debugf(ctx, "Config %s storage keys: %v", cfg.Name, maps.Keys(storageMap))
 	config.InputTables = ParseStorageMappings(storageMap, "input")
 	config.OutputTables = ParseStorageMappings(storageMap, "output")
 }
 
 // parseParametersSection parses the parameters section of a transformation config.
-func parseParametersSection(ctx context.Context, config *TransformationConfig, cfg *keboola.ConfigWithRows, logger log.Logger) {
+func (p *Parser) parseParametersSection(ctx context.Context, config *TransformationConfig, cfg *keboola.ConfigWithRows) {
 	params, ok := cfg.Content.Get("parameters")
 	if !ok {
 		return
@@ -65,12 +75,12 @@ func parseParametersSection(ctx context.Context, config *TransformationConfig, c
 
 	paramsMap := toStringMap(params)
 	if paramsMap == nil {
-		logger.Debugf(ctx, "Config %s parameters type: %T", cfg.Name, params)
+		p.logger.Debugf(ctx, "Config %s parameters type: %T", cfg.Name, params)
 		return
 	}
 
-	logger.Debugf(ctx, "Config %s parameters keys: %v", cfg.Name, maps.Keys(paramsMap))
-	config.Blocks = ParseCodeBlocks(ctx, paramsMap, logger)
+	p.logger.Debugf(ctx, "Config %s parameters keys: %v", cfg.Name, maps.Keys(paramsMap))
+	config.Blocks = p.ParseCodeBlocks(ctx, paramsMap)
 }
 
 // toStringMap converts various map types to map[string]any.
@@ -151,11 +161,11 @@ func parseTableMapping(t any) (StorageMapping, bool) {
 }
 
 // ParseCodeBlocks parses code blocks from transformation parameters.
-func ParseCodeBlocks(ctx context.Context, params map[string]any, logger log.Logger) []*CodeBlock {
+func (p *Parser) ParseCodeBlocks(ctx context.Context, params map[string]any) []*CodeBlock {
 	blocks := make([]*CodeBlock, 0)
 
 	// Parse standard blocks format
-	blocks = append(blocks, parseBlocks(ctx, params, logger)...)
+	blocks = append(blocks, p.parseBlocks(ctx, params)...)
 
 	// Handle Snowflake/SQL transformations that use "queries" instead of "blocks"
 	if queryBlock := parseQueries(params); queryBlock != nil {
@@ -166,7 +176,7 @@ func ParseCodeBlocks(ctx context.Context, params map[string]any, logger log.Logg
 }
 
 // parseBlocks parses the "blocks" section from transformation parameters.
-func parseBlocks(ctx context.Context, params map[string]any, logger log.Logger) []*CodeBlock {
+func (p *Parser) parseBlocks(ctx context.Context, params map[string]any) []*CodeBlock {
 	blocks := make([]*CodeBlock, 0)
 
 	blocksRaw, ok := params["blocks"]
@@ -180,7 +190,7 @@ func parseBlocks(ctx context.Context, params map[string]any, logger log.Logger) 
 	}
 
 	for _, b := range blocksSlice {
-		if block := parseBlock(ctx, b, logger); block != nil {
+		if block := p.parseBlock(ctx, b); block != nil {
 			blocks = append(blocks, block)
 		}
 	}
@@ -189,7 +199,7 @@ func parseBlocks(ctx context.Context, params map[string]any, logger log.Logger) 
 }
 
 // parseBlock parses a single block from the configuration.
-func parseBlock(ctx context.Context, b any, logger log.Logger) *CodeBlock {
+func (p *Parser) parseBlock(ctx context.Context, b any) *CodeBlock {
 	blockMap := toStringMap(b)
 	if blockMap == nil {
 		return nil
@@ -200,9 +210,9 @@ func parseBlock(ctx context.Context, b any, logger log.Logger) *CodeBlock {
 		block.Name = name
 	}
 
-	logger.Debugf(ctx, "Block %s keys: %v", block.Name, maps.Keys(blockMap))
+	p.logger.Debugf(ctx, "Block %s keys: %v", block.Name, maps.Keys(blockMap))
 
-	block.Codes = parseCodes(ctx, blockMap, logger)
+	block.Codes = p.parseCodes(ctx, blockMap)
 
 	if block.Name == "" && len(block.Codes) == 0 {
 		return nil
@@ -212,7 +222,7 @@ func parseBlock(ctx context.Context, b any, logger log.Logger) *CodeBlock {
 }
 
 // parseCodes parses the codes within a block.
-func parseCodes(ctx context.Context, blockMap map[string]any, logger log.Logger) []*Code {
+func (p *Parser) parseCodes(ctx context.Context, blockMap map[string]any) []*Code {
 	codesRaw, ok := blockMap["codes"]
 	if !ok {
 		return nil
@@ -225,7 +235,7 @@ func parseCodes(ctx context.Context, blockMap map[string]any, logger log.Logger)
 
 	var codes []*Code
 	for _, c := range codesSlice {
-		if code := parseCode(ctx, c, logger); code != nil {
+		if code := p.parseCode(ctx, c); code != nil {
 			codes = append(codes, code)
 		}
 	}
@@ -234,7 +244,7 @@ func parseCodes(ctx context.Context, blockMap map[string]any, logger log.Logger)
 }
 
 // parseCode parses a single code entry from a block.
-func parseCode(ctx context.Context, c any, logger log.Logger) *Code {
+func (p *Parser) parseCode(ctx context.Context, c any) *Code {
 	codeMap := toStringMap(c)
 	if codeMap == nil {
 		return nil
@@ -245,11 +255,11 @@ func parseCode(ctx context.Context, c any, logger log.Logger) *Code {
 		code.Name = name
 	}
 
-	logger.Debugf(ctx, "Code %s keys: %v", code.Name, maps.Keys(codeMap))
+	p.logger.Debugf(ctx, "Code %s keys: %v", code.Name, maps.Keys(codeMap))
 
 	code.Script = parseScript(codeMap)
 
-	logger.Debugf(ctx, "Code %s script length: %d", code.Name, len(code.Script))
+	p.logger.Debugf(ctx, "Code %s script length: %d", code.Name, len(code.Script))
 
 	if code.Name == "" && code.Script == "" {
 		return nil

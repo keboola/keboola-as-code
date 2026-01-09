@@ -24,6 +24,7 @@ type FetcherDependencies interface {
 type Fetcher struct {
 	api       *keboola.AuthorizedAPI
 	logger    log.Logger
+	parser    *configparser.Parser
 	projectID keboola.ProjectID
 	telemetry telemetry.Telemetry
 }
@@ -33,6 +34,7 @@ func NewFetcher(d FetcherDependencies) *Fetcher {
 	return &Fetcher{
 		api:       d.KeboolaProjectAPI(),
 		logger:    d.Logger(),
+		parser:    configparser.NewParser(d.Logger()),
 		projectID: d.ProjectID(),
 		telemetry: d.Telemetry(),
 	}
@@ -180,7 +182,7 @@ func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboo
 		}
 
 		for _, cfg := range comp.Configs {
-			config := configparser.ParseTransformationConfig(ctx, comp.ID.String(), cfg, f.logger)
+			config := f.parser.ParseTransformationConfig(ctx, comp.ID.String(), cfg)
 			if config == nil {
 				continue
 			}
