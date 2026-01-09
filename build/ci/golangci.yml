@@ -58,6 +58,7 @@ linters:
     - makezero
     - musttag
     - nakedret
+    - nestif
     - nilerr
     - noctx
     - paralleltest
@@ -147,6 +148,8 @@ linters:
     misspell:
       ignore-rules:
         - Statuser
+    nestif:
+      min-complexity: 7
     staticcheck:
       checks:
         - all
