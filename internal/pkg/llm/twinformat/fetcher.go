@@ -60,30 +60,24 @@ func (f *Fetcher) FetchAll(ctx context.Context, branchID keboola.BranchID) (data
 	data.Tables = tables
 
 	// Fetch jobs from Queue API
-	jobs, err := f.fetchJobsQueue(ctx, branchID)
+	data.Jobs, err = f.fetchJobsQueue(ctx, branchID)
 	if err != nil {
 		f.logger.Warnf(ctx, "Failed to fetch jobs from Queue API: %v", err)
 		data.Jobs = []*keboola.QueueJob{}
-	} else {
-		data.Jobs = jobs
 	}
 
 	// Fetch transformation configs
-	transformConfigs, err := f.FetchTransformationConfigs(ctx, branchID)
+	data.TransformationConfigs, err = f.FetchTransformationConfigs(ctx, branchID)
 	if err != nil {
 		f.logger.Warnf(ctx, "Failed to fetch transformation configs: %v", err)
 		data.TransformationConfigs = []*configparser.TransformationConfig{}
-	} else {
-		data.TransformationConfigs = transformConfigs
 	}
 
 	// Fetch component configs
-	componentConfigs, err := f.FetchComponentConfigs(ctx, branchID)
+	data.ComponentConfigs, err = f.FetchComponentConfigs(ctx, branchID)
 	if err != nil {
 		f.logger.Warnf(ctx, "Failed to fetch component configs: %v", err)
 		data.ComponentConfigs = []*configparser.ComponentConfig{}
-	} else {
-		data.ComponentConfigs = componentConfigs
 	}
 
 	f.logger.Infof(ctx, "Fetched %d buckets, %d tables, %d jobs, %d transformations, %d components",
@@ -226,9 +220,10 @@ func (f *Fetcher) FetchComponentConfigs(ctx context.Context, branchID keboola.Br
 
 		for _, cfg := range comp.Configs {
 			config := configparser.ParseComponentConfig(comp, cfg)
-			if config != nil {
-				configs = append(configs, config)
+			if config == nil {
+				continue
 			}
+			configs = append(configs, config)
 		}
 	}
 
