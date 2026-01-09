@@ -152,6 +152,11 @@ Services auto-reload on code changes using Air.
 - **Dependency management**: Constructor-based DI; interface segregation (small interfaces)
 - **Observability**: Structured logging; OpenTelemetry integration; metrics for critical paths
 
+### Commit Practices
+- **Make small, focused commits** - One logical change per commit
+- **Don't bundle multiple tasks** into a single commit; split them for easier review and rebasing
+- **Example**: If implementing column metadata, transformation code output, and component configs, create 3 separate commits rather than one large commit
+
 ### Testing
 - Test files use `*_test.go` suffix and are located next to implementation
 - Use `testify/assert` for assertions
