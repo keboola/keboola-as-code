@@ -195,7 +195,7 @@ func TestFetchJobsQueue(t *testing.T) {
 	transport.RegisterResponder(
 		http.MethodGet,
 		`=~queue.keboola.local/search/jobs`,
-		httpmock.NewJsonResponderOrPanic(200, []*keboola.QueueJob{
+		httpmock.NewJsonResponderOrPanic(200, []*keboola.QueueJobDetail{
 			{
 				JobKey:      keboola.JobKey{ID: "1001"},
 				BranchID:    branchID,
@@ -466,7 +466,7 @@ func TestFetchAll(t *testing.T) {
 	transport.RegisterResponder(
 		http.MethodGet,
 		`=~queue.keboola.local/search/jobs`,
-		httpmock.NewJsonResponderOrPanic(200, []*keboola.QueueJob{}),
+		httpmock.NewJsonResponderOrPanic(200, []*keboola.QueueJobDetail{}),
 	)
 
 	// Mock components response for transformations and component configs
@@ -505,9 +505,10 @@ func TestFetchAll(t *testing.T) {
 				},
 			},
 		},
-		Jobs:                  []*keboola.QueueJob{},
+		Jobs:                  []*keboola.QueueJobDetail{},
 		TransformationConfigs: []*TransformationConfig{},
 		ComponentConfigs:      []*ComponentConfig{},
+		Components:            []*keboola.ComponentWithConfigs{},
 	}
 	assert.Equal(t, expectedData, data)
 }
