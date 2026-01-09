@@ -9,6 +9,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/configparser"
 )
 
+// Type aliases for types defined in configparser package.
+type (
+	TransformationConfig = configparser.TransformationConfig
+	StorageMapping       = configparser.StorageMapping
+	CodeBlock            = configparser.CodeBlock
+	Code                 = configparser.Code
+	ComponentConfig      = configparser.ComponentConfig
+)
+
 // ProjectData holds all fetched data from Keboola APIs.
 type ProjectData struct {
 	ProjectID             keboola.ProjectID
@@ -219,15 +228,6 @@ type LineageMetaData struct {
 	TotalNodes int    `json:"total_nodes"`
 	Updated    string `json:"updated"`
 }
-
-// Type aliases for types defined in configparser package.
-type (
-	TransformationConfig = configparser.TransformationConfig
-	StorageMapping       = configparser.StorageMapping
-	CodeBlock            = configparser.CodeBlock
-	Code                 = configparser.Code
-	ComponentConfig      = configparser.ComponentConfig
-)
 
 // DocFields represents the standard documentation fields for JSON files.
 type DocFields struct {
