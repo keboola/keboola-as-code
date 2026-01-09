@@ -1281,16 +1281,78 @@ func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample)
 		return errors.Errorf("failed to write sample CSV: %w", err)
 	}
 
+	// Calculate data quality metrics.
+	dataQuality := g.calculateDataQuality(sample)
+
 	// Write metadata.
 	metadata := map[string]any{
 		"_comment":          "Sample data metadata",
 		"_purpose":          "Describes the sample data for this table",
 		"_update_frequency": "Generated on export",
-		"table_id":          sample.TableID.String(),
 		"columns":           sample.Columns,
+		"data_quality":      dataQuality,
 		"row_count":         sample.RowCount,
+		"table_id":          sample.TableID.String(),
 	}
 
 	metadataPath := filesystem.Join(tableDir, "metadata.json")
 	return g.jsonWriter.Write(ctx, metadataPath, metadata)
+}
+
+// calculateDataQuality computes data quality metrics for a sample.
+// Returns completeness (percentage of non-null values), null_counts, distinct_counts, and sample_size.
+func (g *Generator) calculateDataQuality(sample *TableSample) map[string]any {
+	if len(sample.Columns) == 0 || sample.RowCount == 0 {
+		return map[string]any{
+			"completeness":    map[string]int{},
+			"null_counts":     map[string]int{},
+			"distinct_counts": map[string]int{},
+			"sample_size":     sample.RowCount,
+		}
+	}
+
+	// Initialize counters for each column.
+	nullCounts := make(map[string]int)
+	distinctSets := make(map[string]map[string]struct{})
+	for _, col := range sample.Columns {
+		nullCounts[col] = 0
+		distinctSets[col] = make(map[string]struct{})
+	}
+
+	// Process each row.
+	for _, row := range sample.Rows {
+		for i, col := range sample.Columns {
+			if i >= len(row) {
+				nullCounts[col]++
+				continue
+			}
+			value := row[i]
+			if value == "" {
+				nullCounts[col]++
+			} else {
+				distinctSets[col][value] = struct{}{}
+			}
+		}
+	}
+
+	// Calculate completeness and distinct counts.
+	completeness := make(map[string]int)
+	distinctCounts := make(map[string]int)
+	for _, col := range sample.Columns {
+		nullCount := nullCounts[col]
+		nonNullCount := sample.RowCount - nullCount
+		if sample.RowCount > 0 {
+			completeness[col] = (nonNullCount * 100) / sample.RowCount
+		} else {
+			completeness[col] = 0
+		}
+		distinctCounts[col] = len(distinctSets[col])
+	}
+
+	return map[string]any{
+		"completeness":    completeness,
+		"distinct_counts": distinctCounts,
+		"null_counts":     nullCounts,
+		"sample_size":     sample.RowCount,
+	}
 }
