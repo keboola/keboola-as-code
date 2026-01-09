@@ -163,8 +163,8 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 	processed.LineageGraph = lineageGraph
 	processed.Statistics.TotalEdges = len(lineageGraph.Edges)
 
-	// Step 3: Build table source registry from transformation outputs
-	tableSourceRegistry := p.buildTableSourceRegistry(ctx, fetchedData.TransformationConfigs, componentRegistry)
+	// Step 3: Build table source registry from transformation and component outputs
+	tableSourceRegistry := p.buildTableSourceRegistry(ctx, fetchedData.TransformationConfigs, fetchedData.ComponentConfigs, componentRegistry)
 
 	// Step 4: Process tables with lineage and component-based source
 	processed.Tables = p.processTables(ctx, fetchedData.Tables, lineageGraph, tableSourceRegistry)
@@ -205,9 +205,11 @@ func (p *Processor) buildComponentRegistry(ctx context.Context, components []*ke
 }
 
 // buildTableSourceRegistry builds a registry mapping tables to their source components.
-func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfigs []*TransformationConfig, componentRegistry *ComponentRegistry) *TableSourceRegistry {
+// It processes both transformation configs and component configs (extractors, applications, writers).
+func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfigs []*TransformationConfig, componentConfigs []*ComponentConfig, componentRegistry *ComponentRegistry) *TableSourceRegistry {
 	registry := NewTableSourceRegistry()
 
+	// Register tables from transformation outputs
 	for _, cfg := range transformConfigs {
 		compType := componentRegistry.GetType(cfg.ComponentID)
 		if compType == "" {
@@ -226,6 +228,31 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 				ConfigID:      cfg.ID,
 				ConfigName:    cfg.Name,
 			})
+		}
+	}
+
+	// Register tables from component outputs (extractors, applications, writers)
+	for _, cfg := range componentConfigs {
+		compType := cfg.ComponentType
+		if compType == "" {
+			compType = componentRegistry.GetType(cfg.ComponentID)
+		}
+
+		for _, output := range cfg.OutputTables {
+			// The destination is the output table ID (e.g., "out.c-bucket.table")
+			tableID := output.Destination
+			if tableID == "" {
+				continue
+			}
+			// Only register if not already registered (transformations take precedence)
+			if registry.GetSource(tableID) == SourceUnknown {
+				registry.Register(tableID, TableSource{
+					ComponentID:   cfg.ComponentID,
+					ComponentType: compType,
+					ConfigID:      cfg.ID,
+					ConfigName:    cfg.Name,
+				})
+			}
 		}
 	}
 
