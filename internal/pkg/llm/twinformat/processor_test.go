@@ -151,8 +151,8 @@ func TestIsJobNewer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			job := &keboola.QueueJob{StartTime: tc.jobStartTime}
-			existing := &keboola.QueueJob{StartTime: tc.existingStart}
+			job := &keboola.QueueJobDetail{StartTime: tc.jobStartTime}
+			existing := &keboola.QueueJobDetail{StartTime: tc.existingStart}
 			result := isJobNewer(job, existing)
 			assert.Equal(t, tc.expected, result)
 		})
@@ -174,7 +174,7 @@ func TestBuildJobMap(t *testing.T) {
 
 	t.Run("single job", func(t *testing.T) {
 		t.Parallel()
-		jobs := []*keboola.QueueJob{
+		jobs := []*keboola.QueueJobDetail{
 			{
 				ComponentID: "keboola.snowflake-transformation",
 				ConfigID:    "123",
@@ -188,19 +188,19 @@ func TestBuildJobMap(t *testing.T) {
 
 	t.Run("multiple jobs same config - keeps newer", func(t *testing.T) {
 		t.Parallel()
-		olderJob := &keboola.QueueJob{
+		olderJob := &keboola.QueueJobDetail{
 			ComponentID: "keboola.snowflake-transformation",
 			ConfigID:    "123",
 			StartTime:   &olderTime,
 			Status:      "success",
 		}
-		newerJob := &keboola.QueueJob{
+		newerJob := &keboola.QueueJobDetail{
 			ComponentID: "keboola.snowflake-transformation",
 			ConfigID:    "123",
 			StartTime:   &newerTime,
 			Status:      "error",
 		}
-		jobs := []*keboola.QueueJob{olderJob, newerJob}
+		jobs := []*keboola.QueueJobDetail{olderJob, newerJob}
 		result := buildJobMap(jobs)
 		assert.Len(t, result, 1)
 		assert.Equal(t, "error", result["keboola.snowflake-transformation:123"].Status)
@@ -208,17 +208,17 @@ func TestBuildJobMap(t *testing.T) {
 
 	t.Run("multiple configs", func(t *testing.T) {
 		t.Parallel()
-		job1 := &keboola.QueueJob{
+		job1 := &keboola.QueueJobDetail{
 			ComponentID: "keboola.snowflake-transformation",
 			ConfigID:    "123",
 			StartTime:   &olderTime,
 		}
-		job2 := &keboola.QueueJob{
+		job2 := &keboola.QueueJobDetail{
 			ComponentID: "keboola.python-transformation",
 			ConfigID:    "456",
 			StartTime:   &newerTime,
 		}
-		jobs := []*keboola.QueueJob{job1, job2}
+		jobs := []*keboola.QueueJobDetail{job1, job2}
 		result := buildJobMap(jobs)
 		assert.Len(t, result, 2)
 		assert.Equal(t, job1, result["keboola.snowflake-transformation:123"])
@@ -313,7 +313,7 @@ func TestProcessor_Process_Integration(t *testing.T) {
 				},
 			},
 		},
-		Jobs: []*keboola.QueueJob{
+		Jobs: []*keboola.QueueJobDetail{
 			{
 				JobKey:      keboola.JobKey{ID: "job-123"},
 				ComponentID: "keboola.snowflake-transformation",
