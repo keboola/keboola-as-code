@@ -274,3 +274,45 @@ func extractComponentFromUserAgent(userAgent string) string {
 	parts := strings.Split(userAgent, " ")
 	return parts[len(parts)-1]
 }
+
+// FetchTableLastImporter fetches the component that last imported data to a table.
+// It looks at the storage events for the table and finds the latest tableImportDone event.
+// Returns the component ID extracted from the event's userAgent field.
+func (f *Fetcher) FetchTableLastImporter(ctx context.Context, tableID keboola.TableID) (componentID string, err error) {
+	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchTableLastImporter")
+	defer span.End(&err)
+
+	// List events for the table using SDK method
+	events, err := f.api.ListTableEventsRequest(tableID, keboola.WithTableEventsLimit(50)).Send(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	// Find the latest tableImportDone event
+	for _, event := range *events {
+		if event.Event == "storage.tableImportDone" {
+			// Extract component ID from userAgent
+			// Format: "Keboola Storage API PHP Client/14 kds-team.app-custom-python"
+			componentID := extractComponentFromUserAgent(event.Context.UserAgent)
+			if componentID != "" {
+				return componentID, nil
+			}
+		}
+	}
+
+	return "", nil
+}
+
+// extractComponentFromUserAgent extracts the component ID from a userAgent string.
+// Format: "Keboola Storage API PHP Client/14 kds-team.app-custom-python"
+// Returns the last space-separated part which is the component ID.
+func extractComponentFromUserAgent(userAgent string) string {
+	if userAgent == "" {
+		return ""
+	}
+	parts := strings.Split(userAgent, " ")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return ""
+}
