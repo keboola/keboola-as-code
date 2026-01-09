@@ -138,6 +138,7 @@ Services auto-reload on code changes using Air.
 - **Error wrapping**: Use error wrapping with stack traces; custom error types for domain logic
 - **Dependency management**: Constructor-based DI; interface segregation (small interfaces)
 - **Observability**: Structured logging; OpenTelemetry integration; metrics for critical paths
+- **Early returns**: Prefer early `return` / `continue` to reduce nesting
 
 ### Testing
 - Test files use `*_test.go` suffix and are located next to implementation
