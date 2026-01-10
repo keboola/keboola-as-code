@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
@@ -158,8 +159,8 @@ func (m *coreFilesMapper) buildConfigYAML(config *model.Config) *model.ConfigYAM
 		return configYAML
 	}
 
-	// Check if this is an orchestrator - build phases and schedules
-	if err == nil && component.IsOrchestrator() {
+	// Check if this is an orchestrator/flow - build phases and schedules
+	if err == nil && orchestrator.IsOrchestratorOrFlow(component) {
 		m.buildOrchestratorConfigYAML(config, configYAML)
 		return configYAML
 	}
@@ -578,7 +579,7 @@ func (m *coreFilesMapper) isSchedulerForOrchestrator(config *model.Config) bool 
 	for _, rel := range config.Relations.GetByType(model.SchedulerForRelType) {
 		schedulerFor := rel.(*model.SchedulerForRelation)
 		targetComponent, err := m.state.Components().GetOrErr(schedulerFor.ComponentID)
-		if err == nil && targetComponent.IsOrchestrator() {
+		if err == nil && orchestrator.IsOrchestratorOrFlow(targetComponent) {
 			return true
 		}
 	}

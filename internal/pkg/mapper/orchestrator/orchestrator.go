@@ -8,6 +8,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
+// FlowComponentID is the component ID for Keboola Flow (newer orchestration component).
+const FlowComponentID = keboola.ComponentID("keboola.flow")
+
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
 }
@@ -33,7 +36,13 @@ func (m *orchestratorMapper) isOrchestratorConfigKey(key model.Key) (bool, error
 		return false, err
 	}
 
-	return component.IsOrchestrator(), nil
+	return IsOrchestratorOrFlow(component), nil
+}
+
+// IsOrchestratorOrFlow returns true if the component is an orchestrator or a flow.
+// Both keboola.orchestrator and keboola.flow are treated similarly for inline schedules.
+func IsOrchestratorOrFlow(component *keboola.Component) bool {
+	return component.IsOrchestrator() || component.ComponentKey.ID == FlowComponentID
 }
 
 func markConfigUsedInOrchestrator(targetConfig, orchestratorConfig *model.Config) {

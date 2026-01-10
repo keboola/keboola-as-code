@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -91,11 +92,11 @@ func (m *ignoreMapper) isIgnoredConfig(ctx context.Context, config *model.Config
 			return true
 		}
 
-		// Ignore schedulers targeting orchestrators - they are stored inline in the orchestrator's _config.yml
+		// Ignore schedulers targeting orchestrators/flows - they are stored inline in the _config.yml
 		// The orchestrator mapper's AfterRemoteOperation runs before this mapper and collects schedule data
 		targetComponent, err := m.state.Components().GetOrErr(relation.ComponentID)
-		if err == nil && targetComponent.IsOrchestrator() {
-			m.logger.Debugf(ctx, "Ignored scheduler %s targeting orchestrator %s", config.Desc(), targetConfigKey.Desc())
+		if err == nil && orchestrator.IsOrchestratorOrFlow(targetComponent) {
+			m.logger.Debugf(ctx, "Ignored scheduler %s targeting orchestrator/flow %s", config.Desc(), targetConfigKey.Desc())
 			return true
 		}
 	}

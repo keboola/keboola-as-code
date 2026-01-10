@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -123,8 +124,8 @@ func (m *coreFilesMapper) loadUnifiedConfigYAML(ctx context.Context, recipe *mod
 		return nil
 	}
 
-	// Check if this is an orchestrator - build Orchestration from phases
-	if compErr == nil && component.IsOrchestrator() {
+	// Check if this is an orchestrator/flow - build Orchestration from phases
+	if compErr == nil && orchestrator.IsOrchestratorOrFlow(component) {
 		config.Content = orderedmap.New() // Initialize empty content, remote_save will rebuild it
 		config.Orchestration = m.buildOrchestrationFromConfigYAML(recipe, config, &configYAML)
 		// Update scheduler configs with inline schedule data (orchestrator's _config.yml is the source of truth)
