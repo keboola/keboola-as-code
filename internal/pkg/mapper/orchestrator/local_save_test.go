@@ -41,23 +41,21 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 		files = append(files, fileRaw)
 	}
 
-	// Check generated files - now using developer-friendly format with single pipeline.yml
+	// Check generated files - now using developer-friendly format with unified _config.yml
 	configDir := orchestratorConfigState.Path()
 
-	// Expected YAML content for the pipeline
-	// Note: Config metadata (name, description, _keboola) is in _config.yml, not here
-	expectedPipelineYAML := `version: 2
+	// Expected unified _config.yml content (phases are inline)
+	expectedConfigYAML := `version: 2
+name: My Orchestration
 phases:
     - name: Phase
       tasks:
         - name: Task 1
           component: foo.bar1
           config: extractor/target-config-1
-          path: branch/extractor/target-config-1
         - name: Task 2 - disabled
           component: foo.bar2
           config: extractor/target-config-2
-          path: branch/extractor/target-config-2
           enabled: false
         - name: Task 3 - disabled without configId
           component: foo.bar2
@@ -70,25 +68,17 @@ phases:
         - name: Task 4
           component: foo.bar2
           config: extractor/target-config-3
-          path: branch/extractor/target-config-3
         - name: Task 5 - configData
           component: foo.bar3
           config: ""
           parameters:
             params: value
-`
-
-	// Expected _config.yml content
-	expectedConfigYAML := `version: 2
-name: My Orchestration
 _keboola:
     component_id: keboola.orchestrator
     config_id: "456"
 `
 
 	assert.Equal(t, []filesystem.File{
-		filesystem.NewRawFile(configDir+`/pipeline.yml`, expectedPipelineYAML).
-			AddTag(model.FileTypeYaml),
 		filesystem.NewRawFile(configDir+`/_config.yml`, expectedConfigYAML).
 			AddTag(model.FileKindObjectConfig).
 			AddTag(model.FileTypeYaml),

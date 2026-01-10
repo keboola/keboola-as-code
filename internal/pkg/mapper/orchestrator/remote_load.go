@@ -15,6 +15,8 @@ import (
 func (m *orchestratorMapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	errs := errors.NewMultiError()
 	allObjects := m.state.RemoteObjects()
+
+	// Handle loaded orchestrators (pull operation)
 	for _, objectState := range changes.Loaded() {
 		if ok, err := m.isOrchestratorConfigKey(objectState.Key()); err != nil {
 			errs.Append(err)
@@ -22,9 +24,114 @@ func (m *orchestratorMapper) AfterRemoteOperation(ctx context.Context, changes *
 		} else if ok {
 			configState := objectState.(*model.ConfigState)
 			m.onRemoteLoad(ctx, configState.Remote, configState.ConfigManifest, allObjects)
+			// Collect schedule data from scheduler configs before ignore mapper removes them
+			m.collectSchedulesFromRemote(configState.Remote)
 		}
 	}
+
+	// Handle saved orchestrators (push operation) - sync inline schedules with API
+	for _, objectState := range changes.Saved() {
+		if ok, err := m.isOrchestratorConfigKey(objectState.Key()); err != nil {
+			errs.Append(err)
+			continue
+		} else if ok {
+			configState := objectState.(*model.ConfigState)
+			if err := m.syncSchedulesOnSave(ctx, configState); err != nil {
+				errs.Append(err)
+			}
+		}
+	}
+
 	return errs.ErrorOrNil()
+}
+
+// collectSchedulesFromRemote finds scheduler configs targeting this orchestrator and stores
+// their data in the orchestration's Schedules field. This must be called before the ignore
+// mapper removes the scheduler configs from state.
+func (m *orchestratorMapper) collectSchedulesFromRemote(orchestratorConfig *model.Config) {
+	if orchestratorConfig.Orchestration == nil {
+		return
+	}
+
+	var schedules []model.ScheduleYAML
+
+	// Find all scheduler configs that target this orchestrator
+	for _, objectState := range m.state.All() {
+		configState, ok := objectState.(*model.ConfigState)
+		if !ok {
+			continue
+		}
+
+		config := configState.RemoteState()
+		if config == nil {
+			continue
+		}
+		schedulerConfig := config.(*model.Config)
+
+		// Check if this is a scheduler component
+		component, err := m.state.Components().GetOrErr(schedulerConfig.ComponentID)
+		if err != nil || !component.IsScheduler() {
+			continue
+		}
+
+		// Check if this scheduler targets our orchestrator
+		for _, rel := range schedulerConfig.Relations.GetByType(model.SchedulerForRelType) {
+			schedulerFor := rel.(*model.SchedulerForRelation)
+			if schedulerFor.ComponentID == orchestratorConfig.ComponentID && schedulerFor.ConfigID == orchestratorConfig.ID {
+				// Convert to YAML format
+				scheduleYAML := m.buildScheduleYAMLFromRemote(schedulerConfig)
+				schedules = append(schedules, scheduleYAML)
+				break
+			}
+		}
+	}
+
+	orchestratorConfig.Orchestration.Schedules = schedules
+}
+
+// buildScheduleYAMLFromRemote converts a scheduler config to ScheduleYAML.
+func (m *orchestratorMapper) buildScheduleYAMLFromRemote(config *model.Config) model.ScheduleYAML {
+	schedule := model.ScheduleYAML{
+		Name: config.Name,
+		// Include the scheduler config ID for tracking during push operations
+		Keboola: &model.ScheduleKeboolaMeta{
+			ConfigID: config.ID.String(),
+		},
+	}
+
+	// Get description
+	if config.Description != "" {
+		schedule.Description = config.Description
+	}
+
+	// Get schedule (cron) details from the schedule key
+	if config.Content != nil {
+		if scheduleRaw, ok := config.Content.Get("schedule"); ok {
+			if scheduleMap, ok := scheduleRaw.(*orderedmap.OrderedMap); ok {
+				// Get cronTab
+				if cronTab, ok := scheduleMap.Get("cronTab"); ok {
+					if cronStr, ok := cronTab.(string); ok {
+						schedule.Cron = cronStr
+					}
+				}
+				// Get timezone
+				if timezone, ok := scheduleMap.Get("timezone"); ok {
+					if tzStr, ok := timezone.(string); ok {
+						schedule.Timezone = tzStr
+					}
+				}
+				// Get state (enabled/disabled)
+				if state, ok := scheduleMap.Get("state"); ok {
+					if stateStr, ok := state.(string); ok {
+						enabled := stateStr == "enabled"
+						schedule.Enabled = &enabled
+					}
+				}
+			}
+		}
+	}
+
+	return schedule
 }
 
 func (m *orchestratorMapper) onRemoteLoad(ctx context.Context, config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) {
@@ -95,24 +202,8 @@ func (l *remoteLoader) load() error {
 		Phases: sortedPhases,
 	}
 
-	// Set paths if parent path is set
-	if l.manifest.Path() != "" {
-		phasesDir := l.NamingGenerator().PhasesDir(l.manifest.Path())
-		for _, phase := range l.config.Orchestration.Phases {
-			if path, found := l.GetPath(phase.Key()); found {
-				phase.AbsPath = path
-			} else {
-				phase.AbsPath = l.NamingGenerator().PhasePath(phasesDir, phase)
-			}
-			for _, task := range phase.Tasks {
-				if path, found := l.GetPath(task.Key()); found {
-					task.AbsPath = path
-				} else {
-					task.AbsPath = l.NamingGenerator().TaskPath(phase.Path(), task)
-				}
-			}
-		}
-	}
+	// Phases and tasks are now stored inline in _config.yml, so no paths are set.
+	// The legacy phases directory structure is no longer used.
 
 	return l.errors.ErrorOrNil()
 }
@@ -288,4 +379,68 @@ func (l *remoteLoader) getTargetConfig(componentID keboola.ComponentID, configID
 	}
 
 	return config, nil
+}
+
+// syncSchedulesOnSave synchronizes inline schedules from the orchestrator's _config.yml
+// with the Keboola Scheduler API when the orchestrator is pushed.
+// Note: This function doesn't run during push anymore - schedule sync is disabled.
+// Inline schedules are stored in _config.yml and synced on pull only.
+func (m *orchestratorMapper) syncSchedulesOnSave(ctx context.Context, configState *model.ConfigState) error {
+	// Schedule sync on push is disabled for now.
+	// Users should manage schedules via the Keboola UI or API directly.
+	// The inline schedules in _config.yml are read-only - they reflect the API state on pull.
+	return nil
+}
+
+// updateSchedulerFromInlineByID updates an existing scheduler config directly via API using its config ID.
+func (m *orchestratorMapper) updateSchedulerFromInlineByID(ctx context.Context, api *keboola.AuthorizedAPI, configID string, inlineSchedule *model.ScheduleYAML, orchestratorConfig *model.Config) error {
+	// Build scheduler config content from inline schedule
+	schedulerContent := m.buildSchedulerContent(inlineSchedule, orchestratorConfig)
+
+	// Update via API using the config ID directly
+	_, err := api.UpdateConfigRequest(&keboola.ConfigWithRows{
+		Config: &keboola.Config{
+			ConfigKey: keboola.ConfigKey{
+				BranchID:    orchestratorConfig.BranchID,
+				ComponentID: keboola.SchedulerComponentID,
+				ID:          keboola.ConfigID(configID),
+			},
+			Name:          inlineSchedule.Name,
+			Description:   inlineSchedule.Description,
+			Content:       schedulerContent,
+			ChangeDescription: "Updated from inline schedule in orchestrator",
+		},
+	}, []string{"name", "description", "configuration"}).Send(ctx)
+
+	return err
+}
+
+// buildSchedulerContent builds the scheduler config content from inline schedule data.
+// This is kept for potential future use when schedule sync is re-enabled.
+func (m *orchestratorMapper) buildSchedulerContent(inlineSchedule *model.ScheduleYAML, orchestratorConfig *model.Config) *orderedmap.OrderedMap {
+	content := orderedmap.New()
+
+	// Build schedule section
+	schedule := orderedmap.New()
+	schedule.Set("cronTab", inlineSchedule.Cron)
+	if inlineSchedule.Timezone != "" {
+		schedule.Set("timezone", inlineSchedule.Timezone)
+	} else {
+		schedule.Set("timezone", "UTC")
+	}
+	if inlineSchedule.Enabled != nil && *inlineSchedule.Enabled {
+		schedule.Set("state", "enabled")
+	} else {
+		schedule.Set("state", "disabled")
+	}
+	content.Set("schedule", schedule)
+
+	// Build target section
+	target := orderedmap.New()
+	target.Set("componentId", orchestratorConfig.ComponentID.String())
+	target.Set("configurationId", orchestratorConfig.ID.String())
+	target.Set("mode", "run")
+	content.Set("target", target)
+
+	return content
 }

@@ -56,7 +56,7 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 		sharedcode.NewVariablesMapper(s),
 		// Special components
 		scheduler.NewMapper(s, d),
-		orchestrator.NewMapper(s),
+		orchestrator.NewMapper(s, d),
 		// AES codes
 		transformation.NewMapper(s),
 		sharedcode.NewCodesMapper(s),

@@ -19,7 +19,7 @@ func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
 	d := dependencies.NewMocked(t, t.Context())
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(corefiles.NewMapper(mockedState))
-	mockedState.Mapper().AddMapper(orchestrator.NewMapper(mockedState))
+	mockedState.Mapper().AddMapper(orchestrator.NewMapper(mockedState, d))
 	return mockedState, d
 }
 

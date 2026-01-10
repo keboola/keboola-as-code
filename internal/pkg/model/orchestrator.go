@@ -13,7 +13,8 @@ import (
 )
 
 type Orchestration struct {
-	Phases []*Phase
+	Phases    []*Phase
+	Schedules []ScheduleYAML // Inline schedules from _config.yml (source of truth for push)
 }
 
 type Phase struct {

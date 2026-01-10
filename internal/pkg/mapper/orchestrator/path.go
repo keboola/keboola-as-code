@@ -1,38 +1,14 @@
 package orchestrator
 
 import (
-	"context"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 // OnObjectPathUpdate - update Phases/Tasks paths.
+// Phases and tasks are now stored inline in _config.yml, so no path updates are needed.
 func (m *orchestratorMapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
-	if ok, err := m.isOrchestratorConfigKey(event.ObjectState.Key()); err != nil || !ok {
-		return err
-	}
-
-	configState := event.ObjectState.(*model.ConfigState)
-
-	// Check if using developer-friendly format (pipeline.yml).
-	// In this format, phases/tasks are stored inline in the YAML file,
-	// not in separate directories, so we skip the path update operations.
-	pipelinePath := m.state.NamingGenerator().PipelineFilePath(configState.Path())
-	if m.state.ObjectsRoot().IsFile(context.Background(), pipelinePath) {
-		return nil
-	}
-
-	// Legacy format: Rename orchestrator phases/tasks directories
-	if configState.HasLocalState() {
-		for _, phase := range configState.Local.Orchestration.Phases {
-			m.updatePhasePath(event.PathsGenerator, configState, phase)
-		}
-	}
-	if configState.HasRemoteState() {
-		for _, phase := range configState.Remote.Orchestration.Phases {
-			m.updatePhasePath(event.PathsGenerator, configState, phase)
-		}
-	}
+	// Phases and tasks are now stored inline in _config.yml.
+	// No directory structure is used for phases/tasks, so skip path updates.
 	return nil
 }
 

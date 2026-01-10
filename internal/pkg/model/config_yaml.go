@@ -21,6 +21,10 @@ type ConfigYAML struct {
 	// For applications
 	UserProperties map[string]any `yaml:"user_properties,omitempty" json:"user_properties,omitempty"`
 
+	// For orchestrations (phases, tasks, schedules inline)
+	Schedules []ScheduleYAML `yaml:"schedules,omitempty" json:"schedules,omitempty"`
+	Phases    []PhaseYAML    `yaml:"phases,omitempty" json:"phases,omitempty"`
+
 	// Internal Keboola metadata (managed by CLI)
 	Keboola *KeboolaMetaYAML `yaml:"_keboola,omitempty" json:"_keboola,omitempty"`
 }

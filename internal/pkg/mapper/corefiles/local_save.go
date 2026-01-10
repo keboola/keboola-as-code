@@ -20,6 +20,11 @@ const (
 func (m *coreFilesMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Use unified _config.yml for Config objects
 	if config, ok := recipe.Object.(*model.Config); ok {
+		// Skip file generation for scheduler configs targeting orchestrators
+		// (these are represented inline in the orchestrator's _config.yml)
+		if m.isSchedulerForOrchestrator(config) {
+			return nil
+		}
 		return m.createUnifiedConfigYAML(recipe, config)
 	}
 
@@ -143,6 +148,22 @@ func (m *coreFilesMapper) buildConfigYAML(config *model.Config) *model.ConfigYAM
 		},
 	}
 
+	// Check if this is a scheduler component - preserve full content
+	component, err := m.state.Components().GetOrErr(config.ComponentID)
+	if err == nil && component.IsScheduler() {
+		// For scheduler configs, preserve the entire content as-is
+		if config.Content != nil {
+			configYAML.Parameters = orderedMapToMap(config.Content)
+		}
+		return configYAML
+	}
+
+	// Check if this is an orchestrator - build phases and schedules
+	if err == nil && component.IsOrchestrator() {
+		m.buildOrchestratorConfigYAML(config, configYAML)
+		return configYAML
+	}
+
 	// Extract configuration from Content (orderedmap)
 	if config.Content != nil {
 		// Extract storage input/output
@@ -184,6 +205,187 @@ func (m *coreFilesMapper) buildConfigYAML(config *model.Config) *model.ConfigYAM
 	}
 
 	return configYAML
+}
+
+// buildOrchestratorConfigYAML adds orchestration-specific fields (phases, schedules) to ConfigYAML.
+func (m *coreFilesMapper) buildOrchestratorConfigYAML(config *model.Config, configYAML *model.ConfigYAML) {
+	if config.Orchestration == nil {
+		return
+	}
+
+	// Build phases
+	allPhases := config.Orchestration.Phases
+	for _, phase := range allPhases {
+		phaseYAML := model.PhaseYAML{
+			Name:  phase.Name,
+			Tasks: make([]model.TaskYAML, 0),
+		}
+
+		// Get description from Content
+		if phase.Content != nil {
+			if descRaw, ok := phase.Content.Get("description"); ok {
+				if desc, ok := descRaw.(string); ok {
+					phaseYAML.Description = desc
+				}
+			}
+		}
+
+		// Build dependsOn list (using phase names)
+		for _, depOnKey := range phase.DependsOn {
+			depOnPhase := allPhases[depOnKey.Index]
+			phaseYAML.DependsOn = append(phaseYAML.DependsOn, depOnPhase.Name)
+		}
+
+		// Build tasks
+		for _, task := range phase.Tasks {
+			taskYAML := m.buildTaskYAML(config, task)
+			phaseYAML.Tasks = append(phaseYAML.Tasks, taskYAML)
+		}
+
+		configYAML.Phases = append(configYAML.Phases, phaseYAML)
+	}
+
+	// Build schedules from related scheduler configs
+	configYAML.Schedules = m.buildSchedulesYAML(config)
+}
+
+// buildTaskYAML constructs a TaskYAML from a model.Task.
+func (m *coreFilesMapper) buildTaskYAML(config *model.Config, task *model.Task) model.TaskYAML {
+	taskYAML := model.TaskYAML{
+		Name:      task.Name,
+		Component: task.ComponentID.String(),
+	}
+
+	// Get continueOnFailure from Content
+	if task.Content != nil {
+		if continueOnFailureRaw, ok := task.Content.Get("continueOnFailure"); ok {
+			if continueOnFailure, ok := continueOnFailureRaw.(bool); ok {
+				taskYAML.ContinueOnFailure = continueOnFailure
+			}
+		}
+	}
+
+	// Handle enabled field (only set if false)
+	if !task.Enabled {
+		enabled := false
+		taskYAML.Enabled = &enabled
+	}
+
+	// Set config path (relative from orchestrator directory)
+	if len(task.ConfigID) > 0 {
+		// Get target config path
+		// Use the orchestrator's BranchID since target configs are in the same branch
+		targetKey := &model.ConfigKey{
+			BranchID:    config.BranchID,
+			ComponentID: task.ComponentID,
+			ID:          task.ConfigID,
+		}
+
+		if targetConfig, found := m.state.Get(targetKey); found {
+			// Get the branch path as base for relative paths
+			branchKey := model.BranchKey{ID: config.BranchID}
+			if branchState, branchFound := m.state.Get(branchKey); branchFound {
+				branchPath := branchState.Path()
+				// Target path relative from branch directory
+				if strings.HasPrefix(targetConfig.Path(), branchPath+"/") {
+					taskYAML.Config = strings.TrimPrefix(targetConfig.Path(), branchPath+"/")
+				} else {
+					taskYAML.Config = targetConfig.Path()
+				}
+			}
+		}
+	} else if task.ConfigData != nil {
+		// For inline config, serialize the config data
+		taskYAML.Parameters = orderedMapToMap(task.ConfigData)
+	}
+
+	return taskYAML
+}
+
+// buildSchedulesYAML returns schedules for an orchestrator config.
+// It first checks if schedules were pre-collected by the orchestrator mapper (in AfterRemoteOperation).
+// This is necessary because the ignore mapper removes scheduler configs from state before MapBeforeLocalSave runs.
+func (m *coreFilesMapper) buildSchedulesYAML(config *model.Config) []model.ScheduleYAML {
+	// Use pre-collected schedules from orchestrator mapper (populated in AfterRemoteOperation)
+	if config.Orchestration != nil && len(config.Orchestration.Schedules) > 0 {
+		return config.Orchestration.Schedules
+	}
+
+	schedules := make([]model.ScheduleYAML, 0)
+
+	// Fallback: Find all scheduler configs that target this orchestrator
+	// This path is used when schedules weren't pre-collected (e.g., during local load)
+	for _, objectState := range m.state.All() {
+		configState, ok := objectState.(*model.ConfigState)
+		if !ok {
+			continue
+		}
+
+		// Check if this is a scheduler config
+		targetConfig := configState.LocalOrRemoteState().(*model.Config)
+		component, err := m.state.Components().GetOrErr(targetConfig.ComponentID)
+		if err != nil || !component.IsScheduler() {
+			continue
+		}
+
+		// Check if this scheduler targets our orchestrator
+		for _, rel := range targetConfig.Relations.GetByType(model.SchedulerForRelType) {
+			schedulerFor := rel.(*model.SchedulerForRelation)
+			if schedulerFor.ComponentID == config.ComponentID && schedulerFor.ConfigID == config.ID {
+				// Convert to YAML format
+				scheduleYAML := m.buildScheduleYAML(targetConfig)
+				schedules = append(schedules, scheduleYAML)
+				break
+			}
+		}
+	}
+
+	return schedules
+}
+
+// buildScheduleYAML converts a scheduler config to ScheduleYAML.
+func (m *coreFilesMapper) buildScheduleYAML(config *model.Config) model.ScheduleYAML {
+	schedule := model.ScheduleYAML{
+		Name: config.Name,
+		// Include the scheduler config ID for tracking during push operations
+		Keboola: &model.ScheduleKeboolaMeta{
+			ConfigID: config.ID.String(),
+		},
+	}
+
+	// Get description
+	if config.Description != "" {
+		schedule.Description = config.Description
+	}
+
+	// Get schedule (cron) details from the schedule key
+	if config.Content != nil {
+		if scheduleRaw, ok := config.Content.Get("schedule"); ok {
+			if scheduleMap, ok := scheduleRaw.(*orderedmap.OrderedMap); ok {
+				// Get cronTab
+				if cronTab, ok := scheduleMap.Get("cronTab"); ok {
+					if cronStr, ok := cronTab.(string); ok {
+						schedule.Cron = cronStr
+					}
+				}
+				// Get timezone
+				if timezone, ok := scheduleMap.Get("timezone"); ok {
+					if tzStr, ok := timezone.(string); ok {
+						schedule.Timezone = tzStr
+					}
+				}
+				// Get state (enabled/disabled)
+				if state, ok := scheduleMap.Get("state"); ok {
+					if stateStr, ok := state.(string); ok {
+						enabled := stateStr == "enabled"
+						schedule.Enabled = &enabled
+					}
+				}
+			}
+		}
+	}
+
+	return schedule
 }
 
 // buildConfigRowYAML constructs the ConfigYAML structure from a ConfigRow object.
@@ -362,4 +564,24 @@ func extractStorageOutput(storage *orderedmap.OrderedMap) *model.StorageOutputYA
 		return nil
 	}
 	return output
+}
+
+// isSchedulerForOrchestrator checks if the config is a scheduler targeting an orchestrator.
+func (m *coreFilesMapper) isSchedulerForOrchestrator(config *model.Config) bool {
+	// Check if this is a scheduler component
+	component, err := m.state.Components().GetOrErr(config.ComponentID)
+	if err != nil || !component.IsScheduler() {
+		return false
+	}
+
+	// Check if it has a SchedulerForRelation targeting an orchestrator
+	for _, rel := range config.Relations.GetByType(model.SchedulerForRelType) {
+		schedulerFor := rel.(*model.SchedulerForRelation)
+		targetComponent, err := m.state.Components().GetOrErr(schedulerFor.ComponentID)
+		if err == nil && targetComponent.IsOrchestrator() {
+			return true
+		}
+	}
+
+	return false
 }

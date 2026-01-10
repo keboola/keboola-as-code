@@ -42,7 +42,12 @@ type localLoader struct {
 }
 
 func (l *localLoader) load(ctx context.Context) error {
-	// Try loading from pipeline.yml first (new developer-friendly format)
+	// If Orchestration is already populated (by corefiles mapper from _config.yml), skip loading
+	if l.config.Orchestration != nil && len(l.config.Orchestration.Phases) > 0 {
+		return nil
+	}
+
+	// Try loading from pipeline.yml (legacy developer-friendly format, being phased out)
 	if l.hasPipelineYAML(ctx) {
 		pipelinePath := l.NamingGenerator().PipelineFilePath(l.Path())
 		return l.loadPipelineYAML(ctx, pipelinePath)

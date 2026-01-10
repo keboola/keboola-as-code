@@ -31,7 +31,7 @@ func MappersFor(s *state.State, d dependencies) (mapper.Mappers, error) {
 		sharedcode.NewVariablesMapper(s),
 		// Special components
 		scheduler.NewMapper(s, d),
-		orchestrator.NewMapper(s),
+		orchestrator.NewMapper(s, d),
 		datagateway.NewMapper(s, d),
 		// AES codes
 		transformation.NewMapper(s),

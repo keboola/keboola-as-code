@@ -129,6 +129,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	assert.Equal(t, config.ID, rel3.(*model.UsedInOrchestratorRelation).ConfigID)
 
 	// Assert orchestration
+	// Note: Phases and tasks no longer have paths - they are stored inline in _config.yml
 	phase1Key := model.PhaseKey{
 		BranchID:    123,
 		ComponentID: keboola.OrchestratorComponentID,
@@ -146,14 +147,12 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 		Phases: []*model.Phase{
 			{
 				PhaseKey:  phase1Key,
-				AbsPath:   model.NewAbsPath(`branch/config/phases`, `001-phase`),
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content:   orderedmap.New(),
 				Tasks: []*model.Task{
 					{
 						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 0},
-						AbsPath:     model.NewAbsPath(`branch/config/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
 						Enabled:     true,
 						ComponentID: `foo.bar1`,
@@ -171,7 +170,6 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 					},
 					{
 						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 1},
-						AbsPath:     model.NewAbsPath(`branch/config/phases/001-phase`, `002-task-3`),
 						Name:        `Task 3`,
 						Enabled:     false,
 						ComponentID: `foo.bar2`,
@@ -191,7 +189,6 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 			},
 			{
 				PhaseKey: phase2Key,
-				AbsPath:  model.NewAbsPath(`branch/config/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
 						BranchID:    123,
@@ -207,7 +204,6 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 				Tasks: []*model.Task{
 					{
 						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 0},
-						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `001-task-2`),
 						Name:        `Task 2`,
 						Enabled:     true,
 						ComponentID: `foo.bar2`,
@@ -225,7 +221,6 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 					},
 					{
 						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 1},
-						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `002-task-4-config-data`),
 						Name:        `Task 4 - ConfigData`,
 						Enabled:     true,
 						ComponentID: `foo.bar3`,

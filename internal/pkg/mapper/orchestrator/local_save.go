@@ -38,9 +38,34 @@ type localWriter struct {
 }
 
 func (w *localWriter) save(ctx context.Context) {
-	// Use developer-friendly format (pipeline.yml)
-	if err := w.savePipelineYAML(ctx); err != nil {
-		w.logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+	// Orchestrations are now saved in _config.yml by corefiles mapper (with phases inline)
+	// Just clean up old phases directory and pipeline.yml files
+	w.deleteOldFiles(ctx)
+}
+
+// deleteOldFiles removes old phases directories, pipeline.yml, and schedules directory.
+func (w *localWriter) deleteOldFiles(ctx context.Context) {
+	// Delete old phases directory
+	phasesDir := w.NamingGenerator().PhasesDir(w.Path())
+	for _, path := range w.TrackedPaths() {
+		if filesystem.IsFrom(path, phasesDir) && w.IsFile(path) {
+			w.ToDelete = append(w.ToDelete, path)
+		}
+	}
+
+	// Delete old pipeline.yml
+	pipelinePath := w.NamingGenerator().PipelineFilePath(w.Path())
+	if w.ObjectsRoot().IsFile(ctx, pipelinePath) {
+		w.ToDelete = append(w.ToDelete, pipelinePath)
+	}
+
+	// Delete schedules directory - scheduler configs for orchestrators are now
+	// represented inline in the orchestrator's _config.yml
+	schedulesDir := filesystem.Join(w.Path(), "schedules")
+	for _, path := range w.TrackedPaths() {
+		if filesystem.IsFrom(path, schedulesDir) && w.IsFile(path) {
+			w.ToDelete = append(w.ToDelete, path)
+		}
 	}
 }
 

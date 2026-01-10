@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"context"
-	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -32,17 +31,30 @@ func (w *localWriter) savePipelineYAML(ctx context.Context) error {
 	// Delete old phases directory files
 	w.deleteOldPhasesDir()
 
+	// Note: Schedule directories are NOT deleted because scheduler configs are separate
+	// API objects tracked by the manifest. The schedules are included inline in pipeline.yml
+	// as a convenience, but the separate config directories must remain for manifest consistency.
+
 	return nil
 }
 
 // buildPipelineYAML constructs the PipelineYAML structure from the orchestration.
-// Note: Config metadata (name, description, disabled, _keboola) is stored in _config.yml
-// by the corefiles mapper, so we don't duplicate it here.
+// pipeline.yml contains all metadata for orchestrations (no separate _config.yml needed).
 func (w *localWriter) buildPipelineYAML() *model.PipelineYAML {
 	pipeline := &model.PipelineYAML{
-		Version: 2,
-		Phases:  make([]model.PhaseYAML, 0),
+		Version:     2,
+		Name:        w.config.Name,
+		Description: w.config.Description,
+		Disabled:    w.config.IsDisabled,
+		Phases:      make([]model.PhaseYAML, 0),
+		Keboola: &model.KeboolaMetadata{
+			ComponentID: w.config.ComponentID.String(),
+			ConfigID:    w.config.ID.String(),
+		},
 	}
+
+	// Add inline schedules
+	pipeline.Schedules = w.buildSchedulesYAML()
 
 	allPhases := w.config.Orchestration.Phases
 
@@ -77,6 +89,100 @@ func (w *localWriter) buildPipelineYAML() *model.PipelineYAML {
 	return pipeline
 }
 
+// buildSchedulesYAML finds all scheduler configs related to this orchestrator and converts them to YAML format.
+func (w *localWriter) buildSchedulesYAML() []model.ScheduleYAML {
+	schedules := make([]model.ScheduleYAML, 0)
+
+	// Find all scheduler configs that target this orchestrator
+	for _, objectState := range w.All() {
+		configState, ok := objectState.(*model.ConfigState)
+		if !ok {
+			continue
+		}
+
+		// Check if this is a scheduler config
+		config := configState.LocalOrRemoteState().(*model.Config)
+		component, err := w.Components().GetOrErr(config.ComponentID)
+		if err != nil || !component.IsScheduler() {
+			continue
+		}
+
+		// Check if this scheduler targets our orchestrator
+		for _, rel := range config.Relations.GetByType(model.SchedulerForRelType) {
+			schedulerFor := rel.(*model.SchedulerForRelation)
+			if schedulerFor.ComponentID == w.config.ComponentID && schedulerFor.ConfigID == w.config.ID {
+				// Convert to YAML format
+				scheduleYAML := w.buildScheduleYAML(config)
+				schedules = append(schedules, scheduleYAML)
+				break
+			}
+		}
+	}
+
+	return schedules
+}
+
+// buildScheduleYAML converts a scheduler config to ScheduleYAML.
+func (w *localWriter) buildScheduleYAML(config *model.Config) model.ScheduleYAML {
+	schedule := model.ScheduleYAML{
+		Name: config.Name,
+	}
+
+	// Get description
+	if config.Description != "" {
+		schedule.Description = config.Description
+	}
+
+	// Extract schedule details from content
+	if target, ok := config.Content.Get("target"); ok {
+		if targetMap, ok := target.(*orderedmap.OrderedMap); ok {
+			// Get mode (cron expression is in cronTab)
+			if mode, ok := targetMap.Get("mode"); ok {
+				if modeStr, ok := mode.(string); ok && modeStr == "run" {
+					// This is a one-time run, not a scheduled one
+					// For now, skip it
+				}
+			}
+		}
+	}
+
+	// Get schedule (cron) details from the schedule key
+	if scheduleRaw, ok := config.Content.Get("schedule"); ok {
+		if scheduleMap, ok := scheduleRaw.(*orderedmap.OrderedMap); ok {
+			// Get cronTab
+			if cronTab, ok := scheduleMap.Get("cronTab"); ok {
+				if cronStr, ok := cronTab.(string); ok {
+					schedule.Cron = cronStr
+				}
+			}
+			// Get timezone
+			if timezone, ok := scheduleMap.Get("timezone"); ok {
+				if tzStr, ok := timezone.(string); ok {
+					schedule.Timezone = tzStr
+				}
+			}
+			// Get state (enabled/disabled)
+			if state, ok := scheduleMap.Get("state"); ok {
+				if stateStr, ok := state.(string); ok {
+					enabled := stateStr == "enabled"
+					schedule.Enabled = &enabled
+				}
+			}
+		}
+	}
+
+	// Get variable values if present
+	if varsRaw, ok := config.Content.Get("variableValuesId"); ok {
+		if varsID, ok := varsRaw.(string); ok && varsID != "" {
+			// Variable values are stored separately, we'd need to look them up
+			// For now, we'll leave variables empty
+			_ = varsID
+		}
+	}
+
+	return schedule
+}
+
 // buildTaskYAML constructs a TaskYAML from a model.Task.
 func (w *localWriter) buildTaskYAML(task *model.Task) model.TaskYAML {
 	taskYAML := model.TaskYAML{
@@ -99,7 +205,7 @@ func (w *localWriter) buildTaskYAML(task *model.Task) model.TaskYAML {
 		taskYAML.Enabled = &enabled
 	}
 
-	// Set config path and full path
+	// Set config path (relative from orchestrator directory)
 	if len(task.ConfigID) > 0 {
 		// Get target config path
 		targetKey := &model.ConfigKey{
@@ -112,8 +218,6 @@ func (w *localWriter) buildTaskYAML(task *model.Task) model.TaskYAML {
 			// Config is relative path from orchestrator directory
 			targetPath, _ := filesystem.Rel(w.configPath.GetParentPath(), targetConfig.Path())
 			taskYAML.Config = targetPath
-			// Path is full path from project root (without ./ prefix)
-			taskYAML.Path = normalizeConfigPath(targetConfig.Path())
 		}
 	} else if task.ConfigData != nil {
 		// For inline config, serialize the config data
@@ -153,6 +257,17 @@ func (w *localWriter) deleteOldPhasesDir() {
 	}
 }
 
+// deleteSchedulesDirs marks schedule config directories for deletion since they're now inline in pipeline.yml.
+func (w *localWriter) deleteSchedulesDirs() {
+	schedulesDir := filesystem.Join(w.Path(), "schedules")
+
+	for _, path := range w.TrackedPaths() {
+		if filesystem.IsFrom(path, schedulesDir) && w.IsFile(path) {
+			w.ToDelete = append(w.ToDelete, path)
+		}
+	}
+}
+
 // loadPipelineYAML loads orchestration from a pipeline.yml file.
 func (l *localLoader) loadPipelineYAML(ctx context.Context, pipelinePath string) error {
 	// Track the pipeline file
@@ -176,13 +291,14 @@ func (l *localLoader) loadPipelineYAML(ctx context.Context, pipelinePath string)
 	}
 
 	// Apply metadata from pipeline.yml to config
-	if pipeline.Name != "" {
-		l.config.Name = pipeline.Name
-	}
-	if pipeline.Description != "" {
-		l.config.Description = pipeline.Description
-	}
+	// pipeline.yml is the sole source of metadata for orchestrations (no _config.yml)
+	l.config.Name = pipeline.Name
+	l.config.Description = pipeline.Description
 	l.config.IsDisabled = pipeline.Disabled
+
+	// Initialize Content (required for validation)
+	// The remote_save mapper will rebuild it from Orchestration when pushing to API
+	l.config.Content = orderedmap.New()
 
 	// Convert to model.Orchestration
 	l.config.Orchestration = l.buildOrchestrationFromPipeline(&pipeline)
@@ -314,9 +430,4 @@ func mapToOrderedMap(m map[string]any) *orderedmap.OrderedMap {
 func (l *localLoader) hasPipelineYAML(ctx context.Context) bool {
 	pipelinePath := l.NamingGenerator().PipelineFilePath(l.Path())
 	return l.ObjectsRoot().IsFile(ctx, pipelinePath)
-}
-
-// Helper to convert config path to relative path for display
-func normalizeConfigPath(configPath string) string {
-	return strings.TrimPrefix(configPath, "./")
 }

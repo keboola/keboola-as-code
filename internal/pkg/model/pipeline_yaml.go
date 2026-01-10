@@ -7,6 +7,7 @@ type PipelineYAML struct {
 	Description string                  `yaml:"description,omitempty" json:"description,omitempty"`
 	Disabled    bool                    `yaml:"disabled,omitempty" json:"disabled,omitempty"`
 	Tags        []string                `yaml:"tags,omitempty" json:"tags,omitempty"`
+	Schedules   []ScheduleYAML          `yaml:"schedules,omitempty" json:"schedules,omitempty"` // Inline schedules
 	Settings    *PipelineSettingsYAML   `yaml:"settings,omitempty" json:"settings,omitempty"`
 	Phases      []PhaseYAML             `yaml:"phases" json:"phases"`
 	Variables   map[string]VariableYAML `yaml:"variables,omitempty" json:"variables,omitempty"`
@@ -38,8 +39,7 @@ type PhaseYAML struct {
 type TaskYAML struct {
 	Name              string         `yaml:"name" json:"name"`
 	Component         string         `yaml:"component" json:"component"`
-	Config            string         `yaml:"config" json:"config"`
-	Path              string         `yaml:"path,omitempty" json:"path,omitempty"` // Full path from project root
+	Config            string         `yaml:"config" json:"config"`                              // Relative path to config from orchestrator directory
 	Enabled           *bool          `yaml:"enabled,omitempty" json:"enabled,omitempty"`
 	ContinueOnFailure bool           `yaml:"continue_on_failure,omitempty" json:"continue_on_failure,omitempty"`
 	Parameters        map[string]any `yaml:"parameters,omitempty" json:"parameters,omitempty"`
@@ -60,10 +60,16 @@ type SchedulesYAML struct {
 
 // ScheduleYAML represents a schedule definition.
 type ScheduleYAML struct {
-	Name        string         `yaml:"name" json:"name"`
-	Description string         `yaml:"description,omitempty" json:"description,omitempty"`
-	Cron        string         `yaml:"cron" json:"cron"`
-	Timezone    string         `yaml:"timezone,omitempty" json:"timezone,omitempty"`
-	Enabled     *bool          `yaml:"enabled,omitempty" json:"enabled,omitempty"`
-	Variables   map[string]any `yaml:"variables,omitempty" json:"variables,omitempty"`
+	Name        string              `yaml:"name" json:"name"`
+	Description string              `yaml:"description,omitempty" json:"description,omitempty"`
+	Cron        string              `yaml:"cron" json:"cron"`
+	Timezone    string              `yaml:"timezone,omitempty" json:"timezone,omitempty"`
+	Enabled     *bool               `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	Variables   map[string]any      `yaml:"variables,omitempty" json:"variables,omitempty"`
+	Keboola     *ScheduleKeboolaMeta `yaml:"_keboola,omitempty" json:"_keboola,omitempty"`
+}
+
+// ScheduleKeboolaMeta contains scheduler config metadata.
+type ScheduleKeboolaMeta struct {
+	ConfigID string `yaml:"config_id" json:"config_id"`
 }

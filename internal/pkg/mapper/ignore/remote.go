@@ -90,6 +90,14 @@ func (m *ignoreMapper) isIgnoredConfig(ctx context.Context, config *model.Config
 			m.logger.Debugf(ctx, "Ignored scheduler %s, target %s not found", config.Desc(), targetConfigKey.Desc())
 			return true
 		}
+
+		// Ignore schedulers targeting orchestrators - they are stored inline in the orchestrator's _config.yml
+		// The orchestrator mapper's AfterRemoteOperation runs before this mapper and collects schedule data
+		targetComponent, err := m.state.Components().GetOrErr(relation.ComponentID)
+		if err == nil && targetComponent.IsOrchestrator() {
+			m.logger.Debugf(ctx, "Ignored scheduler %s targeting orchestrator %s", config.Desc(), targetConfigKey.Desc())
+			return true
+		}
 	}
 
 	return false
