@@ -38,6 +38,15 @@ type localWriter struct {
 }
 
 func (w *localWriter) save(ctx context.Context) {
+	// Use developer-friendly format (pipeline.yml)
+	if err := w.savePipelineYAML(ctx); err != nil {
+		w.logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+	}
+}
+
+// saveLegacyFormat saves orchestration using the legacy phases/tasks directory structure.
+// This is kept for backward compatibility during the transition period.
+func (w *localWriter) saveLegacyFormat(ctx context.Context) {
 	phasesDir := w.NamingGenerator().PhasesDir(w.Path())
 
 	// Generate ".gitkeep" to preserve the "phases" directory, even if there are no phases.

@@ -1,0 +1,20 @@
+Command "local data"
+
+Downloads input data for local execution of a transformation or application.
+
+This command reads the storage input mappings from the configuration and downloads
+the required tables and files from Keboola Storage to a local "data" directory.
+
+The directory structure follows the Keboola Common Interface format:
+  data/
+    in/
+      tables/    - Input tables (CSV files with .manifest)
+      files/     - Input files with .manifest
+    out/
+      tables/    - Empty, for transformation output
+      files/     - Empty, for transformation output
+
+Options:
+  --limit, -l   Maximum rows per table (default: 1000, use 0 for unlimited)
+
+For applications, a config.json file is also generated with the parameters.

@@ -1,6 +1,10 @@
 package orchestrator
 
-import "github.com/keboola/keboola-as-code/internal/pkg/model"
+import (
+	"context"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+)
 
 // OnObjectPathUpdate - update Phases/Tasks paths.
 func (m *orchestratorMapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
@@ -8,8 +12,17 @@ func (m *orchestratorMapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEv
 		return err
 	}
 
-	// Rename orchestrator phases/tasks
 	configState := event.ObjectState.(*model.ConfigState)
+
+	// Check if using developer-friendly format (pipeline.yml).
+	// In this format, phases/tasks are stored inline in the YAML file,
+	// not in separate directories, so we skip the path update operations.
+	pipelinePath := m.state.NamingGenerator().PipelineFilePath(configState.Path())
+	if m.state.ObjectsRoot().IsFile(context.Background(), pipelinePath) {
+		return nil
+	}
+
+	// Legacy format: Rename orchestrator phases/tasks directories
 	if configState.HasLocalState() {
 		for _, phase := range configState.Local.Orchestration.Phases {
 			m.updatePhasePath(event.PathsGenerator, configState, phase)

@@ -6,7 +6,9 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation/blockcode"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
@@ -29,8 +31,8 @@ func (m *transformationMapper) MapBeforeLocalSave(ctx context.Context, recipe *m
 		errors:          errors.NewMultiError(),
 	}
 
-	// Save
-	return w.save()
+	// Save using developer-friendly format (single file)
+	return w.saveDeveloperFormat()
 }
 
 type localWriter struct {
@@ -40,7 +42,76 @@ type localWriter struct {
 	errors errors.MultiError
 }
 
-func (w *localWriter) save() error {
+// saveDeveloperFormat saves transformation code as a single file (transform.sql/transform.py).
+func (w *localWriter) saveDeveloperFormat() error {
+	if w.config.Transformation == nil {
+		return nil
+	}
+
+	// Generate single transform file
+	w.generateTransformFile()
+
+	// Delete old blocks directory if it exists
+	w.deleteOldBlocksDir()
+
+	return w.errors.ErrorOrNil()
+}
+
+// generateTransformFile generates the single transform.sql/transform.py file.
+func (w *localWriter) generateTransformFile() {
+	blocks := w.config.Transformation.Blocks
+	if len(blocks) == 0 {
+		// Create empty transform file to preserve the transformation
+		transformPath := w.NamingGenerator().TransformFilePath(w.Path(), w.config.ComponentID)
+		w.Files.
+			Add(filesystem.NewRawFile(transformPath, "")).
+			SetDescription("transformation code").
+			AddTag(model.FileTypeOther).
+			AddTag(model.FileKindNativeCode)
+		return
+	}
+
+	// Get shared codes map for expanding references
+	sharedCodes := w.getSharedCodesMap()
+
+	// Convert blocks to single string using blockcode package
+	content := blockcode.BlocksToString(blocks, w.config.ComponentID, sharedCodes)
+
+	// Write the transform file
+	transformPath := w.NamingGenerator().TransformFilePath(w.Path(), w.config.ComponentID)
+	w.Files.
+		Add(filesystem.NewRawFile(transformPath, content)).
+		SetDescription("transformation code").
+		AddTag(model.FileTypeOther).
+		AddTag(model.FileKindNativeCode)
+}
+
+// getSharedCodesMap returns a map of shared code IDs to their content.
+func (w *localWriter) getSharedCodesMap() map[string]string {
+	sharedCodes := make(map[string]string)
+	// TODO: Populate from linked shared codes if needed
+	// For now, shared codes will be referenced by their placeholder
+	return sharedCodes
+}
+
+// deleteOldBlocksDir marks old blocks directory files for deletion.
+func (w *localWriter) deleteOldBlocksDir() {
+	blocksDir := w.NamingGenerator().BlocksDir(w.Path())
+
+	// Delete all old files from blocks dir
+	for _, path := range w.TrackedPaths() {
+		if filesystem.IsFrom(path, blocksDir) && w.IsFile(path) {
+			w.ToDelete = append(w.ToDelete, path)
+		}
+	}
+
+	// Also delete the blocks directory itself if empty
+	// The .gitkeep file will be removed as part of the tracked paths
+}
+
+// saveLegacyFormat saves transformation code using the legacy blocks/codes structure.
+// This is kept for backward compatibility during the transition period.
+func (w *localWriter) saveLegacyFormat() error {
 	blocksDir := w.NamingGenerator().BlocksDir(w.Path())
 
 	// Generate ".gitkeep" to preserve the "blocks" directory, even if there are no blocks.
@@ -92,9 +163,15 @@ func (w *localWriter) generateCodeFiles(code *model.Code) {
 		w.createMetadataFile(metadataPath, `code metadata`, model.FileKindCodeMeta, metadata)
 	}
 
+	// Determine code file name
+	codeFileName := code.CodeFileName
+	if codeFileName == "" {
+		codeFileName = naming.CodeFileName + "." + naming.CodeFileExt(code.ComponentID)
+	}
+
 	// Create code file
 	w.Files.
-		Add(filesystem.NewRawFile(w.NamingGenerator().CodeFilePath(code), code.Scripts.String(code.ComponentID))).
+		Add(filesystem.NewRawFile(filesystem.Join(code.Path(), codeFileName), code.Scripts.String(code.ComponentID))).
 		SetDescription(`code`).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeCode)

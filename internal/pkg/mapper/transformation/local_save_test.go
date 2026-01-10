@@ -51,8 +51,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	recipe := model.NewLocalSaveRecipe(configState.Manifest(), configState.Local, model.NewChangedFields())
 
 	configDir := filesystem.Join(`branch`, `config`)
-	blocksDir := filesystem.Join(configDir, `blocks`)
-	require.NoError(t, fs.Mkdir(t.Context(), blocksDir))
+	require.NoError(t, fs.Mkdir(t.Context(), configDir))
 
 	// Prepare
 	object.Content.Set(`foo`, `bar`)
@@ -164,44 +163,32 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 		files = append(files, fileRaw)
 	}
 
-	// Check files
+	// Expected content for the new developer-friendly format (single transform.sql file)
+	// Note: block2/code3 has empty content so only block1 is included
+	expectedTransformContent := `/* ===== BLOCK: block1 ===== */
+
+/* ===== CODE: code1 ===== */
+SELECT 1;
+
+/* ===== CODE: code2 ===== */
+SELECT 2;
+SELECT 3;`
+
+	// Expected _config.yml content
+	expectedConfigYAML := `version: 2
+name: My Config
+_keboola:
+    component_id: keboola.snowflake-transformation
+    config_id: "456"
+`
+
+	// Check files - now using developer-friendly format with single transform.sql and unified _config.yml
 	assert.Equal(t, []filesystem.File{
-		filesystem.
-			NewRawFile(blocksDir+`/.gitkeep`, ``).
-			AddTag(model.FileKindGitKeep).
-			AddTag(model.FileTypeOther),
-		filesystem.NewRawFile(blocksDir+`/001-block-1/meta.json`, `{"name":"block1"}`).
-			AddTag(model.FileKindBlockMeta).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(blocksDir+`/001-block-1/001-code-1/meta.json`, `{"name":"code1"}`).
-			AddTag(model.FileKindCodeMeta).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(blocksDir+`/001-block-1/001-code-1/code.sql`, "SELECT 1\n").
+		filesystem.NewRawFile(configDir+`/transform.sql`, expectedTransformContent).
 			AddTag(model.FileKindNativeCode).
 			AddTag(model.FileTypeOther),
-		filesystem.NewRawFile(blocksDir+`/001-block-1/002-code-2/meta.json`, `{"name":"code2"}`).
-			AddTag(model.FileKindCodeMeta).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(blocksDir+`/001-block-1/002-code-2/code.sql`, "SELECT 2;\n\nSELECT 3;\n").
-			AddTag(model.FileKindNativeCode).
-			AddTag(model.FileTypeOther),
-		filesystem.NewRawFile(blocksDir+`/002-block-2/meta.json`, `{"name":"block2"}`).
-			AddTag(model.FileKindBlockMeta).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(blocksDir+`/002-block-2/001-code-3/meta.json`, `{"name":"code3"}`).
-			AddTag(model.FileKindCodeMeta).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n").
-			AddTag(model.FileKindNativeCode).
-			AddTag(model.FileTypeOther),
-		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Config","isDisabled":false}`).
-			AddTag(model.FileKindObjectMeta).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(configDir+`/config.json`, `{"foo":"bar"}`).
+		filesystem.NewRawFile(configDir+`/_config.yml`, expectedConfigYAML).
 			AddTag(model.FileKindObjectConfig).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(configDir+`/description.md`, "\n").
-			AddTag(model.FileKindObjectDescription).
-			AddTag(model.FileTypeMarkdown),
+			AddTag(model.FileTypeYaml),
 	}, files)
 }

@@ -11,6 +11,7 @@ const (
 	FileTypeJSON               = `json`
 	FileTypeJsonnet            = `jsonnet`
 	FileTypeMarkdown           = `markdown`
+	FileTypeYaml               = `yaml`
 	FileTypeOther              = `other`
 	FileKindObjectConfig       = `objectConfig`
 	FileKindObjectMeta         = `objectMeta`

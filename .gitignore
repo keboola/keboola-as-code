@@ -56,3 +56,4 @@ vendor/*
 # Certificates
 /ca
 /certs
+/testing_cli

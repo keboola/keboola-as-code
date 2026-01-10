@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -31,8 +30,13 @@ type testMapper struct {
 
 func (*testMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	if config, ok := recipe.Object.(*model.Config); ok {
-		config.Content.Set("key", "overwritten")
-		config.Content.Set("new", "value")
+		// Modify name which will be reflected in the _config.yml
+		config.Name = "overwritten-name"
+		// Modify parameters which will be extracted to _config.yml
+		params := orderedmap.New()
+		params.Set("key", "overwritten")
+		params.Set("new", "value")
+		config.Content.Set("parameters", params)
 	}
 	return nil
 }
@@ -102,10 +106,13 @@ func TestLocalSaveMapper(t *testing.T) {
 	uow.SaveObject(configState, configState.Remote, model.ChangedFields{})
 	require.NoError(t, uow.Invoke())
 
-	// File content has been mapped
-	configFile, err := fs.ReadFile(t.Context(), filesystem.NewFileDef(filesystem.Join(`branch`, `config`, naming.ConfigFile)).SetDescription(`config file`))
+	// File content has been mapped - now using unified _config.yml format
+	configFile, err := fs.ReadFile(t.Context(), filesystem.NewFileDef(filesystem.Join(`branch`, `config`, naming.ConfigYAMLFile)).SetDescription(`config file`))
 	require.NoError(t, err)
-	assert.JSONEq(t, `{"key": "overwritten","new": "value"}`, strings.TrimSpace(configFile.Content))
+	// Check that the YAML content includes the mapped values
+	assert.Contains(t, configFile.Content, "name: overwritten-name")
+	assert.Contains(t, configFile.Content, "key: overwritten")
+	assert.Contains(t, configFile.Content, "new: value")
 
 	// AfterLocalOperation event has been called
 	assert.Equal(t, []string{

@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation/blockcode"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -31,8 +32,8 @@ func (m *transformationMapper) MapAfterLocalLoad(ctx context.Context, recipe *mo
 		errors:          errors.NewMultiError(),
 	}
 
-	// Load
-	return l.loadBlocks(ctx)
+	// Load - detect format and use appropriate method
+	return l.load(ctx)
 }
 
 type localLoader struct {
@@ -45,7 +46,78 @@ type localLoader struct {
 	errors    errors.MultiError
 }
 
-func (l *localLoader) loadBlocks(ctx context.Context) error {
+// load detects the format and loads transformation code.
+func (l *localLoader) load(ctx context.Context) error {
+	// Check for developer-friendly format (transform.* file)
+	transformPath := l.NamingGenerator().TransformFilePath(l.Path(), l.config.ComponentID)
+	if l.ObjectsRoot().IsFile(ctx, transformPath) {
+		return l.loadDeveloperFormat(ctx, transformPath)
+	}
+
+	// Check for legacy format (blocks/ directory)
+	if l.ObjectsRoot().IsDir(ctx, l.blocksDir) {
+		return l.loadLegacyFormat(ctx)
+	}
+
+	// No transformation code found - create empty transformation
+	l.config.Transformation = &model.Transformation{Blocks: []*model.Block{}}
+	return nil
+}
+
+// loadDeveloperFormat loads transformation from a single transform.* file.
+func (l *localLoader) loadDeveloperFormat(ctx context.Context, transformPath string) error {
+	// Track the transform file
+	l.AddRelatedPath(transformPath)
+
+	// Read the transform file
+	file, err := l.Files.
+		Load(transformPath).
+		AddMetadata(filesystem.ObjectKeyMetadata, l.config.Key()).
+		SetDescription("transformation code file").
+		AddTag(model.FileKindNativeCode).
+		ReadFile(ctx)
+	if err != nil {
+		l.errors.Append(err)
+		return l.errors.ErrorOrNil()
+	}
+
+	content := file.Content
+
+	// Parse the single file into blocks
+	parsed := blockcode.ParseString(content, l.config.ComponentID)
+
+	// Convert to model.Block objects
+	l.blocks = blockcode.ToBlocks(parsed, l.config, l.config.ComponentID)
+
+	// Set paths for blocks and codes (virtual paths since they don't exist on disk)
+	for blockIndex, block := range l.blocks {
+		block.AbsPath = model.NewAbsPath(l.blocksDir, generateVirtualBlockPath(block, blockIndex))
+		for codeIndex, code := range block.Codes {
+			code.AbsPath = model.NewAbsPath(block.Path(), generateVirtualCodePath(code, codeIndex))
+			code.CodeFileName = naming.CodeFileName + "." + naming.CodeFileExt(l.config.ComponentID)
+		}
+	}
+
+	// Validate
+	l.validate()
+
+	l.config.Transformation = &model.Transformation{Blocks: l.blocks}
+	l.logger.Debugf(ctx, `Loaded transformation with %d blocks from "%s"`, len(l.blocks), transformPath)
+	return l.errors.ErrorOrNil()
+}
+
+// generateVirtualBlockPath generates a virtual path for a block (used for internal references).
+func generateVirtualBlockPath(block *model.Block, index int) string {
+	return strings.ReplaceAll(strings.ToLower(block.Name), " ", "-")
+}
+
+// generateVirtualCodePath generates a virtual path for a code (used for internal references).
+func generateVirtualCodePath(code *model.Code, index int) string {
+	return strings.ReplaceAll(strings.ToLower(code.Name), " ", "-")
+}
+
+// loadLegacyFormat loads transformation from the legacy blocks/codes directory structure.
+func (l *localLoader) loadLegacyFormat(ctx context.Context) error {
 	// Load blocks and codes from filesystem
 	for blockIndex, blockDir := range l.blockDirs(ctx) {
 		block := l.addBlock(ctx, blockIndex, blockDir)

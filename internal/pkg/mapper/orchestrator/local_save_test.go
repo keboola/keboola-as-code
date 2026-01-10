@@ -1,7 +1,6 @@
 package orchestrator_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,72 +41,57 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 		files = append(files, fileRaw)
 	}
 
-	// Check generated files
+	// Check generated files - now using developer-friendly format with single pipeline.yml
 	configDir := orchestratorConfigState.Path()
-	phasesDir := state.NamingGenerator().PhasesDir(configDir)
+
+	// Expected YAML content for the pipeline
+	// Note: Config metadata (name, description, _keboola) is in _config.yml, not here
+	expectedPipelineYAML := `version: 2
+phases:
+    - name: Phase
+      tasks:
+        - name: Task 1
+          component: foo.bar1
+          config: extractor/target-config-1
+          path: branch/extractor/target-config-1
+        - name: Task 2 - disabled
+          component: foo.bar2
+          config: extractor/target-config-2
+          path: branch/extractor/target-config-2
+          enabled: false
+        - name: Task 3 - disabled without configId
+          component: foo.bar2
+          config: ""
+          enabled: false
+    - name: Phase With Deps
+      depends_on:
+        - Phase
+      tasks:
+        - name: Task 4
+          component: foo.bar2
+          config: extractor/target-config-3
+          path: branch/extractor/target-config-3
+        - name: Task 5 - configData
+          component: foo.bar3
+          config: ""
+          parameters:
+            params: value
+`
+
+	// Expected _config.yml content
+	expectedConfigYAML := `version: 2
+name: My Orchestration
+_keboola:
+    component_id: keboola.orchestrator
+    config_id: "456"
+`
+
 	assert.Equal(t, []filesystem.File{
-		filesystem.
-			NewRawFile(phasesDir+`/.gitkeep`, ``).
-			AddTag(model.FileKindGitKeep).
-			AddTag(model.FileTypeOther),
-		filesystem.
-			NewRawFile(
-				phasesDir+`/001-phase/phase.json`,
-				`{"name":"Phase","dependsOn":[],"foo":"bar"}`,
-			).
-			AddTag(model.FileKindPhaseConfig).
-			AddTag(model.FileTypeJSON),
-		filesystem.
-			NewRawFile(
-				phasesDir+`/001-phase/001-task-1/task.json`,
-				`{"name":"Task 1","enabled":true,"task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false}`,
-			).
-			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJSON),
-		filesystem.
-			NewRawFile(
-				phasesDir+`/001-phase/002-task-2/task.json`,
-				`{"name":"Task 2 - disabled","enabled":false,"task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false}`,
-			).
-			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJSON),
-		filesystem.
-			NewRawFile(
-				phasesDir+`/001-phase/003-task-3/task.json`,
-				`{"name":"Task 3 - disabled without configId","enabled":false,"task":{"mode":"run","componentId":"foo.bar2"},"continueOnFailure":false}`,
-			).
-			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJSON),
-		filesystem.
-			NewRawFile(
-				phasesDir+`/002-phase-with-deps/phase.json`,
-				`{"name":"Phase With Deps","dependsOn":["001-phase"]}`,
-			).
-			AddTag(model.FileKindPhaseConfig).
-			AddTag(model.FileTypeJSON),
-		filesystem.
-			NewRawFile(
-				phasesDir+`/002-phase-with-deps/001-task-4/task.json`,
-				`{"name":"Task 4","enabled":true,"task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false}`,
-			).
-			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJSON),
-		filesystem.
-			NewRawFile(
-				phasesDir+`/002-phase-with-deps/002-task-5/task.json`,
-				`{"name":"Task 5 - configData","enabled":true,"task":{"mode":"run","configData":{"params":"value"},"componentId":"foo.bar3"},"continueOnFailure":false}`,
-			).
-			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Orchestration","isDisabled":false}`).
-			AddTag(model.FileKindObjectMeta).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(configDir+`/config.json`, `{}`).
+		filesystem.NewRawFile(configDir+`/pipeline.yml`, expectedPipelineYAML).
+			AddTag(model.FileTypeYaml),
+		filesystem.NewRawFile(configDir+`/_config.yml`, expectedConfigYAML).
 			AddTag(model.FileKindObjectConfig).
-			AddTag(model.FileTypeJSON),
-		filesystem.NewRawFile(configDir+`/description.md`, "\n").
-			AddTag(model.FileKindObjectDescription).
-			AddTag(model.FileTypeMarkdown),
+			AddTag(model.FileTypeYaml),
 	}, files)
 }
 
@@ -122,17 +106,7 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 
 	// Save
 	require.NoError(t, state.Mapper().MapBeforeLocalSave(t.Context(), recipe))
-	expectedWarnings := `
-WARN  Warning:
-- Cannot save orchestrator config "branch/other/orchestrator":
-  - Cannot save phase "001-phase":
-    - Cannot save task "001-task-1":
-      - Config "branch:123/component:foo.bar1/config:123" not found.
-    - Cannot save task "002-task-2":
-      - Config "branch:123/component:foo.bar2/config:789" not found.
-  - Cannot save phase "002-phase-with-deps":
-    - Cannot save task "001-task-4":
-      - Config "branch:123/component:foo.bar2/config:456" not found.
-`
-	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.AllMessagesTxt())
+	// With the new pipeline.yml format, config paths are stored as-is without validation
+	// so there are no warnings when configs are not found
+	assert.Empty(t, logger.WarnAndErrorMessages())
 }

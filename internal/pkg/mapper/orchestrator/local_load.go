@@ -42,6 +42,17 @@ type localLoader struct {
 }
 
 func (l *localLoader) load(ctx context.Context) error {
+	// Try loading from pipeline.yml first (new developer-friendly format)
+	if l.hasPipelineYAML(ctx) {
+		pipelinePath := l.NamingGenerator().PipelineFilePath(l.Path())
+		return l.loadPipelineYAML(ctx, pipelinePath)
+	}
+
+	// Fall back to legacy phases directory format
+	return l.loadLegacyFormat(ctx)
+}
+
+func (l *localLoader) loadLegacyFormat(ctx context.Context) error {
 	// Load phases and tasks from filesystem
 	for phaseIndex, phaseDir := range l.phasesDirs(ctx) {
 		errs := errors.NewMultiError()
@@ -90,6 +101,18 @@ func (l *localLoader) load(ctx context.Context) error {
 	}
 
 	return l.errors.ErrorOrNil()
+}
+
+func (l *localLoader) Path() string {
+	return l.manifest.Path()
+}
+
+func (l *localLoader) Files() *model.FilesLoader {
+	return l.files
+}
+
+func (l *localLoader) AddRelatedPath(path string) {
+	l.manifest.AddRelatedPath(path)
 }
 
 func (l *localLoader) addPhase(ctx context.Context, phaseIndex int, path string) (*model.Phase, []string, error) {

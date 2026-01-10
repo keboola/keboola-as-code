@@ -25,6 +25,16 @@ const (
 	phasesDir         = `phases`
 	phaseNameTemplate = PathTemplate(`{phase_order}-{phase_name}`)
 	taskNameTemplate  = PathTemplate(`{task_order}-{task_name}`)
+
+	// Developer-friendly format constants
+	TransformFileName = `transform`    // transformation code file name without ext
+	ConfigYAMLFile    = `_config.yml`  // YAML configuration file
+	MetaYAMLFile      = `_meta.yml`    // YAML metadata file
+	PipelineFile      = `pipeline.yml` // orchestration pipeline file
+	SchedulesFile     = `_schedules.yml`
+	VariablesYAMLFile = `_variables.yml`
+	PyProjectFile     = `pyproject.toml` // Python project file
+	DataDir           = `data`           // local execution data directory
 )
 
 type Generator struct {
@@ -252,4 +262,46 @@ func (g Generator) TaskPath(parentPath string, task *model.Task) model.AbsPath {
 
 func (g Generator) TaskFilePath(task *model.Task) string {
 	return filesystem.Join(task.Path(), TaskFile)
+}
+
+// Developer-friendly format paths
+
+// TransformFilePath returns the path to the single transformation file (e.g., transform.sql).
+func (g Generator) TransformFilePath(configDir string, componentID keboola.ComponentID) string {
+	return filesystem.Join(configDir, TransformFileName+"."+CodeFileExt(componentID))
+}
+
+// ConfigYAMLFilePath returns the path to the YAML configuration file.
+func (g Generator) ConfigYAMLFilePath(dir string) string {
+	return filesystem.Join(dir, ConfigYAMLFile)
+}
+
+// MetaYAMLFilePath returns the path to the YAML metadata file.
+func (g Generator) MetaYAMLFilePath(dir string) string {
+	return filesystem.Join(dir, MetaYAMLFile)
+}
+
+// PipelineFilePath returns the path to the pipeline.yml file for orchestrations.
+func (g Generator) PipelineFilePath(dir string) string {
+	return filesystem.Join(dir, PipelineFile)
+}
+
+// SchedulesFilePath returns the path to the schedules.yml file.
+func (g Generator) SchedulesFilePath(dir string) string {
+	return filesystem.Join(dir, SchedulesFile)
+}
+
+// VariablesYAMLFilePath returns the path to the _variables.yml file.
+func (g Generator) VariablesYAMLFilePath(dir string) string {
+	return filesystem.Join(dir, VariablesYAMLFile)
+}
+
+// PyProjectFilePath returns the path to pyproject.toml.
+func (g Generator) PyProjectFilePath(dir string) string {
+	return filesystem.Join(dir, PyProjectFile)
+}
+
+// DataDirPath returns the path to the data directory for local execution.
+func (g Generator) DataDirPath(dir string) string {
+	return filesystem.Join(dir, DataDir)
 }

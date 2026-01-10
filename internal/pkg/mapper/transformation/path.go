@@ -1,6 +1,10 @@
 package transformation
 
-import "github.com/keboola/keboola-as-code/internal/pkg/model"
+import (
+	"context"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+)
 
 // OnObjectPathUpdate - update Blocks/Codes paths.
 func (m *transformationMapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
@@ -8,8 +12,19 @@ func (m *transformationMapper) OnObjectPathUpdate(event model.OnObjectPathUpdate
 		return err
 	}
 
-	// Rename transformation blocks/codes
 	configState := event.ObjectState.(*model.ConfigState)
+
+	// Check if using developer-friendly format (transform.* file).
+	// In this format, code is stored in a single file, not in blocks directories,
+	// so we skip the path update operations.
+	// Use local state if available, otherwise remote state for componentID
+	var componentID = configState.ComponentID
+	transformPath := m.state.NamingGenerator().TransformFilePath(configState.Path(), componentID)
+	if m.state.ObjectsRoot().IsFile(context.Background(), transformPath) {
+		return nil
+	}
+
+	// Legacy format: Rename transformation blocks/codes directories
 	if configState.HasLocalState() {
 		for _, block := range configState.Local.Transformation.Blocks {
 			m.updateBlockPath(event.PathsGenerator, configState, block)
