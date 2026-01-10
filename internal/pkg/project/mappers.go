@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/ignore"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/pyproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode"
@@ -38,6 +39,8 @@ func MappersFor(s *state.State, d dependencies) (mapper.Mappers, error) {
 		sharedcode.NewCodesMapper(s),
 		// Custom Python component
 		codemapper.NewMapper(s),
+		// Python dependencies (pyproject.toml)
+		pyproject.NewMapper(s),
 		// Shared code links
 		sharedcode.NewLinksMapper(s),
 		// Relations between objects

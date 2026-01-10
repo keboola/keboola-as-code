@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -99,20 +101,24 @@ func getPackagesFromConfig(config *model.Config) []string {
 		return packages
 	}
 
-	// Get parameters
+	// Get parameters - can be orderedmap or map[string]any
 	parametersRaw, ok := config.Content.Get("parameters")
 	if !ok {
 		return packages
 	}
 
-	parameters, ok := parametersRaw.(map[string]any)
-	if !ok {
+	// Try to get packages from parameters (handle both orderedmap and map types)
+	var packagesRaw any
+	switch params := parametersRaw.(type) {
+	case *orderedmap.OrderedMap:
+		packagesRaw, _ = params.Get("packages")
+	case map[string]any:
+		packagesRaw = params["packages"]
+	default:
 		return packages
 	}
 
-	// Get packages
-	packagesRaw, ok := parameters["packages"]
-	if !ok {
+	if packagesRaw == nil {
 		return packages
 	}
 
