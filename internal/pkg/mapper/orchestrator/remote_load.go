@@ -383,13 +383,226 @@ func (l *remoteLoader) getTargetConfig(componentID keboola.ComponentID, configID
 
 // syncSchedulesOnSave synchronizes inline schedules from the orchestrator's _config.yml
 // with the Keboola Scheduler API when the orchestrator is pushed.
-// Note: This function doesn't run during push anymore - schedule sync is disabled.
-// Inline schedules are stored in _config.yml and synced on pull only.
 func (m *orchestratorMapper) syncSchedulesOnSave(ctx context.Context, configState *model.ConfigState) error {
-	// Schedule sync on push is disabled for now.
-	// Users should manage schedules via the Keboola UI or API directly.
-	// The inline schedules in _config.yml are read-only - they reflect the API state on pull.
-	return nil
+	// Get local orchestrator config
+	localConfig := configState.Local
+
+	if localConfig == nil || localConfig.Orchestration == nil {
+		return nil
+	}
+
+	api := m.KeboolaProjectAPI()
+	errs := errors.NewMultiError()
+
+	// Get local schedules (from _config.yml)
+	localSchedules := localConfig.Orchestration.Schedules
+
+	// Fetch current schedules from API (we can't rely on configState.Remote because it's been updated after save)
+	remoteSchedules, err := m.fetchSchedulesFromAPI(ctx, api, localConfig)
+	if err != nil {
+		return errors.PrefixError(err, "failed to fetch current schedules from API")
+	}
+
+	// Build maps by config ID for comparison
+	localByID := make(map[string]*model.ScheduleYAML)
+	for i := range localSchedules {
+		s := &localSchedules[i]
+		if s.Keboola != nil && s.Keboola.ConfigID != "" {
+			localByID[s.Keboola.ConfigID] = s
+		}
+	}
+
+	remoteByID := make(map[string]*model.ScheduleYAML)
+	for i := range remoteSchedules {
+		s := &remoteSchedules[i]
+		if s.Keboola != nil && s.Keboola.ConfigID != "" {
+			remoteByID[s.Keboola.ConfigID] = s
+		}
+	}
+
+	// Find schedules to create (in local but no config_id - new schedules)
+	for i := range localSchedules {
+		s := &localSchedules[i]
+		if s.Keboola == nil || s.Keboola.ConfigID == "" {
+			// New schedule - create it
+			if err := m.createSchedulerConfig(ctx, api, s, localConfig); err != nil {
+				errs.AppendWithPrefixf(err, "failed to create schedule %q", s.Name)
+			}
+		}
+	}
+
+	// Find schedules to update (in both local and remote, with config_id)
+	for configID, localSchedule := range localByID {
+		remoteSchedule, exists := remoteByID[configID]
+		if exists && m.scheduleChanged(localSchedule, remoteSchedule) {
+			// Schedule changed - update it
+			if err := m.updateSchedulerFromInlineByID(ctx, api, configID, localSchedule, localConfig); err != nil {
+				errs.AppendWithPrefixf(err, "failed to update schedule %q", localSchedule.Name)
+			}
+		}
+	}
+
+	// Find schedules to delete (in remote but not in local)
+	for configID := range remoteByID {
+		if _, exists := localByID[configID]; !exists {
+			// Schedule removed - delete it
+			if err := m.deleteSchedulerConfig(ctx, api, configID, localConfig.BranchID); err != nil {
+				errs.AppendWithPrefixf(err, "failed to delete schedule with config_id %q", configID)
+			}
+		}
+	}
+
+	return errs.ErrorOrNil()
+}
+
+// scheduleChanged compares two schedules and returns true if they differ.
+func (m *orchestratorMapper) scheduleChanged(local, remote *model.ScheduleYAML) bool {
+	if local.Name != remote.Name {
+		return true
+	}
+	if local.Description != remote.Description {
+		return true
+	}
+	if local.Cron != remote.Cron {
+		return true
+	}
+	if local.Timezone != remote.Timezone {
+		return true
+	}
+	// Compare enabled status
+	localEnabled := local.Enabled == nil || *local.Enabled
+	remoteEnabled := remote.Enabled == nil || *remote.Enabled
+	if localEnabled != remoteEnabled {
+		return true
+	}
+	return false
+}
+
+// createSchedulerConfig creates a new scheduler config via API.
+func (m *orchestratorMapper) createSchedulerConfig(ctx context.Context, api *keboola.AuthorizedAPI, schedule *model.ScheduleYAML, orchestratorConfig *model.Config) error {
+	schedulerContent := m.buildSchedulerContent(schedule, orchestratorConfig)
+
+	configWithRows := &keboola.ConfigWithRows{
+		Config: &keboola.Config{
+			ConfigKey: keboola.ConfigKey{
+				BranchID:    orchestratorConfig.BranchID,
+				ComponentID: keboola.SchedulerComponentID,
+			},
+			Name:              schedule.Name,
+			Description:       schedule.Description,
+			Content:           schedulerContent,
+			ChangeDescription: "Created from inline schedule in orchestrator",
+		},
+	}
+
+	_, err := api.CreateConfigRequest(configWithRows, false).Send(ctx)
+	return err
+}
+
+// deleteSchedulerConfig deletes a scheduler config via API.
+func (m *orchestratorMapper) deleteSchedulerConfig(ctx context.Context, api *keboola.AuthorizedAPI, configID string, branchID keboola.BranchID) error {
+	configKey := keboola.ConfigKey{
+		BranchID:    branchID,
+		ComponentID: keboola.SchedulerComponentID,
+		ID:          keboola.ConfigID(configID),
+	}
+
+	_, err := api.DeleteConfigRequest(configKey).Send(ctx)
+	return err
+}
+
+// fetchSchedulesFromAPI fetches all scheduler configs targeting this orchestrator from the API.
+func (m *orchestratorMapper) fetchSchedulesFromAPI(ctx context.Context, api *keboola.AuthorizedAPI, orchestratorConfig *model.Config) ([]model.ScheduleYAML, error) {
+	// List all configs for the scheduler component in this branch
+	branchKey := keboola.BranchKey{ID: orchestratorConfig.BranchID}
+	components, err := api.ListConfigsAndRowsFrom(branchKey).Send(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var schedules []model.ScheduleYAML
+
+	// Find scheduler configs targeting this orchestrator
+	for _, component := range *components {
+		if component.ComponentKey.ID != keboola.SchedulerComponentID {
+			continue
+		}
+
+		for _, config := range component.Configs {
+			// Check if this scheduler targets our orchestrator
+			if config.Content == nil {
+				continue
+			}
+
+			targetRaw, ok := config.Content.Get("target")
+			if !ok {
+				continue
+			}
+
+			targetMap, ok := targetRaw.(*orderedmap.OrderedMap)
+			if !ok {
+				continue
+			}
+
+			componentIDRaw, _ := targetMap.Get("componentId")
+			configIDRaw, _ := targetMap.Get("configurationId")
+
+			componentID, _ := componentIDRaw.(string)
+			configID, _ := configIDRaw.(string)
+
+			if componentID == orchestratorConfig.ComponentID.String() && configID == orchestratorConfig.ID.String() {
+				// This scheduler targets our orchestrator - convert to ScheduleYAML
+				schedule := m.buildScheduleYAMLFromAPIConfig(config.Config)
+				schedules = append(schedules, schedule)
+			}
+		}
+	}
+
+	return schedules, nil
+}
+
+// buildScheduleYAMLFromAPIConfig converts a keboola.Config to ScheduleYAML.
+func (m *orchestratorMapper) buildScheduleYAMLFromAPIConfig(config *keboola.Config) model.ScheduleYAML {
+	schedule := model.ScheduleYAML{
+		Name: config.Name,
+		Keboola: &model.ScheduleKeboolaMeta{
+			ConfigID: config.ID.String(),
+		},
+	}
+
+	// Get description
+	if config.Description != "" {
+		schedule.Description = config.Description
+	}
+
+	// Get schedule (cron) details from the schedule key
+	if config.Content != nil {
+		if scheduleRaw, ok := config.Content.Get("schedule"); ok {
+			if scheduleMap, ok := scheduleRaw.(*orderedmap.OrderedMap); ok {
+				// Get cronTab
+				if cronTab, ok := scheduleMap.Get("cronTab"); ok {
+					if cronStr, ok := cronTab.(string); ok {
+						schedule.Cron = cronStr
+					}
+				}
+				// Get timezone
+				if timezone, ok := scheduleMap.Get("timezone"); ok {
+					if tzStr, ok := timezone.(string); ok {
+						schedule.Timezone = tzStr
+					}
+				}
+				// Get state (enabled/disabled)
+				if state, ok := scheduleMap.Get("state"); ok {
+					if stateStr, ok := state.(string); ok {
+						enabled := stateStr == "enabled"
+						schedule.Enabled = &enabled
+					}
+				}
+			}
+		}
+	}
+
+	return schedule
 }
 
 // updateSchedulerFromInlineByID updates an existing scheduler config directly via API using its config ID.
