@@ -248,13 +248,19 @@ func buildContentFromConfigYAML(configYAML *model.ConfigYAML) *orderedmap.Ordere
 	}
 
 	// Add parameters - use orderedmap directly to preserve ordering
-	if configYAML.Parameters != nil && configYAML.Parameters.Len() > 0 {
-		content.Set("parameters", configYAML.Parameters.Clone())
+	// Normalize numbers to float64 to match API behavior (JSON uses float64 for all numbers)
+	// Always include parameters if present in YAML, even if empty (API expects parameters: {})
+	if configYAML.Parameters != nil {
+		params := configYAML.Parameters.Clone()
+		normalizeOrderedMapNumbers(params)
+		content.Set("parameters", params)
 	}
 
 	// Add runtime fields (backend, safe, etc.) as a unified object
 	if configYAML.Runtime != nil && configYAML.Runtime.Len() > 0 {
-		content.Set("runtime", configYAML.Runtime.Clone())
+		runtime := configYAML.Runtime.Clone()
+		normalizeOrderedMapNumbers(runtime)
+		content.Set("runtime", runtime)
 	}
 
 	return content
@@ -337,6 +343,8 @@ func (m *coreFilesMapper) buildTaskFromConfigYAML(recipe *model.LocalLoadRecipe,
 	content := orderedmap.New()
 	// Store continueOnFailure in content
 	content.Set("continueOnFailure", taskYAML.ContinueOnFailure)
+	// Add empty task object to match API structure
+	content.Set("task", orderedmap.New())
 
 	task := &model.Task{
 		TaskKey: model.TaskKey{
@@ -430,4 +438,58 @@ func (m *coreFilesMapper) updateSchedulerConfigsFromInline(config *model.Config,
 		return
 	}
 	config.Orchestration.Schedules = schedules
+}
+
+// normalizeOrderedMapNumbers recursively converts all integer types to float64 in an orderedmap.
+// This is needed because YAML unmarshals numbers as int while JSON from API uses float64.
+func normalizeOrderedMapNumbers(om *orderedmap.OrderedMap) {
+	if om == nil {
+		return
+	}
+
+	for _, key := range om.Keys() {
+		value, _ := om.Get(key)
+		om.Set(key, normalizeValue(value))
+	}
+}
+
+// normalizeValue converts integer types to float64 and recursively processes nested structures.
+func normalizeValue(value any) any {
+	switch v := value.(type) {
+	case int:
+		return float64(v)
+	case int8:
+		return float64(v)
+	case int16:
+		return float64(v)
+	case int32:
+		return float64(v)
+	case int64:
+		return float64(v)
+	case uint:
+		return float64(v)
+	case uint8:
+		return float64(v)
+	case uint16:
+		return float64(v)
+	case uint32:
+		return float64(v)
+	case uint64:
+		return float64(v)
+	case *orderedmap.OrderedMap:
+		normalizeOrderedMapNumbers(v)
+		return v
+	case []any:
+		for i, item := range v {
+			v[i] = normalizeValue(item)
+		}
+		return v
+	case map[string]any:
+		for k, item := range v {
+			v[k] = normalizeValue(item)
+		}
+		return v
+	default:
+		return value
+	}
 }
