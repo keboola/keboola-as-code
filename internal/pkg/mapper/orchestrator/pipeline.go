@@ -220,8 +220,8 @@ func (w *localWriter) buildTaskYAML(task *model.Task) model.TaskYAML {
 			taskYAML.Config = targetPath
 		}
 	} else if task.ConfigData != nil {
-		// For inline config, serialize the config data
-		taskYAML.Parameters = orderedMapToMap(task.ConfigData)
+		// For inline config, serialize the config data - preserve ordering
+		taskYAML.Parameters = task.ConfigData.Clone()
 	}
 
 	return taskYAML
@@ -400,9 +400,9 @@ func (l *localLoader) buildTaskFromYAML(taskYAML *model.TaskYAML, phaseIndex, ta
 		}
 	}
 
-	// Handle inline parameters
+	// Handle inline parameters - use orderedmap directly to preserve ordering
 	if taskYAML.Parameters != nil {
-		task.ConfigData = mapToOrderedMap(taskYAML.Parameters)
+		task.ConfigData = taskYAML.Parameters.Clone()
 	}
 
 	return task

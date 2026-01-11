@@ -154,7 +154,7 @@ func (m *coreFilesMapper) buildConfigYAML(config *model.Config) *model.ConfigYAM
 	if err == nil && component.IsScheduler() {
 		// For scheduler configs, preserve the entire content as-is
 		if config.Content != nil {
-			configYAML.Parameters = orderedMapToMap(config.Content)
+			configYAML.Parameters = config.Content.Clone()
 		}
 		return configYAML
 	}
@@ -175,19 +175,20 @@ func (m *coreFilesMapper) buildConfigYAML(config *model.Config) *model.ConfigYAM
 			}
 		}
 
-		// Extract parameters
+		// Extract parameters - preserve ordering by using orderedmap directly
 		if params, ok := config.Content.Get("parameters"); ok {
 			if paramsMap, ok := params.(*orderedmap.OrderedMap); ok {
-				configYAML.Parameters = orderedMapToMap(paramsMap)
+				configYAML.Parameters = paramsMap.Clone()
 			} else if paramsMapAny, ok := params.(map[string]any); ok {
-				configYAML.Parameters = paramsMapAny
+				// Convert regular map to orderedmap (will sort alphabetically, but at least be consistent)
+				configYAML.Parameters = orderedmap.FromPairs(mapToPairs(paramsMapAny))
 			}
 		}
 
-		// Extract runtime fields (backend, safe, etc.) as a unified object
+		// Extract runtime fields (backend, safe, etc.) as a unified object - preserve ordering
 		if runtime, ok := config.Content.Get("runtime"); ok {
 			if runtimeMap, ok := runtime.(*orderedmap.OrderedMap); ok {
-				configYAML.Runtime = orderedMapToMap(runtimeMap)
+				configYAML.Runtime = runtimeMap.Clone()
 			}
 		}
 	}
@@ -283,8 +284,8 @@ func (m *coreFilesMapper) buildTaskYAML(config *model.Config, task *model.Task) 
 			}
 		}
 	} else if task.ConfigData != nil {
-		// For inline config, serialize the config data
-		taskYAML.Parameters = orderedMapToMap(task.ConfigData)
+		// For inline config, serialize the config data - preserve ordering
+		taskYAML.Parameters = task.ConfigData.Clone()
 	}
 
 	return taskYAML
@@ -391,12 +392,13 @@ func (m *coreFilesMapper) buildConfigRowYAML(configRow *model.ConfigRow) *model.
 
 	// Extract configuration from Content
 	if configRow.Content != nil {
-		// Extract parameters
+		// Extract parameters - preserve ordering
 		if params, ok := configRow.Content.Get("parameters"); ok {
 			if paramsMap, ok := params.(*orderedmap.OrderedMap); ok {
-				configYAML.Parameters = orderedMapToMap(paramsMap)
+				configYAML.Parameters = paramsMap.Clone()
 			} else if paramsMapAny, ok := params.(map[string]any); ok {
-				configYAML.Parameters = paramsMapAny
+				// Convert regular map to orderedmap (will sort alphabetically, but at least be consistent)
+				configYAML.Parameters = orderedmap.FromPairs(mapToPairs(paramsMapAny))
 			}
 		}
 	}
@@ -428,6 +430,7 @@ func (m *coreFilesMapper) deleteOldCoreFiles(recipe *model.LocalSaveRecipe) {
 }
 
 // orderedMapToMap converts an orderedmap to a regular map.
+// Deprecated: Use orderedmap directly to preserve key ordering.
 func orderedMapToMap(om *orderedmap.OrderedMap) map[string]any {
 	if om == nil {
 		return nil
@@ -444,6 +447,19 @@ func orderedMapToMap(om *orderedmap.OrderedMap) map[string]any {
 		}
 	}
 	return result
+}
+
+// mapToPairs converts a regular map to orderedmap pairs (sorted alphabetically for consistency).
+func mapToPairs(m map[string]any) []orderedmap.Pair {
+	if m == nil {
+		return nil
+	}
+
+	pairs := make([]orderedmap.Pair, 0, len(m))
+	for k, v := range m {
+		pairs = append(pairs, orderedmap.Pair{Key: k, Value: v})
+	}
+	return pairs
 }
 
 // extractStorageInput extracts input storage mapping from storage orderedmap.

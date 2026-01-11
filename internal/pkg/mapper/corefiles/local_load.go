@@ -117,7 +117,7 @@ func (m *coreFilesMapper) loadUnifiedConfigYAML(ctx context.Context, recipe *mod
 		// For scheduler configs, Parameters contains the full content (schedule, target, etc.)
 		// Restore it directly without wrapping in "parameters"
 		if configYAML.Parameters != nil {
-			config.Content = mapToOrderedMap(configYAML.Parameters)
+			config.Content = configYAML.Parameters.Clone()
 		} else {
 			config.Content = orderedmap.New()
 		}
@@ -247,14 +247,14 @@ func buildContentFromConfigYAML(configYAML *model.ConfigYAML) *orderedmap.Ordere
 		content.Set("storage", storage)
 	}
 
-	// Add parameters
-	if configYAML.Parameters != nil && len(configYAML.Parameters) > 0 {
-		content.Set("parameters", mapToOrderedMap(configYAML.Parameters))
+	// Add parameters - use orderedmap directly to preserve ordering
+	if configYAML.Parameters != nil && configYAML.Parameters.Len() > 0 {
+		content.Set("parameters", configYAML.Parameters.Clone())
 	}
 
 	// Add runtime fields (backend, safe, etc.) as a unified object
-	if len(configYAML.Runtime) > 0 {
-		content.Set("runtime", mapToOrderedMap(configYAML.Runtime))
+	if configYAML.Runtime != nil && configYAML.Runtime.Len() > 0 {
+		content.Set("runtime", configYAML.Runtime.Clone())
 	}
 
 	return content
@@ -372,9 +372,9 @@ func (m *coreFilesMapper) buildTaskFromConfigYAML(recipe *model.LocalLoadRecipe,
 		}
 	}
 
-	// Handle inline parameters
+	// Handle inline parameters - use orderedmap directly to preserve ordering
 	if taskYAML.Parameters != nil {
-		task.ConfigData = mapToOrderedMap(taskYAML.Parameters)
+		task.ConfigData = taskYAML.Parameters.Clone()
 	}
 
 	return task

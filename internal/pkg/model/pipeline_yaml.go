@@ -1,5 +1,9 @@
 package model
 
+import (
+	"github.com/keboola/go-utils/pkg/orderedmap"
+)
+
 // PipelineYAML represents the pipeline.yml structure for orchestrations.
 type PipelineYAML struct {
 	Version     int                     `yaml:"version" json:"version"`
@@ -37,12 +41,12 @@ type PhaseYAML struct {
 
 // TaskYAML represents a task in a phase.
 type TaskYAML struct {
-	Name              string         `yaml:"name" json:"name"`
-	Component         string         `yaml:"component" json:"component"`
-	Config            string         `yaml:"config" json:"config"`                              // Relative path to config from orchestrator directory
-	Enabled           *bool          `yaml:"enabled,omitempty" json:"enabled,omitempty"`
-	ContinueOnFailure bool           `yaml:"continue_on_failure,omitempty" json:"continue_on_failure,omitempty"`
-	Parameters        map[string]any `yaml:"parameters,omitempty" json:"parameters,omitempty"`
+	Name              string                 `yaml:"name" json:"name"`
+	Component         string                 `yaml:"component" json:"component"`
+	Config            string                 `yaml:"config" json:"config"` // Relative path to config from orchestrator directory
+	Enabled           *bool                  `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	ContinueOnFailure bool                   `yaml:"continue_on_failure,omitempty" json:"continue_on_failure,omitempty"`
+	Parameters        *orderedmap.OrderedMap `yaml:"parameters,omitempty" json:"parameters,omitempty"`
 }
 
 // VariableYAML represents a variable definition in the pipeline.

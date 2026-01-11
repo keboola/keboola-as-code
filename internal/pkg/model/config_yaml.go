@@ -1,5 +1,9 @@
 package model
 
+import (
+	"github.com/keboola/go-utils/pkg/orderedmap"
+)
+
 // ConfigYAML represents the unified _config.yml structure that combines
 // metadata (from meta.json + description.md) and configuration (from config.json).
 type ConfigYAML struct {
@@ -12,14 +16,15 @@ type ConfigYAML struct {
 	Tags        []string `yaml:"tags,omitempty" json:"tags,omitempty"`
 
 	// Configuration fields (previously in config.json)
-	Runtime    map[string]any      `yaml:"runtime,omitempty" json:"runtime,omitempty"` // Full runtime object (backend, safe, etc.)
-	Input      *StorageInputYAML   `yaml:"input,omitempty" json:"input,omitempty"`
-	Output     *StorageOutputYAML  `yaml:"output,omitempty" json:"output,omitempty"`
-	Parameters map[string]any      `yaml:"parameters,omitempty" json:"parameters,omitempty"`
-	SharedCode []SharedCodeRefYAML `yaml:"shared_code,omitempty" json:"shared_code,omitempty"`
+	// Using orderedmap to preserve key ordering from the API
+	Runtime    *orderedmap.OrderedMap `yaml:"runtime,omitempty" json:"runtime,omitempty"` // Full runtime object (backend, safe, etc.)
+	Input      *StorageInputYAML      `yaml:"input,omitempty" json:"input,omitempty"`
+	Output     *StorageOutputYAML     `yaml:"output,omitempty" json:"output,omitempty"`
+	Parameters *orderedmap.OrderedMap `yaml:"parameters,omitempty" json:"parameters,omitempty"`
+	SharedCode []SharedCodeRefYAML    `yaml:"shared_code,omitempty" json:"shared_code,omitempty"`
 
 	// For applications
-	UserProperties map[string]any `yaml:"user_properties,omitempty" json:"user_properties,omitempty"`
+	UserProperties *orderedmap.OrderedMap `yaml:"user_properties,omitempty" json:"user_properties,omitempty"`
 
 	// For orchestrations (phases, tasks, schedules inline)
 	Schedules []ScheduleYAML `yaml:"schedules,omitempty" json:"schedules,omitempty"`
