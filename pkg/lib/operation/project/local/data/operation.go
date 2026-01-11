@@ -488,17 +488,29 @@ func downloadFile(ctx context.Context, d dependencies, file InputFile, dataDir s
 	return nil
 }
 
+// componentCustomPython is the component ID for the custom Python application
+// that requires special config transformation.
+const componentCustomPython = "kds-team.app-custom-python"
+
 // generateConfigJSON generates config.json for applications in Common Interface format.
 func generateConfigJSON(config *model.Config, dataDir string) error {
 	// Get parameters from config content
 	configData := map[string]any{}
 
 	if config.Content != nil {
-		if params, ok := config.Content.Get("parameters"); ok {
-			if paramsMap, ok := params.(*orderedmap.OrderedMap); ok {
-				configData["parameters"] = orderedMapToPlainMap(paramsMap)
-			} else if paramsPlain, ok := params.(map[string]any); ok {
-				configData["parameters"] = paramsPlain
+		// Special handling for kds-team.app-custom-python:
+		// The component receives parameters.user_properties as parameters
+		// and storage section as storage.
+		if string(config.ComponentID) == componentCustomPython {
+			configData = generateCustomPythonConfig(config.Content)
+		} else {
+			// Standard handling: use parameters as-is
+			if params, ok := config.Content.Get("parameters"); ok {
+				if paramsMap, ok := params.(*orderedmap.OrderedMap); ok {
+					configData["parameters"] = orderedMapToPlainMap(paramsMap)
+				} else if paramsPlain, ok := params.(map[string]any); ok {
+					configData["parameters"] = paramsPlain
+				}
 			}
 		}
 	}
@@ -511,6 +523,41 @@ func generateConfigJSON(config *model.Config, dataDir string) error {
 
 	configPath := filepath.Join(dataDir, "config.json")
 	return os.WriteFile(configPath, data, 0o644) //nolint:forbidigo
+}
+
+// generateCustomPythonConfig generates config for kds-team.app-custom-python component.
+// This component receives:
+// - parameters.user_properties as parameters
+// - storage as storage
+func generateCustomPythonConfig(content *orderedmap.OrderedMap) map[string]any {
+	configData := map[string]any{}
+
+	// Extract parameters.user_properties -> parameters
+	if params, ok := content.Get("parameters"); ok {
+		var paramsMap map[string]any
+		if pm, ok := params.(*orderedmap.OrderedMap); ok {
+			paramsMap = orderedMapToPlainMap(pm)
+		} else if pm, ok := params.(map[string]any); ok {
+			paramsMap = pm
+		}
+
+		if paramsMap != nil {
+			if userProps, ok := paramsMap["user_properties"]; ok {
+				configData["parameters"] = userProps
+			}
+		}
+	}
+
+	// Extract storage -> storage
+	if storage, ok := content.Get("storage"); ok {
+		if storageMap, ok := storage.(*orderedmap.OrderedMap); ok {
+			configData["storage"] = orderedMapToPlainMap(storageMap)
+		} else if storagePlain, ok := storage.(map[string]any); ok {
+			configData["storage"] = storagePlain
+		}
+	}
+
+	return configData
 }
 
 // parseCompareOp parses a comparison operator string.
