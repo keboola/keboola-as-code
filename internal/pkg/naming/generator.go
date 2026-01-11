@@ -130,11 +130,17 @@ func (g Generator) ConfigPath(parentPath string, component *keboola.Component, c
 		panic(errors.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
 	}
 
+	// Determine component type for path - use "flow" for orchestrations
+	componentType := component.Type
+	if component.IsOrchestrator() || component.ID == keboola.ComponentID("keboola.flow") {
+		componentType = "flow"
+	}
+
 	p := model.AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]any{
 		"target_component_id": targetComponentID, // for shared code
-		"component_type":      component.Type,
+		"component_type":      componentType,
 		"component_id":        component.ID,
 		"config_id":           jsonnet.StripIDPlaceholder(config.ID.String()),
 		"config_name":         strhelper.NormalizeName(config.Name),

@@ -108,7 +108,7 @@ The proposed structure consolidates transformation code into single files (`.sql
 ┃         ┣ 📂 tables/
 ┃         ┗ 📂 files/
 ┃
-┣ 📂 orchestrator/
+┣ 📂 flow/
 ┃ ┗ 📂 keboola.orchestrator/               # Orchestrations
 ┃   ┗ 📂 [orchestration-name]/
 ┃     ┗ 🟦 pipeline.yml                    # Single file: metadata, phases, tasks, schedules, variables
@@ -128,7 +128,7 @@ The parent directory structure remains unchanged. Only the internal structure of
 | SQL Transformations | `transformation/keboola.snowflake-transformation/[name]/` |
 | Python Transformations | `transformation/keboola.python-transformation-v2/[name]/` |
 | Custom Python Apps | `application/kds-team.app-custom-python/[name]/` |
-| Orchestrations | `orchestrator/keboola.orchestrator/[name]/` |
+| Orchestrations | `flow/keboola.orchestrator/[name]/` |
 
 ### File Naming Conventions
 
