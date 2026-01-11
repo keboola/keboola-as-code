@@ -252,18 +252,9 @@ func buildContentFromConfigYAML(configYAML *model.ConfigYAML) *orderedmap.Ordere
 		content.Set("parameters", mapToOrderedMap(configYAML.Parameters))
 	}
 
-	// Add runtime/backend
-	if configYAML.Backend != nil && (configYAML.Backend.Type != "" || configYAML.Backend.Context != "") {
-		runtime := orderedmap.New()
-		backend := orderedmap.New()
-		if configYAML.Backend.Type != "" {
-			backend.Set("type", configYAML.Backend.Type)
-		}
-		if configYAML.Backend.Context != "" {
-			backend.Set("context", configYAML.Backend.Context)
-		}
-		runtime.Set("backend", backend)
-		content.Set("runtime", runtime)
+	// Add runtime fields (backend, safe, etc.) as a unified object
+	if len(configYAML.Runtime) > 0 {
+		content.Set("runtime", mapToOrderedMap(configYAML.Runtime))
 	}
 
 	return content

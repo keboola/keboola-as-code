@@ -12,7 +12,7 @@ type ConfigYAML struct {
 	Tags        []string `yaml:"tags,omitempty" json:"tags,omitempty"`
 
 	// Configuration fields (previously in config.json)
-	Backend    *BackendYAML        `yaml:"backend,omitempty" json:"backend,omitempty"`
+	Runtime    map[string]any      `yaml:"runtime,omitempty" json:"runtime,omitempty"` // Full runtime object (backend, safe, etc.)
 	Input      *StorageInputYAML   `yaml:"input,omitempty" json:"input,omitempty"`
 	Output     *StorageOutputYAML  `yaml:"output,omitempty" json:"output,omitempty"`
 	Parameters map[string]any      `yaml:"parameters,omitempty" json:"parameters,omitempty"`
@@ -27,12 +27,6 @@ type ConfigYAML struct {
 
 	// Internal Keboola metadata (managed by CLI)
 	Keboola *KeboolaMetaYAML `yaml:"_keboola,omitempty" json:"_keboola,omitempty"`
-}
-
-// BackendYAML represents backend configuration.
-type BackendYAML struct {
-	Type    string `yaml:"type,omitempty" json:"type,omitempty"`
-	Context string `yaml:"context,omitempty" json:"context,omitempty"`
 }
 
 // StorageInputYAML represents input storage mapping.

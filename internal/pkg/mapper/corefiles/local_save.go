@@ -184,23 +184,10 @@ func (m *coreFilesMapper) buildConfigYAML(config *model.Config) *model.ConfigYAM
 			}
 		}
 
-		// Extract runtime/backend
+		// Extract runtime fields (backend, safe, etc.) as a unified object
 		if runtime, ok := config.Content.Get("runtime"); ok {
 			if runtimeMap, ok := runtime.(*orderedmap.OrderedMap); ok {
-				backend := &model.BackendYAML{}
-				if backendType, ok := runtimeMap.Get("backend"); ok {
-					if backendMap, ok := backendType.(*orderedmap.OrderedMap); ok {
-						if t, ok := backendMap.Get("type"); ok {
-							backend.Type, _ = t.(string)
-						}
-						if c, ok := backendMap.Get("context"); ok {
-							backend.Context, _ = c.(string)
-						}
-					}
-				}
-				if backend.Type != "" || backend.Context != "" {
-					configYAML.Backend = backend
-				}
+				configYAML.Runtime = orderedMapToMap(runtimeMap)
 			}
 		}
 	}

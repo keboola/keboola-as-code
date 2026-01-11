@@ -645,8 +645,11 @@ tags:
   - daily
 
 # Configuration
-backend:
-  type: snowflake | synapse | bigquery | redshift | python
+runtime:
+  backend:
+    type: snowflake | synapse | bigquery | redshift | python
+    context: transformation  # optional
+  safe: true  # optional, and other runtime fields
 
 input:
   tables:

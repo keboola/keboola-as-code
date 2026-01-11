@@ -268,7 +268,7 @@ The `_config.yml` file contains both metadata (previously in `meta.json` + `desc
        Disabled    bool                   `yaml:"disabled,omitempty"`
        Tags        []string               `yaml:"tags,omitempty"`
        // Configuration
-       Backend     *BackendConfig         `yaml:"backend,omitempty"`
+       Runtime     map[string]any         `yaml:"runtime,omitempty"`  // Full runtime object (backend, safe, etc.)
        Input       *StorageInputConfig    `yaml:"input,omitempty"`
        Output      *StorageOutputConfig   `yaml:"output,omitempty"`
        Parameters  map[string]any         `yaml:"parameters,omitempty"`
