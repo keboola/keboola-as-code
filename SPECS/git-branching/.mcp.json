@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "keboola": {
+      "command": "uvx",
+      "args": [
+        "keboola-mcp-server",
+        "--working-dir", ".",
+        "--git-default-branch", "main"
+      ],
+      "env": {
+        "KBC_STORAGE_API_TOKEN": "${KBC_STORAGE_API_TOKEN}",
+        "KBC_STORAGE_API_HOST": "${KBC_STORAGE_API_HOST}"
+      }
+    }
+  }
+}

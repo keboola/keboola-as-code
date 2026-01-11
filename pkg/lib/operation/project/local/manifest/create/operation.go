@@ -19,6 +19,8 @@ type Options struct {
 	AllowedBranches model.AllowedBranches
 	// AllowTargetENV allows usage KBC_PROJECT_ID and KBC_BRANCH_ID envs for future operations
 	AllowTargetENV bool
+	// GitBranching enables git-branching mode
+	GitBranching *projectManifest.GitBranching
 }
 
 type dependencies interface {
@@ -45,6 +47,9 @@ func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (m *p
 	manifest.SetAllowTargetENV(o.AllowTargetENV)
 	manifest.SetNamingTemplate(o.Naming)
 	manifest.SetAllowedBranches(o.AllowedBranches)
+	if o.GitBranching != nil {
+		manifest.SetGitBranching(o.GitBranching)
+	}
 
 	// Save
 	if err := manifest.Save(ctx, fs); err != nil {

@@ -23,12 +23,47 @@ func Path() string {
 	return filesystem.Join(filesystem.MetadataDir, FileName)
 }
 
+// ExistsIn returns true if the manifest file exists in the given filesystem.
+func ExistsIn(fs filesystem.Fs) bool {
+	return fs.IsFile(context.Background(), Path())
+}
+
+// ReadGitBranchingConfig reads just the gitBranching config from the manifest file
+// without loading the full manifest. This is useful to check git-branching mode
+// before the full manifest is loaded.
+func ReadGitBranchingConfig(ctx context.Context, fs filesystem.Fs) (*GitBranching, error) {
+	path := Path()
+
+	// Exists?
+	if !fs.IsFile(ctx, path) {
+		return nil, errors.Errorf("manifest \"%s\" not found", path)
+	}
+
+	// Read JSON file - we only need gitBranching field
+	type minimalManifest struct {
+		GitBranching *GitBranching `json:"gitBranching,omitempty"`
+	}
+	content := &minimalManifest{}
+	if _, err := fs.FileLoader().ReadJSONFileTo(ctx, filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
+		return nil, err
+	}
+
+	return content.GitBranching, nil
+}
+
+// GitBranching configuration for git-to-Keboola branch mapping mode.
+type GitBranching struct {
+	Enabled       bool   `json:"enabled"`
+	DefaultBranch string `json:"defaultBranch,omitempty"`
+}
+
 // file is template repository manifest JSON file.
 type file struct {
 	Version int     `json:"version" validate:"required,min=1,max=2"`
 	Project Project `json:"project" validate:"required"`
 	// AllowTargetENV allows usage KBC_PROJECT_ID and KBC_BRANCH_ID envs to override manifest values
 	AllowTargetENV    bool                            `json:"allowTargetEnv"`
+	GitBranching      *GitBranching                   `json:"gitBranching,omitempty"`
 	SortBy            string                          `json:"sortBy" validate:"oneof=id path"`
 	Naming            naming.Template                 `json:"naming" validate:"required"`
 	AllowedBranches   model.AllowedBranches           `json:"allowedBranches" validate:"required,min=1"`

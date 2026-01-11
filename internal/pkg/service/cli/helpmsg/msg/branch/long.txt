@@ -1,0 +1,7 @@
+Manage git-to-Keboola branch mappings for git-branching mode.
+
+Git-branching mode maps git branches to Keboola development branches,
+enabling a DevOps workflow where each git branch works with its own
+Keboola branch.
+
+Use "kbc branch link" to create a mapping before using sync commands.

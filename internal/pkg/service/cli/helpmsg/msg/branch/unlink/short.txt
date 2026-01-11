@@ -1,0 +1,1 @@
+Remove the mapping for the current git branch

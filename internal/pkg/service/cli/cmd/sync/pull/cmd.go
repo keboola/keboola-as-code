@@ -3,6 +3,7 @@ package pull
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/gitbranch"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
@@ -41,6 +42,15 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// Set KBC_BRANCH_ID from git-branching BEFORE RemoteCommandScope
+			// RemoteCommandScope calls LocalProject() internally to verify project ID,
+			// which caches the manifest. The branch ID must be set before that.
+			logger := p.BaseScope().Logger()
+			_, err = gitbranch.SetBranchIDFromGitBranching(cmd.Context(), p.BaseScope().Fs(), p.BaseScope().EnvironmentMap(), logger)
+			if err != nil {
+				return err
+			}
+
 			// Authentication
 			d, err := p.RemoteCommandScope(cmd.Context(), f.StorageAPIHost, f.StorageAPIToken)
 			if err != nil {
@@ -48,7 +58,6 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get local project
-			logger := d.Logger()
 			force := f.Force.Value
 			prj, _, err := d.LocalProject(cmd.Context(), force)
 			if err != nil {

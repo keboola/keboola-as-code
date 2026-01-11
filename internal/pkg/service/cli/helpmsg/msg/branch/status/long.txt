@@ -1,0 +1,7 @@
+Show the branch mapping status for the current git branch.
+
+Displays whether the current git branch is linked to a Keboola branch
+and provides information about the linked branch.
+
+Example:
+  kbc branch status

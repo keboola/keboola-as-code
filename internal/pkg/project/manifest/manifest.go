@@ -45,6 +45,8 @@ type Manifest struct {
 	*records
 	// allowTargetENV allows usage KBC_PROJECT_ID and KBC_BRANCH_ID envs to override manifest values
 	allowTargetENV bool
+	// gitBranching holds git-to-Keboola branch mapping configuration
+	gitBranching *GitBranching
 	// mapping between manifest representation and memory representation
 	mapping      []mappingItem
 	project      Project
@@ -149,6 +151,7 @@ func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Pro
 	// Create manifest
 	m := New(content.Project.ID, content.Project.APIHost)
 	m.allowTargetENV = content.AllowTargetENV
+	m.gitBranching = content.GitBranching
 	m.mapping = mapping
 
 	// Set configuration
@@ -171,6 +174,7 @@ func (m *Manifest) Save(ctx context.Context, fs filesystem.Fs) error {
 	// Create file content
 	content := newFile(m.ProjectID(), m.APIHost())
 	content.AllowTargetENV = m.allowTargetENV
+	content.GitBranching = m.gitBranching
 	content.SortBy = m.SortBy()
 	content.Naming = m.naming
 	content.AllowedBranches = m.filter.AllowedBranches()
@@ -266,4 +270,27 @@ func (m *Manifest) TemplateRepository(name string) (model.TemplateRepository, bo
 		}
 	}
 	return model.TemplateRepository{}, false
+}
+
+// GitBranching returns the git-branching configuration.
+func (m *Manifest) GitBranching() *GitBranching {
+	return m.gitBranching
+}
+
+// SetGitBranching sets the git-branching configuration.
+func (m *Manifest) SetGitBranching(v *GitBranching) {
+	m.gitBranching = v
+}
+
+// IsGitBranchingEnabled returns true if git-branching mode is enabled.
+func (m *Manifest) IsGitBranchingEnabled() bool {
+	return m.gitBranching != nil && m.gitBranching.Enabled
+}
+
+// GitBranchingDefaultBranch returns the default git branch name for git-branching mode.
+func (m *Manifest) GitBranchingDefaultBranch() string {
+	if m.gitBranching == nil {
+		return ""
+	}
+	return m.gitBranching.DefaultBranch
 }

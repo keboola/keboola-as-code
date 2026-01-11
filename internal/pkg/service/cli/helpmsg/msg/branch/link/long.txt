@@ -1,0 +1,11 @@
+Link the current git branch to a Keboola development branch.
+
+By default, creates a new Keboola branch with the same name as the git branch
+and links it. If a Keboola branch with the same name already exists, links to it.
+
+Cannot be used on the default branch (main/master) - it is auto-linked during init.
+
+Examples:
+  kbc branch link                     Create and link Keboola branch with git branch name
+  kbc branch link --branch-id=12345   Link to existing Keboola branch by ID
+  kbc branch link --branch-name=dev   Link to or create branch named "dev"

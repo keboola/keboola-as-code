@@ -47,6 +47,7 @@ var (
 type BaseScope interface {
 	dependencies.BaseScope
 	Environment() env.Provider
+	EnvironmentMap() *env.Map
 	Fs() filesystem.Fs
 	FsInfo() FsInfo
 	ConfigBinder() *cmdconfig.Binder

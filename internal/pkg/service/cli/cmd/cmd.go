@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/branch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/llm"
@@ -211,6 +212,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 	root.AddCommand(
 		StatusCommand(p),
 		sync.Commands(p),
+		branch.Commands(p),
 		ci.Commands(p),
 		local.Commands(p),
 		remote.Commands(p),

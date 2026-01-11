@@ -1,0 +1,7 @@
+Remove the git-to-Keboola branch mapping for the current git branch.
+
+This does NOT delete the Keboola branch - only removes the mapping.
+Cannot be used on the default branch (main/master).
+
+Example:
+  kbc branch unlink

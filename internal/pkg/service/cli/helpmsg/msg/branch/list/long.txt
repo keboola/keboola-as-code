@@ -1,0 +1,7 @@
+List all git-to-Keboola branch mappings stored in the project.
+
+Shows all git branches that have been linked to Keboola branches,
+along with the Keboola branch IDs and names.
+
+Example:
+  kbc branch list

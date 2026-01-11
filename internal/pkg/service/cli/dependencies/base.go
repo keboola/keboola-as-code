@@ -75,6 +75,10 @@ func (v *baseScope) Environment() env.Provider {
 	return v.envs
 }
 
+func (v *baseScope) EnvironmentMap() *env.Map {
+	return v.envs
+}
+
 func (v *baseScope) Fs() filesystem.Fs {
 	return v.fs
 }
