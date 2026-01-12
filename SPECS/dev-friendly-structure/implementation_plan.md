@@ -901,6 +901,15 @@ The following features have been implemented and tested:
    - Fixed: Scheduler configs were being ignored before schedule data could be collected
    - Solution: Collect schedule data in `AfterRemoteOperation` before ignore mapper runs
 
+4. **pyproject.toml Package Propagation** (`pyproject/local_load.go`)
+   - Fixed: Changes to `pyproject.toml` packages were not being propagated to the config on push
+   - Cause: `updateConfigPackages` only handled `map[string]any` type, but corefiles mapper stores parameters as `*orderedmap.OrderedMap`
+   - Solution: Updated `updateConfigPackages` to handle both `*orderedmap.OrderedMap` and `map[string]any` types
+
+5. **Packages in _config.yml for Python Components** (`corefiles/local_save.go`)
+   - Fixed: `_config.yml` contained duplicate `packages` field that could become stale when `pyproject.toml` was edited
+   - Solution: Exclude `packages` from `_config.yml` for Python transformations and custom Python apps, making `pyproject.toml` the single source of truth
+
 ### Building and Testing the CLI Locally
 
 To build the CLI for local testing on macOS ARM64:
@@ -963,12 +972,13 @@ kbc init ...
 | `internal/pkg/mapper/transformation/path.go` | Skip path updates for transform.* format |
 | `internal/pkg/model/pipeline_yaml.go` | PhaseYAML, TaskYAML, ScheduleYAML types |
 | `internal/pkg/model/config_yaml.go` | ConfigYAML with phases, schedules support |
-| `internal/pkg/mapper/corefiles/local_save.go` | Build unified _config.yml with phases/schedules |
+| `internal/pkg/mapper/corefiles/local_save.go` | Build unified _config.yml with phases/schedules; exclude packages for Python components |
 | `internal/pkg/mapper/corefiles/local_load.go` | Parse _config.yml, resolve task config paths |
 | `internal/pkg/mapper/orchestrator/local_save.go` | Delete old phases/, schedules/, pipeline.yml |
 | `internal/pkg/mapper/orchestrator/remote_load.go` | Collect schedule data before ignore mapper |
 | `internal/pkg/mapper/ignore/remote.go` | Ignore scheduler configs for orchestrators |
 | `internal/pkg/mapper/pyproject/local_save.go` | Generate pyproject.toml for Python components |
+| `internal/pkg/mapper/pyproject/local_load.go` | Parse pyproject.toml and update config packages (supports orderedmap) |
 | `pkg/lib/operation/project/local/data/operation.go` | Local data download with special app handling |
 
 ### Implementation Status Summary

@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -91,22 +93,27 @@ func updateConfigPackages(config *model.Config, packages []string) {
 		return
 	}
 
-	// Ensure parameters exists
-	parametersRaw, ok := config.Content.Get("parameters")
-	if !ok {
-		return
-	}
-
-	parameters, ok := parametersRaw.(map[string]any)
-	if !ok {
-		return
-	}
-
 	// Convert packages to []any for storage
 	packagesAny := make([]any, len(packages))
 	for i, pkg := range packages {
 		packagesAny[i] = pkg
 	}
 
-	parameters["packages"] = packagesAny
+	// Get or create parameters
+	parametersRaw, ok := config.Content.Get("parameters")
+	if !ok {
+		// Create new parameters orderedmap if it doesn't exist
+		params := orderedmap.New()
+		params.Set("packages", packagesAny)
+		config.Content.Set("parameters", params)
+		return
+	}
+
+	// Handle both orderedmap and map[string]any types
+	switch params := parametersRaw.(type) {
+	case *orderedmap.OrderedMap:
+		params.Set("packages", packagesAny)
+	case map[string]any:
+		params["packages"] = packagesAny
+	}
 }

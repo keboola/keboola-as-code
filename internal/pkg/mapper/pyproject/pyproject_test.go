@@ -144,3 +144,96 @@ dependencies = [
 	packages := parsePyProjectPackages(content)
 	assert.Empty(t, packages)
 }
+
+func TestUpdateConfigPackages_OrderedMap(t *testing.T) {
+	t.Parallel()
+
+	// Test with *orderedmap.OrderedMap parameters (this is how corefiles mapper stores them)
+	params := orderedmap.New()
+	params.Set("packages", []any{"old-package"})
+
+	config := &model.Config{
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
+			{Key: "parameters", Value: params},
+		}),
+	}
+
+	// Update packages
+	updateConfigPackages(config, []string{"pandas>=2.0.0", "numpy", "requests"})
+
+	// Verify packages were updated
+	parametersRaw, ok := config.Content.Get("parameters")
+	assert.True(t, ok)
+
+	paramsMap, ok := parametersRaw.(*orderedmap.OrderedMap)
+	assert.True(t, ok)
+
+	packagesRaw, ok := paramsMap.Get("packages")
+	assert.True(t, ok)
+
+	packages, ok := packagesRaw.([]any)
+	assert.True(t, ok)
+	assert.Len(t, packages, 3)
+	assert.Equal(t, "pandas>=2.0.0", packages[0])
+	assert.Equal(t, "numpy", packages[1])
+	assert.Equal(t, "requests", packages[2])
+}
+
+func TestUpdateConfigPackages_MapStringAny(t *testing.T) {
+	t.Parallel()
+
+	// Test with map[string]any parameters
+	config := &model.Config{
+		Content: orderedmap.FromPairs([]orderedmap.Pair{
+			{
+				Key: "parameters",
+				Value: map[string]any{
+					"packages": []any{"old-package"},
+				},
+			},
+		}),
+	}
+
+	// Update packages
+	updateConfigPackages(config, []string{"pandas>=2.0.0", "numpy"})
+
+	// Verify packages were updated
+	parametersRaw, ok := config.Content.Get("parameters")
+	assert.True(t, ok)
+
+	paramsMap, ok := parametersRaw.(map[string]any)
+	assert.True(t, ok)
+
+	packages, ok := paramsMap["packages"].([]any)
+	assert.True(t, ok)
+	assert.Len(t, packages, 2)
+	assert.Equal(t, "pandas>=2.0.0", packages[0])
+	assert.Equal(t, "numpy", packages[1])
+}
+
+func TestUpdateConfigPackages_NoParameters(t *testing.T) {
+	t.Parallel()
+
+	// Test with no parameters - should create them
+	config := &model.Config{
+		Content: orderedmap.New(),
+	}
+
+	// Update packages
+	updateConfigPackages(config, []string{"pandas>=2.0.0"})
+
+	// Verify parameters and packages were created
+	parametersRaw, ok := config.Content.Get("parameters")
+	assert.True(t, ok)
+
+	paramsMap, ok := parametersRaw.(*orderedmap.OrderedMap)
+	assert.True(t, ok)
+
+	packagesRaw, ok := paramsMap.Get("packages")
+	assert.True(t, ok)
+
+	packages, ok := packagesRaw.([]any)
+	assert.True(t, ok)
+	assert.Len(t, packages, 1)
+	assert.Equal(t, "pandas>=2.0.0", packages[0])
+}

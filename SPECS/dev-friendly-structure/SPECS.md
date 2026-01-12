@@ -260,6 +260,8 @@ Users edit `pyproject.toml` to manage dependencies and `transform.py` for code. 
 - `pyproject.toml` dependencies → `config.json` `parameters.packages`
 - `transform.py` content → block/code structure (using UI conversion logic)
 
+**Important:** For Python transformations and custom Python applications, packages are stored ONLY in `pyproject.toml`, not in `_config.yml`. This makes `pyproject.toml` the single source of truth for dependencies. If packages are edited in `_config.yml`, they will be ignored in favor of `pyproject.toml`.
+
 ---
 
 ## 6. Custom Python Applications (`kds-team.app-custom-python`)

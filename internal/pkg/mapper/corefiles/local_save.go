@@ -183,6 +183,15 @@ func (m *coreFilesMapper) buildConfigYAML(config *model.Config) *model.ConfigYAM
 				// Convert regular map to orderedmap (will sort alphabetically, but at least be consistent)
 				configYAML.Parameters = orderedmap.FromPairs(mapToPairs(paramsMapAny))
 			}
+			// For Python transformations and custom Python apps, remove packages from _config.yml
+			// since they are stored in pyproject.toml (single source of truth for dependencies)
+			if configYAML.Parameters != nil && isPythonComponent(config.ComponentID.String()) {
+				configYAML.Parameters.Delete("packages")
+				// If parameters is now empty, set to nil
+				if configYAML.Parameters.Len() == 0 {
+					configYAML.Parameters = nil
+				}
+			}
 		}
 
 		// Extract runtime fields (backend, safe, etc.) as a unified object - preserve ordering
@@ -588,4 +597,13 @@ func (m *coreFilesMapper) isSchedulerForOrchestrator(config *model.Config) bool 
 	}
 
 	return false
+}
+
+// isPythonComponent checks if the component uses Python and has a pyproject.toml.
+// These components store packages in pyproject.toml, not in _config.yml.
+func isPythonComponent(componentID string) bool {
+	return strings.Contains(componentID, "python") &&
+		(strings.Contains(componentID, "transformation") ||
+			componentID == "keboola.python-mlflow" ||
+			componentID == "kds-team.app-custom-python")
 }
