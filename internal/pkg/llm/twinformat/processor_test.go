@@ -242,8 +242,8 @@ type mockProcessorDeps struct {
 	telemetry telemetry.Telemetry
 }
 
-func (m *mockProcessorDeps) Fs() filesystem.Fs             { return m.fs }
-func (m *mockProcessorDeps) Logger() log.Logger            { return m.logger }
+func (m *mockProcessorDeps) Fs() filesystem.Fs              { return m.fs }
+func (m *mockProcessorDeps) Logger() log.Logger             { return m.logger }
 func (m *mockProcessorDeps) Telemetry() telemetry.Telemetry { return m.telemetry }
 
 func newTestProcessor(t *testing.T) *Processor {
@@ -345,7 +345,7 @@ func TestProcessor_Process_Integration(t *testing.T) {
 
 	// Verify lineage graph
 	require.NotNil(t, result.LineageGraph)
-	assert.Greater(t, len(result.LineageGraph.Edges), 0)
+	assert.NotEmpty(t, result.LineageGraph.Edges)
 
 	// Verify transformations were processed
 	require.Len(t, result.Transformations, 1)
@@ -465,7 +465,7 @@ type mockLineageBuilderDeps struct {
 	telemetry telemetry.Telemetry
 }
 
-func (m *mockLineageBuilderDeps) Logger() log.Logger            { return m.logger }
+func (m *mockLineageBuilderDeps) Logger() log.Logger             { return m.logger }
 func (m *mockLineageBuilderDeps) Telemetry() telemetry.Telemetry { return m.telemetry }
 
 func newTestLineageBuilder(t *testing.T) *LineageBuilder {
@@ -522,15 +522,15 @@ func TestLineageBuilder_BuildLineageGraph_Integration(t *testing.T) {
 	// Verify node counts
 	// Tables: orders, customers, enriched_orders, order_summary = 4
 	// Transformations: 2
-	assert.Equal(t, 4, len(graph.TableNodes))
-	assert.Equal(t, 2, len(graph.TransNodes))
+	assert.Len(t, graph.TableNodes, 4)
+	assert.Len(t, graph.TransNodes, 2)
 	assert.Equal(t, 6, graph.NodeCount)
 
 	// Verify edge count
 	// Transform 1: 2 inputs + 1 output = 3 edges
 	// Transform 2: 1 input + 1 output = 2 edges
 	// Total = 5 edges
-	assert.Equal(t, 5, len(graph.Edges))
+	assert.Len(t, graph.Edges, 5)
 
 	// Verify metadata
 	require.NotNil(t, graph.Meta)

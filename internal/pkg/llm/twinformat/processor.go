@@ -261,7 +261,7 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 
 	// PRIORITY 3: Job outputs (fallback for tables not declared in configurations)
 	// Job results provide runtime data for tables not found in config mappings
-	jobOutputCount := p.registerTablesFromJobs(ctx, jobs, componentRegistry, registry)
+	jobOutputCount := p.registerTablesFromJobs(jobs, componentRegistry, registry)
 
 	p.logger.Infof(ctx, "Built table source registry with %d table mappings (%d from jobs as fallback)", len(registry.tableToSource), jobOutputCount)
 	return registry
@@ -269,7 +269,7 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 
 // registerTablesFromJobs extracts table sources from job output data.
 // Returns the number of tables registered from jobs.
-func (p *Processor) registerTablesFromJobs(ctx context.Context, jobs []*keboola.QueueJobDetail, componentRegistry *ComponentRegistry, registry *TableSourceRegistry) int {
+func (p *Processor) registerTablesFromJobs(jobs []*keboola.QueueJobDetail, componentRegistry *ComponentRegistry, registry *TableSourceRegistry) int {
 	count := 0
 
 	for _, job := range jobs {
