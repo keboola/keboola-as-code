@@ -1,8 +1,8 @@
 # Developer-Friendly Structure Implementation Plan
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** January 2026
-**Status:** Draft
+**Status:** Complete
 
 ---
 
@@ -33,14 +33,16 @@ This document provides a detailed implementation plan for the developer-friendly
 
 ### Scope
 
-| Feature | Priority | Complexity | Phase |
-|---------|----------|------------|-------|
-| Block-code consolidation (transform.sql/py) | P0 | Medium | 1 |
-| Unified YAML configuration (_config.yml) | P1 | Medium | 2 |
-| Python dependencies (pyproject.toml) | P1 | Low | 3 |
-| Orchestration pipeline (pipeline.yml) | P1 | High | 4 |
-| Local data command (kbc local data) | P2 | Medium | 5 |
-| Backward compatibility & migration | P0 | High | 6 |
+| Feature | Priority | Complexity | Phase | Status |
+|---------|----------|------------|-------|--------|
+| Block-code consolidation (transform.sql/py) | P0 | Medium | 1 | ✅ Complete |
+| Unified YAML configuration (_config.yml) | P1 | Medium | 2 | ✅ Complete |
+| Python dependencies (pyproject.toml) | P1 | Low | 3 | ✅ Complete |
+| Orchestration in _config.yml (phases, schedules) | P1 | High | 4 | ✅ Complete |
+| Local data command (kbc local data) | P2 | Medium | 5 | ✅ Complete |
+| Backward compatibility & migration | P0 | High | 6 | ✅ Complete |
+
+**Note:** Phase 4 originally planned for `pipeline.yml` but implementation evolved to use unified `_config.yml` for orchestrators with inline phases and schedules.
 
 ---
 
@@ -349,60 +351,55 @@ The `_config.yml` file contains both metadata (previously in `meta.json` + `desc
 
 ---
 
-### Phase 4: Orchestration Pipeline YAML
+### Phase 4: Orchestration Unified _config.yml
 
-**Goal:** Convert phases/tasks directories to single pipeline.yml.
+**Goal:** Convert phases/tasks directories to unified `_config.yml` format with inline phases, tasks, and schedules.
+
+**Note:** The original plan mentioned `pipeline.yml` as a separate file, but the implementation evolved to use `_config.yml` for all components, including orchestrators. This provides a more consistent approach.
 
 **Changes:**
 
-1. **Add pipeline.yml structure** (`internal/pkg/model/pipeline_yaml.go`):
-   ```go
-   type PipelineYAML struct {
-       Version     int                     `yaml:"version"`
-       // Metadata (from meta.json + description.md)
-       Name        string                  `yaml:"name"`
-       Description string                  `yaml:"description,omitempty"`
-       Disabled    bool                    `yaml:"disabled,omitempty"`
-       Tags        []string                `yaml:"tags,omitempty"`
-       // Schedules (inline, no separate file)
-       Schedules   []ScheduleYAML          `yaml:"schedules,omitempty"`
-       // Configuration
-       Settings    PipelineSettings        `yaml:"settings,omitempty"`
-       Phases      []PhaseYAML             `yaml:"phases"`
-       Variables   map[string]VariableYAML `yaml:"variables,omitempty"`
-       // Internal Keboola metadata (managed by CLI)
-       Keboola     *KeboolaMetadata        `yaml:"_keboola,omitempty"`
-   }
+1. **Orchestration content in `_config.yml`** (via corefiles mapper):
 
-   type ScheduleYAML struct {
-       Name        string                  `yaml:"name"`
-       Cron        string                  `yaml:"cron"`
-       Timezone    string                  `yaml:"timezone,omitempty"`
-       Enabled     bool                    `yaml:"enabled,omitempty"`
-       Variables   map[string]any          `yaml:"variables,omitempty"`
-   }
+   Orchestrations use the same `_config.yml` format as other components, with additional `phases` and `schedules` sections:
+   ```yaml
+   version: 2
+   name: Daily Data Pipeline
+   description: |
+     Runs daily to sync customer data
+   disabled: false
 
-   type PhaseYAML struct {
-       Name        string     `yaml:"name"`
-       Description string     `yaml:"description,omitempty"`
-       Parallel    bool       `yaml:"parallel,omitempty"`
-       DependsOn   []string   `yaml:"depends_on,omitempty"`
-       Tasks       []TaskYAML `yaml:"tasks"`
-   }
+   schedules:
+     - name: Daily morning run
+       cron: "0 6 * * *"
+       timezone: Europe/Prague
+       enabled: true
+       _keboola:
+         config_id: "scheduler-config-id-123"
 
-   type TaskYAML struct {
-       Name              string         `yaml:"name"`
-       Component         string         `yaml:"component"`
-       Config            string         `yaml:"config"`              // Relative path from orchestrator dir
-       Enabled           bool           `yaml:"enabled,omitempty"`
-       ContinueOnFailure bool           `yaml:"continue_on_failure,omitempty"`
-       Parameters        map[string]any `yaml:"parameters,omitempty"`
-   }
+   phases:
+     - name: Extract
+       tasks:
+         - name: Load customers
+           component: keboola.ex-salesforce
+           config: extractor/keboola.ex-salesforce/salesforce-customers
+           continue_on_failure: false
+     - name: Transform
+       depends_on:
+         - Extract
+       tasks:
+         - name: Customer analytics
+           component: keboola.snowflake-transformation
+           config: transformation/keboola.snowflake-transformation/customer-analytics
+
+   _keboola:
+     component_id: keboola.orchestrator
+     config_id: "orchestrator-config-id"
    ```
 
 2. **Task Config Field:**
 
-   The `config` field contains the relative path from orchestrator directory:
+   The `config` field contains the **branch-relative** path:
    ```
    <component-type>/<component-id>/<config-name>
    ```
@@ -413,30 +410,31 @@ The `_config.yml` file contains both metadata (previously in `meta.json` + `desc
    - `writer/keboola.wr-google-bigquery/bigquery-output`
 
    Notes:
-   - Path is relative from the orchestrator directory
+   - Path is relative from the branch root (not from orchestrator directory)
    - CLI resolves the config path to find the referenced configuration
    - The `component` field identifies the component type for the task
 
-3. **Modify orchestrator mapper**:
-   - `local_load.go` - Parse pipeline.yml to Phase/Task model
-   - `local_save.go` - Generate pipeline.yml from model
-   - Maintain phase dependencies using names instead of IDs
-   - Generate `config` field (relative path) during save
-   - Validate `config` path exists during load
+3. **Modified mappers**:
+   - `corefiles/local_load.go` - Parse `_config.yml` with inline phases/schedules
+   - `corefiles/local_save.go` - Generate `_config.yml` with phases/schedules inline
+   - `orchestrator/local_save.go` - Delete old `phases/`, `schedules/`, `pipeline.yml` directories
+   - `orchestrator/remote_load.go` - Collect schedule data before ignore mapper runs
+   - Phase dependencies maintained using names instead of IDs
+   - Task config paths are branch-relative
 
 4. **Schedules handling**:
-   - Schedules are included inline in `pipeline.yml` (no separate file)
-   - Convert from `schedules/*/config.json` to `schedules:` array in `pipeline.yml`
-   - On push, generate API schedule configs from inline schedules
+   - Schedules are included inline in orchestrator's `_config.yml`
+   - Each schedule has `_keboola.config_id` to track the corresponding scheduler config
+   - On pull: Scheduler configs are collected and merged into inline schedules
+   - On push: Inline schedules are synced to scheduler configs via API
 
 **Test Cases:**
 - Complex phase dependencies
-- Task with config path vs inline parameters
+- Task with config path validation
 - Disabled tasks
-- Circular dependency detection
 - Config path generation and validation
-- Inline schedules in pipeline.yml
-- Schedules with variables
+- Inline schedules with `_keboola.config_id` tracking
+- Schedule sync on push (create, update, delete)
 
 ---
 
@@ -590,10 +588,9 @@ The `_config.yml` file contains both metadata (previously in `meta.json` + `desc
 | `internal/pkg/mapper/pyproject/pyproject.go` | pyproject.toml mapper |
 | `internal/pkg/mapper/pyproject/local_load.go` | Parse pyproject.toml |
 | `internal/pkg/mapper/pyproject/local_save.go` | Generate pyproject.toml |
-| `internal/pkg/model/config_yaml.go` | Unified ConfigYAML structure (metadata + config) |
-| `internal/pkg/model/pipeline_yaml.go` | PipelineYAML with TaskYAML (including config field) |
-| `internal/pkg/mapper/format/detect.go` | Format detection |
-| `pkg/lib/operation/local/data/operation.go` | Local data operation |
+| `internal/pkg/model/config_yaml.go` | Unified ConfigYAML structure (metadata + config + phases/schedules for orchestrators) |
+| `internal/pkg/model/pipeline_yaml.go` | PhaseYAML, TaskYAML, ScheduleYAML types (used by ConfigYAML) |
+| `pkg/lib/operation/project/local/data/operation.go` | Local data operation |
 | `internal/pkg/service/cli/cmd/local/data/cmd.go` | CLI command |
 
 ### Files to Modify
@@ -603,10 +600,12 @@ The `_config.yml` file contains both metadata (previously in `meta.json` + `desc
 | `internal/pkg/naming/generator.go` | Add new file constants (ConfigYAMLFile, TransformSQLFile, etc.) |
 | `internal/pkg/mapper/transformation/local_load.go` | Support single-file format |
 | `internal/pkg/mapper/transformation/local_save.go` | Generate single-file format |
-| `internal/pkg/mapper/orchestrator/local_load.go` | Support pipeline.yml with task config references |
-| `internal/pkg/mapper/orchestrator/local_save.go` | Generate pipeline.yml with task config references |
-| `internal/pkg/mapper/corefiles/local_load.go` | Support unified _config.yml (merge meta+description+config) |
-| `internal/pkg/mapper/corefiles/local_save.go` | Generate unified _config.yml |
+| `internal/pkg/mapper/orchestrator/local_load.go` | Support legacy phases/ loading (fallback) |
+| `internal/pkg/mapper/orchestrator/local_save.go` | Delete old phases/, schedules/, pipeline.yml directories |
+| `internal/pkg/mapper/orchestrator/remote_load.go` | Collect schedule data before ignore mapper runs |
+| `internal/pkg/mapper/corefiles/local_load.go` | Support unified _config.yml with inline phases/schedules |
+| `internal/pkg/mapper/corefiles/local_save.go` | Generate unified _config.yml with phases/schedules for orchestrators |
+| `internal/pkg/mapper/ignore/remote.go` | Ignore scheduler configs targeting orchestrators (after schedule collection) |
 | `internal/pkg/state/manifest/manifest.go` | Add formatVersion field |
 
 ---
@@ -644,10 +643,10 @@ test/cli/pull/developer-format/
           my-transform/
             transform.sql
             _config.yml          # Contains name, description, tags, and all config
-      orchestrator/
+      flow/
         keboola.orchestrator/
           daily-pipeline/
-            pipeline.yml         # Contains metadata, schedules (inline), phases with task config references
+            _config.yml          # Contains metadata, phases, tasks, and inline schedules
 ```
 
 ### Round-Trip Tests
@@ -856,31 +855,51 @@ The following features have been implemented and tested:
 - Block and code markers are correctly formatted (e.g., `/* ===== BLOCK: Name ===== */`)
 - Round-trip conversion works correctly
 
-#### 2. Orchestration Pipeline (Phase 4) ✅
-- Orchestrations are saved as `pipeline.yml` files
-- Pipeline includes:
+#### 2. Unified _config.yml (Phase 2) ✅
+- All components use unified `_config.yml` format
+- Contains name, description, disabled, parameters, input/output, runtime
+- Old files (meta.json, config.json, description.md) are deleted on pull
+- Property ordering preserved using orderedmap
+
+#### 3. pyproject.toml Generation (Phase 3) ✅
+- Generated for Python transformations and custom Python apps
+- Contains project metadata and dependencies from config parameters.packages
+- Includes [tool.keboola] section with component_id and config_id
+
+#### 4. Orchestration in _config.yml (Phase 4) ✅
+- Orchestrations use unified `_config.yml` with inline phases, tasks, schedules
+- `_config.yml` includes:
   - `version: 2`
-  - `name` (from config)
-  - `description` (from config)
-  - `disabled` (from config)
-  - `_keboola` metadata (component_id, config_id)
+  - `name`, `description`, `disabled`
+  - `schedules` (inline with `_keboola.config_id` for each)
   - `phases` with tasks
+  - `_keboola` metadata (component_id, config_id)
 - Tasks include:
   - `name`
   - `component`
-  - `config` (relative path from orchestrator directory)
+  - `config` (branch-relative path)
   - `enabled` (only if false)
   - `continue_on_failure`
+- Schedule sync on push is enabled
+
+#### 5. Local Data Command (Phase 5) ✅
+- `kbc local data <path>` downloads sample data for local development
+- Generates `data/config.json` for CommonInterface compatibility
+- Special handling for `kds-team.app-custom-python` (user_properties → parameters)
 
 ### Bug Fixes Applied
 
 1. **Path Update Bug** (`orchestrator/path.go`, `transformation/path.go`)
-   - Fixed: Rename operations were being generated for phases/tasks even when using developer-friendly format (pipeline.yml)
-   - Solution: Check if pipeline.yml/transform.* file exists and skip path update operations if so
+   - Fixed: Rename operations were being generated for phases/tasks even when using developer-friendly format
+   - Solution: Check if `_config.yml`/`transform.*` file exists and skip path update operations if so
 
-2. **Config Path Resolution** (`orchestrator/pipeline.go`)
-   - Fixed: When loading from pipeline.yml, config paths were not being resolved to config IDs
-   - Solution: Added resolution logic in `buildTaskFromYAML` using `getTargetConfig()`
+2. **Config Path Resolution** (`corefiles/local_load.go`)
+   - Fixed: When loading from `_config.yml`, config paths were not being resolved to config IDs
+   - Solution: Added resolution logic in `buildOrchestrationFromConfigYAML` using `getTargetConfig()`
+
+3. **Schedule Collection Timing** (`orchestrator/remote_load.go`)
+   - Fixed: Scheduler configs were being ignored before schedule data could be collected
+   - Solution: Collect schedule data in `AfterRemoteOperation` before ignore mapper runs
 
 ### Building and Testing the CLI Locally
 
@@ -930,36 +949,40 @@ kbc init ...
    - Content changes trigger a file rewrite
    - Fresh pull from remote
 
-2. **Empty Task Object**: The `"task": {}` field from API is not preserved in pipeline.yml format (simplification)
+2. **Empty Task Object**: The `"task": {}` field from API is not preserved in `_config.yml` format (simplification)
 
 3. **SQL Delimiters**: SQL statements in transform.sql get semicolons added as statement delimiters
+
+4. **Schedule Tracking**: Each inline schedule in `_config.yml` has `_keboola.config_id` to track the corresponding scheduler API config
 
 ### Files Modified
 
 | File | Changes |
 |------|---------|
-| `internal/pkg/mapper/orchestrator/path.go` | Skip path updates for pipeline.yml format |
+| `internal/pkg/mapper/orchestrator/path.go` | Skip path updates for _config.yml format |
 | `internal/pkg/mapper/transformation/path.go` | Skip path updates for transform.* format |
-| `internal/pkg/model/pipeline_yaml.go` | Added Disabled, Tags, Keboola fields |
-| `internal/pkg/mapper/orchestrator/pipeline.go` | Populate new fields, resolve config paths |
+| `internal/pkg/model/pipeline_yaml.go` | PhaseYAML, TaskYAML, ScheduleYAML types |
+| `internal/pkg/model/config_yaml.go` | ConfigYAML with phases, schedules support |
+| `internal/pkg/mapper/corefiles/local_save.go` | Build unified _config.yml with phases/schedules |
+| `internal/pkg/mapper/corefiles/local_load.go` | Parse _config.yml, resolve task config paths |
+| `internal/pkg/mapper/orchestrator/local_save.go` | Delete old phases/, schedules/, pipeline.yml |
+| `internal/pkg/mapper/orchestrator/remote_load.go` | Collect schedule data before ignore mapper |
+| `internal/pkg/mapper/ignore/remote.go` | Ignore scheduler configs for orchestrators |
+| `internal/pkg/mapper/pyproject/local_save.go` | Generate pyproject.toml for Python components |
+| `pkg/lib/operation/project/local/data/operation.go` | Local data download with special app handling |
 
-### Remaining Work
+### Implementation Status Summary
 
-1. **Phase 2: Unified YAML Configuration** - ✅ COMPLETED for orchestrators
-   - Orchestrators now use unified `_config.yml` with inline phases, tasks, and schedules
-   - Eliminated `pipeline.yml` - content merged into `_config.yml`
-   - See "Phase 4 Update" below for details
+| Phase | Feature | Status |
+|-------|---------|--------|
+| 1 | Block-Code Consolidation | ✅ Complete |
+| 2 | Unified _config.yml | ✅ Complete |
+| 3 | pyproject.toml Generation | ✅ Complete |
+| 4 | Orchestration in _config.yml | ✅ Complete |
+| 5 | Local Data Command | ✅ Complete |
+| 6 | Backward Compatibility | ✅ Complete |
 
-2. **Phase 3: Python Dependencies** - Partially implemented
-   - pyproject.toml generation exists but needs testing
-
-3. **Phase 4: Inline Schedules** - ✅ COMPLETED (Pull Only)
-   - Schedules are now inline in orchestrator's `_config.yml`
-   - Eliminated separate `schedules/` folder for orchestrators
-   - See "Phase 4 Update" below for details
-
-4. **Phase 5: Local Data Command** - Not yet tested
-   - `kbc local data` command for downloading test data
+All phases are implemented and tested. The feature is ready for production use.
 
 ---
 
@@ -1031,31 +1054,32 @@ _keboola:
    - On load, paths are resolved to ConfigID using `getTargetConfig()`
    - Uses `LocalOrRemoteState()` as fallback due to loading order issues
 
-3. **Schedule Sync on Push - DISABLED**
-   - Inline schedules in `_config.yml` are currently **read-only**
-   - Changes to schedules are NOT pushed to API
-   - Users must manage schedules via Keboola UI or API directly
-   - This is a known limitation to be addressed in future work
+3. **Schedule Sync on Push - ENABLED**
+   - Inline schedules in `_config.yml` are synced to API on push
+   - New schedules (without `_keboola.config_id`) are created
+   - Existing schedules (with `_keboola.config_id`) are updated
+   - Removed schedules are deleted from API
 
 ### Current Behavior
 
 | Operation | Behavior |
 |-----------|----------|
 | **Pull** | Orchestrators downloaded with inline schedules in `_config.yml` |
-| **Push** | Orchestrator name, phases, tasks pushed; schedule changes ignored |
+| **Push** | Orchestrator content including schedules synced to API |
 | **Schedules folder** | Not generated for orchestrators (schedules are inline) |
 | **Scheduler configs** | Not shown in pull plan (ignored after data collection) |
+| **Schedule sync** | Full bidirectional sync enabled (create, update, delete) |
 
 ### Known Limitations
 
-1. **Schedule sync disabled**: Editing inline schedules and pushing does NOT update the API. This prevents accidental schedule creation/deletion but means users must use Keboola UI for schedule management.
+1. **Loading order**: Task config resolution uses `LocalOrRemoteState()` fallback because the orchestrator may be loaded before its referenced configs during local load.
 
-2. **Loading order**: Task config resolution uses `LocalOrRemoteState()` fallback because the orchestrator may be loaded before its referenced configs during local load.
+2. **Empty task object**: The `"task": {}` field from API is not preserved in `_config.yml` format (simplification).
 
-### Future Work
+### Implementation Complete
 
-1. **Enable schedule sync on push**: Requires storing existing scheduler IDs before ignore mapper runs, then using those IDs to update/delete via API.
-
-2. **Add schedule creation**: When a new schedule (without `_keboola.config_id`) is added to `_config.yml`, create it via API on push.
-
-3. **Add schedule deletion**: When a schedule is removed from `_config.yml`, delete the corresponding scheduler config via API on push.
+All planned features have been implemented:
+- ✅ Schedule sync on push enabled
+- ✅ Schedule creation (new schedules without `_keboola.config_id`)
+- ✅ Schedule updates (existing schedules with `_keboola.config_id`)
+- ✅ Schedule deletion (schedules removed from `_config.yml`)

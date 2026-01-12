@@ -1,8 +1,8 @@
 # Keboola CLI Developer-Friendly Structure Specification
 
-**Version:** 1.0  
-**Date:** January 2026  
-**Status:** Draft
+**Version:** 1.1
+**Date:** January 2026
+**Status:** Implemented
 
 ---
 
@@ -22,7 +22,7 @@ The proposed structure consolidates transformation code into single files (`.sql
 | Python Transformations | Multiple files in `blocks/*/codes/*/code.py` | Single `transform.py` with comment markers |
 | Python Dependencies | Embedded in `config.json` | Standalone `pyproject.toml` |
 | Python Local Dev | No local execution support | `data/` folder with Common Interface structure |
-| Orchestrations | Nested `phases/*/tasks/*/task.json` | Single `pipeline.yml` |
+| Orchestrations | Nested `phases/*/tasks/*/task.json` | Single `_config.yml` with inline phases, tasks, schedules |
 | Configuration & Metadata | Separate `config.json`, `meta.json`, `description.md` | Single `_config.yml` with all metadata |
 
 ---
@@ -111,7 +111,7 @@ The proposed structure consolidates transformation code into single files (`.sql
 ┣ 📂 flow/
 ┃ ┗ 📂 keboola.orchestrator/               # Orchestrations
 ┃   ┗ 📂 [orchestration-name]/
-┃     ┗ 🟦 pipeline.yml                    # Single file: metadata, phases, tasks, schedules, variables
+┃     ┗ 🟦 _config.yml                     # Single file: metadata, phases, tasks, schedules
 ┃
 ┣ 📂 extractors/                           # Other components (unchanged)
 ┣ 📂 writers/
@@ -136,9 +136,8 @@ The parent directory structure remains unchanged. Only the internal structure of
 |------|---------|
 | `transform.sql` / `transform.py` | Transformation code (fixed names) |
 | `code.py` | Custom Python application code |
-| `_config.yml` | Configuration + metadata (name, description, tags, mappings, parameters) |
+| `_config.yml` | Configuration + metadata (name, description, tags, mappings, parameters). For orchestrations: also includes phases, tasks, and schedules |
 | `pyproject.toml` | Python dependencies |
-| `pipeline.yml` | Complete orchestration: metadata, phases, tasks, schedules, variables |
 | `_variables.yml` | Variable definitions (for transformations) |
 | `data/` | Local execution data directory (git-ignored, fully generated) |
 
@@ -500,9 +499,9 @@ python ../transform.py
 
 ## 8. Orchestration File Format
 
-### 8.1 `pipeline.yml` Structure
+### 8.1 Unified `_config.yml` for Orchestrations
 
-The `pipeline.yml` is the **only file** for an orchestration. It contains everything: metadata, phases, tasks, schedules, and variables.
+Orchestrations use the same `_config.yml` format as other components, but with additional `phases` and `schedules` sections. Everything is in a single file: metadata, phases, tasks, and schedules.
 
 ```yaml
 version: 2
@@ -513,82 +512,61 @@ description: |
   Runs daily to sync customer data from Salesforce,
   transform it with analytics, and load to BigQuery.
 disabled: false
-tags:
-  - production
-  - daily
 
-# Schedules (inline, no separate file)
+# Schedules (inline, with _keboola.config_id for tracking)
 schedules:
   - name: Daily morning run
     cron: "0 6 * * *"
     timezone: Europe/Prague
     enabled: true
-    variables:
-      full_refresh: false
+    _keboola:
+      config_id: "scheduler-config-id-123"  # Tracks the scheduler config in API
 
   - name: Weekly full refresh
     cron: "0 2 * * 0"
     timezone: Europe/Prague
     enabled: true
-    variables:
-      full_refresh: true
-
-# Variables definition
-variables:
-  full_refresh:
-    type: boolean
-    default: false
-    description: When true, reload all data instead of incremental
+    _keboola:
+      config_id: "scheduler-config-id-456"
 
 # Pipeline phases and tasks
 phases:
   - name: Extract
-    description: Load data from external sources
-    parallel: true
-
     tasks:
       - name: Load customers
         component: keboola.ex-salesforce
         config: extractor/keboola.ex-salesforce/salesforce-customers
-        enabled: true
         continue_on_failure: false
 
   - name: Transform
     depends_on:
       - Extract
-
     tasks:
       - name: Customer analytics
         component: keboola.snowflake-transformation
         config: transformation/keboola.snowflake-transformation/customer-analytics
-        enabled: true
 
       - name: Process orders
         component: keboola.python-transformation-v2
         config: transformation/keboola.python-transformation-v2/order-processing
-        enabled: true
-        parameters:
-          <key>: <value>
 
   - name: Load
     depends_on:
       - Transform
-
     tasks:
       - name: Write to BigQuery
         component: keboola.wr-google-bigquery
         config: writer/keboola.wr-google-bigquery/bigquery-output
-        enabled: true
 
 # Internal Keboola metadata (managed by CLI)
 _keboola:
-  component_id: <component-id>
-  config_id: <config-id>
+  component_id: keboola.orchestrator
+  config_id: "orchestrator-config-id"
 ```
 
 ### 8.2 Task Config Field
 
-The `config` field contains the relative path from the orchestrator directory to the target configuration:
+The `config` field contains the **branch-relative** path to the target configuration:
 
 ```
 <component-type>/<component-id>/<config-name>
@@ -601,19 +579,27 @@ The `config` field contains the relative path from the orchestrator directory to
 - `writer/keboola.wr-google-bigquery/bigquery-output`
 
 **Notes:**
-- Path is relative from the orchestrator directory
+- Path is relative from the branch root (not from the orchestrator directory)
 - CLI resolves the config path to find the referenced configuration
 - The `component` field identifies the component type for the task
+- Tasks with `enabled: false` will have that field present; otherwise omitted
 
-### 8.3 Conversion Reference
+### 8.3 Schedule Tracking
+
+Each schedule includes a `_keboola.config_id` field that tracks the corresponding scheduler config in the Keboola API:
+- On pull: The scheduler config ID is preserved in the `_keboola.config_id` field
+- On push: The CLI uses this ID to update existing schedules or create new ones
+- If a schedule is removed from `_config.yml`, the corresponding scheduler config is deleted on push
+
+### 8.4 Conversion Reference
 
 The conversion logic derives from the existing orchestration structure:
-- `phases/*/phase.json` → `phases` section in `pipeline.yml`
+- `phases/*/phase.json` → `phases` section in `_config.yml`
 - `phases/*/tasks/*/task.json` → `tasks` within each phase
-- `schedules/*/config.json` → `schedules` section in `pipeline.yml` (inline)
-- `meta.json` + `description.md` → `name`, `description`, `tags` in `pipeline.yml`
+- Scheduler configs (separate API objects) → `schedules` section in `_config.yml` (inline)
+- `meta.json` + `description.md` → `name`, `description` in `_config.yml`
 
-**Note:** The separate `schedules/` folder is eliminated. All schedules are defined inline in `pipeline.yml`.
+**Note:** The separate `phases/` and `schedules/` folders are eliminated. All orchestration content is in `_config.yml`.
 
 ---
 
@@ -793,7 +779,7 @@ The CLI should detect which format is present locally by checking for format ind
 
 **New format indicators:**
 - `transform.sql` or `transform.py` file present in transformation configs
-- `pipeline.yml` file present in orchestration configs
+- `_config.yml` file with `phases` section (for orchestrations)
 - `_config.yml` file with `user_properties` section (for applications)
 - `pyproject.toml` file present (for Python components)
 
@@ -897,7 +883,35 @@ transformation/keboola.snowflake-transformation/customer-analytics/
 └── _config.yml       # Contains name, description, tags, and all config
 ```
 
-### 13.2 Custom Python Application
+### 13.2 Orchestration
+
+**Before (Classic Format):**
+```
+flow/keboola.orchestrator/daily-pipeline/
+├── config.json
+├── meta.json
+├── description.md
+├── phases/
+│   ├── 001-extract/
+│   │   ├── phase.json
+│   │   └── 001-load-customers/
+│   │       └── task.json
+│   └── 002-transform/
+│       ├── phase.json
+│       └── 001-process-data/
+│           └── task.json
+└── schedules/
+    └── 001-daily-run/
+        └── config.json
+```
+
+**After (Developer Format):**
+```
+flow/keboola.orchestrator/daily-pipeline/
+└── _config.yml       # Contains name, description, phases, tasks, and schedules inline
+```
+
+### 13.3 Custom Python Application
 
 **Before (Classic Format):**
 ```
