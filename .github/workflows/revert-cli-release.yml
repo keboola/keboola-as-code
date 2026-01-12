@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Configure AWS Credentials to CLI Assets Account
         uses: aws-actions/configure-aws-credentials@v5
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install GPG
         run: sudo apt-get update && sudo apt-get install -y gnupg
@@ -166,7 +166,7 @@ jobs:
     steps:
       - name: Check if release exists
         id: check_release
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -192,7 +192,7 @@ jobs:
 
       - name: Delete GitHub Release
         if: steps.check_release.outputs.exists == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
