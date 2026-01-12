@@ -273,14 +273,21 @@ func (p *Processor) registerTablesFromJobs(jobs []*keboola.QueueJobDetail, compo
 		count += p.registerTablesFromJobResult(job.ComponentID.String(), job.ConfigID.String(), &job.Result, componentRegistry, registry)
 
 		// Process flow/orchestration task outputs
-		// Note: SDK's JobTask struct doesn't include ConfigID, only Component - so we pass empty string
-		for _, task := range job.Result.Tasks {
-			for _, result := range task.Results {
-				count += p.registerTablesFromJobResult(task.Component, "", &result.Result, componentRegistry, registry)
-			}
-		}
+		count += p.registerTablesFromTasks(job.Result.Tasks, componentRegistry, registry)
 	}
 
+	return count
+}
+
+// registerTablesFromTasks registers tables from orchestration/flow task results.
+// Note: SDK's JobTask struct doesn't include ConfigID, only Component - so we pass empty string.
+func (p *Processor) registerTablesFromTasks(tasks []keboola.JobTask, componentRegistry *ComponentRegistry, registry *TableSourceRegistry) int {
+	count := 0
+	for _, task := range tasks {
+		for _, result := range task.Results {
+			count += p.registerTablesFromJobResult(task.Component, "", &result.Result, componentRegistry, registry)
+		}
+	}
 	return count
 }
 
@@ -462,30 +469,34 @@ func (p *Processor) convertCodeBlocks(ctx context.Context, blocks []*CodeBlock, 
 		if block == nil {
 			continue
 		}
-		processedBlock := &ProcessedCodeBlock{
+		codes := convertCodes(block.Codes, language)
+		if len(codes) == 0 {
+			p.logger.Debugf(ctx, "Skipping empty code block %q (no codes after processing)", block.Name)
+			continue
+		}
+		result = append(result, &ProcessedCodeBlock{
 			Name:     block.Name,
 			Language: language,
-			Codes:    make([]*ProcessedCode, 0, len(block.Codes)),
-		}
-
-		for _, code := range block.Codes {
-			if code == nil {
-				continue
-			}
-			processedBlock.Codes = append(processedBlock.Codes, &ProcessedCode{
-				Name:     code.Name,
-				Language: language,
-				Script:   code.Script,
-			})
-		}
-
-		if len(processedBlock.Codes) > 0 {
-			result = append(result, processedBlock)
-		} else {
-			p.logger.Debugf(ctx, "Skipping empty code block %q (no codes after processing)", block.Name)
-		}
+			Codes:    codes,
+		})
 	}
 
+	return result
+}
+
+// convertCodes converts a slice of Code to ProcessedCode.
+func convertCodes(codes []*Code, language string) []*ProcessedCode {
+	result := make([]*ProcessedCode, 0, len(codes))
+	for _, code := range codes {
+		if code == nil {
+			continue
+		}
+		result = append(result, &ProcessedCode{
+			Name:     code.Name,
+			Language: language,
+			Script:   code.Script,
+		})
+	}
 	return result
 }
 
