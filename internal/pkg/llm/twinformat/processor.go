@@ -285,6 +285,7 @@ func (p *Processor) registerTablesFromJobs(ctx context.Context, jobs []*keboola.
 		count += p.registerTablesFromJobResult(job.ComponentID.String(), job.ConfigID.String(), &job.Result, componentRegistry, registry)
 
 		// Process flow/orchestration task outputs
+		// Note: SDK's JobTask struct doesn't include ConfigID, only Component - so we pass empty string
 		for _, task := range job.Result.Tasks {
 			for _, result := range task.Results {
 				count += p.registerTablesFromJobResult(task.Component, "", &result.Result, componentRegistry, registry)
