@@ -152,12 +152,9 @@ func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, configs []*Trans
 }
 
 // buildTransformationUIDFromConfig builds a UID for a transformation from API config.
+// Uses config ID for consistency with job-based UIDs (jobs only have ConfigID, not ConfigName).
 func (b *LineageBuilder) buildTransformationUIDFromConfig(cfg *TransformationConfig) string {
-	name := cfg.Name
-	if name == "" {
-		name = cfg.ID
-	}
-	return "transform:" + name
+	return "transform:" + cfg.ID
 }
 
 // buildTableUID builds a UID for a table from a table reference.
