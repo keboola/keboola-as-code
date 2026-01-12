@@ -273,8 +273,12 @@ func (p *Processor) registerTablesFromJobs(ctx context.Context, jobs []*keboola.
 	count := 0
 
 	for _, job := range jobs {
+		// Intentionally only process successful jobs:
+		//  - Failed/terminated jobs can produce partial or inconsistent outputs.
+		//  - For lineage, we only trust tables produced by fully successful jobs.
+		// If lineage for failed jobs is needed in the future, this behavior should be revisited.
 		if job.Status != "success" {
-			continue // Only process successful jobs
+			continue
 		}
 
 		// Process direct job outputs
