@@ -48,8 +48,21 @@ func Run(ctx context.Context, _ Options, d dependencies) (err error) {
 	logger.Infof(ctx, "Fetched project data: %d buckets, %d tables, %d jobs",
 		len(projectData.Buckets), len(projectData.Tables), len(projectData.Jobs))
 
+	// Process fetched data: build lineage, detect platforms, infer sources
+	processor := twinformat.NewProcessor(d)
+	processedData, err := processor.Process(ctx, d.Fs().BasePath(), projectData)
+	if err != nil {
+		return err
+	}
+
+	// Log processing summary
+	logger.Infof(ctx, "Processed data: %d buckets, %d tables, %d transformations, %d edges",
+		processedData.Statistics.TotalBuckets,
+		processedData.Statistics.TotalTables,
+		processedData.Statistics.TotalTransformations,
+		processedData.Statistics.TotalEdges)
+
 	// Implementation will be added in subsequent PRs:
-	// - PR 4 (DMD-920): Processor to transform data and build lineage
 	// - PR 5 (DMD-921): Generator to write twin_format/ directory
 
 	logger.Info(ctx, "Export done.")
