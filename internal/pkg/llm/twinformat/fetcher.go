@@ -240,6 +240,7 @@ func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.Branc
 }
 
 // FetchTransformationConfigs fetches transformation configurations from the API.
+//
 // Deprecated: Use FetchAll which fetches everything in a single call.
 func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboola.BranchID) (configs []*configparser.TransformationConfig, err error) {
 	_, configs, _, err = f.fetchAllComponents(ctx, branchID)
@@ -247,6 +248,7 @@ func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboo
 }
 
 // FetchComponentConfigs fetches non-transformation component configurations from the API.
+//
 // Deprecated: Use FetchAll which fetches everything in a single call.
 func (f *Fetcher) FetchComponentConfigs(ctx context.Context, branchID keboola.BranchID) (configs []*configparser.ComponentConfig, err error) {
 	_, _, configs, err = f.fetchAllComponents(ctx, branchID)
