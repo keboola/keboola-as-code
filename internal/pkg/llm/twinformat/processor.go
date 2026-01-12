@@ -600,14 +600,14 @@ func extractBucketName(bucketID string) string {
 		return bucketID
 	}
 
-	// parts[0] is stage, parts[1] is bucket identifier
+	// parts[0] is stage, parts[1] is bucket identifier (e.g., "c-bucket"), not yet the plain bucket name
 	bucket := parts[1]
 	if bucket == "" {
 		// Missing bucket part (e.g., "in."), treat as malformed and return original ID
 		return bucketID
 	}
 
-	// Remove "c-" prefix if present and followed by a non-empty name
+	// Remove "c-" prefix from the bucket identifier to get the bucket name, if present and followed by a non-empty name
 	if strings.HasPrefix(bucket, "c-") {
 		if len(bucket) == 2 {
 			// "c-" without an actual name is considered malformed
