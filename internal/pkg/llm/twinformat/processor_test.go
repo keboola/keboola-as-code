@@ -588,8 +588,8 @@ func TestLineageBuilder_GetDependencies(t *testing.T) {
 	assert.Empty(t, outputDeps.ConsumedBy, "output table should not be consumed by anything yet")
 	assert.NotEmpty(t, outputDeps.ProducedBy, "output table should be produced by transformation")
 
-	// Test GetTransformationDependencies
-	transformUID := "transform:Process"
+	// Test GetTransformationDependencies - UID uses config ID for consistency with job-based UIDs
+	transformUID := "transform:transform-1"
 	transformDeps := builder.GetTransformationDependencies(graph, transformUID)
 	assert.NotEmpty(t, transformDeps.Consumes, "transformation should consume input table")
 	assert.NotEmpty(t, transformDeps.Produces, "transformation should produce output table")

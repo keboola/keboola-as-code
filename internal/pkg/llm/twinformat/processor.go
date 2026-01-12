@@ -416,12 +416,10 @@ func (p *Processor) processTransformations(ctx context.Context, configs []*Trans
 		}
 		stats.ByPlatform[platform]++
 
-		// Build transformation UID
-		name := cfg.Name
-		if name == "" {
-			name = cfg.ID
-		}
-		uid := buildTransformationUID(name)
+		// Build transformation UID using config ID for consistency with job-based UIDs.
+		// Jobs only have ConfigID (not ConfigName), so we use ID everywhere to ensure
+		// job execution data properly links to transformations.
+		uid := buildTransformationUID(cfg.ID)
 
 		// Get dependencies from lineage graph
 		deps := p.lineageBuilder.GetTransformationDependencies(graph, uid)
