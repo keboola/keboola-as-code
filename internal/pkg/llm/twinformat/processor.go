@@ -211,60 +211,48 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 	registry := NewTableSourceRegistry()
 
 	// PRIORITY 1: Transformation config output mappings (most reliable)
-	// Configuration storage.output.tables declares what tables the transformation produces
 	for _, cfg := range transformConfigs {
 		compType := componentRegistry.GetType(cfg.ComponentID)
 		if compType == "" {
-			compType = "transformation" // fallback
+			compType = "transformation"
 		}
-
-		for _, output := range cfg.OutputTables {
-			// The destination is the output table ID (e.g., "out.c-bucket.table")
-			tableID := output.Destination
-			if tableID == "" {
-				continue
-			}
-			registry.Register(tableID, TableSource{
-				ComponentID:   cfg.ComponentID,
-				ComponentType: compType,
-				ConfigID:      cfg.ID,
-				ConfigName:    cfg.Name,
-			})
-		}
+		registerOutputTables(registry, cfg.OutputTables, cfg.ComponentID, compType, cfg.ID, cfg.Name, false)
 	}
 
 	// PRIORITY 2: Component config output mappings (extractors, applications, writers)
-	// These also declare output tables in their storage configuration
 	for _, cfg := range componentConfigs {
 		compType := cfg.ComponentType
 		if compType == "" {
 			compType = componentRegistry.GetType(cfg.ComponentID)
 		}
-
-		for _, output := range cfg.OutputTables {
-			// The destination is the output table ID (e.g., "out.c-bucket.table")
-			tableID := output.Destination
-			if tableID == "" {
-				continue
-			}
-			// Only register if not already registered from transformation configs
-			if registry.GetSource(tableID) == SourceUnknown {
-				registry.Register(tableID, TableSource{
-					ComponentID:   cfg.ComponentID,
-					ComponentType: compType,
-					ConfigID:      cfg.ID,
-					ConfigName:    cfg.Name,
-				})
-			}
-		}
+		registerOutputTables(registry, cfg.OutputTables, cfg.ComponentID, compType, cfg.ID, cfg.Name, true)
 	}
 
 	// PRIORITY 3: Job outputs (fallback for tables not declared in configurations)
-	// Job results provide runtime data for tables not found in config mappings
 	jobOutputCount := p.registerTablesFromJobs(jobs, componentRegistry, registry)
 
 	p.logger.Infof(ctx, "Built table source registry with %d table mappings (%d from jobs as fallback)", len(registry.tableToSource), jobOutputCount)
 	return registry
+}
+
+// registerOutputTables registers output table mappings from a config.
+// If onlyIfUnknown is true, tables are only registered if not already in the registry.
+func registerOutputTables(registry *TableSourceRegistry, outputs []StorageMapping, componentID, compType, configID, configName string, onlyIfUnknown bool) {
+	for _, output := range outputs {
+		tableID := output.Destination
+		if tableID == "" {
+			continue
+		}
+		if onlyIfUnknown && registry.GetSource(tableID) != SourceUnknown {
+			continue
+		}
+		registry.Register(tableID, TableSource{
+			ComponentID:   componentID,
+			ComponentType: compType,
+			ConfigID:      configID,
+			ConfigName:    configName,
+		})
+	}
 }
 
 // registerTablesFromJobs extracts table sources from job output data.
@@ -529,14 +517,17 @@ func (p *Processor) processJobs(ctx context.Context, jobs []*keboola.QueueJobDet
 		stats.ByJobStatus[job.Status]++
 
 		// Detect platform from component ID
-		platform := DetectPlatform(job.ComponentID.String())
-		if platform == PlatformUnknown && IsTransformationComponent(job.ComponentID.String()) {
-			p.logger.Debugf(ctx, "Unknown platform for transformation job component %q", job.ComponentID.String())
+		componentID := job.ComponentID.String()
+		platform := DetectPlatform(componentID)
+		isTransformation := IsTransformationComponent(componentID)
+
+		if platform == PlatformUnknown && isTransformation {
+			p.logger.Debugf(ctx, "Unknown platform for transformation job component %q", componentID)
 		}
 
 		// Build transformation UID if this is a transformation job
 		var transformUID string
-		if IsTransformationComponent(job.ComponentID.String()) {
+		if isTransformation {
 			transformUID = buildTransformationUID(job.ConfigID.String())
 		}
 
@@ -568,20 +559,12 @@ func buildJobMap(jobs []*keboola.QueueJobDetail) map[string]*keboola.QueueJobDet
 }
 
 // isJobNewer returns true if job is newer than existing.
-// Jobs without start times are treated as older than jobs with start times.
-// If both jobs lack start times, the existing job is preferred (returns false).
 func isJobNewer(job, existing *keboola.QueueJobDetail) bool {
-	// Both nil: keep existing
-	if job.StartTime == nil && existing.StartTime == nil {
-		return false
-	}
-	// Job has no timestamp: treat as older
 	if job.StartTime == nil {
-		return false
+		return false // Job without timestamp is always older
 	}
-	// Existing has no timestamp: job is newer
 	if existing.StartTime == nil {
-		return true
+		return true // Job with timestamp beats existing without
 	}
 	return job.StartTime.After(existing.StartTime.Time)
 }
