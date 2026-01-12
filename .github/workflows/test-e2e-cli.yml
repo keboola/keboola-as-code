@@ -44,7 +44,7 @@ jobs:
         run: echo "TEST_COVERAGE=true" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Go, tools and caching
         uses: ./.github/actions/go-setup

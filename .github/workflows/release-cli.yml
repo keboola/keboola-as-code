@@ -96,7 +96,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Go, tools and caching
         uses: ./.github/actions/go-setup
@@ -105,7 +105,7 @@ jobs:
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Import Code-Signing Certificates
-        uses: Apple-Actions/import-codesign-certs@v5
+        uses: Apple-Actions/import-codesign-certs@v6
         with:
           # The certificates in a PKCS12 file encoded as a base64 string
           p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -146,10 +146,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download targets
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: release-targets
 
@@ -242,10 +242,10 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download Homebrew formulae
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: homebrew-formulae
           path: target/homebrew
@@ -276,7 +276,7 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install GPG
         run: sudo apt-get update && sudo apt-get install -y gnupg
@@ -335,7 +335,7 @@ jobs:
           APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
 
       - name: Download Scoop manifest
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: scoop-manifest
           path: target/scoop
@@ -366,7 +366,7 @@ jobs:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install GitHub "hub" CLI
         uses: geertvdc/setup-hub@master
