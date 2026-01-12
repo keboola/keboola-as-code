@@ -130,11 +130,11 @@ func (r *TableSourceRegistry) GetDominantSourceForBucket(bucketID string, tableI
 		return SourceUnknown
 	}
 
-	// Find dominant source
+	// Find dominant source (use alphabetical order as tiebreaker for deterministic results)
 	var dominantSource string
 	var maxCount int
 	for source, count := range sourceCounts {
-		if count > maxCount {
+		if count > maxCount || (count == maxCount && source < dominantSource) {
 			maxCount = count
 			dominantSource = source
 		}
