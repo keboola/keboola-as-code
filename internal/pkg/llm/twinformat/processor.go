@@ -468,6 +468,9 @@ func (p *Processor) convertCodeBlocks(ctx context.Context, blocks []*CodeBlock, 
 	result := make([]*ProcessedCodeBlock, 0, len(blocks))
 
 	for _, block := range blocks {
+		if block == nil {
+			continue
+		}
 		processedBlock := &ProcessedCodeBlock{
 			Name:     block.Name,
 			Language: language,
@@ -475,6 +478,9 @@ func (p *Processor) convertCodeBlocks(ctx context.Context, blocks []*CodeBlock, 
 		}
 
 		for _, code := range block.Codes {
+			if code == nil {
+				continue
+			}
 			processedBlock.Codes = append(processedBlock.Codes, &ProcessedCode{
 				Name:     code.Name,
 				Language: language,
