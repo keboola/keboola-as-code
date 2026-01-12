@@ -44,6 +44,15 @@ type LineageGraph struct {
 	TransNodes map[string]bool // Set of transformation node IDs
 }
 
+// addEdge adds an edge to the lineage graph.
+func (g *LineageGraph) addEdge(source, target, edgeType string) {
+	g.Edges = append(g.Edges, &LineageEdge{
+		Source: source,
+		Target: target,
+		Type:   edgeType,
+	})
+}
+
 // uidTracker tracks original inputs to sanitized UIDs for collision detection.
 type uidTracker struct {
 	tableUIDs     map[string]string // sanitized UID -> original input
@@ -110,13 +119,7 @@ func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, configs []*Trans
 				b.logger.Warnf(ctx, "UID collision detected: tables %q and %q both map to UID %q", prev, input.Source, tableUID)
 			}
 			graph.TableNodes[tableUID] = true
-
-			edge := &LineageEdge{
-				Source: tableUID,
-				Target: transformUID,
-				Type:   EdgeTypeConsumedBy,
-			}
-			graph.Edges = append(graph.Edges, edge)
+			graph.addEdge(tableUID, transformUID, EdgeTypeConsumedBy)
 		}
 
 		// Build output edges: transformation -> table (produces)
@@ -126,13 +129,7 @@ func (b *LineageBuilder) BuildLineageGraph(ctx context.Context, configs []*Trans
 				b.logger.Warnf(ctx, "UID collision detected: tables %q and %q both map to UID %q", prev, output.Destination, tableUID)
 			}
 			graph.TableNodes[tableUID] = true
-
-			edge := &LineageEdge{
-				Source: transformUID,
-				Target: tableUID,
-				Type:   EdgeTypeProduces,
-			}
-			graph.Edges = append(graph.Edges, edge)
+			graph.addEdge(transformUID, tableUID, EdgeTypeProduces)
 		}
 	}
 
