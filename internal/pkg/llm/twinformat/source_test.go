@@ -14,8 +14,8 @@ func TestComponentRegistry(t *testing.T) {
 		t.Parallel()
 		registry := NewComponentRegistry()
 
-		assert.Equal(t, "", registry.GetType("unknown-component"))
-		assert.Equal(t, "", registry.GetName("unknown-component"))
+		assert.Empty(t, registry.GetType("unknown-component"))
+		assert.Empty(t, registry.GetName("unknown-component"))
 
 		_, found := registry.Get("unknown-component")
 		assert.False(t, found)
@@ -51,7 +51,7 @@ func TestComponentRegistry(t *testing.T) {
 		// Should not panic
 		registry.Register(nil)
 
-		assert.Equal(t, "", registry.GetType("anything"))
+		assert.Empty(t, registry.GetType("anything"))
 	})
 
 	t.Run("multiple components", func(t *testing.T) {
