@@ -130,6 +130,43 @@ Services auto-reload on code changes using Air.
 - Follow KISS principle - clear, straightforward code
 - Follow DRY principle - extract common functionality
 
+### Avoid Deep Nesting
+- **Maximum 2 levels of nesting** - Extract helper functions for deeper loops
+- **Use early returns** - Invert conditions and return/continue early to reduce indentation
+- **Extract inner loops** - When you have nested `for` loops, extract the inner loop to a separate function
+- **Flatten conditionals** - Replace `if { if { if { }}}` with guard clauses and early returns
+
+Example - instead of:
+```go
+for _, item := range items {
+    if item != nil {
+        for _, sub := range item.Children {
+            if sub.Valid {
+                process(sub)
+            }
+        }
+    }
+}
+```
+Use:
+```go
+for _, item := range items {
+    if item == nil {
+        continue
+    }
+    processChildren(item.Children)
+}
+
+func processChildren(children []Child) {
+    for _, sub := range children {
+        if !sub.Valid {
+            continue
+        }
+        process(sub)
+    }
+}
+```
+
 ### Prohibited Patterns
 - **Global variables** - Use dependency injection
 - **init() functions** - Use explicit initialization
