@@ -174,7 +174,8 @@ func (b *LineageBuilder) buildTableUID(ctx context.Context, tableRef string) str
 
 	// Extract bucket and table name
 	// Format: stage.c-bucket.table -> bucket/table
-	bucket := strings.TrimPrefix(parts[1], "c-")
+	bucketID := parts[0] + "." + parts[1]
+	bucket := extractBucketName(bucketID)
 	table := strings.Join(parts[2:], ".")
 
 	return "table:" + bucket + "/" + table
