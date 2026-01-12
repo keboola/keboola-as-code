@@ -305,7 +305,7 @@ func (p *Processor) registerTablesFromJobResult(componentID, configID string, re
 			continue
 		}
 
-		// Only register if not already registered (first job wins - jobs are returned in reverse chronological order)
+		// Only register if not already registered: the first job that outputs a given table determines its recorded source.
 		if registry.GetSource(table.ID) == SourceUnknown {
 			registry.Register(table.ID, TableSource{
 				ComponentID:   componentID,
