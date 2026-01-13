@@ -158,7 +158,15 @@ func GenerateProjectREADME(projectID string, stats ProjectStats) string {
 	mb.P("This directory contains an AI-optimized export of a Keboola project in \"twin format\".")
 
 	mb.H2("Quick Start")
-	mb.P("For AI assistants: Start with `manifest-extended.json` for a complete project overview.")
+	mb.P("**For AI assistants**: Read `ai/AGENT_INSTRUCTIONS.md` for comprehensive guidance on working with this project, including API patterns, data analysis workflows, and MCP server integration.")
+	mb.P("For a quick overview, start with `manifest-extended.json` for a complete project snapshot.")
+
+	mb.H2("For AI Assistants")
+	mb.P("The `ai/` directory contains detailed instructions for AI agents:")
+	mb.List([]string{
+		"`ai/README.md` - Quick reference guide",
+		"`ai/AGENT_INSTRUCTIONS.md` - Comprehensive guide with API patterns, workflows, error analysis, and MCP server setup",
+	})
 
 	mb.H2("Statistics")
 	mb.List([]string{
@@ -173,6 +181,7 @@ func GenerateProjectREADME(projectID string, stats ProjectStats) string {
 ├── manifest.yaml              # Project configuration
 ├── manifest-extended.json     # Complete project overview (start here)
 ├── README.md                  # This file
+├── ai/                        # AI assistant guides
 ├── buckets/                   # Storage buckets and tables
 ├── transformations/           # Data transformations
 ├── components/                # Extractors, writers, etc.
@@ -185,6 +194,7 @@ func GenerateProjectREADME(projectID string, stats ProjectStats) string {
 	mb.Table(
 		[]string{"File", "Purpose"},
 		[][]string{
+			{"ai/AGENT_INSTRUCTIONS.md", "Comprehensive AI assistant guide"},
 			{"manifest-extended.json", "Complete project overview in one file"},
 			{"buckets/index.json", "Catalog of all buckets"},
 			{"transformations/index.json", "Catalog of all transformations"},
