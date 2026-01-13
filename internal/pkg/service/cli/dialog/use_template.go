@@ -90,12 +90,15 @@ func (d *useTmplInputsDialog) ask(ctx context.Context, isForTest bool, inputsFil
 
 		// Use value from the inputs file, if it is present
 		if d.useInputsFile {
-			if v, found := d.inputsFile[inputDef.ID]; found {
-				if err := d.addInputValue(ctx, v, inputDef, true); err != nil {
+			v, found := d.inputsFile[inputDef.ID]
+			if !found {
+				v = d.defaultOrEmptyValueFor(inputDef)
+			}
+			err := d.addInputValue(ctx, v, inputDef, true)
+			if err != nil {
+				if found {
 					return errors.NewNestedError(err, errors.New("please fix the value in the inputs JSON file"))
-				}
-			} else {
-				if err := d.addInputValue(ctx, d.defaultOrEmptyValueFor(inputDef), inputDef, true); err != nil {
+				} else {
 					return errors.NewNestedError(err, errors.New("please define value in the inputs JSON file"))
 				}
 			}
@@ -175,37 +178,7 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt, isForTes
 
 	// Validate steps count
 	if err := group.ValidateStepsCount(len(group.Steps), len(selectedSteps)); err != nil && !isForTest {
-		details := errors.NewMultiError()
-		details.Append(err)
-		details.Append(errors.Errorf("number of selected steps (%d) is incorrect", len(selectedSteps)))
-		if d.useInputsFile {
-			// List found inputs
-			foundInputs := orderedmap.New()
-			for _, step := range group.Steps {
-				for _, inputDef := range step.Inputs {
-					if _, found := d.inputsFile[inputDef.ID]; found {
-						v, _ := foundInputs.GetOrNil(step.Name).([]string)
-						foundInputs.Set(step.Name, append(v, inputDef.ID))
-					}
-				}
-			}
-
-			// Convert list to error message
-			if foundInputs.Len() > 0 {
-				foundInputsErr := errors.NewMultiError()
-				for _, step := range foundInputs.Keys() {
-					inputs := foundInputs.GetOrNil(step).([]string)
-					foundInputsErr.Append(errors.Errorf(`%s, inputs: %s`, step, strings.Join(inputs, ", ")))
-				}
-				details.AppendWithPrefix(foundInputsErr, "in the inputs JSON file, these steps are defined")
-			} else {
-				details.Append(errors.New("there are no inputs for this group in the inputs JSON file"))
-			}
-		}
-		return errors.NewNestedError(
-			errors.Errorf(`steps group %d "%s" is invalid`, group.GroupIndex+1, group.Description),
-			details,
-		)
+		return d.createStepsGroupError(group, err, selectedSteps)
 	}
 
 	// Mark selected steps
@@ -213,6 +186,42 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt, isForTes
 		group.Steps[selectedIndex].Show = true
 	}
 	return nil
+}
+
+func (d *useTmplInputsDialog) createStepsGroupError(group *input.StepsGroupExt, err error, selectedSteps []int) error {
+	details := errors.NewMultiError()
+	details.Append(err)
+	details.Append(errors.Errorf("number of selected steps (%d) is incorrect", len(selectedSteps)))
+
+	if d.useInputsFile {
+		// List found inputs
+		foundInputs := orderedmap.New()
+		for _, step := range group.Steps {
+			for _, inputDef := range step.Inputs {
+				if _, found := d.inputsFile[inputDef.ID]; found {
+					v, _ := foundInputs.GetOrNil(step.Name).([]string)
+					foundInputs.Set(step.Name, append(v, inputDef.ID))
+				}
+			}
+		}
+
+		// Convert list to error message
+		if foundInputs.Len() > 0 {
+			foundInputsErr := errors.NewMultiError()
+			for _, step := range foundInputs.Keys() {
+				inputs := foundInputs.GetOrNil(step).([]string)
+				foundInputsErr.Append(errors.Errorf(`%s, inputs: %s`, step, strings.Join(inputs, ", ")))
+			}
+			details.AppendWithPrefix(foundInputsErr, "in the inputs JSON file, these steps are defined")
+		} else {
+			details.Append(errors.New("there are no inputs for this group in the inputs JSON file"))
+		}
+	}
+
+	return errors.NewNestedError(
+		errors.Errorf(`steps group %d "%s" is invalid`, group.GroupIndex+1, group.Description),
+		details,
+	)
 }
 
 func (d *useTmplInputsDialog) announceStep(step *input.StepExt) error {

@@ -29,45 +29,47 @@ const (
 // setupOnFileOpen creates staging file using Storage API and saves upload credentials to database.
 func (b *Bridge) setupOnFileOpen() {
 	b.plugins.Collection().OnFileOpen(func(ctx context.Context, now time.Time, sink definition.Sink, file *model.File) error {
-		if b.isKeboolaTableSink(&sink) {
-			tableKey := keboola.TableKey{BranchID: sink.BranchID, TableID: sink.Table.Keboola.TableID}
-
-			// Create bucket if not exists, but only if the operation is called via API.
-			// We need a token with right permissions, to be able to create the bucket.
-			// If the operation is not called via API, but from a background operator, the bucket should already exist.
-			if api, err := b.apiProvider.APIFromContext(ctx); err == nil {
-				if err := b.ensureBucketExists(ctx, api, tableKey.BucketKey()); err != nil {
-					return err
-				}
-			}
-
-			// Get token from the database, or create a new one.
-			token, err := b.tokenForSink(ctx, now, sink)
-			if err != nil {
-				return err
-			}
-
-			// Following API operations are always called using the limited token - scoped to the bucket.
-			api := b.publicAPI.NewAuthorizedAPI(token.Token, 1*time.Minute)
-			ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", token.ID))
-
-			// Create table if not exists
-			if err := b.ensureTableExists(ctx, api, tableKey, sink); err != nil {
-				return err
-			}
-
-			// Create file resource
-			keboolaFile, err := b.createStagingFile(ctx, api, sink, file)
-			if err != nil {
-				return err
-			}
-
-			// Update file entity
-			file.Mapping = sink.Table.Mapping
-			file.StagingStorage.Provider = stagingFileProvider // staging file is provided by the Keboola
-			file.TargetStorage.Provider = targetProvider       // destination is a Keboola table
-			file.StagingStorage.Expiration = keboolaFile.Expiration()
+		if !b.isKeboolaTableSink(&sink) {
+			return nil
 		}
+
+		tableKey := keboola.TableKey{BranchID: sink.BranchID, TableID: sink.Table.Keboola.TableID}
+
+		// Create bucket if not exists, but only if the operation is called via API.
+		// We need a token with right permissions, to be able to create the bucket.
+		// If the operation is not called via API, but from a background operator, the bucket should already exist.
+		if api, err := b.apiProvider.APIFromContext(ctx); err == nil {
+			if err := b.ensureBucketExists(ctx, api, tableKey.BucketKey()); err != nil {
+				return err
+			}
+		}
+
+		// Get token from the database, or create a new one.
+		token, err := b.tokenForSink(ctx, now, sink)
+		if err != nil {
+			return err
+		}
+
+		// Following API operations are always called using the limited token - scoped to the bucket.
+		api := b.publicAPI.NewAuthorizedAPI(token.Token, 1*time.Minute)
+		ctx = ctxattr.ContextWith(ctx, attribute.String("token.ID", token.ID))
+
+		// Create table if not exists
+		if err := b.ensureTableExists(ctx, api, tableKey, sink); err != nil {
+			return err
+		}
+
+		// Create file resource
+		keboolaFile, err := b.createStagingFile(ctx, api, sink, file)
+		if err != nil {
+			return err
+		}
+
+		// Update file entity
+		file.Mapping = sink.Table.Mapping
+		file.StagingStorage.Provider = stagingFileProvider // staging file is provided by the Keboola
+		file.TargetStorage.Provider = targetProvider       // destination is a Keboola table
+		file.StagingStorage.Expiration = keboolaFile.Expiration()
 
 		return nil
 	})
