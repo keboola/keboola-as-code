@@ -88,3 +88,12 @@ Every JSON file includes self-documenting fields:
 ## For More Information
 
 See `AGENT_INSTRUCTIONS.md` for comprehensive workflows, API patterns, and best practices.
+
+### MCP Servers for Keboola
+
+If your AI environment supports MCP (Model Context Protocol), Keboola provides two MCP servers:
+
+- **[Keboola MCP Server](https://github.com/keboola/mcp-server)** - Direct interaction with Keboola projects (query tables, create transformations, run jobs)
+- **[API Documentation Server](https://github.com/keboola/keboola-api-documentation-mcp-server)** - Look up API endpoint documentation
+
+See `AGENT_INSTRUCTIONS.md` for setup instructions.

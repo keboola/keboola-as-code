@@ -188,6 +188,17 @@ func processChildren(children []Child) {
 - **Error wrapping**: Use error wrapping with stack traces; custom error types for domain logic
 - **Dependency management**: Constructor-based DI; interface segregation (small interfaces)
 - **Observability**: Structured logging; OpenTelemetry integration; metrics for critical paths
+- **Deterministic output**: When iterating over maps, always sort results before output to ensure consistent ordering across runs
+- **Avoid deep nesting**: Invert conditions and use early returns/continue instead of nested if/else blocks
+- **Avoid else-if chains**: Prefer early returns, switch statements, or restructured logic
+- **Type assertions with nil checks**: After type assertions, always check for nil before using the value
+- **nolint directives**: Use `//nolint:directive` format (no space after //)
+- **Parser/processor pattern**: Use struct with logger as constructor dependency for components that need logging; keep utility functions that don't need logger as standalone
+
+### Commit Practices
+- **Make small, focused commits** - One logical change per commit
+- **Don't bundle multiple tasks** into a single commit; split them for easier review and rebasing
+- **Example**: If implementing column metadata, transformation code output, and component configs, create 3 separate commits rather than one large commit
 
 ### Testing
 - Test files use `*_test.go` suffix and are located next to implementation
