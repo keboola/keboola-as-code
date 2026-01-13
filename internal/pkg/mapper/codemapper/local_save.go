@@ -48,6 +48,10 @@ func (w *localWriter) save(ctx context.Context) error {
 		return w.errors.ErrorOrNil()
 	}
 
+	// Inject default venv if missing for custom python
+	// We do this here (and not just in Load) so it is persisted to config.json
+	w.injectDefaultVenv(w.config)
+
 	// Always save the file, even if the code is empty
 	// Path to code.py file
 	codePath := filesystem.Join(w.Path(), "code.py")
