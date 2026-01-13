@@ -63,52 +63,55 @@ func (m *dataGatewayMapper) AfterRemoteOperation(ctx context.Context, changes *m
 
 		// Check if workspace was created and details were set
 		workspaceID, found, _ = config.Content.GetNested("parameters.db.workspaceId")
-		if found && workspaceID != nil && workspaceID != "" {
-			// Update the configuration in remote with workspace details
-			// If this update fails, the workspace exists but the config doesn't reference it.
-			// This creates an inconsistent state, so we return the error to prevent silent failures.
-			api := m.KeboolaProjectAPI()
-			changedFields := model.NewChangedFields()
-			changedFields.Add("configuration")
-			apiObject, apiChangedFields := config.ToAPIObject("Workspace created and configuration updated", changedFields)
-			_, err := api.UpdateRequest(apiObject, apiChangedFields).Send(ctx)
-			if err != nil {
-				// Return error instead of logging and continuing.
-				// The workspace has been created and should be used, but the config update failed.
-				// This error must be propagated to prevent inconsistent state.
-				errs.Append(errors.Errorf(`cannot update configuration "%s" with workspace details: %w`, config.Name, err))
-				continue
-			}
-			m.logger.Debugf(ctx, `Updated configuration "%s" with workspace details`, config.Name)
+		if !found || workspaceID == nil || workspaceID == "" {
+			continue
+		}
 
-			// Update remote state with the updated config
-			configState.SetRemoteState(config)
+		// Update the configuration in remote with workspace details
+		// If this update fails, the workspace exists but the config doesn't reference it.
+		// This creates an inconsistent state, so we return the error to prevent silent failures.
+		api := m.KeboolaProjectAPI()
+		changedFields := model.NewChangedFields()
+		changedFields.Add("configuration")
+		apiObject, apiChangedFields := config.ToAPIObject("Workspace created and configuration updated", changedFields)
+		_, err := api.UpdateRequest(apiObject, apiChangedFields).Send(ctx)
+		if err != nil {
+			// Return error instead of logging and continuing.
+			// The workspace has been created and should be used, but the config update failed.
+			// This error must be propagated to prevent inconsistent state.
+			errs.Append(errors.Errorf(`cannot update configuration "%s" with workspace details: %w`, config.Name, err))
+			continue
+		}
+		m.logger.Debugf(ctx, `Updated configuration "%s" with workspace details`, config.Name)
 
-			// Sync workspace details to local state if it exists
-			if configState.Local != nil {
-				if err := configState.Local.Content.SetNested("parameters.db.workspaceId", workspaceID); err != nil {
-					m.logger.Warnf(ctx, `Failed to sync workspaceId to local state for config "%s": %s`, config.Name, err.Error())
-				}
-				normalizeWorkspaceID(configState.Local)
-				// Also sync other workspace details
-				if host, found, _ := config.Content.GetNested("parameters.db.host"); found {
-					if err := configState.Local.Content.SetNested("parameters.db.host", host); err != nil {
-						m.logger.Warnf(ctx, `Failed to sync host to local state for config "%s": %s`, config.Name, err.Error())
-					}
-				}
-				if user, found, _ := config.Content.GetNested("parameters.db.user"); found {
-					if err := configState.Local.Content.SetNested("parameters.db.user", user); err != nil {
-						m.logger.Warnf(ctx, `Failed to sync user to local state for config "%s": %s`, config.Name, err.Error())
-					}
-				}
-				if database, found, _ := config.Content.GetNested("parameters.db.database"); found {
-					if err := configState.Local.Content.SetNested("parameters.db.database", database); err != nil {
-						m.logger.Warnf(ctx, `Failed to sync database to local state for config "%s": %s`, config.Name, err.Error())
-					}
-				}
-				scheduleLocalSave(configState)
+		// Update remote state with the updated config
+		configState.SetRemoteState(config)
+
+		// Sync workspace details to local state if it exists
+		if configState.Local == nil {
+			continue
+		}
+		if err := configState.Local.Content.SetNested("parameters.db.workspaceId", workspaceID); err != nil {
+			m.logger.Warnf(ctx, `Failed to sync workspaceId to local state for config "%s": %s`, config.Name, err.Error())
+		}
+		normalizeWorkspaceID(configState.Local)
+		// Also sync other workspace details
+		if host, found, _ := config.Content.GetNested("parameters.db.host"); found {
+			if err := configState.Local.Content.SetNested("parameters.db.host", host); err != nil {
+				m.logger.Warnf(ctx, `Failed to sync host to local state for config "%s": %s`, config.Name, err.Error())
 			}
 		}
+		if user, found, _ := config.Content.GetNested("parameters.db.user"); found {
+			if err := configState.Local.Content.SetNested("parameters.db.user", user); err != nil {
+				m.logger.Warnf(ctx, `Failed to sync user to local state for config "%s": %s`, config.Name, err.Error())
+			}
+		}
+		if database, found, _ := config.Content.GetNested("parameters.db.database"); found {
+			if err := configState.Local.Content.SetNested("parameters.db.database", database); err != nil {
+				m.logger.Warnf(ctx, `Failed to sync database to local state for config "%s": %s`, config.Name, err.Error())
+			}
+		}
+		scheduleLocalSave(configState)
 	}
 
 	// Process loaded configs - backfill workspace details

@@ -154,84 +154,92 @@ func (v *kvWrapper) startOp(op etcd.Op) string {
 	return v.start(&op, opToStr(op), keyToStr(op.KeyBytes(), op.RangeBytes()), value)
 }
 
+// writePair writes the key-value pair details to the output builder.
+// It includes metadata like revision, count-only flag, keys-only flag, serializable flag, and the value.
+func (v *kvWrapper) writePair(op *etcd.Op, key, value string, out *strings.Builder) {
+	out.WriteString(" ")
+	out.WriteString(key)
+	if op.Rev() > 0 {
+		out.WriteString(" | rev")
+		if v.config.Revision {
+			out.WriteString(": ")
+			out.WriteString(strconv.FormatInt(op.Rev(), 10))
+		}
+	}
+	if op.IsCountOnly() {
+		out.WriteString(" | count only")
+	}
+	if op.IsKeysOnly() {
+		out.WriteString(" | keys only")
+	}
+	if op.IsSerializable() {
+		out.WriteString(" | serializable")
+	}
+	if value != "" && v.config.PutValue {
+		out.WriteString(" | value:")
+		out.WriteString("\n")
+		out.WriteString(">>> ")
+		out.WriteString(value)
+	}
+}
+
 func (v *kvWrapper) start(op *etcd.Op, opName, key, value string) string {
 	var out strings.Builder
 
 	out.WriteString(fmt.Sprintf("➡️  %s", opName))
 
 	if key != "" {
-		out.WriteString(" ")
-		out.WriteString(key)
-		if op.Rev() > 0 {
-			out.WriteString(" | rev")
-			if v.config.Revision {
-				out.WriteString(": ")
-				out.WriteString(strconv.FormatInt(op.Rev(), 10))
-			}
-		}
-		if op.IsCountOnly() {
-			out.WriteString(" | count only")
-		}
-		if op.IsKeysOnly() {
-			out.WriteString(" | keys only")
-		}
-		if op.IsSerializable() {
-			out.WriteString(" | serializable")
-		}
-		if value != "" && v.config.PutValue {
-			out.WriteString(" | value:")
-			out.WriteString("\n")
-			out.WriteString(">>> ")
-			out.WriteString(value)
-		}
+		v.writePair(op, key, value, &out)
+	}
+
+	if op == nil || !op.IsTxn() {
+		return out.String()
 	}
 
 	// Dump transaction
-	if op != nil && op.IsTxn() {
-		cmpOps, thenOps, elseOps := op.Txn()
+	cmpOps, thenOps, elseOps := op.Txn()
 
-		if len(cmpOps) > 0 {
+	if len(cmpOps) > 0 {
+		out.WriteString("\n")
+		out.WriteString("  ➡️  IF:")
+		for i, item := range cmpOps {
 			out.WriteString("\n")
-			out.WriteString("  ➡️  IF:")
-			for i, item := range cmpOps {
-				out.WriteString("\n")
-				var expectedResult string
-				switch v := item.TargetUnion.(type) {
-				case *etcdserverpb.Compare_Version:
-					expectedResult = fmt.Sprintf(`%v`, v.Version)
-				case *etcdserverpb.Compare_CreateRevision:
-					expectedResult = fmt.Sprintf(`%v`, v.CreateRevision)
-				case *etcdserverpb.Compare_ModRevision:
-					expectedResult = fmt.Sprintf(`%v`, v.ModRevision)
-				case *etcdserverpb.Compare_Value:
-					expectedResult = fmt.Sprintf(`"%s"`, string(v.Value))
-				case *etcdserverpb.Compare_Lease:
-					expectedResult = fmt.Sprintf(`%v`, v.Lease)
-				default:
-					panic(errors.Errorf(`unexpected type "%T"`, item.TargetUnion))
-				}
-				out.WriteString(fmt.Sprintf("  %03d %s %s %v %s", i+1, keyToStr(item.Key, item.RangeEnd), item.Target, item.Result, expectedResult))
+			var expectedResult string
+			switch v := item.TargetUnion.(type) {
+			case *etcdserverpb.Compare_Version:
+				expectedResult = fmt.Sprintf(`%v`, v.Version)
+			case *etcdserverpb.Compare_CreateRevision:
+				expectedResult = fmt.Sprintf(`%v`, v.CreateRevision)
+			case *etcdserverpb.Compare_ModRevision:
+				expectedResult = fmt.Sprintf(`%v`, v.ModRevision)
+			case *etcdserverpb.Compare_Value:
+				expectedResult = fmt.Sprintf(`"%s"`, string(v.Value))
+			case *etcdserverpb.Compare_Lease:
+				expectedResult = fmt.Sprintf(`%v`, v.Lease)
+			default:
+				panic(errors.Errorf(`unexpected type "%T"`, item.TargetUnion))
 			}
+			out.WriteString(fmt.Sprintf("  %03d %s %s %v %s", i+1, keyToStr(item.Key, item.RangeEnd), item.Target, item.Result, expectedResult))
 		}
+	}
 
-		if len(thenOps) > 0 {
+	if len(thenOps) > 0 {
+		out.WriteString("\n")
+		out.WriteString("  ➡️  THEN:")
+		for i, item := range thenOps {
 			out.WriteString("\n")
-			out.WriteString("  ➡️  THEN:")
-			for i, item := range thenOps {
-				out.WriteString("\n")
-				linePrefix := fmt.Sprintf("  %03d ", i+1)
-				prefixLines(linePrefix, v.startOp(item), &out)
-			}
+			linePrefix := fmt.Sprintf("  %03d ", i+1)
+			prefixLines(linePrefix, v.startOp(item), &out)
 		}
+	}
 
-		if len(elseOps) > 0 {
+	if len(elseOps) > 0 {
+		out.WriteString("\n")
+		out.WriteString("  ➡️  ELSE:")
+		for i, item := range elseOps {
 			out.WriteString("\n")
-			out.WriteString("  ➡️  ELSE:")
-			for i, item := range elseOps {
-				out.WriteString("\n")
-				linePrefix := fmt.Sprintf("  %03d ", i+1)
-				prefixLines(linePrefix, v.startOp(item), &out)
-			}
+			linePrefix := fmt.Sprintf("  %03d ", i+1)
+			prefixLines(linePrefix, v.startOp(item), &out)
 		}
 	}
 

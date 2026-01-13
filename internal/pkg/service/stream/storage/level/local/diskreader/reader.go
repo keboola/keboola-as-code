@@ -101,43 +101,9 @@ func newReader(
 		}
 	}()
 
-	// Add compression to the reader chain, if the local and staging compression is not the same.
-	// Preferred way is to use the same compression, then an internal Go optimization and "zero CPU copy" can be used,
-	// Read more about "sendfile" syscall and see the UnwrapFile method.
-	if localCompression.Type != targetCompression.Type {
-		// Decompress the file stream on-the-fly, when reading, if needed.
-		if localCompression.Type != compression.TypeNone {
-			_, err := r.chain.PrependReaderOrErr(func(r io.Reader) (io.Reader, error) {
-				return compressionReader.New(r, localCompression)
-			})
-			if err != nil {
-				return nil, errors.PrefixError(err, `cannot create compression reader`)
-			}
-		}
-
-		// Compress the file stream on-the-fly, when reading.
-		if targetCompression.Type != compression.TypeNone {
-			// Convert compression writer to a reader using pipe
-			pipeR, pipeW := io.Pipe()
-			compressionW, err := compressionWriter.New(pipeW, targetCompression)
-			if err != nil {
-				return nil, errors.PrefixError(err, `cannot create compression writer`)
-			}
-			r.chain.PrependReader(func(r io.Reader) io.Reader {
-				// Copy: raw bytes (r) -> compressionW -> pipeW -> pipeR
-				go func() {
-					var err error
-					if _, copyErr := io.Copy(compressionW, r); copyErr != nil {
-						err = copyErr
-					}
-					if closeErr := compressionW.Close(); err == nil && closeErr != nil {
-						err = closeErr
-					}
-					_ = pipeW.CloseWithError(err)
-				}()
-				return pipeR
-			})
-		}
+	// Add compression to the reader chain, if needed
+	if err := r.setupCompression(localCompression, targetCompression); err != nil {
+		return nil, err
 	}
 
 	// Dispatch "open" event
@@ -147,6 +113,52 @@ func newReader(
 
 	r.logger.Debug(ctx, "opened disk reader")
 	return r, nil
+}
+
+// setupCompression configures compression in the reader chain if local and target compression differ.
+// Preferred way is to use the same compression, then an internal Go optimization and "zero CPU copy" can be used.
+// Read more about "sendfile" syscall and see the UnwrapFile method.
+func (r *reader) setupCompression(localCompression, targetCompression compression.Config) error {
+	// Skip if compression types are the same
+	if localCompression.Type == targetCompression.Type {
+		return nil
+	}
+
+	// Decompress the file stream on-the-fly, when reading, if needed.
+	if localCompression.Type != compression.TypeNone {
+		_, err := r.chain.PrependReaderOrErr(func(r io.Reader) (io.Reader, error) {
+			return compressionReader.New(r, localCompression)
+		})
+		if err != nil {
+			return errors.PrefixError(err, `cannot create compression reader`)
+		}
+	}
+
+	// Compress the file stream on-the-fly, when reading.
+	if targetCompression.Type != compression.TypeNone {
+		// Convert compression writer to a reader using pipe
+		pipeR, pipeW := io.Pipe()
+		compressionW, err := compressionWriter.New(pipeW, targetCompression)
+		if err != nil {
+			return errors.PrefixError(err, `cannot create compression writer`)
+		}
+		r.chain.PrependReader(func(r io.Reader) io.Reader {
+			// Copy: raw bytes (r) -> compressionW -> pipeW -> pipeR
+			go func() {
+				var err error
+				if _, copyErr := io.Copy(compressionW, r); copyErr != nil {
+					err = copyErr
+				}
+				if closeErr := compressionW.Close(); err == nil && closeErr != nil {
+					err = closeErr
+				}
+				_ = pipeW.CloseWithError(err)
+			}()
+			return pipeR
+		})
+	}
+
+	return nil
 }
 
 func (r *reader) WriteTo(w io.Writer) (n int64, err error) {

@@ -134,9 +134,12 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 		workersFor(manifest.Level()).
 		AddWorker(func(ctx context.Context) error {
 			// Has been parent loaded?
-			if parentKey, err := manifest.Key().ParentKey(); err != nil {
+			parentKey, err := manifest.Key().ParentKey()
+			if err != nil {
 				return err
-			} else if parentKey != nil {
+			}
+
+			if parentKey != nil {
 				// Has object a parent?
 				if _, found := u.localObjects.Get(parentKey); !found {
 					// Parent is not loaded -> skip
