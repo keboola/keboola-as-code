@@ -82,51 +82,51 @@ func (l *loader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppCon
 	// Send API request with cached eTag.
 	// At first, the item.config.ETag() is empty string.
 	newConfig, err := l.api.GetAppConfig(appID, item.config.ETag()).Send(ctx)
-	if err != nil {
-		// The config hasn't been modified, extend expiration, return cached version
-		notModifierErr := api.NotModifiedError{}
-		if errors.As(err, &notModifierErr) {
-			item.ExtendExpiration(now, notModifierErr.MaxAge)
-			return item.config, false, nil
-		}
-
-		// Only the not found error is expected
-		var apiErr *api.Error
-		if errors.As(err, &apiErr) && apiErr.StatusCode() != http.StatusNotFound {
-			// Log other errors
-			l.logger.Errorf(ctx, `unable to load configuration for application "%s": %s`, appID, err.Error())
-
-			// Keep the proxy running for a limited time in case of an API outage.
-			// The item.expiresAt may be zero, if there is no cached version, then the condition is skipped.
-			if now.Before(item.expiresAt.Add(staleCacheFallbackDuration)) {
-				l.logger.Warnf(ctx, `using stale cache for app "%s": %s`, appID, err.Error())
-				return item.config, false, nil
-			}
-		}
-
-		// Handle not found error
-		if apiErr != nil && apiErr.StatusCode() == http.StatusNotFound {
-			err = svcErrors.NewResourceNotFoundError("application", appID.String(), "stack").Wrap(err)
-			return api.AppConfig{}, false, err
-		}
-
-		// Return the error if:
-		//  - It is not found error.
-		//  - There is no cached version.
-		//  - The staleCacheFallbackDuration has been exceeded.
-		return api.AppConfig{}, false, svcErrors.
-			NewServiceUnavailableError(errors.PrefixErrorf(err,
-				`unable to load configuration for application "%s"`, appID,
-			)).
-			WithUserMessage(fmt.Sprintf(
-				`Unable to load configuration for application "%s".`, appID,
-			))
+	if err == nil {
+		// Cache the loaded configuration
+		item.config = *newConfig
+		item.ExtendExpiration(now, item.config.MaxAge())
+		return item.config, true, nil
 	}
 
-	// Cache the loaded configuration
-	item.config = *newConfig
-	item.ExtendExpiration(now, item.config.MaxAge())
-	return item.config, true, nil
+	// The config hasn't been modified, extend expiration, return cached version
+	notModifierErr := api.NotModifiedError{}
+	if errors.As(err, &notModifierErr) {
+		item.ExtendExpiration(now, notModifierErr.MaxAge)
+		return item.config, false, nil
+	}
+
+	// Only the not found error is expected
+	var apiErr *api.Error
+	if errors.As(err, &apiErr) && apiErr.StatusCode() != http.StatusNotFound {
+		// Log other errors
+		l.logger.Errorf(ctx, `unable to load configuration for application "%s": %s`, appID, err.Error())
+
+		// Keep the proxy running for a limited time in case of an API outage.
+		// The item.expiresAt may be zero, if there is no cached version, then the condition is skipped.
+		if now.Before(item.expiresAt.Add(staleCacheFallbackDuration)) {
+			l.logger.Warnf(ctx, `using stale cache for app "%s": %s`, appID, err.Error())
+			return item.config, false, nil
+		}
+	}
+
+	// Handle not found error
+	if apiErr != nil && apiErr.StatusCode() == http.StatusNotFound {
+		err = svcErrors.NewResourceNotFoundError("application", appID.String(), "stack").Wrap(err)
+		return api.AppConfig{}, false, err
+	}
+
+	// Return the error if:
+	//  - It is not found error.
+	//  - There is no cached version.
+	//  - The staleCacheFallbackDuration has been exceeded.
+	return api.AppConfig{}, false, svcErrors.
+		NewServiceUnavailableError(errors.PrefixErrorf(err,
+			`unable to load configuration for application "%s"`, appID,
+		)).
+		WithUserMessage(fmt.Sprintf(
+			`Unable to load configuration for application "%s".`, appID,
+		))
 }
 
 func (v *cachedAppProxyConfig) ExtendExpiration(now time.Time, maxAge time.Duration) {

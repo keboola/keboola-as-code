@@ -92,17 +92,22 @@ func (r *Renderer) mapPathCSVValue(c Path, ctx recordctx.Context) (string, error
 
 	if c.Path == "" {
 		value = bodyMap
-	} else {
-		value, _, err = bodyMap.GetNested(c.Path)
-		if err != nil {
-			if c.DefaultValue != nil {
-				value = *c.DefaultValue
-			} else {
-				return "", errors.Wrapf(err, `path "%s" not found in the body`, c.Path)
-			}
+		return r.mapValueToString(value, c)
+	}
+
+	value, _, err = bodyMap.GetNested(c.Path)
+	if err != nil {
+		if c.DefaultValue != nil {
+			value = *c.DefaultValue
+		} else {
+			return "", errors.Wrapf(err, `path "%s" not found in the body`, c.Path)
 		}
 	}
 
+	return r.mapValueToString(value, c)
+}
+
+func (r *Renderer) mapValueToString(value any, c Path) (string, error) {
 	if c.RawString {
 		if stringValue, ok := value.(string); ok {
 			return stringValue, nil

@@ -685,10 +685,11 @@ func logMatches(expected, actual map[string]any) bool {
 				if err != nil {
 					return false
 				}
-			} else {
-				return false
+				continue
 			}
-		} else if !reflect.DeepEqual(expectedValue, actualValue) {
+			return false
+		}
+		if !reflect.DeepEqual(expectedValue, actualValue) {
 			return false
 		}
 	}

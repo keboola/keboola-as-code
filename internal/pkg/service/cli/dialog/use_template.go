@@ -98,9 +98,8 @@ func (d *useTmplInputsDialog) ask(ctx context.Context, isForTest bool, inputsFil
 			if err != nil {
 				if found {
 					return errors.NewNestedError(err, errors.New("please fix the value in the inputs JSON file"))
-				} else {
-					return errors.NewNestedError(err, errors.New("please define value in the inputs JSON file"))
 				}
+				return errors.NewNestedError(err, errors.New("please define value in the inputs JSON file"))
 			}
 			return nil
 		}

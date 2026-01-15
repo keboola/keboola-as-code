@@ -148,8 +148,6 @@ linters:
     misspell:
       ignore-rules:
         - Statuser
-    nestif:
-      min-complexity: 6
     staticcheck:
       checks:
         - all

@@ -252,17 +252,20 @@ func (v *kvWrapper) endOp(op etcd.Op, startTime time.Time, r etcd.OpResponse, er
 	duration := time.Since(startTime)
 	if err != nil {
 		return v.logEnd(err, opStr, keyStr, "", 0, -1, -1, duration)
-	} else if get := r.Get(); get != nil {
-		return v.logEnd(nil, opStr, keyStr, "", get.Header.Revision, get.Count, len(get.Kvs), duration)
-	} else if put := r.Put(); put != nil {
-		return v.logEnd(nil, opStr, keyStr, "", put.Header.Revision, -1, -1, duration)
-	} else if del := r.Del(); del != nil {
-		return v.logEnd(nil, opStr, keyStr, "", del.Header.Revision, del.Deleted, -1, duration)
-	} else if txn := r.Txn(); txn != nil {
-		return v.logEnd(nil, opStr, keyStr, fmt.Sprintf("| succeeded: %t", txn.Succeeded), txn.Header.Revision, -1, -1, duration)
-	} else {
-		return v.logEnd(nil, opStr, keyStr, "", 0, -1, -1, duration)
 	}
+	if get := r.Get(); get != nil {
+		return v.logEnd(nil, opStr, keyStr, "", get.Header.Revision, get.Count, len(get.Kvs), duration)
+	}
+	if put := r.Put(); put != nil {
+		return v.logEnd(nil, opStr, keyStr, "", put.Header.Revision, -1, -1, duration)
+	}
+	if del := r.Del(); del != nil {
+		return v.logEnd(nil, opStr, keyStr, "", del.Header.Revision, del.Deleted, -1, duration)
+	}
+	if txn := r.Txn(); txn != nil {
+		return v.logEnd(nil, opStr, keyStr, fmt.Sprintf("| succeeded: %t", txn.Succeeded), txn.Header.Revision, -1, -1, duration)
+	}
+	return v.logEnd(nil, opStr, keyStr, "", 0, -1, -1, duration)
 }
 
 func (v *kvWrapper) logEnd(err error, op, key, extra string, rev, count int64, loaded int, duration time.Duration) string {
