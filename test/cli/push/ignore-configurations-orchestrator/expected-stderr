@@ -1,0 +1,3 @@
+Error: configurations with dependencies reference ignored configurations:
+  - orchestrator %q references ignored config %q, please add it to .kbcignore:
+      keboola.orchestrator/%%_%%
