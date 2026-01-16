@@ -92,15 +92,18 @@ func (v *resultBase) AddErr(err error) {
 func getResponseHeader(response *RawResponse) *Header {
 	if response == nil {
 		return nil
-	} else if v := response.Get(); v != nil {
-		return v.Header
-	} else if v := response.Del(); v != nil {
-		return v.Header
-	} else if v := response.Put(); v != nil {
-		return v.Header
-	} else if v := response.Txn(); v != nil {
-		return v.Header
-	} else {
-		return nil
 	}
+	if v := response.Get(); v != nil {
+		return v.Header
+	}
+	if v := response.Del(); v != nil {
+		return v.Header
+	}
+	if v := response.Put(); v != nil {
+		return v.Header
+	}
+	if v := response.Txn(); v != nil {
+		return v.Header
+	}
+	return nil
 }

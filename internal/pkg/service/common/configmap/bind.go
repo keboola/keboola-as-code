@@ -369,17 +369,23 @@ func collectValues(cfg BindConfig, flagToField FlagToFieldFn) (*orderedmap.Order
 
 	// Bind flags and ENVs, flags have priority
 	cfg.Flags.VisitAll(func(flag *pflag.Flag) {
-		if fieldPath, ok := flagToField(flag); ok {
-			if flag.Changed {
-				if err := values.SetNestedPath(fieldPath, fieldValue{Value: flag.Value.String(), SetBy: SetByFlag}); err != nil {
+		fieldPath, ok := flagToField(flag)
+		if !ok {
+			return
+		}
+
+		if flag.Changed {
+			if err := values.SetNestedPath(fieldPath, fieldValue{Value: flag.Value.String(), SetBy: SetByFlag}); err != nil {
+				errs.Append(err)
+			}
+			return
+		}
+
+		if cfg.EnvNaming != nil && cfg.Envs != nil {
+			envName := cfg.EnvNaming.FlagToEnv(flag.Name)
+			if envValue, found := cfg.Envs.Lookup(envName); found {
+				if err := values.SetNestedPath(fieldPath, fieldValue{Value: envValue, SetBy: SetByEnv}); err != nil {
 					errs.Append(err)
-				}
-			} else if cfg.EnvNaming != nil && cfg.Envs != nil {
-				envName := cfg.EnvNaming.FlagToEnv(flag.Name)
-				if envValue, found := cfg.Envs.Lookup(envName); found {
-					if err := values.SetNestedPath(fieldPath, fieldValue{Value: envValue, SetBy: SetByEnv}); err != nil {
-						errs.Append(err)
-					}
 				}
 			}
 		}

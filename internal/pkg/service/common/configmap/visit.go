@@ -103,75 +103,7 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 
 	// Handle structure
 	if typ.Kind() == reflect.Struct {
-		// Call callback
-		if err := cfg.OnValue(vc); err != nil {
-			return err
-		}
-
-		for i := range typ.NumField() {
-			// Fill context with field information
-			field := &VisitContext{}
-			field.StructField = typ.Field(i)
-			field.OriginalPath = append(field.OriginalPath, vc.OriginalPath...)
-			field.OriginalPath = append(field.OriginalPath, orderedmap.MapStep(field.StructField.Name))
-			field.MappedPath = append(field.MappedPath, vc.MappedPath...)
-			field.Type = field.StructField.Type
-			field.Leaf = false
-
-			// Get field value, if the parent struct is valid/defined.
-			if value.IsValid() {
-				// Get field value
-				fv := value.Field(i)
-				field.Value = fv
-				field.PrimitiveValue = fv
-
-				// Initialize nil pointer with an empty struct. It is used by the configpatch.BindKVs.
-				if cfg.InitNilPtr && fv.Kind() == reflect.Pointer && fv.IsNil() {
-					fv.Set(reflect.New(field.Type.Elem()))
-				}
-			}
-
-			// Mark field and all its children as sensitive according to the tag
-			field.Sensitive = vc.Sensitive || field.StructField.Tag.Get(sensitiveTag) == "true"
-
-			// Set usage from the tag, or use parent value
-			field.Usage = vc.Usage
-			if usage := field.StructField.Tag.Get(configUsageTag); usage != "" {
-				field.Usage = usage
-			}
-
-			// Set shorthand from the tag, or use parent value
-			field.Shorthand = vc.Shorthand
-			if shorthand := field.StructField.Tag.Get(configShorthandTag); shorthand != "" {
-				field.Shorthand = shorthand
-			}
-
-			// Set validate from the tag
-			if validate := field.StructField.Tag.Get(validateTag); validate != "" {
-				field.Validate = validate
-			}
-
-			// Map field name, ignore skipped fields
-			if fieldName, ok := cfg.OnField(field.StructField, field.OriginalPath); !ok {
-				continue
-			} else if fieldName != "" {
-				field.MappedPath = append(field.MappedPath, orderedmap.MapStep(fieldName))
-			}
-
-			// Step down
-			if err := doVisit(field, cfg); err != nil {
-				return err
-			}
-		}
-
-		// Set nil, if the value is a pointer to an empty struct
-		if cfg.EmptyStructToNilPtr {
-			if vc.Value.CanAddr() && vc.Value.Kind() == reflect.Pointer && vc.Value.Elem().Kind() == reflect.Struct && vc.Value.Elem().IsZero() {
-				vc.Value.Set(reflect.Zero(vc.Value.Type())) // nil is zero value for a pointer
-			}
-		}
-
-		return nil
+		return doVisitStruct(vc, cfg, typ, value)
 	}
 
 	// Handle base types
@@ -236,4 +168,76 @@ func doVisit(vc *VisitContext, cfg VisitConfig) error {
 		// Fallback
 		return onLeaf(value)
 	}
+}
+
+func doVisitStruct(vc *VisitContext, cfg VisitConfig, typ reflect.Type, value reflect.Value) error {
+	// Call callback
+	if err := cfg.OnValue(vc); err != nil {
+		return err
+	}
+
+	for i := range typ.NumField() {
+		// Fill context with field information
+		field := &VisitContext{}
+		field.StructField = typ.Field(i)
+		field.OriginalPath = append(field.OriginalPath, vc.OriginalPath...)
+		field.OriginalPath = append(field.OriginalPath, orderedmap.MapStep(field.StructField.Name))
+		field.MappedPath = append(field.MappedPath, vc.MappedPath...)
+		field.Type = field.StructField.Type
+		field.Leaf = false
+
+		// Get field value, if the parent struct is valid/defined.
+		if value.IsValid() {
+			// Get field value
+			fv := value.Field(i)
+			field.Value = fv
+			field.PrimitiveValue = fv
+
+			// Initialize nil pointer with an empty struct. It is used by the configpatch.BindKVs.
+			if cfg.InitNilPtr && fv.Kind() == reflect.Pointer && fv.IsNil() {
+				fv.Set(reflect.New(field.Type.Elem()))
+			}
+		}
+
+		// Mark field and all its children as sensitive according to the tag
+		field.Sensitive = vc.Sensitive || field.StructField.Tag.Get(sensitiveTag) == "true"
+
+		// Set usage from the tag, or use parent value
+		field.Usage = vc.Usage
+		if usage := field.StructField.Tag.Get(configUsageTag); usage != "" {
+			field.Usage = usage
+		}
+
+		// Set shorthand from the tag, or use parent value
+		field.Shorthand = vc.Shorthand
+		if shorthand := field.StructField.Tag.Get(configShorthandTag); shorthand != "" {
+			field.Shorthand = shorthand
+		}
+
+		// Set validate from the tag
+		if validate := field.StructField.Tag.Get(validateTag); validate != "" {
+			field.Validate = validate
+		}
+
+		// Map field name, ignore skipped fields
+		if fieldName, ok := cfg.OnField(field.StructField, field.OriginalPath); !ok {
+			continue
+		} else if fieldName != "" {
+			field.MappedPath = append(field.MappedPath, orderedmap.MapStep(fieldName))
+		}
+
+		// Step down
+		if err := doVisit(field, cfg); err != nil {
+			return err
+		}
+	}
+
+	// Set nil, if the value is a pointer to an empty struct
+	if cfg.EmptyStructToNilPtr {
+		if vc.Value.CanAddr() && vc.Value.Kind() == reflect.Pointer && vc.Value.Elem().Kind() == reflect.Struct && vc.Value.Elem().IsZero() {
+			vc.Value.Set(reflect.Zero(vc.Value.Type())) // nil is zero value for a pointer
+		}
+	}
+
+	return nil
 }

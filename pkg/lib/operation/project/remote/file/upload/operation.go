@@ -54,20 +54,20 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 		if err != nil {
 			return nil, errors.Errorf(`error reading file "%s": %w`, o.Input, err)
 		}
+	}
 
-		if fi.IsDir() {
-			files, err := os.ReadDir(o.Input)
-			if err != nil {
-				return nil, errors.Errorf(`error reading files in folder "%s": %w`, o.Input, err)
-			}
-			for _, f := range files {
-				_, err := f.Info()
-				if err != nil {
-					return nil, errors.Errorf(`error reading file "%s" in folder "%s": %w`, f.Name(), o.Input, err)
-				}
-			}
-			opts = append(opts, keboola.WithIsSliced(true))
+	if o.Input != "-" && fi.IsDir() {
+		files, err := os.ReadDir(o.Input)
+		if err != nil {
+			return nil, errors.Errorf(`error reading files in folder "%s": %w`, o.Input, err)
 		}
+		for _, f := range files {
+			_, err := f.Info()
+			if err != nil {
+				return nil, errors.Errorf(`error reading file "%s" in folder "%s": %w`, f.Name(), o.Input, err)
+			}
+		}
+		opts = append(opts, keboola.WithIsSliced(true))
 	}
 
 	file, err := d.KeboolaProjectAPI().CreateFileResourceRequest(o.BranchKey.ID, o.Name, opts...).Send(ctx)

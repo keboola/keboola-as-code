@@ -222,20 +222,22 @@ func (t *Template) ProjectsFilePath() string {
 }
 
 func (t *Template) TestsDir(ctx context.Context) (filesystem.Fs, error) {
-	if t.testsDir == nil {
-		if !t.fs.IsDir(ctx, TestsDirectory) {
-			err := t.fs.Mkdir(ctx, TestsDirectory)
-			if err != nil {
-				return nil, err
-			}
-		}
+	if t.testsDir != nil {
+		return t.testsDir, nil
+	}
 
-		testDir, err := t.fs.SubDirFs(TestsDirectory)
-		if err == nil {
-			t.testsDir = testDir
-		} else {
+	if !t.fs.IsDir(ctx, TestsDirectory) {
+		err := t.fs.Mkdir(ctx, TestsDirectory)
+		if err != nil {
 			return nil, err
 		}
+	}
+
+	testDir, err := t.fs.SubDirFs(TestsDirectory)
+	if err == nil {
+		t.testsDir = testDir
+	} else {
+		return nil, err
 	}
 
 	return t.testsDir, nil

@@ -210,20 +210,20 @@ func TestOpForType_WithProcessorMethods_Pointer(t *testing.T) {
 	}
 
 	mapper := func(ctx context.Context, raw *op.RawResponse) (result *testValue, err error) {
-		if response := raw.Get(); response != nil {
-			if len(response.Kvs) == 1 {
-				value := &testValue{}
-				if err := json.Unmarshal(raw.Get().Kvs[0].Value, value); err != nil {
-					return nil, err
-				}
-				if value.Foo == "" {
-					// Return nil without error, if the field is not set
-					return nil, nil
-				}
-				return value, nil
-			}
+		response := raw.Get()
+		if response == nil || len(response.Kvs) != 1 {
+			return nil, errors.New("not found")
 		}
-		return nil, errors.New("not found")
+
+		value := &testValue{}
+		if err := json.Unmarshal(raw.Get().Kvs[0].Value, value); err != nil {
+			return nil, err
+		}
+		if value.Foo == "" {
+			// Return nil without error, if the field is not set
+			return nil, nil
+		}
+		return value, nil
 	}
 
 	log := &strings.Builder{}

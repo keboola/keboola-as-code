@@ -135,48 +135,49 @@ func (r *CachedRepository) Template(ctx context.Context, reference model.Templat
 // update returns an updated copy of the repository if the repository has been changed.
 func (r *CachedRepository) update(ctx context.Context) (*CachedRepository, bool, error) {
 	// Only RemoteRepository can be updated
-	if repo, ok := r.git.(*git.RemoteRepository); ok {
-		// Log start
-		startTime := time.Now()
-		sanitizedURL := url.SanitizeURLString(r.URLAndRef())
-		r.d.Logger().Infof(ctx, `repository "%s" update started`, sanitizedURL)
-
-		// Pull
-		result, err := pullOp.Run(ctx, repo, r.d)
-		if err != nil {
-			r.d.Logger().Errorf(ctx, `error while updating repository "%s": %s`, sanitizedURL, err)
-			return nil, false, err
-		}
-
-		// Done
-		if result.Changed {
-			r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" updated from %s to %s`, sanitizedURL, result.OldHash, result.NewHash)
-		} else {
-			r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" update finished, no change found (%s)`, sanitizedURL, result.NewHash)
-		}
-
-		// No change
-		if !result.Changed {
-			return r, false, nil
-		}
-
-		// Reload template repository
-		fs, unlockFn := r.git.Fs()
-		newData, err := loadRepositoryOp.Run(ctx, r.d, r.repo.Definition(), loadRepositoryOp.WithFs(fs))
-		if err != nil {
-			unlockFn()
-			return nil, false, err
-		}
-
-		// Atomically exchange value, see lock method
-		newRepo := newCachedRepository(ctx, r.d, r.git, unlockFn, newData)
-
-		// Return new value
-		return newRepo, true, nil
+	repo, ok := r.git.(*git.RemoteRepository)
+	if !ok {
+		// No operation for a local repository
+		return r, false, nil
 	}
 
-	// No operation for a local repository
-	return r, false, nil
+	// Log start
+	startTime := time.Now()
+	sanitizedURL := url.SanitizeURLString(r.URLAndRef())
+	r.d.Logger().Infof(ctx, `repository "%s" update started`, sanitizedURL)
+
+	// Pull
+	result, err := pullOp.Run(ctx, repo, r.d)
+	if err != nil {
+		r.d.Logger().Errorf(ctx, `error while updating repository "%s": %s`, sanitizedURL, err)
+		return nil, false, err
+	}
+
+	// Done
+	if result.Changed {
+		r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" updated from %s to %s`, sanitizedURL, result.OldHash, result.NewHash)
+	} else {
+		r.d.Logger().WithDuration(time.Since(startTime)).Infof(ctx, `repository "%s" update finished, no change found (%s)`, sanitizedURL, result.NewHash)
+	}
+
+	// No change
+	if !result.Changed {
+		return r, false, nil
+	}
+
+	// Reload template repository
+	fs, unlockFn := r.git.Fs()
+	newData, err := loadRepositoryOp.Run(ctx, r.d, r.repo.Definition(), loadRepositoryOp.WithFs(fs))
+	if err != nil {
+		unlockFn()
+		return nil, false, err
+	}
+
+	// Atomically exchange value, see lock method
+	newRepo := newCachedRepository(ctx, r.d, r.git, unlockFn, newData)
+
+	// Return new value
+	return newRepo, true, nil
 }
 
 // loadAllTemplates preloads all templates from the repository.

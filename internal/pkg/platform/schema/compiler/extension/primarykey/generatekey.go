@@ -35,16 +35,18 @@ func GenerateKeys(config *gen.Config) error {
 	// Create Go file with a key struct for each schema
 	for _, schema := range graph.Schemas {
 		for _, field := range schema.Fields {
-			if field.Name == "id" {
-				if asMap, ok := field.Annotations[pkAnnotationName]; ok {
-					// asMap is PKAnnotation type serialized to a map
-					pkAnnotation := PKAnnotation{}
-					if err := json.ConvertByJSON(asMap, &pkAnnotation); err != nil {
-						return err
-					}
-					if err := generateKey(targetDir, schema, pkAnnotation); err != nil {
-						return err
-					}
+			if field.Name != "id" {
+				continue
+			}
+
+			if asMap, ok := field.Annotations[pkAnnotationName]; ok {
+				// asMap is PKAnnotation type serialized to a map
+				pkAnnotation := PKAnnotation{}
+				if err := json.ConvertByJSON(asMap, &pkAnnotation); err != nil {
+					return err
+				}
+				if err := generateKey(targetDir, schema, pkAnnotation); err != nil {
+					return err
 				}
 			}
 		}

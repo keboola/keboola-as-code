@@ -56,26 +56,24 @@ func ProjectScope(cfg ProjectScopeConfig) Middleware {
 			if projectScope == nil {
 				// Get public scope
 				publicScope := ctx.Value(cfg.PublicScopeCtxKey)
-				if publicScope != nil {
-					// Try to get token from header
-					token := req.Header.Get(cfg.TokenHeader)
-					if token != "" {
-						// Attempt to create project scope
-						if ps, err := cfg.CreateProjectScope(ctx, publicScope, token); err == nil {
-							projectScope = ps
-							// Store project scope in context
-							ctx = context.WithValue(ctx, cfg.ProjectScopeCtxKey, projectScope)
-							req = req.WithContext(ctx)
-						}
-						// Note: We silently ignore errors here because:
-						// - This is an optimization for early scope creation
-						// - The actual auth middleware will handle auth errors properly
-						// - We don't want to block requests if early scope creation fails
+				// Try to get token from header
+				token := req.Header.Get(cfg.TokenHeader)
+				if publicScope != nil && token != "" {
+					// Attempt to create project scope
+					if ps, err := cfg.CreateProjectScope(ctx, publicScope, token); err == nil {
+						projectScope = ps
+						// Store project scope in context
+						ctx = context.WithValue(ctx, cfg.ProjectScopeCtxKey, projectScope)
+						req = req.WithContext(ctx)
 					}
+					// Note: We silently ignore errors here because:
+					// - This is an optimization for early scope creation
+					// - The actual auth middleware will handle auth errors properly
+					// - We don't want to block requests if early scope creation fails
 				}
 			}
 
-			// If AttributeExtractor is provided and we have a project scope, enrich context with attributes
+			// If AttributeExtractor is provided, and we have a project scope, enrich context with attributes
 			if projectScope != nil && cfg.AttributeExtractor != nil {
 				attrs := cfg.AttributeExtractor(projectScope)
 				if len(attrs) > 0 {

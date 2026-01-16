@@ -646,28 +646,29 @@ func processPathReference(path string, requests map[string]*APIRequest) (string,
 		return "", err
 	}
 	regexPathRes := regexPath.FindStringSubmatch(path)
-	if regexPathRes != nil {
-		if len(regexPathRes) != 3 {
-			return "", errors.Errorf("invalid reference in the request path: %s", path)
-		}
-		refReq, ok := requests[regexPathRes[1]]
-		if !ok || refReq.Response == nil {
-			return "", errors.Errorf("invalid request reference in the request path: %s", path)
-		}
-		refReqURL, found, err := refReq.Response.GetNested(regexPathRes[2])
-		if err != nil {
-			return "", err
-		}
-		if !found {
-			return "", errors.Errorf("invalid response reference in the request path: %s", path)
-		}
-		refURLParsed, err := url.Parse(refReqURL.(string))
-		if err != nil {
-			return "", errors.Errorf(`invalid referenced url "%s": %s`, refReqURL, err.Error())
-		}
-		return refURLParsed.Path, nil
+	if regexPathRes == nil {
+		return path, nil
 	}
-	return path, nil
+
+	if len(regexPathRes) != 3 {
+		return "", errors.Errorf("invalid reference in the request path: %s", path)
+	}
+	refReq, ok := requests[regexPathRes[1]]
+	if !ok || refReq.Response == nil {
+		return "", errors.Errorf("invalid request reference in the request path: %s", path)
+	}
+	refReqURL, found, err := refReq.Response.GetNested(regexPathRes[2])
+	if err != nil {
+		return "", err
+	}
+	if !found {
+		return "", errors.Errorf("invalid response reference in the request path: %s", path)
+	}
+	refURLParsed, err := url.Parse(refReqURL.(string))
+	if err != nil {
+		return "", errors.Errorf(`invalid referenced url "%s": %s`, refReqURL, err.Error())
+	}
+	return refURLParsed.Path, nil
 }
 
 func (t *Test) ReadFileFromTestDir(path string) string {

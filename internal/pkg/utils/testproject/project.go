@@ -308,48 +308,8 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 					p.logf("✔️ Bucket \"%s\".", apiBucket.BucketID)
 
 					for _, t := range b.Tables {
-						tableKey := keboola.TableKey{BranchID: p.defaultBranch.ID, TableID: t.ID}
-						if len(t.Rows) > 0 {
-							p.logf("▶ Table (with rows) \"%s\"...", t.Name)
-
-							fileName := fmt.Sprintf("%s.data", t.ID)
-							p.logf("▶ Table \"%s\" file resource \"%s\"...", t.Name, fileName)
-							file, err := p.keboolaProjectAPI.CreateFileResourceRequest(p.defaultBranch.ID, fileName).Send(ctx)
-							if err != nil {
-								return err
-							}
-							p.logf("✔️ Table \"%s\" file resource \"%s\".", t.Name, fileName)
-
-							p.logf("▶ Upload file \"%s\"...", fileName)
-							buf := bytes.NewBuffer([]byte{})
-							w := csv.NewWriter(buf)
-							err = w.Write(t.Columns)
-							if err != nil {
-								return err
-							}
-							err = w.WriteAll(t.Rows)
-							if err != nil {
-								return err
-							}
-							_, err = keboola.Upload(ctx, file, buf)
-							if err != nil {
-								return err
-							}
-							p.logf("✔️ Upload file \"%s\".", fileName)
-
-							p.logf("▶ Table \"%s\" from file resource \"%s\"...", t.Name, fileName)
-							_, err = p.keboolaProjectAPI.CreateTableFromFileRequest(tableKey, file.FileKey, keboola.WithPrimaryKey(t.PrimaryKey)).Send(ctx)
-							if err != nil {
-								return err
-							}
-							p.logf("✔️ Table (with rows) \"%s\"(%s).", t.Name, t.ID)
-						} else {
-							p.logf("▶ Table \"%s\"...", t.Name)
-							_, err = p.keboolaProjectAPI.CreateTableRequest(tableKey, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey)).Send(ctx)
-							if err != nil {
-								return err
-							}
-							p.logf("✔️ Table \"%s\"(%s).", t.Name, t.ID)
+						if err := p.prepareBucketTable(ctx, t); err != nil {
+							return err
 						}
 					}
 
@@ -363,6 +323,58 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	if err := grp.Wait(); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+// prepareBucketTable creates a table in the default branch.
+// If the table has rows, it creates a file resource, uploads the data, and creates the table from the file.
+// Otherwise, it creates an empty table with the specified columns.
+func (p *Project) prepareBucketTable(ctx context.Context, t *fixtures.Table) error {
+	tableKey := keboola.TableKey{BranchID: p.defaultBranch.ID, TableID: t.ID}
+	if len(t.Rows) == 0 {
+		p.logf("▶ Table \"%s\"...", t.Name)
+		_, err := p.keboolaProjectAPI.CreateTableRequest(tableKey, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey)).Send(ctx)
+		if err != nil {
+			return err
+		}
+		p.logf("✔️ Table \"%s\"(%s).", t.Name, t.ID)
+		return nil
+	}
+
+	p.logf("▶ Table (with rows) \"%s\"...", t.Name)
+
+	fileName := fmt.Sprintf("%s.data", t.ID)
+	p.logf("▶ Table \"%s\" file resource \"%s\"...", t.Name, fileName)
+	file, err := p.keboolaProjectAPI.CreateFileResourceRequest(p.defaultBranch.ID, fileName).Send(ctx)
+	if err != nil {
+		return err
+	}
+	p.logf("✔️ Table \"%s\" file resource \"%s\".", t.Name, fileName)
+
+	p.logf("▶ Upload file \"%s\"...", fileName)
+	buf := bytes.NewBuffer([]byte{})
+	w := csv.NewWriter(buf)
+	err = w.Write(t.Columns)
+	if err != nil {
+		return err
+	}
+	err = w.WriteAll(t.Rows)
+	if err != nil {
+		return err
+	}
+	_, err = keboola.Upload(ctx, file, buf)
+	if err != nil {
+		return err
+	}
+	p.logf("✔️ Upload file \"%s\".", fileName)
+
+	p.logf("▶ Table \"%s\" from file resource \"%s\"...", t.Name, fileName)
+	_, err = p.keboolaProjectAPI.CreateTableFromFileRequest(tableKey, file.FileKey, keboola.WithPrimaryKey(t.PrimaryKey)).Send(ctx)
+	if err != nil {
+		return err
+	}
+	p.logf("✔️ Table (with rows) \"%s\"(%s).", t.Name, t.ID)
 
 	return nil
 }
@@ -482,50 +494,61 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 	return nil
 }
 
+// createDefaultBranchRequest creates a request for the default branch.
+// The default branch already exists and cannot be created/deleted, so this only updates its description if needed.
+func (p *Project) createDefaultBranchRequest(fixture *fixtures.BranchState) request.APIRequest[*keboola.Branch] {
+	// Reset default branch description (default branch cannot be created/deleted)
+	req := request.NewNoOperationAPIRequest(p.defaultBranch) // default branch already exists
+	if p.defaultBranch.Description != fixture.Description {
+		req = req.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
+			branch.Description = fixture.Description
+			return p.keboolaProjectAPI.
+				UpdateBranchRequest(branch, []string{"description"}).
+				WithBefore(func(ctx context.Context) error {
+					p.logf("▶ Default branch description ...")
+					return nil
+				}).
+				WithOnComplete(func(ctx context.Context, _ *keboola.Branch, err error) error {
+					if err == nil {
+						p.logf("✔️ Default branch description.")
+						return nil
+					} else {
+						return errors.Errorf("cannot set default branch description: %w", err)
+					}
+				}).
+				SendOrErr(ctx)
+		})
+	}
+	return req
+}
+
+// createNewBranchRequest creates a request for a new non-default branch.
+func (p *Project) createNewBranchRequest(fixture *fixtures.BranchState, createBranchSem *semaphore.Weighted) request.APIRequest[*keboola.Branch] {
+	return p.keboolaProjectAPI.
+		CreateBranchRequest(fixture.ToAPI()).
+		WithBefore(func(ctx context.Context) error {
+			p.logf("▶ Branch \"%s\"...", fixture.Name)
+			return createBranchSem.Acquire(ctx, 1)
+		}).
+		WithOnComplete(func(ctx context.Context, branch *keboola.Branch, err error) error {
+			createBranchSem.Release(1)
+			if err == nil {
+				p.logf("✔️ Branch \"%s\"(%s).", fixture.Name, branch.ID)
+				return nil
+			} else {
+				return errors.Errorf(`cannot create branch: %w`, err)
+			}
+		})
+}
+
 func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranchSem *semaphore.Weighted) request.APIRequest[*keboola.Branch] {
 	var req request.APIRequest[*keboola.Branch]
 
 	// Create branch
 	if fixture.IsDefault {
-		// Reset default branch description (default branch cannot be created/deleted)
-		req = request.NewNoOperationAPIRequest(p.defaultBranch) // default branch already exists
-		if p.defaultBranch.Description != fixture.Description {
-			req = req.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
-				branch.Description = fixture.Description
-				return p.keboolaProjectAPI.
-					UpdateBranchRequest(branch, []string{"description"}).
-					WithBefore(func(ctx context.Context) error {
-						p.logf("▶ Default branch description ...")
-						return nil
-					}).
-					WithOnComplete(func(ctx context.Context, _ *keboola.Branch, err error) error {
-						if err == nil {
-							p.logf("✔️ Default branch description.")
-							return nil
-						} else {
-							return errors.Errorf("cannot set default branch description: %w", err)
-						}
-					}).
-					SendOrErr(ctx)
-			})
-		}
+		req = p.createDefaultBranchRequest(fixture)
 	} else {
-		// Create a new branch
-		req = p.keboolaProjectAPI.
-			CreateBranchRequest(fixture.ToAPI()).
-			WithBefore(func(ctx context.Context) error {
-				p.logf("▶ Branch \"%s\"...", fixture.Name)
-				return createBranchSem.Acquire(ctx, 1)
-			}).
-			WithOnComplete(func(ctx context.Context, branch *keboola.Branch, err error) error {
-				createBranchSem.Release(1)
-				if err == nil {
-					p.logf("✔️ Branch \"%s\"(%s).", fixture.Name, branch.ID)
-					return nil
-				} else {
-					return errors.Errorf(`cannot create branch: %w`, err)
-				}
-			})
+		req = p.createNewBranchRequest(fixture, createBranchSem)
 	}
 
 	// Branch is ready

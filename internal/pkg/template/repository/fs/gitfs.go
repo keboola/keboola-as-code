@@ -48,44 +48,7 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 	fs := gitRepository.WorkingFs()
 
 	if sparse {
-		// Add repository manifest to sparse git repository
-		if err := gitRepository.Load(ctx, ".keboola/repository.json"); err != nil {
-			return nil, err
-		}
-
-		// Load repository manifest
-		repoManifest, err := repository.LoadManifest(ctx, fs)
-		if err != nil {
-			return nil, err
-		}
-
-		// Get version record
-		tmpl := config.onlyForTemplate
-		templateRecord, versionRecord, err := repoManifest.GetVersion(tmpl.TemplateID(), tmpl.Version())
-		if err != nil {
-			// version or template not found
-			return nil, errors.NewNestedError(
-				err,
-				errors.Errorf(`searched in git repository "%s"`, gitRepository.URL()),
-				errors.Errorf(`reference "%s"`, gitRepository.Ref()),
-			)
-		}
-
-		// Load template src directory
-		srcDir := filesystem.Join(templateRecord.Path, versionRecord.Path, template.SrcDirectory)
-		if err := gitRepository.Load(ctx, srcDir); err != nil {
-			return nil, err
-		}
-		if !fs.Exists(ctx, srcDir) {
-			return nil, errors.NewNestedError(
-				errors.Errorf(`folder "%s" not found`, srcDir),
-				errors.Errorf(`searched in git repository "%s"`, gitRepository.URL()),
-				errors.Errorf(`reference "%s"`, gitRepository.Ref()),
-			)
-		}
-
-		// Load common directory, shared between all templates in repository, if it exists
-		if err := gitRepository.Load(ctx, repository.CommonDirectory); err != nil {
+		if err := loadFiles(ctx, gitRepository, fs, config.onlyForTemplate); err != nil {
 			return nil, err
 		}
 	}
@@ -96,4 +59,48 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 		return nil, err
 	}
 	return memoryFs, nil
+}
+
+func loadFiles(ctx context.Context, gitRepository *git.RemoteRepository, fs filesystem.Fs, tmpl model.TemplateRef) error {
+	// Add repository manifest to sparse git repository
+	if err := gitRepository.Load(ctx, ".keboola/repository.json"); err != nil {
+		return err
+	}
+
+	// Load repository manifest
+	repoManifest, err := repository.LoadManifest(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	// Get version record
+	templateRecord, versionRecord, err := repoManifest.GetVersion(tmpl.TemplateID(), tmpl.Version())
+	if err != nil {
+		// version or template not found
+		return errors.NewNestedError(
+			err,
+			errors.Errorf(`searched in git repository "%s"`, gitRepository.URL()),
+			errors.Errorf(`reference "%s"`, gitRepository.Ref()),
+		)
+	}
+
+	// Load template src directory
+	srcDir := filesystem.Join(templateRecord.Path, versionRecord.Path, template.SrcDirectory)
+	if err := gitRepository.Load(ctx, srcDir); err != nil {
+		return err
+	}
+	if !fs.Exists(ctx, srcDir) {
+		return errors.NewNestedError(
+			errors.Errorf(`folder "%s" not found`, srcDir),
+			errors.Errorf(`searched in git repository "%s"`, gitRepository.URL()),
+			errors.Errorf(`reference "%s"`, gitRepository.Ref()),
+		)
+	}
+
+	// Load common directory, shared between all templates in repository, if it exists
+	if err := gitRepository.Load(ctx, repository.CommonDirectory); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -18,49 +18,54 @@ func (m *Manager) rename(ctx context.Context, actions []model.RenameAction, clea
 	// Evaluate
 	errs := errors.NewMultiError()
 	warnings := errors.NewMultiError()
-	var newPaths []string
-	var pathsToRemove []string
+	newPaths := make([]string, 0)
+	pathsToRemove := make([]string, 0)
+	// var newPaths []string
+	// var pathsToRemove []string
 	m.logger.Debugf(ctx, `Starting renaming of the %d paths.`, len(actions))
 	for _, action := range actions {
 		// Deep copy
 		err := m.fs.Copy(ctx, action.RenameFrom, action.NewPath)
 
-		if err != nil {
-			// If destination exists and cleanup is enabled, attempt to remove and retry
-			if cleanup && strings.Contains(err.Error(), "destination exists") {
-				if rmErr := m.fs.Remove(ctx, action.NewPath); rmErr != nil {
-					errs.AppendWithPrefixf(rmErr, `cannot remove existing destination "%s"`, action.NewPath)
-				} else if retryErr := m.fs.Copy(ctx, action.RenameFrom, action.NewPath); retryErr != nil {
-					errs.AppendWithPrefixf(retryErr, `cannot copy "%s" after cleanup`, action.Description)
-				} else {
-					// proceed as success path
-					// Update manifest
-					if err := m.manifest.PersistRecord(action.Manifest); err != nil {
-						errs.AppendWithPrefixf(err, `cannot persist "%s"`, action.Manifest.Desc())
-					}
-					if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
-						action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
-					}
-					newPaths = append(newPaths, action.NewPath)
-					pathsToRemove = append(pathsToRemove, action.RenameFrom)
-					continue
-				}
-			} else {
-				errs.AppendWithPrefixf(err, `cannot copy "%s"`, action.Description)
-			}
-		} else {
-			// Update manifest
+		if err == nil {
+			// Success - update manifest and schedule for removal
 			if err := m.manifest.PersistRecord(action.Manifest); err != nil {
 				errs.AppendWithPrefixf(err, `cannot persist "%s"`, action.Manifest.Desc())
 			}
 			if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
 				action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
 			}
-
-			// Remove old path
 			newPaths = append(newPaths, action.NewPath)
 			pathsToRemove = append(pathsToRemove, action.RenameFrom)
+			continue
 		}
+
+		// Handle error - try cleanup if applicable
+		if !cleanup || !strings.Contains(err.Error(), "destination exists") {
+			errs.AppendWithPrefixf(err, `cannot copy "%s"`, action.Description)
+			continue
+		}
+
+		// Attempt to remove destination and retry
+		if rmErr := m.fs.Remove(ctx, action.NewPath); rmErr != nil {
+			errs.AppendWithPrefixf(rmErr, `cannot remove existing destination "%s"`, action.NewPath)
+			continue
+		}
+
+		if retryErr := m.fs.Copy(ctx, action.RenameFrom, action.NewPath); retryErr != nil {
+			errs.AppendWithPrefixf(retryErr, `cannot copy "%s" after cleanup`, action.Description)
+			continue
+		}
+
+		// Retry succeeded - update manifest and schedule for removal
+		if err := m.manifest.PersistRecord(action.Manifest); err != nil {
+			errs.AppendWithPrefixf(err, `cannot persist "%s"`, action.Manifest.Desc())
+		}
+		if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
+			action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
+		}
+		newPaths = append(newPaths, action.NewPath)
+		pathsToRemove = append(pathsToRemove, action.RenameFrom)
 	}
 
 	if errs.Len() == 0 {

@@ -201,25 +201,27 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...Asser
 				continue
 			}
 
-			if wildcards.Compare(expected.Key, actual.Key) == nil {
-				matchedExpected[e] = true
-				matchedActual[a] = true
-				if err := wildcards.Compare(expected.Value, actual.Value); err == nil {
-					// Value matched, check lease presence.
-					if expected.Lease == 1 && actual.Lease == 0 {
-						assert.Fail(t, fmt.Sprintf(`The key "%s" is not supposed to have a lease, but it was found.`, actual.Key))
-					} else if expected.Lease == 0 && actual.Lease > 0 {
-						assert.Fail(t, fmt.Sprintf(`The key "%s" is supposed to have lease, but it was not found.`, actual.Key))
-					}
-					break
-				} else {
-					msg := fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match the expected key\n\"%s\"", actual.Key, expected.Key)
-					if c.expectedStateFromFile != "" {
-						msg += fmt.Sprintf("\ndefined in the file\n\"%s\"", c.expectedStateFromFile)
-					}
-					msg += fmt.Sprintf("\n%s", err)
-					assert.Fail(t, msg)
+			if wildcards.Compare(expected.Key, actual.Key) != nil {
+				continue
+			}
+
+			matchedExpected[e] = true
+			matchedActual[a] = true
+			if err := wildcards.Compare(expected.Value, actual.Value); err == nil {
+				// Value matched, check lease presence.
+				if expected.Lease == 1 && actual.Lease == 0 {
+					assert.Fail(t, fmt.Sprintf(`The key "%s" is not supposed to have a lease, but it was found.`, actual.Key))
+				} else if expected.Lease == 0 && actual.Lease > 0 {
+					assert.Fail(t, fmt.Sprintf(`The key "%s" is supposed to have lease, but it was not found.`, actual.Key))
 				}
+				break
+			} else {
+				msg := fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match the expected key\n\"%s\"", actual.Key, expected.Key)
+				if c.expectedStateFromFile != "" {
+					msg += fmt.Sprintf("\ndefined in the file\n\"%s\"", c.expectedStateFromFile)
+				}
+				msg += fmt.Sprintf("\n%s", err)
+				assert.Fail(t, msg)
 			}
 		}
 	}

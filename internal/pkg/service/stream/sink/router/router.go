@@ -265,45 +265,48 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	r.metrics.sourceDuration.Record(finalizationCtx, durationMs, metric.WithAttributes(attrs...))
 	r.metrics.sourceBytes.Add(finalizationCtx, int64(c.BodyLength()), metric.WithAttributes(attrs...))
 
+	if result.FailedSinks == 0 {
+		return result
+	}
+
 	// Log errors when has_error is true.
 	// This ensures that when the metric has_error:true is reported, there is a corresponding log entry in Datadog.
 	// This is important because some errors (e.g., 400 Bad Request) are not logged at the sink level,
 	// but they still set has_error:true in the metric.
-	if result.FailedSinks > 0 {
-		// Collect failed sink information for logging
-		var failedSinkDetails []string
-		for _, sinkResult := range result.Sinks {
-			if sinkResult.error != nil {
-				// Format error message for the failed sink
-				var errorMsg string
-				var withMsg svcerrors.WithUserMessage
-				if errors.As(sinkResult.error, &withMsg) {
-					errorMsg = withMsg.ErrorUserMessage()
-				} else {
-					errorMsg = errors.Format(sinkResult.error, errors.FormatAsSentences())
-				}
-				failedSinkDetails = append(
-					failedSinkDetails,
-					errors.Errorf("sink %s: %s", sinkResult.SinkID, errorMsg).Error(),
-				)
+
+	// Collect failed sink information for logging
+	var failedSinkDetails []string
+	for _, sinkResult := range result.Sinks {
+		if sinkResult.error != nil {
+			// Format error message for the failed sink
+			var errorMsg string
+			var withMsg svcerrors.WithUserMessage
+			if errors.As(sinkResult.error, &withMsg) {
+				errorMsg = withMsg.ErrorUserMessage()
+			} else {
+				errorMsg = errors.Format(sinkResult.error, errors.FormatAsSentences())
 			}
+			failedSinkDetails = append(
+				failedSinkDetails,
+				errors.Errorf("sink %s: %s", sinkResult.SinkID, errorMsg).Error(),
+			)
 		}
+	}
 
-		// Create log message with failed sink details
-		logMsg := errors.Errorf(
-			"source record processing failed: %d/%d sinks failed. Failed sinks: %s",
-			result.FailedSinks,
-			result.AllSinks,
-			strings.Join(failedSinkDetails, "; "),
-		).Error()
+	// Create log message with failed sink details
+	logMsg := errors.Errorf(
+		"source record processing failed: %d/%d sinks failed. Failed sinks: %s",
+		result.FailedSinks,
+		result.AllSinks,
+		strings.Join(failedSinkDetails, "; "),
+	).Error()
 
-		// Log with appropriate level based on status code
-		// Use Error level for server errors (5xx), Warn level for client errors (4xx)
-		if result.StatusCode >= http.StatusInternalServerError {
-			r.logger.Errorf(finalizationCtx, logMsg)
-		} else {
-			r.logger.Warnf(finalizationCtx, logMsg)
-		}
+	// Log with appropriate level based on status code
+	// Use Error level for server errors (5xx), Warn level for client errors (4xx)
+	if result.StatusCode >= http.StatusInternalServerError {
+		r.logger.Errorf(finalizationCtx, logMsg)
+	} else {
+		r.logger.Warnf(finalizationCtx, logMsg)
 	}
 
 	return result

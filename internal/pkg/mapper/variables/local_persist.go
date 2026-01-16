@@ -64,7 +64,9 @@ func (m *variablesMapper) AfterLocalOperation(_ context.Context, changes *model.
 			if component.IsVariables() {
 				configs[config.ConfigKey] = true
 			}
-		} else if row, ok := object.(*model.ConfigRow); ok {
+			continue
+		}
+		if row, ok := object.(*model.ConfigRow); ok {
 			// Variables values row?
 			component, err := m.state.Components().GetOrErr(row.ComponentID)
 			if err != nil {

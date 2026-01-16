@@ -36,33 +36,7 @@ func (p *Dialogs) SelectConfig(all []*model.ConfigWithRows, label string, cfg co
 
 func (p *Dialogs) SelectConfigs(all []*model.ConfigWithRows, label string, configs configmap.Value[string]) (results []*model.ConfigWithRows, err error) {
 	if configs.IsSet() {
-		// Create configs map
-		configByKey := make(map[string]*model.ConfigWithRows)
-		for _, config := range all {
-			configByKey[fmt.Sprintf(`%s:%s`, config.ComponentID, config.ID)] = config
-		}
-
-		// Parse user input
-		errs := errors.NewMultiError()
-		for item := range strings.SplitSeq(configs.Value, `,`) {
-			item = strings.TrimSpace(item)
-			if len(item) == 0 {
-				continue
-			}
-
-			// Check [componentId]:[configId] format
-			if len(strings.Split(item, `:`)) != 2 {
-				errs.Append(errors.Errorf(`cannot parse "%s", must be in "[componentId]:[configId]" format`, item))
-				continue
-			}
-
-			// Map to config
-			if config, ok := configByKey[item]; ok {
-				results = append(results, config)
-			} else {
-				errs.Append(errors.Errorf(`config "%s" not found`, item))
-			}
-		}
+		results = parseUserInput(all, configs, results)
 	} else {
 		indexes, ok := p.MultiSelectIndex(&prompt.MultiSelectIndex{
 			Label:     label,
@@ -81,6 +55,38 @@ func (p *Dialogs) SelectConfigs(all []*model.ConfigWithRows, label string, confi
 	}
 
 	return results, nil
+}
+
+func parseUserInput(all []*model.ConfigWithRows, configs configmap.Value[string], results []*model.ConfigWithRows) []*model.ConfigWithRows {
+	// Create configs map
+	configByKey := make(map[string]*model.ConfigWithRows)
+	for _, config := range all {
+		configByKey[fmt.Sprintf(`%s:%s`, config.ComponentID, config.ID)] = config
+	}
+
+	// Parse user input
+	errs := errors.NewMultiError()
+	for item := range strings.SplitSeq(configs.Value, `,`) {
+		item = strings.TrimSpace(item)
+		if len(item) == 0 {
+			continue
+		}
+
+		// Check [componentId]:[configId] format
+		if len(strings.Split(item, `:`)) != 2 {
+			errs.Append(errors.Errorf(`cannot parse "%s", must be in "[componentId]:[configId]" format`, item))
+			continue
+		}
+
+		// Map to config
+		if config, ok := configByKey[item]; ok {
+			results = append(results, config)
+		} else {
+			errs.Append(errors.Errorf(`config "%s" not found`, item))
+		}
+	}
+
+	return results
 }
 
 func configsSelectOpts(all []*model.ConfigWithRows) []string {

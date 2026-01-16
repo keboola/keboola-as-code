@@ -91,17 +91,17 @@ func (v *TemplateRecord) GetVersionOrErr(wantedStr string) (VersionRecord, error
 	// Parse version
 	var wanted model.SemVersion
 	if wantedStr == "" {
-		if v, err := v.DefaultVersionOrErr(); err != nil {
+		v, err := v.DefaultVersionOrErr()
+		if err != nil {
 			return VersionRecord{}, err
-		} else {
-			wanted = v.Version
 		}
+		wanted = v.Version
 	} else {
-		if v, err := model.NewSemVersion(wantedStr); err != nil {
+		v, err := model.NewSemVersion(wantedStr)
+		if err != nil {
 			return VersionRecord{}, err
-		} else {
-			wanted = v
 		}
+		wanted = v
 	}
 
 	// Get version
@@ -119,7 +119,6 @@ func (v *TemplateRecord) GetClosestVersion(wanted model.SemVersion) (VersionReco
 	if version, found := v.GetVersion(wanted.ToMinor()); found {
 		return version, true
 	}
-
 	if version, found := v.GetVersion(wanted.ToMajor()); found {
 		return version, true
 	}

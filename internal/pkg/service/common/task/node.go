@@ -321,33 +321,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	})
 
 	// Set task entity result
-	if result.Error == nil {
-		task.Result = result.Result
-	} else {
-		task.Error = result.Error.Error()
-		task.UserError = &Error{}
-
-		var errWithName svcerrors.WithName
-		if errors.As(result.Error, &errWithName) {
-			task.UserError.Name = errWithName.ErrorName()
-		} else {
-			task.UserError.Name = "unknownError"
-		}
-
-		var errWithUserMessage svcerrors.WithUserMessage
-		if errors.As(result.Error, &errWithUserMessage) {
-			task.UserError.Message = errWithUserMessage.ErrorUserMessage()
-		} else {
-			task.UserError.Message = "Unknown error"
-		}
-
-		var errWithExceptionID svcerrors.WithExceptionID
-		if errors.As(result.Error, &errWithExceptionID) {
-			task.UserError.ExceptionID = errWithExceptionID.ErrorExceptionID()
-		} else {
-			task.UserError.ExceptionID = n.exceptionIDPrefix + idgenerator.TaskExceptionID()
-		}
-	}
+	n.setTaskResult(&task, result)
 
 	// Update telemetry
 	span.SetAttributes(spanEndAttrs(&task, result)...)
@@ -389,6 +363,40 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	logger.Debugf(ctx, `lock released "%s"`, task.Lock.Key())
 
 	return result, nil
+}
+
+// setTaskResult sets the task result or error information.
+// If the result contains an error, it extracts error details (name, message, exception ID) from the error.
+// Otherwise, it sets the task result value.
+func (n *Node) setTaskResult(task *Task, result Result) {
+	if result.Error == nil {
+		task.Result = result.Result
+		return
+	}
+
+	task.Error = result.Error.Error()
+	task.UserError = &Error{}
+
+	var errWithName svcerrors.WithName
+	if errors.As(result.Error, &errWithName) {
+		task.UserError.Name = errWithName.ErrorName()
+	} else {
+		task.UserError.Name = "unknownError"
+	}
+
+	var errWithUserMessage svcerrors.WithUserMessage
+	if errors.As(result.Error, &errWithUserMessage) {
+		task.UserError.Message = errWithUserMessage.ErrorUserMessage()
+	} else {
+		task.UserError.Message = "Unknown error"
+	}
+
+	var errWithExceptionID svcerrors.WithExceptionID
+	if errors.As(result.Error, &errWithExceptionID) {
+		task.UserError.ExceptionID = errWithExceptionID.ErrorExceptionID()
+	} else {
+		task.UserError.ExceptionID = n.exceptionIDPrefix + idgenerator.TaskExceptionID()
+	}
 }
 
 // lockTaskLocally guarantees that the task runs at most once on the Worker node.

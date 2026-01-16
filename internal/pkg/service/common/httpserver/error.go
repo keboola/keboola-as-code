@@ -102,35 +102,39 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 	// Log error
 	var logEnabledProvider serviceerrors.WithErrorLogEnabled
 	if !errors.As(err, &logEnabledProvider) || logEnabledProvider.ErrorLogEnabled() {
-		// Log message
-		var logMessage string
-		var logMessageProvider serviceerrors.WithLogMessage
-		if errors.As(err, &logMessageProvider) {
-			logMessage = logMessageProvider.ErrorLogMessage()
-		} else {
-			logMessage = errors.Format(err, errors.FormatWithStack())
-		}
-
-		// Attributes
-		attrs := datadog.ErrorAttrs(err)
-		if response.ExceptionID != nil {
-			attrs = append(attrs, attribute.String("exceptionId", *response.ExceptionID))
-		}
-		if response.Name != "" {
-			attrs = append(attrs, attribute.String("error.name", response.Name))
-		}
-		attrs = append(attrs, attribute.String("response", json.MustEncodeString(response, false)))
-
-		// Level
-		logger := wr.logger.With(attrs...)
-		if response.StatusCode > 499 {
-			logger.Error(ctx, logMessage)
-		} else {
-			logger.Info(ctx, logMessage)
-		}
+		logError(ctx, err, response, wr.logger)
 	}
 
 	// Write response
 	_, err = w.Write([]byte(json.MustEncodeString(response, true)))
 	return err
+}
+
+func logError(ctx context.Context, err error, response *serviceerrors.UnexpectedError, logger log.Logger) {
+	// Log message
+	var logMessage string
+	var logMessageProvider serviceerrors.WithLogMessage
+	if errors.As(err, &logMessageProvider) {
+		logMessage = logMessageProvider.ErrorLogMessage()
+	} else {
+		logMessage = errors.Format(err, errors.FormatWithStack())
+	}
+
+	// Attributes
+	attrs := datadog.ErrorAttrs(err)
+	if response.ExceptionID != nil {
+		attrs = append(attrs, attribute.String("exceptionId", *response.ExceptionID))
+	}
+	if response.Name != "" {
+		attrs = append(attrs, attribute.String("error.name", response.Name))
+	}
+	attrs = append(attrs, attribute.String("response", json.MustEncodeString(response, false)))
+
+	// Level
+	logger = logger.With(attrs...)
+	if response.StatusCode > 499 {
+		logger.Error(ctx, logMessage)
+	} else {
+		logger.Info(ctx, logMessage)
+	}
 }
