@@ -143,59 +143,67 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 	conditionalReqs := make(map[string][]conditionalRequirement)
 
 	m.VisitAllRecursive(func(path orderedmap.Path, value any, parent any) {
+		lastStep := path.Last()
+
 		// Required field in a JSON schema should be an array of required nested fields.
 		// But, for historical reasons, in Keboola components, "required: true" and "required: false" are also used.
 		// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
-		if path.Last() == orderedmap.MapStep("required") {
+		if lastStep == orderedmap.MapStep("required") {
 			if _, ok := value.(bool); ok {
 				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
 					parentMap.Delete("required")
 				}
 			}
+			return
 		}
 
 		// Empty enums are removed, we're using those for asynchronously loaded enums.
-		if path.Last() == orderedmap.MapStep("enum") {
+		if lastStep == orderedmap.MapStep("enum") {
 			if arr, ok := value.([]any); ok && len(arr) == 0 {
 				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
 					parentMap.Delete("enum")
 				}
 			}
+			return
 		}
 
 		// Handle options.dependencies - collect conditional requirements
 		// Path pattern: .../properties/<fieldName>/options/dependencies
-		if path.Last() == orderedmap.MapStep("dependencies") {
-			pathLen := len(path)
-			if pathLen >= 4 {
-				// Check if this is options.dependencies pattern
-				if path[pathLen-2] == orderedmap.MapStep("options") {
-					// Get the field name (two levels up from "options")
-					if fieldStep, ok := path[pathLen-3].(orderedmap.MapStep); ok {
-						// Check if we're inside "properties"
-						if pathLen >= 4 && path[pathLen-4] == orderedmap.MapStep("properties") {
-							// Get dependencies map
-							if depsMap, ok := value.(*orderedmap.OrderedMap); ok {
-								deps := make(map[string]any)
-								for _, key := range depsMap.Keys() {
-									depValue, _ := depsMap.Get(key)
-									deps[key] = depValue
-								}
-								if len(deps) > 0 {
-									// Calculate parent object path (remove "properties/<fieldName>/options/dependencies")
-									parentPath := path[:pathLen-4]
-									parentPathStr := parentPath.String()
-									conditionalReqs[parentPathStr] = append(conditionalReqs[parentPathStr], conditionalRequirement{
-										fieldName:    fieldStep.Key(),
-										dependencies: deps,
-									})
-								}
-							}
-						}
-					}
-				}
-			}
+		if lastStep != orderedmap.MapStep("dependencies") {
+			return
 		}
+		pathLen := len(path)
+		if pathLen < 4 {
+			return
+		}
+		if path[pathLen-2] != orderedmap.MapStep("options") {
+			return
+		}
+		fieldStep, ok := path[pathLen-3].(orderedmap.MapStep)
+		if !ok {
+			return
+		}
+		if path[pathLen-4] != orderedmap.MapStep("properties") {
+			return
+		}
+		depsMap, ok := value.(*orderedmap.OrderedMap)
+		if !ok {
+			return
+		}
+		deps := make(map[string]any)
+		for _, key := range depsMap.Keys() {
+			depValue, _ := depsMap.Get(key)
+			deps[key] = depValue
+		}
+		if len(deps) == 0 {
+			return
+		}
+		parentPath := path[:pathLen-4]
+		parentPathStr := parentPath.String()
+		conditionalReqs[parentPathStr] = append(conditionalReqs[parentPathStr], conditionalRequirement{
+			fieldName:    fieldStep.Key(),
+			dependencies: deps,
+		})
 	})
 
 	// Process conditional requirements: remove from required arrays and add if/then/else constructs
