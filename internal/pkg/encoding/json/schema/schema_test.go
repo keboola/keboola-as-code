@@ -546,7 +546,7 @@ func TestNormalizeSchema_OptionsDependencies_SingleValue(t *testing.T) {
 	require.True(t, ok)
 	appendDateCond, ok := ifProps["append_date"].(map[string]any)
 	require.True(t, ok)
-	assert.Equal(t, float64(1), appendDateCond["const"])
+	assert.InDelta(t, 1, appendDateCond["const"], 0.001)
 
 	thenClause, ok := ifThen["then"].(map[string]any)
 	require.True(t, ok)
