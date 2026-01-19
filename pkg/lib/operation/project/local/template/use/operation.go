@@ -277,7 +277,7 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 		return nil, err
 	}
 
-	// Encrypt values
+	// Encrypt values - ALWAYS, except when creating template tests (SkipEncrypt flag)
 	if !p.options.SkipEncrypt {
 		if err := encrypt.Run(ctx, p.options.ProjectState, encrypt.Options{DryRun: false, LogEmpty: false}, p.deps); err != nil {
 			return nil, err
@@ -298,7 +298,8 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 	}
 
 	// Validate schemas and encryption
-	if err := validate.Run(ctx, p.options.ProjectState, validate.Options{ValidateSecrets: !p.options.SkipSecretsValidation, ValidateJSONSchema: true}, p.deps); err != nil {
+	validateSecrets := p.options.SkipEncrypt && !p.options.SkipSecretsValidation
+	if err := validate.Run(ctx, p.options.ProjectState, validate.Options{ValidateSecrets: validateSecrets, ValidateJSONSchema: true}, p.deps); err != nil {
 		logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 		logger.Warn(ctx, "")
 		logger.Warn(ctx, `Please correct the problems listed above.`)
