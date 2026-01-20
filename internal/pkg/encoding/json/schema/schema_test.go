@@ -898,6 +898,70 @@ func TestNormalizeSchema_OptionsDependencies_ArrayValidation(t *testing.T) {
 	require.NoError(t, err, "Should pass validation when protocol=FTP and passive_mode is provided")
 }
 
+func TestNormalizeSchema_ExistingAllOfIfThen(t *testing.T) {
+	t.Parallel()
+
+	// Test that schemas with existing allOf containing if/then/else constructs
+	// continue to work correctly (backward compatibility)
+	schema := []byte(`
+{
+  "type": "object",
+  "required": ["append_date"],
+  "properties": {
+    "append_date": {
+      "type": "integer",
+      "default": 0
+    },
+    "append_date_format": {
+      "type": "string"
+    }
+  },
+  "allOf": [{
+    "if": { "properties": { "append_date": { "const": 1 } } },
+    "then": { "required": ["append_date_format"] }
+  }]
+}
+`)
+
+	// Test 1: When append_date = 0, append_date_format should NOT be required
+	content1 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "append_date", Value: 0},
+			}),
+		},
+	})
+	err := ValidateContent(schema, content1)
+	require.NoError(t, err, "Should pass validation when append_date=0 and append_date_format is missing")
+
+	// Test 2: When append_date = 1, append_date_format SHOULD be required
+	content2 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "append_date", Value: 1},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content2)
+	require.Error(t, err, "Should fail validation when append_date=1 and append_date_format is missing")
+	assert.Contains(t, err.Error(), "append_date_format")
+
+	// Test 3: When append_date = 1 and append_date_format is provided, should pass
+	content3 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "append_date", Value: 1},
+				{Key: "append_date_format", Value: "Y-m-d"},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content3)
+	require.NoError(t, err, "Should pass validation when append_date=1 and append_date_format is provided")
+}
+
 func getTestSchema() []byte {
 	return []byte(`
 {
