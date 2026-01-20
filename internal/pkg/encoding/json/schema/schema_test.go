@@ -486,6 +486,482 @@ func TestNormalizeSchema_RequiredTrue(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(string(expectedSchema)), strings.TrimSpace(string(normalizedSchema)))
 }
 
+func TestNormalizeSchema_OptionsDependencies_SingleValue(t *testing.T) {
+	t.Parallel()
+
+	// Schema with options.dependencies using a single value condition
+	// This is the SFTP writer pattern: append_date_format is required only when append_date = 1
+	schema := []byte(`
+{
+  "type": "object",
+  "required": ["path", "append_date", "append_date_format"],
+  "properties": {
+    "path": {
+      "type": "string"
+    },
+    "append_date": {
+      "type": "integer",
+      "default": 0
+    },
+    "append_date_format": {
+      "type": "string",
+      "options": {
+        "dependencies": {
+          "append_date": 1
+        }
+      }
+    }
+  }
+}
+`)
+
+	// Normalize the schema
+	normalizedSchema, err := NormalizeSchema(schema)
+	require.NoError(t, err)
+
+	// Verify the transformation: append_date_format should be removed from required
+	// and an if/then construct should be added
+	var result map[string]any
+	err = json.Unmarshal(normalizedSchema, &result)
+	require.NoError(t, err)
+
+	// Check that append_date_format is removed from required
+	required, ok := result["required"].([]any)
+	require.True(t, ok)
+	assert.Contains(t, required, "path")
+	assert.Contains(t, required, "append_date")
+	assert.NotContains(t, required, "append_date_format")
+
+	// Check that allOf with if/then is added
+	allOf, ok := result["allOf"].([]any)
+	require.True(t, ok)
+	require.Len(t, allOf, 1)
+
+	// Validate the if/then structure
+	ifThen, ok := allOf[0].(map[string]any)
+	require.True(t, ok)
+	ifClause, ok := ifThen["if"].(map[string]any)
+	require.True(t, ok)
+	ifProps, ok := ifClause["properties"].(map[string]any)
+	require.True(t, ok)
+	appendDateCond, ok := ifProps["append_date"].(map[string]any)
+	require.True(t, ok)
+	assert.InDelta(t, 1, appendDateCond["const"], 0.001)
+
+	thenClause, ok := ifThen["then"].(map[string]any)
+	require.True(t, ok)
+	thenRequired, ok := thenClause["required"].([]any)
+	require.True(t, ok)
+	assert.Contains(t, thenRequired, "append_date_format")
+}
+
+func TestNormalizeSchema_OptionsDependencies_ArrayValue(t *testing.T) {
+	t.Parallel()
+
+	// Schema with options.dependencies using an array value condition
+	// This is the FTP writer pattern: passive_mode is required only when protocol is one of ["FTP", "Ex-FTPS", "Im-FTPS"]
+	schema := []byte(`
+{
+  "type": "object",
+  "required": ["protocol", "passive_mode"],
+  "properties": {
+    "protocol": {
+      "type": "string",
+      "enum": ["FTP", "Ex-FTPS", "Im-FTPS", "SFTP"]
+    },
+    "passive_mode": {
+      "type": "boolean",
+      "options": {
+        "dependencies": {
+          "protocol": ["FTP", "Ex-FTPS", "Im-FTPS"]
+        }
+      }
+    }
+  }
+}
+`)
+
+	// Normalize the schema
+	normalizedSchema, err := NormalizeSchema(schema)
+	require.NoError(t, err)
+
+	// Verify the transformation
+	var result map[string]any
+	err = json.Unmarshal(normalizedSchema, &result)
+	require.NoError(t, err)
+
+	// Check that passive_mode is removed from required
+	required, ok := result["required"].([]any)
+	require.True(t, ok)
+	assert.Contains(t, required, "protocol")
+	assert.NotContains(t, required, "passive_mode")
+
+	// Check that allOf with if/then is added with enum condition
+	allOf, ok := result["allOf"].([]any)
+	require.True(t, ok)
+	require.Len(t, allOf, 1)
+
+	ifThen, ok := allOf[0].(map[string]any)
+	require.True(t, ok)
+	ifClause, ok := ifThen["if"].(map[string]any)
+	require.True(t, ok)
+	ifProps, ok := ifClause["properties"].(map[string]any)
+	require.True(t, ok)
+	protocolCond, ok := ifProps["protocol"].(map[string]any)
+	require.True(t, ok)
+	enumValues, ok := protocolCond["enum"].([]any)
+	require.True(t, ok)
+	assert.Contains(t, enumValues, "FTP")
+	assert.Contains(t, enumValues, "Ex-FTPS")
+	assert.Contains(t, enumValues, "Im-FTPS")
+}
+
+func TestNormalizeSchema_OptionsDependencies_MultipleFields(t *testing.T) {
+	t.Parallel()
+
+	// Schema with multiple fields having options.dependencies
+	schema := []byte(`
+{
+  "type": "object",
+  "required": ["mode", "field_a", "field_b"],
+  "properties": {
+    "mode": {
+      "type": "string"
+    },
+    "field_a": {
+      "type": "string",
+      "options": {
+        "dependencies": {
+          "mode": "advanced"
+        }
+      }
+    },
+    "field_b": {
+      "type": "string",
+      "options": {
+        "dependencies": {
+          "mode": "expert"
+        }
+      }
+    }
+  }
+}
+`)
+
+	// Normalize the schema
+	normalizedSchema, err := NormalizeSchema(schema)
+	require.NoError(t, err)
+
+	// Verify the transformation
+	var result map[string]any
+	err = json.Unmarshal(normalizedSchema, &result)
+	require.NoError(t, err)
+
+	// Check that field_a and field_b are removed from required
+	required, ok := result["required"].([]any)
+	require.True(t, ok)
+	assert.Contains(t, required, "mode")
+	assert.NotContains(t, required, "field_a")
+	assert.NotContains(t, required, "field_b")
+
+	// Check that allOf has two if/then constructs
+	allOf, ok := result["allOf"].([]any)
+	require.True(t, ok)
+	assert.Len(t, allOf, 2)
+}
+
+func TestNormalizeSchema_OptionsDependencies_NestedObject(t *testing.T) {
+	t.Parallel()
+
+	// Schema with options.dependencies in a nested object
+	schema := []byte(`
+{
+  "type": "object",
+  "properties": {
+    "connection": {
+      "type": "object",
+      "required": ["type", "ssl_cert"],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "ssl_cert": {
+          "type": "string",
+          "options": {
+            "dependencies": {
+              "type": "ssl"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`)
+
+	// Normalize the schema
+	normalizedSchema, err := NormalizeSchema(schema)
+	require.NoError(t, err)
+
+	// Verify the transformation
+	var result map[string]any
+	err = json.Unmarshal(normalizedSchema, &result)
+	require.NoError(t, err)
+
+	// Navigate to the nested connection object
+	props, ok := result["properties"].(map[string]any)
+	require.True(t, ok)
+	connection, ok := props["connection"].(map[string]any)
+	require.True(t, ok)
+
+	// Check that ssl_cert is removed from required in the nested object
+	required, ok := connection["required"].([]any)
+	require.True(t, ok)
+	assert.Contains(t, required, "type")
+	assert.NotContains(t, required, "ssl_cert")
+
+	// Check that allOf with if/then is added to the nested object
+	allOf, ok := connection["allOf"].([]any)
+	require.True(t, ok)
+	require.Len(t, allOf, 1)
+}
+
+func TestNormalizeSchema_OptionsDependencies_NotInRequired(t *testing.T) {
+	t.Parallel()
+
+	// Schema with options.dependencies but the field is not in the required array
+	// The transformation should still add the if/then construct but not modify required
+	schema := []byte(`
+{
+  "type": "object",
+  "required": ["mode"],
+  "properties": {
+    "mode": {
+      "type": "string"
+    },
+    "optional_field": {
+      "type": "string",
+      "options": {
+        "dependencies": {
+          "mode": "advanced"
+        }
+      }
+    }
+  }
+}
+`)
+
+	// Normalize the schema
+	normalizedSchema, err := NormalizeSchema(schema)
+	require.NoError(t, err)
+
+	// Verify the transformation
+	var result map[string]any
+	err = json.Unmarshal(normalizedSchema, &result)
+	require.NoError(t, err)
+
+	// Check that required still only contains "mode"
+	required, ok := result["required"].([]any)
+	require.True(t, ok)
+	assert.Equal(t, []any{"mode"}, required)
+
+	// Check that allOf with if/then is still added
+	allOf, ok := result["allOf"].([]any)
+	require.True(t, ok)
+	require.Len(t, allOf, 1)
+}
+
+func TestNormalizeSchema_OptionsDependencies_Validation(t *testing.T) {
+	t.Parallel()
+
+	// Test that the transformed schema validates correctly
+	schema := []byte(`
+{
+  "type": "object",
+  "required": ["append_date", "append_date_format"],
+  "properties": {
+    "append_date": {
+      "type": "integer",
+      "default": 0
+    },
+    "append_date_format": {
+      "type": "string",
+      "options": {
+        "dependencies": {
+          "append_date": 1
+        }
+      }
+    }
+  }
+}
+`)
+
+	// Test 1: When append_date = 0, append_date_format should NOT be required
+	content1 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "append_date", Value: 0},
+			}),
+		},
+	})
+	err := ValidateContent(schema, content1)
+	require.NoError(t, err, "Should pass validation when append_date=0 and append_date_format is missing")
+
+	// Test 2: When append_date = 1, append_date_format SHOULD be required
+	content2 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "append_date", Value: 1},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content2)
+	require.Error(t, err, "Should fail validation when append_date=1 and append_date_format is missing")
+	assert.Contains(t, err.Error(), "append_date_format")
+
+	// Test 3: When append_date = 1 and append_date_format is provided, should pass
+	content3 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "append_date", Value: 1},
+				{Key: "append_date_format", Value: "Y-m-d"},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content3)
+	require.NoError(t, err, "Should pass validation when append_date=1 and append_date_format is provided")
+}
+
+func TestNormalizeSchema_OptionsDependencies_ArrayValidation(t *testing.T) {
+	t.Parallel()
+
+	// Test that array-based dependencies validate correctly
+	schema := []byte(`
+{
+  "type": "object",
+  "required": ["protocol", "passive_mode"],
+  "properties": {
+    "protocol": {
+      "type": "string"
+    },
+    "passive_mode": {
+      "type": "boolean",
+      "options": {
+        "dependencies": {
+          "protocol": ["FTP", "FTPS"]
+        }
+      }
+    }
+  }
+}
+`)
+
+	// Test 1: When protocol = "SFTP", passive_mode should NOT be required
+	content1 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "protocol", Value: "SFTP"},
+			}),
+		},
+	})
+	err := ValidateContent(schema, content1)
+	require.NoError(t, err, "Should pass validation when protocol=SFTP and passive_mode is missing")
+
+	// Test 2: When protocol = "FTP", passive_mode SHOULD be required
+	content2 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "protocol", Value: "FTP"},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content2)
+	require.Error(t, err, "Should fail validation when protocol=FTP and passive_mode is missing")
+	assert.Contains(t, err.Error(), "passive_mode")
+
+	// Test 3: When protocol = "FTP" and passive_mode is provided, should pass
+	content3 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "protocol", Value: "FTP"},
+				{Key: "passive_mode", Value: true},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content3)
+	require.NoError(t, err, "Should pass validation when protocol=FTP and passive_mode is provided")
+}
+
+func TestNormalizeSchema_ExistingAllOfIfThen(t *testing.T) {
+	t.Parallel()
+
+	// Test that schemas with existing allOf containing if/then/else constructs
+	// continue to work correctly (backward compatibility)
+	schema := []byte(`
+{
+  "type": "object",
+  "required": ["append_date"],
+  "properties": {
+    "append_date": {
+      "type": "integer",
+      "default": 0
+    },
+    "append_date_format": {
+      "type": "string"
+    }
+  },
+  "allOf": [{
+    "if": { "properties": { "append_date": { "const": 1 } } },
+    "then": { "required": ["append_date_format"] }
+  }]
+}
+`)
+
+	// Test 1: When append_date = 0, append_date_format should NOT be required
+	content1 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "append_date", Value: 0},
+			}),
+		},
+	})
+	err := ValidateContent(schema, content1)
+	require.NoError(t, err, "Should pass validation when append_date=0 and append_date_format is missing")
+
+	// Test 2: When append_date = 1, append_date_format SHOULD be required
+	content2 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "append_date", Value: 1},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content2)
+	require.Error(t, err, "Should fail validation when append_date=1 and append_date_format is missing")
+	assert.Contains(t, err.Error(), "append_date_format")
+
+	// Test 3: When append_date = 1 and append_date_format is provided, should pass
+	content3 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "append_date", Value: 1},
+				{Key: "append_date_format", Value: "Y-m-d"},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content3)
+	require.NoError(t, err, "Should pass validation when append_date=1 and append_date_format is provided")
+}
+
 func getTestSchema() []byte {
 	return []byte(`
 {

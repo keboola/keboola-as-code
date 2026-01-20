@@ -125,6 +125,12 @@ func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 	return nil
 }
 
+// conditionalRequirement represents a field that is conditionally required based on options.dependencies.
+type conditionalRequirement struct {
+	fieldName    string         // The field that is conditionally required
+	dependencies map[string]any // The dependency conditions (e.g., {"append_date": 1})
+}
+
 func NormalizeSchema(schema []byte) ([]byte, error) {
 	// Decode JSON
 	m := orderedmap.New()
@@ -132,27 +138,104 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	// Collect conditional requirements per parent object path
+	// Key is the string representation of the parent path (the object containing the properties)
+	conditionalReqs := make(map[string][]conditionalRequirement)
+
 	m.VisitAllRecursive(func(path orderedmap.Path, value any, parent any) {
+		lastStep := path.Last()
+
 		// Required field in a JSON schema should be an array of required nested fields.
 		// But, for historical reasons, in Keboola components, "required: true" and "required: false" are also used.
 		// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
-		if path.Last() == orderedmap.MapStep("required") {
+		if lastStep == orderedmap.MapStep("required") {
 			if _, ok := value.(bool); ok {
 				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
 					parentMap.Delete("required")
 				}
 			}
+			return
 		}
 
 		// Empty enums are removed, we're using those for asynchronously loaded enums.
-		if path.Last() == orderedmap.MapStep("enum") {
+		if lastStep == orderedmap.MapStep("enum") {
 			if arr, ok := value.([]any); ok && len(arr) == 0 {
 				if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
 					parentMap.Delete("enum")
 				}
 			}
+			return
 		}
+
+		// Handle options.dependencies - collect conditional requirements
+		// Path pattern: .../properties/<fieldName>/options/dependencies
+		if lastStep != orderedmap.MapStep("dependencies") {
+			return
+		}
+		pathLen := len(path)
+		if pathLen < 4 {
+			return
+		}
+		if path[pathLen-2] != orderedmap.MapStep("options") {
+			return
+		}
+		fieldStep, ok := path[pathLen-3].(orderedmap.MapStep)
+		if !ok {
+			return
+		}
+		if path[pathLen-4] != orderedmap.MapStep("properties") {
+			return
+		}
+		depsMap, ok := value.(*orderedmap.OrderedMap)
+		if !ok {
+			return
+		}
+		deps := make(map[string]any)
+		for _, key := range depsMap.Keys() {
+			depValue, _ := depsMap.Get(key)
+			deps[key] = depValue
+		}
+		if len(deps) == 0 {
+			return
+		}
+		parentPath := path[:pathLen-4]
+		parentPathStr := parentPath.String()
+		conditionalReqs[parentPathStr] = append(conditionalReqs[parentPathStr], conditionalRequirement{
+			fieldName:    fieldStep.Key(),
+			dependencies: deps,
+		})
 	})
+
+	// Process conditional requirements: remove from required arrays and add if/then/else constructs
+	for parentPathStr, reqs := range conditionalReqs {
+		parentObj := getObjectAtPath(m, parentPathStr)
+		if parentObj == nil {
+			continue
+		}
+
+		// Remove conditionally required fields from the required array
+		removeConditionalFieldsFromRequired(parentObj, reqs)
+
+		// Generate if/then/else constructs for each conditional requirement
+		allOfItems := make([]any, 0, len(reqs))
+		for _, req := range reqs {
+			ifThenElse := buildIfThenElse(req)
+			if ifThenElse != nil {
+				allOfItems = append(allOfItems, ifThenElse)
+			}
+		}
+
+		// Add allOf with if/then/else constructs to the parent object
+		if len(allOfItems) > 0 {
+			// Check if allOf already exists
+			if existingAllOf, found := parentObj.Get("allOf"); found {
+				if existingArr, ok := existingAllOf.([]any); ok {
+					allOfItems = append(existingArr, allOfItems...)
+				}
+			}
+			parentObj.Set("allOf", allOfItems)
+		}
+	}
 
 	// Encode back to JSON
 	normalized, err := json.Encode(m, false)
@@ -161,6 +244,100 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 	}
 
 	return normalized, nil
+}
+
+// removeConditionalFieldsFromRequired removes conditionally required fields from the required array.
+func removeConditionalFieldsFromRequired(parentObj *orderedmap.OrderedMap, reqs []conditionalRequirement) {
+	requiredVal, found := parentObj.Get("required")
+	if !found {
+		return
+	}
+	requiredArr, ok := requiredVal.([]any)
+	if !ok {
+		return
+	}
+
+	conditionalFields := make(map[string]bool)
+	for _, req := range reqs {
+		conditionalFields[req.fieldName] = true
+	}
+
+	newRequired := make([]any, 0, len(requiredArr))
+	for _, field := range requiredArr {
+		fieldStr, ok := field.(string)
+		if !ok || !conditionalFields[fieldStr] {
+			newRequired = append(newRequired, field)
+		}
+	}
+
+	if len(newRequired) > 0 {
+		parentObj.Set("required", newRequired)
+	} else {
+		parentObj.Delete("required")
+	}
+}
+
+// getObjectAtPath returns the orderedmap at the given path string.
+func getObjectAtPath(m *orderedmap.OrderedMap, pathStr string) *orderedmap.OrderedMap {
+	if pathStr == "" {
+		return m
+	}
+
+	// Parse path string and navigate to the object
+	// Path format: key1.key2.key3 (dot-separated)
+	parts := strings.Split(pathStr, ".")
+	current := m
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		val, found := current.Get(part)
+		if !found {
+			return nil
+		}
+		nextMap, ok := val.(*orderedmap.OrderedMap)
+		if !ok {
+			return nil
+		}
+		current = nextMap
+	}
+	return current
+}
+
+// buildIfThenElse creates an if/then/else construct for a conditional requirement.
+func buildIfThenElse(req conditionalRequirement) *orderedmap.OrderedMap {
+	if len(req.dependencies) == 0 {
+		return nil
+	}
+
+	// Build the "if" condition properties
+	ifProperties := orderedmap.New()
+	for depField, depValue := range req.dependencies {
+		condition := orderedmap.New()
+		// Handle array values (e.g., "protocol": ["FTP", "FTPS"]) using enum
+		// Handle single values using const
+		if arr, ok := depValue.([]any); ok {
+			condition.Set("enum", arr)
+		} else {
+			condition.Set("const", depValue)
+		}
+		ifProperties.Set(depField, condition)
+	}
+
+	// Build the "if" clause
+	ifClause := orderedmap.New()
+	ifClause.Set("properties", ifProperties)
+
+	// Build the "then" clause with required field
+	thenClause := orderedmap.New()
+	thenClause.Set("required", []any{req.fieldName})
+
+	// Build the complete if/then construct
+	result := orderedmap.New()
+	result.Set("if", ifClause)
+	result.Set("then", thenClause)
+
+	return result
 }
 
 func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
