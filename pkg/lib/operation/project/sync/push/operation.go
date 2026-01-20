@@ -18,12 +18,13 @@ import (
 )
 
 type Options struct {
-	Encrypt           bool
-	DryRun            bool
-	SkipValidation    bool
-	AllowRemoteDelete bool
-	LogUntrackedPaths bool
-	ChangeDescription string
+	Encrypt            bool
+	DryRun             bool
+	SkipValidation     bool
+	ValidateJSONSchema bool
+	AllowRemoteDelete  bool
+	LogUntrackedPaths  bool
+	ChangeDescription  string
 }
 
 type dependencies interface {
@@ -59,7 +60,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	if !o.SkipValidation {
 		validateOptions := validate.Options{
 			ValidateSecrets:    !o.Encrypt || !o.DryRun,
-			ValidateJSONSchema: true,
+			ValidateJSONSchema: o.ValidateJSONSchema,
 		}
 		if err := validate.Run(ctx, projectState, validateOptions, d); err != nil {
 			return err
