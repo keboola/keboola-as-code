@@ -51,26 +51,27 @@ func (p *Plan) Log(w io.Writer) {
 
 	if len(actions) == 0 {
 		fmt.Fprintln(w, "  no difference")
-	} else {
-		skippedDeleteCount := 0
-		for _, action := range actions {
-			msg := action.String()
-			if !p.allowedRemoteDelete && action.action == ActionDeleteRemote {
-				// determine if it is ignored or skipped
-				if action.IsIgnored() {
-					msg += " - IGNORED"
-				} else {
-					msg += " - SKIPPED"
-				}
+		return
+	}
 
-				skippedDeleteCount++
+	skippedDeleteCount := 0
+	for _, action := range actions {
+		msg := action.String()
+		if !p.allowedRemoteDelete && action.action == ActionDeleteRemote {
+			// determine if it is ignored or skipped
+			if action.IsIgnored() {
+				msg += " - IGNORED"
+			} else {
+				msg += " - SKIPPED"
 			}
-			fmt.Fprintln(w, "  "+msg)
-		}
 
-		if skippedDeleteCount > 0 {
-			fmt.Fprintln(w, "Skipped remote objects deletion, use \"--force\" to delete them.")
+			skippedDeleteCount++
 		}
+		fmt.Fprintln(w, "  "+msg)
+	}
+
+	if skippedDeleteCount > 0 {
+		fmt.Fprintln(w, "Skipped remote objects deletion, use \"--force\" to delete them.")
 	}
 }
 

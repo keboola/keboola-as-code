@@ -61,24 +61,26 @@ func visitRoot(root *expr.RootExpr) error {
 			attr.AddMeta(metaVisitedAttr, metaVisitedAttrValue)
 
 			// Process attribute examples
-			if examples := attr.ExtractUserExamples(); len(examples) == 0 {
+			examples := attr.ExtractUserExamples()
+			if len(examples) == 0 {
 				// Generate example
 				if v, err := exampleFor(attr, root.API.ExampleGenerator); err == nil {
 					attr.UserExamples = append(attr.UserExamples, &expr.ExampleExpr{Summary: "default", Value: v})
 				} else {
 					return err
 				}
-			} else {
-				// Normalize already defined examples
-				for _, example := range examples { // example is a pointer
-					if v, err := normalizeExample(example.Value); err == nil {
-						example.Value = v
-					} else {
-						return err
-					}
-				}
-				attr.UserExamples = examples
+				return nil
 			}
+
+			// Normalize already defined examples
+			for _, example := range examples { // example is a pointer
+				if v, err := normalizeExample(example.Value); err == nil {
+					example.Value = v
+				} else {
+					return err
+				}
+			}
+			attr.UserExamples = examples
 
 			return nil
 		})
@@ -138,7 +140,8 @@ func exampleFor(attr *expr.AttributeExpr, g *expr.ExampleGenerator) (any, error)
 		return out, nil
 	case *expr.Array:
 		var out []any
-		if userExamples := value.ElemType.ExtractUserExamples(); len(userExamples) > 0 {
+		userExamples := value.ElemType.ExtractUserExamples()
+		if len(userExamples) > 0 {
 			// Use UserExamples of the element type
 			for _, item := range userExamples {
 				if example, err := normalizeExample(item.Value); err == nil {
@@ -147,14 +150,16 @@ func exampleFor(attr *expr.AttributeExpr, g *expr.ExampleGenerator) (any, error)
 					return nil, err
 				}
 			}
-		} else {
-			// Generate array with one example
-			if example, err := exampleFor(value.ElemType, g); err == nil {
-				out = append(out, example)
-			} else {
-				return nil, err
-			}
+			return out, nil
 		}
+
+		// Generate array with one example
+		if example, err := exampleFor(value.ElemType, g); err == nil {
+			out = append(out, example)
+		} else {
+			return nil, err
+		}
+
 		return out, nil
 	}
 

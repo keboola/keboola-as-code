@@ -94,11 +94,8 @@ func (d *downloader) Download(ctx context.Context) (returnErr error) {
 	// Download
 	if d.options.ToStdout() || !d.options.AllowSliced || !d.options.File.IsSliced {
 		// Download all slices into single file
-		if output, err := d.openOutput(""); err != nil {
-			return err
-		} else if err := d.readMergedSlicesTo(ctx, output); err != nil {
-			return err
-		} else if err := output.Close(); err != nil {
+		err := d.downloadSlicesTo(ctx, "", d.readMergedSlicesTo)
+		if err != nil {
 			return err
 		}
 	} else {
@@ -109,11 +106,10 @@ func (d *downloader) Download(ctx context.Context) (returnErr error) {
 
 		// Download all slices as separate files
 		for _, slice := range d.slices {
-			if output, err := d.openOutput(slice); err != nil {
-				return err
-			} else if err := d.readSliceTo(ctx, slice, output); err != nil {
-				return err
-			} else if err := output.Close(); err != nil {
+			err := d.downloadSlicesTo(ctx, slice, func(ctx context.Context, writer io.Writer) error {
+				return d.readSliceTo(ctx, slice, writer)
+			})
+			if err != nil {
 				return err
 			}
 		}
@@ -127,6 +123,17 @@ type nopCloser struct {
 }
 
 func (n *nopCloser) Close() error {
+	return nil
+}
+
+func (d *downloader) downloadSlicesTo(ctx context.Context, slice string, fn func(ctx context.Context, writer io.Writer) error) error {
+	if output, err := d.openOutput(slice); err != nil {
+		return err
+	} else if err := fn(ctx, output); err != nil {
+		return err
+	} else if err := output.Close(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -174,18 +181,17 @@ func (d *downloader) readSliceTo(ctx context.Context, slice string, writer io.Wr
 	}
 
 	// Add decompression reader
-	if !d.options.WithOutDecompress.IsSet() {
-		if strings.HasSuffix(slice, GZIPFileExt) || (slice == "" && strings.HasSuffix(d.options.File.Name, GZIPFileExt)) {
-			if gzipReader, err := pgzip.NewReader(reader); err == nil {
-				defer func() {
-					if closeErr := gzipReader.Close(); returnErr == nil && closeErr != nil {
-						returnErr = closeErr
-					}
-				}()
-				reader = gzipReader
-			} else {
-				return errors.Errorf(`cannot create gzip reader: %w`, err)
-			}
+	if !d.options.WithOutDecompress.IsSet() &&
+		(strings.HasSuffix(slice, GZIPFileExt) || (slice == "" && strings.HasSuffix(d.options.File.Name, GZIPFileExt))) {
+		if gzipReader, err := pgzip.NewReader(reader); err == nil {
+			defer func() {
+				if closeErr := gzipReader.Close(); returnErr == nil && closeErr != nil {
+					returnErr = closeErr
+				}
+			}()
+			reader = gzipReader
+		} else {
+			return errors.Errorf(`cannot create gzip reader: %w`, err)
 		}
 	}
 

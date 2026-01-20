@@ -111,50 +111,58 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 
 	// Re-generate object path IF rename is enabled OR path is not set
 	if objectState.GetRelativePath() == "" || g.rename {
-		switch v := objectState.(type) {
-		case *model.BranchState:
-			v.AbsPath = g.NamingGenerator().BranchPath(object.(*model.Branch))
-		case *model.ConfigState:
-			config := object.(*model.Config)
-			if component, err := g.state.Components().GetOrErr(config.ComponentID); err == nil {
-				v.AbsPath = g.NamingGenerator().ConfigPath(v.GetParentPath(), component, config)
-			} else {
-				return err
-			}
-		case *model.ConfigRowState:
-			row := object.(*model.ConfigRow)
-			if component, err := g.state.Components().GetOrErr(row.ComponentID); err == nil {
-				v.AbsPath = g.NamingGenerator().ConfigRowPath(v.GetParentPath(), component, row)
-			} else {
-				return err
-			}
-		default:
-			panic(errors.Errorf(`unexpect type "%T"`, objectState))
-		}
-
-		// Has been object renamed?
-		newPath := objectState.Path()
-		renamed := false
-		if renameFrom != newPath {
-			renamed = true
-			g.AddRenamed(model.RenamedPath{ObjectState: objectState, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})
-		}
-
-		// Event
-		event := model.OnObjectPathUpdateEvent{
-			PathsGenerator: g,
-			ObjectState:    objectState,
-			Renamed:        renamed,
-			OldPath:        oldPath,
-			NewPath:        newPath,
-		}
-		if err := g.mapper.OnObjectPathUpdate(event); err != nil {
+		if err := g.regeneratePath(objectState, object, oldPath, renameFrom); err != nil {
 			return err
 		}
 	}
 
 	// Mark processed
 	g.processed[objectState.Key().String()] = true
+
+	return nil
+}
+
+func (g *PathsGenerator) regeneratePath(objectState model.ObjectState, object model.Object, oldPath, renameFrom string) error {
+	switch v := objectState.(type) {
+	case *model.BranchState:
+		v.AbsPath = g.NamingGenerator().BranchPath(object.(*model.Branch))
+	case *model.ConfigState:
+		config := object.(*model.Config)
+		if component, err := g.state.Components().GetOrErr(config.ComponentID); err == nil {
+			v.AbsPath = g.NamingGenerator().ConfigPath(v.GetParentPath(), component, config)
+		} else {
+			return err
+		}
+	case *model.ConfigRowState:
+		row := object.(*model.ConfigRow)
+		if component, err := g.state.Components().GetOrErr(row.ComponentID); err == nil {
+			v.AbsPath = g.NamingGenerator().ConfigRowPath(v.GetParentPath(), component, row)
+		} else {
+			return err
+		}
+	default:
+		panic(errors.Errorf(`unexpect type "%T"`, objectState))
+	}
+
+	// Has been object renamed?
+	newPath := objectState.Path()
+	renamed := false
+	if renameFrom != newPath {
+		renamed = true
+		g.AddRenamed(model.RenamedPath{ObjectState: objectState, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})
+	}
+
+	// Event
+	event := model.OnObjectPathUpdateEvent{
+		PathsGenerator: g,
+		ObjectState:    objectState,
+		Renamed:        renamed,
+		OldPath:        oldPath,
+		NewPath:        newPath,
+	}
+	if err := g.mapper.OnObjectPathUpdate(event); err != nil {
+		return err
+	}
 
 	return nil
 }

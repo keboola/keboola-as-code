@@ -282,19 +282,22 @@ func CategoriesResponse(in []string) []string {
 func ComponentsResponse(d dependencies.ProjectRequestScope, in []string) (out []string) {
 	out = make([]string, 0)
 	for _, componentId := range in {
+		if componentId != manifest.SnowflakeWriterComponentIDPlaceholder {
+			out = append(out, componentId)
+			continue
+		}
+
 		// Map placeholder "<keboola.wr-snowflake>" to real componentId.
-		if componentId == manifest.SnowflakeWriterComponentIDPlaceholder {
-			if _, found := d.Components().Get(function.SnowflakeWriterIDAws); found {
-				componentId = function.SnowflakeWriterIDAws.String()
-			} else if _, found := d.Components().Get(function.SnowflakeWriterIDAzure); found {
-				componentId = function.SnowflakeWriterIDAzure.String()
-			} else if _, found := d.Components().Get(function.SnowflakeWriterIDGCPS3); found && slices.Contains(d.ProjectBackends(), project.BackendSnowflake) {
-				componentId = function.SnowflakeWriterIDGCPS3.String()
-			} else if _, found := d.Components().Get(function.SnowflakeWriterIDGCP); found && slices.Contains(d.ProjectBackends(), project.BackendBigQuery) {
-				componentId = function.SnowflakeWriterIDGCP.String()
-			} else {
-				continue
-			}
+		if _, found := d.Components().Get(function.SnowflakeWriterIDAws); found {
+			componentId = function.SnowflakeWriterIDAws.String()
+		} else if _, found := d.Components().Get(function.SnowflakeWriterIDAzure); found {
+			componentId = function.SnowflakeWriterIDAzure.String()
+		} else if _, found := d.Components().Get(function.SnowflakeWriterIDGCPS3); found && slices.Contains(d.ProjectBackends(), project.BackendSnowflake) {
+			componentId = function.SnowflakeWriterIDGCPS3.String()
+		} else if _, found := d.Components().Get(function.SnowflakeWriterIDGCP); found && slices.Contains(d.ProjectBackends(), project.BackendBigQuery) {
+			componentId = function.SnowflakeWriterIDGCP.String()
+		} else {
+			continue
 		}
 		out = append(out, componentId)
 	}

@@ -118,18 +118,20 @@ func (c *fastHTTPContext) JSONValue(parserPool *fastjson.ParserPool) (*fastjson.
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if c.jsonValue == nil && c.jsonValueErr == nil {
-		if body, err := c.BodyBytes(); err != nil {
-			c.jsonValueErr = err
-		} else {
-			parser := parserPool.Get()
-			defer parserPool.Put(parser)
+	if c.jsonValue != nil || c.jsonValueErr != nil {
+		return c.jsonValue, c.jsonValueErr
+	}
 
-			if jsonValue, err := parser.ParseBytes(body); err != nil {
-				c.jsonValueErr = errors.PrefixError(err, "cannot parse request json")
-			} else {
-				c.jsonValue = jsonValue
-			}
+	if body, err := c.BodyBytes(); err != nil {
+		c.jsonValueErr = err
+	} else {
+		parser := parserPool.Get()
+		defer parserPool.Put(parser)
+
+		if jsonValue, err := parser.ParseBytes(body); err != nil {
+			c.jsonValueErr = errors.PrefixError(err, "cannot parse request json")
+		} else {
+			c.jsonValue = jsonValue
 		}
 	}
 

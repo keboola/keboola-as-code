@@ -110,18 +110,7 @@ func newWriter(
 
 	// Allocate disk space
 	if isNew := stat.Size() == 0; isNew {
-		if size := slice.AllocatedDiskSpace; size != 0 {
-			if ok, err := allocator.Allocate(w.file, size); ok {
-				logger.Debugf(ctx, `allocated disk space "%s"`, size)
-			} else if err != nil {
-				// The error is not fatal
-				logger.Errorf(ctx, `cannot allocate disk space "%s", allocation skipped: %s`, size, err)
-			} else {
-				logger.Debug(ctx, "disk space allocation is not supported")
-			}
-		} else {
-			logger.Debug(ctx, "disk space allocation is disabled")
-		}
+		w.allocateDiskSpace(ctx, allocator, slice)
 	}
 
 	// Dispatch "open" event
@@ -222,5 +211,20 @@ func (w *writer) isClosed() bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func (w *writer) allocateDiskSpace(ctx context.Context, allocator diskalloc.Allocator, slice localModel.Slice) {
+	if size := slice.AllocatedDiskSpace; size != 0 {
+		if ok, err := allocator.Allocate(w.file, size); ok {
+			w.logger.Debugf(ctx, `allocated disk space "%s"`, size)
+		} else if err != nil {
+			// The error is not fatal
+			w.logger.Errorf(ctx, `cannot allocate disk space "%s", allocation skipped: %s`, size, err)
+		} else {
+			w.logger.Debug(ctx, "disk space allocation is not supported")
+		}
+	} else {
+		w.logger.Debug(ctx, "disk space allocation is disabled")
 	}
 }

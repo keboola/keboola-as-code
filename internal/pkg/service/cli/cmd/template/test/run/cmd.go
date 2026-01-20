@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	testOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/run"
 )
@@ -49,34 +50,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Load templates
-			templates := make([]*template.Template, 0)
-			if len(args) >= 1 {
-				// Optional version argument
-				var versionArg string
-				if len(args) > 1 {
-					versionArg = args[1]
-				}
-				tmpl, err := d.TemplateForTests(cmd.Context(), model.NewTemplateRef(repo.Definition(), args[0], versionArg), f.TestProjectsFile.Value)
-				if err != nil {
-					return errors.Errorf(`loading test for template "%s" failed: %w`, args[0], err)
-				}
-				templates = append(templates, tmpl)
-			} else {
-				for _, t := range repo.Templates() {
-					// Don't test deprecated templates
-					if t.Deprecated {
-						continue
-					}
-					v, err := t.DefaultVersionOrErr()
-					if err != nil {
-						return errors.Errorf(`loading default version for template "%s" failed: %w`, t.ID, err)
-					}
-					tmpl, err := d.TemplateForTests(cmd.Context(), model.NewTemplateRef(repo.Definition(), t.ID, v.Version.String()), f.TestProjectsFile.Value)
-					if err != nil {
-						return errors.Errorf(`loading test for template "%s" failed: %w`, t.ID, err)
-					}
-					templates = append(templates, tmpl)
-				}
+			templates, err := loadTemplates(cmd, args, d, repo, f)
+			if err != nil {
+				return err
 			}
 
 			// Options
@@ -102,4 +78,38 @@ func Command(p dependencies.Provider) *cobra.Command {
 	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
+}
+
+func loadTemplates(cmd *cobra.Command, args []string, d dependencies.LocalCommandScope, repo *repository.Repository, f Flags) ([]*template.Template, error) {
+	templates := make([]*template.Template, 0)
+	if len(args) >= 1 {
+		// Optional version argument
+		var versionArg string
+		if len(args) > 1 {
+			versionArg = args[1]
+		}
+		tmpl, err := d.TemplateForTests(cmd.Context(), model.NewTemplateRef(repo.Definition(), args[0], versionArg), f.TestProjectsFile.Value)
+		if err != nil {
+			return nil, errors.Errorf(`loading test for template "%s" failed: %w`, args[0], err)
+		}
+		templates = append(templates, tmpl)
+		return templates, nil
+	}
+
+	for _, t := range repo.Templates() {
+		// Don't test deprecated templates
+		if t.Deprecated {
+			continue
+		}
+		v, err := t.DefaultVersionOrErr()
+		if err != nil {
+			return nil, errors.Errorf(`loading default version for template "%s" failed: %w`, t.ID, err)
+		}
+		tmpl, err := d.TemplateForTests(cmd.Context(), model.NewTemplateRef(repo.Definition(), t.ID, v.Version.String()), f.TestProjectsFile.Value)
+		if err != nil {
+			return nil, errors.Errorf(`loading test for template "%s" failed: %w`, t.ID, err)
+		}
+		templates = append(templates, tmpl)
+	}
+	return templates, nil
 }

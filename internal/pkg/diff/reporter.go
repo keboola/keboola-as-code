@@ -43,46 +43,48 @@ func (r *Reporter) PushStep(ps cmp.PathStep) {
 }
 
 func (r *Reporter) Report(rs cmp.Result) {
-	if !rs.Equal() {
-		var lines []string
-		remoteValue, localValue := r.path.Last().Values()
+	if rs.Equal() {
+		return
+	}
 
-		// Diff values
-		if v, ok := r.relationsDiff(remoteValue, localValue); ok {
-			// Relations diff
-			lines = append(lines, v...)
-		} else if v, ok := r.stringsDiff(remoteValue, localValue); ok {
-			// Strings diff
-			lines = append(lines, v...)
-		} else {
-			// Other types
-			lines = append(lines, valuesDiff(remoteValue, localValue)...)
-		}
+	var lines []string
+	remoteValue, localValue := r.path.Last().Values()
 
-		// Format lines
-		var mark string
-		switch {
-		case remoteValue.IsValid() && !localValue.IsValid():
-			mark = OnlyInRemoteMark
-		case !remoteValue.IsValid() && localValue.IsValid():
-			mark = OnlyInLocalMark
-		default:
-			// Values are present in both: local and remote value
-			// Individual lines are already marked.
-			mark = " "
+	// Diff values
+	if v, ok := r.relationsDiff(remoteValue, localValue); ok {
+		// Relations diff
+		lines = append(lines, v...)
+	} else if v, ok := r.stringsDiff(remoteValue, localValue); ok {
+		// Strings diff
+		lines = append(lines, v...)
+	} else {
+		// Other types
+		lines = append(lines, valuesDiff(remoteValue, localValue)...)
+	}
+
+	// Format lines
+	var mark string
+	switch {
+	case remoteValue.IsValid() && !localValue.IsValid():
+		mark = OnlyInRemoteMark
+	case !remoteValue.IsValid() && localValue.IsValid():
+		mark = OnlyInLocalMark
+	default:
+		// Values are present in both: local and remote value
+		// Individual lines are already marked.
+		mark = " "
+	}
+	pathStr := r.pathToString(r.path)
+	if len(pathStr) > 0 {
+		r.paths = append(r.paths, pathStr)
+		if !r.isPathHidden() {
+			r.diffs = append(r.diffs, fmt.Sprintf(`%s %s:`, mark, pathStr))
+			// Ident values inside path
+			mark += `  `
 		}
-		pathStr := r.pathToString(r.path)
-		if len(pathStr) > 0 {
-			r.paths = append(r.paths, pathStr)
-			if !r.isPathHidden() {
-				r.diffs = append(r.diffs, fmt.Sprintf(`%s %s:`, mark, pathStr))
-				// Ident values inside path
-				mark += `  `
-			}
-		}
-		for _, line := range lines {
-			r.diffs = append(r.diffs, fmt.Sprintf(`%s %s`, mark, line))
-		}
+	}
+	for _, line := range lines {
+		r.diffs = append(r.diffs, fmt.Sprintf(`%s %s`, mark, line))
 	}
 }
 
@@ -185,15 +187,22 @@ func (r *Reporter) pathToString(path cmp.Path) string {
 }
 
 func (r *Reporter) objectPath(value reflect.Value) string {
-	if value.IsValid() {
-		if v, ok := value.Interface().(model.RecordPaths); ok {
-			objectPath := v.Path()
-			if objectPath != "" {
-				if v, err := filesystem.Rel(r.manifest.Path(), objectPath); err == nil {
-					return v
-				}
-			}
-		}
+	if !value.IsValid() {
+		return ""
+	}
+
+	v, ok := value.Interface().(model.RecordPaths)
+	if !ok {
+		return ""
+	}
+
+	objectPath := v.Path()
+	if objectPath == "" {
+		return ""
+	}
+
+	if v, err := filesystem.Rel(r.manifest.Path(), objectPath); err == nil {
+		return v
 	}
 	return ""
 }
