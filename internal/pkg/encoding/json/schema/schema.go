@@ -214,29 +214,7 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 		}
 
 		// Remove conditionally required fields from the required array
-		if requiredVal, found := parentObj.Get("required"); found {
-			if requiredArr, ok := requiredVal.([]any); ok {
-				newRequired := make([]any, 0, len(requiredArr))
-				conditionalFields := make(map[string]bool)
-				for _, req := range reqs {
-					conditionalFields[req.fieldName] = true
-				}
-				for _, field := range requiredArr {
-					if fieldStr, ok := field.(string); ok {
-						if !conditionalFields[fieldStr] {
-							newRequired = append(newRequired, field)
-						}
-					} else {
-						newRequired = append(newRequired, field)
-					}
-				}
-				if len(newRequired) > 0 {
-					parentObj.Set("required", newRequired)
-				} else {
-					parentObj.Delete("required")
-				}
-			}
-		}
+		removeConditionalFieldsFromRequired(parentObj, reqs)
 
 		// Generate if/then/else constructs for each conditional requirement
 		allOfItems := make([]any, 0, len(reqs))
@@ -266,6 +244,37 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 	}
 
 	return normalized, nil
+}
+
+// removeConditionalFieldsFromRequired removes conditionally required fields from the required array.
+func removeConditionalFieldsFromRequired(parentObj *orderedmap.OrderedMap, reqs []conditionalRequirement) {
+	requiredVal, found := parentObj.Get("required")
+	if !found {
+		return
+	}
+	requiredArr, ok := requiredVal.([]any)
+	if !ok {
+		return
+	}
+
+	conditionalFields := make(map[string]bool)
+	for _, req := range reqs {
+		conditionalFields[req.fieldName] = true
+	}
+
+	newRequired := make([]any, 0, len(requiredArr))
+	for _, field := range requiredArr {
+		fieldStr, ok := field.(string)
+		if !ok || !conditionalFields[fieldStr] {
+			newRequired = append(newRequired, field)
+		}
+	}
+
+	if len(newRequired) > 0 {
+		parentObj.Set("required", newRequired)
+	} else {
+		parentObj.Delete("required")
+	}
 }
 
 // getObjectAtPath returns the orderedmap at the given path string.
