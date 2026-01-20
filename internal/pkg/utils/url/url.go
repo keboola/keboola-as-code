@@ -40,22 +40,9 @@ func ParseQuery(query string) (m *orderedmap.OrderedMap, err error) {
 		}
 
 		if sliceAppend {
-			existingValue, found, _ := m.GetNestedPath(path)
-			if !found {
-				err = m.SetNestedPath(path, []any{value})
-				if err != nil {
-					return m, err
-				}
-			} else {
-				if existingValueSlice, ok := existingValue.([]any); ok {
-					err = m.SetNestedPath(path, append(existingValueSlice, value))
-					if err != nil {
-						return m, err
-					}
-				} else {
-					err = errors.Errorf("invalid square brackets in query")
-					return m, err
-				}
+			err = appendValueToSlice(m, path, value)
+			if err != nil {
+				return m, err
 			}
 			continue
 		}
@@ -66,6 +53,23 @@ func ParseQuery(query string) (m *orderedmap.OrderedMap, err error) {
 		}
 	}
 	return m, err
+}
+
+// appendValueToSlice appends a value to a slice at the given path in the ordered map.
+// If the path doesn't exist, it creates a new slice with the value.
+// If the existing value is not a slice, it returns an error.
+func appendValueToSlice(m *orderedmap.OrderedMap, path orderedmap.Path, value string) error {
+	existingValue, found, _ := m.GetNestedPath(path)
+	if !found {
+		return m.SetNestedPath(path, []any{value})
+	}
+
+	existingValueSlice, ok := existingValue.([]any)
+	if !ok {
+		return errors.Errorf("invalid square brackets in query")
+	}
+
+	return m.SetNestedPath(path, append(existingValueSlice, value))
 }
 
 // parseKey transforms a given url key string to orderedmap.Path.

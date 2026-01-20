@@ -92,52 +92,58 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	// Log plan
 	plan.Log(d.Stdout())
 
-	if !plan.Empty() {
-		// Dry run?
-		if o.DryRun {
-			logger.Info(ctx, "Dry run, nothing changed.")
-			return nil
+	if plan.Empty() {
+		// Log untracked paths
+		if o.LogUntrackedPaths {
+			projectState.LogUntrackedPaths(ctx, logger)
 		}
+		return nil
+	}
 
-		// Invoke
-		if err := plan.Invoke(logger, projectState.Ctx(), projectState.LocalManager(), projectState.RemoteManager(), ``); err != nil { // nolint: contextcheck
-			return err
-		}
+	// Dry run?
+	if o.DryRun {
+		logger.Info(ctx, "Dry run, nothing changed.")
+		return nil
+	}
 
-		// Save manifest
-		if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
-			return err
-		}
+	// Invoke
+	if err := plan.Invoke(logger, projectState.Ctx(), projectState.LocalManager(), projectState.RemoteManager(), ``); err != nil { // nolint: contextcheck
+		return err
+	}
 
-		// Save project.json
-		if err := cachefile.New().Save(ctx, projectState.Fs(), d.ProjectBackends(), d.ProjectFeatures(), defaultBranch.ID); err != nil {
-			return err
-		}
+	// Save manifest
+	if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+		return err
+	}
 
-		// Reload local state so that the naming registry reflects deletions
-		// and freed paths before running path normalization. Without this the
-		// rename plan may see old paths as still occupied and append suffixes.
-		if ok, localErr, _ := projectState.Load(ctx, state.LoadOptions{LoadLocalState: true}); !ok {
-			if localErr != nil {
-				return localErr
-			}
-			return errors.New("failed to reload local state")
-		}
+	// Save project.json
+	if err := cachefile.New().Save(ctx, projectState.Fs(), d.ProjectBackends(), d.ProjectFeatures(), defaultBranch.ID); err != nil {
+		return err
+	}
 
-		// Normalize paths
-		// Enable Cleanup to handle chained renames where destination temporarily exists
-		if _, err := rename.Run(ctx, projectState, renameOptions, d); err != nil {
-			return err
+	// Reload local state so that the naming registry reflects deletions
+	// and freed paths before running path normalization. Without this the
+	// rename plan may see old paths as still occupied and append suffixes.
+	if ok, localErr, _ := projectState.Load(ctx, state.LoadOptions{LoadLocalState: true}); !ok {
+		if localErr != nil {
+			return localErr
 		}
+		return errors.New("failed to reload local state")
+	}
 
-		// Validate schemas and encryption
-		if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJSONSchema: true}, d); err != nil {
-			logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
-			logger.Warn(ctx, "")
-			logger.Warn(ctx, `The project has been pulled, but it is not in a valid state.`)
-			logger.Warn(ctx, `Please correct the problems listed above.`)
-			logger.Warn(ctx, `Push operation is only possible when project is valid.`)
-		}
+	// Normalize paths
+	// Enable Cleanup to handle chained renames where destination temporarily exists
+	if _, err := rename.Run(ctx, projectState, renameOptions, d); err != nil {
+		return err
+	}
+
+	// Validate schemas and encryption
+	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJSONSchema: true}, d); err != nil {
+		logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+		logger.Warn(ctx, "")
+		logger.Warn(ctx, `The project has been pulled, but it is not in a valid state.`)
+		logger.Warn(ctx, `Please correct the problems listed above.`)
+		logger.Warn(ctx, `Push operation is only possible when project is valid.`)
 	}
 
 	// Log untracked paths
@@ -145,9 +151,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		projectState.LogUntrackedPaths(ctx, logger)
 	}
 
-	if !plan.Empty() {
-		logger.Info(ctx, "Pull done.")
-	}
+	logger.Info(ctx, "Pull done.")
 
 	return nil
 }

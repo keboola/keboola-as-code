@@ -133,23 +133,12 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 	u.
 		workersFor(manifest.Level()).
 		AddWorker(func(ctx context.Context) error {
-			// Has been parent loaded?
-			if parentKey, err := manifest.Key().ParentKey(); err != nil {
+			shouldValidate, err := u.shouldValidate(manifest)
+			if err != nil {
 				return err
-			} else if parentKey != nil {
-				// Has object a parent?
-				if _, found := u.localObjects.Get(parentKey); !found {
-					// Parent is not loaded -> skip
-					manifest.State().SetInvalid()
-					if parent, found := u.manifest.GetRecord(parentKey); found && parent.State().IsNotFound() {
-						// Parent is not found
-						manifest.State().SetNotFound()
-						if !u.skipNotFoundErr {
-							return errors.Errorf(`%s "%s" not found`, manifest.Kind().Name, manifest.Path())
-						}
-					}
-					return nil
-				}
+			}
+			if !shouldValidate {
+				return nil
 			}
 
 			// Load object from filesystem
@@ -209,6 +198,34 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 			u.changes.AddLoaded(objectState)
 			return nil
 		})
+}
+
+func (u *UnitOfWork) shouldValidate(manifest model.ObjectManifest) (bool, error) {
+	// Has been parent loaded?
+	parentKey, err := manifest.Key().ParentKey()
+	if err != nil {
+		return false, err
+	}
+
+	if parentKey == nil {
+		return true, nil
+	}
+
+	// Has object a parent?
+	if _, found := u.localObjects.Get(parentKey); !found {
+		// Parent is not loaded -> skip
+		manifest.State().SetInvalid()
+		if parent, found := u.manifest.GetRecord(parentKey); found && parent.State().IsNotFound() {
+			// Parent is not found
+			manifest.State().SetNotFound()
+			if !u.skipNotFoundErr {
+				return false, errors.Errorf(`%s "%s" not found`, manifest.Kind().Name, manifest.Path())
+			}
+		}
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object, changedFields model.ChangedFields) {

@@ -40,11 +40,9 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	logger := d.Logger()
 
-	// Encrypt before push?
-	if o.Encrypt {
-		if err := encrypt.Run(ctx, projectState, encrypt.Options{DryRun: o.DryRun, LogEmpty: true}, d); err != nil {
-			return err
-		}
+	// Encrypt before push - ALWAYS (--encrypt flag kept for backwards compatibility)
+	if err := encrypt.Run(ctx, projectState, encrypt.Options{DryRun: o.DryRun, LogEmpty: false}, d); err != nil {
+		return err
 	}
 
 	// Change description - optional arg
@@ -58,7 +56,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	// Validate
 	if !o.SkipValidation {
 		validateOptions := validate.Options{
-			ValidateSecrets:    !o.Encrypt || !o.DryRun,
+			ValidateSecrets:    false, // Already encrypted above
 			ValidateJSONSchema: true,
 		}
 		if err := validate.Run(ctx, projectState, validateOptions, d); err != nil {

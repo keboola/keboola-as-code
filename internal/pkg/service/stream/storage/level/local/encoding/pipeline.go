@@ -205,48 +205,9 @@ func newPipeline(
 		p.chain = writechain.New(logger, p.chunks)
 	}
 
-	// Measure size of compressed data
-	{
-		p.chain.PrependWriter(func(writer io.Writer) io.Writer {
-			p.compressedMeter = size.NewMeter(writer)
-			return p.compressedMeter
-		})
-	}
-
-	// Add compression if enabled
-	{
-		if encodingCfg.Compression.Type != compression.TypeNone {
-			// Add compression writer
-			_, err = p.chain.PrependWriterOrErr(func(writer io.Writer) (io.Writer, error) {
-				return compressionWriter.New(writer, encodingCfg.Compression)
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			// Add a buffer before compression writer, if it is not included in the writer itself
-			if encodingCfg.InputBuffer > 0 && !encodingCfg.Compression.HasWriterInputBuffer() {
-				_, err = p.chain.PrependWriterOrErr(func(w io.Writer) (io.Writer, error) {
-					bytes, err := safecast.Convert[int](encodingCfg.InputBuffer.Bytes())
-					if err != nil {
-						return nil, err
-					}
-					return limitbuffer.New(w, bytes), nil
-				})
-				if err != nil {
-					return nil, err
-				}
-			}
-
-			// Measure size of uncompressed CSV data
-			p.chain.PrependWriter(func(writer io.Writer) io.Writer {
-				p.uncompressedMeter = size.NewMeter(writer)
-				return p.uncompressedMeter
-			})
-		} else {
-			// Size of the compressed and uncompressed data is same
-			p.uncompressedMeter = p.compressedMeter
-		}
+	// Setup compression in the write chain
+	if err = p.setupCompression(encodingCfg); err != nil {
+		return nil, err
 	}
 
 	// Create syncer to trigger sync based on counter and meters from the previous steps
@@ -284,6 +245,53 @@ func newPipeline(
 
 	p.logger.Debug(ctx, "opened encoding pipeline")
 	return p, nil
+}
+
+// setupCompression configures compression in the write chain.
+// It adds size meters and compression writer with optional input buffer.
+func (p *pipeline) setupCompression(encodingCfg encoding.Config) error {
+	// Measure size of compressed data
+	p.chain.PrependWriter(func(writer io.Writer) io.Writer {
+		p.compressedMeter = size.NewMeter(writer)
+		return p.compressedMeter
+	})
+
+	// Add compression if enabled
+	if encodingCfg.Compression.Type == compression.TypeNone {
+		// Size of the compressed and uncompressed data is same
+		p.uncompressedMeter = p.compressedMeter
+		return nil
+	}
+
+	// Add compression writer
+	_, err := p.chain.PrependWriterOrErr(func(writer io.Writer) (io.Writer, error) {
+		return compressionWriter.New(writer, encodingCfg.Compression)
+	})
+	if err != nil {
+		return err
+	}
+
+	// Add a buffer before compression writer, if it is not included in the writer itself
+	if encodingCfg.InputBuffer > 0 && !encodingCfg.Compression.HasWriterInputBuffer() {
+		_, err = p.chain.PrependWriterOrErr(func(w io.Writer) (io.Writer, error) {
+			bytes, err := safecast.Convert[int](encodingCfg.InputBuffer.Bytes())
+			if err != nil {
+				return nil, err
+			}
+			return limitbuffer.New(w, bytes), nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// Measure size of uncompressed CSV data
+	p.chain.PrependWriter(func(writer io.Writer) io.Writer {
+		p.uncompressedMeter = size.NewMeter(writer)
+		return p.uncompressedMeter
+	})
+
+	return nil
 }
 
 func (p *pipeline) IsReady() bool {

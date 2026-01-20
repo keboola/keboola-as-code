@@ -155,16 +155,17 @@ func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFil
 	ok, localErr, remoteErr := projectState.Load(ctx, loadOptions)
 	if ok {
 		logger.Debugf(ctx, "Project state has been successfully loaded.")
-	} else {
-		if remoteErr != nil {
-			return nil, InvalidRemoteStateError{error: remoteErr}
-		}
-		if localErr != nil {
-			if o.IgnoreInvalidLocalState {
-				logger.Info(ctx, `Ignoring invalid local state.`)
-			} else {
-				return nil, InvalidLocalStateError{error: localErr}
-			}
+		return projectState, nil
+	}
+
+	if remoteErr != nil {
+		return nil, InvalidRemoteStateError{error: remoteErr}
+	}
+	if localErr != nil {
+		if o.IgnoreInvalidLocalState {
+			logger.Info(ctx, `Ignoring invalid local state.`)
+		} else {
+			return nil, InvalidLocalStateError{error: localErr}
 		}
 	}
 

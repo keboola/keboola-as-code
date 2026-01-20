@@ -130,20 +130,12 @@ func (c *Cleaner) isForCleanup(t Task) bool {
 	now := c.clock.Now()
 	if t.IsProcessing() {
 		taskAge := now.Sub(t.CreatedAt.Time())
-		if taskAge >= CleanupUnfinishedTasksAfter {
-			return true
-		}
-	} else {
-		taskAge := now.Sub(t.FinishedAt.Time())
-		if t.IsSuccessful() {
-			if taskAge >= CleanupSuccessfulTasksAfter {
-				return true
-			}
-		} else {
-			if taskAge >= CleanupFailedTasksAfter {
-				return true
-			}
-		}
+		return taskAge >= CleanupUnfinishedTasksAfter
 	}
-	return false
+
+	taskAge := now.Sub(t.FinishedAt.Time())
+	if t.IsSuccessful() {
+		return taskAge >= CleanupSuccessfulTasksAfter
+	}
+	return taskAge >= CleanupFailedTasksAfter
 }

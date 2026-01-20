@@ -58,6 +58,7 @@ linters:
     - makezero
     - musttag
     - nakedret
+    - nestif
     - nilerr
     - noctx
     - paralleltest

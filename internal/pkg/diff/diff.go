@@ -95,21 +95,21 @@ func (d *Differ) Diff() (*Results, error) {
 		result, err := d.diffState(objectState)
 		if err != nil {
 			d.errors.Append(err)
-		} else {
-			if result.State != ResultEqual {
-				results.Equal = false
-			}
-			if result.State == ResultNotEqual {
-				results.HasNotEqualResult = true
-			}
-			if result.State != ResultOnlyInRemote {
-				results.HasOnlyInRemoteResult = true
-			}
-			if result.State != ResultOnlyInLocal {
-				results.HasOnlyInLocalResult = true
-			}
-			d.results = append(d.results, result)
+			continue
 		}
+		if result.State != ResultEqual {
+			results.Equal = false
+		}
+		if result.State == ResultNotEqual {
+			results.HasNotEqualResult = true
+		}
+		if result.State != ResultOnlyInRemote {
+			results.HasOnlyInRemoteResult = true
+		}
+		if result.State != ResultOnlyInLocal {
+			results.HasOnlyInLocalResult = true
+		}
+		d.results = append(d.results, result)
 	}
 
 	// Sort results
