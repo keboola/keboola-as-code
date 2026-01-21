@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/expr-lang/expr"
 	"github.com/go-resty/resty/v2"
 	"github.com/google/shlex"
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -25,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
-	goValuate "gopkg.in/Knetic/govaluate.v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -596,17 +596,18 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 			}
 
 			// Evaluate repeat until condition
-			repeatUntilExp, err := goValuate.NewEvaluableExpression(request.Repeat.Until)
-			if err != nil {
-				t.t.Fatal(errors.Errorf("cannot compile repeat until expression: %w", err))
-			}
-			repeatUntilVal, err := repeatUntilExp.Evaluate(respMap.ToMap())
-			if err != nil {
-				t.t.Fatal(errors.Errorf("cannot evaluate repeat until expression: %w", err))
-			}
-			if repeatUntilVal.(bool) {
-				break
-			}
+				env := respMap.ToMap()
+				program, err := expr.Compile(request.Repeat.Until, expr.Env(env), expr.AsBool())
+				if err != nil {
+					t.t.Fatal(errors.Errorf("cannot compile repeat until expression: %w", err))
+				}
+				output, err := expr.Run(program, env)
+				if err != nil {
+					t.t.Fatal(errors.Errorf("cannot evaluate repeat until expression: %w", err))
+				}
+				if output.(bool) {
+					break
+				}
 			time.Sleep(reqsWait)
 		}
 

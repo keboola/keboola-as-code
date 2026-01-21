@@ -194,7 +194,7 @@ Format:
 
 `Path` supports reference to previous request's response. The reference is in the format `<<001-create:response.url>>` where `001-create` is the name of the request and `url` is the path to the value in the `response`. The referenced URL will be stripped of the hostname so that it will be relative to the API server.
 
-`Repeat.until` is an expression evaluated by [govaluate](https://github.com/Knetic/govaluate) library against the response. 
+`Repeat.until` is an expression evaluated by [expr](https://github.com/expr-lang/expr) library against the response. 
 Until the expression is met the request is repeated with the specified `timeout`. 
 
 Timeout is in seconds and default value is `60`. Wait is a sleep between requests in seconds and default value is `3`.
