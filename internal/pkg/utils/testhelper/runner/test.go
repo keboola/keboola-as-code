@@ -20,12 +20,13 @@ import (
 	"github.com/expr-lang/expr"
 	"github.com/go-resty/resty/v2"
 	"github.com/google/shlex"
-	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
+
+	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/go-utils/pkg/wildcards"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"

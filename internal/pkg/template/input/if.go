@@ -4,7 +4,6 @@ import (
 	"regexp"
 
 	"github.com/expr-lang/expr"
-	"github.com/expr-lang/expr/vm"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -93,7 +92,7 @@ func (i If) Evaluate(params map[string]any) (bool, error) {
 
 // compile validates the expression syntax without environment type inference.
 // Used for validation purposes where we only need to check if the expression is syntactically valid.
-func (i If) compile() (*vm.Program, error) {
+func (i If) compile() error {
 	// Convert govaluate syntax to expr syntax
 	exprStr := convertGovaluateToExpr(string(i))
 
@@ -103,13 +102,13 @@ func (i If) compile() (*vm.Program, error) {
 		"get": func(name string) any { return nil },
 	}
 
-	program, err := expr.Compile(exprStr, expr.Env(env), expr.AsBool())
+	_, err := expr.Compile(exprStr, expr.Env(env), expr.AsBool())
 	if err != nil {
-		return nil, errors.NewNestedError(
+		return errors.NewNestedError(
 			errors.New("cannot compile condition"),
 			errors.Errorf("expression: %s", i),
 			errors.Errorf("error: %w", err),
 		)
 	}
-	return program, nil
+	return nil
 }
