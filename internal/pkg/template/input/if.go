@@ -32,9 +32,11 @@ func (i If) Evaluate(params map[string]any) (bool, error) {
 	}
 
 	// Convert govaluate syntax to expr syntax
+	// This converts [variable-name] to get("variable-name") for variables with special chars
 	exprStr := convertGovaluateToExpr(string(i))
 
-	// Create a custom "get" function that retrieves parameters and returns an error if not found
+	// Create a custom "get" function that retrieves parameters
+	// This is used for [variable-name] syntax which gets converted to get("variable-name")
 	var missingParam string
 	getFunc := func(name string) any {
 		if val, ok := params[name]; ok {
@@ -44,10 +46,13 @@ func (i If) Evaluate(params map[string]any) (bool, error) {
 		return nil
 	}
 
-	// Create environment with the get function
-	env := map[string]any{
-		"get": getFunc,
+	// Create environment with params directly accessible (for direct variable references)
+	// and the get function (for [variable-name] syntax)
+	env := make(map[string]any, len(params)+1)
+	for k, v := range params {
+		env[k] = v
 	}
+	env["get"] = getFunc
 
 	// Compile with environment for type inference
 	program, err := expr.Compile(exprStr, expr.Env(env), expr.AsBool())
@@ -69,7 +74,7 @@ func (i If) Evaluate(params map[string]any) (bool, error) {
 		)
 	}
 
-	// Check if a parameter was missing during evaluation
+	// Check if a parameter was missing during evaluation (only for get() function calls)
 	if missingParam != "" {
 		return false, errors.NewNestedError(
 			errors.New("cannot evaluate condition"),
