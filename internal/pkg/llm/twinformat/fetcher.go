@@ -74,15 +74,11 @@ func (f *Fetcher) FetchAll(ctx context.Context, branchID keboola.BranchID) (data
 	// Fetch all components with configs (single API call)
 	components, transformConfigs, componentConfigs, err := f.fetchAllComponents(ctx, branchID)
 	if err != nil {
-		f.logger.Warnf(ctx, "Failed to fetch components: %v", err)
-		data.Components = []*keboola.ComponentWithConfigs{}
-		data.TransformationConfigs = []*configparser.TransformationConfig{}
-		data.ComponentConfigs = []*configparser.ComponentConfig{}
-	} else {
-		data.Components = components
-		data.TransformationConfigs = transformConfigs
-		data.ComponentConfigs = componentConfigs
+		return nil, err
 	}
+	data.Components = components
+	data.TransformationConfigs = transformConfigs
+	data.ComponentConfigs = componentConfigs
 
 	f.logger.Infof(ctx, "Fetched %d buckets, %d tables, %d jobs, %d components, %d transformations, %d component configs",
 		len(data.Buckets), len(data.Tables), len(data.Jobs),
@@ -287,12 +283,6 @@ func (f *Fetcher) FetchTableLastImporter(ctx context.Context, tableID keboola.Ta
 // Format: "Keboola Storage API PHP Client/14 kds-team.app-custom-python"
 // Returns the last space-separated part which is the component ID.
 func extractComponentFromUserAgent(userAgent string) string {
-	if userAgent == "" {
-		return ""
-	}
 	parts := strings.Split(userAgent, " ")
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return ""
+	return parts[len(parts)-1]
 }
