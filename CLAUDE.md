@@ -182,6 +182,43 @@ func processChildren(children []Child) {
 - **Direct "zap" logger** - Use `internal/pkg/log` package
 - **Naked returns**
 - **Underscores in package names**
+- **Deprecated functions** - Remove deprecated functions instead of keeping them; don't mark as deprecated if still needed
+- **Variables only used for logging** - Don't create variables solely for debug/info logging; inline or remove them
+- **Pseudo-version SDK dependencies** - Use tagged versions (e.g., `v2.12.0`) instead of pseudo-versions (e.g., `v2.9.1-0.20260109014800-d596b2c092e2`)
+
+### Go Naming Conventions
+- **No "Get" prefix for getters** - Use `Type()` not `GetType()`, `Name()` not `GetName()`, `Source()` not `GetSource()`
+- **Use "Get" only when it fetches external data** - e.g., `GetFromAPI()`, `GetFromDatabase()`
+
+### Function Return Values
+- **Wrap multiple return values** - When returning more than 3 values, wrap them in a struct
+- **Return errors, don't silently continue** - When an operation fails, return the error instead of continuing with empty/default values
+
+Example - instead of:
+```go
+func fetchData() (a, b, c, d Type, err error)
+```
+Use:
+```go
+type fetchResult struct {
+    A, B, C, D Type
+}
+func fetchData() (fetchResult, error)
+```
+
+### String Building
+- **Use `strings.Builder` for concatenation** - More efficient than `fmt.Sprintf` or `+` for building strings
+
+Example:
+```go
+func buildUID(prefix, name string) string {
+    var b strings.Builder
+    b.WriteString(prefix)
+    b.WriteByte(':')
+    b.WriteString(name)
+    return b.String()
+}
+```
 
 ### Required Patterns
 - **Context handling**: Pass context as first parameter; respect cancellation; never store in structs
