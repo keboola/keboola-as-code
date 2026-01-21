@@ -40,18 +40,18 @@ func (r *ComponentRegistry) Register(comp *keboola.ComponentWithConfigs) {
 	}
 }
 
-// GetType returns the type for a component ID.
+// Type returns the type for a component ID.
 // Returns empty string if component not found.
-func (r *ComponentRegistry) GetType(componentID string) string {
+func (r *ComponentRegistry) Type(componentID string) string {
 	if info, ok := r.components[componentID]; ok {
 		return info.Type
 	}
 	return ""
 }
 
-// GetName returns the human-readable name for a component ID.
+// Name returns the human-readable name for a component ID.
 // Returns empty string if component not found.
-func (r *ComponentRegistry) GetName(componentID string) string {
+func (r *ComponentRegistry) Name(componentID string) string {
 	if info, ok := r.components[componentID]; ok {
 		return info.Name
 	}
@@ -93,9 +93,9 @@ func (r *TableSourceRegistry) Register(tableID string, source TableSource) {
 	r.tableToSource[tableID] = source
 }
 
-// GetSource returns the source ComponentID for a table.
+// Source returns the source ComponentID for a table.
 // Returns SourceUnknown if table not found.
-func (r *TableSourceRegistry) GetSource(tableID string) string {
+func (r *TableSourceRegistry) Source(tableID string) string {
 	if source, ok := r.tableToSource[tableID]; ok {
 		return source.ComponentID
 	}
@@ -120,7 +120,7 @@ func (r *TableSourceRegistry) GetDominantSourceForBucket(bucketID string, tableI
 	// Count sources
 	sourceCounts := make(map[string]int)
 	for _, tableID := range tableIDs {
-		source := r.GetSource(tableID)
+		source := r.Source(tableID)
 		if source != SourceUnknown {
 			sourceCounts[source]++
 		}

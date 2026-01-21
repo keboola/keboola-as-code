@@ -14,8 +14,8 @@ func TestComponentRegistry(t *testing.T) {
 		t.Parallel()
 		registry := NewComponentRegistry()
 
-		assert.Empty(t, registry.GetType("unknown-component"))
-		assert.Empty(t, registry.GetName("unknown-component"))
+		assert.Empty(t, registry.Type("unknown-component"))
+		assert.Empty(t, registry.Name("unknown-component"))
 
 		_, found := registry.Get("unknown-component")
 		assert.False(t, found)
@@ -34,8 +34,8 @@ func TestComponentRegistry(t *testing.T) {
 		}
 		registry.Register(comp)
 
-		assert.Equal(t, "extractor", registry.GetType("keboola.ex-db-mysql"))
-		assert.Equal(t, "MySQL", registry.GetName("keboola.ex-db-mysql"))
+		assert.Equal(t, "extractor", registry.Type("keboola.ex-db-mysql"))
+		assert.Equal(t, "MySQL", registry.Name("keboola.ex-db-mysql"))
 
 		info, found := registry.Get("keboola.ex-db-mysql")
 		assert.True(t, found)
@@ -51,7 +51,7 @@ func TestComponentRegistry(t *testing.T) {
 		// Should not panic
 		registry.Register(nil)
 
-		assert.Empty(t, registry.GetType("anything"))
+		assert.Empty(t, registry.Type("anything"))
 	})
 
 	t.Run("multiple components", func(t *testing.T) {
@@ -86,13 +86,13 @@ func TestComponentRegistry(t *testing.T) {
 			registry.Register(comp)
 		}
 
-		assert.Equal(t, "transformation", registry.GetType("keboola.snowflake-transformation"))
-		assert.Equal(t, "application", registry.GetType("kds-team.app-custom-python"))
-		assert.Equal(t, "extractor", registry.GetType("keboola.ex-shopify"))
+		assert.Equal(t, "transformation", registry.Type("keboola.snowflake-transformation"))
+		assert.Equal(t, "application", registry.Type("kds-team.app-custom-python"))
+		assert.Equal(t, "extractor", registry.Type("keboola.ex-shopify"))
 
-		assert.Equal(t, "Snowflake SQL", registry.GetName("keboola.snowflake-transformation"))
-		assert.Equal(t, "Custom Python", registry.GetName("kds-team.app-custom-python"))
-		assert.Equal(t, "Shopify", registry.GetName("keboola.ex-shopify"))
+		assert.Equal(t, "Snowflake SQL", registry.Name("keboola.snowflake-transformation"))
+		assert.Equal(t, "Custom Python", registry.Name("kds-team.app-custom-python"))
+		assert.Equal(t, "Shopify", registry.Name("keboola.ex-shopify"))
 	})
 }
 
@@ -103,7 +103,7 @@ func TestTableSourceRegistry(t *testing.T) {
 		t.Parallel()
 		registry := NewTableSourceRegistry()
 
-		assert.Equal(t, SourceUnknown, registry.GetSource("in.c-bucket.table"))
+		assert.Equal(t, SourceUnknown, registry.Source("in.c-bucket.table"))
 
 		_, found := registry.GetSourceInfo("in.c-bucket.table")
 		assert.False(t, found)
@@ -120,7 +120,7 @@ func TestTableSourceRegistry(t *testing.T) {
 			ConfigName:    "My Transformation",
 		})
 
-		assert.Equal(t, "keboola.snowflake-transformation", registry.GetSource("out.c-bucket.table"))
+		assert.Equal(t, "keboola.snowflake-transformation", registry.Source("out.c-bucket.table"))
 
 		info, found := registry.GetSourceInfo("out.c-bucket.table")
 		assert.True(t, found)
@@ -139,7 +139,7 @@ func TestTableSourceRegistry(t *testing.T) {
 			ComponentID: "some-component",
 		})
 
-		assert.Equal(t, SourceUnknown, registry.GetSource(""))
+		assert.Equal(t, SourceUnknown, registry.Source(""))
 	})
 
 	t.Run("multiple tables", func(t *testing.T) {
@@ -165,10 +165,10 @@ func TestTableSourceRegistry(t *testing.T) {
 			ConfigName:    "Hacker News Extractor",
 		})
 
-		assert.Equal(t, "keboola.snowflake-transformation", registry.GetSource("out.c-customer-analysis.customers"))
-		assert.Equal(t, "keboola.snowflake-transformation", registry.GetSource("out.c-customer-analysis.orders"))
-		assert.Equal(t, "kds-team.app-custom-python", registry.GetSource("out.c-hackernews.stories"))
-		assert.Equal(t, SourceUnknown, registry.GetSource("in.c-input.data"))
+		assert.Equal(t, "keboola.snowflake-transformation", registry.Source("out.c-customer-analysis.customers"))
+		assert.Equal(t, "keboola.snowflake-transformation", registry.Source("out.c-customer-analysis.orders"))
+		assert.Equal(t, "kds-team.app-custom-python", registry.Source("out.c-hackernews.stories"))
+		assert.Equal(t, SourceUnknown, registry.Source("in.c-input.data"))
 	})
 }
 

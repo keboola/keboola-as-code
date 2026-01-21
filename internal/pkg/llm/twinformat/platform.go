@@ -68,8 +68,11 @@ func IsTransformationComponent(componentID string) bool {
 	return strings.Contains(componentIDLower, "transformation")
 }
 
-// GetPlatformDisplayName returns a human-readable display name for a platform.
-func GetPlatformDisplayName(platform string) string {
+// PlatformDisplayName returns a human-readable display name for a platform.
+// Note: We use a switch statement instead of cases.Title because display names
+// have special formatting (e.g., "BigQuery", "dbt", "R") that can't be derived
+// algorithmically.
+func PlatformDisplayName(platform string) string {
 	switch platform {
 	case PlatformSnowflake:
 		return "Snowflake"

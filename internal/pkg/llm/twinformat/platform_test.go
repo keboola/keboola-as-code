@@ -107,7 +107,7 @@ func TestIsTransformationComponent(t *testing.T) {
 	}
 }
 
-func TestGetPlatformDisplayName(t *testing.T) {
+func TestPlatformDisplayName(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -124,7 +124,7 @@ func TestGetPlatformDisplayName(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.platform, func(t *testing.T) {
 			t.Parallel()
-			result := GetPlatformDisplayName(tc.platform)
+			result := PlatformDisplayName(tc.platform)
 			assert.Equal(t, tc.expected, result)
 		})
 	}

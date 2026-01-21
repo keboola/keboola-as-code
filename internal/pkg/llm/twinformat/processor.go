@@ -212,7 +212,7 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 
 	// PRIORITY 1: Transformation config output mappings (most reliable)
 	for _, cfg := range transformConfigs {
-		compType := componentRegistry.GetType(cfg.ComponentID)
+		compType := componentRegistry.Type(cfg.ComponentID)
 		if compType == "" {
 			compType = "transformation"
 		}
@@ -223,7 +223,7 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 	for _, cfg := range componentConfigs {
 		compType := cfg.ComponentType
 		if compType == "" {
-			compType = componentRegistry.GetType(cfg.ComponentID)
+			compType = componentRegistry.Type(cfg.ComponentID)
 		}
 		registerOutputTables(registry, cfg.OutputTables, cfg.ComponentID, compType, cfg.ID, cfg.Name, true)
 	}
@@ -243,7 +243,7 @@ func registerOutputTables(registry *TableSourceRegistry, outputs []StorageMappin
 		if tableID == "" {
 			continue
 		}
-		if onlyIfUnknown && registry.GetSource(tableID) != SourceUnknown {
+		if onlyIfUnknown && registry.Source(tableID) != SourceUnknown {
 			continue
 		}
 		registry.Register(tableID, TableSource{
@@ -298,7 +298,7 @@ func (p *Processor) registerTablesFromJobResult(componentID, configID string, re
 	}
 
 	count := 0
-	compType := componentRegistry.GetType(componentID)
+	compType := componentRegistry.Type(componentID)
 
 	for _, table := range result.Output.Tables {
 		if table.ID == "" {
@@ -306,7 +306,7 @@ func (p *Processor) registerTablesFromJobResult(componentID, configID string, re
 		}
 
 		// Only register if not already registered: the first job that outputs a given table determines its recorded source.
-		if registry.GetSource(table.ID) == SourceUnknown {
+		if registry.Source(table.ID) == SourceUnknown {
 			registry.Register(table.ID, TableSource{
 				ComponentID:   componentID,
 				ComponentType: compType,
@@ -382,7 +382,7 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 
 		// Get source from component-based registry
 		tableID := table.TableID.String()
-		source := sourceRegistry.GetSource(tableID)
+		source := sourceRegistry.Source(tableID)
 
 		processed = append(processed, &ProcessedTable{
 			Table:        table,
