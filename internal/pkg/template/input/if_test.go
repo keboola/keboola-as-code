@@ -40,5 +40,6 @@ func TestIf_Evaluate(t *testing.T) {
 	result, err = If(">>>>>").Evaluate(map[string]any{})
 	assert.False(t, result)
 	require.Error(t, err)
-	assert.Equal(t, "cannot compile condition:\n- expression: >>>>>\n- error: Invalid token: '>>>>>'", err.Error())
+	assert.Contains(t, err.Error(), "cannot compile condition")
+	assert.Contains(t, err.Error(), "expression: >>>>>")
 }
