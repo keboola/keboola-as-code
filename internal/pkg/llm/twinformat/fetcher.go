@@ -72,13 +72,13 @@ func (f *Fetcher) FetchAll(ctx context.Context, branchID keboola.BranchID) (data
 	}
 
 	// Fetch all components with configs (single API call)
-	components, transformConfigs, componentConfigs, err := f.fetchAllComponents(ctx, branchID)
+	compResult, err := f.fetchAllComponents(ctx, branchID)
 	if err != nil {
 		return nil, err
 	}
-	data.Components = components
-	data.TransformationConfigs = transformConfigs
-	data.ComponentConfigs = componentConfigs
+	data.Components = compResult.Components
+	data.TransformationConfigs = compResult.TransformConfigs
+	data.ComponentConfigs = compResult.ComponentConfigs
 
 	f.logger.Infof(ctx, "Fetched %d buckets, %d tables, %d jobs, %d components, %d transformations, %d component configs",
 		len(data.Buckets), len(data.Tables), len(data.Jobs),
@@ -176,32 +176,36 @@ func (f *Fetcher) fetchJobsQueue(ctx context.Context, branchID keboola.BranchID)
 	return jobs, nil
 }
 
+// componentsResult holds the result of fetchAllComponents.
+type componentsResult struct {
+	Components       []*keboola.ComponentWithConfigs
+	TransformConfigs []*configparser.TransformationConfig
+	ComponentConfigs []*configparser.ComponentConfig
+}
+
 // fetchAllComponents fetches all components and extracts transformation and component configs.
 // This makes a single API call and returns all data needed for processing.
-func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.BranchID) (
-	components []*keboola.ComponentWithConfigs,
-	transformConfigs []*configparser.TransformationConfig,
-	componentConfigs []*configparser.ComponentConfig,
-	err error,
-) {
+func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.BranchID) (result *componentsResult, err error) {
 	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.fetchAllComponents")
 	defer span.End(&err)
 
 	f.logger.Info(ctx, "Fetching all components from API...")
 
 	// Fetch all components with configs (single API call)
-	result, err := f.api.ListConfigsAndRowsFrom(keboola.BranchKey{ID: branchID}).Send(ctx)
+	apiResult, err := f.api.ListConfigsAndRowsFrom(keboola.BranchKey{ID: branchID}).Send(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
-	components = make([]*keboola.ComponentWithConfigs, 0, len(*result))
-	transformConfigs = make([]*configparser.TransformationConfig, 0)
-	componentConfigs = make([]*configparser.ComponentConfig, 0)
+	result = &componentsResult{
+		Components:       make([]*keboola.ComponentWithConfigs, 0, len(*apiResult)),
+		TransformConfigs: make([]*configparser.TransformationConfig, 0),
+		ComponentConfigs: make([]*configparser.ComponentConfig, 0),
+	}
 
-	for _, comp := range *result {
+	for _, comp := range *apiResult {
 		// Store all components for the registry
-		components = append(components, comp)
+		result.Components = append(result.Components, comp)
 
 		// Process transformation components
 		if comp.IsTransformation() {
@@ -210,7 +214,7 @@ func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.Branc
 				if config == nil {
 					continue
 				}
-				transformConfigs = append(transformConfigs, config)
+				result.TransformConfigs = append(result.TransformConfigs, config)
 			}
 			continue
 		}
@@ -224,31 +228,15 @@ func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.Branc
 		for _, cfg := range comp.Configs {
 			config := configparser.ParseComponentConfig(comp, cfg)
 			if config != nil {
-				componentConfigs = append(componentConfigs, config)
+				result.ComponentConfigs = append(result.ComponentConfigs, config)
 			}
 		}
 	}
 
 	f.logger.Infof(ctx, "Found %d components, %d transformation configs, %d component configs",
-		len(components), len(transformConfigs), len(componentConfigs))
+		len(result.Components), len(result.TransformConfigs), len(result.ComponentConfigs))
 
-	return components, transformConfigs, componentConfigs, nil
-}
-
-// FetchTransformationConfigs fetches transformation configurations from the API.
-//
-// Deprecated: Use FetchAll which fetches everything in a single call.
-func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboola.BranchID) (configs []*configparser.TransformationConfig, err error) {
-	_, configs, _, err = f.fetchAllComponents(ctx, branchID)
-	return configs, err
-}
-
-// FetchComponentConfigs fetches non-transformation component configurations from the API.
-//
-// Deprecated: Use FetchAll which fetches everything in a single call.
-func (f *Fetcher) FetchComponentConfigs(ctx context.Context, branchID keboola.BranchID) (configs []*configparser.ComponentConfig, err error) {
-	_, _, configs, err = f.fetchAllComponents(ctx, branchID)
-	return configs, err
+	return result, nil
 }
 
 // FetchTableLastImporter fetches the component that last imported data to a table.
