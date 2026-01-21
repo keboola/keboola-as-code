@@ -229,9 +229,9 @@ func (p *Processor) buildTableSourceRegistry(ctx context.Context, transformConfi
 	}
 
 	// PRIORITY 3: Job outputs (fallback for tables not declared in configurations)
-	jobOutputCount := p.registerTablesFromJobs(jobs, componentRegistry, registry)
+	p.registerTablesFromJobs(jobs, componentRegistry, registry)
 
-	p.logger.Infof(ctx, "Built table source registry with %d table mappings (%d from jobs as fallback)", len(registry.tableToSource), jobOutputCount)
+	p.logger.Infof(ctx, "Built table source registry with %d table mappings", len(registry.tableToSource))
 	return registry
 }
 
@@ -632,10 +632,18 @@ func formatJobTimePtr(t *iso8601.Time) string {
 
 // buildTableUID builds a table UID from bucket and table name.
 func buildTableUID(bucket, table string) string {
-	return "table:" + bucket + "/" + table
+	var b strings.Builder
+	b.WriteString("table:")
+	b.WriteString(bucket)
+	b.WriteByte('/')
+	b.WriteString(table)
+	return b.String()
 }
 
 // buildTransformationUID builds a transformation UID from a name.
 func buildTransformationUID(name string) string {
-	return "transform:" + name
+	var b strings.Builder
+	b.WriteString("transform:")
+	b.WriteString(name)
+	return b.String()
 }
