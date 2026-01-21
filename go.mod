@@ -9,7 +9,7 @@ replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
 require (
-	ariga.io/atlas v0.38.0
+	ariga.io/atlas v1.0.0
 	entgo.io/ent v0.14.5
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -42,7 +42,7 @@ require (
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250422071622-41a5d5547c43
-	github.com/keboola/go-utils v1.4.0
+	github.com/keboola/go-utils v1.4.1
 	github.com/keboola/keboola-sdk-go/v2 v2.12.0
 	github.com/klauspost/compress v1.18.3
 	github.com/klauspost/pgzip v1.2.6
