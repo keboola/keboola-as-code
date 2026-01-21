@@ -1,14 +1,27 @@
 package input
 
 import (
-	goValuate "gopkg.in/Knetic/govaluate.v3"
+	"regexp"
+
+	"github.com/expr-lang/expr"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// If condition, defined by an expression, compiled by https://github.com/Knetic/govaluate/tree/v3.0.0.
+// If condition, defined by an expression, compiled by https://github.com/expr-lang/expr.
 // If the result is "false", then Input is hidden in the template use dialog.
 type If string
+
+// varRefRegex matches govaluate-style variable references like [variable-name].
+// In govaluate, [variable-name] was used to reference variables with special characters.
+// In expr, we convert this to a function call get("variable-name") for safe access.
+var varRefRegex = regexp.MustCompile(`\[([a-zA-Z0-9_-]+)\]`)
+
+// convertGovaluateToExpr converts govaluate-style expressions to expr-compatible syntax.
+// Specifically, it converts [variable-name] to get("variable-name") function calls.
+func convertGovaluateToExpr(expression string) string {
+	return varRefRegex.ReplaceAllString(expression, `get("$1")`)
+}
 
 // Evaluate condition.
 func (i If) Evaluate(params map[string]any) (bool, error) {
@@ -17,14 +30,41 @@ func (i If) Evaluate(params map[string]any) (bool, error) {
 		return true, nil
 	}
 
-	// Compile
-	expression, err := i.compile()
+	// Convert govaluate syntax to expr syntax
+	// This converts [variable-name] to get("variable-name") for variables with special chars
+	exprStr := convertGovaluateToExpr(string(i))
+
+	// Create a custom "get" function that retrieves parameters
+	// This is used for [variable-name] syntax which gets converted to get("variable-name")
+	var missingParam string
+	getFunc := func(name string) any {
+		if val, ok := params[name]; ok {
+			return val
+		}
+		missingParam = name
+		return nil
+	}
+
+	// Create environment with params directly accessible (for direct variable references)
+	// and the get function (for [variable-name] syntax)
+	env := make(map[string]any, len(params)+1)
+	for k, v := range params {
+		env[k] = v
+	}
+	env["get"] = getFunc
+
+	// Compile with environment for type inference
+	program, err := expr.Compile(exprStr, expr.Env(env), expr.AsBool())
 	if err != nil {
-		return false, err
+		return false, errors.NewNestedError(
+			errors.New("cannot compile condition"),
+			errors.Errorf("expression: %s", i),
+			errors.Errorf("error: %w", err),
+		)
 	}
 
 	// Evaluate
-	result, err := expression.Evaluate(params)
+	result, err := expr.Run(program, env)
 	if err != nil {
 		return false, errors.NewNestedError(
 			errors.New("cannot evaluate condition"),
@@ -33,17 +73,42 @@ func (i If) Evaluate(params map[string]any) (bool, error) {
 		)
 	}
 
+	// Check if a parameter was missing during evaluation (only for get() function calls)
+	if missingParam != "" {
+		return false, errors.NewNestedError(
+			errors.New("cannot evaluate condition"),
+			errors.Errorf("expression: %s", i),
+			errors.Errorf("error: No parameter '%s' found.", missingParam),
+		)
+	}
+
+	// Handle nil result (shouldn't happen with AsBool(), but be safe)
+	if result == nil {
+		return false, nil
+	}
+
 	return result.(bool), nil
 }
 
-func (i If) compile() (*goValuate.EvaluableExpression, error) {
-	expression, err := goValuate.NewEvaluableExpression(string(i))
+// compile validates the expression syntax without environment type inference.
+// Used for validation purposes where we only need to check if the expression is syntactically valid.
+func (i If) compile() error {
+	// Convert govaluate syntax to expr syntax
+	exprStr := convertGovaluateToExpr(string(i))
+
+	// For validation, we need to provide a mock environment structure
+	// with a get function that accepts any string
+	env := map[string]any{
+		"get": func(name string) any { return nil },
+	}
+
+	_, err := expr.Compile(exprStr, expr.Env(env), expr.AsBool())
 	if err != nil {
-		return nil, errors.NewNestedError(
+		return errors.NewNestedError(
 			errors.New("cannot compile condition"),
 			errors.Errorf("expression: %s", i),
 			errors.Errorf("error: %w", err),
 		)
 	}
-	return expression, nil
+	return nil
 }

@@ -215,7 +215,7 @@ Allowed combinations of input type and kind (visual style):
 Rules example, see: https://github.com/go-playground/validator/blob/master/README.md
     rules: required,email
 
-ShowIf example, see: https://github.com/Knetic/govaluate/blob/master/MANUAL.md
+ShowIf example, see: https://expr-lang.org/docs/language-definition
     showIf: [some-previous-input] == "value"
 
 Options format:

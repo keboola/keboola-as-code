@@ -111,13 +111,13 @@ func inputDefinitionExtraRules(ctx context.Context) []validator.Rule {
 			Tag: "template-input-if",
 			Func: func(fl goValidator.FieldLevel) bool {
 				if fl.Field().Kind() == reflect.String {
-					_, err := fl.Field().Interface().(If).compile()
+					err := fl.Field().Interface().(If).compile()
 					return err == nil
 				}
 				return false
 			},
 			ErrorMsgFunc: func(fe goValidator.FieldError) string {
-				_, err := fe.Value().(If).compile()
+				err := fe.Value().(If).compile()
 				return err.Error()
 			},
 		},
