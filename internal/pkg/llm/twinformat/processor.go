@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/relvacode/iso8601"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/timeutils"
 )
 
 // ProcessedData holds all processed data ready for generation.
@@ -425,7 +425,7 @@ func (p *Processor) processTransformations(ctx context.Context, configs []*Trans
 		jobKey := cfg.ComponentID + ":" + cfg.ID
 		if job, ok := jobMap[jobKey]; ok {
 			jobExec = &JobExecution{
-				LastRunTime:     formatJobTimePtr(job.StartTime),
+				LastRunTime:     timeutils.FormatISO8601Ptr(job.StartTime),
 				LastRunStatus:   job.Status,
 				JobReference:    job.ID.String(),
 				DurationSeconds: job.DurationSeconds,
@@ -620,14 +620,6 @@ func extractBucketName(bucketID string) string {
 	}
 
 	return bucket
-}
-
-// formatJobTimePtr formats a job time pointer for output.
-func formatJobTimePtr(t *iso8601.Time) string {
-	if t == nil {
-		return ""
-	}
-	return t.Time.UTC().Format(time.RFC3339)
 }
 
 // buildTableUID builds a table UID from bucket and table name.
