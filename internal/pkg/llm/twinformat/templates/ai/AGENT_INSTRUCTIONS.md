@@ -37,9 +37,9 @@ After reading the 3 key files, you should know:
 ```
 project-root/
 ├── .keboola/
-│   └── manifest.json           # Project configuration
-├── .env.local                  # API token (KBC_STORAGE_API_TOKEN)
-├── .env.dist                   # Token template
+│   └── manifest.json           # Project configuration (if CLI project)
+├── .env.local                  # (Optional) API token, created separately
+├── .env.dist                   # (Optional) Token template, created separately
 │
 ├── buckets/
 │   ├── index.json              # All buckets catalog
@@ -60,7 +60,7 @@ project-root/
 │           └── {config-id}/
 │               └── latest.json
 │
-├── samples/
+├── samples/                    # (Optional) Present only when --samples flag is used
 │   ├── index.json              # Sample data index
 │   └── {table-id}/
 │       ├── metadata.json       # Column list
