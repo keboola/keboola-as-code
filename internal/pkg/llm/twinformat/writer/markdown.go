@@ -189,67 +189,6 @@ func GenerateProjectREADME(projectID string, stats ProjectStats) string {
 	return mb.String()
 }
 
-// GenerateAIGuide generates the ai/README.md guide for AI assistants.
-func GenerateAIGuide(projectID string, stats ProjectStats, platforms map[string]int, sources []string) string {
-	mb := NewMarkdownBuilder()
-
-	mb.H1("AI Assistant Guide")
-	mb.P(fmt.Sprintf("This guide helps AI assistants understand and work with Keboola project `%s`.", projectID))
-
-	mb.H2("Project Overview")
-	mb.List([]string{
-		fmt.Sprintf("Total Buckets: %d", stats.TotalBuckets),
-		fmt.Sprintf("Total Tables: %d", stats.TotalTables),
-		fmt.Sprintf("Total Transformations: %d", stats.TotalTransformations),
-		fmt.Sprintf("Total Lineage Edges: %d", stats.TotalEdges),
-	})
-
-	mb.H2("Data Sources")
-	if len(sources) > 0 {
-		mb.List(sources)
-	} else {
-		mb.P("No data sources detected.")
-	}
-
-	mb.H2("Transformation Platforms")
-	if len(platforms) > 0 {
-		platformList := make([]string, 0, len(platforms))
-		for platform, count := range platforms {
-			platformList = append(platformList, fmt.Sprintf("%s: %d transformations", platform, count))
-		}
-		mb.List(platformList)
-	} else {
-		mb.P("No transformations found.")
-	}
-
-	mb.H2("How to Use This Data")
-	mb.H3("Understanding Data Flow")
-	mb.P("Use `indices/graph.jsonl` to understand how data flows through the project:")
-	mb.List([]string{
-		"`consumed_by` edges: Table → Transformation (input)",
-		"`produces` edges: Transformation → Table (output)",
-	})
-
-	mb.H3("Finding Tables")
-	mb.P("Tables are organized by bucket in `buckets/{bucket}/tables/{table}/metadata.json`.")
-
-	mb.H3("Finding Transformations")
-	mb.P("Transformations are in `transformations/{name}/metadata.json` with their dependencies and job status.")
-
-	mb.H3("Checking Job Status")
-	mb.P("Recent job executions are in `jobs/recent/` and `jobs/by-component/`.")
-
-	mb.H2("JSON Documentation Fields")
-	mb.P("Every JSON file includes documentation fields:")
-	mb.List([]string{
-		"`_comment`: How the data was generated",
-		"`_purpose`: Why this file exists",
-		"`_update_frequency`: When to regenerate",
-	})
-
-	return mb.String()
-}
-
 // ProjectStats holds statistics for README generation.
 type ProjectStats struct {
 	TotalBuckets         int
