@@ -150,18 +150,30 @@ func (g *Generator) buildBucketIndex(data *ProcessedData) map[string]any {
 		bucketTables[table.BucketName] = append(bucketTables[table.BucketName], table.Name)
 	}
 
-	// Build by_source stats.
-	bySource := make(map[string]map[string]any)
+	// Build by_source stats using typed counters.
+	type sourceStats struct {
+		count       int
+		totalTables int
+	}
+	bySourceStats := make(map[string]*sourceStats)
 	for _, bucket := range data.Buckets {
 		source := bucket.Source
-		if _, ok := bySource[source]; !ok {
-			bySource[source] = map[string]any{
-				"count":        0,
-				"total_tables": 0,
-			}
+		stats, ok := bySourceStats[source]
+		if !ok {
+			stats = &sourceStats{}
+			bySourceStats[source] = stats
 		}
-		bySource[source]["count"] = bySource[source]["count"].(int) + 1
-		bySource[source]["total_tables"] = bySource[source]["total_tables"].(int) + bucket.TableCount
+		stats.count++
+		stats.totalTables += bucket.TableCount
+	}
+
+	// Convert typed stats to the generic map structure for JSON output.
+	bySource := make(map[string]map[string]any, len(bySourceStats))
+	for source, stats := range bySourceStats {
+		bySource[source] = map[string]any{
+			"count":        stats.count,
+			"total_tables": stats.totalTables,
+		}
 	}
 
 	// Build buckets list.
