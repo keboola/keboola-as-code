@@ -734,10 +734,11 @@ func (g *Generator) buildComponentsIndex(data *ProcessedData) map[string]any {
 		components = append(components, entry)
 	}
 
+	docFields := ComponentsIndexDocFields()
 	return map[string]any{
-		"_comment":          "GENERATION: List of non-transformation component configurations",
-		"_purpose":          "Overview of extractors, writers, and other components in the project",
-		"_update_frequency": "Every sync",
+		"_comment":          docFields.Comment,
+		"_purpose":          docFields.Purpose,
+		"_update_frequency": docFields.UpdateFrequency,
 		"total_components":  len(data.ComponentConfigs),
 		"by_type":           byType,
 		"components":        components,
