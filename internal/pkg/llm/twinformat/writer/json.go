@@ -3,7 +3,6 @@ package writer
 import (
 	"context"
 	"encoding/json"
-	"maps"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -34,21 +33,4 @@ func (w *JSONWriter) Write(ctx context.Context, path string, data any) error {
 	}
 
 	return nil
-}
-
-// WriteWithDocFields writes a JSON file with documentation fields at the top.
-// The docFields map is merged with the data map, with docFields taking precedence.
-func (w *JSONWriter) WriteWithDocFields(ctx context.Context, path string, docFields map[string]string, data map[string]any) error {
-	// Create a new map with doc fields first, then data.
-	result := make(map[string]any)
-
-	// Add doc fields first (they should appear at the top).
-	for k, v := range docFields {
-		result[k] = v
-	}
-
-	// Add data fields.
-	maps.Copy(result, data)
-
-	return w.Write(ctx, path, result)
 }
