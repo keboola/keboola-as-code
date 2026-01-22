@@ -161,7 +161,7 @@ func GenerateProjectREADME(projectID string, stats ProjectStats) string {
 	})
 
 	mb.H2("Directory Structure")
-	mb.Code("", `twin_format/
+	mb.Code("", `./
 ├── manifest.yaml              # Project configuration
 ├── manifest-extended.json     # Complete project overview (start here)
 ├── README.md                  # This file
@@ -169,7 +169,8 @@ func GenerateProjectREADME(projectID string, stats ProjectStats) string {
 ├── transformations/           # Data transformations
 ├── components/                # Extractors, writers, etc.
 ├── jobs/                      # Job execution history
-└── indices/                   # Lineage graph and queries`)
+├── indices/                   # Lineage graph and queries
+└── ai/                        # AI assistant guides`)
 
 	mb.H2("Key Files")
 	mb.Table(
