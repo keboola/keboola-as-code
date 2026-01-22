@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/timeutils"
 )
 
 const (
@@ -581,7 +582,7 @@ func (g *Generator) buildJobsIndex(data *ProcessedData) map[string]any {
 				"transformation":   job.ConfigID.String(),
 				"component_id":     job.ComponentID.String(),
 				"status":           job.Status,
-				"completed_time":   formatJobTimePtr(job.EndTime),
+				"completed_time":   timeutils.FormatISO8601Ptr(job.EndTime),
 				"duration_seconds": job.DurationSeconds,
 			})
 		}
@@ -632,10 +633,10 @@ func (g *Generator) generateJobFile(ctx context.Context, job *ProcessedJob) erro
 		jobData["operation_name"] = job.OperationName
 	}
 	if job.StartTime != nil {
-		jobData["start_time"] = formatJobTimePtr(job.StartTime)
+		jobData["start_time"] = timeutils.FormatISO8601Ptr(job.StartTime)
 	}
 	if job.EndTime != nil {
-		jobData["end_time"] = formatJobTimePtr(job.EndTime)
+		jobData["end_time"] = timeutils.FormatISO8601Ptr(job.EndTime)
 	}
 	if job.DurationSeconds > 0 {
 		jobData["duration_seconds"] = job.DurationSeconds
@@ -805,7 +806,7 @@ func (g *Generator) generateLineageGraph(ctx context.Context, data *ProcessedDat
 			"total_nodes":           data.Statistics.TotalTables + data.Statistics.TotalTransformations,
 			"total_tables":          data.Statistics.TotalTables,
 			"total_transformations": data.Statistics.TotalTransformations,
-			"sources":               len(data.Statistics.SourceCounts),
+			"sources":               len(data.Statistics.BySource),
 			"updated":               time.Now().UTC().Format(time.RFC3339),
 		},
 	}
@@ -832,38 +833,7 @@ func (g *Generator) generateLineageGraph(ctx context.Context, data *ProcessedDat
 // generateSourcesIndex generates indices/sources.json.
 func (g *Generator) generateSourcesIndex(ctx context.Context, data *ProcessedData) error {
 	docFields := SourcesIndexDocFields()
-
-	// Build sources list from bucket data.
-	sourceMap := make(map[string]*sourceInfo)
-	for _, bucket := range data.Buckets {
-		source := bucket.Source
-		if _, ok := sourceMap[source]; !ok {
-			sourceMap[source] = &sourceInfo{
-				ID:        source,
-				Name:      formatSourceName(source),
-				Type:      inferSourceType(source),
-				Instances: 0,
-				Tables:    0,
-				Buckets:   []string{},
-			}
-		}
-		sourceMap[source].Instances++
-		sourceMap[source].Tables += bucket.TableCount
-		sourceMap[source].Buckets = append(sourceMap[source].Buckets, bucket.DisplayName)
-	}
-
-	// Convert to list.
-	sources := make([]map[string]any, 0, len(sourceMap))
-	for _, info := range sourceMap {
-		sources = append(sources, map[string]any{
-			"id":           info.ID,
-			"name":         info.Name,
-			"type":         info.Type,
-			"instances":    info.Instances,
-			"total_tables": info.Tables,
-			"buckets":      info.Buckets,
-		})
-	}
+	sources := buildSourcesList(data.Buckets)
 
 	sourcesIndex := map[string]any{
 		"_comment":          docFields.Comment,
@@ -883,6 +853,41 @@ type sourceInfo struct {
 	Instances int
 	Tables    int
 	Buckets   []string
+}
+
+// buildSourcesList builds sources list from bucket data.
+// Extracted helper to avoid code duplication between generateSourcesIndex and generateManifestExtended.
+func buildSourcesList(buckets []*ProcessedBucket) []map[string]any {
+	sourceMap := make(map[string]*sourceInfo)
+	for _, bucket := range buckets {
+		source := bucket.Source
+		if _, ok := sourceMap[source]; !ok {
+			sourceMap[source] = &sourceInfo{
+				ID:        source,
+				Name:      formatSourceName(source),
+				Type:      inferSourceType(source),
+				Instances: 0,
+				Tables:    0,
+				Buckets:   []string{},
+			}
+		}
+		sourceMap[source].Instances++
+		sourceMap[source].Tables += bucket.TableCount
+		sourceMap[source].Buckets = append(sourceMap[source].Buckets, bucket.DisplayName)
+	}
+
+	sources := make([]map[string]any, 0, len(sourceMap))
+	for _, info := range sourceMap {
+		sources = append(sources, map[string]any{
+			"id":           info.ID,
+			"name":         info.Name,
+			"type":         info.Type,
+			"instances":    info.Instances,
+			"total_tables": info.Tables,
+			"buckets":      info.Buckets,
+		})
+	}
+	return sources
 }
 
 // formatSourceName converts a source ID to a human-readable name.
@@ -973,7 +978,7 @@ func (g *Generator) generateTablesBySource(ctx context.Context, data *ProcessedD
 		tablesBySource[table.Source] = append(tablesBySource[table.Source], table.UID)
 	}
 	// Ensure empty slices for sources with no tables.
-	for source := range data.Statistics.SourceCounts {
+	for source := range data.Statistics.BySource {
 		if _, ok := tablesBySource[source]; !ok {
 			tablesBySource[source] = []string{}
 		}
@@ -1096,37 +1101,7 @@ func (g *Generator) generateRootFiles(ctx context.Context, data *ProcessedData) 
 // generateManifestExtended generates manifest-extended.json.
 func (g *Generator) generateManifestExtended(ctx context.Context, data *ProcessedData) error {
 	docFields := ManifestExtendedDocFields()
-
-	// Build sources list.
-	sourceMap := make(map[string]*sourceInfo)
-	for _, bucket := range data.Buckets {
-		source := bucket.Source
-		if _, ok := sourceMap[source]; !ok {
-			sourceMap[source] = &sourceInfo{
-				ID:        source,
-				Name:      formatSourceName(source),
-				Type:      inferSourceType(source),
-				Instances: 0,
-				Tables:    0,
-				Buckets:   []string{},
-			}
-		}
-		sourceMap[source].Instances++
-		sourceMap[source].Tables += bucket.TableCount
-		sourceMap[source].Buckets = append(sourceMap[source].Buckets, bucket.DisplayName)
-	}
-
-	sources := make([]map[string]any, 0, len(sourceMap))
-	for _, info := range sourceMap {
-		sources = append(sources, map[string]any{
-			"id":           info.ID,
-			"name":         info.Name,
-			"type":         info.Type,
-			"instances":    info.Instances,
-			"total_tables": info.Tables,
-			"buckets":      info.Buckets,
-		})
-	}
+	sources := buildSourcesList(data.Buckets)
 
 	// Build platform counts.
 	platformCounts := make(map[string]int)

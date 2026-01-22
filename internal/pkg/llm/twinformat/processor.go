@@ -110,7 +110,6 @@ type ProcessingStatistics struct {
 	ByPlatform           map[string]int
 	BySource             map[string]int
 	ByJobStatus          map[string]int
-	SourceCounts         map[string]int
 }
 
 // ProcessorDependencies defines dependencies for the Processor.
@@ -150,10 +149,9 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 		BranchID:    fetchedData.BranchID,
 		ProcessedAt: time.Now().UTC(),
 		Statistics: &ProcessingStatistics{
-			ByPlatform:   make(map[string]int),
-			BySource:     make(map[string]int),
-			ByJobStatus:  make(map[string]int),
-			SourceCounts: make(map[string]int),
+			ByPlatform:  make(map[string]int),
+			BySource:    make(map[string]int),
+			ByJobStatus: make(map[string]int),
 		},
 	}
 
@@ -183,7 +181,7 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 	// Step 7: Process jobs
 	processed.Jobs = p.processJobs(ctx, fetchedData.Jobs, processed.Statistics)
 
-	// Step 6: Pass through component configs (already structured from API)
+	// Step 8: Pass through component configs (already structured from API)
 	processed.ComponentConfigs = fetchedData.ComponentConfigs
 
 	// Update final statistics
@@ -355,7 +353,6 @@ func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucke
 		// Get dominant source from tables in this bucket
 		source := sourceRegistry.GetDominantSourceForBucket(bucketID, tableIDs)
 		stats.BySource[source]++
-		stats.SourceCounts[source]++
 
 		processed = append(processed, &ProcessedBucket{
 			Bucket:     bucket,
