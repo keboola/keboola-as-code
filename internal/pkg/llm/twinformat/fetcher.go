@@ -3,6 +3,7 @@ package twinformat
 import (
 	"context"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -61,30 +62,27 @@ func (f *Fetcher) FetchAll(ctx context.Context, branchID keboola.BranchID) (data
 	data.Buckets = buckets
 	data.Tables = tables
 
-	// Fetch jobs from Queue API
-	data.Jobs, err = f.fetchJobsQueue(ctx, branchID)
+	// Fetch jobs from Queue API with detailed result data (including input/output tables)
+	jobs, err := f.fetchJobsQueue(ctx, branchID)
 	if err != nil {
 		f.logger.Warnf(ctx, "Failed to fetch jobs from Queue API: %v", err)
-		data.Jobs = []*keboola.QueueJob{}
+		data.Jobs = []*keboola.QueueJobDetail{}
+	} else {
+		data.Jobs = jobs
 	}
 
-	// Fetch transformation configs
-	data.TransformationConfigs, err = f.FetchTransformationConfigs(ctx, branchID)
+	// Fetch all components with configs (single API call)
+	compResult, err := f.fetchAllComponents(ctx, branchID)
 	if err != nil {
-		f.logger.Warnf(ctx, "Failed to fetch transformation configs: %v", err)
-		data.TransformationConfigs = []*configparser.TransformationConfig{}
+		return nil, err
 	}
+	data.Components = compResult.Components
+	data.TransformationConfigs = compResult.TransformConfigs
+	data.ComponentConfigs = compResult.ComponentConfigs
 
-	// Fetch component configs
-	data.ComponentConfigs, err = f.FetchComponentConfigs(ctx, branchID)
-	if err != nil {
-		f.logger.Warnf(ctx, "Failed to fetch component configs: %v", err)
-		data.ComponentConfigs = []*configparser.ComponentConfig{}
-	}
-
-	f.logger.Infof(ctx, "Fetched %d buckets, %d tables, %d jobs, %d transformations, %d components",
+	f.logger.Infof(ctx, "Fetched %d buckets, %d tables, %d jobs, %d components, %d transformations, %d component configs",
 		len(data.Buckets), len(data.Tables), len(data.Jobs),
-		len(data.TransformationConfigs), len(data.ComponentConfigs))
+		len(data.Components), len(data.TransformationConfigs), len(data.ComponentConfigs))
 
 	return data, nil
 }
@@ -139,15 +137,15 @@ func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.B
 	return buckets, tables, nil
 }
 
-// fetchJobsQueue fetches jobs from the Jobs Queue API.
-func (f *Fetcher) fetchJobsQueue(ctx context.Context, branchID keboola.BranchID) (jobs []*keboola.QueueJob, err error) {
+// fetchJobsQueue fetches jobs from the Jobs Queue API with detailed result data.
+func (f *Fetcher) fetchJobsQueue(ctx context.Context, branchID keboola.BranchID) (jobs []*keboola.QueueJobDetail, err error) {
 	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.fetchJobsQueue")
 	defer span.End(&err)
 
 	f.logger.Info(ctx, "Fetching jobs from Queue API...")
 
-	// Search for jobs in the branch with limit of 100
-	jobsResult, err := f.api.SearchJobsRequest(
+	// Search for jobs in the branch with limit of 100, using detail request to get input/output tables
+	jobsResult, err := f.api.SearchJobsDetailRequest(
 		keboola.WithSearchJobsBranch(branchID),
 		keboola.WithSearchJobsLimit(100),
 	).Send(ctx)
@@ -156,79 +154,123 @@ func (f *Fetcher) fetchJobsQueue(ctx context.Context, branchID keboola.BranchID)
 	}
 
 	jobs = *jobsResult
-	f.logger.Infof(ctx, "Found %d jobs", len(jobs))
+
+	// Log summary of output tables found
+	totalOutputTables := 0
+	for _, job := range jobs {
+		if job.Result.Output != nil {
+			totalOutputTables += len(job.Result.Output.Tables)
+		}
+		// Also count tables from flow tasks
+		for _, task := range job.Result.Tasks {
+			for _, result := range task.Results {
+				if result.Result.Output != nil {
+					totalOutputTables += len(result.Result.Output.Tables)
+				}
+			}
+		}
+	}
+
+	f.logger.Infof(ctx, "Found %d jobs with %d output tables", len(jobs), totalOutputTables)
 
 	return jobs, nil
 }
 
-// FetchTransformationConfigs fetches transformation configurations from the API.
-func (f *Fetcher) FetchTransformationConfigs(ctx context.Context, branchID keboola.BranchID) (configs []*configparser.TransformationConfig, err error) {
-	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchTransformationConfigs")
-	defer span.End(&err)
-
-	f.logger.Info(ctx, "Fetching transformation configs from API...")
-
-	// Fetch all components with configs
-	components, err := f.api.ListConfigsAndRowsFrom(keboola.BranchKey{ID: branchID}).Send(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	configs = make([]*configparser.TransformationConfig, 0)
-	for _, comp := range *components {
-		// Only process transformation components
-		if !comp.IsTransformation() {
-			continue
-		}
-
-		for _, cfg := range comp.Configs {
-			config := f.parser.ParseTransformationConfig(ctx, comp.ID.String(), cfg)
-			if config == nil {
-				continue
-			}
-
-			configs = append(configs, config)
-		}
-	}
-
-	f.logger.Infof(ctx, "Found %d transformation configs", len(configs))
-	return configs, nil
+// componentsResult holds the result of fetchAllComponents.
+type componentsResult struct {
+	Components       []*keboola.ComponentWithConfigs
+	TransformConfigs []*configparser.TransformationConfig
+	ComponentConfigs []*configparser.ComponentConfig
 }
 
-// FetchComponentConfigs fetches non-transformation component configurations from the API.
-func (f *Fetcher) FetchComponentConfigs(ctx context.Context, branchID keboola.BranchID) (configs []*configparser.ComponentConfig, err error) {
-	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchComponentConfigs")
+// fetchAllComponents fetches all components and extracts transformation and component configs.
+// This makes a single API call and returns all data needed for processing.
+func (f *Fetcher) fetchAllComponents(ctx context.Context, branchID keboola.BranchID) (result *componentsResult, err error) {
+	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.fetchAllComponents")
 	defer span.End(&err)
 
-	f.logger.Info(ctx, "Fetching component configs from API...")
+	f.logger.Info(ctx, "Fetching all components from API...")
 
-	// Fetch all components with configs
-	components, err := f.api.ListConfigsAndRowsFrom(keboola.BranchKey{ID: branchID}).Send(ctx)
+	// Fetch all components with configs (single API call)
+	apiResult, err := f.api.ListConfigsAndRowsFrom(keboola.BranchKey{ID: branchID}).Send(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	configs = make([]*configparser.ComponentConfig, 0)
-	for _, comp := range *components {
-		// Skip transformation components (handled separately)
+	result = &componentsResult{
+		Components:       make([]*keboola.ComponentWithConfigs, 0, len(*apiResult)),
+		TransformConfigs: make([]*configparser.TransformationConfig, 0),
+		ComponentConfigs: make([]*configparser.ComponentConfig, 0),
+	}
+
+	for _, comp := range *apiResult {
+		// Store all components for the registry
+		result.Components = append(result.Components, comp)
+
+		// Process transformation components
 		if comp.IsTransformation() {
+			for _, cfg := range comp.Configs {
+				config := f.parser.ParseTransformationConfig(ctx, comp.ID.String(), cfg)
+				if config == nil {
+					continue
+				}
+				result.TransformConfigs = append(result.TransformConfigs, config)
+			}
 			continue
 		}
 
-		// Skip internal components
+		// Skip internal components for component configs
 		if comp.IsScheduler() || comp.IsOrchestrator() || comp.IsVariables() || comp.IsSharedCode() {
 			continue
 		}
 
+		// Process non-transformation component configs
 		for _, cfg := range comp.Configs {
 			config := configparser.ParseComponentConfig(comp, cfg)
-			if config == nil {
-				continue
+			if config != nil {
+				result.ComponentConfigs = append(result.ComponentConfigs, config)
 			}
-			configs = append(configs, config)
 		}
 	}
 
-	f.logger.Infof(ctx, "Found %d component configs", len(configs))
-	return configs, nil
+	f.logger.Infof(ctx, "Found %d components, %d transformation configs, %d component configs",
+		len(result.Components), len(result.TransformConfigs), len(result.ComponentConfigs))
+
+	return result, nil
+}
+
+// FetchTableLastImporter fetches the component that last imported data to a table.
+// It looks at the storage events for the table and finds the latest tableImportDone event.
+// Returns the component ID extracted from the event's userAgent field.
+func (f *Fetcher) FetchTableLastImporter(ctx context.Context, tableID keboola.TableID) (componentID string, err error) {
+	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchTableLastImporter")
+	defer span.End(&err)
+
+	// List events for the table using SDK method
+	events, err := f.api.ListTableEventsRequest(tableID, keboola.WithTableEventsLimit(50)).Send(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	// Find the latest tableImportDone event
+	for _, event := range *events {
+		if event.Event == "storage.tableImportDone" {
+			// Extract component ID from userAgent
+			// Format: "Keboola Storage API PHP Client/14 kds-team.app-custom-python"
+			componentID := extractComponentFromUserAgent(event.Context.UserAgent)
+			if componentID != "" {
+				return componentID, nil
+			}
+		}
+	}
+
+	return "", nil
+}
+
+// extractComponentFromUserAgent extracts the component ID from a userAgent string.
+// Format: "Keboola Storage API PHP Client/14 kds-team.app-custom-python"
+// Returns the last space-separated part which is the component ID.
+func extractComponentFromUserAgent(userAgent string) string {
+	parts := strings.Split(userAgent, " ")
+	return parts[len(parts)-1]
 }

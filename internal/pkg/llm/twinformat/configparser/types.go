@@ -35,15 +35,16 @@ type Code struct {
 
 // ComponentConfig represents a non-transformation component configuration.
 type ComponentConfig struct {
-	ID            string         `json:"id"`
-	Name          string         `json:"name"`
-	ComponentID   string         `json:"component_id"`
-	ComponentType string         `json:"component_type"`
-	Description   string         `json:"description,omitempty"`
-	IsDisabled    bool           `json:"is_disabled"`
-	Configuration map[string]any `json:"configuration,omitempty"`
-	LastRun       string         `json:"last_run,omitempty"`
-	Status        string         `json:"status,omitempty"`
-	Version       int            `json:"version"`
-	Created       string         `json:"created,omitempty"`
+	ID            string           `json:"id"`
+	Name          string           `json:"name"`
+	ComponentID   string           `json:"component_id"`
+	ComponentType string           `json:"component_type"`
+	Description   string           `json:"description,omitempty"`
+	IsDisabled    bool             `json:"is_disabled"`
+	OutputTables  []StorageMapping `json:"output_tables,omitempty"`
+	Configuration map[string]any   `json:"configuration,omitempty"`
+	LastRun       string           `json:"last_run,omitempty"`
+	Status        string           `json:"status,omitempty"`
+	Version       int              `json:"version"`
+	Created       string           `json:"created,omitempty"`
 }
