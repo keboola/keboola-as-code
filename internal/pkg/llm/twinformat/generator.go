@@ -1159,7 +1159,7 @@ statistics:
   total_edges: %d
 `,
 		time.Now().UTC().Format(time.RFC3339),
-		data.ProjectID,
+		data.ProjectID.String(),
 		TwinFormatVersion,
 		FormatVersion,
 		data.Statistics.TotalBuckets,
