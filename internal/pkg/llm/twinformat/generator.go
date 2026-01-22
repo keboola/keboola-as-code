@@ -753,10 +753,11 @@ func (g *Generator) generateComponentConfig(ctx context.Context, config *Compone
 		return errors.Errorf("failed to create component config directory %s: %w", configDir, err)
 	}
 
+	docFields := ComponentMetadataDocFields()
 	configData := map[string]any{
-		"_comment":          "GENERATION: Component configuration from Keboola",
-		"_purpose":          "Configuration details for this component",
-		"_update_frequency": "Every sync",
+		"_comment":          docFields.Comment,
+		"_purpose":          docFields.Purpose,
+		"_update_frequency": docFields.UpdateFrequency,
 		"id":                config.ID,
 		"name":              config.Name,
 		"component_id":      config.ComponentID,
