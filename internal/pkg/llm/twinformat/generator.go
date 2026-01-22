@@ -1,3 +1,4 @@
+//nolint:tagliatelle // RFC specifies snake_case for JSON output in twin format.
 package twinformat
 
 import (
@@ -142,8 +143,6 @@ func (g *Generator) generateBuckets(ctx context.Context, data *ProcessedData) er
 }
 
 // buildBucketIndex builds the bucket index structure.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 func (g *Generator) buildBucketIndex(data *ProcessedData) map[string]any {
 	docFields := BucketsIndexDocFields()
 
@@ -318,8 +317,6 @@ func (g *Generator) generateTransformations(ctx context.Context, data *Processed
 }
 
 // buildTransformationIndex builds the transformation index structure.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 func (g *Generator) buildTransformationIndex(data *ProcessedData) map[string]any {
 	docFields := TransformationsIndexDocFields()
 
@@ -553,8 +550,6 @@ func (g *Generator) generateJobs(ctx context.Context, data *ProcessedData) error
 }
 
 // buildJobsIndex builds the jobs index structure.
-//
-//nolint:tagliatelle // RFC specifies snake_case for JSON output.
 func (g *Generator) buildJobsIndex(data *ProcessedData) map[string]any {
 	docFields := JobsIndexDocFields()
 
