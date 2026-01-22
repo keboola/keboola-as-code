@@ -383,8 +383,8 @@ func (g *Generator) buildTransformationIndex(data *ProcessedData) map[string]any
 
 // generateTransformationMetadata generates a transformation metadata.json file.
 func (g *Generator) generateTransformationMetadata(ctx context.Context, transform *ProcessedTransformation) error {
-	// Create transformation directory.
-	transformDir := filesystem.Join(g.outputDir, "transformations", transform.Name)
+	// Create transformation directory with sanitized name for filesystem safety.
+	transformDir := filesystem.Join(g.outputDir, "transformations", sanitizeFilename(transform.Name))
 	if err := g.fs.Mkdir(ctx, transformDir); err != nil {
 		return errors.Errorf("failed to create transformation directory %s: %w", transformDir, err)
 	}
