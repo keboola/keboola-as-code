@@ -522,6 +522,7 @@ func languageToExtension(language string) string {
 }
 
 // sanitizeFilename removes or replaces characters that are not safe for filenames.
+// Returns "unnamed" if the result would be empty.
 func sanitizeFilename(name string) string {
 	// Replace spaces and special characters with hyphens
 	result := make([]byte, 0, len(name))
@@ -532,6 +533,9 @@ func sanitizeFilename(name string) string {
 		} else if c == ' ' {
 			result = append(result, '-')
 		}
+	}
+	if len(result) == 0 {
+		return "unnamed"
 	}
 	return string(result)
 }
