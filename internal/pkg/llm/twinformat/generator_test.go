@@ -622,15 +622,15 @@ func TestGenerator_Generate_Integration(t *testing.T) {
 	transformIndexContent := readJSONFile(t, fs, "/output/transformations/index.json")
 	assert.EqualValues(t, 1, transformIndexContent["total_transformations"])
 
-	// Verify transformation metadata was created
-	assertFileExists(t, fs, "/output/transformations/Process Orders/metadata.json")
-	transformMetadata := readJSONFile(t, fs, "/output/transformations/Process Orders/metadata.json")
+	// Verify transformation metadata was created (directory name is sanitized)
+	assertFileExists(t, fs, "/output/transformations/Process-Orders/metadata.json")
+	transformMetadata := readJSONFile(t, fs, "/output/transformations/Process-Orders/metadata.json")
 	assert.Equal(t, "transform:config-1", transformMetadata["uid"])
 	assert.Equal(t, "Process Orders", transformMetadata["name"])
 	assert.Equal(t, PlatformSnowflake, transformMetadata["platform"])
 
 	// Verify transformation code was created
-	assertFileExists(t, fs, "/output/transformations/Process Orders/code/01-Process.sql")
+	assertFileExists(t, fs, "/output/transformations/Process-Orders/code/01-Process.sql")
 
 	// Verify jobs index was created
 	assertFileExists(t, fs, "/output/jobs/index.json")
