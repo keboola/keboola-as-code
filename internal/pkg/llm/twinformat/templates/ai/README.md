@@ -33,7 +33,7 @@ project-root/
 │   ├── graph.jsonl            # Data lineage graph
 │   ├── sources.json           # Data sources summary
 │   └── queries/*.json         # Pre-computed queries
-├── samples/                   # Table data samples (if exported)
+├── samples/                   # (Optional) Table data samples, present only when --samples flag is used
 │   └── {table-id}/sample.csv
 └── ai/
     ├── README.md              # This file
