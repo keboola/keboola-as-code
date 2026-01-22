@@ -20,8 +20,6 @@ const (
 	TwinFormatVersion = 1
 	// FormatVersion is the version of the output format.
 	FormatVersion = 2
-	// TwinFormatDir is the name of the output directory.
-	TwinFormatDir = "twin_format"
 )
 
 // GeneratorDependencies defines the dependencies for the Generator.
