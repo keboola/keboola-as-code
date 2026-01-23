@@ -43,14 +43,6 @@ the [prometheus.ServeMetrics](../internal/pkg/telemetry/metric/prometheus/promet
 |-----------------------|--------------------------------------------------------------------------------------------------|
 | `http.server.request` | HTTP request. Attributes `keboola.*` contain info about stack, project and token, if applicable. |
 
-### Metrics
-
-| Span                                         | Description               |
-|----------------------------------------------|---------------------------|
-| `keboola.go.http.server.duration`            | Duration of HTTP request. |
-| `keboola.go.http.server.request.size.count`  | Request content length.   |
-| `keboola.go.http.server.response.size.count` | Response content length.  |
-
 #### Apdex
 
 [Apdex](https://en.wikipedia.org/wiki/Apdex) metric measure user satisfaction as a value `0.0-1.0`:
