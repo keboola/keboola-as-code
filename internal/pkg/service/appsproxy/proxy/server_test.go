@@ -138,5 +138,5 @@ func TestAppProxyHandler(t *testing.T) {
 			return fmt.Sprintf("%d:%s", status.AsInt64(), host.AsString())
 		}),
 	)
-	assert.Equal(t, "null", strings.TrimSpace(actualMetricsJSON))
+	assert.JSONEq(t, "null", strings.TrimSpace(actualMetricsJSON))
 }
