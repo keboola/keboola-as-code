@@ -475,3 +475,146 @@ func TestFetchTableLastImporter_NoImportEvents(t *testing.T) {
 	// No import events, should return empty
 	assert.Empty(t, componentID)
 }
+
+func TestFetchTableSample(t *testing.T) {
+	t.Parallel()
+
+	fetcher, transport := newTestFetcher(t)
+	branchID := keboola.BranchID(123)
+
+	tableKey := keboola.TableKey{
+		BranchID: branchID,
+		TableID: keboola.TableID{
+			BucketID:  keboola.BucketID{Stage: keboola.BucketStageIn, BucketName: "test"},
+			TableName: "sample_table",
+		},
+	}
+
+	// Mock table preview response - Storage API returns CSV format
+	csvData := "\"id\",\"name\",\"value\"\n\"1\",\"Alice\",\"100\"\n\"2\",\"Bob\",\"200\"\n\"3\",\"Charlie\",\"300\"\n"
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/branch/123/tables/in.test.sample_table/data-preview`,
+		httpmock.NewStringResponder(200, csvData),
+	)
+
+	sample, err := fetcher.FetchTableSample(t.Context(), tableKey, 100)
+	require.NoError(t, err)
+
+	assert.Equal(t, tableKey.TableID, sample.TableID)
+	assert.Equal(t, []string{"id", "name", "value"}, sample.Columns)
+	assert.Len(t, sample.Rows, 3)
+	assert.Equal(t, 3, sample.RowCount)
+	assert.Equal(t, []string{"1", "Alice", "100"}, sample.Rows[0])
+}
+
+func TestFetchTableSamples(t *testing.T) {
+	t.Parallel()
+
+	fetcher, transport := newTestFetcher(t)
+	branchID := keboola.BranchID(123)
+
+	tables := []*keboola.Table{
+		{
+			TableKey: keboola.TableKey{
+				BranchID: branchID,
+				TableID: keboola.TableID{
+					BucketID:  keboola.BucketID{Stage: keboola.BucketStageIn, BucketName: "bucket"},
+					TableName: "table1",
+				},
+			},
+		},
+		{
+			TableKey: keboola.TableKey{
+				BranchID: branchID,
+				TableID: keboola.TableID{
+					BucketID:  keboola.BucketID{Stage: keboola.BucketStageIn, BucketName: "bucket"},
+					TableName: "table2",
+				},
+			},
+		},
+		{
+			TableKey: keboola.TableKey{
+				BranchID: branchID,
+				TableID: keboola.TableID{
+					BucketID:  keboola.BucketID{Stage: keboola.BucketStageIn, BucketName: "bucket"},
+					TableName: "table3",
+				},
+			},
+		},
+	}
+
+	// Mock preview responses for each table - Storage API returns CSV format
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/branch/123/tables/in.bucket.table1/data-preview`,
+		httpmock.NewStringResponder(200, "\"col1\"\n\"val1\"\n"),
+	)
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/branch/123/tables/in.bucket.table2/data-preview`,
+		httpmock.NewStringResponder(200, "\"col2\"\n\"val2\"\n"),
+	)
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/branch/123/tables/in.bucket.table3/data-preview`,
+		httpmock.NewStringResponder(200, "\"col3\"\n\"val3\"\n"),
+	)
+
+	// Test with maxTables=2 (should only fetch first 2 tables)
+	samples, err := fetcher.FetchTableSamples(t.Context(), tables, branchID, 100, 2)
+	require.NoError(t, err)
+
+	assert.Len(t, samples, 2)
+	assert.Equal(t, "in.bucket.table1", samples[0].TableID.String())
+	assert.Equal(t, "in.bucket.table2", samples[1].TableID.String())
+}
+
+func TestFetchTableSamples_SkipsFailedTables(t *testing.T) {
+	t.Parallel()
+
+	fetcher, transport := newTestFetcher(t)
+	branchID := keboola.BranchID(123)
+
+	tables := []*keboola.Table{
+		{
+			TableKey: keboola.TableKey{
+				BranchID: branchID,
+				TableID: keboola.TableID{
+					BucketID:  keboola.BucketID{Stage: keboola.BucketStageIn, BucketName: "bucket"},
+					TableName: "good_table",
+				},
+			},
+		},
+		{
+			TableKey: keboola.TableKey{
+				BranchID: branchID,
+				TableID: keboola.TableID{
+					BucketID:  keboola.BucketID{Stage: keboola.BucketStageIn, BucketName: "bucket"},
+					TableName: "bad_table",
+				},
+			},
+		},
+	}
+
+	// First table succeeds - Storage API returns CSV format
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/branch/123/tables/in.bucket.good_table/data-preview`,
+		httpmock.NewStringResponder(200, "\"col1\"\n\"val1\"\n"),
+	)
+
+	// Second table fails
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/branch/123/tables/in.bucket.bad_table/data-preview`,
+		httpmock.NewStringResponder(500, "Internal Server Error"),
+	)
+
+	samples, err := fetcher.FetchTableSamples(t.Context(), tables, branchID, 100, 10)
+	require.NoError(t, err)
+
+	// Should have 1 sample (failed table is skipped)
+	assert.Len(t, samples, 1)
+	assert.Equal(t, "in.bucket.good_table", samples[0].TableID.String())
+}

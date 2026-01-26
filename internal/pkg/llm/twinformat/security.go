@@ -36,13 +36,16 @@ func NewSecurity(d SecurityDependencies) *Security {
 	}
 }
 
-// IsPublicRepository detects if the current directory is a public Git repository.
-// Returns true if the repository is public, false otherwise.
+// IsPublicRepository checks if the repository might be public.
+// NOTE: This is a placeholder implementation that always returns false (assumes private).
+// Actual public repository detection would require GitHub/GitLab API calls with authentication,
+// which is beyond the scope of this scaffolding. This method exists to support future
+// implementation of automatic sample disabling for public repositories.
 func (s *Security) IsPublicRepository(ctx context.Context, repoPath string) (isPublic bool, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.security.IsPublicRepository")
 	defer span.End(&err)
 
-	// Try to get the remote URL.
+	// Try to get the remote URL for logging purposes.
 	remoteURL, err := s.getGitRemoteURL(ctx, repoPath)
 	if err != nil {
 		s.logger.Debugf(ctx, "Failed to get git remote URL: %v", err)
@@ -50,24 +53,14 @@ func (s *Security) IsPublicRepository(ctx context.Context, repoPath string) (isP
 	}
 
 	if remoteURL == "" {
-		s.logger.Debugf(ctx, "No git remote URL found")
+		s.logger.Debugf(ctx, "No git remote URL found, assuming private")
 		return false, nil
 	}
 
-	// Check if it's a GitHub repository.
-	if strings.Contains(remoteURL, "github.com") {
-		s.logger.Debugf(ctx, "GitHub repository detected: %s", remoteURL)
-		return false, nil
-	}
-
-	// Check if it's a GitLab repository.
-	if strings.Contains(remoteURL, "gitlab.com") {
-		s.logger.Debugf(ctx, "GitLab repository detected: %s", remoteURL)
-		return false, nil
-	}
-
-	// For other repositories, assume private by default.
-	s.logger.Debugf(ctx, "Unknown repository host, assuming private")
+	// Log detected repository host.
+	// NOTE: Actual visibility detection would require API calls.
+	// For now, we conservatively assume all repositories are private.
+	s.logger.Debugf(ctx, "Repository detected: %s (assuming private - visibility detection not implemented)", remoteURL)
 	return false, nil
 }
 

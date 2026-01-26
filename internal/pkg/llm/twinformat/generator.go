@@ -1238,10 +1238,10 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 // generateSamplesIndex generates the samples/index.json file.
 func (g *Generator) generateSamplesIndex(ctx context.Context, data *ProcessedData, samples []*TableSample) error {
 	type sampleEntry struct {
-		TableID   string `json:"tableId"`
-		RowCount  int    `json:"rowCount"`
+		TableID   string `json:"table_id"`
+		RowCount  int    `json:"row_count"`
 		Columns   int    `json:"columns"`
-		SampleDir string `json:"sampleDir"`
+		SampleDir string `json:"sample_dir"`
 	}
 
 	entries := make([]sampleEntry, 0, len(samples))
@@ -1258,8 +1258,8 @@ func (g *Generator) generateSamplesIndex(ctx context.Context, data *ProcessedDat
 		"_comment":          "Index of table samples",
 		"_purpose":          "Lists all tables with sample data available",
 		"_update_frequency": "Generated on export",
-		"projectId":         data.ProjectID.String(),
-		"totalSamples":      len(samples),
+		"project_id":        data.ProjectID.String(),
+		"total_samples":     len(samples),
 		"samples":           entries,
 	}
 

@@ -920,6 +920,81 @@ func TestCalculateDataQuality(t *testing.T) {
 }
 
 // =============================================================================
+// GenerateSamples Tests
+// =============================================================================
+
+func TestGenerateSamples(t *testing.T) {
+	t.Parallel()
+
+	t.Run("generates sample files and index", func(t *testing.T) {
+		t.Parallel()
+		ctx := t.Context()
+		g, testFs := newTestGenerator(t)
+
+		// Create samples directory (normally done by createDirectories in Generate)
+		// Generator uses /output as outputDir
+		err := testFs.Mkdir(ctx, "/output/samples")
+		require.NoError(t, err)
+
+		data := &ProcessedData{
+			ProjectID: keboola.ProjectID(12345),
+		}
+
+		samples := []*TableSample{
+			{
+				TableID:  keboola.MustParseTableID("in.c-bucket.table1"),
+				Columns:  []string{"id", "name"},
+				Rows:     [][]string{{"1", "Alice"}, {"2", "Bob"}},
+				RowCount: 2,
+			},
+			{
+				TableID:  keboola.MustParseTableID("in.c-bucket.table2"),
+				Columns:  []string{"col1"},
+				Rows:     [][]string{{"value1"}},
+				RowCount: 1,
+			},
+		}
+
+		err = g.GenerateSamples(ctx, data, samples)
+		require.NoError(t, err)
+
+		// Verify samples/index.json exists and has correct structure
+		assertFileExists(t, testFs, "/output/samples/index.json")
+		index := readJSONFile(t, testFs, "/output/samples/index.json")
+		assert.Equal(t, "12345", index["project_id"])
+		assert.Equal(t, 2, int(index["total_samples"].(float64)))
+
+		// Verify sample directories and files
+		assertDirExists(t, testFs, "/output/samples/in.c-bucket.table1")
+		assertFileExists(t, testFs, "/output/samples/in.c-bucket.table1/sample.csv")
+		assertFileExists(t, testFs, "/output/samples/in.c-bucket.table1/metadata.json")
+
+		assertDirExists(t, testFs, "/output/samples/in.c-bucket.table2")
+		assertFileExists(t, testFs, "/output/samples/in.c-bucket.table2/sample.csv")
+		assertFileExists(t, testFs, "/output/samples/in.c-bucket.table2/metadata.json")
+
+		// Verify metadata content
+		metadata := readJSONFile(t, testFs, "/output/samples/in.c-bucket.table1/metadata.json")
+		assert.Equal(t, "in.c-bucket.table1", metadata["table_id"])
+		assert.Equal(t, 2, int(metadata["row_count"].(float64)))
+		assert.NotNil(t, metadata["data_quality"])
+	})
+
+	t.Run("handles empty samples", func(t *testing.T) {
+		t.Parallel()
+		ctx := t.Context()
+		g, _ := newTestGenerator(t)
+
+		data := &ProcessedData{
+			ProjectID: keboola.ProjectID(12345),
+		}
+
+		err := g.GenerateSamples(ctx, data, []*TableSample{})
+		require.NoError(t, err)
+	})
+}
+
+// =============================================================================
 // Test Helpers
 // =============================================================================
 
