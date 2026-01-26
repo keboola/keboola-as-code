@@ -1225,6 +1225,7 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 	// Generate individual sample files first, collecting only successful ones.
 	// Create samples/ directory only on first sample attempt.
 	successfulSamples := make([]*TableSample, 0, len(samples))
+	failedCount := 0
 	for _, sample := range samples {
 		// Create samples directory on first sample attempt if it doesn't exist.
 		if !samplesDirCreated && !samplesDirExistedBefore {
@@ -1236,6 +1237,7 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 
 		if err := g.generateSampleFile(ctx, sample); err != nil {
 			g.logger.Warnf(ctx, "Failed to generate sample for table %s: %v", sample.TableID, err)
+			failedCount++
 			continue
 		}
 		successfulSamples = append(successfulSamples, sample)
@@ -1249,7 +1251,7 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 				g.logger.Warnf(ctx, "Failed to remove empty samples directory: %v", err)
 			}
 		}
-		return nil
+		return errors.Errorf("failed to generate samples for all %d tables", len(samples))
 	}
 
 	// Generate samples index only for successfully generated samples.
@@ -1257,7 +1259,13 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 		return errors.Errorf("failed to generate samples index: %w", err)
 	}
 
-	g.logger.Infof(ctx, "Generated samples for %d tables", len(successfulSamples))
+	g.logger.Infof(ctx, "Generated samples for %d tables (%d failed)", len(successfulSamples), failedCount)
+
+	// Return error if any tables failed to generate, but still write partial results.
+	if failedCount > 0 {
+		return errors.Errorf("failed to generate samples for %d of %d tables", failedCount, len(samples))
+	}
+
 	return nil
 }
 
