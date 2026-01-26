@@ -1213,14 +1213,29 @@ func (g *Generator) generateAIGuide(ctx context.Context, _ *ProcessedData) error
 func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, samples []*TableSample) error {
 	g.logger.Infof(ctx, "Generating samples for %d tables", len(samples))
 
-	if len(samples) == 0 {
-		g.logger.Info(ctx, "No samples to generate")
-		return nil
-	}
-
 	samplesDir := filesystem.Join(g.outputDir, "samples")
 	samplesDirExistedBefore := g.fs.IsDir(ctx, samplesDir)
 	samplesDirCreated := false
+
+	// If no samples, still create an empty index for consistency when --with-samples is enabled.
+	if len(samples) == 0 {
+		if !samplesDirExistedBefore {
+			if err := g.fs.Mkdir(ctx, samplesDir); err != nil {
+				return errors.Errorf("failed to create samples directory: %w", err)
+			}
+			samplesDirCreated = true
+		}
+		if err := g.generateSamplesIndex(ctx, data, samples); err != nil {
+			if samplesDirCreated {
+				if rmErr := g.fs.Remove(ctx, samplesDir); rmErr != nil {
+					g.logger.Warnf(ctx, "Failed to remove samples directory after index generation error: %v", rmErr)
+				}
+			}
+			return errors.Errorf("failed to generate samples index: %w", err)
+		}
+		g.logger.Info(ctx, "No samples to generate, created empty samples index")
+		return nil
+	}
 
 	// Generate individual sample files first, collecting only successful ones.
 	// Create samples/ directory only on first sample attempt.
