@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/writer"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/timeutils"
 )
 
@@ -387,7 +388,7 @@ func (g *Generator) buildTransformationIndex(data *ProcessedData) map[string]any
 // generateTransformationMetadata generates a transformation metadata.json file.
 func (g *Generator) generateTransformationMetadata(ctx context.Context, transform *ProcessedTransformation) error {
 	// Create transformation directory with sanitized name for filesystem safety.
-	transformDir := filesystem.Join(g.outputDir, "transformations", sanitizeFilename(transform.Name))
+	transformDir := filesystem.Join(g.outputDir, "transformations", strhelper.SanitizeFilename(transform.Name))
 	if err := g.fs.Mkdir(ctx, transformDir); err != nil {
 		return errors.Errorf("failed to create transformation directory %s: %w", transformDir, err)
 	}
@@ -484,7 +485,7 @@ func (g *Generator) generateTransformationCode(ctx context.Context, transformDir
 			blockNum++
 			// Create filename: 01-block-name.sql
 			ext := languageToExtension(block.Language)
-			filename := fmt.Sprintf("%02d-%s%s", blockNum, sanitizeFilename(code.Name), ext)
+			filename := fmt.Sprintf("%02d-%s%s", blockNum, strhelper.SanitizeFilename(code.Name), ext)
 			filePath := filesystem.Join(codeDir, filename)
 
 			if err := g.mdWriter.Write(ctx, filePath, code.Script); err != nil {
@@ -527,25 +528,6 @@ func buildJobExecutionMap(exec *JobExecution) map[string]any {
 		result["last_error"] = exec.LastError
 	}
 	return result
-}
-
-// sanitizeFilename removes or replaces characters that are not safe for filenames.
-// Returns "unnamed" if the result would be empty.
-func sanitizeFilename(name string) string {
-	// Replace spaces and special characters with hyphens
-	result := make([]byte, 0, len(name))
-	for i := range len(name) {
-		c := name[i]
-		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' {
-			result = append(result, c)
-		} else if c == ' ' {
-			result = append(result, '-')
-		}
-	}
-	if len(result) == 0 {
-		return "unnamed"
-	}
-	return string(result)
 }
 
 // generateJobs generates jobs/index.json and job detail files.
