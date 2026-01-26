@@ -22,7 +22,7 @@ type mockGeneratorDeps struct {
 	logger log.Logger
 }
 
-func (m *mockGeneratorDeps) Fs() filesystem.Fs   { return m.fs }
+func (m *mockGeneratorDeps) Fs() filesystem.Fs  { return m.fs }
 func (m *mockGeneratorDeps) Logger() log.Logger { return m.logger }
 
 func newTestGenerator(t *testing.T) (*Generator, filesystem.Fs) {

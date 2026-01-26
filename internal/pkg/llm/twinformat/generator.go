@@ -436,23 +436,7 @@ func (g *Generator) generateTransformationMetadata(ctx context.Context, transfor
 
 	// Add job execution info if available.
 	if transform.JobExecution != nil {
-		jobExecution := map[string]any{}
-		if transform.JobExecution.LastRunTime != "" {
-			jobExecution["last_run_time"] = transform.JobExecution.LastRunTime
-		}
-		if transform.JobExecution.LastRunStatus != "" {
-			jobExecution["last_run_status"] = transform.JobExecution.LastRunStatus
-		}
-		if transform.JobExecution.JobReference != "" {
-			jobExecution["job_reference"] = transform.JobExecution.JobReference
-		}
-		if transform.JobExecution.DurationSeconds > 0 {
-			jobExecution["duration_seconds"] = transform.JobExecution.DurationSeconds
-		}
-		if transform.JobExecution.LastError != "" {
-			jobExecution["last_error"] = transform.JobExecution.LastError
-		}
-		metadata["job_execution"] = jobExecution
+		metadata["job_execution"] = buildJobExecutionMap(transform.JobExecution)
 	}
 
 	// Add code block summary to metadata
@@ -519,6 +503,27 @@ func languageToExtension(language string) string {
 	default:
 		return ".sql"
 	}
+}
+
+// buildJobExecutionMap builds a map of job execution info for metadata.
+func buildJobExecutionMap(exec *JobExecution) map[string]any {
+	result := map[string]any{}
+	if exec.LastRunTime != "" {
+		result["last_run_time"] = exec.LastRunTime
+	}
+	if exec.LastRunStatus != "" {
+		result["last_run_status"] = exec.LastRunStatus
+	}
+	if exec.JobReference != "" {
+		result["job_reference"] = exec.JobReference
+	}
+	if exec.DurationSeconds > 0 {
+		result["duration_seconds"] = exec.DurationSeconds
+	}
+	if exec.LastError != "" {
+		result["last_error"] = exec.LastError
+	}
+	return result
 }
 
 // sanitizeFilename removes or replaces characters that are not safe for filenames.
