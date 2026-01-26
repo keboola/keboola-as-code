@@ -285,6 +285,11 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 
 	wg.Wait()
 
+	// If context was cancelled and no samples were fetched, propagate the cancellation error.
+	if len(results) == 0 && ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
 	// Sort by original index to preserve order.
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].index < results[j].index
