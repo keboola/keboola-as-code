@@ -928,13 +928,7 @@ func TestGenerateSamples(t *testing.T) {
 
 	t.Run("generates sample files and index", func(t *testing.T) {
 		t.Parallel()
-		ctx := t.Context()
 		g, testFs := newTestGenerator(t)
-
-		// Create samples directory (normally done by createDirectories in Generate)
-		// Generator uses /output as outputDir
-		err := testFs.Mkdir(ctx, "/output/samples")
-		require.NoError(t, err)
 
 		data := &ProcessedData{
 			ProjectID: keboola.ProjectID(12345),
@@ -955,7 +949,7 @@ func TestGenerateSamples(t *testing.T) {
 			},
 		}
 
-		err = g.GenerateSamples(ctx, data, samples)
+		err := g.GenerateSamples(t.Context(), data, samples)
 		require.NoError(t, err)
 
 		// Verify samples/index.json exists and has correct structure

@@ -100,6 +100,7 @@ func (g *Generator) Generate(ctx context.Context, data *ProcessedData) error {
 }
 
 // createDirectories creates the output directory structure.
+// Note: samples/ directory is created lazily by GenerateSamples when --with-samples is used.
 func (g *Generator) createDirectories(ctx context.Context) error {
 	dirs := []string{
 		g.outputDir,
@@ -112,7 +113,6 @@ func (g *Generator) createDirectories(ctx context.Context) error {
 		filesystem.Join(g.outputDir, "indices"),
 		filesystem.Join(g.outputDir, "indices", "queries"),
 		filesystem.Join(g.outputDir, "ai"),
-		filesystem.Join(g.outputDir, "samples"),
 	}
 
 	for _, dir := range dirs {
@@ -1216,6 +1216,12 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 	if len(samples) == 0 {
 		g.logger.Info(ctx, "No samples to generate")
 		return nil
+	}
+
+	// Create samples directory lazily (only when --with-samples is used).
+	samplesDir := filesystem.Join(g.outputDir, "samples")
+	if err := g.fs.Mkdir(ctx, samplesDir); err != nil {
+		return errors.Errorf("failed to create samples directory: %w", err)
 	}
 
 	// Generate individual sample files first, collecting only successful ones.
