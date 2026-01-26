@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type dependencies interface {
@@ -75,13 +76,12 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	if opts.ShouldIncludeSamples() {
 		logger.Info(ctx, "Fetching table samples...")
 		samples, fetchErr := fetcher.FetchTableSamples(ctx, projectData.Tables, opts.EffectiveSampleLimit(), opts.EffectiveMaxSamples())
-		if len(samples) > 0 {
-			if err := generator.GenerateSamples(ctx, processedData, samples); err != nil {
-				return err
-			}
+		// Always call GenerateSamples to create index (even if empty) for consistent output structure.
+		if err := generator.GenerateSamples(ctx, processedData, samples); err != nil {
+			return errors.Errorf("export completed but sample generation failed: %w", err)
 		}
 		if fetchErr != nil {
-			return fetchErr
+			return errors.Errorf("export completed but sample fetching was incomplete: %w", fetchErr)
 		}
 	}
 
