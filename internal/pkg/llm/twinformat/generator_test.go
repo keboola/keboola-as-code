@@ -1,7 +1,6 @@
 package twinformat
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -926,19 +925,19 @@ func TestCalculateDataQuality(t *testing.T) {
 
 func assertDirExists(t *testing.T, fs filesystem.Fs, path string) {
 	t.Helper()
-	exists := fs.IsDir(context.Background(), path)
+	exists := fs.IsDir(t.Context(), path)
 	assert.True(t, exists, "directory %s should exist", path)
 }
 
 func assertFileExists(t *testing.T, fs filesystem.Fs, path string) {
 	t.Helper()
-	exists := fs.IsFile(context.Background(), path)
+	exists := fs.IsFile(t.Context(), path)
 	assert.True(t, exists, "file %s should exist", path)
 }
 
 func readJSONFile(t *testing.T, fs filesystem.Fs, path string) map[string]any {
 	t.Helper()
-	file, err := fs.ReadFile(context.Background(), filesystem.NewFileDef(path))
+	file, err := fs.ReadFile(t.Context(), filesystem.NewFileDef(path))
 	require.NoError(t, err)
 
 	var result map[string]any
