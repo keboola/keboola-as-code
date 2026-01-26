@@ -275,8 +275,5 @@ func extractComponentFromUserAgent(userAgent string) string {
 		return ""
 	}
 	parts := strings.Split(userAgent, " ")
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return ""
+	return parts[len(parts)-1]
 }
