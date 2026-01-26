@@ -31,6 +31,9 @@ type ProcessedData struct {
 	// Processed jobs
 	Jobs []*ProcessedJob
 
+	// Component configurations (extractors, writers, etc.)
+	ComponentConfigs []*ComponentConfig
+
 	// Lineage graph
 	LineageGraph *LineageGraph
 
@@ -177,6 +180,9 @@ func (p *Processor) Process(ctx context.Context, projectDir string, fetchedData 
 
 	// Step 7: Process jobs
 	processed.Jobs = p.processJobs(ctx, fetchedData.Jobs, processed.Statistics)
+
+	// Step 8: Pass through component configs (already structured from API)
+	processed.ComponentConfigs = fetchedData.ComponentConfigs
 
 	// Update final statistics
 	processed.Statistics.TotalBuckets = len(processed.Buckets)

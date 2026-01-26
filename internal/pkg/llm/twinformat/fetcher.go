@@ -271,6 +271,9 @@ func (f *Fetcher) FetchTableLastImporter(ctx context.Context, tableID keboola.Ta
 // Format: "Keboola Storage API PHP Client/14 kds-team.app-custom-python"
 // Returns the last space-separated part which is the component ID.
 func extractComponentFromUserAgent(userAgent string) string {
+	if userAgent == "" {
+		return ""
+	}
 	parts := strings.Split(userAgent, " ")
 	return parts[len(parts)-1]
 }

@@ -187,3 +187,23 @@ func FilterLines(keep, lines string) string {
 	}
 	return strings.TrimRight(out.String(), "\n")
 }
+
+// SanitizeFilename removes or replaces characters that are not safe for filenames.
+// Only alphanumeric characters, hyphens, and underscores are kept.
+// Spaces are replaced with hyphens.
+// Returns "unnamed" if the result would be empty.
+func SanitizeFilename(name string) string {
+	result := make([]byte, 0, len(name))
+	for i := range len(name) {
+		c := name[i]
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' {
+			result = append(result, c)
+		} else if c == ' ' {
+			result = append(result, '-')
+		}
+	}
+	if len(result) == 0 {
+		return "unnamed"
+	}
+	return string(result)
+}

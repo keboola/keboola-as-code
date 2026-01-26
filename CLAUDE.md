@@ -226,6 +226,37 @@ func buildUID(prefix, name string) string {
 - **Dependency management**: Constructor-based DI; interface segregation (small interfaces)
 - **Observability**: Structured logging; OpenTelemetry integration; metrics for critical paths
 - **Early returns**: Prefer early `return` / `continue` to reduce nesting
+- **Default-first assignment**: Set default value first, then override if present. Avoid resetting nil values after assignment.
+
+Example - instead of:
+```go
+value := someMap[key]
+if value == nil {
+    value = defaultValue
+}
+```
+Use:
+```go
+value := defaultValue
+if v, ok := someMap[key]; ok {
+    value = v
+}
+```
+
+Similarly for struct fields:
+```go
+// Good: set default, override if not nil
+items := []string{}
+if data.Items != nil {
+    items = data.Items
+}
+
+// Bad: assign then reset if nil
+items := data.Items
+if items == nil {
+    items = []string{}
+}
+```
 
 ### Testing
 - Test files use `*_test.go` suffix and are located next to implementation

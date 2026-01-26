@@ -235,3 +235,32 @@ func TestFilterLines(t *testing.T) {
 		assert.Equal(t, c.expected, FilterLines("^<KEEP>", c.in), "case "+cast.ToString(i))
 	}
 }
+
+func TestSanitizeFilename(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{name: "simple name", input: "orders", expected: "orders"},
+		{name: "with spaces", input: "my file", expected: "my-file"},
+		{name: "with special chars", input: "file@#$%", expected: "file"},
+		{name: "with dashes", input: "my-file", expected: "my-file"},
+		{name: "with underscores", input: "my_file", expected: "my_file"},
+		{name: "mixed", input: "My File (v2)", expected: "My-File-v2"},
+		{name: "numbers", input: "file123", expected: "file123"},
+		{name: "empty string", input: "", expected: "unnamed"},
+		{name: "only special chars", input: "@#$%", expected: "unnamed"},
+		{name: "multiple spaces", input: "a   b", expected: "a---b"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result := SanitizeFilename(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
