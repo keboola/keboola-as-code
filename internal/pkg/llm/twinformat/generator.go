@@ -1218,20 +1218,27 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 		return nil
 	}
 
-	// Generate samples index.
-	if err := g.generateSamplesIndex(ctx, data, samples); err != nil {
-		return errors.Errorf("failed to generate samples index: %w", err)
-	}
-
-	// Generate individual sample files.
+	// Generate individual sample files first, collecting only successful ones.
+	successfulSamples := make([]*TableSample, 0, len(samples))
 	for _, sample := range samples {
 		if err := g.generateSampleFile(ctx, sample); err != nil {
 			g.logger.Warnf(ctx, "Failed to generate sample for table %s: %v", sample.TableID, err)
 			continue
 		}
+		successfulSamples = append(successfulSamples, sample)
 	}
 
-	g.logger.Infof(ctx, "Generated samples for %d tables", len(samples))
+	if len(successfulSamples) == 0 {
+		g.logger.Warn(ctx, "No samples were successfully generated, skipping samples index")
+		return nil
+	}
+
+	// Generate samples index only for successfully generated samples.
+	if err := g.generateSamplesIndex(ctx, data, successfulSamples); err != nil {
+		return errors.Errorf("failed to generate samples index: %w", err)
+	}
+
+	g.logger.Infof(ctx, "Generated samples for %d tables", len(successfulSamples))
 	return nil
 }
 
