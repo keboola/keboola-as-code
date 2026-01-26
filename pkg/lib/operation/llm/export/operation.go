@@ -78,24 +78,44 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	}
 
 	// Phase 5: Fetch and generate samples if requested
-	if opts.ShouldIncludeSamples() {
-		logger.Info(ctx, "[5/5] Fetching and generating table samples...")
-		samples, err := fetcher.FetchTableSamples(ctx, projectData.Tables, branch.ID, opts.EffectiveSampleLimit(), opts.EffectiveMaxSamples())
-		if err != nil {
-			logger.Warnf(ctx, "Failed to fetch samples (continuing without samples): %v", err)
-		} else if len(samples) > 0 {
-			if err := generator.GenerateSamples(ctx, processedData, samples); err != nil {
-				logger.Warnf(ctx, "Failed to generate samples (continuing without samples): %v", err)
-			} else {
-				logger.Infof(ctx, "Generated samples for %d tables", len(samples))
-			}
-		}
-	} else {
+	if !opts.ShouldIncludeSamples() {
 		logger.Info(ctx, "[5/5] Skipping samples (not requested)")
+	} else {
+		generateSamples(ctx, logger, fetcher, generator, processedData, projectData, branch.ID, opts)
 	}
 
 	logger.Infof(ctx, "Twin format exported to: %s", d.Fs().BasePath())
 	logger.Info(ctx, "Export completed successfully.")
 
 	return nil
+}
+
+func generateSamples(
+	ctx context.Context,
+	logger log.Logger,
+	fetcher *twinformat.Fetcher,
+	generator *twinformat.Generator,
+	processedData *twinformat.ProcessedData,
+	projectData *twinformat.ProjectData,
+	branchID keboola.BranchID,
+	opts Options,
+) {
+	logger.Info(ctx, "[5/5] Fetching and generating table samples...")
+
+	samples, err := fetcher.FetchTableSamples(ctx, projectData.Tables, branchID, opts.EffectiveSampleLimit(), opts.EffectiveMaxSamples())
+	if err != nil {
+		logger.Warnf(ctx, "Failed to fetch samples (continuing without samples): %v", err)
+		return
+	}
+
+	if len(samples) == 0 {
+		return
+	}
+
+	if err := generator.GenerateSamples(ctx, processedData, samples); err != nil {
+		logger.Warnf(ctx, "Failed to generate samples (continuing without samples): %v", err)
+		return
+	}
+
+	logger.Infof(ctx, "Generated samples for %d tables", len(samples))
 }
