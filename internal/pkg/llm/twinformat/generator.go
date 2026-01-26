@@ -1072,12 +1072,14 @@ func (g *Generator) generateMostConnectedNodes(ctx context.Context, data *Proces
 		return nodes[i].Connections > nodes[j].Connections
 	})
 
-	// Take top 20.
-	topNodes := make([]map[string]any, 0)
-	for i, node := range nodes {
-		if i >= 20 {
-			break
-		}
+	// Limit to top 20 nodes.
+	if len(nodes) > 20 {
+		nodes = nodes[:20]
+	}
+
+	// Convert to output format.
+	topNodes := make([]map[string]any, 0, len(nodes))
+	for _, node := range nodes {
 		topNodes = append(topNodes, map[string]any{
 			"uid":         node.UID,
 			"connections": node.Connections,
