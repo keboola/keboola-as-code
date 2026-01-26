@@ -15,7 +15,7 @@ type Flags struct {
 	Force           configmap.Value[bool]   `configKey:"force" configShorthand:"f" configUsage:"skip confirmation when directory contains existing files"`
 	WithSamples     configmap.Value[bool]   `configKey:"with-samples" configUsage:"include table data samples in export"`
 	SampleLimit     configmap.Value[int]    `configKey:"sample-limit" configUsage:"maximum number of rows per table sample (default: 100, max: 1000)"`
-	MaxSamples      configmap.Value[int]    `configKey:"max-samples" configUsage:"maximum number of tables to sample (default: 50)"`
+	MaxSamples      configmap.Value[int]    `configKey:"max-samples" configUsage:"maximum number of tables to sample (default and max: 50)"`
 }
 
 func DefaultFlags() Flags {
