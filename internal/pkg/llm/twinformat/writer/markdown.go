@@ -38,6 +38,14 @@ type MarkdownBuilder struct {
 	lines []string
 }
 
+// ProjectStats holds statistics for README generation.
+type ProjectStats struct {
+	TotalBuckets         int
+	TotalTables          int
+	TotalTransformations int
+	TotalEdges           int
+}
+
 // NewMarkdownBuilder creates a new Markdown builder.
 func NewMarkdownBuilder() *MarkdownBuilder {
 	return &MarkdownBuilder{
@@ -188,12 +196,4 @@ func GenerateProjectREADME(projectID string, stats ProjectStats) string {
 	mb.P("Format Version: 2")
 
 	return mb.String()
-}
-
-// ProjectStats holds statistics for README generation.
-type ProjectStats struct {
-	TotalBuckets         int
-	TotalTables          int
-	TotalTransformations int
-	TotalEdges           int
 }
