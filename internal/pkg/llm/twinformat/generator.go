@@ -1261,7 +1261,7 @@ func (g *Generator) generateSamplesIndex(ctx context.Context, data *ProcessedDat
 	for _, sample := range samples {
 		entries = append(entries, sampleEntry{
 			TableID:   sample.TableID.String(),
-			RowCount:  sample.RowCount,
+			RowCount:  sample.RowCount(),
 			Columns:   len(sample.Columns),
 			SampleDir: sample.TableID.String(),
 		})
@@ -1304,7 +1304,7 @@ func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample)
 		"_update_frequency": "Generated on export",
 		"columns":           sample.Columns,
 		"data_quality":      dataQuality,
-		"row_count":         sample.RowCount,
+		"row_count":         sample.RowCount(),
 		"table_id":          sample.TableID.String(),
 	}
 
@@ -1315,12 +1315,12 @@ func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample)
 // calculateDataQuality computes data quality metrics for a sample.
 // Returns completeness (percentage of non-null values), null_counts, distinct_counts, and sample_size.
 func (g *Generator) calculateDataQuality(sample *TableSample) map[string]any {
-	if len(sample.Columns) == 0 || sample.RowCount == 0 {
+	if len(sample.Columns) == 0 || sample.RowCount() == 0 {
 		return map[string]any{
 			"completeness":    map[string]int{},
 			"null_counts":     map[string]int{},
 			"distinct_counts": map[string]int{},
-			"sample_size":     sample.RowCount,
+			"sample_size":     sample.RowCount(),
 		}
 	}
 
@@ -1353,9 +1353,9 @@ func (g *Generator) calculateDataQuality(sample *TableSample) map[string]any {
 	distinctCounts := make(map[string]int)
 	for _, col := range sample.Columns {
 		nullCount := nullCounts[col]
-		nonNullCount := sample.RowCount - nullCount
-		if sample.RowCount > 0 {
-			completeness[col] = (nonNullCount * 100) / sample.RowCount
+		nonNullCount := sample.RowCount() - nullCount
+		if sample.RowCount() > 0 {
+			completeness[col] = (nonNullCount * 100) / sample.RowCount()
 		} else {
 			completeness[col] = 0
 		}
@@ -1366,6 +1366,6 @@ func (g *Generator) calculateDataQuality(sample *TableSample) map[string]any {
 		"completeness":    completeness,
 		"distinct_counts": distinctCounts,
 		"null_counts":     nullCounts,
-		"sample_size":     sample.RowCount,
+		"sample_size":     sample.RowCount(),
 	}
 }

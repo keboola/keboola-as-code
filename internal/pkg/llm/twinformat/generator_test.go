@@ -821,10 +821,9 @@ func TestCalculateDataQuality(t *testing.T) {
 		{
 			name: "empty sample",
 			sample: &TableSample{
-				TableID:  keboola.TableID{TableName: "test"},
-				Columns:  []string{},
-				Rows:     [][]string{},
-				RowCount: 0,
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{},
+				Rows:    [][]string{},
 			},
 			expected: map[string]any{
 				"completeness":    map[string]int{},
@@ -836,10 +835,9 @@ func TestCalculateDataQuality(t *testing.T) {
 		{
 			name: "all non-null values",
 			sample: &TableSample{
-				TableID:  keboola.TableID{TableName: "test"},
-				Columns:  []string{"col1", "col2"},
-				Rows:     [][]string{{"a", "b"}, {"c", "d"}, {"e", "f"}},
-				RowCount: 3,
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1", "col2"},
+				Rows:    [][]string{{"a", "b"}, {"c", "d"}, {"e", "f"}},
 			},
 			expected: map[string]any{
 				"completeness":    map[string]int{"col1": 100, "col2": 100},
@@ -851,10 +849,9 @@ func TestCalculateDataQuality(t *testing.T) {
 		{
 			name: "some null values",
 			sample: &TableSample{
-				TableID:  keboola.TableID{TableName: "test"},
-				Columns:  []string{"col1", "col2"},
-				Rows:     [][]string{{"a", ""}, {"", "d"}, {"e", "f"}, {"", ""}},
-				RowCount: 4,
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1", "col2"},
+				Rows:    [][]string{{"a", ""}, {"", "d"}, {"e", "f"}, {"", ""}},
 			},
 			expected: map[string]any{
 				"completeness":    map[string]int{"col1": 50, "col2": 50},
@@ -866,10 +863,9 @@ func TestCalculateDataQuality(t *testing.T) {
 		{
 			name: "all null values",
 			sample: &TableSample{
-				TableID:  keboola.TableID{TableName: "test"},
-				Columns:  []string{"col1"},
-				Rows:     [][]string{{""}, {""}, {""}},
-				RowCount: 3,
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1"},
+				Rows:    [][]string{{""}, {""}, {""}},
 			},
 			expected: map[string]any{
 				"completeness":    map[string]int{"col1": 0},
@@ -881,10 +877,9 @@ func TestCalculateDataQuality(t *testing.T) {
 		{
 			name: "duplicate values",
 			sample: &TableSample{
-				TableID:  keboola.TableID{TableName: "test"},
-				Columns:  []string{"col1"},
-				Rows:     [][]string{{"a"}, {"a"}, {"b"}, {"b"}, {"b"}},
-				RowCount: 5,
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1"},
+				Rows:    [][]string{{"a"}, {"a"}, {"b"}, {"b"}, {"b"}},
 			},
 			expected: map[string]any{
 				"completeness":    map[string]int{"col1": 100},
@@ -896,10 +891,9 @@ func TestCalculateDataQuality(t *testing.T) {
 		{
 			name: "row shorter than columns",
 			sample: &TableSample{
-				TableID:  keboola.TableID{TableName: "test"},
-				Columns:  []string{"col1", "col2", "col3"},
-				Rows:     [][]string{{"a"}, {"b", "c"}},
-				RowCount: 2,
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1", "col2", "col3"},
+				Rows:    [][]string{{"a"}, {"b", "c"}},
 			},
 			expected: map[string]any{
 				"completeness":    map[string]int{"col1": 100, "col2": 50, "col3": 0},
@@ -936,16 +930,14 @@ func TestGenerateSamples(t *testing.T) {
 
 		samples := []*TableSample{
 			{
-				TableID:  keboola.MustParseTableID("in.c-bucket.table1"),
-				Columns:  []string{"id", "name"},
-				Rows:     [][]string{{"1", "Alice"}, {"2", "Bob"}},
-				RowCount: 2,
+				TableID: keboola.MustParseTableID("in.c-bucket.table1"),
+				Columns: []string{"id", "name"},
+				Rows:    [][]string{{"1", "Alice"}, {"2", "Bob"}},
 			},
 			{
-				TableID:  keboola.MustParseTableID("in.c-bucket.table2"),
-				Columns:  []string{"col1"},
-				Rows:     [][]string{{"value1"}},
-				RowCount: 1,
+				TableID: keboola.MustParseTableID("in.c-bucket.table2"),
+				Columns: []string{"col1"},
+				Rows:    [][]string{{"value1"}},
 			},
 		}
 

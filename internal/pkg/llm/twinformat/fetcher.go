@@ -185,10 +185,14 @@ type componentsResult struct {
 
 // TableSample represents a sample of table data.
 type TableSample struct {
-	TableID  keboola.TableID
-	Columns  []string
-	Rows     [][]string
-	RowCount int
+	TableID keboola.TableID
+	Columns []string
+	Rows    [][]string
+}
+
+// RowCount returns the number of rows in the sample.
+func (s *TableSample) RowCount() int {
+	return len(s.Rows)
 }
 
 // FetchTableSample fetches a sample of data from a table.
@@ -205,13 +209,12 @@ func (f *Fetcher) FetchTableSample(ctx context.Context, tableKey keboola.TableKe
 	}
 
 	sample = &TableSample{
-		TableID:  tableKey.TableID,
-		Columns:  preview.Columns,
-		Rows:     preview.Rows,
-		RowCount: len(preview.Rows),
+		TableID: tableKey.TableID,
+		Columns: preview.Columns,
+		Rows:    preview.Rows,
 	}
 
-	f.logger.Debugf(ctx, "Fetched %d rows for table %s", sample.RowCount, tableKey.TableID)
+	f.logger.Debugf(ctx, "Fetched %d rows for table %s", sample.RowCount(), tableKey.TableID)
 
 	return sample, nil
 }

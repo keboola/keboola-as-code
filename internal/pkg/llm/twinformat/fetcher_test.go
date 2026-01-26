@@ -504,7 +504,7 @@ func TestFetchTableSample(t *testing.T) {
 	assert.Equal(t, tableKey.TableID, sample.TableID)
 	assert.Equal(t, []string{"id", "name", "value"}, sample.Columns)
 	assert.Len(t, sample.Rows, 3)
-	assert.Equal(t, 3, sample.RowCount)
+	assert.Equal(t, 3, sample.RowCount())
 	assert.Equal(t, []string{"1", "Alice", "100"}, sample.Rows[0])
 }
 
