@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -219,7 +220,7 @@ func (f *Fetcher) FetchTableSample(ctx context.Context, tableKey keboola.TableKe
 	return sample, nil
 }
 
-// FetchTableSamples fetches samples for multiple tables.
+// FetchTableSamples fetches samples for multiple tables concurrently.
 func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table, limit uint, maxTables int) (samples []*TableSample, err error) {
 	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchTableSamples")
 	defer span.End(&err)
@@ -229,33 +230,69 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 		return []*TableSample{}, nil
 	}
 
-	f.logger.Infof(ctx, "Fetching samples for up to %d tables (limit: %d rows each)", maxTables, limit)
-
-	// Preallocate capacity safely using the smaller of maxTables and len(tables).
-	capacity := maxTables
-	if capacity > len(tables) {
-		capacity = len(tables)
+	// Limit tables to fetch.
+	tablesToFetch := tables
+	if len(tablesToFetch) > maxTables {
+		tablesToFetch = tablesToFetch[:maxTables]
 	}
-	samples = make([]*TableSample, 0, capacity)
 
-	for _, table := range tables {
-		if len(samples) >= maxTables {
-			break
-		}
+	f.logger.Infof(ctx, "Fetching samples for %d tables concurrently (limit: %d rows each)", len(tablesToFetch), limit)
 
-		// Use table's own BranchID to avoid branch mismatch.
-		tableKey := keboola.TableKey{
-			BranchID: table.BranchID,
-			TableID:  table.TableID,
-		}
+	// Use bounded concurrency to respect API rate limits.
+	const maxConcurrency = 5
 
-		sample, err := f.FetchTableSample(ctx, tableKey, limit)
-		if err != nil {
-			f.logger.Warnf(ctx, "Failed to fetch sample for table %s: %v", table.TableID, err)
-			continue
-		}
+	type indexedSample struct {
+		index  int
+		sample *TableSample
+	}
 
-		samples = append(samples, sample)
+	var (
+		mu        sync.Mutex
+		wg        sync.WaitGroup
+		semaphore = make(chan struct{}, maxConcurrency)
+		results   = make([]indexedSample, 0, len(tablesToFetch))
+	)
+
+	for i, table := range tablesToFetch {
+		wg.Add(1)
+		go func(idx int, t *keboola.Table) {
+			defer wg.Done()
+
+			// Acquire semaphore.
+			select {
+			case semaphore <- struct{}{}:
+				defer func() { <-semaphore }()
+			case <-ctx.Done():
+				return
+			}
+
+			tableKey := keboola.TableKey{
+				BranchID: t.BranchID,
+				TableID:  t.TableID,
+			}
+
+			sample, fetchErr := f.FetchTableSample(ctx, tableKey, limit)
+			if fetchErr != nil {
+				f.logger.Warnf(ctx, "Failed to fetch sample for table %s: %v", t.TableID, fetchErr)
+				return
+			}
+
+			mu.Lock()
+			results = append(results, indexedSample{index: idx, sample: sample})
+			mu.Unlock()
+		}(i, table)
+	}
+
+	wg.Wait()
+
+	// Sort by original index to preserve order.
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].index < results[j].index
+	})
+
+	samples = make([]*TableSample, 0, len(results))
+	for _, r := range results {
+		samples = append(samples, r.sample)
 	}
 
 	f.logger.Infof(ctx, "Fetched samples for %d tables", len(samples))
