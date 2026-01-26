@@ -1,7 +1,9 @@
 package twinformat
 
 import (
+	"encoding/csv"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -964,6 +966,13 @@ func TestGenerateSamples(t *testing.T) {
 		assert.Equal(t, "in.c-bucket.table1", metadata["table_id"])
 		assert.Equal(t, 2, int(metadata["row_count"].(float64)))
 		assert.NotNil(t, metadata["data_quality"])
+
+		// Verify CSV content is parseable and has correct data
+		csvRecords := readCSVFile(t, testFs, "/output/samples/in.c-bucket.table1/sample.csv")
+		require.Len(t, csvRecords, 3) // header + 2 rows
+		assert.Equal(t, []string{"id", "name"}, csvRecords[0])
+		assert.Equal(t, []string{"1", "Alice"}, csvRecords[1])
+		assert.Equal(t, []string{"2", "Bob"}, csvRecords[2])
 	})
 
 	t.Run("handles empty samples", func(t *testing.T) {
@@ -1005,4 +1014,15 @@ func readJSONFile(t *testing.T, fs filesystem.Fs, path string) map[string]any {
 	err = json.Unmarshal([]byte(file.Content), &result)
 	require.NoError(t, err)
 	return result
+}
+
+func readCSVFile(t *testing.T, fs filesystem.Fs, path string) [][]string {
+	t.Helper()
+	file, err := fs.ReadFile(t.Context(), filesystem.NewFileDef(path))
+	require.NoError(t, err)
+
+	reader := csv.NewReader(strings.NewReader(file.Content))
+	records, err := reader.ReadAll()
+	require.NoError(t, err)
+	return records
 }
