@@ -1298,13 +1298,14 @@ func (g *Generator) generateSamplesIndex(ctx context.Context, data *ProcessedDat
 func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample) (err error) {
 	// Create table-specific directory.
 	tableDir := filesystem.Join(g.outputDir, "samples", sample.TableID.String())
+	tableDirExistedBefore := g.fs.IsDir(ctx, tableDir)
 	if err := g.fs.Mkdir(ctx, tableDir); err != nil {
 		return errors.Errorf("failed to create sample directory: %w", err)
 	}
 
-	// Clean up on failure to avoid partial sample artifacts.
+	// Clean up on failure to avoid partial sample artifacts, but only if we created the directory.
 	defer func() {
-		if err != nil {
+		if err != nil && !tableDirExistedBefore {
 			if removeErr := g.fs.Remove(ctx, tableDir); removeErr != nil {
 				g.logger.Warnf(ctx, "Failed to clean up partial sample directory %s: %v", tableDir, removeErr)
 			}
