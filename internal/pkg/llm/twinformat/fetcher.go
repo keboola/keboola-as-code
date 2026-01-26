@@ -217,22 +217,32 @@ func (f *Fetcher) FetchTableSample(ctx context.Context, tableKey keboola.TableKe
 }
 
 // FetchTableSamples fetches samples for multiple tables.
-func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table, branchID keboola.BranchID, limit uint, maxTables int) (samples []*TableSample, err error) {
+func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table, limit uint, maxTables int) (samples []*TableSample, err error) {
 	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchTableSamples")
 	defer span.End(&err)
 
+	// Guard against non-positive maxTables to avoid panics from negative slice capacities.
+	if maxTables <= 0 {
+		return []*TableSample{}, nil
+	}
+
 	f.logger.Infof(ctx, "Fetching samples for up to %d tables (limit: %d rows each)", maxTables, limit)
 
-	samples = make([]*TableSample, 0, maxTables)
-	count := 0
+	// Preallocate capacity safely using the smaller of maxTables and len(tables).
+	capacity := maxTables
+	if capacity > len(tables) {
+		capacity = len(tables)
+	}
+	samples = make([]*TableSample, 0, capacity)
 
 	for _, table := range tables {
-		if count >= maxTables {
+		if len(samples) >= maxTables {
 			break
 		}
 
+		// Use table's own BranchID to avoid branch mismatch.
 		tableKey := keboola.TableKey{
-			BranchID: branchID,
+			BranchID: table.BranchID,
 			TableID:  table.TableID,
 		}
 
@@ -243,7 +253,6 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 		}
 
 		samples = append(samples, sample)
-		count++
 	}
 
 	f.logger.Infof(ctx, "Fetched samples for %d tables", len(samples))

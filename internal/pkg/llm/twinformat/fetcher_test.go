@@ -562,7 +562,7 @@ func TestFetchTableSamples(t *testing.T) {
 	)
 
 	// Test with maxTables=2 (should only fetch first 2 tables)
-	samples, err := fetcher.FetchTableSamples(t.Context(), tables, branchID, 100, 2)
+	samples, err := fetcher.FetchTableSamples(t.Context(), tables, 100, 2)
 	require.NoError(t, err)
 
 	assert.Len(t, samples, 2)
@@ -611,7 +611,7 @@ func TestFetchTableSamples_SkipsFailedTables(t *testing.T) {
 		httpmock.NewStringResponder(500, "Internal Server Error"),
 	)
 
-	samples, err := fetcher.FetchTableSamples(t.Context(), tables, branchID, 100, 10)
+	samples, err := fetcher.FetchTableSamples(t.Context(), tables, 100, 10)
 	require.NoError(t, err)
 
 	// Should have 1 sample (failed table is skipped)

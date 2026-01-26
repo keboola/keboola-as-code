@@ -72,7 +72,7 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	// Fetch and generate samples if requested
 	if opts.ShouldIncludeSamples() {
 		logger.Info(ctx, "Fetching table samples...")
-		samples, err := fetcher.FetchTableSamples(ctx, projectData.Tables, branch.ID, opts.EffectiveSampleLimit(), opts.EffectiveMaxSamples())
+		samples, err := fetcher.FetchTableSamples(ctx, projectData.Tables, opts.EffectiveSampleLimit(), opts.EffectiveMaxSamples())
 		if err != nil {
 			logger.Warnf(ctx, "Failed to fetch samples: %v", err)
 		} else if len(samples) > 0 {
