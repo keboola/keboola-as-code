@@ -30,8 +30,9 @@ func (o Options) ShouldIncludeSamples() bool {
 }
 
 // EffectiveSampleLimit returns the sample limit, clamped to valid range.
+// Zero is preserved as meaningful (no rows), only negative values default.
 func (o Options) EffectiveSampleLimit() uint {
-	if o.SampleLimit <= 0 {
+	if o.SampleLimit < 0 {
 		return DefaultSampleLimit
 	}
 	if o.SampleLimit > MaxSampleLimit {
@@ -41,8 +42,9 @@ func (o Options) EffectiveSampleLimit() uint {
 }
 
 // EffectiveMaxSamples returns the max samples, clamped to valid range.
+// Zero is preserved as meaningful (no samples), only negative values default.
 func (o Options) EffectiveMaxSamples() int {
-	if o.MaxSamples <= 0 {
+	if o.MaxSamples < 0 {
 		return DefaultMaxSamples
 	}
 	if o.MaxSamples > MaxAllowedSamples {
