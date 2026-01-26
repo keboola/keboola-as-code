@@ -29,10 +29,16 @@ func (o Options) EffectiveSampleLimit() uint {
 }
 
 // EffectiveMaxSamples returns the max samples, clamped to valid range.
-// Default is 50, maximum is 50.
+// Default is 50, maximum is 100.
 func (o Options) EffectiveMaxSamples() int {
-	const maxAllowedSamples = 50
-	if o.MaxSamples <= 0 || o.MaxSamples > maxAllowedSamples {
+	const (
+		defaultMaxSamples = 50
+		maxAllowedSamples = 100
+	)
+	if o.MaxSamples <= 0 {
+		return defaultMaxSamples
+	}
+	if o.MaxSamples > maxAllowedSamples {
 		return maxAllowedSamples
 	}
 	return o.MaxSamples
