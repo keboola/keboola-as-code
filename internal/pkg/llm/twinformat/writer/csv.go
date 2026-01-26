@@ -30,9 +30,12 @@ func (w *CSVWriter) Write(ctx context.Context, path string, headers []string, ro
 		return errors.Errorf("failed to write CSV headers: %w", err)
 	}
 
-	// Write data rows.
+	// Write data rows, normalizing length to match headers.
 	for i, row := range rows {
-		if err := csvWriter.Write(row); err != nil {
+		normalizedRow := make([]string, len(headers))
+		copy(normalizedRow, row)
+
+		if err := csvWriter.Write(normalizedRow); err != nil {
 			return errors.Errorf("failed to write CSV row %d: %w", i, err)
 		}
 	}
