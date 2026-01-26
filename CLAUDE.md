@@ -227,8 +227,13 @@ func buildUID(prefix, name string) string {
 - **Observability**: Structured logging; OpenTelemetry integration; metrics for critical paths
 - **Early returns**: Prefer early `return` / `continue` to reduce nesting
 - **Default-first assignment**: Set default value first, then override if present. Avoid resetting nil values after assignment.
+- **Deterministic output**: When iterating over maps, always sort results before output to ensure consistent ordering across runs
+- **Avoid else-if chains**: Prefer early returns, switch statements, or restructured logic
+- **Type assertions with nil checks**: After type assertions, always check for nil before using the value
+- **nolint directives**: Use `//nolint:directive` format (no space after //)
+- **Parser/processor pattern**: Use struct with logger as constructor dependency for components that need logging; keep utility functions that don't need logger as standalone
 
-Example - instead of:
+Example of default-first assignment - instead of:
 ```go
 value := someMap[key]
 if value == nil {
@@ -257,6 +262,11 @@ if items == nil {
     items = []string{}
 }
 ```
+
+### Commit Practices
+- **Make small, focused commits** - One logical change per commit
+- **Don't bundle multiple tasks** into a single commit; split them for easier review and rebasing
+- **Example**: If implementing column metadata, transformation code output, and component configs, create 3 separate commits rather than one large commit
 
 ### Testing
 - Test files use `*_test.go` suffix and are located next to implementation

@@ -95,6 +95,10 @@ func (g *Generator) Generate(ctx context.Context, data *ProcessedData) error {
 		return errors.Errorf("failed to generate AI guide: %w", err)
 	}
 
+	if err := g.generateDataDictionary(ctx, data); err != nil {
+		return errors.Errorf("failed to generate data dictionary: %w", err)
+	}
+
 	g.logger.Infof(ctx, "Twin format output generated successfully")
 	return nil
 }
@@ -835,6 +839,11 @@ func (g *Generator) generateSourcesIndex(ctx context.Context, data *ProcessedDat
 	docFields := SourcesIndexDocFields()
 	sources := buildSourcesList(data.Buckets)
 
+	// Sort sources by ID for deterministic output.
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i]["id"].(string) < sources[j]["id"].(string)
+	})
+
 	sourcesIndex := map[string]any{
 		"_comment":          docFields.Comment,
 		"_purpose":          docFields.Purpose,
@@ -878,6 +887,8 @@ func buildSourcesList(buckets []*ProcessedBucket) []map[string]any {
 
 	sources := make([]map[string]any, 0, len(sourceMap))
 	for _, info := range sourceMap {
+		// Sort buckets for deterministic output.
+		sort.Strings(info.Buckets)
 		sources = append(sources, map[string]any{
 			"id":           info.ID,
 			"name":         info.Name,
@@ -1050,7 +1061,11 @@ func (g *Generator) generateMostConnectedNodes(ctx context.Context, data *Proces
 	}
 
 	sort.Slice(nodes, func(i, j int) bool {
-		return nodes[i].Connections > nodes[j].Connections
+		if nodes[i].Connections != nodes[j].Connections {
+			return nodes[i].Connections > nodes[j].Connections
+		}
+		// Secondary sort by UID for deterministic order when connections are equal.
+		return nodes[i].UID < nodes[j].UID
 	})
 
 	// Limit to top 20 nodes.
@@ -1104,6 +1119,11 @@ func (g *Generator) generateRootFiles(ctx context.Context, data *ProcessedData) 
 func (g *Generator) generateManifestExtended(ctx context.Context, data *ProcessedData) error {
 	docFields := ManifestExtendedDocFields()
 	sources := buildSourcesList(data.Buckets)
+
+	// Sort sources by ID for deterministic output.
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i]["id"].(string) < sources[j]["id"].(string)
+	})
 
 	// Build platform counts.
 	platformCounts := make(map[string]int)
@@ -1207,6 +1227,109 @@ func (g *Generator) generateAIGuide(ctx context.Context, _ *ProcessedData) error
 	}
 
 	return nil
+}
+
+// generateDataDictionary generates a data dictionary from the exported data.
+func (g *Generator) generateDataDictionary(ctx context.Context, data *ProcessedData) error {
+	g.logger.Debugf(ctx, "Generating data dictionary")
+
+	// Create documentation directory.
+	docDir := filesystem.Join(g.outputDir, "documentation")
+	if err := g.fs.Mkdir(ctx, docDir); err != nil {
+		return errors.Errorf("failed to create documentation directory: %w", err)
+	}
+
+	// Build tables section from actual data.
+	tables := make(map[string]map[string]any)
+	for _, table := range data.Tables {
+		tableEntry := map[string]any{
+			"name":         table.Name,
+			"bucket":       table.BucketName,
+			"source":       table.Source,
+			"rows_count":   table.RowsCount,
+			"column_count": len(table.Columns),
+		}
+
+		if table.DisplayName != "" {
+			tableEntry["display_name"] = table.DisplayName
+		}
+
+		// Add column details.
+		columns := make([]map[string]any, 0, len(table.Columns))
+		for _, colName := range table.Columns {
+			col := map[string]any{"name": colName}
+			if table.Table != nil && table.ColumnMetadata != nil {
+				if colMeta, ok := table.ColumnMetadata[colName]; ok {
+					for _, meta := range colMeta {
+						switch meta.Key {
+						case "KBC.datatype.basetype":
+							col["type"] = meta.Value
+						case "KBC.description":
+							col["description"] = meta.Value
+						}
+					}
+				}
+			}
+			columns = append(columns, col)
+		}
+		tableEntry["columns"] = columns
+
+		tables[table.UID] = tableEntry
+	}
+
+	// Build transformations section.
+	transformations := make(map[string]map[string]any)
+	for _, transform := range data.Transformations {
+		entry := map[string]any{
+			"name":        transform.Name,
+			"platform":    transform.Platform,
+			"is_disabled": transform.IsDisabled,
+		}
+		if transform.Description != "" {
+			entry["description"] = transform.Description
+		}
+		if transform.Dependencies != nil {
+			entry["inputs"] = transform.Dependencies.Consumes
+			entry["outputs"] = transform.Dependencies.Produces
+		}
+		transformations[transform.UID] = entry
+	}
+
+	// Build components section.
+	components := make(map[string]map[string]any)
+	for _, config := range data.ComponentConfigs {
+		entry := map[string]any{
+			"name":           config.Name,
+			"component_id":   config.ComponentID,
+			"component_type": config.ComponentType,
+			"is_disabled":    config.IsDisabled,
+		}
+		if config.Description != "" {
+			entry["description"] = config.Description
+		}
+		components[config.ID] = entry
+	}
+
+	// Build the data dictionary.
+	dictionary := map[string]any{
+		"_comment":          "Auto-generated data dictionary from Keboola project",
+		"_purpose":          "Comprehensive reference of all tables, transformations, and components",
+		"_update_frequency": "Generated on each export",
+		"project_id":        data.ProjectID.String(),
+		"generated_at":      data.ProcessedAt.UTC().Format(time.RFC3339),
+		"summary": map[string]any{
+			"total_tables":          len(data.Tables),
+			"total_transformations": len(data.Transformations),
+			"total_components":      len(data.ComponentConfigs),
+			"total_buckets":         len(data.Buckets),
+		},
+		"tables":          tables,
+		"transformations": transformations,
+		"components":      components,
+	}
+
+	dictPath := filesystem.Join(docDir, "data-dictionary.json")
+	return g.jsonWriter.Write(ctx, dictPath, dictionary)
 }
 
 // GenerateSamples generates sample CSV files for tables.
