@@ -185,9 +185,9 @@ func (g *Generator) buildBucketIndex(data *ProcessedData) map[string]any {
 	for _, bucket := range data.Buckets {
 		// Extract bucket name from BucketID.
 		bucketName := extractBucketName(bucket.BucketID.String())
-		tables := bucketTables[bucketName]
-		if tables == nil {
-			tables = []string{}
+		tables := []string{}
+		if value, ok := bucketTables[bucketName]; ok {
+			tables = value
 		}
 		buckets = append(buckets, map[string]any{
 			"name":        bucketName,
@@ -253,14 +253,12 @@ func (g *Generator) generateTableMetadata(ctx context.Context, table *ProcessedT
 	consumedBy := []string{}
 	producedBy := []string{}
 	if table.Dependencies != nil {
-		consumedBy = table.Dependencies.ConsumedBy
-		producedBy = table.Dependencies.ProducedBy
-	}
-	if consumedBy == nil {
-		consumedBy = []string{}
-	}
-	if producedBy == nil {
-		producedBy = []string{}
+		if table.Dependencies.ConsumedBy != nil {
+			consumedBy = table.Dependencies.ConsumedBy
+		}
+		if table.Dependencies.ProducedBy != nil {
+			producedBy = table.Dependencies.ProducedBy
+		}
 	}
 
 	metadata["dependencies"] = map[string]any{
@@ -423,14 +421,12 @@ func (g *Generator) generateTransformationMetadata(ctx context.Context, transfor
 	consumes := []string{}
 	produces := []string{}
 	if transform.Dependencies != nil {
-		consumes = transform.Dependencies.Consumes
-		produces = transform.Dependencies.Produces
-	}
-	if consumes == nil {
-		consumes = []string{}
-	}
-	if produces == nil {
-		produces = []string{}
+		if transform.Dependencies.Consumes != nil {
+			consumes = transform.Dependencies.Consumes
+		}
+		if transform.Dependencies.Produces != nil {
+			produces = transform.Dependencies.Produces
+		}
 	}
 
 	metadata["dependencies"] = map[string]any{
