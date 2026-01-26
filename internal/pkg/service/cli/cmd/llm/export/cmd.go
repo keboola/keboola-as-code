@@ -20,8 +20,8 @@ type Flags struct {
 
 func DefaultFlags() Flags {
 	return Flags{
-		SampleLimit: configmap.NewValue(100),
-		MaxSamples:  configmap.NewValue(50),
+		SampleLimit: configmap.NewValue(exportOp.DefaultSampleLimit),
+		MaxSamples:  configmap.NewValue(exportOp.DefaultMaxSamples),
 	}
 }
 

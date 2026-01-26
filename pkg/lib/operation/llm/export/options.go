@@ -1,5 +1,17 @@
 package export
 
+// Sample limit constants - shared between CLI defaults and clamping.
+const (
+	// DefaultSampleLimit is the default number of rows per table sample.
+	DefaultSampleLimit = 100
+	// MaxSampleLimit is the maximum allowed rows per table sample.
+	MaxSampleLimit = 1000
+	// DefaultMaxSamples is the default number of tables to sample.
+	DefaultMaxSamples = 50
+	// MaxAllowedSamples is the maximum allowed number of tables to sample.
+	MaxAllowedSamples = 100
+)
+
 // Options for the llm export operation.
 type Options struct {
 	// Force skips confirmation when directory contains existing files.
@@ -20,26 +32,21 @@ func (o Options) ShouldIncludeSamples() bool {
 // EffectiveSampleLimit returns the sample limit, clamped to valid range.
 func (o Options) EffectiveSampleLimit() uint {
 	if o.SampleLimit <= 0 {
-		return 100
+		return DefaultSampleLimit
 	}
-	if o.SampleLimit > 1000 {
-		return 1000
+	if o.SampleLimit > MaxSampleLimit {
+		return MaxSampleLimit
 	}
 	return uint(o.SampleLimit)
 }
 
 // EffectiveMaxSamples returns the max samples, clamped to valid range.
-// Default is 50, maximum is 100.
 func (o Options) EffectiveMaxSamples() int {
-	const (
-		defaultMaxSamples = 50
-		maxAllowedSamples = 100
-	)
 	if o.MaxSamples <= 0 {
-		return defaultMaxSamples
+		return DefaultMaxSamples
 	}
-	if o.MaxSamples > maxAllowedSamples {
-		return maxAllowedSamples
+	if o.MaxSamples > MaxAllowedSamples {
+		return MaxAllowedSamples
 	}
 	return o.MaxSamples
 }
