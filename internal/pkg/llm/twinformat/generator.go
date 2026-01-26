@@ -1219,14 +1219,15 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 	}
 
 	samplesDir := filesystem.Join(g.outputDir, "samples")
+	samplesDirExistedBefore := g.fs.IsDir(ctx, samplesDir)
 	samplesDirCreated := false
 
 	// Generate individual sample files first, collecting only successful ones.
-	// Create samples/ directory only on first successful sample.
+	// Create samples/ directory only on first sample attempt.
 	successfulSamples := make([]*TableSample, 0, len(samples))
 	for _, sample := range samples {
-		// Create samples directory on first successful sample attempt.
-		if !samplesDirCreated {
+		// Create samples directory on first sample attempt if it doesn't exist.
+		if !samplesDirCreated && !samplesDirExistedBefore {
 			if err := g.fs.Mkdir(ctx, samplesDir); err != nil {
 				return errors.Errorf("failed to create samples directory: %w", err)
 			}
@@ -1242,7 +1243,7 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 
 	if len(successfulSamples) == 0 {
 		g.logger.Warn(ctx, "No samples were successfully generated, skipping samples index")
-		// Remove empty samples directory if it was created but no samples succeeded.
+		// Remove samples directory only if we created it in this run (not pre-existing).
 		if samplesDirCreated {
 			if err := g.fs.Remove(ctx, samplesDir); err != nil {
 				g.logger.Warnf(ctx, "Failed to remove empty samples directory: %v", err)
