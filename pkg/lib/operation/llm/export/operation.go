@@ -69,15 +69,17 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 		return err
 	}
 
-	// Fetch and generate samples if requested
+	// Fetch and generate samples if requested.
+	// When --with-samples is explicitly enabled, errors are propagated so callers can detect failures.
 	if opts.ShouldIncludeSamples() {
 		logger.Info(ctx, "Fetching table samples...")
 		samples, err := fetcher.FetchTableSamples(ctx, projectData.Tables, opts.EffectiveSampleLimit(), opts.EffectiveMaxSamples())
 		if err != nil {
-			logger.Warnf(ctx, "Failed to fetch samples: %v", err)
-		} else if len(samples) > 0 {
+			return err
+		}
+		if len(samples) > 0 {
 			if err := generator.GenerateSamples(ctx, processedData, samples); err != nil {
-				logger.Warnf(ctx, "Failed to generate samples: %v", err)
+				return err
 			}
 		}
 	}
