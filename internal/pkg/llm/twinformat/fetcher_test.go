@@ -612,7 +612,10 @@ func TestFetchTableSamples_SkipsFailedTables(t *testing.T) {
 	)
 
 	samples, err := fetcher.FetchTableSamples(t.Context(), tables, 100, 10)
-	require.NoError(t, err)
+
+	// Should return error indicating partial failure, but still return partial results.
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to fetch samples for 1 of 2 tables")
 
 	// Should have 1 sample (failed table is skipped)
 	assert.Len(t, samples, 1)

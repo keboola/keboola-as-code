@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/configparser"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // FetcherDependencies defines the dependencies required by the Fetcher.
@@ -247,10 +248,11 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 	}
 
 	var (
-		mu        sync.Mutex
-		wg        sync.WaitGroup
-		semaphore = make(chan struct{}, maxConcurrency)
-		results   = make([]indexedSample, 0, len(tablesToFetch))
+		mu          sync.Mutex
+		wg          sync.WaitGroup
+		semaphore   = make(chan struct{}, maxConcurrency)
+		results     = make([]indexedSample, 0, len(tablesToFetch))
+		failedCount int
 	)
 
 	for i, table := range tablesToFetch {
@@ -263,6 +265,9 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 			case semaphore <- struct{}{}:
 				defer func() { <-semaphore }()
 			case <-ctx.Done():
+				mu.Lock()
+				failedCount++
+				mu.Unlock()
 				return
 			}
 
@@ -274,6 +279,9 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 			sample, fetchErr := f.FetchTableSample(ctx, tableKey, limit)
 			if fetchErr != nil {
 				f.logger.Warnf(ctx, "Failed to fetch sample for table %s: %v", t.TableID, fetchErr)
+				mu.Lock()
+				failedCount++
+				mu.Unlock()
 				return
 			}
 
@@ -300,7 +308,12 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 		samples = append(samples, r.sample)
 	}
 
-	f.logger.Infof(ctx, "Fetched samples for %d tables", len(samples))
+	f.logger.Infof(ctx, "Fetched samples for %d tables (%d failed)", len(samples), failedCount)
+
+	// Return error if any tables failed to fetch, but still return partial results.
+	if failedCount > 0 {
+		return samples, errors.Errorf("failed to fetch samples for %d of %d tables", failedCount, len(tablesToFetch))
+	}
 
 	return samples, nil
 }
