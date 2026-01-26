@@ -17,8 +17,8 @@ func (o Options) ShouldIncludeSamples() bool {
 	return o.WithSamples
 }
 
-// GetSampleLimit returns the sample limit, clamped to valid range.
-func (o Options) GetSampleLimit() uint {
+// EffectiveSampleLimit returns the sample limit, clamped to valid range.
+func (o Options) EffectiveSampleLimit() uint {
 	if o.SampleLimit <= 0 {
 		return 100
 	}
@@ -28,8 +28,8 @@ func (o Options) GetSampleLimit() uint {
 	return uint(o.SampleLimit)
 }
 
-// GetMaxSamples returns the max samples, with default if not set.
-func (o Options) GetMaxSamples() int {
+// EffectiveMaxSamples returns the max samples, with default if not set.
+func (o Options) EffectiveMaxSamples() int {
 	if o.MaxSamples <= 0 {
 		return 50
 	}
