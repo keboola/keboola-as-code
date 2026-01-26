@@ -15,11 +15,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/timeutils"
 )
 
+// Version represents a format version number.
+type Version int
+
 const (
 	// TwinFormatVersion is the version of the twin format specification.
-	TwinFormatVersion = 1
+	TwinFormatVersion Version = 1
 	// FormatVersion is the version of the output format.
-	FormatVersion = 2
+	FormatVersion Version = 2
 )
 
 // GeneratorDependencies defines the dependencies for the Generator.
