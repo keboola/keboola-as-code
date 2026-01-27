@@ -1219,22 +1219,7 @@ func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, sa
 
 	// If no samples, still create an empty index for consistency when --with-samples is enabled.
 	if len(samples) == 0 {
-		if !samplesDirExistedBefore {
-			if err := g.fs.Mkdir(ctx, samplesDir); err != nil {
-				return errors.Errorf("failed to create samples directory: %w", err)
-			}
-			samplesDirCreated = true
-		}
-		if err := g.generateSamplesIndex(ctx, data, samples); err != nil {
-			if samplesDirCreated {
-				if rmErr := g.fs.Remove(ctx, samplesDir); rmErr != nil {
-					g.logger.Warnf(ctx, "Failed to remove samples directory after index generation error: %v", rmErr)
-				}
-			}
-			return errors.Errorf("failed to generate samples index: %w", err)
-		}
-		g.logger.Info(ctx, "No samples to generate, created empty samples index")
-		return nil
+		return g.generateEmptySamplesIndex(ctx, data, samplesDir, samplesDirExistedBefore)
 	}
 
 	// Generate individual sample files first, collecting only successful ones.
@@ -1314,6 +1299,30 @@ func (g *Generator) generateSamplesIndex(ctx context.Context, data *ProcessedDat
 
 	indexPath := filesystem.Join(g.outputDir, "samples", "index.json")
 	return g.jsonWriter.Write(ctx, indexPath, index)
+}
+
+// generateEmptySamplesIndex creates an empty samples index when no samples are available.
+// This ensures consistent output structure when --with-samples is enabled.
+func (g *Generator) generateEmptySamplesIndex(ctx context.Context, data *ProcessedData, samplesDir string, dirExisted bool) error {
+	dirCreated := false
+	if !dirExisted {
+		if err := g.fs.Mkdir(ctx, samplesDir); err != nil {
+			return errors.Errorf("failed to create samples directory: %w", err)
+		}
+		dirCreated = true
+	}
+
+	if err := g.generateSamplesIndex(ctx, data, nil); err != nil {
+		if dirCreated {
+			if rmErr := g.fs.Remove(ctx, samplesDir); rmErr != nil {
+				g.logger.Warnf(ctx, "Failed to remove samples directory after index generation error: %v", rmErr)
+			}
+		}
+		return errors.Errorf("failed to generate samples index: %w", err)
+	}
+
+	g.logger.Info(ctx, "No samples to generate, created empty samples index")
+	return nil
 }
 
 // generateSampleFile generates a sample CSV file and metadata for a table.
