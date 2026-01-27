@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/configparser"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -227,62 +229,31 @@ func (f *Fetcher) FetchTableSample(ctx context.Context, tableKey keboola.TableKe
 	return sample, nil
 }
 
-// sampleFetchWorker holds shared state for concurrent sample fetching.
-type sampleFetchWorker struct {
-	fetcher   *Fetcher
-	ctx       context.Context
-	limit     uint
-	semaphore chan struct{}
-
-	mu          sync.Mutex
-	results     []indexedSample
-	failedCount int
-}
-
 // indexedSample pairs a sample with its original index for ordering.
 type indexedSample struct {
 	index  int
 	sample *TableSample
 }
 
-// fetchTable fetches a sample for a single table and records the result.
-func (w *sampleFetchWorker) fetchTable(idx int, t *keboola.Table) {
-	// Acquire semaphore.
-	select {
-	case w.semaphore <- struct{}{}:
-		defer func() { <-w.semaphore }()
-	case <-w.ctx.Done():
-		w.recordFailure()
-		return
-	}
-
-	tableKey := keboola.TableKey{
-		BranchID: t.BranchID,
-		TableID:  t.TableID,
-	}
-
-	sample, fetchErr := w.fetcher.FetchTableSample(w.ctx, tableKey, w.limit)
-	if fetchErr != nil {
-		w.fetcher.logger.Warnf(w.ctx, "Failed to fetch sample for table %s: %v", t.TableID, fetchErr)
-		w.recordFailure()
-		return
-	}
-
-	w.recordSuccess(idx, sample)
+// sampleFetchCollector collects results from concurrent sample fetching.
+type sampleFetchCollector struct {
+	mu          sync.Mutex
+	results     []indexedSample
+	failedCount int
 }
 
 // recordFailure increments the failure count.
-func (w *sampleFetchWorker) recordFailure() {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.failedCount++
+func (c *sampleFetchCollector) recordFailure() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.failedCount++
 }
 
 // recordSuccess records a successfully fetched sample.
-func (w *sampleFetchWorker) recordSuccess(idx int, sample *TableSample) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.results = append(w.results, indexedSample{index: idx, sample: sample})
+func (c *sampleFetchCollector) recordSuccess(idx int, sample *TableSample) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.results = append(c.results, indexedSample{index: idx, sample: sample})
 }
 
 // FetchTableSamples fetches samples for multiple tables concurrently.
@@ -304,50 +275,72 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 	f.logger.Infof(ctx, "Fetching samples for %d tables concurrently (limit: %d rows each)", len(tablesToFetch), limit)
 
 	// Use bounded concurrency to respect API rate limits.
-	const maxConcurrency = 5
+	const maxConcurrency = 10
 
-	worker := &sampleFetchWorker{
-		fetcher:   f,
-		ctx:       ctx,
-		limit:     limit,
-		semaphore: make(chan struct{}, maxConcurrency),
-		results:   make([]indexedSample, 0, len(tablesToFetch)),
+	sem := semaphore.NewWeighted(maxConcurrency)
+	group, groupCtx := errgroup.WithContext(ctx)
+	collector := &sampleFetchCollector{
+		results: make([]indexedSample, 0, len(tablesToFetch)),
 	}
 
-	var wg sync.WaitGroup
 	for i, table := range tablesToFetch {
-		wg.Add(1)
-		go func(idx int, t *keboola.Table) {
-			defer wg.Done()
-			worker.fetchTable(idx, t)
-		}(i, table)
+		idx, t := i, table
+		group.Go(func() error {
+			// Acquire semaphore - blocks until slot available or context cancelled.
+			if err := sem.Acquire(groupCtx, 1); err != nil {
+				collector.recordFailure()
+				return nil // Don't propagate - we want partial results
+			}
+			defer sem.Release(1)
+
+			f.fetchTableSample(groupCtx, collector, idx, t, limit)
+			return nil
+		})
 	}
 
-	wg.Wait()
+	// Wait for all goroutines to complete.
+	_ = group.Wait()
 
 	// If context was cancelled and no samples were fetched, propagate the cancellation error.
-	if len(worker.results) == 0 && ctx.Err() != nil {
+	if len(collector.results) == 0 && ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
 
 	// Sort by original index to preserve order.
-	sort.Slice(worker.results, func(i, j int) bool {
-		return worker.results[i].index < worker.results[j].index
+	sort.Slice(collector.results, func(i, j int) bool {
+		return collector.results[i].index < collector.results[j].index
 	})
 
-	samples = make([]*TableSample, 0, len(worker.results))
-	for _, r := range worker.results {
+	samples = make([]*TableSample, 0, len(collector.results))
+	for _, r := range collector.results {
 		samples = append(samples, r.sample)
 	}
 
-	f.logger.Infof(ctx, "Fetched samples for %d tables (%d failed)", len(samples), worker.failedCount)
+	f.logger.Infof(ctx, "Fetched samples for %d tables (%d failed)", len(samples), collector.failedCount)
 
 	// Return error if any tables failed to fetch, but still return partial results.
-	if worker.failedCount > 0 {
-		return samples, errors.Errorf("failed to fetch samples for %d of %d tables", worker.failedCount, len(tablesToFetch))
+	if collector.failedCount > 0 {
+		return samples, errors.Errorf("failed to fetch samples for %d of %d tables", collector.failedCount, len(tablesToFetch))
 	}
 
 	return samples, nil
+}
+
+// fetchTableSample fetches a sample for a single table and records the result.
+func (f *Fetcher) fetchTableSample(ctx context.Context, collector *sampleFetchCollector, idx int, t *keboola.Table, limit uint) {
+	tableKey := keboola.TableKey{
+		BranchID: t.BranchID,
+		TableID:  t.TableID,
+	}
+
+	sample, err := f.FetchTableSample(ctx, tableKey, limit)
+	if err != nil {
+		f.logger.Warnf(ctx, "Failed to fetch sample for table %s: %v", t.TableID, err)
+		collector.recordFailure()
+		return
+	}
+
+	collector.recordSuccess(idx, sample)
 }
 
 // fetchAllComponents fetches all components and extracts transformation and component configs.
