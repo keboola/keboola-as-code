@@ -205,7 +205,13 @@ func (f *Fetcher) FetchTableSample(ctx context.Context, tableKey keboola.TableKe
 	f.logger.Debugf(ctx, "Fetching sample for table %s (limit: %d)", tableKey.TableID, limit)
 
 	// Fetch table preview using the SDK.
-	preview, err := f.api.PreviewTableRequest(tableKey, keboola.WithLimitRows(limit)).Send(ctx)
+	// Don't pass WithLimitRows when limit is 0, as it may have different semantics than omitting.
+	var preview *keboola.TablePreview
+	if limit == 0 {
+		preview, err = f.api.PreviewTableRequest(tableKey).Send(ctx)
+	} else {
+		preview, err = f.api.PreviewTableRequest(tableKey, keboola.WithLimitRows(limit)).Send(ctx)
+	}
 	if err != nil {
 		return nil, err
 	}
