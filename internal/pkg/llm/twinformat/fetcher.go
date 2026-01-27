@@ -227,6 +227,64 @@ func (f *Fetcher) FetchTableSample(ctx context.Context, tableKey keboola.TableKe
 	return sample, nil
 }
 
+// sampleFetchWorker holds shared state for concurrent sample fetching.
+type sampleFetchWorker struct {
+	fetcher   *Fetcher
+	ctx       context.Context
+	limit     uint
+	semaphore chan struct{}
+
+	mu          sync.Mutex
+	results     []indexedSample
+	failedCount int
+}
+
+// indexedSample pairs a sample with its original index for ordering.
+type indexedSample struct {
+	index  int
+	sample *TableSample
+}
+
+// fetchTable fetches a sample for a single table and records the result.
+func (w *sampleFetchWorker) fetchTable(idx int, t *keboola.Table) {
+	// Acquire semaphore.
+	select {
+	case w.semaphore <- struct{}{}:
+		defer func() { <-w.semaphore }()
+	case <-w.ctx.Done():
+		w.recordFailure()
+		return
+	}
+
+	tableKey := keboola.TableKey{
+		BranchID: t.BranchID,
+		TableID:  t.TableID,
+	}
+
+	sample, fetchErr := w.fetcher.FetchTableSample(w.ctx, tableKey, w.limit)
+	if fetchErr != nil {
+		w.fetcher.logger.Warnf(w.ctx, "Failed to fetch sample for table %s: %v", t.TableID, fetchErr)
+		w.recordFailure()
+		return
+	}
+
+	w.recordSuccess(idx, sample)
+}
+
+// recordFailure increments the failure count.
+func (w *sampleFetchWorker) recordFailure() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.failedCount++
+}
+
+// recordSuccess records a successfully fetched sample.
+func (w *sampleFetchWorker) recordSuccess(idx int, sample *TableSample) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.results = append(w.results, indexedSample{index: idx, sample: sample})
+}
+
 // FetchTableSamples fetches samples for multiple tables concurrently.
 func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table, limit uint, maxTables int) (samples []*TableSample, err error) {
 	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchTableSamples")
@@ -248,77 +306,45 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 	// Use bounded concurrency to respect API rate limits.
 	const maxConcurrency = 5
 
-	type indexedSample struct {
-		index  int
-		sample *TableSample
+	worker := &sampleFetchWorker{
+		fetcher:   f,
+		ctx:       ctx,
+		limit:     limit,
+		semaphore: make(chan struct{}, maxConcurrency),
+		results:   make([]indexedSample, 0, len(tablesToFetch)),
 	}
 
-	var (
-		mu          sync.Mutex
-		wg          sync.WaitGroup
-		semaphore   = make(chan struct{}, maxConcurrency)
-		results     = make([]indexedSample, 0, len(tablesToFetch))
-		failedCount int
-	)
-
+	var wg sync.WaitGroup
 	for i, table := range tablesToFetch {
 		wg.Add(1)
 		go func(idx int, t *keboola.Table) {
 			defer wg.Done()
-
-			// Acquire semaphore.
-			select {
-			case semaphore <- struct{}{}:
-				defer func() { <-semaphore }()
-			case <-ctx.Done():
-				mu.Lock()
-				failedCount++
-				mu.Unlock()
-				return
-			}
-
-			tableKey := keboola.TableKey{
-				BranchID: t.BranchID,
-				TableID:  t.TableID,
-			}
-
-			sample, fetchErr := f.FetchTableSample(ctx, tableKey, limit)
-			if fetchErr != nil {
-				f.logger.Warnf(ctx, "Failed to fetch sample for table %s: %v", t.TableID, fetchErr)
-				mu.Lock()
-				failedCount++
-				mu.Unlock()
-				return
-			}
-
-			mu.Lock()
-			results = append(results, indexedSample{index: idx, sample: sample})
-			mu.Unlock()
+			worker.fetchTable(idx, t)
 		}(i, table)
 	}
 
 	wg.Wait()
 
 	// If context was cancelled and no samples were fetched, propagate the cancellation error.
-	if len(results) == 0 && ctx.Err() != nil {
+	if len(worker.results) == 0 && ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
 
 	// Sort by original index to preserve order.
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].index < results[j].index
+	sort.Slice(worker.results, func(i, j int) bool {
+		return worker.results[i].index < worker.results[j].index
 	})
 
-	samples = make([]*TableSample, 0, len(results))
-	for _, r := range results {
+	samples = make([]*TableSample, 0, len(worker.results))
+	for _, r := range worker.results {
 		samples = append(samples, r.sample)
 	}
 
-	f.logger.Infof(ctx, "Fetched samples for %d tables (%d failed)", len(samples), failedCount)
+	f.logger.Infof(ctx, "Fetched samples for %d tables (%d failed)", len(samples), worker.failedCount)
 
 	// Return error if any tables failed to fetch, but still return partial results.
-	if failedCount > 0 {
-		return samples, errors.Errorf("failed to fetch samples for %d of %d tables", failedCount, len(tablesToFetch))
+	if worker.failedCount > 0 {
+		return samples, errors.Errorf("failed to fetch samples for %d of %d tables", worker.failedCount, len(tablesToFetch))
 	}
 
 	return samples, nil
