@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -111,7 +110,7 @@ func ServeMetrics(ctx context.Context, cfg Config, logger log.Logger, proc *serv
 }
 
 func View() metric.View {
-	ignoreAttrs := metric.NewView(
+	return metric.NewView(
 		metric.Instrument{Name: "*"},
 		metric.Stream{AttributeFilter: func(value attribute.KeyValue) bool {
 			switch value.Key {
@@ -122,14 +121,4 @@ func View() metric.View {
 			return true
 		}},
 	)
-	rename := func(inst metric.Instrument) metric.Instrument {
-		if strings.HasPrefix(inst.Name, "http.server") {
-			inst.Name = "keboola.go." + inst.Name
-		}
-		return inst
-	}
-	return func(inst metric.Instrument) (metric.Stream, bool) {
-		inst = rename(inst)
-		return ignoreAttrs(inst)
-	}
 }

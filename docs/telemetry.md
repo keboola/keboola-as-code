@@ -43,38 +43,6 @@ the [prometheus.ServeMetrics](../internal/pkg/telemetry/metric/prometheus/promet
 |-----------------------|--------------------------------------------------------------------------------------------------|
 | `http.server.request` | HTTP request. Attributes `keboola.*` contain info about stack, project and token, if applicable. |
 
-### Metrics
-
-| Span                                         | Description               |
-|----------------------------------------------|---------------------------|
-| `keboola.go.http.server.duration`            | Duration of HTTP request. |
-| `keboola.go.http.server.request.size.count`  | Request content length.   |
-| `keboola.go.http.server.response.size.count` | Response content length.  |
-
-#### Apdex
-
-[Apdex](https://en.wikipedia.org/wiki/Apdex) metric measure user satisfaction as a value `0.0-1.0`:
-
-- Parameter `T` defines threshold for `satisfied` request duration in `ms`.
-- `4T` is threshold for `tolerating` request duration.
-- Longer durations are considered as `frustrated`, as well as requests with a status code `>= 500` (server errors).
-
-Apdex is reported cumulatively from [Go code](../internal/pkg/service/common/httpserver/middleware/otel_apdex.go).
-The following metrics are generated:
-
-| Span                                          | Description                           |
-|-----------------------------------------------|---------------------------------------|
-| `keboola_go_http_server_apdex_count.count`    | Apdex - total count of requests.      |
-| `keboola_go_http_server_apdex_500_sum.count`  | Apdex sum for: T=`500ms` 4T=`2000ms`  |
-| `keboola_go_http_server_apdex_1000_sum.count` | Apdex sum for: T=`1000ms` 4T=`4000ms` |
-| `keboola_go_http_server_apdex_2000_sum.count` | Apdex sum for: T=`2000ms` 4T=`8000ms` |
-
-Final Apdex value is calculated as follows:
-
-```
-keboola_go_http_server_apdex_<T>_sum.count / keboola_go_http_server_apdex_count.count
-```
-
 ## HTTP Client
 
 Client telemetry is implemented in the [keboola-sdk-go](https://github.com/keboola/keboola-sdk-go) repository, in

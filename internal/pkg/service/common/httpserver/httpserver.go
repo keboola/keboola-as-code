@@ -59,7 +59,6 @@ func New(ctx context.Context, d dependencies, cfg Config) *HTTPServer {
 	middlewares = append(middlewares,
 		middleware.Logger(server.logger),
 		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
-		middleware.OpenTelemetryApdex(tel.MeterProvider()),
 	)
 
 	// Add gzip compression if enabled

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -61,10 +62,11 @@ func RequestSpan(ctx context.Context) (trace.Span, bool) {
 	return v, ok
 }
 
-func otelOptions(cfg Config, tp trace.TracerProvider, mp metric.MeterProvider) []otelhttp.Option {
+func otelOptions(cfg Config, tp trace.TracerProvider, _ metric.MeterProvider) []otelhttp.Option {
 	out := []otelhttp.Option{
 		otelhttp.WithTracerProvider(tp),
-		otelhttp.WithMeterProvider(mp),
+		// Use noop MeterProvider to disable HTTP server metrics (they duplicate Datadog APM functionality)
+		otelhttp.WithMeterProvider(noop.NewMeterProvider()),
 		otelhttp.WithFilter(func(req *http.Request) bool {
 			return !isTelemetryDisabled(req)
 		}),
