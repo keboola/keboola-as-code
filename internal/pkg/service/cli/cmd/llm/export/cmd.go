@@ -13,10 +13,16 @@ type Flags struct {
 	StorageAPIHost  configmap.Value[string] `configKey:"storage-api-host" configShorthand:"H" configUsage:"storage API host, eg. \"connection.keboola.com\""`
 	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	Force           configmap.Value[bool]   `configKey:"force" configShorthand:"f" configUsage:"skip confirmation when directory contains existing files"`
+	WithSamples     configmap.Value[bool]   `configKey:"with-samples" configUsage:"include table data samples in export"`
+	SampleLimit     configmap.Value[int]    `configKey:"sample-limit" configUsage:"maximum number of rows per table sample (default: 100, max: 1000)"`
+	MaxSamples      configmap.Value[int]    `configKey:"max-samples" configUsage:"maximum number of tables to sample (default: 50, max: 100)"`
 }
 
 func DefaultFlags() Flags {
-	return Flags{}
+	return Flags{
+		SampleLimit: configmap.NewValue(exportOp.DefaultSampleLimit),
+		MaxSamples:  configmap.NewValue(exportOp.DefaultMaxSamples),
+	}
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -43,7 +49,10 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Build options
 			options := exportOp.Options{
-				Force: f.Force.Value,
+				Force:       f.Force.Value,
+				WithSamples: f.WithSamples.Value,
+				SampleLimit: f.SampleLimit.Value,
+				MaxSamples:  f.MaxSamples.Value,
 			}
 
 			// Send cmd successful/failed event
