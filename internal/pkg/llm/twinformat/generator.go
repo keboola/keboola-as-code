@@ -1317,7 +1317,8 @@ func (g *Generator) generateSamplesIndex(ctx context.Context, data *ProcessedDat
 }
 
 // generateSampleFile generates a sample CSV file and metadata for a table.
-// On failure after creating the directory, cleans up to avoid partial artifacts.
+// For new directories, cleans up on failure to avoid partial artifacts.
+// For existing directories, removes old files before writing to prevent mixed state.
 func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample) (err error) {
 	// Create table-specific directory.
 	tableDir := filesystem.Join(g.outputDir, "samples", sample.TableID.String())
@@ -1326,17 +1327,31 @@ func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample)
 		return errors.Errorf("failed to create sample directory: %w", err)
 	}
 
-	// Clean up on failure to avoid partial sample artifacts, but only if we created the directory.
+	csvPath := filesystem.Join(tableDir, "sample.csv")
+	metadataPath := filesystem.Join(tableDir, "metadata.json")
+
+	// If directory existed, remove old files to prevent mixed old/new state on partial failure.
+	if tableDirExistedBefore {
+		_ = g.fs.Remove(ctx, csvPath)
+		_ = g.fs.Remove(ctx, metadataPath)
+	}
+
+	// Clean up on failure to avoid partial sample artifacts.
 	defer func() {
-		if err != nil && !tableDirExistedBefore {
-			if removeErr := g.fs.Remove(ctx, tableDir); removeErr != nil {
-				g.logger.Warnf(ctx, "Failed to clean up partial sample directory %s: %v", tableDir, removeErr)
+		if err != nil {
+			// Remove any files we may have written.
+			_ = g.fs.Remove(ctx, csvPath)
+			_ = g.fs.Remove(ctx, metadataPath)
+			// Remove directory only if we created it.
+			if !tableDirExistedBefore {
+				if removeErr := g.fs.Remove(ctx, tableDir); removeErr != nil {
+					g.logger.Warnf(ctx, "Failed to clean up partial sample directory %s: %v", tableDir, removeErr)
+				}
 			}
 		}
 	}()
 
 	// Write CSV file.
-	csvPath := filesystem.Join(tableDir, "sample.csv")
 	if err = g.csvWriter.Write(ctx, csvPath, sample.Columns, sample.Rows); err != nil {
 		return errors.Errorf("failed to write sample CSV: %w", err)
 	}
@@ -1355,7 +1370,6 @@ func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample)
 		"table_id":          sample.TableID.String(),
 	}
 
-	metadataPath := filesystem.Join(tableDir, "metadata.json")
 	if err = g.jsonWriter.Write(ctx, metadataPath, metadata); err != nil {
 		return err
 	}
