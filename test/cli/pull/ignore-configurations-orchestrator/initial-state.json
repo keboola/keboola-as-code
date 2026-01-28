@@ -1,0 +1,23 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "empty",
+        "without-rows",
+        "orchestrator"
+      ]
+    }
+  ],
+  "envs": {
+    "TEST_ORCHESTRATOR_TASK_1_COMPONENT_ID": "ex-generic-v2",
+    "TEST_ORCHESTRATOR_TASK_1_CONFIG_ID": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%",
+    "TEST_ORCHESTRATOR_TASK_2_COMPONENT_ID": "ex-generic-v2",
+    "TEST_ORCHESTRATOR_TASK_2_CONFIG_ID": "%%TEST_BRANCH_MAIN_CONFIG_WITHOUT_ROWS_ID%%"
+  }
+}
+
