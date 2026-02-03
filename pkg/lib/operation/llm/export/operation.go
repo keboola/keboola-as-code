@@ -79,24 +79,44 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	}
 
 	// Phase 5: Fetch and generate samples if requested.
-	// When --with-samples is explicitly enabled, errors are propagated so callers can detect failures.
-	// Partial samples are still generated even if some tables fail to fetch.
-	if !opts.ShouldIncludeSamples() {
-		logger.Info(ctx, "[5/5] Skipping samples (not requested)")
-	} else {
-		logger.Info(ctx, "[5/5] Fetching and generating table samples...")
-		samples, fetchErr := fetcher.FetchTableSamples(ctx, projectData.Tables, opts.EffectiveSampleLimit(), opts.EffectiveMaxSamples())
-		// Always call GenerateSamples to create index (even if empty) for consistent output structure.
-		if err := generator.GenerateSamples(ctx, processedData, samples); err != nil {
-			return errors.Errorf("export completed but sample generation failed: %w", err)
-		}
-		if fetchErr != nil {
-			return errors.Errorf("export completed but sample fetching was incomplete: %w", fetchErr)
-		}
+	if err := generateSamplesPhase(ctx, logger, opts, fetcher, generator, processedData, projectData); err != nil {
+		return err
 	}
 
 	logger.Infof(ctx, "Twin format exported to: %s", d.Fs().BasePath())
 	logger.Info(ctx, "Export completed successfully.")
+
+	return nil
+}
+
+// generateSamplesPhase handles phase 5: fetching and generating table samples.
+// When --with-samples is explicitly enabled, errors are propagated so callers can detect failures.
+// Partial samples are still generated even if some tables fail to fetch.
+func generateSamplesPhase(
+	ctx context.Context,
+	logger log.Logger,
+	opts Options,
+	fetcher *twinformat.Fetcher,
+	generator *twinformat.Generator,
+	processedData *twinformat.ProcessedData,
+	projectData *twinformat.ProjectData,
+) error {
+	if !opts.ShouldIncludeSamples() {
+		logger.Info(ctx, "[5/5] Skipping samples (not requested)")
+		return nil
+	}
+
+	logger.Info(ctx, "[5/5] Fetching and generating table samples...")
+	samples, fetchErr := fetcher.FetchTableSamples(ctx, projectData.Tables, opts.EffectiveSampleLimit(), opts.EffectiveMaxSamples())
+
+	// Always call GenerateSamples to create index (even if empty) for consistent output structure.
+	if err := generator.GenerateSamples(ctx, processedData, samples); err != nil {
+		return errors.Errorf("export completed but sample generation failed: %w", err)
+	}
+
+	if fetchErr != nil {
+		return errors.Errorf("export completed but sample fetching was incomplete: %w", fetchErr)
+	}
 
 	return nil
 }

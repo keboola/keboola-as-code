@@ -7,6 +7,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/writer"
@@ -280,35 +282,10 @@ func (g *Generator) generateTableMetadata(ctx context.Context, table *ProcessedT
 // buildColumnDetails builds detailed column information including metadata.
 func (g *Generator) buildColumnDetails(table *ProcessedTable) []map[string]any {
 	columns := make([]map[string]any, 0, len(table.Columns))
-
 	for _, colName := range table.Columns {
-		col := map[string]any{
-			"name": colName,
-		}
-
-		// Extract column metadata if available
-		if table.Table != nil && table.ColumnMetadata != nil {
-			if colMeta, ok := table.ColumnMetadata[colName]; ok {
-				for _, meta := range colMeta {
-					switch meta.Key {
-					case "KBC.datatype.basetype":
-						col["base_type"] = meta.Value
-					case "KBC.datatype.type":
-						col["type"] = meta.Value
-					case "KBC.datatype.nullable":
-						col["nullable"] = meta.Value == "1" || meta.Value == "true"
-					case "KBC.datatype.length":
-						col["length"] = meta.Value
-					case "KBC.description":
-						col["description"] = meta.Value
-					}
-				}
-			}
-		}
-
+		col := buildColumnDetailEntry(colName, table.ColumnMetadata)
 		columns = append(columns, col)
 	}
-
 	return columns
 }
 
@@ -901,6 +878,60 @@ func buildSourcesList(buckets []*ProcessedBucket) []map[string]any {
 	return sources
 }
 
+// buildColumnDetailEntry builds a detailed column entry map for table metadata.
+// Extracts all available metadata fields (base_type, type, nullable, length, description).
+func buildColumnDetailEntry(colName string, columnMetadata keboola.ColumnsMetadata) map[string]any {
+	col := map[string]any{"name": colName}
+	if columnMetadata == nil {
+		return col
+	}
+
+	colMeta, ok := columnMetadata[colName]
+	if !ok {
+		return col
+	}
+
+	for _, meta := range colMeta {
+		switch meta.Key {
+		case "KBC.datatype.basetype":
+			col["base_type"] = meta.Value
+		case "KBC.datatype.type":
+			col["type"] = meta.Value
+		case "KBC.datatype.nullable":
+			col["nullable"] = meta.Value == "1" || meta.Value == "true"
+		case "KBC.datatype.length":
+			col["length"] = meta.Value
+		case "KBC.description":
+			col["description"] = meta.Value
+		}
+	}
+	return col
+}
+
+// buildColumnEntry builds a column entry map for data dictionary.
+// Extracts type and description from column metadata if available.
+func buildColumnEntry(colName string, columnMetadata keboola.ColumnsMetadata) map[string]any {
+	col := map[string]any{"name": colName}
+	if columnMetadata == nil {
+		return col
+	}
+
+	colMeta, ok := columnMetadata[colName]
+	if !ok {
+		return col
+	}
+
+	for _, meta := range colMeta {
+		switch meta.Key {
+		case "KBC.datatype.basetype":
+			col["type"] = meta.Value
+		case "KBC.description":
+			col["description"] = meta.Value
+		}
+	}
+	return col
+}
+
 // formatSourceName converts a source ID to a human-readable name.
 func formatSourceName(source string) string {
 	names := map[string]string{
@@ -1257,19 +1288,7 @@ func (g *Generator) generateDataDictionary(ctx context.Context, data *ProcessedD
 		// Add column details.
 		columns := make([]map[string]any, 0, len(table.Columns))
 		for _, colName := range table.Columns {
-			col := map[string]any{"name": colName}
-			if table.Table != nil && table.ColumnMetadata != nil {
-				if colMeta, ok := table.ColumnMetadata[colName]; ok {
-					for _, meta := range colMeta {
-						switch meta.Key {
-						case "KBC.datatype.basetype":
-							col["type"] = meta.Value
-						case "KBC.description":
-							col["description"] = meta.Value
-						}
-					}
-				}
-			}
+			col := buildColumnEntry(colName, table.ColumnMetadata)
 			columns = append(columns, col)
 		}
 		tableEntry["columns"] = columns
