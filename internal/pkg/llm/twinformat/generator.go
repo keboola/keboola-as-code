@@ -39,6 +39,7 @@ type Generator struct {
 	jsonWriter  *writer.JSONWriter
 	jsonlWriter *writer.JSONLWriter
 	mdWriter    *writer.MarkdownWriter
+	csvWriter   *writer.CSVWriter
 	outputDir   string
 }
 
@@ -51,6 +52,7 @@ func NewGenerator(d GeneratorDependencies, outputDir string) *Generator {
 		jsonWriter:  writer.NewJSONWriter(fs),
 		jsonlWriter: writer.NewJSONLWriter(fs),
 		mdWriter:    writer.NewMarkdownWriter(fs),
+		csvWriter:   writer.NewCSVWriter(fs),
 		outputDir:   outputDir,
 	}
 }
@@ -98,6 +100,7 @@ func (g *Generator) Generate(ctx context.Context, data *ProcessedData) error {
 }
 
 // createDirectories creates the output directory structure.
+// Note: samples/ directory is created lazily by GenerateSamples when --with-samples is used.
 func (g *Generator) createDirectories(ctx context.Context) error {
 	dirs := []string{
 		g.outputDir,
@@ -1204,4 +1207,237 @@ func (g *Generator) generateAIGuide(ctx context.Context, _ *ProcessedData) error
 	}
 
 	return nil
+}
+
+// GenerateSamples generates sample CSV files for tables.
+func (g *Generator) GenerateSamples(ctx context.Context, data *ProcessedData, samples []*TableSample) error {
+	g.logger.Infof(ctx, "Generating samples for %d tables", len(samples))
+
+	samplesDir := filesystem.Join(g.outputDir, "samples")
+	samplesDirExistedBefore := g.fs.IsDir(ctx, samplesDir)
+
+	// If no samples, still create an empty index for consistency when --with-samples is enabled.
+	if len(samples) == 0 {
+		return g.generateEmptySamplesIndex(ctx, data, samplesDir, samplesDirExistedBefore)
+	}
+
+	// Create samples directory if it doesn't exist.
+	// We know samples is non-empty here due to the guard above.
+	if !samplesDirExistedBefore {
+		if err := g.fs.Mkdir(ctx, samplesDir); err != nil {
+			return errors.Errorf("failed to create samples directory: %w", err)
+		}
+	}
+
+	// Generate individual sample files first, collecting only successful ones.
+	successfulSamples := make([]*TableSample, 0, len(samples))
+	failedCount := 0
+	for _, sample := range samples {
+		if err := g.generateSampleFile(ctx, sample); err != nil {
+			g.logger.Warnf(ctx, "Failed to generate sample for table %s: %v", sample.TableID, err)
+			failedCount++
+			continue
+		}
+		successfulSamples = append(successfulSamples, sample)
+	}
+
+	if len(successfulSamples) == 0 {
+		g.logger.Warn(ctx, "No samples were successfully generated, skipping samples index")
+		// Remove samples directory only if we created it in this run (not pre-existing).
+		if !samplesDirExistedBefore {
+			if err := g.fs.Remove(ctx, samplesDir); err != nil {
+				g.logger.Warnf(ctx, "Failed to remove empty samples directory: %v", err)
+			}
+		}
+		return errors.Errorf("failed to generate samples for all %d tables", len(samples))
+	}
+
+	// Generate samples index only for successfully generated samples.
+	if err := g.generateSamplesIndex(ctx, data, successfulSamples); err != nil {
+		return errors.Errorf("failed to generate samples index: %w", err)
+	}
+
+	g.logger.Infof(ctx, "Generated samples for %d tables (%d failed)", len(successfulSamples), failedCount)
+
+	// Return error if any tables failed to generate, but still write partial results.
+	if failedCount > 0 {
+		return errors.Errorf("failed to generate samples for %d of %d tables", failedCount, len(samples))
+	}
+
+	return nil
+}
+
+// generateSamplesIndex generates the samples/index.json file.
+func (g *Generator) generateSamplesIndex(ctx context.Context, data *ProcessedData, samples []*TableSample) error {
+	type sampleEntry struct {
+		TableID     string `json:"table_id"`
+		RowCount    int    `json:"row_count"`
+		ColumnCount int    `json:"column_count"`
+		SampleDir   string `json:"sample_dir"`
+	}
+
+	entries := make([]sampleEntry, 0, len(samples))
+	for _, sample := range samples {
+		entries = append(entries, sampleEntry{
+			TableID:     sample.TableID.String(),
+			RowCount:    sample.RowCount(),
+			ColumnCount: len(sample.Columns),
+			SampleDir:   sample.TableID.String(),
+		})
+	}
+
+	index := map[string]any{
+		"_comment":          "Index of table samples",
+		"_purpose":          "Lists all tables with sample data available",
+		"_update_frequency": "Generated on export",
+		"project_id":        data.ProjectID.String(),
+		"total_samples":     len(samples),
+		"samples":           entries,
+	}
+
+	indexPath := filesystem.Join(g.outputDir, "samples", "index.json")
+	return g.jsonWriter.Write(ctx, indexPath, index)
+}
+
+// generateEmptySamplesIndex creates an empty samples index when no samples are available.
+// This ensures consistent output structure when --with-samples is enabled.
+func (g *Generator) generateEmptySamplesIndex(ctx context.Context, data *ProcessedData, samplesDir string, dirExisted bool) error {
+	dirCreated := false
+	if !dirExisted {
+		if err := g.fs.Mkdir(ctx, samplesDir); err != nil {
+			return errors.Errorf("failed to create samples directory: %w", err)
+		}
+		dirCreated = true
+	}
+
+	if err := g.generateSamplesIndex(ctx, data, nil); err != nil {
+		if dirCreated {
+			if rmErr := g.fs.Remove(ctx, samplesDir); rmErr != nil {
+				g.logger.Warnf(ctx, "Failed to remove samples directory after index generation error: %v", rmErr)
+			}
+		}
+		return errors.Errorf("failed to generate samples index: %w", err)
+	}
+
+	g.logger.Info(ctx, "No samples to generate, created empty samples index")
+	return nil
+}
+
+// generateSampleFile generates a sample CSV file and metadata for a table.
+// For new directories, cleans up on failure to avoid partial artifacts.
+// For existing directories, removes old files before writing to prevent mixed state.
+func (g *Generator) generateSampleFile(ctx context.Context, sample *TableSample) (err error) {
+	// Create table-specific directory.
+	tableDir := filesystem.Join(g.outputDir, "samples", sample.TableID.String())
+	tableDirExistedBefore := g.fs.IsDir(ctx, tableDir)
+	if err := g.fs.Mkdir(ctx, tableDir); err != nil {
+		return errors.Errorf("failed to create sample directory: %w", err)
+	}
+
+	csvPath := filesystem.Join(tableDir, "sample.csv")
+	metadataPath := filesystem.Join(tableDir, "metadata.json")
+
+	// If directory existed, remove old files to prevent mixed old/new state on partial failure.
+	if tableDirExistedBefore {
+		_ = g.fs.Remove(ctx, csvPath)
+		_ = g.fs.Remove(ctx, metadataPath)
+	}
+
+	// Clean up on failure to avoid partial sample artifacts.
+	defer func() {
+		if err != nil {
+			// Remove any files we may have written.
+			_ = g.fs.Remove(ctx, csvPath)
+			_ = g.fs.Remove(ctx, metadataPath)
+			// Remove directory only if we created it.
+			if !tableDirExistedBefore {
+				if removeErr := g.fs.Remove(ctx, tableDir); removeErr != nil {
+					g.logger.Warnf(ctx, "Failed to clean up partial sample directory %s: %v", tableDir, removeErr)
+				}
+			}
+		}
+	}()
+
+	// Write CSV file.
+	if err = g.csvWriter.Write(ctx, csvPath, sample.Columns, sample.Rows); err != nil {
+		return errors.Errorf("failed to write sample CSV: %w", err)
+	}
+
+	// Calculate data quality metrics.
+	dataQuality := g.calculateDataQuality(sample)
+
+	// Write metadata.
+	metadata := map[string]any{
+		"_comment":          "Sample data metadata",
+		"_purpose":          "Describes the sample data for this table",
+		"_update_frequency": "Generated on export",
+		"columns":           sample.Columns,
+		"data_quality":      dataQuality,
+		"row_count":         sample.RowCount(),
+		"table_id":          sample.TableID.String(),
+	}
+
+	if err = g.jsonWriter.Write(ctx, metadataPath, metadata); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// columnStats holds quality metrics for a single column.
+type columnStats struct {
+	nullCount    int
+	distinctVals map[string]struct{}
+}
+
+// calculateDataQuality computes data quality metrics for a sample.
+// Returns completeness (percentage of non-null values), null_counts, distinct_counts, and sample_size.
+func (g *Generator) calculateDataQuality(sample *TableSample) map[string]any {
+	if len(sample.Columns) == 0 || sample.RowCount() == 0 {
+		return map[string]any{
+			"completeness":    map[string]int{},
+			"null_counts":     map[string]int{},
+			"distinct_counts": map[string]int{},
+			"sample_size":     sample.RowCount(),
+		}
+	}
+
+	// Initialize stats for each column.
+	stats := make(map[string]*columnStats, len(sample.Columns))
+	for _, col := range sample.Columns {
+		stats[col] = &columnStats{distinctVals: make(map[string]struct{})}
+	}
+
+	// Process each row.
+	for _, row := range sample.Rows {
+		for i, col := range sample.Columns {
+			colStats := stats[col]
+			if i >= len(row) || row[i] == "" {
+				colStats.nullCount++
+			} else {
+				colStats.distinctVals[row[i]] = struct{}{}
+			}
+		}
+	}
+
+	// Calculate completeness and distinct counts.
+	completeness := make(map[string]int, len(sample.Columns))
+	nullCounts := make(map[string]int, len(sample.Columns))
+	distinctCounts := make(map[string]int, len(sample.Columns))
+	for _, col := range sample.Columns {
+		colStats := stats[col]
+		nullCounts[col] = colStats.nullCount
+		distinctCounts[col] = len(colStats.distinctVals)
+		nonNullCount := sample.RowCount() - colStats.nullCount
+		if sample.RowCount() > 0 {
+			completeness[col] = (nonNullCount * 100) / sample.RowCount()
+		}
+	}
+
+	return map[string]any{
+		"completeness":    completeness,
+		"distinct_counts": distinctCounts,
+		"null_counts":     nullCounts,
+		"sample_size":     sample.RowCount(),
+	}
 }

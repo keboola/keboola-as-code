@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type dependencies interface {
@@ -23,7 +24,7 @@ type dependencies interface {
 	Stdout() io.Writer
 }
 
-func Run(ctx context.Context, _ Options, d dependencies) (err error) {
+func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.llm.export")
 	defer span.End(&err)
 
@@ -67,6 +68,21 @@ func Run(ctx context.Context, _ Options, d dependencies) (err error) {
 	generator := twinformat.NewGenerator(d, outputDir)
 	if err := generator.Generate(ctx, processedData); err != nil {
 		return err
+	}
+
+	// Fetch and generate samples if requested.
+	// When --with-samples is explicitly enabled, errors are propagated so callers can detect failures.
+	// Partial samples are still generated even if some tables fail to fetch.
+	if opts.ShouldIncludeSamples() {
+		logger.Info(ctx, "Fetching table samples...")
+		samples, fetchErr := fetcher.FetchTableSamples(ctx, projectData.Tables, opts.EffectiveSampleLimit(), opts.EffectiveMaxSamples())
+		// Always call GenerateSamples to create index (even if empty) for consistent output structure.
+		if err := generator.GenerateSamples(ctx, processedData, samples); err != nil {
+			return errors.Errorf("export completed but sample generation failed: %w", err)
+		}
+		if fetchErr != nil {
+			return errors.Errorf("export completed but sample fetching was incomplete: %w", fetchErr)
+		}
 	}
 
 	logger.Infof(ctx, "Twin format exported to: %s", d.Fs().BasePath())

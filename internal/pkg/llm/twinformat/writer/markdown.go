@@ -178,7 +178,8 @@ func GenerateProjectREADME(projectID string, stats ProjectStats) string {
 ├── components/                # Extractors, writers, etc.
 ├── jobs/                      # Job execution history
 ├── indices/                   # Lineage graph and queries
-└── ai/                        # AI assistant guides`)
+├── ai/                        # AI assistant guides
+└── samples/                   # Table data samples (when --with-samples)`)
 
 	mb.H2("Key Files")
 	mb.Table(
@@ -188,6 +189,7 @@ func GenerateProjectREADME(projectID string, stats ProjectStats) string {
 			{"buckets/index.json", "Catalog of all buckets"},
 			{"transformations/index.json", "Catalog of all transformations"},
 			{"indices/graph.jsonl", "Lineage graph (JSONL format)"},
+			{"samples/index.json", "Index of table samples (when --with-samples)"},
 		},
 	)
 

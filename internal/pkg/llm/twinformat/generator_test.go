@@ -1,8 +1,9 @@
 package twinformat
 
 import (
-	"context"
+	"encoding/csv"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -806,28 +807,222 @@ func TestGenerator_GeneratePythonCode(t *testing.T) {
 }
 
 // =============================================================================
+// Data Quality Tests
+// =============================================================================
+
+func TestCalculateDataQuality(t *testing.T) {
+	t.Parallel()
+
+	g := &Generator{}
+
+	tests := []struct {
+		name     string
+		sample   *TableSample
+		expected map[string]any
+	}{
+		{
+			name: "empty sample",
+			sample: &TableSample{
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{},
+				Rows:    [][]string{},
+			},
+			expected: map[string]any{
+				"completeness":    map[string]int{},
+				"null_counts":     map[string]int{},
+				"distinct_counts": map[string]int{},
+				"sample_size":     0,
+			},
+		},
+		{
+			name: "all non-null values",
+			sample: &TableSample{
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1", "col2"},
+				Rows:    [][]string{{"a", "b"}, {"c", "d"}, {"e", "f"}},
+			},
+			expected: map[string]any{
+				"completeness":    map[string]int{"col1": 100, "col2": 100},
+				"null_counts":     map[string]int{"col1": 0, "col2": 0},
+				"distinct_counts": map[string]int{"col1": 3, "col2": 3},
+				"sample_size":     3,
+			},
+		},
+		{
+			name: "some null values",
+			sample: &TableSample{
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1", "col2"},
+				Rows:    [][]string{{"a", ""}, {"", "d"}, {"e", "f"}, {"", ""}},
+			},
+			expected: map[string]any{
+				"completeness":    map[string]int{"col1": 50, "col2": 50},
+				"null_counts":     map[string]int{"col1": 2, "col2": 2},
+				"distinct_counts": map[string]int{"col1": 2, "col2": 2},
+				"sample_size":     4,
+			},
+		},
+		{
+			name: "all null values",
+			sample: &TableSample{
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1"},
+				Rows:    [][]string{{""}, {""}, {""}},
+			},
+			expected: map[string]any{
+				"completeness":    map[string]int{"col1": 0},
+				"null_counts":     map[string]int{"col1": 3},
+				"distinct_counts": map[string]int{"col1": 0},
+				"sample_size":     3,
+			},
+		},
+		{
+			name: "duplicate values",
+			sample: &TableSample{
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1"},
+				Rows:    [][]string{{"a"}, {"a"}, {"b"}, {"b"}, {"b"}},
+			},
+			expected: map[string]any{
+				"completeness":    map[string]int{"col1": 100},
+				"null_counts":     map[string]int{"col1": 0},
+				"distinct_counts": map[string]int{"col1": 2},
+				"sample_size":     5,
+			},
+		},
+		{
+			name: "row shorter than columns",
+			sample: &TableSample{
+				TableID: keboola.TableID{TableName: "test"},
+				Columns: []string{"col1", "col2", "col3"},
+				Rows:    [][]string{{"a"}, {"b", "c"}},
+			},
+			expected: map[string]any{
+				"completeness":    map[string]int{"col1": 100, "col2": 50, "col3": 0},
+				"null_counts":     map[string]int{"col1": 0, "col2": 1, "col3": 2},
+				"distinct_counts": map[string]int{"col1": 2, "col2": 1, "col3": 0},
+				"sample_size":     2,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := g.calculateDataQuality(tt.sample)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// =============================================================================
+// GenerateSamples Tests
+// =============================================================================
+
+func TestGenerateSamples(t *testing.T) {
+	t.Parallel()
+
+	t.Run("generates sample files and index", func(t *testing.T) {
+		t.Parallel()
+		g, testFs := newTestGenerator(t)
+
+		data := &ProcessedData{
+			ProjectID: keboola.ProjectID(12345),
+		}
+
+		samples := []*TableSample{
+			{
+				TableID: keboola.MustParseTableID("in.c-bucket.table1"),
+				Columns: []string{"id", "name"},
+				Rows:    [][]string{{"1", "Alice"}, {"2", "Bob"}},
+			},
+			{
+				TableID: keboola.MustParseTableID("in.c-bucket.table2"),
+				Columns: []string{"col1"},
+				Rows:    [][]string{{"value1"}},
+			},
+		}
+
+		err := g.GenerateSamples(t.Context(), data, samples)
+		require.NoError(t, err)
+
+		// Verify samples/index.json exists and has correct structure
+		assertFileExists(t, testFs, "/output/samples/index.json")
+		index := readJSONFile(t, testFs, "/output/samples/index.json")
+		assert.Equal(t, "12345", index["project_id"])
+		assert.Equal(t, 2, int(index["total_samples"].(float64)))
+
+		// Verify sample directories and files
+		assertDirExists(t, testFs, "/output/samples/in.c-bucket.table1")
+		assertFileExists(t, testFs, "/output/samples/in.c-bucket.table1/sample.csv")
+		assertFileExists(t, testFs, "/output/samples/in.c-bucket.table1/metadata.json")
+
+		assertDirExists(t, testFs, "/output/samples/in.c-bucket.table2")
+		assertFileExists(t, testFs, "/output/samples/in.c-bucket.table2/sample.csv")
+		assertFileExists(t, testFs, "/output/samples/in.c-bucket.table2/metadata.json")
+
+		// Verify metadata content
+		metadata := readJSONFile(t, testFs, "/output/samples/in.c-bucket.table1/metadata.json")
+		assert.Equal(t, "in.c-bucket.table1", metadata["table_id"])
+		assert.Equal(t, 2, int(metadata["row_count"].(float64)))
+		assert.NotNil(t, metadata["data_quality"])
+
+		// Verify CSV content is parseable and has correct data
+		csvRecords := readCSVFile(t, testFs, "/output/samples/in.c-bucket.table1/sample.csv")
+		require.Len(t, csvRecords, 3) // header + 2 rows
+		assert.Equal(t, []string{"id", "name"}, csvRecords[0])
+		assert.Equal(t, []string{"1", "Alice"}, csvRecords[1])
+		assert.Equal(t, []string{"2", "Bob"}, csvRecords[2])
+	})
+
+	t.Run("handles empty samples", func(t *testing.T) {
+		t.Parallel()
+		ctx := t.Context()
+		g, _ := newTestGenerator(t)
+
+		data := &ProcessedData{
+			ProjectID: keboola.ProjectID(12345),
+		}
+
+		err := g.GenerateSamples(ctx, data, []*TableSample{})
+		require.NoError(t, err)
+	})
+}
+
+// =============================================================================
 // Test Helpers
 // =============================================================================
 
 func assertDirExists(t *testing.T, fs filesystem.Fs, path string) {
 	t.Helper()
-	exists := fs.IsDir(context.Background(), path)
+	exists := fs.IsDir(t.Context(), path)
 	assert.True(t, exists, "directory %s should exist", path)
 }
 
 func assertFileExists(t *testing.T, fs filesystem.Fs, path string) {
 	t.Helper()
-	exists := fs.IsFile(context.Background(), path)
+	exists := fs.IsFile(t.Context(), path)
 	assert.True(t, exists, "file %s should exist", path)
 }
 
 func readJSONFile(t *testing.T, fs filesystem.Fs, path string) map[string]any {
 	t.Helper()
-	file, err := fs.ReadFile(context.Background(), filesystem.NewFileDef(path))
+	file, err := fs.ReadFile(t.Context(), filesystem.NewFileDef(path))
 	require.NoError(t, err)
 
 	var result map[string]any
 	err = json.Unmarshal([]byte(file.Content), &result)
 	require.NoError(t, err)
 	return result
+}
+
+func readCSVFile(t *testing.T, fs filesystem.Fs, path string) [][]string {
+	t.Helper()
+	file, err := fs.ReadFile(t.Context(), filesystem.NewFileDef(path))
+	require.NoError(t, err)
+
+	reader := csv.NewReader(strings.NewReader(file.Content))
+	records, err := reader.ReadAll()
+	require.NoError(t, err)
+	return records
 }
