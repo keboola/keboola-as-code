@@ -212,7 +212,38 @@ for job in errors:
 
 **Goal**: Query live data from Keboola
 
-**Authentication**:
+#### Connection Information
+
+Your Keboola connection credentials are stored in two files:
+
+| Information | File | Key/Field |
+|-------------|------|-----------|
+| API Host | `.keboola/manifest.json` | `project.apiHost` |
+| Project ID | `.keboola/manifest.json` | `project.id` |
+| API Token | `.env.local` | `KBC_STORAGE_API_TOKEN` |
+
+**Example `.keboola/manifest.json`**:
+```json
+{
+  "version": 2,
+  "project": {
+    "id": 12345,
+    "apiHost": "connection.us-east4.gcp.keboola.com"
+  },
+  "allowTargetEnv": true,
+  "branches": [...]
+}
+```
+
+**Example `.env.local`**:
+```
+KBC_STORAGE_API_TOKEN="1234-567890-abcdef..."
+```
+
+> **Note**: The `.env.local` file contains sensitive credentials and should never be committed to version control. A template is provided in `.env.dist`.
+
+#### Authentication
+
 ```bash
 # Get token from .env.local
 TOKEN=$(grep KBC_STORAGE_API_TOKEN .env.local | cut -d'"' -f2)
@@ -292,6 +323,133 @@ Queue:   queue.us-east4.gcp.keboola.com
 # Table details
 ?include=columns,metadata  # Include additional data
 ```
+
+---
+
+## MCP Servers for Keboola
+
+For AI agents with MCP (Model Context Protocol) support, Keboola provides two MCP servers:
+
+| Server | Purpose | Repository |
+|--------|---------|------------|
+| **Keboola MCP Server** | Direct interaction with Keboola projects | https://github.com/keboola/mcp-server |
+| **API Documentation Server** | Look up API endpoint documentation | https://github.com/keboola/keboola-api-documentation-mcp-server |
+
+---
+
+### Keboola MCP Server (Project Interaction)
+
+Connect your AI agents directly to Keboola. Query data, create transformations, run jobs, and manage your project—no glue code required.
+
+**Repository**: https://github.com/keboola/mcp-server
+
+#### Features
+
+- **Storage**: Query tables directly and manage table/bucket descriptions
+- **Components**: Create, list, and inspect extractors, writers, data apps, and transformations
+- **SQL**: Create SQL transformations with natural language
+- **Jobs**: Run components and transformations, retrieve job execution details
+- **Flows**: Build and manage workflow pipelines
+- **Data Apps**: Create, deploy, and manage Streamlit Data Apps
+- **Metadata**: Search, read, and update project documentation
+- **Dev Branches**: Work safely in development branches outside of production
+
+#### Quick Start: Remote MCP Server (Recommended)
+
+The easiest way is through the hosted **Remote MCP Server** on every Keboola stack with OAuth authentication.
+
+**Claude Code** - Install using:
+```bash
+claude mcp add --transport http keboola https://mcp.<YOUR_REGION>.keboola.com/mcp
+```
+
+| Region | Installation Command |
+|--------|---------------------|
+| US Virginia AWS | `claude mcp add --transport http keboola https://mcp.keboola.com/mcp` |
+| US Virginia GCP | `claude mcp add --transport http keboola https://mcp.us-east4.gcp.keboola.com/mcp` |
+| EU Frankfurt AWS | `claude mcp add --transport http keboola https://mcp.eu-central-1.keboola.com/mcp` |
+| EU Ireland Azure | `claude mcp add --transport http keboola https://mcp.north-europe.azure.keboola.com/mcp` |
+| EU Frankfurt GCP | `claude mcp add --transport http keboola https://mcp.europe-west3.gcp.keboola.com/mcp` |
+
+**Claude Desktop / Cursor**: Navigate to your Keboola Project Settings → `MCP Server` tab and copy the server URL.
+
+#### Local Setup (Alternative)
+
+For local development or custom configurations:
+
+```json
+{
+  "mcpServers": {
+    "keboola": {
+      "command": "uvx",
+      "args": ["keboola_mcp_server"],
+      "env": {
+        "KBC_STORAGE_API_URL": "https://connection.YOUR_REGION.keboola.com",
+        "KBC_STORAGE_TOKEN": "your_keboola_storage_token",
+        "KBC_WORKSPACE_SCHEMA": "your_workspace_schema"
+      }
+    }
+  }
+}
+```
+
+#### Example Usage
+
+Once configured, ask your AI agent:
+- "Query the top 10 rows from the orders table"
+- "Create a SQL transformation to aggregate sales by region"
+- "Run the daily ETL job and show me the results"
+- "What tables are in the sales bucket?"
+
+---
+
+### API Documentation MCP Server
+
+Look up Keboola API endpoint documentation without leaving your environment.
+
+**Repository**: https://github.com/keboola/keboola-api-documentation-mcp-server
+
+#### Available APIs (Indexed)
+
+| API | Endpoints |
+|-----|-----------|
+| Storage API | 199 |
+| Management API | 129 |
+| Stream Service | 41 |
+| Templates Service | 23 |
+| Orchestrator API | 15 |
+| Queue Service | Jobs search and management |
+
+#### Installation
+
+**Claude Desktop / Claude Code** (using uvx):
+```json
+{
+  "mcpServers": {
+    "keboola-docs": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/keboola/keboola-api-documentation-mcp-server", "keboola-docs-mcp"]
+    }
+  }
+}
+```
+
+#### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `list_apis()` | List all available Keboola APIs with endpoint counts |
+| `search_endpoints(query, api_filter?, method_filter?)` | Search for endpoints by keyword |
+| `get_endpoint_details(api_name, path, method)` | Get full endpoint documentation |
+| `get_api_section(api_name, section_name?)` | Get all endpoints in a section |
+| `get_request_example(api_name, path, method)` | Generate curl example |
+
+#### Example Usage
+
+Once configured, ask your AI agent:
+- "Find endpoints for creating tables in Storage API"
+- "Get details for POST /v2/storage/buckets"
+- "Show me a curl example for listing jobs"
 
 ---
 
