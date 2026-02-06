@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "project": {
+    "id": %%TEST_KBC_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "allowTargetEnv": false,
+  "sortBy": "id",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}",
+    "dataAppConfig": "app/{component_id}/{config_name}"
+  },
+  "allowedBranches": [
+    "*"
+  ],
+  "ignoredComponents": [],
+  "templates": {
+    "repositories": [
+      {
+        "type": "git",
+        "name": "keboola",
+        "url": "https://github.com/keboola/keboola-as-code-templates.git",
+        "ref": "main"
+      },
+      {
+        "type": "git",
+        "name": "keboola-components",
+        "url": "https://github.com/keboola/keboola-as-code-templates-components.git",
+        "ref": "main"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "path": "main"
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "kds-team.app-orchestration-trigger-queue-v2",
+      "id": "%%TEST_BRANCH_ALL_CONFIG_TRIGGER_FIRE_AND_FORGET_ID%%",
+      "path": "application/kds-team.app-orchestration-trigger-queue-v2/trigger-fire-and-forget",
+      "rows": []
+    }
+  ]
+}

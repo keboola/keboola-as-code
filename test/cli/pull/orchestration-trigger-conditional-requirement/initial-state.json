@@ -1,0 +1,14 @@
+{
+  "allBranchesConfigs": [
+    "trigger-fire-and-forget"
+  ],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      }
+    }
+  ]
+}
+ 
