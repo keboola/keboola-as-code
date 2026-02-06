@@ -343,8 +343,9 @@ func buildIfThenElse(req conditionalRequirement) *orderedmap.OrderedMap {
 		return nil
 	}
 
-	// Build the "if" condition properties
+	// Build the "if" condition properties and collect dependency field names
 	ifProperties := orderedmap.New()
+	requiredFields := make([]any, 0, len(req.dependencies))
 	for depField, depValue := range req.dependencies {
 		condition := orderedmap.New()
 		// Handle array values (e.g., "protocol": ["FTP", "FTPS"]) using enum
@@ -355,10 +356,19 @@ func buildIfThenElse(req conditionalRequirement) *orderedmap.OrderedMap {
 			condition.Set("const", depValue)
 		}
 		ifProperties.Set(depField, condition)
+		requiredFields = append(requiredFields, depField)
 	}
 
 	// Build the "if" clause
+	// IMPORTANT: In JSON Schema, "if: { properties: { field: {const: value} } }" without "required"
+	// evaluates to TRUE when field is MISSING (because missing properties match any schema).
+	// We must add "required" to ensure "if" only applies when the dependency field exists.
+	// This way:
+	// - If dependency field is MISSING → "if" is FALSE → "then" doesn't apply → field is optional ✓
+	// - If dependency field EXISTS but has wrong value → "if" is FALSE → "then" doesn't apply → field is optional ✓
+	// - If dependency field EXISTS and has correct value → "if" is TRUE → "then" applies → field is required ✓
 	ifClause := orderedmap.New()
+	ifClause.Set("required", requiredFields)
 	ifClause.Set("properties", ifProperties)
 
 	// Build the "then" clause with required field
