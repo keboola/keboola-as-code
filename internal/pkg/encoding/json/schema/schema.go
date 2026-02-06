@@ -207,18 +207,32 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 	})
 
 	// Process conditional requirements: remove from required arrays and add if/then/else constructs
+	// IMPORTANT: Only add if/then for fields that were ORIGINALLY in the required array.
+	// options.dependencies is for UI visibility, not for making fields required.
+	// If a field was never required, it should stay optional even when visible.
 	for parentPathStr, reqs := range conditionalReqs {
 		parentObj := getObjectAtPath(m, parentPathStr)
 		if parentObj == nil {
 			continue
 		}
 
-		// Remove conditionally required fields from the required array
-		removeConditionalFieldsFromRequired(parentObj, reqs)
+		// Get the set of originally required fields
+		originallyRequired := getRequiredFields(parentObj)
 
-		// Generate if/then/else constructs for each conditional requirement
-		allOfItems := make([]any, 0, len(reqs))
+		// Filter to only fields that were originally required
+		var requiredReqs []conditionalRequirement
 		for _, req := range reqs {
+			if originallyRequired[req.fieldName] {
+				requiredReqs = append(requiredReqs, req)
+			}
+		}
+
+		// Remove conditionally required fields from the required array
+		removeConditionalFieldsFromRequired(parentObj, requiredReqs)
+
+		// Generate if/then/else constructs only for fields that were originally required
+		allOfItems := make([]any, 0, len(requiredReqs))
+		for _, req := range requiredReqs {
 			ifThenElse := buildIfThenElse(req)
 			if ifThenElse != nil {
 				allOfItems = append(allOfItems, ifThenElse)
@@ -244,6 +258,25 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 	}
 
 	return normalized, nil
+}
+
+// getRequiredFields returns a set of field names that are in the required array.
+func getRequiredFields(parentObj *orderedmap.OrderedMap) map[string]bool {
+	result := make(map[string]bool)
+	requiredVal, found := parentObj.Get("required")
+	if !found {
+		return result
+	}
+	requiredArr, ok := requiredVal.([]any)
+	if !ok {
+		return result
+	}
+	for _, field := range requiredArr {
+		if fieldStr, ok := field.(string); ok {
+			result[fieldStr] = true
+		}
+	}
+	return result
 }
 
 // removeConditionalFieldsFromRequired removes conditionally required fields from the required array.
