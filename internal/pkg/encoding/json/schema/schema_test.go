@@ -1013,19 +1013,8 @@ func TestNormalizeSchema_OptionsDependencies_MissingDependencyField(t *testing.T
 }
 `)
 
-	// First, let's see what the normalized schema looks like
-	normalized, err := NormalizeSchema(schema)
-	require.NoError(t, err)
-
-	// Pretty print for debugging
-	var prettySchema map[string]any
-	json.Unmarshal(normalized, &prettySchema)
-	prettyBytes, _ := json.MarshalIndent(prettySchema, "", "  ")
-	t.Logf("Normalized schema:\n%s", string(prettyBytes))
-
 	// Test 1: triggerActionOnFailure field is missing entirely (fire-and-forget config)
 	// This should PASS - actionOnFailureSettings should NOT be required
-	// BUG: Currently this fails with "missing property actionOnFailureSettings"
 	content1 := orderedmap.FromPairs([]orderedmap.Pair{
 		{
 			Key: "parameters",
@@ -1038,7 +1027,7 @@ func TestNormalizeSchema_OptionsDependencies_MissingDependencyField(t *testing.T
 			}),
 		},
 	})
-	err = ValidateContent(schema, content1)
+	err := ValidateContent(schema, content1)
 	require.NoError(t, err, "Should pass when triggerActionOnFailure field is missing (undefined)")
 
 	// Test 2: triggerActionOnFailure is explicitly false
