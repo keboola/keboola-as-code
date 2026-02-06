@@ -729,8 +729,9 @@ func TestNormalizeSchema_OptionsDependencies_NestedObject(t *testing.T) {
 func TestNormalizeSchema_OptionsDependencies_NotInRequired(t *testing.T) {
 	t.Parallel()
 
-	// Schema with options.dependencies but the field is not in the required array
-	// The transformation should still add the if/then construct but not modify required
+	// Schema with options.dependencies but the field is NOT in the required array.
+	// options.dependencies is for UI visibility, NOT for making fields required.
+	// Therefore, if the field was not originally required, we should NOT add if/then for it.
 	schema := []byte(`
 {
   "type": "object",
@@ -765,10 +766,10 @@ func TestNormalizeSchema_OptionsDependencies_NotInRequired(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, []any{"mode"}, required)
 
-	// Check that allOf with if/then is still added
-	allOf, ok := result["allOf"].([]any)
-	require.True(t, ok)
-	require.Len(t, allOf, 1)
+	// Check that NO allOf was added - optional_field was not in required,
+	// so we don't need conditional requirement logic
+	_, hasAllOf := result["allOf"]
+	assert.False(t, hasAllOf, "allOf should NOT be added for fields that were not originally required")
 }
 
 func TestNormalizeSchema_OptionsDependencies_Validation(t *testing.T) {
@@ -960,6 +961,167 @@ func TestNormalizeSchema_ExistingAllOfIfThen(t *testing.T) {
 	})
 	err = ValidateContent(schema, content3)
 	require.NoError(t, err, "Should pass validation when append_date=1 and append_date_format is provided")
+}
+
+func TestNormalizeSchema_OptionsDependencies_MissingDependencyField(t *testing.T) {
+	t.Parallel()
+
+	// This test uses the actual schema from kds-team.app-orchestration-trigger-queue-v2 component.
+	// triggerActionOnFailure is NOT in the required array.
+	// triggerActionOnFailure has options.dependencies: { waitUntilFinish: true }
+	// actionOnFailureSettings has options.dependencies: { triggerActionOnFailure: true }
+	schema := []byte(`
+{
+  "type": "object",
+  "required": ["waitUntilFinish", "#kbcToken", "kbcUrl", "orchestrationId"],
+  "properties": {
+    "waitUntilFinish": {
+      "type": "boolean"
+    },
+    "triggerActionOnFailure": {
+      "type": "boolean",
+      "options": {
+        "dependencies": {
+          "waitUntilFinish": true
+        }
+      }
+    },
+    "actionOnFailureSettings": {
+      "type": "object",
+      "required": ["failureConfigurationId"],
+      "properties": {
+        "failureConfigurationId": {
+          "type": "string"
+        }
+      },
+      "options": {
+        "dependencies": {
+          "triggerActionOnFailure": true
+        }
+      }
+    },
+    "#kbcToken": {
+      "type": "string"
+    },
+    "kbcUrl": {
+      "type": "string"
+    },
+    "orchestrationId": {
+      "type": "string"
+    }
+  }
+}
+`)
+
+	// First, let's see what the normalized schema looks like
+	normalized, err := NormalizeSchema(schema)
+	require.NoError(t, err)
+
+	// Pretty print for debugging
+	var prettySchema map[string]any
+	json.Unmarshal(normalized, &prettySchema)
+	prettyBytes, _ := json.MarshalIndent(prettySchema, "", "  ")
+	t.Logf("Normalized schema:\n%s", string(prettyBytes))
+
+	// Test 1: triggerActionOnFailure field is missing entirely (fire-and-forget config)
+	// This should PASS - actionOnFailureSettings should NOT be required
+	// BUG: Currently this fails with "missing property actionOnFailureSettings"
+	content1 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "waitUntilFinish", Value: false},
+				{Key: "#kbcToken", Value: "xxx"},
+				{Key: "kbcUrl", Value: "-"},
+				{Key: "orchestrationId", Value: "123"},
+				// triggerActionOnFailure is NOT present at all
+			}),
+		},
+	})
+	err = ValidateContent(schema, content1)
+	require.NoError(t, err, "Should pass when triggerActionOnFailure field is missing (undefined)")
+
+	// Test 2: triggerActionOnFailure is explicitly false
+	// This should PASS - actionOnFailureSettings should NOT be required
+	content2 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "waitUntilFinish", Value: true},
+				{Key: "#kbcToken", Value: "xxx"},
+				{Key: "kbcUrl", Value: "-"},
+				{Key: "triggerActionOnFailure", Value: false},
+				{Key: "orchestrationId", Value: "123"},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content2)
+	require.NoError(t, err, "Should pass when triggerActionOnFailure is explicitly false")
+
+	// Test 3: triggerActionOnFailure is true but actionOnFailureSettings is missing
+	// This should PASS - actionOnFailureSettings was NOT in the required array,
+	// options.dependencies is only for UI visibility, not for making fields required.
+	content3 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "waitUntilFinish", Value: true},
+				{Key: "#kbcToken", Value: "xxx"},
+				{Key: "kbcUrl", Value: "-"},
+				{Key: "triggerActionOnFailure", Value: true},
+				{Key: "orchestrationId", Value: "123"},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content3)
+	require.NoError(t, err, "Should pass - actionOnFailureSettings was NOT in required, options.dependencies is for visibility only")
+
+	// Test 4: triggerActionOnFailure is true and actionOnFailureSettings is provided but missing internal required field
+	// This should FAIL - failureConfigurationId is required WITHIN actionOnFailureSettings
+	content4 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "waitUntilFinish", Value: true},
+				{Key: "#kbcToken", Value: "xxx"},
+				{Key: "kbcUrl", Value: "-"},
+				{Key: "triggerActionOnFailure", Value: true},
+				{Key: "orchestrationId", Value: "123"},
+				{
+					Key:   "actionOnFailureSettings",
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
+						// missing failureConfigurationId
+					}),
+				},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content4)
+	require.Error(t, err, "Should fail - failureConfigurationId is required within actionOnFailureSettings")
+	assert.Contains(t, err.Error(), "failureConfigurationId")
+
+	// Test 5: triggerActionOnFailure is true and actionOnFailureSettings is provided with required field
+	// This should PASS
+	content5 := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "waitUntilFinish", Value: true},
+				{Key: "#kbcToken", Value: "xxx"},
+				{Key: "kbcUrl", Value: "-"},
+				{Key: "triggerActionOnFailure", Value: true},
+				{Key: "orchestrationId", Value: "123"},
+				{
+					Key: "actionOnFailureSettings",
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
+						{Key: "failureConfigurationId", Value: "456"},
+					}),
+				},
+			}),
+		},
+	})
+	err = ValidateContent(schema, content5)
+	require.NoError(t, err, "Should pass when actionOnFailureSettings is provided with required fields")
 }
 
 func getTestSchema() []byte {
