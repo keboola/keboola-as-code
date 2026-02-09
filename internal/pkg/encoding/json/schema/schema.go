@@ -207,18 +207,32 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 	})
 
 	// Process conditional requirements: remove from required arrays and add if/then/else constructs
+	// IMPORTANT: Only add if/then for fields that were ORIGINALLY in the required array.
+	// options.dependencies is for UI visibility, not for making fields required.
+	// If a field was never required, it should stay optional even when visible.
 	for parentPathStr, reqs := range conditionalReqs {
 		parentObj := getObjectAtPath(m, parentPathStr)
 		if parentObj == nil {
 			continue
 		}
 
-		// Remove conditionally required fields from the required array
-		removeConditionalFieldsFromRequired(parentObj, reqs)
+		// Get the set of originally required fields
+		originallyRequired := getRequiredFields(parentObj)
 
-		// Generate if/then/else constructs for each conditional requirement
-		allOfItems := make([]any, 0, len(reqs))
+		// Filter to only fields that were originally required
+		var requiredReqs []conditionalRequirement
 		for _, req := range reqs {
+			if originallyRequired[req.fieldName] {
+				requiredReqs = append(requiredReqs, req)
+			}
+		}
+
+		// Remove conditionally required fields from the required array
+		removeConditionalFieldsFromRequired(parentObj, requiredReqs)
+
+		// Generate if/then/else constructs only for fields that were originally required
+		allOfItems := make([]any, 0, len(requiredReqs))
+		for _, req := range requiredReqs {
 			ifThenElse := buildIfThenElse(req)
 			if ifThenElse != nil {
 				allOfItems = append(allOfItems, ifThenElse)
@@ -244,6 +258,25 @@ func NormalizeSchema(schema []byte) ([]byte, error) {
 	}
 
 	return normalized, nil
+}
+
+// getRequiredFields returns a set of field names that are in the required array.
+func getRequiredFields(parentObj *orderedmap.OrderedMap) map[string]bool {
+	result := make(map[string]bool)
+	requiredVal, found := parentObj.Get("required")
+	if !found {
+		return result
+	}
+	requiredArr, ok := requiredVal.([]any)
+	if !ok {
+		return result
+	}
+	for _, field := range requiredArr {
+		if fieldStr, ok := field.(string); ok {
+			result[fieldStr] = true
+		}
+	}
+	return result
 }
 
 // removeConditionalFieldsFromRequired removes conditionally required fields from the required array.
@@ -310,8 +343,9 @@ func buildIfThenElse(req conditionalRequirement) *orderedmap.OrderedMap {
 		return nil
 	}
 
-	// Build the "if" condition properties
+	// Build the "if" condition properties and collect dependency field names
 	ifProperties := orderedmap.New()
+	requiredFields := make([]any, 0, len(req.dependencies))
 	for depField, depValue := range req.dependencies {
 		condition := orderedmap.New()
 		// Handle array values (e.g., "protocol": ["FTP", "FTPS"]) using enum
@@ -322,10 +356,19 @@ func buildIfThenElse(req conditionalRequirement) *orderedmap.OrderedMap {
 			condition.Set("const", depValue)
 		}
 		ifProperties.Set(depField, condition)
+		requiredFields = append(requiredFields, depField)
 	}
 
 	// Build the "if" clause
+	// IMPORTANT: In JSON Schema, "if: { properties: { field: {const: value} } }" without "required"
+	// evaluates to TRUE when field is MISSING (because missing properties match any schema).
+	// We must add "required" to ensure "if" only applies when the dependency field exists.
+	// This way:
+	// - If dependency field is MISSING → "if" is FALSE → "then" doesn't apply → field is optional ✓
+	// - If dependency field EXISTS but has wrong value → "if" is FALSE → "then" doesn't apply → field is optional ✓
+	// - If dependency field EXISTS and has correct value → "if" is TRUE → "then" applies → field is required ✓
 	ifClause := orderedmap.New()
+	ifClause.Set("required", requiredFields)
 	ifClause.Set("properties", ifProperties)
 
 	// Build the "then" clause with required field

@@ -1,0 +1,8 @@
+{
+  "parameters": {
+    "waitUntilFinish": false,
+    "#kbcToken": "KBC::ProjectSecure::dummytoken",
+    "kbcUrl": "-",
+    "orchestrationId": "123456"
+  }
+}

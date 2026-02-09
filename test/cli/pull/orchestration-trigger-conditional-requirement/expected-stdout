@@ -1,0 +1,4 @@
+Plan for "pull" operation:
+  + B main
+  + C main/application/kds-team.app-orchestration-trigger-queue-v2/trigger-fire-and-forget
+Pull done.
