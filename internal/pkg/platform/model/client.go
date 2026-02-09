@@ -273,8 +273,8 @@ func (c *BranchClient) Update() *BranchUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *BranchClient) UpdateOne(b *Branch) *BranchUpdateOne {
-	mutation := newBranchMutation(c.config, OpUpdateOne, withBranch(b))
+func (c *BranchClient) UpdateOne(_m *Branch) *BranchUpdateOne {
+	mutation := newBranchMutation(c.config, OpUpdateOne, withBranch(_m))
 	return &BranchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -291,8 +291,8 @@ func (c *BranchClient) Delete() *BranchDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *BranchClient) DeleteOne(b *Branch) *BranchDeleteOne {
-	return c.DeleteOneID(b.ID)
+func (c *BranchClient) DeleteOne(_m *Branch) *BranchDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -327,16 +327,16 @@ func (c *BranchClient) GetX(ctx context.Context, id key.BranchKey) *Branch {
 }
 
 // QueryConfigurations queries the configurations edge of a Branch.
-func (c *BranchClient) QueryConfigurations(b *Branch) *ConfigurationQuery {
+func (c *BranchClient) QueryConfigurations(_m *Branch) *ConfigurationQuery {
 	query := (&ConfigurationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := b.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(branch.Table, branch.FieldID, id),
 			sqlgraph.To(configuration.Table, configuration.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, branch.ConfigurationsTable, branch.ConfigurationsColumn),
 		)
-		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -422,8 +422,8 @@ func (c *ConfigurationClient) Update() *ConfigurationUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ConfigurationClient) UpdateOne(co *Configuration) *ConfigurationUpdateOne {
-	mutation := newConfigurationMutation(c.config, OpUpdateOne, withConfiguration(co))
+func (c *ConfigurationClient) UpdateOne(_m *Configuration) *ConfigurationUpdateOne {
+	mutation := newConfigurationMutation(c.config, OpUpdateOne, withConfiguration(_m))
 	return &ConfigurationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -440,8 +440,8 @@ func (c *ConfigurationClient) Delete() *ConfigurationDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *ConfigurationClient) DeleteOne(co *Configuration) *ConfigurationDeleteOne {
-	return c.DeleteOneID(co.ID)
+func (c *ConfigurationClient) DeleteOne(_m *Configuration) *ConfigurationDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -476,16 +476,16 @@ func (c *ConfigurationClient) GetX(ctx context.Context, id key.ConfigurationKey)
 }
 
 // QueryParent queries the parent edge of a Configuration.
-func (c *ConfigurationClient) QueryParent(co *Configuration) *BranchQuery {
+func (c *ConfigurationClient) QueryParent(_m *Configuration) *BranchQuery {
 	query := (&BranchClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := co.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(configuration.Table, configuration.FieldID, id),
 			sqlgraph.To(branch.Table, branch.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, configuration.ParentTable, configuration.ParentColumn),
 		)
-		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -571,8 +571,8 @@ func (c *ConfigurationRowClient) Update() *ConfigurationRowUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ConfigurationRowClient) UpdateOne(cr *ConfigurationRow) *ConfigurationRowUpdateOne {
-	mutation := newConfigurationRowMutation(c.config, OpUpdateOne, withConfigurationRow(cr))
+func (c *ConfigurationRowClient) UpdateOne(_m *ConfigurationRow) *ConfigurationRowUpdateOne {
+	mutation := newConfigurationRowMutation(c.config, OpUpdateOne, withConfigurationRow(_m))
 	return &ConfigurationRowUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -589,8 +589,8 @@ func (c *ConfigurationRowClient) Delete() *ConfigurationRowDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *ConfigurationRowClient) DeleteOne(cr *ConfigurationRow) *ConfigurationRowDeleteOne {
-	return c.DeleteOneID(cr.ID)
+func (c *ConfigurationRowClient) DeleteOne(_m *ConfigurationRow) *ConfigurationRowDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -625,16 +625,16 @@ func (c *ConfigurationRowClient) GetX(ctx context.Context, id key.ConfigurationR
 }
 
 // QueryParent queries the parent edge of a ConfigurationRow.
-func (c *ConfigurationRowClient) QueryParent(cr *ConfigurationRow) *ConfigurationQuery {
+func (c *ConfigurationRowClient) QueryParent(_m *ConfigurationRow) *ConfigurationQuery {
 	query := (&ConfigurationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := cr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(configurationrow.Table, configurationrow.FieldID, id),
 			sqlgraph.To(configuration.Table, configuration.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, configurationrow.ParentTable, configurationrow.ParentColumn),
 		)
-		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query

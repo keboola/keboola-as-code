@@ -72,7 +72,7 @@ func (*Branch) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Branch fields.
-func (b *Branch) assignValues(columns []string, values []any) error {
+func (_m *Branch) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -82,34 +82,34 @@ func (b *Branch) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*key.BranchKey); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				b.ID = *value
+				_m.ID = *value
 			}
 		case branch.FieldBranchID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field branchID", values[i])
 			} else if value.Valid {
-				b.BranchID = keboola.BranchID(value.Int64)
+				_m.BranchID = keboola.BranchID(value.Int64)
 			}
 		case branch.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				b.Name = value.String
+				_m.Name = value.String
 			}
 		case branch.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				b.Description = value.String
+				_m.Description = value.String
 			}
 		case branch.FieldIsDefault:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field isDefault", values[i])
 			} else if value.Valid {
-				b.IsDefault = value.Bool
+				_m.IsDefault = value.Bool
 			}
 		default:
-			b.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -117,49 +117,49 @@ func (b *Branch) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Branch.
 // This includes values selected through modifiers, order, etc.
-func (b *Branch) Value(name string) (ent.Value, error) {
-	return b.selectValues.Get(name)
+func (_m *Branch) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryConfigurations queries the "configurations" edge of the Branch entity.
-func (b *Branch) QueryConfigurations() *ConfigurationQuery {
-	return NewBranchClient(b.config).QueryConfigurations(b)
+func (_m *Branch) QueryConfigurations() *ConfigurationQuery {
+	return NewBranchClient(_m.config).QueryConfigurations(_m)
 }
 
 // Update returns a builder for updating this Branch.
 // Note that you need to call Branch.Unwrap() before calling this method if this Branch
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (b *Branch) Update() *BranchUpdateOne {
-	return NewBranchClient(b.config).UpdateOne(b)
+func (_m *Branch) Update() *BranchUpdateOne {
+	return NewBranchClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Branch entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (b *Branch) Unwrap() *Branch {
-	_tx, ok := b.config.driver.(*txDriver)
+func (_m *Branch) Unwrap() *Branch {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("model: Branch is not a transactional entity")
 	}
-	b.config.driver = _tx.drv
-	return b
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (b *Branch) String() string {
+func (_m *Branch) String() string {
 	var builder strings.Builder
 	builder.WriteString("Branch(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", b.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("branchID=")
-	builder.WriteString(fmt.Sprintf("%v", b.BranchID))
+	builder.WriteString(fmt.Sprintf("%v", _m.BranchID))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(b.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(b.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("isDefault=")
-	builder.WriteString(fmt.Sprintf("%v", b.IsDefault))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsDefault))
 	builder.WriteByte(')')
 	return builder.String()
 }

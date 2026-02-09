@@ -24,92 +24,92 @@ type ConfigurationRowCreate struct {
 }
 
 // SetBranchID sets the "branchID" field.
-func (crc *ConfigurationRowCreate) SetBranchID(ki keboola.BranchID) *ConfigurationRowCreate {
-	crc.mutation.SetBranchID(ki)
-	return crc
+func (_c *ConfigurationRowCreate) SetBranchID(v keboola.BranchID) *ConfigurationRowCreate {
+	_c.mutation.SetBranchID(v)
+	return _c
 }
 
 // SetComponentID sets the "componentID" field.
-func (crc *ConfigurationRowCreate) SetComponentID(ki keboola.ComponentID) *ConfigurationRowCreate {
-	crc.mutation.SetComponentID(ki)
-	return crc
+func (_c *ConfigurationRowCreate) SetComponentID(v keboola.ComponentID) *ConfigurationRowCreate {
+	_c.mutation.SetComponentID(v)
+	return _c
 }
 
 // SetConfigID sets the "configID" field.
-func (crc *ConfigurationRowCreate) SetConfigID(ki keboola.ConfigID) *ConfigurationRowCreate {
-	crc.mutation.SetConfigID(ki)
-	return crc
+func (_c *ConfigurationRowCreate) SetConfigID(v keboola.ConfigID) *ConfigurationRowCreate {
+	_c.mutation.SetConfigID(v)
+	return _c
 }
 
 // SetRowID sets the "rowID" field.
-func (crc *ConfigurationRowCreate) SetRowID(ki keboola.RowID) *ConfigurationRowCreate {
-	crc.mutation.SetRowID(ki)
-	return crc
+func (_c *ConfigurationRowCreate) SetRowID(v keboola.RowID) *ConfigurationRowCreate {
+	_c.mutation.SetRowID(v)
+	return _c
 }
 
 // SetName sets the "name" field.
-func (crc *ConfigurationRowCreate) SetName(s string) *ConfigurationRowCreate {
-	crc.mutation.SetName(s)
-	return crc
+func (_c *ConfigurationRowCreate) SetName(v string) *ConfigurationRowCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (crc *ConfigurationRowCreate) SetDescription(s string) *ConfigurationRowCreate {
-	crc.mutation.SetDescription(s)
-	return crc
+func (_c *ConfigurationRowCreate) SetDescription(v string) *ConfigurationRowCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetIsDisabled sets the "isDisabled" field.
-func (crc *ConfigurationRowCreate) SetIsDisabled(b bool) *ConfigurationRowCreate {
-	crc.mutation.SetIsDisabled(b)
-	return crc
+func (_c *ConfigurationRowCreate) SetIsDisabled(v bool) *ConfigurationRowCreate {
+	_c.mutation.SetIsDisabled(v)
+	return _c
 }
 
 // SetNillableIsDisabled sets the "isDisabled" field if the given value is not nil.
-func (crc *ConfigurationRowCreate) SetNillableIsDisabled(b *bool) *ConfigurationRowCreate {
-	if b != nil {
-		crc.SetIsDisabled(*b)
+func (_c *ConfigurationRowCreate) SetNillableIsDisabled(v *bool) *ConfigurationRowCreate {
+	if v != nil {
+		_c.SetIsDisabled(*v)
 	}
-	return crc
+	return _c
 }
 
 // SetContent sets the "content" field.
-func (crc *ConfigurationRowCreate) SetContent(om *orderedmap.OrderedMap) *ConfigurationRowCreate {
-	crc.mutation.SetContent(om)
-	return crc
+func (_c *ConfigurationRowCreate) SetContent(v *orderedmap.OrderedMap) *ConfigurationRowCreate {
+	_c.mutation.SetContent(v)
+	return _c
 }
 
 // SetID sets the "id" field.
-func (crc *ConfigurationRowCreate) SetID(krk key.ConfigurationRowKey) *ConfigurationRowCreate {
-	crc.mutation.SetID(krk)
-	return crc
+func (_c *ConfigurationRowCreate) SetID(v key.ConfigurationRowKey) *ConfigurationRowCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetParentID sets the "parent" edge to the Configuration entity by ID.
-func (crc *ConfigurationRowCreate) SetParentID(id key.ConfigurationKey) *ConfigurationRowCreate {
-	crc.mutation.SetParentID(id)
-	return crc
+func (_c *ConfigurationRowCreate) SetParentID(id key.ConfigurationKey) *ConfigurationRowCreate {
+	_c.mutation.SetParentID(id)
+	return _c
 }
 
 // SetParent sets the "parent" edge to the Configuration entity.
-func (crc *ConfigurationRowCreate) SetParent(c *Configuration) *ConfigurationRowCreate {
-	return crc.SetParentID(c.ID)
+func (_c *ConfigurationRowCreate) SetParent(v *Configuration) *ConfigurationRowCreate {
+	return _c.SetParentID(v.ID)
 }
 
 // Mutation returns the ConfigurationRowMutation object of the builder.
-func (crc *ConfigurationRowCreate) Mutation() *ConfigurationRowMutation {
-	return crc.mutation
+func (_c *ConfigurationRowCreate) Mutation() *ConfigurationRowMutation {
+	return _c.mutation
 }
 
 // Save creates the ConfigurationRow in the database.
-func (crc *ConfigurationRowCreate) Save(ctx context.Context) (*ConfigurationRow, error) {
-	crc.defaults()
-	return withHooks(ctx, crc.sqlSave, crc.mutation, crc.hooks)
+func (_c *ConfigurationRowCreate) Save(ctx context.Context) (*ConfigurationRow, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (crc *ConfigurationRowCreate) SaveX(ctx context.Context) *ConfigurationRow {
-	v, err := crc.Save(ctx)
+func (_c *ConfigurationRowCreate) SaveX(ctx context.Context) *ConfigurationRow {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -117,94 +117,94 @@ func (crc *ConfigurationRowCreate) SaveX(ctx context.Context) *ConfigurationRow 
 }
 
 // Exec executes the query.
-func (crc *ConfigurationRowCreate) Exec(ctx context.Context) error {
-	_, err := crc.Save(ctx)
+func (_c *ConfigurationRowCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (crc *ConfigurationRowCreate) ExecX(ctx context.Context) {
-	if err := crc.Exec(ctx); err != nil {
+func (_c *ConfigurationRowCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (crc *ConfigurationRowCreate) defaults() {
-	if _, ok := crc.mutation.IsDisabled(); !ok {
+func (_c *ConfigurationRowCreate) defaults() {
+	if _, ok := _c.mutation.IsDisabled(); !ok {
 		v := configurationrow.DefaultIsDisabled
-		crc.mutation.SetIsDisabled(v)
+		_c.mutation.SetIsDisabled(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (crc *ConfigurationRowCreate) check() error {
-	if _, ok := crc.mutation.BranchID(); !ok {
+func (_c *ConfigurationRowCreate) check() error {
+	if _, ok := _c.mutation.BranchID(); !ok {
 		return &ValidationError{Name: "branchID", err: errors.New(`model: missing required field "ConfigurationRow.branchID"`)}
 	}
-	if v, ok := crc.mutation.BranchID(); ok {
+	if v, ok := _c.mutation.BranchID(); ok {
 		if err := configurationrow.BranchIDValidator(int(v)); err != nil {
 			return &ValidationError{Name: "branchID", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.branchID": %w`, err)}
 		}
 	}
-	if _, ok := crc.mutation.ComponentID(); !ok {
+	if _, ok := _c.mutation.ComponentID(); !ok {
 		return &ValidationError{Name: "componentID", err: errors.New(`model: missing required field "ConfigurationRow.componentID"`)}
 	}
-	if v, ok := crc.mutation.ComponentID(); ok {
+	if v, ok := _c.mutation.ComponentID(); ok {
 		if err := configurationrow.ComponentIDValidator(string(v)); err != nil {
 			return &ValidationError{Name: "componentID", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.componentID": %w`, err)}
 		}
 	}
-	if _, ok := crc.mutation.ConfigID(); !ok {
+	if _, ok := _c.mutation.ConfigID(); !ok {
 		return &ValidationError{Name: "configID", err: errors.New(`model: missing required field "ConfigurationRow.configID"`)}
 	}
-	if v, ok := crc.mutation.ConfigID(); ok {
+	if v, ok := _c.mutation.ConfigID(); ok {
 		if err := configurationrow.ConfigIDValidator(string(v)); err != nil {
 			return &ValidationError{Name: "configID", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.configID": %w`, err)}
 		}
 	}
-	if _, ok := crc.mutation.RowID(); !ok {
+	if _, ok := _c.mutation.RowID(); !ok {
 		return &ValidationError{Name: "rowID", err: errors.New(`model: missing required field "ConfigurationRow.rowID"`)}
 	}
-	if v, ok := crc.mutation.RowID(); ok {
+	if v, ok := _c.mutation.RowID(); ok {
 		if err := configurationrow.RowIDValidator(string(v)); err != nil {
 			return &ValidationError{Name: "rowID", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.rowID": %w`, err)}
 		}
 	}
-	if _, ok := crc.mutation.Name(); !ok {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`model: missing required field "ConfigurationRow.name"`)}
 	}
-	if v, ok := crc.mutation.Name(); ok {
+	if v, ok := _c.mutation.Name(); ok {
 		if err := configurationrow.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.name": %w`, err)}
 		}
 	}
-	if _, ok := crc.mutation.Description(); !ok {
+	if _, ok := _c.mutation.Description(); !ok {
 		return &ValidationError{Name: "description", err: errors.New(`model: missing required field "ConfigurationRow.description"`)}
 	}
-	if _, ok := crc.mutation.IsDisabled(); !ok {
+	if _, ok := _c.mutation.IsDisabled(); !ok {
 		return &ValidationError{Name: "isDisabled", err: errors.New(`model: missing required field "ConfigurationRow.isDisabled"`)}
 	}
-	if _, ok := crc.mutation.Content(); !ok {
+	if _, ok := _c.mutation.Content(); !ok {
 		return &ValidationError{Name: "content", err: errors.New(`model: missing required field "ConfigurationRow.content"`)}
 	}
-	if v, ok := crc.mutation.ID(); ok {
+	if v, ok := _c.mutation.ID(); ok {
 		if err := configurationrow.IDValidator(v.String()); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.id": %w`, err)}
 		}
 	}
-	if len(crc.mutation.ParentIDs()) == 0 {
+	if len(_c.mutation.ParentIDs()) == 0 {
 		return &ValidationError{Name: "parent", err: errors.New(`model: missing required edge "ConfigurationRow.parent"`)}
 	}
 	return nil
 }
 
-func (crc *ConfigurationRowCreate) sqlSave(ctx context.Context) (*ConfigurationRow, error) {
-	if err := crc.check(); err != nil {
+func (_c *ConfigurationRowCreate) sqlSave(ctx context.Context) (*ConfigurationRow, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := crc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, crc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -217,53 +217,53 @@ func (crc *ConfigurationRowCreate) sqlSave(ctx context.Context) (*ConfigurationR
 			return nil, err
 		}
 	}
-	crc.mutation.id = &_node.ID
-	crc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (crc *ConfigurationRowCreate) createSpec() (*ConfigurationRow, *sqlgraph.CreateSpec) {
+func (_c *ConfigurationRowCreate) createSpec() (*ConfigurationRow, *sqlgraph.CreateSpec) {
 	var (
-		_node = &ConfigurationRow{config: crc.config}
+		_node = &ConfigurationRow{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(configurationrow.Table, sqlgraph.NewFieldSpec(configurationrow.FieldID, field.TypeString))
 	)
-	if id, ok := crc.mutation.ID(); ok {
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := crc.mutation.BranchID(); ok {
+	if value, ok := _c.mutation.BranchID(); ok {
 		_spec.SetField(configurationrow.FieldBranchID, field.TypeInt, value)
 		_node.BranchID = value
 	}
-	if value, ok := crc.mutation.ComponentID(); ok {
+	if value, ok := _c.mutation.ComponentID(); ok {
 		_spec.SetField(configurationrow.FieldComponentID, field.TypeString, value)
 		_node.ComponentID = value
 	}
-	if value, ok := crc.mutation.ConfigID(); ok {
+	if value, ok := _c.mutation.ConfigID(); ok {
 		_spec.SetField(configurationrow.FieldConfigID, field.TypeString, value)
 		_node.ConfigID = value
 	}
-	if value, ok := crc.mutation.RowID(); ok {
+	if value, ok := _c.mutation.RowID(); ok {
 		_spec.SetField(configurationrow.FieldRowID, field.TypeString, value)
 		_node.RowID = value
 	}
-	if value, ok := crc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(configurationrow.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := crc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(configurationrow.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := crc.mutation.IsDisabled(); ok {
+	if value, ok := _c.mutation.IsDisabled(); ok {
 		_spec.SetField(configurationrow.FieldIsDisabled, field.TypeBool, value)
 		_node.IsDisabled = value
 	}
-	if value, ok := crc.mutation.Content(); ok {
+	if value, ok := _c.mutation.Content(); ok {
 		_spec.SetField(configurationrow.FieldContent, field.TypeJSON, value)
 		_node.Content = value
 	}
-	if nodes := crc.mutation.ParentIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -291,16 +291,16 @@ type ConfigurationRowCreateBulk struct {
 }
 
 // Save creates the ConfigurationRow entities in the database.
-func (crcb *ConfigurationRowCreateBulk) Save(ctx context.Context) ([]*ConfigurationRow, error) {
-	if crcb.err != nil {
-		return nil, crcb.err
+func (_c *ConfigurationRowCreateBulk) Save(ctx context.Context) ([]*ConfigurationRow, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(crcb.builders))
-	nodes := make([]*ConfigurationRow, len(crcb.builders))
-	mutators := make([]Mutator, len(crcb.builders))
-	for i := range crcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*ConfigurationRow, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := crcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ConfigurationRowMutation)
@@ -314,11 +314,11 @@ func (crcb *ConfigurationRowCreateBulk) Save(ctx context.Context) ([]*Configurat
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, crcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, crcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -338,7 +338,7 @@ func (crcb *ConfigurationRowCreateBulk) Save(ctx context.Context) ([]*Configurat
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, crcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -346,8 +346,8 @@ func (crcb *ConfigurationRowCreateBulk) Save(ctx context.Context) ([]*Configurat
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (crcb *ConfigurationRowCreateBulk) SaveX(ctx context.Context) []*ConfigurationRow {
-	v, err := crcb.Save(ctx)
+func (_c *ConfigurationRowCreateBulk) SaveX(ctx context.Context) []*ConfigurationRow {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -355,14 +355,14 @@ func (crcb *ConfigurationRowCreateBulk) SaveX(ctx context.Context) []*Configurat
 }
 
 // Exec executes the query.
-func (crcb *ConfigurationRowCreateBulk) Exec(ctx context.Context) error {
-	_, err := crcb.Save(ctx)
+func (_c *ConfigurationRowCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (crcb *ConfigurationRowCreateBulk) ExecX(ctx context.Context) {
-	if err := crcb.Exec(ctx); err != nil {
+func (_c *ConfigurationRowCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

@@ -88,7 +88,7 @@ func (*Configuration) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Configuration fields.
-func (c *Configuration) assignValues(columns []string, values []any) error {
+func (_m *Configuration) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -98,49 +98,49 @@ func (c *Configuration) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*key.ConfigurationKey); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				c.ID = *value
+				_m.ID = *value
 			}
 		case configuration.FieldBranchID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field branchID", values[i])
 			} else if value.Valid {
-				c.BranchID = keboola.BranchID(value.Int64)
+				_m.BranchID = keboola.BranchID(value.Int64)
 			}
 		case configuration.FieldComponentID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field componentID", values[i])
 			} else if value.Valid {
-				c.ComponentID = keboola.ComponentID(value.String)
+				_m.ComponentID = keboola.ComponentID(value.String)
 			}
 		case configuration.FieldConfigID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field configID", values[i])
 			} else if value.Valid {
-				c.ConfigID = keboola.ConfigID(value.String)
+				_m.ConfigID = keboola.ConfigID(value.String)
 			}
 		case configuration.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				c.Name = value.String
+				_m.Name = value.String
 			}
 		case configuration.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				c.Description = value.String
+				_m.Description = value.String
 			}
 		case configuration.FieldIsDisabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field isDisabled", values[i])
 			} else if value.Valid {
-				c.IsDisabled = value.Bool
+				_m.IsDisabled = value.Bool
 			}
 		case configuration.FieldContent:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field content", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &c.Content); err != nil {
+				if err := json.Unmarshal(*value, &_m.Content); err != nil {
 					return fmt.Errorf("unmarshal field content: %w", err)
 				}
 			}
@@ -148,11 +148,11 @@ func (c *Configuration) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field configuration_parent", values[i])
 			} else if value.Valid {
-				c.configuration_parent = new(key.BranchKey)
-				*c.configuration_parent = *value.S.(*key.BranchKey)
+				_m.configuration_parent = new(key.BranchKey)
+				*_m.configuration_parent = *value.S.(*key.BranchKey)
 			}
 		default:
-			c.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -160,58 +160,58 @@ func (c *Configuration) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Configuration.
 // This includes values selected through modifiers, order, etc.
-func (c *Configuration) Value(name string) (ent.Value, error) {
-	return c.selectValues.Get(name)
+func (_m *Configuration) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryParent queries the "parent" edge of the Configuration entity.
-func (c *Configuration) QueryParent() *BranchQuery {
-	return NewConfigurationClient(c.config).QueryParent(c)
+func (_m *Configuration) QueryParent() *BranchQuery {
+	return NewConfigurationClient(_m.config).QueryParent(_m)
 }
 
 // Update returns a builder for updating this Configuration.
 // Note that you need to call Configuration.Unwrap() before calling this method if this Configuration
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (c *Configuration) Update() *ConfigurationUpdateOne {
-	return NewConfigurationClient(c.config).UpdateOne(c)
+func (_m *Configuration) Update() *ConfigurationUpdateOne {
+	return NewConfigurationClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Configuration entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (c *Configuration) Unwrap() *Configuration {
-	_tx, ok := c.config.driver.(*txDriver)
+func (_m *Configuration) Unwrap() *Configuration {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("model: Configuration is not a transactional entity")
 	}
-	c.config.driver = _tx.drv
-	return c
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (c *Configuration) String() string {
+func (_m *Configuration) String() string {
 	var builder strings.Builder
 	builder.WriteString("Configuration(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", c.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("branchID=")
-	builder.WriteString(fmt.Sprintf("%v", c.BranchID))
+	builder.WriteString(fmt.Sprintf("%v", _m.BranchID))
 	builder.WriteString(", ")
 	builder.WriteString("componentID=")
-	builder.WriteString(fmt.Sprintf("%v", c.ComponentID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ComponentID))
 	builder.WriteString(", ")
 	builder.WriteString("configID=")
-	builder.WriteString(fmt.Sprintf("%v", c.ConfigID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ConfigID))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(c.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(c.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("isDisabled=")
-	builder.WriteString(fmt.Sprintf("%v", c.IsDisabled))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsDisabled))
 	builder.WriteString(", ")
 	builder.WriteString("content=")
-	builder.WriteString(fmt.Sprintf("%v", c.Content))
+	builder.WriteString(fmt.Sprintf("%v", _m.Content))
 	builder.WriteByte(')')
 	return builder.String()
 }
