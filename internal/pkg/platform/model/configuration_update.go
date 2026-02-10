@@ -23,72 +23,72 @@ type ConfigurationUpdate struct {
 }
 
 // Where appends a list predicates to the ConfigurationUpdate builder.
-func (cu *ConfigurationUpdate) Where(ps ...predicate.Configuration) *ConfigurationUpdate {
-	cu.mutation.Where(ps...)
-	return cu
+func (_u *ConfigurationUpdate) Where(ps ...predicate.Configuration) *ConfigurationUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (cu *ConfigurationUpdate) SetName(s string) *ConfigurationUpdate {
-	cu.mutation.SetName(s)
-	return cu
+func (_u *ConfigurationUpdate) SetName(v string) *ConfigurationUpdate {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (cu *ConfigurationUpdate) SetNillableName(s *string) *ConfigurationUpdate {
-	if s != nil {
-		cu.SetName(*s)
+func (_u *ConfigurationUpdate) SetNillableName(v *string) *ConfigurationUpdate {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return cu
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (cu *ConfigurationUpdate) SetDescription(s string) *ConfigurationUpdate {
-	cu.mutation.SetDescription(s)
-	return cu
+func (_u *ConfigurationUpdate) SetDescription(v string) *ConfigurationUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (cu *ConfigurationUpdate) SetNillableDescription(s *string) *ConfigurationUpdate {
-	if s != nil {
-		cu.SetDescription(*s)
+func (_u *ConfigurationUpdate) SetNillableDescription(v *string) *ConfigurationUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return cu
+	return _u
 }
 
 // SetIsDisabled sets the "isDisabled" field.
-func (cu *ConfigurationUpdate) SetIsDisabled(b bool) *ConfigurationUpdate {
-	cu.mutation.SetIsDisabled(b)
-	return cu
+func (_u *ConfigurationUpdate) SetIsDisabled(v bool) *ConfigurationUpdate {
+	_u.mutation.SetIsDisabled(v)
+	return _u
 }
 
 // SetNillableIsDisabled sets the "isDisabled" field if the given value is not nil.
-func (cu *ConfigurationUpdate) SetNillableIsDisabled(b *bool) *ConfigurationUpdate {
-	if b != nil {
-		cu.SetIsDisabled(*b)
+func (_u *ConfigurationUpdate) SetNillableIsDisabled(v *bool) *ConfigurationUpdate {
+	if v != nil {
+		_u.SetIsDisabled(*v)
 	}
-	return cu
+	return _u
 }
 
 // SetContent sets the "content" field.
-func (cu *ConfigurationUpdate) SetContent(om *orderedmap.OrderedMap) *ConfigurationUpdate {
-	cu.mutation.SetContent(om)
-	return cu
+func (_u *ConfigurationUpdate) SetContent(v *orderedmap.OrderedMap) *ConfigurationUpdate {
+	_u.mutation.SetContent(v)
+	return _u
 }
 
 // Mutation returns the ConfigurationMutation object of the builder.
-func (cu *ConfigurationUpdate) Mutation() *ConfigurationMutation {
-	return cu.mutation
+func (_u *ConfigurationUpdate) Mutation() *ConfigurationMutation {
+	return _u.mutation
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (cu *ConfigurationUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, cu.sqlSave, cu.mutation, cu.hooks)
+func (_u *ConfigurationUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cu *ConfigurationUpdate) SaveX(ctx context.Context) int {
-	affected, err := cu.Save(ctx)
+func (_u *ConfigurationUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -96,56 +96,56 @@ func (cu *ConfigurationUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (cu *ConfigurationUpdate) Exec(ctx context.Context) error {
-	_, err := cu.Save(ctx)
+func (_u *ConfigurationUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cu *ConfigurationUpdate) ExecX(ctx context.Context) {
-	if err := cu.Exec(ctx); err != nil {
+func (_u *ConfigurationUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cu *ConfigurationUpdate) check() error {
-	if v, ok := cu.mutation.Name(); ok {
+func (_u *ConfigurationUpdate) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := configuration.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "Configuration.name": %w`, err)}
 		}
 	}
-	if cu.mutation.ParentCleared() && len(cu.mutation.ParentIDs()) > 0 {
+	if _u.mutation.ParentCleared() && len(_u.mutation.ParentIDs()) > 0 {
 		return errors.New(`model: clearing a required unique edge "Configuration.parent"`)
 	}
 	return nil
 }
 
-func (cu *ConfigurationUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := cu.check(); err != nil {
-		return n, err
+func (_u *ConfigurationUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(configuration.Table, configuration.Columns, sqlgraph.NewFieldSpec(configuration.FieldID, field.TypeString))
-	if ps := cu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := cu.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(configuration.FieldName, field.TypeString, value)
 	}
-	if value, ok := cu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(configuration.FieldDescription, field.TypeString, value)
 	}
-	if value, ok := cu.mutation.IsDisabled(); ok {
+	if value, ok := _u.mutation.IsDisabled(); ok {
 		_spec.SetField(configuration.FieldIsDisabled, field.TypeBool, value)
 	}
-	if value, ok := cu.mutation.Content(); ok {
+	if value, ok := _u.mutation.Content(); ok {
 		_spec.SetField(configuration.FieldContent, field.TypeJSON, value)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{configuration.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -153,8 +153,8 @@ func (cu *ConfigurationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	cu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // ConfigurationUpdateOne is the builder for updating a single Configuration entity.
@@ -166,79 +166,79 @@ type ConfigurationUpdateOne struct {
 }
 
 // SetName sets the "name" field.
-func (cuo *ConfigurationUpdateOne) SetName(s string) *ConfigurationUpdateOne {
-	cuo.mutation.SetName(s)
-	return cuo
+func (_u *ConfigurationUpdateOne) SetName(v string) *ConfigurationUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (cuo *ConfigurationUpdateOne) SetNillableName(s *string) *ConfigurationUpdateOne {
-	if s != nil {
-		cuo.SetName(*s)
+func (_u *ConfigurationUpdateOne) SetNillableName(v *string) *ConfigurationUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return cuo
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (cuo *ConfigurationUpdateOne) SetDescription(s string) *ConfigurationUpdateOne {
-	cuo.mutation.SetDescription(s)
-	return cuo
+func (_u *ConfigurationUpdateOne) SetDescription(v string) *ConfigurationUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (cuo *ConfigurationUpdateOne) SetNillableDescription(s *string) *ConfigurationUpdateOne {
-	if s != nil {
-		cuo.SetDescription(*s)
+func (_u *ConfigurationUpdateOne) SetNillableDescription(v *string) *ConfigurationUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return cuo
+	return _u
 }
 
 // SetIsDisabled sets the "isDisabled" field.
-func (cuo *ConfigurationUpdateOne) SetIsDisabled(b bool) *ConfigurationUpdateOne {
-	cuo.mutation.SetIsDisabled(b)
-	return cuo
+func (_u *ConfigurationUpdateOne) SetIsDisabled(v bool) *ConfigurationUpdateOne {
+	_u.mutation.SetIsDisabled(v)
+	return _u
 }
 
 // SetNillableIsDisabled sets the "isDisabled" field if the given value is not nil.
-func (cuo *ConfigurationUpdateOne) SetNillableIsDisabled(b *bool) *ConfigurationUpdateOne {
-	if b != nil {
-		cuo.SetIsDisabled(*b)
+func (_u *ConfigurationUpdateOne) SetNillableIsDisabled(v *bool) *ConfigurationUpdateOne {
+	if v != nil {
+		_u.SetIsDisabled(*v)
 	}
-	return cuo
+	return _u
 }
 
 // SetContent sets the "content" field.
-func (cuo *ConfigurationUpdateOne) SetContent(om *orderedmap.OrderedMap) *ConfigurationUpdateOne {
-	cuo.mutation.SetContent(om)
-	return cuo
+func (_u *ConfigurationUpdateOne) SetContent(v *orderedmap.OrderedMap) *ConfigurationUpdateOne {
+	_u.mutation.SetContent(v)
+	return _u
 }
 
 // Mutation returns the ConfigurationMutation object of the builder.
-func (cuo *ConfigurationUpdateOne) Mutation() *ConfigurationMutation {
-	return cuo.mutation
+func (_u *ConfigurationUpdateOne) Mutation() *ConfigurationMutation {
+	return _u.mutation
 }
 
 // Where appends a list predicates to the ConfigurationUpdate builder.
-func (cuo *ConfigurationUpdateOne) Where(ps ...predicate.Configuration) *ConfigurationUpdateOne {
-	cuo.mutation.Where(ps...)
-	return cuo
+func (_u *ConfigurationUpdateOne) Where(ps ...predicate.Configuration) *ConfigurationUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (cuo *ConfigurationUpdateOne) Select(field string, fields ...string) *ConfigurationUpdateOne {
-	cuo.fields = append([]string{field}, fields...)
-	return cuo
+func (_u *ConfigurationUpdateOne) Select(field string, fields ...string) *ConfigurationUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Configuration entity.
-func (cuo *ConfigurationUpdateOne) Save(ctx context.Context) (*Configuration, error) {
-	return withHooks(ctx, cuo.sqlSave, cuo.mutation, cuo.hooks)
+func (_u *ConfigurationUpdateOne) Save(ctx context.Context) (*Configuration, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cuo *ConfigurationUpdateOne) SaveX(ctx context.Context) *Configuration {
-	node, err := cuo.Save(ctx)
+func (_u *ConfigurationUpdateOne) SaveX(ctx context.Context) *Configuration {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -246,42 +246,42 @@ func (cuo *ConfigurationUpdateOne) SaveX(ctx context.Context) *Configuration {
 }
 
 // Exec executes the query on the entity.
-func (cuo *ConfigurationUpdateOne) Exec(ctx context.Context) error {
-	_, err := cuo.Save(ctx)
+func (_u *ConfigurationUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cuo *ConfigurationUpdateOne) ExecX(ctx context.Context) {
-	if err := cuo.Exec(ctx); err != nil {
+func (_u *ConfigurationUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cuo *ConfigurationUpdateOne) check() error {
-	if v, ok := cuo.mutation.Name(); ok {
+func (_u *ConfigurationUpdateOne) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := configuration.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "Configuration.name": %w`, err)}
 		}
 	}
-	if cuo.mutation.ParentCleared() && len(cuo.mutation.ParentIDs()) > 0 {
+	if _u.mutation.ParentCleared() && len(_u.mutation.ParentIDs()) > 0 {
 		return errors.New(`model: clearing a required unique edge "Configuration.parent"`)
 	}
 	return nil
 }
 
-func (cuo *ConfigurationUpdateOne) sqlSave(ctx context.Context) (_node *Configuration, err error) {
-	if err := cuo.check(); err != nil {
+func (_u *ConfigurationUpdateOne) sqlSave(ctx context.Context) (_node *Configuration, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(configuration.Table, configuration.Columns, sqlgraph.NewFieldSpec(configuration.FieldID, field.TypeString))
-	id, ok := cuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`model: missing "Configuration.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := cuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, configuration.FieldID)
 		for _, f := range fields {
@@ -293,29 +293,29 @@ func (cuo *ConfigurationUpdateOne) sqlSave(ctx context.Context) (_node *Configur
 			}
 		}
 	}
-	if ps := cuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := cuo.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(configuration.FieldName, field.TypeString, value)
 	}
-	if value, ok := cuo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(configuration.FieldDescription, field.TypeString, value)
 	}
-	if value, ok := cuo.mutation.IsDisabled(); ok {
+	if value, ok := _u.mutation.IsDisabled(); ok {
 		_spec.SetField(configuration.FieldIsDisabled, field.TypeBool, value)
 	}
-	if value, ok := cuo.mutation.Content(); ok {
+	if value, ok := _u.mutation.Content(); ok {
 		_spec.SetField(configuration.FieldContent, field.TypeJSON, value)
 	}
-	_node = &Configuration{config: cuo.config}
+	_node = &Configuration{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, cuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{configuration.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -323,6 +323,6 @@ func (cuo *ConfigurationUpdateOne) sqlSave(ctx context.Context) (_node *Configur
 		}
 		return nil, err
 	}
-	cuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

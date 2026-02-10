@@ -24,86 +24,86 @@ type ConfigurationCreate struct {
 }
 
 // SetBranchID sets the "branchID" field.
-func (cc *ConfigurationCreate) SetBranchID(ki keboola.BranchID) *ConfigurationCreate {
-	cc.mutation.SetBranchID(ki)
-	return cc
+func (_c *ConfigurationCreate) SetBranchID(v keboola.BranchID) *ConfigurationCreate {
+	_c.mutation.SetBranchID(v)
+	return _c
 }
 
 // SetComponentID sets the "componentID" field.
-func (cc *ConfigurationCreate) SetComponentID(ki keboola.ComponentID) *ConfigurationCreate {
-	cc.mutation.SetComponentID(ki)
-	return cc
+func (_c *ConfigurationCreate) SetComponentID(v keboola.ComponentID) *ConfigurationCreate {
+	_c.mutation.SetComponentID(v)
+	return _c
 }
 
 // SetConfigID sets the "configID" field.
-func (cc *ConfigurationCreate) SetConfigID(ki keboola.ConfigID) *ConfigurationCreate {
-	cc.mutation.SetConfigID(ki)
-	return cc
+func (_c *ConfigurationCreate) SetConfigID(v keboola.ConfigID) *ConfigurationCreate {
+	_c.mutation.SetConfigID(v)
+	return _c
 }
 
 // SetName sets the "name" field.
-func (cc *ConfigurationCreate) SetName(s string) *ConfigurationCreate {
-	cc.mutation.SetName(s)
-	return cc
+func (_c *ConfigurationCreate) SetName(v string) *ConfigurationCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (cc *ConfigurationCreate) SetDescription(s string) *ConfigurationCreate {
-	cc.mutation.SetDescription(s)
-	return cc
+func (_c *ConfigurationCreate) SetDescription(v string) *ConfigurationCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetIsDisabled sets the "isDisabled" field.
-func (cc *ConfigurationCreate) SetIsDisabled(b bool) *ConfigurationCreate {
-	cc.mutation.SetIsDisabled(b)
-	return cc
+func (_c *ConfigurationCreate) SetIsDisabled(v bool) *ConfigurationCreate {
+	_c.mutation.SetIsDisabled(v)
+	return _c
 }
 
 // SetNillableIsDisabled sets the "isDisabled" field if the given value is not nil.
-func (cc *ConfigurationCreate) SetNillableIsDisabled(b *bool) *ConfigurationCreate {
-	if b != nil {
-		cc.SetIsDisabled(*b)
+func (_c *ConfigurationCreate) SetNillableIsDisabled(v *bool) *ConfigurationCreate {
+	if v != nil {
+		_c.SetIsDisabled(*v)
 	}
-	return cc
+	return _c
 }
 
 // SetContent sets the "content" field.
-func (cc *ConfigurationCreate) SetContent(om *orderedmap.OrderedMap) *ConfigurationCreate {
-	cc.mutation.SetContent(om)
-	return cc
+func (_c *ConfigurationCreate) SetContent(v *orderedmap.OrderedMap) *ConfigurationCreate {
+	_c.mutation.SetContent(v)
+	return _c
 }
 
 // SetID sets the "id" field.
-func (cc *ConfigurationCreate) SetID(kk key.ConfigurationKey) *ConfigurationCreate {
-	cc.mutation.SetID(kk)
-	return cc
+func (_c *ConfigurationCreate) SetID(v key.ConfigurationKey) *ConfigurationCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetParentID sets the "parent" edge to the Branch entity by ID.
-func (cc *ConfigurationCreate) SetParentID(id key.BranchKey) *ConfigurationCreate {
-	cc.mutation.SetParentID(id)
-	return cc
+func (_c *ConfigurationCreate) SetParentID(id key.BranchKey) *ConfigurationCreate {
+	_c.mutation.SetParentID(id)
+	return _c
 }
 
 // SetParent sets the "parent" edge to the Branch entity.
-func (cc *ConfigurationCreate) SetParent(b *Branch) *ConfigurationCreate {
-	return cc.SetParentID(b.ID)
+func (_c *ConfigurationCreate) SetParent(v *Branch) *ConfigurationCreate {
+	return _c.SetParentID(v.ID)
 }
 
 // Mutation returns the ConfigurationMutation object of the builder.
-func (cc *ConfigurationCreate) Mutation() *ConfigurationMutation {
-	return cc.mutation
+func (_c *ConfigurationCreate) Mutation() *ConfigurationMutation {
+	return _c.mutation
 }
 
 // Save creates the Configuration in the database.
-func (cc *ConfigurationCreate) Save(ctx context.Context) (*Configuration, error) {
-	cc.defaults()
-	return withHooks(ctx, cc.sqlSave, cc.mutation, cc.hooks)
+func (_c *ConfigurationCreate) Save(ctx context.Context) (*Configuration, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (cc *ConfigurationCreate) SaveX(ctx context.Context) *Configuration {
-	v, err := cc.Save(ctx)
+func (_c *ConfigurationCreate) SaveX(ctx context.Context) *Configuration {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -111,86 +111,86 @@ func (cc *ConfigurationCreate) SaveX(ctx context.Context) *Configuration {
 }
 
 // Exec executes the query.
-func (cc *ConfigurationCreate) Exec(ctx context.Context) error {
-	_, err := cc.Save(ctx)
+func (_c *ConfigurationCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cc *ConfigurationCreate) ExecX(ctx context.Context) {
-	if err := cc.Exec(ctx); err != nil {
+func (_c *ConfigurationCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (cc *ConfigurationCreate) defaults() {
-	if _, ok := cc.mutation.IsDisabled(); !ok {
+func (_c *ConfigurationCreate) defaults() {
+	if _, ok := _c.mutation.IsDisabled(); !ok {
 		v := configuration.DefaultIsDisabled
-		cc.mutation.SetIsDisabled(v)
+		_c.mutation.SetIsDisabled(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cc *ConfigurationCreate) check() error {
-	if _, ok := cc.mutation.BranchID(); !ok {
+func (_c *ConfigurationCreate) check() error {
+	if _, ok := _c.mutation.BranchID(); !ok {
 		return &ValidationError{Name: "branchID", err: errors.New(`model: missing required field "Configuration.branchID"`)}
 	}
-	if v, ok := cc.mutation.BranchID(); ok {
+	if v, ok := _c.mutation.BranchID(); ok {
 		if err := configuration.BranchIDValidator(int(v)); err != nil {
 			return &ValidationError{Name: "branchID", err: fmt.Errorf(`model: validator failed for field "Configuration.branchID": %w`, err)}
 		}
 	}
-	if _, ok := cc.mutation.ComponentID(); !ok {
+	if _, ok := _c.mutation.ComponentID(); !ok {
 		return &ValidationError{Name: "componentID", err: errors.New(`model: missing required field "Configuration.componentID"`)}
 	}
-	if v, ok := cc.mutation.ComponentID(); ok {
+	if v, ok := _c.mutation.ComponentID(); ok {
 		if err := configuration.ComponentIDValidator(string(v)); err != nil {
 			return &ValidationError{Name: "componentID", err: fmt.Errorf(`model: validator failed for field "Configuration.componentID": %w`, err)}
 		}
 	}
-	if _, ok := cc.mutation.ConfigID(); !ok {
+	if _, ok := _c.mutation.ConfigID(); !ok {
 		return &ValidationError{Name: "configID", err: errors.New(`model: missing required field "Configuration.configID"`)}
 	}
-	if v, ok := cc.mutation.ConfigID(); ok {
+	if v, ok := _c.mutation.ConfigID(); ok {
 		if err := configuration.ConfigIDValidator(string(v)); err != nil {
 			return &ValidationError{Name: "configID", err: fmt.Errorf(`model: validator failed for field "Configuration.configID": %w`, err)}
 		}
 	}
-	if _, ok := cc.mutation.Name(); !ok {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`model: missing required field "Configuration.name"`)}
 	}
-	if v, ok := cc.mutation.Name(); ok {
+	if v, ok := _c.mutation.Name(); ok {
 		if err := configuration.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "Configuration.name": %w`, err)}
 		}
 	}
-	if _, ok := cc.mutation.Description(); !ok {
+	if _, ok := _c.mutation.Description(); !ok {
 		return &ValidationError{Name: "description", err: errors.New(`model: missing required field "Configuration.description"`)}
 	}
-	if _, ok := cc.mutation.IsDisabled(); !ok {
+	if _, ok := _c.mutation.IsDisabled(); !ok {
 		return &ValidationError{Name: "isDisabled", err: errors.New(`model: missing required field "Configuration.isDisabled"`)}
 	}
-	if _, ok := cc.mutation.Content(); !ok {
+	if _, ok := _c.mutation.Content(); !ok {
 		return &ValidationError{Name: "content", err: errors.New(`model: missing required field "Configuration.content"`)}
 	}
-	if v, ok := cc.mutation.ID(); ok {
+	if v, ok := _c.mutation.ID(); ok {
 		if err := configuration.IDValidator(v.String()); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`model: validator failed for field "Configuration.id": %w`, err)}
 		}
 	}
-	if len(cc.mutation.ParentIDs()) == 0 {
+	if len(_c.mutation.ParentIDs()) == 0 {
 		return &ValidationError{Name: "parent", err: errors.New(`model: missing required edge "Configuration.parent"`)}
 	}
 	return nil
 }
 
-func (cc *ConfigurationCreate) sqlSave(ctx context.Context) (*Configuration, error) {
-	if err := cc.check(); err != nil {
+func (_c *ConfigurationCreate) sqlSave(ctx context.Context) (*Configuration, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := cc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, cc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -203,49 +203,49 @@ func (cc *ConfigurationCreate) sqlSave(ctx context.Context) (*Configuration, err
 			return nil, err
 		}
 	}
-	cc.mutation.id = &_node.ID
-	cc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (cc *ConfigurationCreate) createSpec() (*Configuration, *sqlgraph.CreateSpec) {
+func (_c *ConfigurationCreate) createSpec() (*Configuration, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Configuration{config: cc.config}
+		_node = &Configuration{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(configuration.Table, sqlgraph.NewFieldSpec(configuration.FieldID, field.TypeString))
 	)
-	if id, ok := cc.mutation.ID(); ok {
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := cc.mutation.BranchID(); ok {
+	if value, ok := _c.mutation.BranchID(); ok {
 		_spec.SetField(configuration.FieldBranchID, field.TypeInt, value)
 		_node.BranchID = value
 	}
-	if value, ok := cc.mutation.ComponentID(); ok {
+	if value, ok := _c.mutation.ComponentID(); ok {
 		_spec.SetField(configuration.FieldComponentID, field.TypeString, value)
 		_node.ComponentID = value
 	}
-	if value, ok := cc.mutation.ConfigID(); ok {
+	if value, ok := _c.mutation.ConfigID(); ok {
 		_spec.SetField(configuration.FieldConfigID, field.TypeString, value)
 		_node.ConfigID = value
 	}
-	if value, ok := cc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(configuration.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := cc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(configuration.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := cc.mutation.IsDisabled(); ok {
+	if value, ok := _c.mutation.IsDisabled(); ok {
 		_spec.SetField(configuration.FieldIsDisabled, field.TypeBool, value)
 		_node.IsDisabled = value
 	}
-	if value, ok := cc.mutation.Content(); ok {
+	if value, ok := _c.mutation.Content(); ok {
 		_spec.SetField(configuration.FieldContent, field.TypeJSON, value)
 		_node.Content = value
 	}
-	if nodes := cc.mutation.ParentIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -273,16 +273,16 @@ type ConfigurationCreateBulk struct {
 }
 
 // Save creates the Configuration entities in the database.
-func (ccb *ConfigurationCreateBulk) Save(ctx context.Context) ([]*Configuration, error) {
-	if ccb.err != nil {
-		return nil, ccb.err
+func (_c *ConfigurationCreateBulk) Save(ctx context.Context) ([]*Configuration, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(ccb.builders))
-	nodes := make([]*Configuration, len(ccb.builders))
-	mutators := make([]Mutator, len(ccb.builders))
-	for i := range ccb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Configuration, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := ccb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ConfigurationMutation)
@@ -296,11 +296,11 @@ func (ccb *ConfigurationCreateBulk) Save(ctx context.Context) ([]*Configuration,
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, ccb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, ccb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -320,7 +320,7 @@ func (ccb *ConfigurationCreateBulk) Save(ctx context.Context) ([]*Configuration,
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, ccb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -328,8 +328,8 @@ func (ccb *ConfigurationCreateBulk) Save(ctx context.Context) ([]*Configuration,
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (ccb *ConfigurationCreateBulk) SaveX(ctx context.Context) []*Configuration {
-	v, err := ccb.Save(ctx)
+func (_c *ConfigurationCreateBulk) SaveX(ctx context.Context) []*Configuration {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -337,14 +337,14 @@ func (ccb *ConfigurationCreateBulk) SaveX(ctx context.Context) []*Configuration 
 }
 
 // Exec executes the query.
-func (ccb *ConfigurationCreateBulk) Exec(ctx context.Context) error {
-	_, err := ccb.Save(ctx)
+func (_c *ConfigurationCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ccb *ConfigurationCreateBulk) ExecX(ctx context.Context) {
-	if err := ccb.Exec(ctx); err != nil {
+func (_c *ConfigurationCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

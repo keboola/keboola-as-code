@@ -23,63 +23,63 @@ type BranchCreate struct {
 }
 
 // SetBranchID sets the "branchID" field.
-func (bc *BranchCreate) SetBranchID(ki keboola.BranchID) *BranchCreate {
-	bc.mutation.SetBranchID(ki)
-	return bc
+func (_c *BranchCreate) SetBranchID(v keboola.BranchID) *BranchCreate {
+	_c.mutation.SetBranchID(v)
+	return _c
 }
 
 // SetName sets the "name" field.
-func (bc *BranchCreate) SetName(s string) *BranchCreate {
-	bc.mutation.SetName(s)
-	return bc
+func (_c *BranchCreate) SetName(v string) *BranchCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (bc *BranchCreate) SetDescription(s string) *BranchCreate {
-	bc.mutation.SetDescription(s)
-	return bc
+func (_c *BranchCreate) SetDescription(v string) *BranchCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetIsDefault sets the "isDefault" field.
-func (bc *BranchCreate) SetIsDefault(b bool) *BranchCreate {
-	bc.mutation.SetIsDefault(b)
-	return bc
+func (_c *BranchCreate) SetIsDefault(v bool) *BranchCreate {
+	_c.mutation.SetIsDefault(v)
+	return _c
 }
 
 // SetID sets the "id" field.
-func (bc *BranchCreate) SetID(kk key.BranchKey) *BranchCreate {
-	bc.mutation.SetID(kk)
-	return bc
+func (_c *BranchCreate) SetID(v key.BranchKey) *BranchCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // AddConfigurationIDs adds the "configurations" edge to the Configuration entity by IDs.
-func (bc *BranchCreate) AddConfigurationIDs(ids ...key.ConfigurationKey) *BranchCreate {
-	bc.mutation.AddConfigurationIDs(ids...)
-	return bc
+func (_c *BranchCreate) AddConfigurationIDs(ids ...key.ConfigurationKey) *BranchCreate {
+	_c.mutation.AddConfigurationIDs(ids...)
+	return _c
 }
 
 // AddConfigurations adds the "configurations" edges to the Configuration entity.
-func (bc *BranchCreate) AddConfigurations(c ...*Configuration) *BranchCreate {
-	ids := make([]key.ConfigurationKey, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+func (_c *BranchCreate) AddConfigurations(v ...*Configuration) *BranchCreate {
+	ids := make([]key.ConfigurationKey, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return bc.AddConfigurationIDs(ids...)
+	return _c.AddConfigurationIDs(ids...)
 }
 
 // Mutation returns the BranchMutation object of the builder.
-func (bc *BranchCreate) Mutation() *BranchMutation {
-	return bc.mutation
+func (_c *BranchCreate) Mutation() *BranchMutation {
+	return _c.mutation
 }
 
 // Save creates the Branch in the database.
-func (bc *BranchCreate) Save(ctx context.Context) (*Branch, error) {
-	return withHooks(ctx, bc.sqlSave, bc.mutation, bc.hooks)
+func (_c *BranchCreate) Save(ctx context.Context) (*Branch, error) {
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (bc *BranchCreate) SaveX(ctx context.Context) *Branch {
-	v, err := bc.Save(ctx)
+func (_c *BranchCreate) SaveX(ctx context.Context) *Branch {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -87,43 +87,43 @@ func (bc *BranchCreate) SaveX(ctx context.Context) *Branch {
 }
 
 // Exec executes the query.
-func (bc *BranchCreate) Exec(ctx context.Context) error {
-	_, err := bc.Save(ctx)
+func (_c *BranchCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bc *BranchCreate) ExecX(ctx context.Context) {
-	if err := bc.Exec(ctx); err != nil {
+func (_c *BranchCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (bc *BranchCreate) check() error {
-	if _, ok := bc.mutation.BranchID(); !ok {
+func (_c *BranchCreate) check() error {
+	if _, ok := _c.mutation.BranchID(); !ok {
 		return &ValidationError{Name: "branchID", err: errors.New(`model: missing required field "Branch.branchID"`)}
 	}
-	if v, ok := bc.mutation.BranchID(); ok {
+	if v, ok := _c.mutation.BranchID(); ok {
 		if err := branch.BranchIDValidator(int(v)); err != nil {
 			return &ValidationError{Name: "branchID", err: fmt.Errorf(`model: validator failed for field "Branch.branchID": %w`, err)}
 		}
 	}
-	if _, ok := bc.mutation.Name(); !ok {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`model: missing required field "Branch.name"`)}
 	}
-	if v, ok := bc.mutation.Name(); ok {
+	if v, ok := _c.mutation.Name(); ok {
 		if err := branch.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "Branch.name": %w`, err)}
 		}
 	}
-	if _, ok := bc.mutation.Description(); !ok {
+	if _, ok := _c.mutation.Description(); !ok {
 		return &ValidationError{Name: "description", err: errors.New(`model: missing required field "Branch.description"`)}
 	}
-	if _, ok := bc.mutation.IsDefault(); !ok {
+	if _, ok := _c.mutation.IsDefault(); !ok {
 		return &ValidationError{Name: "isDefault", err: errors.New(`model: missing required field "Branch.isDefault"`)}
 	}
-	if v, ok := bc.mutation.ID(); ok {
+	if v, ok := _c.mutation.ID(); ok {
 		if err := branch.IDValidator(v.String()); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`model: validator failed for field "Branch.id": %w`, err)}
 		}
@@ -131,12 +131,12 @@ func (bc *BranchCreate) check() error {
 	return nil
 }
 
-func (bc *BranchCreate) sqlSave(ctx context.Context) (*Branch, error) {
-	if err := bc.check(); err != nil {
+func (_c *BranchCreate) sqlSave(ctx context.Context) (*Branch, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := bc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, bc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -149,37 +149,37 @@ func (bc *BranchCreate) sqlSave(ctx context.Context) (*Branch, error) {
 			return nil, err
 		}
 	}
-	bc.mutation.id = &_node.ID
-	bc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
+func (_c *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Branch{config: bc.config}
+		_node = &Branch{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(branch.Table, sqlgraph.NewFieldSpec(branch.FieldID, field.TypeString))
 	)
-	if id, ok := bc.mutation.ID(); ok {
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := bc.mutation.BranchID(); ok {
+	if value, ok := _c.mutation.BranchID(); ok {
 		_spec.SetField(branch.FieldBranchID, field.TypeInt, value)
 		_node.BranchID = value
 	}
-	if value, ok := bc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(branch.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := bc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(branch.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := bc.mutation.IsDefault(); ok {
+	if value, ok := _c.mutation.IsDefault(); ok {
 		_spec.SetField(branch.FieldIsDefault, field.TypeBool, value)
 		_node.IsDefault = value
 	}
-	if nodes := bc.mutation.ConfigurationsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ConfigurationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -206,16 +206,16 @@ type BranchCreateBulk struct {
 }
 
 // Save creates the Branch entities in the database.
-func (bcb *BranchCreateBulk) Save(ctx context.Context) ([]*Branch, error) {
-	if bcb.err != nil {
-		return nil, bcb.err
+func (_c *BranchCreateBulk) Save(ctx context.Context) ([]*Branch, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(bcb.builders))
-	nodes := make([]*Branch, len(bcb.builders))
-	mutators := make([]Mutator, len(bcb.builders))
-	for i := range bcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Branch, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := bcb.builders[i]
+			builder := _c.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*BranchMutation)
 				if !ok {
@@ -228,11 +228,11 @@ func (bcb *BranchCreateBulk) Save(ctx context.Context) ([]*Branch, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, bcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, bcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -252,7 +252,7 @@ func (bcb *BranchCreateBulk) Save(ctx context.Context) ([]*Branch, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, bcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -260,8 +260,8 @@ func (bcb *BranchCreateBulk) Save(ctx context.Context) ([]*Branch, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (bcb *BranchCreateBulk) SaveX(ctx context.Context) []*Branch {
-	v, err := bcb.Save(ctx)
+func (_c *BranchCreateBulk) SaveX(ctx context.Context) []*Branch {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -269,14 +269,14 @@ func (bcb *BranchCreateBulk) SaveX(ctx context.Context) []*Branch {
 }
 
 // Exec executes the query.
-func (bcb *BranchCreateBulk) Exec(ctx context.Context) error {
-	_, err := bcb.Save(ctx)
+func (_c *BranchCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bcb *BranchCreateBulk) ExecX(ctx context.Context) {
-	if err := bcb.Exec(ctx); err != nil {
+func (_c *BranchCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

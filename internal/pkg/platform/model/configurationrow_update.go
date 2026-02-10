@@ -23,72 +23,72 @@ type ConfigurationRowUpdate struct {
 }
 
 // Where appends a list predicates to the ConfigurationRowUpdate builder.
-func (cru *ConfigurationRowUpdate) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowUpdate {
-	cru.mutation.Where(ps...)
-	return cru
+func (_u *ConfigurationRowUpdate) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetName sets the "name" field.
-func (cru *ConfigurationRowUpdate) SetName(s string) *ConfigurationRowUpdate {
-	cru.mutation.SetName(s)
-	return cru
+func (_u *ConfigurationRowUpdate) SetName(v string) *ConfigurationRowUpdate {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (cru *ConfigurationRowUpdate) SetNillableName(s *string) *ConfigurationRowUpdate {
-	if s != nil {
-		cru.SetName(*s)
+func (_u *ConfigurationRowUpdate) SetNillableName(v *string) *ConfigurationRowUpdate {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return cru
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (cru *ConfigurationRowUpdate) SetDescription(s string) *ConfigurationRowUpdate {
-	cru.mutation.SetDescription(s)
-	return cru
+func (_u *ConfigurationRowUpdate) SetDescription(v string) *ConfigurationRowUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (cru *ConfigurationRowUpdate) SetNillableDescription(s *string) *ConfigurationRowUpdate {
-	if s != nil {
-		cru.SetDescription(*s)
+func (_u *ConfigurationRowUpdate) SetNillableDescription(v *string) *ConfigurationRowUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return cru
+	return _u
 }
 
 // SetIsDisabled sets the "isDisabled" field.
-func (cru *ConfigurationRowUpdate) SetIsDisabled(b bool) *ConfigurationRowUpdate {
-	cru.mutation.SetIsDisabled(b)
-	return cru
+func (_u *ConfigurationRowUpdate) SetIsDisabled(v bool) *ConfigurationRowUpdate {
+	_u.mutation.SetIsDisabled(v)
+	return _u
 }
 
 // SetNillableIsDisabled sets the "isDisabled" field if the given value is not nil.
-func (cru *ConfigurationRowUpdate) SetNillableIsDisabled(b *bool) *ConfigurationRowUpdate {
-	if b != nil {
-		cru.SetIsDisabled(*b)
+func (_u *ConfigurationRowUpdate) SetNillableIsDisabled(v *bool) *ConfigurationRowUpdate {
+	if v != nil {
+		_u.SetIsDisabled(*v)
 	}
-	return cru
+	return _u
 }
 
 // SetContent sets the "content" field.
-func (cru *ConfigurationRowUpdate) SetContent(om *orderedmap.OrderedMap) *ConfigurationRowUpdate {
-	cru.mutation.SetContent(om)
-	return cru
+func (_u *ConfigurationRowUpdate) SetContent(v *orderedmap.OrderedMap) *ConfigurationRowUpdate {
+	_u.mutation.SetContent(v)
+	return _u
 }
 
 // Mutation returns the ConfigurationRowMutation object of the builder.
-func (cru *ConfigurationRowUpdate) Mutation() *ConfigurationRowMutation {
-	return cru.mutation
+func (_u *ConfigurationRowUpdate) Mutation() *ConfigurationRowMutation {
+	return _u.mutation
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (cru *ConfigurationRowUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, cru.sqlSave, cru.mutation, cru.hooks)
+func (_u *ConfigurationRowUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cru *ConfigurationRowUpdate) SaveX(ctx context.Context) int {
-	affected, err := cru.Save(ctx)
+func (_u *ConfigurationRowUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -96,56 +96,56 @@ func (cru *ConfigurationRowUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (cru *ConfigurationRowUpdate) Exec(ctx context.Context) error {
-	_, err := cru.Save(ctx)
+func (_u *ConfigurationRowUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cru *ConfigurationRowUpdate) ExecX(ctx context.Context) {
-	if err := cru.Exec(ctx); err != nil {
+func (_u *ConfigurationRowUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cru *ConfigurationRowUpdate) check() error {
-	if v, ok := cru.mutation.Name(); ok {
+func (_u *ConfigurationRowUpdate) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := configurationrow.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.name": %w`, err)}
 		}
 	}
-	if cru.mutation.ParentCleared() && len(cru.mutation.ParentIDs()) > 0 {
+	if _u.mutation.ParentCleared() && len(_u.mutation.ParentIDs()) > 0 {
 		return errors.New(`model: clearing a required unique edge "ConfigurationRow.parent"`)
 	}
 	return nil
 }
 
-func (cru *ConfigurationRowUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := cru.check(); err != nil {
-		return n, err
+func (_u *ConfigurationRowUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(configurationrow.Table, configurationrow.Columns, sqlgraph.NewFieldSpec(configurationrow.FieldID, field.TypeString))
-	if ps := cru.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := cru.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(configurationrow.FieldName, field.TypeString, value)
 	}
-	if value, ok := cru.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(configurationrow.FieldDescription, field.TypeString, value)
 	}
-	if value, ok := cru.mutation.IsDisabled(); ok {
+	if value, ok := _u.mutation.IsDisabled(); ok {
 		_spec.SetField(configurationrow.FieldIsDisabled, field.TypeBool, value)
 	}
-	if value, ok := cru.mutation.Content(); ok {
+	if value, ok := _u.mutation.Content(); ok {
 		_spec.SetField(configurationrow.FieldContent, field.TypeJSON, value)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, cru.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{configurationrow.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -153,8 +153,8 @@ func (cru *ConfigurationRowUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		return 0, err
 	}
-	cru.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // ConfigurationRowUpdateOne is the builder for updating a single ConfigurationRow entity.
@@ -166,79 +166,79 @@ type ConfigurationRowUpdateOne struct {
 }
 
 // SetName sets the "name" field.
-func (cruo *ConfigurationRowUpdateOne) SetName(s string) *ConfigurationRowUpdateOne {
-	cruo.mutation.SetName(s)
-	return cruo
+func (_u *ConfigurationRowUpdateOne) SetName(v string) *ConfigurationRowUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (cruo *ConfigurationRowUpdateOne) SetNillableName(s *string) *ConfigurationRowUpdateOne {
-	if s != nil {
-		cruo.SetName(*s)
+func (_u *ConfigurationRowUpdateOne) SetNillableName(v *string) *ConfigurationRowUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return cruo
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (cruo *ConfigurationRowUpdateOne) SetDescription(s string) *ConfigurationRowUpdateOne {
-	cruo.mutation.SetDescription(s)
-	return cruo
+func (_u *ConfigurationRowUpdateOne) SetDescription(v string) *ConfigurationRowUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (cruo *ConfigurationRowUpdateOne) SetNillableDescription(s *string) *ConfigurationRowUpdateOne {
-	if s != nil {
-		cruo.SetDescription(*s)
+func (_u *ConfigurationRowUpdateOne) SetNillableDescription(v *string) *ConfigurationRowUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return cruo
+	return _u
 }
 
 // SetIsDisabled sets the "isDisabled" field.
-func (cruo *ConfigurationRowUpdateOne) SetIsDisabled(b bool) *ConfigurationRowUpdateOne {
-	cruo.mutation.SetIsDisabled(b)
-	return cruo
+func (_u *ConfigurationRowUpdateOne) SetIsDisabled(v bool) *ConfigurationRowUpdateOne {
+	_u.mutation.SetIsDisabled(v)
+	return _u
 }
 
 // SetNillableIsDisabled sets the "isDisabled" field if the given value is not nil.
-func (cruo *ConfigurationRowUpdateOne) SetNillableIsDisabled(b *bool) *ConfigurationRowUpdateOne {
-	if b != nil {
-		cruo.SetIsDisabled(*b)
+func (_u *ConfigurationRowUpdateOne) SetNillableIsDisabled(v *bool) *ConfigurationRowUpdateOne {
+	if v != nil {
+		_u.SetIsDisabled(*v)
 	}
-	return cruo
+	return _u
 }
 
 // SetContent sets the "content" field.
-func (cruo *ConfigurationRowUpdateOne) SetContent(om *orderedmap.OrderedMap) *ConfigurationRowUpdateOne {
-	cruo.mutation.SetContent(om)
-	return cruo
+func (_u *ConfigurationRowUpdateOne) SetContent(v *orderedmap.OrderedMap) *ConfigurationRowUpdateOne {
+	_u.mutation.SetContent(v)
+	return _u
 }
 
 // Mutation returns the ConfigurationRowMutation object of the builder.
-func (cruo *ConfigurationRowUpdateOne) Mutation() *ConfigurationRowMutation {
-	return cruo.mutation
+func (_u *ConfigurationRowUpdateOne) Mutation() *ConfigurationRowMutation {
+	return _u.mutation
 }
 
 // Where appends a list predicates to the ConfigurationRowUpdate builder.
-func (cruo *ConfigurationRowUpdateOne) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowUpdateOne {
-	cruo.mutation.Where(ps...)
-	return cruo
+func (_u *ConfigurationRowUpdateOne) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (cruo *ConfigurationRowUpdateOne) Select(field string, fields ...string) *ConfigurationRowUpdateOne {
-	cruo.fields = append([]string{field}, fields...)
-	return cruo
+func (_u *ConfigurationRowUpdateOne) Select(field string, fields ...string) *ConfigurationRowUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated ConfigurationRow entity.
-func (cruo *ConfigurationRowUpdateOne) Save(ctx context.Context) (*ConfigurationRow, error) {
-	return withHooks(ctx, cruo.sqlSave, cruo.mutation, cruo.hooks)
+func (_u *ConfigurationRowUpdateOne) Save(ctx context.Context) (*ConfigurationRow, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cruo *ConfigurationRowUpdateOne) SaveX(ctx context.Context) *ConfigurationRow {
-	node, err := cruo.Save(ctx)
+func (_u *ConfigurationRowUpdateOne) SaveX(ctx context.Context) *ConfigurationRow {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -246,42 +246,42 @@ func (cruo *ConfigurationRowUpdateOne) SaveX(ctx context.Context) *Configuration
 }
 
 // Exec executes the query on the entity.
-func (cruo *ConfigurationRowUpdateOne) Exec(ctx context.Context) error {
-	_, err := cruo.Save(ctx)
+func (_u *ConfigurationRowUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cruo *ConfigurationRowUpdateOne) ExecX(ctx context.Context) {
-	if err := cruo.Exec(ctx); err != nil {
+func (_u *ConfigurationRowUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cruo *ConfigurationRowUpdateOne) check() error {
-	if v, ok := cruo.mutation.Name(); ok {
+func (_u *ConfigurationRowUpdateOne) check() error {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := configurationrow.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`model: validator failed for field "ConfigurationRow.name": %w`, err)}
 		}
 	}
-	if cruo.mutation.ParentCleared() && len(cruo.mutation.ParentIDs()) > 0 {
+	if _u.mutation.ParentCleared() && len(_u.mutation.ParentIDs()) > 0 {
 		return errors.New(`model: clearing a required unique edge "ConfigurationRow.parent"`)
 	}
 	return nil
 }
 
-func (cruo *ConfigurationRowUpdateOne) sqlSave(ctx context.Context) (_node *ConfigurationRow, err error) {
-	if err := cruo.check(); err != nil {
+func (_u *ConfigurationRowUpdateOne) sqlSave(ctx context.Context) (_node *ConfigurationRow, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(configurationrow.Table, configurationrow.Columns, sqlgraph.NewFieldSpec(configurationrow.FieldID, field.TypeString))
-	id, ok := cruo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`model: missing "ConfigurationRow.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := cruo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, configurationrow.FieldID)
 		for _, f := range fields {
@@ -293,29 +293,29 @@ func (cruo *ConfigurationRowUpdateOne) sqlSave(ctx context.Context) (_node *Conf
 			}
 		}
 	}
-	if ps := cruo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := cruo.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(configurationrow.FieldName, field.TypeString, value)
 	}
-	if value, ok := cruo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(configurationrow.FieldDescription, field.TypeString, value)
 	}
-	if value, ok := cruo.mutation.IsDisabled(); ok {
+	if value, ok := _u.mutation.IsDisabled(); ok {
 		_spec.SetField(configurationrow.FieldIsDisabled, field.TypeBool, value)
 	}
-	if value, ok := cruo.mutation.Content(); ok {
+	if value, ok := _u.mutation.Content(); ok {
 		_spec.SetField(configurationrow.FieldContent, field.TypeJSON, value)
 	}
-	_node = &ConfigurationRow{config: cruo.config}
+	_node = &ConfigurationRow{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, cruo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{configurationrow.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -323,6 +323,6 @@ func (cruo *ConfigurationRowUpdateOne) sqlSave(ctx context.Context) (_node *Conf
 		}
 		return nil, err
 	}
-	cruo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

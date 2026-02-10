@@ -20,56 +20,56 @@ type ConfigurationRowDelete struct {
 }
 
 // Where appends a list predicates to the ConfigurationRowDelete builder.
-func (crd *ConfigurationRowDelete) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowDelete {
-	crd.mutation.Where(ps...)
-	return crd
+func (_d *ConfigurationRowDelete) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (crd *ConfigurationRowDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, crd.sqlExec, crd.mutation, crd.hooks)
+func (_d *ConfigurationRowDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (crd *ConfigurationRowDelete) ExecX(ctx context.Context) int {
-	n, err := crd.Exec(ctx)
+func (_d *ConfigurationRowDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (crd *ConfigurationRowDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *ConfigurationRowDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(configurationrow.Table, sqlgraph.NewFieldSpec(configurationrow.FieldID, field.TypeString))
-	if ps := crd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, crd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	crd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // ConfigurationRowDeleteOne is the builder for deleting a single ConfigurationRow entity.
 type ConfigurationRowDeleteOne struct {
-	crd *ConfigurationRowDelete
+	_d *ConfigurationRowDelete
 }
 
 // Where appends a list predicates to the ConfigurationRowDelete builder.
-func (crdo *ConfigurationRowDeleteOne) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowDeleteOne {
-	crdo.crd.mutation.Where(ps...)
-	return crdo
+func (_d *ConfigurationRowDeleteOne) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (crdo *ConfigurationRowDeleteOne) Exec(ctx context.Context) error {
-	n, err := crdo.crd.Exec(ctx)
+func (_d *ConfigurationRowDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (crdo *ConfigurationRowDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (crdo *ConfigurationRowDeleteOne) ExecX(ctx context.Context) {
-	if err := crdo.Exec(ctx); err != nil {
+func (_d *ConfigurationRowDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

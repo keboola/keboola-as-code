@@ -90,7 +90,7 @@ func (*ConfigurationRow) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the ConfigurationRow fields.
-func (cr *ConfigurationRow) assignValues(columns []string, values []any) error {
+func (_m *ConfigurationRow) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -100,55 +100,55 @@ func (cr *ConfigurationRow) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*key.ConfigurationRowKey); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				cr.ID = *value
+				_m.ID = *value
 			}
 		case configurationrow.FieldBranchID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field branchID", values[i])
 			} else if value.Valid {
-				cr.BranchID = keboola.BranchID(value.Int64)
+				_m.BranchID = keboola.BranchID(value.Int64)
 			}
 		case configurationrow.FieldComponentID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field componentID", values[i])
 			} else if value.Valid {
-				cr.ComponentID = keboola.ComponentID(value.String)
+				_m.ComponentID = keboola.ComponentID(value.String)
 			}
 		case configurationrow.FieldConfigID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field configID", values[i])
 			} else if value.Valid {
-				cr.ConfigID = keboola.ConfigID(value.String)
+				_m.ConfigID = keboola.ConfigID(value.String)
 			}
 		case configurationrow.FieldRowID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field rowID", values[i])
 			} else if value.Valid {
-				cr.RowID = keboola.RowID(value.String)
+				_m.RowID = keboola.RowID(value.String)
 			}
 		case configurationrow.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				cr.Name = value.String
+				_m.Name = value.String
 			}
 		case configurationrow.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				cr.Description = value.String
+				_m.Description = value.String
 			}
 		case configurationrow.FieldIsDisabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field isDisabled", values[i])
 			} else if value.Valid {
-				cr.IsDisabled = value.Bool
+				_m.IsDisabled = value.Bool
 			}
 		case configurationrow.FieldContent:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field content", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &cr.Content); err != nil {
+				if err := json.Unmarshal(*value, &_m.Content); err != nil {
 					return fmt.Errorf("unmarshal field content: %w", err)
 				}
 			}
@@ -156,11 +156,11 @@ func (cr *ConfigurationRow) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field configuration_row_parent", values[i])
 			} else if value.Valid {
-				cr.configuration_row_parent = new(key.ConfigurationKey)
-				*cr.configuration_row_parent = *value.S.(*key.ConfigurationKey)
+				_m.configuration_row_parent = new(key.ConfigurationKey)
+				*_m.configuration_row_parent = *value.S.(*key.ConfigurationKey)
 			}
 		default:
-			cr.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -168,61 +168,61 @@ func (cr *ConfigurationRow) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the ConfigurationRow.
 // This includes values selected through modifiers, order, etc.
-func (cr *ConfigurationRow) Value(name string) (ent.Value, error) {
-	return cr.selectValues.Get(name)
+func (_m *ConfigurationRow) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryParent queries the "parent" edge of the ConfigurationRow entity.
-func (cr *ConfigurationRow) QueryParent() *ConfigurationQuery {
-	return NewConfigurationRowClient(cr.config).QueryParent(cr)
+func (_m *ConfigurationRow) QueryParent() *ConfigurationQuery {
+	return NewConfigurationRowClient(_m.config).QueryParent(_m)
 }
 
 // Update returns a builder for updating this ConfigurationRow.
 // Note that you need to call ConfigurationRow.Unwrap() before calling this method if this ConfigurationRow
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (cr *ConfigurationRow) Update() *ConfigurationRowUpdateOne {
-	return NewConfigurationRowClient(cr.config).UpdateOne(cr)
+func (_m *ConfigurationRow) Update() *ConfigurationRowUpdateOne {
+	return NewConfigurationRowClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the ConfigurationRow entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (cr *ConfigurationRow) Unwrap() *ConfigurationRow {
-	_tx, ok := cr.config.driver.(*txDriver)
+func (_m *ConfigurationRow) Unwrap() *ConfigurationRow {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("model: ConfigurationRow is not a transactional entity")
 	}
-	cr.config.driver = _tx.drv
-	return cr
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (cr *ConfigurationRow) String() string {
+func (_m *ConfigurationRow) String() string {
 	var builder strings.Builder
 	builder.WriteString("ConfigurationRow(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", cr.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("branchID=")
-	builder.WriteString(fmt.Sprintf("%v", cr.BranchID))
+	builder.WriteString(fmt.Sprintf("%v", _m.BranchID))
 	builder.WriteString(", ")
 	builder.WriteString("componentID=")
-	builder.WriteString(fmt.Sprintf("%v", cr.ComponentID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ComponentID))
 	builder.WriteString(", ")
 	builder.WriteString("configID=")
-	builder.WriteString(fmt.Sprintf("%v", cr.ConfigID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ConfigID))
 	builder.WriteString(", ")
 	builder.WriteString("rowID=")
-	builder.WriteString(fmt.Sprintf("%v", cr.RowID))
+	builder.WriteString(fmt.Sprintf("%v", _m.RowID))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(cr.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(cr.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("isDisabled=")
-	builder.WriteString(fmt.Sprintf("%v", cr.IsDisabled))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsDisabled))
 	builder.WriteString(", ")
 	builder.WriteString("content=")
-	builder.WriteString(fmt.Sprintf("%v", cr.Content))
+	builder.WriteString(fmt.Sprintf("%v", _m.Content))
 	builder.WriteByte(')')
 	return builder.String()
 }

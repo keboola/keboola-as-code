@@ -32,44 +32,44 @@ type ConfigurationRowQuery struct {
 }
 
 // Where adds a new predicate for the ConfigurationRowQuery builder.
-func (crq *ConfigurationRowQuery) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowQuery {
-	crq.predicates = append(crq.predicates, ps...)
-	return crq
+func (_q *ConfigurationRowQuery) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (crq *ConfigurationRowQuery) Limit(limit int) *ConfigurationRowQuery {
-	crq.ctx.Limit = &limit
-	return crq
+func (_q *ConfigurationRowQuery) Limit(limit int) *ConfigurationRowQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (crq *ConfigurationRowQuery) Offset(offset int) *ConfigurationRowQuery {
-	crq.ctx.Offset = &offset
-	return crq
+func (_q *ConfigurationRowQuery) Offset(offset int) *ConfigurationRowQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (crq *ConfigurationRowQuery) Unique(unique bool) *ConfigurationRowQuery {
-	crq.ctx.Unique = &unique
-	return crq
+func (_q *ConfigurationRowQuery) Unique(unique bool) *ConfigurationRowQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (crq *ConfigurationRowQuery) Order(o ...configurationrow.OrderOption) *ConfigurationRowQuery {
-	crq.order = append(crq.order, o...)
-	return crq
+func (_q *ConfigurationRowQuery) Order(o ...configurationrow.OrderOption) *ConfigurationRowQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryParent chains the current query on the "parent" edge.
-func (crq *ConfigurationRowQuery) QueryParent() *ConfigurationQuery {
-	query := (&ConfigurationClient{config: crq.config}).Query()
+func (_q *ConfigurationRowQuery) QueryParent() *ConfigurationQuery {
+	query := (&ConfigurationClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := crq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := crq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -78,7 +78,7 @@ func (crq *ConfigurationRowQuery) QueryParent() *ConfigurationQuery {
 			sqlgraph.To(configuration.Table, configuration.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, configurationrow.ParentTable, configurationrow.ParentColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(crq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -86,8 +86,8 @@ func (crq *ConfigurationRowQuery) QueryParent() *ConfigurationQuery {
 
 // First returns the first ConfigurationRow entity from the query.
 // Returns a *NotFoundError when no ConfigurationRow was found.
-func (crq *ConfigurationRowQuery) First(ctx context.Context) (*ConfigurationRow, error) {
-	nodes, err := crq.Limit(1).All(setContextOp(ctx, crq.ctx, ent.OpQueryFirst))
+func (_q *ConfigurationRowQuery) First(ctx context.Context) (*ConfigurationRow, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +98,8 @@ func (crq *ConfigurationRowQuery) First(ctx context.Context) (*ConfigurationRow,
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (crq *ConfigurationRowQuery) FirstX(ctx context.Context) *ConfigurationRow {
-	node, err := crq.First(ctx)
+func (_q *ConfigurationRowQuery) FirstX(ctx context.Context) *ConfigurationRow {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -108,9 +108,9 @@ func (crq *ConfigurationRowQuery) FirstX(ctx context.Context) *ConfigurationRow 
 
 // FirstID returns the first ConfigurationRow ID from the query.
 // Returns a *NotFoundError when no ConfigurationRow ID was found.
-func (crq *ConfigurationRowQuery) FirstID(ctx context.Context) (id key.ConfigurationRowKey, err error) {
+func (_q *ConfigurationRowQuery) FirstID(ctx context.Context) (id key.ConfigurationRowKey, err error) {
 	var ids []key.ConfigurationRowKey
-	if ids, err = crq.Limit(1).IDs(setContextOp(ctx, crq.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -121,8 +121,8 @@ func (crq *ConfigurationRowQuery) FirstID(ctx context.Context) (id key.Configura
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (crq *ConfigurationRowQuery) FirstIDX(ctx context.Context) key.ConfigurationRowKey {
-	id, err := crq.FirstID(ctx)
+func (_q *ConfigurationRowQuery) FirstIDX(ctx context.Context) key.ConfigurationRowKey {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -132,8 +132,8 @@ func (crq *ConfigurationRowQuery) FirstIDX(ctx context.Context) key.Configuratio
 // Only returns a single ConfigurationRow entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one ConfigurationRow entity is found.
 // Returns a *NotFoundError when no ConfigurationRow entities are found.
-func (crq *ConfigurationRowQuery) Only(ctx context.Context) (*ConfigurationRow, error) {
-	nodes, err := crq.Limit(2).All(setContextOp(ctx, crq.ctx, ent.OpQueryOnly))
+func (_q *ConfigurationRowQuery) Only(ctx context.Context) (*ConfigurationRow, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +148,8 @@ func (crq *ConfigurationRowQuery) Only(ctx context.Context) (*ConfigurationRow, 
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (crq *ConfigurationRowQuery) OnlyX(ctx context.Context) *ConfigurationRow {
-	node, err := crq.Only(ctx)
+func (_q *ConfigurationRowQuery) OnlyX(ctx context.Context) *ConfigurationRow {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -159,9 +159,9 @@ func (crq *ConfigurationRowQuery) OnlyX(ctx context.Context) *ConfigurationRow {
 // OnlyID is like Only, but returns the only ConfigurationRow ID in the query.
 // Returns a *NotSingularError when more than one ConfigurationRow ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (crq *ConfigurationRowQuery) OnlyID(ctx context.Context) (id key.ConfigurationRowKey, err error) {
+func (_q *ConfigurationRowQuery) OnlyID(ctx context.Context) (id key.ConfigurationRowKey, err error) {
 	var ids []key.ConfigurationRowKey
-	if ids, err = crq.Limit(2).IDs(setContextOp(ctx, crq.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -176,8 +176,8 @@ func (crq *ConfigurationRowQuery) OnlyID(ctx context.Context) (id key.Configurat
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (crq *ConfigurationRowQuery) OnlyIDX(ctx context.Context) key.ConfigurationRowKey {
-	id, err := crq.OnlyID(ctx)
+func (_q *ConfigurationRowQuery) OnlyIDX(ctx context.Context) key.ConfigurationRowKey {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -185,18 +185,18 @@ func (crq *ConfigurationRowQuery) OnlyIDX(ctx context.Context) key.Configuration
 }
 
 // All executes the query and returns a list of ConfigurationRows.
-func (crq *ConfigurationRowQuery) All(ctx context.Context) ([]*ConfigurationRow, error) {
-	ctx = setContextOp(ctx, crq.ctx, ent.OpQueryAll)
-	if err := crq.prepareQuery(ctx); err != nil {
+func (_q *ConfigurationRowQuery) All(ctx context.Context) ([]*ConfigurationRow, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*ConfigurationRow, *ConfigurationRowQuery]()
-	return withInterceptors[[]*ConfigurationRow](ctx, crq, qr, crq.inters)
+	return withInterceptors[[]*ConfigurationRow](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (crq *ConfigurationRowQuery) AllX(ctx context.Context) []*ConfigurationRow {
-	nodes, err := crq.All(ctx)
+func (_q *ConfigurationRowQuery) AllX(ctx context.Context) []*ConfigurationRow {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -204,20 +204,20 @@ func (crq *ConfigurationRowQuery) AllX(ctx context.Context) []*ConfigurationRow 
 }
 
 // IDs executes the query and returns a list of ConfigurationRow IDs.
-func (crq *ConfigurationRowQuery) IDs(ctx context.Context) (ids []key.ConfigurationRowKey, err error) {
-	if crq.ctx.Unique == nil && crq.path != nil {
-		crq.Unique(true)
+func (_q *ConfigurationRowQuery) IDs(ctx context.Context) (ids []key.ConfigurationRowKey, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, crq.ctx, ent.OpQueryIDs)
-	if err = crq.Select(configurationrow.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(configurationrow.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (crq *ConfigurationRowQuery) IDsX(ctx context.Context) []key.ConfigurationRowKey {
-	ids, err := crq.IDs(ctx)
+func (_q *ConfigurationRowQuery) IDsX(ctx context.Context) []key.ConfigurationRowKey {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -225,17 +225,17 @@ func (crq *ConfigurationRowQuery) IDsX(ctx context.Context) []key.ConfigurationR
 }
 
 // Count returns the count of the given query.
-func (crq *ConfigurationRowQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, crq.ctx, ent.OpQueryCount)
-	if err := crq.prepareQuery(ctx); err != nil {
+func (_q *ConfigurationRowQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, crq, querierCount[*ConfigurationRowQuery](), crq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*ConfigurationRowQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (crq *ConfigurationRowQuery) CountX(ctx context.Context) int {
-	count, err := crq.Count(ctx)
+func (_q *ConfigurationRowQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -243,9 +243,9 @@ func (crq *ConfigurationRowQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (crq *ConfigurationRowQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, crq.ctx, ent.OpQueryExist)
-	switch _, err := crq.FirstID(ctx); {
+func (_q *ConfigurationRowQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -256,8 +256,8 @@ func (crq *ConfigurationRowQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (crq *ConfigurationRowQuery) ExistX(ctx context.Context) bool {
-	exist, err := crq.Exist(ctx)
+func (_q *ConfigurationRowQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -266,32 +266,32 @@ func (crq *ConfigurationRowQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the ConfigurationRowQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (crq *ConfigurationRowQuery) Clone() *ConfigurationRowQuery {
-	if crq == nil {
+func (_q *ConfigurationRowQuery) Clone() *ConfigurationRowQuery {
+	if _q == nil {
 		return nil
 	}
 	return &ConfigurationRowQuery{
-		config:     crq.config,
-		ctx:        crq.ctx.Clone(),
-		order:      append([]configurationrow.OrderOption{}, crq.order...),
-		inters:     append([]Interceptor{}, crq.inters...),
-		predicates: append([]predicate.ConfigurationRow{}, crq.predicates...),
-		withParent: crq.withParent.Clone(),
+		config:     _q.config,
+		ctx:        _q.ctx.Clone(),
+		order:      append([]configurationrow.OrderOption{}, _q.order...),
+		inters:     append([]Interceptor{}, _q.inters...),
+		predicates: append([]predicate.ConfigurationRow{}, _q.predicates...),
+		withParent: _q.withParent.Clone(),
 		// clone intermediate query.
-		sql:  crq.sql.Clone(),
-		path: crq.path,
+		sql:  _q.sql.Clone(),
+		path: _q.path,
 	}
 }
 
 // WithParent tells the query-builder to eager-load the nodes that are connected to
 // the "parent" edge. The optional arguments are used to configure the query builder of the edge.
-func (crq *ConfigurationRowQuery) WithParent(opts ...func(*ConfigurationQuery)) *ConfigurationRowQuery {
-	query := (&ConfigurationClient{config: crq.config}).Query()
+func (_q *ConfigurationRowQuery) WithParent(opts ...func(*ConfigurationQuery)) *ConfigurationRowQuery {
+	query := (&ConfigurationClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	crq.withParent = query
-	return crq
+	_q.withParent = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -308,10 +308,10 @@ func (crq *ConfigurationRowQuery) WithParent(opts ...func(*ConfigurationQuery)) 
 //		GroupBy(configurationrow.FieldBranchID).
 //		Aggregate(model.Count()).
 //		Scan(ctx, &v)
-func (crq *ConfigurationRowQuery) GroupBy(field string, fields ...string) *ConfigurationRowGroupBy {
-	crq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ConfigurationRowGroupBy{build: crq}
-	grbuild.flds = &crq.ctx.Fields
+func (_q *ConfigurationRowQuery) GroupBy(field string, fields ...string) *ConfigurationRowGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &ConfigurationRowGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = configurationrow.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -329,55 +329,55 @@ func (crq *ConfigurationRowQuery) GroupBy(field string, fields ...string) *Confi
 //	client.ConfigurationRow.Query().
 //		Select(configurationrow.FieldBranchID).
 //		Scan(ctx, &v)
-func (crq *ConfigurationRowQuery) Select(fields ...string) *ConfigurationRowSelect {
-	crq.ctx.Fields = append(crq.ctx.Fields, fields...)
-	sbuild := &ConfigurationRowSelect{ConfigurationRowQuery: crq}
+func (_q *ConfigurationRowQuery) Select(fields ...string) *ConfigurationRowSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &ConfigurationRowSelect{ConfigurationRowQuery: _q}
 	sbuild.label = configurationrow.Label
-	sbuild.flds, sbuild.scan = &crq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a ConfigurationRowSelect configured with the given aggregations.
-func (crq *ConfigurationRowQuery) Aggregate(fns ...AggregateFunc) *ConfigurationRowSelect {
-	return crq.Select().Aggregate(fns...)
+func (_q *ConfigurationRowQuery) Aggregate(fns ...AggregateFunc) *ConfigurationRowSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (crq *ConfigurationRowQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range crq.inters {
+func (_q *ConfigurationRowQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("model: uninitialized interceptor (forgotten import model/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, crq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range crq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !configurationrow.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("model: invalid field %q for query", f)}
 		}
 	}
-	if crq.path != nil {
-		prev, err := crq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		crq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (crq *ConfigurationRowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ConfigurationRow, error) {
+func (_q *ConfigurationRowQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ConfigurationRow, error) {
 	var (
 		nodes       = []*ConfigurationRow{}
-		withFKs     = crq.withFKs
-		_spec       = crq.querySpec()
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			crq.withParent != nil,
+			_q.withParent != nil,
 		}
 	)
-	if crq.withParent != nil {
+	if _q.withParent != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -387,7 +387,7 @@ func (crq *ConfigurationRowQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		return (*ConfigurationRow).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &ConfigurationRow{config: crq.config}
+		node := &ConfigurationRow{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -395,14 +395,14 @@ func (crq *ConfigurationRowQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, crq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := crq.withParent; query != nil {
-		if err := crq.loadParent(ctx, query, nodes, nil,
+	if query := _q.withParent; query != nil {
+		if err := _q.loadParent(ctx, query, nodes, nil,
 			func(n *ConfigurationRow, e *Configuration) { n.Edges.Parent = e }); err != nil {
 			return nil, err
 		}
@@ -410,7 +410,7 @@ func (crq *ConfigurationRowQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	return nodes, nil
 }
 
-func (crq *ConfigurationRowQuery) loadParent(ctx context.Context, query *ConfigurationQuery, nodes []*ConfigurationRow, init func(*ConfigurationRow), assign func(*ConfigurationRow, *Configuration)) error {
+func (_q *ConfigurationRowQuery) loadParent(ctx context.Context, query *ConfigurationQuery, nodes []*ConfigurationRow, init func(*ConfigurationRow), assign func(*ConfigurationRow, *Configuration)) error {
 	ids := make([]key.ConfigurationKey, 0, len(nodes))
 	nodeids := make(map[key.ConfigurationKey][]*ConfigurationRow)
 	for i := range nodes {
@@ -443,24 +443,24 @@ func (crq *ConfigurationRowQuery) loadParent(ctx context.Context, query *Configu
 	return nil
 }
 
-func (crq *ConfigurationRowQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := crq.querySpec()
-	_spec.Node.Columns = crq.ctx.Fields
-	if len(crq.ctx.Fields) > 0 {
-		_spec.Unique = crq.ctx.Unique != nil && *crq.ctx.Unique
+func (_q *ConfigurationRowQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, crq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (crq *ConfigurationRowQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *ConfigurationRowQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(configurationrow.Table, configurationrow.Columns, sqlgraph.NewFieldSpec(configurationrow.FieldID, field.TypeString))
-	_spec.From = crq.sql
-	if unique := crq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if crq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := crq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, configurationrow.FieldID)
 		for i := range fields {
@@ -469,20 +469,20 @@ func (crq *ConfigurationRowQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := crq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := crq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := crq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := crq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -492,33 +492,33 @@ func (crq *ConfigurationRowQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (crq *ConfigurationRowQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(crq.driver.Dialect())
+func (_q *ConfigurationRowQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(configurationrow.Table)
-	columns := crq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = configurationrow.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if crq.sql != nil {
-		selector = crq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if crq.ctx.Unique != nil && *crq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, p := range crq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range crq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := crq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := crq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -531,41 +531,41 @@ type ConfigurationRowGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (crgb *ConfigurationRowGroupBy) Aggregate(fns ...AggregateFunc) *ConfigurationRowGroupBy {
-	crgb.fns = append(crgb.fns, fns...)
-	return crgb
+func (_g *ConfigurationRowGroupBy) Aggregate(fns ...AggregateFunc) *ConfigurationRowGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (crgb *ConfigurationRowGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, crgb.build.ctx, ent.OpQueryGroupBy)
-	if err := crgb.build.prepareQuery(ctx); err != nil {
+func (_g *ConfigurationRowGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ConfigurationRowQuery, *ConfigurationRowGroupBy](ctx, crgb.build, crgb, crgb.build.inters, v)
+	return scanWithInterceptors[*ConfigurationRowQuery, *ConfigurationRowGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (crgb *ConfigurationRowGroupBy) sqlScan(ctx context.Context, root *ConfigurationRowQuery, v any) error {
+func (_g *ConfigurationRowGroupBy) sqlScan(ctx context.Context, root *ConfigurationRowQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(crgb.fns))
-	for _, fn := range crgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*crgb.flds)+len(crgb.fns))
-		for _, f := range *crgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*crgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := crgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -579,27 +579,27 @@ type ConfigurationRowSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (crs *ConfigurationRowSelect) Aggregate(fns ...AggregateFunc) *ConfigurationRowSelect {
-	crs.fns = append(crs.fns, fns...)
-	return crs
+func (_s *ConfigurationRowSelect) Aggregate(fns ...AggregateFunc) *ConfigurationRowSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (crs *ConfigurationRowSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, crs.ctx, ent.OpQuerySelect)
-	if err := crs.prepareQuery(ctx); err != nil {
+func (_s *ConfigurationRowSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ConfigurationRowQuery, *ConfigurationRowSelect](ctx, crs.ConfigurationRowQuery, crs, crs.inters, v)
+	return scanWithInterceptors[*ConfigurationRowQuery, *ConfigurationRowSelect](ctx, _s.ConfigurationRowQuery, _s, _s.inters, v)
 }
 
-func (crs *ConfigurationRowSelect) sqlScan(ctx context.Context, root *ConfigurationRowQuery, v any) error {
+func (_s *ConfigurationRowSelect) sqlScan(ctx context.Context, root *ConfigurationRowQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(crs.fns))
-	for _, fn := range crs.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*crs.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -607,7 +607,7 @@ func (crs *ConfigurationRowSelect) sqlScan(ctx context.Context, root *Configurat
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := crs.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
