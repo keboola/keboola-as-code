@@ -63,7 +63,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			return err
 		}
 
-		ignoreConfigsAndRows(projectState)
+		IgnoreConfigsAndRows(projectState)
 	}
 
 	// Diff
@@ -156,7 +156,9 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	return nil
 }
 
-func ignoreConfigsAndRows(projectState *project.State) {
+// IgnoreConfigsAndRows clears remote state of ignored configs/rows so they behave as absent.
+// Exported to reuse in push operation as well.
+func IgnoreConfigsAndRows(projectState *project.State) {
 	for _, v := range projectState.IgnoredConfigRows() {
 		v.SetRemoteState(nil)
 	}
