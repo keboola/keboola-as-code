@@ -1856,6 +1856,66 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedWakeUps:       map[string]int{},
 		},
 		{
+			name: "restart-disabled-no-repeated-wakeups",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+
+				wakeupCallCount := atomic.NewInt64(0)
+				service.WakeUpOverrides["123"] = func(w http.ResponseWriter, req *http.Request) {
+					wakeupCallCount.Add(1)
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusBadRequest)
+					_, _ = fmt.Fprintln(w, `{
+	"code": 0,
+	"context": {
+		"code": "apps.restartDisabled"
+	},
+	"error": "App restart is disabled. Contact app maintainer.",
+	"exceptionId": "exception-208db995c92ed365d47bcc701ae4d802",
+	"status": "error"
+}`)
+				}
+
+				// First request triggers DNS failure → wakeup → restartDisabled flag is set
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				// Wait for async wakeup to complete and flag to be set
+				assert.Eventually(t, func() bool {
+					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+					require.NoError(t, err)
+					response, err := client.Do(request)
+					require.NoError(t, err)
+					body, err := io.ReadAll(response.Body)
+					require.NoError(t, err)
+					return response.StatusCode == http.StatusServiceUnavailable && strings.Contains(string(body), "Application Disabled")
+				}, 5*time.Second, 100*time.Millisecond)
+
+				// Record wakeup count after flag is set
+				countAfterFlagSet := wakeupCallCount.Load()
+				assert.Equal(t, int64(1), countAfterFlagSet, "expected exactly 1 wakeup call before flag was set")
+
+				// Send multiple additional requests — with the fix, wakeup() is never called
+				// when restartDisabled flag is set, so counter must not increase.
+				for range 10 {
+					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+					require.NoError(t, err)
+					response, err := client.Do(request)
+					require.NoError(t, err)
+					require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+					_, _ = io.ReadAll(response.Body)
+				}
+
+				// Wakeup count must not have increased — wakeup() is skipped entirely by the guard
+				assert.Equal(t, countAfterFlagSet, wakeupCallCount.Load(), "no additional wakeup calls should be made after restartDisabled flag is set")
+			},
+			expectedNotifications: map[string]int{},
+			expectedWakeUps:       map[string]int{},
+		},
+		{
 			name: "restart-disabled-flag-reset-on-dns-success",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Phase 1: Set restart disabled state
