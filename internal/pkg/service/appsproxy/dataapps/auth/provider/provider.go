@@ -11,10 +11,11 @@ import (
 )
 
 const (
-	TypeOIDC   Type = "oidc"
-	TypeGitLab Type = "gitlab"
-	TypeGitHub Type = "github"
-	TypeBasic  Type = "password"
+	TypeOIDC      Type = "oidc"
+	TypeGitLab    Type = "gitlab"
+	TypeGitHub    Type = "github"
+	TypeBasic     Type = "password"
+	TypeJumpCloud Type = "jumpcloud"
 )
 
 // ID is unique identifier of the authentication provider inside a data app.
@@ -53,6 +54,9 @@ func (t Type) new() (Provider, error) {
 		return GitHub{}, nil
 	case TypeBasic:
 		return Basic{}, nil
+	case TypeJumpCloud:
+		return JumpCloud{}, nil
+
 	default:
 		return nil, errors.Errorf(`unexpected type of data app auth provider "%v"`, t)
 	}
