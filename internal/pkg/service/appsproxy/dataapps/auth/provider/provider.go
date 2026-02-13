@@ -56,7 +56,6 @@ func (t Type) new() (Provider, error) {
 		return Basic{}, nil
 	case TypeJumpCloud:
 		return JumpCloud{}, nil
-
 	default:
 		return nil, errors.Errorf(`unexpected type of data app auth provider "%v"`, t)
 	}
