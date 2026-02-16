@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure AWS Credentials to CLI Assets Account
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
@@ -127,7 +127,7 @@ jobs:
         run: rm -rf ${HOME}/.aws
 
       - name: Configure AWS Credentials to CLI Assets Account
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_ROLE_REGION }}
