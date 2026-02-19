@@ -1,4 +1,4 @@
-FROM golang:1.25.4
+FROM golang:1.26.0
 
 ENV HOME=/my-home
 ENV GOCACHE=/tmp/cache/go
