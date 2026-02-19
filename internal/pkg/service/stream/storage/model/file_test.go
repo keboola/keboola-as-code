@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
@@ -203,7 +202,7 @@ func TestFile_Validation(t *testing.T) {
 			Value: File{
 				FileKey:   testFileKey(),
 				State:     FileClosing,
-				ClosingAt: ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				ClosingAt: new(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				Mapping: table.Mapping{
 					Columns: column.Columns{
 						column.UUID{Name: "uuid"},
@@ -222,8 +221,8 @@ func TestFile_Validation(t *testing.T) {
 			Value: File{
 				FileKey:     testFileKey(),
 				State:       FileImporting,
-				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				ImportingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				ClosingAt:   new(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				ImportingAt: new(utctime.MustParse("2006-01-02T16:04:05.000Z")),
 				Mapping: table.Mapping{
 					Columns: column.Columns{
 						column.UUID{Name: "uuid"},
@@ -242,9 +241,9 @@ func TestFile_Validation(t *testing.T) {
 			Value: File{
 				FileKey:     testFileKey(),
 				State:       FileImported,
-				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				ImportingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
-				ImportedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
+				ClosingAt:   new(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				ImportingAt: new(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				ImportedAt:  new(utctime.MustParse("2006-01-02T17:04:05.000Z")),
 				Mapping: table.Mapping{
 					Columns: column.Columns{
 						column.UUID{Name: "uuid"},

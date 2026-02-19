@@ -5,7 +5,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -47,7 +46,7 @@ func (r *Repository) ResetSinkStats(sinkKey key.SinkKey) *op.AtomicOp[op.NoResul
 
 	// Save reset key
 	ops.Write(func(context.Context) op.Op {
-		objectSum.ResetAt = ptr.Ptr(utctime.From(r.clock.Now()))
+		objectSum.ResetAt = new(utctime.From(r.clock.Now()))
 		// Sum aggregated and non-aggregated statistics
 		return resetKey.Put(r.client, objectSum)
 	})

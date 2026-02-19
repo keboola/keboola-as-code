@@ -10,7 +10,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
 	local "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding/compression"
@@ -37,17 +36,17 @@ func TestConfig_With(t *testing.T) {
 	localConfigPatch := &local.ConfigPatch{
 		Volume: &volume.ConfigPatch{
 			Assignment: &assignment.ConfigPatch{
-				Count:          ptr.Ptr(2),
-				PreferredTypes: ptr.Ptr([]string{"foo", "bar"}),
+				Count:          new(2),
+				PreferredTypes: new([]string{"foo", "bar"}),
 			},
 		},
 		Encoding: &encoding.ConfigPatch{
 			Compression: &compression.ConfigPatch{
 				GZIP: &compression.GZIPConfigPatch{
-					Level:          ptr.Ptr(5),
-					Implementation: ptr.Ptr(compression.GZIPImplFast),
-					BlockSize:      ptr.Ptr(10 * datasize.MB),
-					Concurrency:    ptr.Ptr(10),
+					Level:          new(5),
+					Implementation: new(compression.GZIPImplFast),
+					BlockSize:      new(10 * datasize.MB),
+					Concurrency:    new(10),
 				},
 			},
 		},
@@ -65,9 +64,9 @@ func TestConfig_With(t *testing.T) {
 	stagingConfigPatch := &staging.ConfigPatch{
 		Upload: &staging.UploadConfigPatch{
 			Trigger: &staging.UploadTriggerPatch{
-				Count:    ptr.Ptr(uint64(30000)),
-				Size:     ptr.Ptr(4 * datasize.MB),
-				Interval: ptr.Ptr(duration.From(5 * time.Minute)),
+				Count:    new(uint64(30000)),
+				Size:     new(4 * datasize.MB),
+				Interval: new(duration.From(5 * time.Minute)),
 			},
 		},
 	}
@@ -88,13 +87,13 @@ func TestConfig_With(t *testing.T) {
 	localConfigPatch2 := &local.ConfigPatch{
 		Encoding: &encoding.ConfigPatch{
 			Sync: &writesync.ConfigPatch{
-				Mode:                     ptr.Ptr(writesync.ModeCache),
-				Wait:                     ptr.Ptr(true),
-				CheckInterval:            ptr.Ptr(duration.From(10 * time.Millisecond)),
-				CountTrigger:             ptr.Ptr(uint(123)),
-				UncompressedBytesTrigger: ptr.Ptr(1 * datasize.MB),
-				CompressedBytesTrigger:   ptr.Ptr(1 * datasize.MB),
-				IntervalTrigger:          ptr.Ptr(duration.From(100 * time.Millisecond)),
+				Mode:                     new(writesync.ModeCache),
+				Wait:                     new(true),
+				CheckInterval:            new(duration.From(10 * time.Millisecond)),
+				CountTrigger:             new(uint(123)),
+				UncompressedBytesTrigger: new(1 * datasize.MB),
+				CompressedBytesTrigger:   new(1 * datasize.MB),
+				IntervalTrigger:          new(duration.From(100 * time.Millisecond)),
 			},
 		},
 	}
@@ -111,9 +110,9 @@ func TestConfig_With(t *testing.T) {
 	targetConfigPatch := &target.ConfigPatch{
 		Import: &target.ImportConfigPatch{
 			Trigger: &target.ImportTriggerPatch{
-				Count:    ptr.Ptr(uint64(60000)),
-				Size:     ptr.Ptr(7 * datasize.MB),
-				Interval: ptr.Ptr(duration.From(8 * time.Minute)),
+				Count:    new(uint64(60000)),
+				Size:     new(7 * datasize.MB),
+				Interval: new(duration.From(8 * time.Minute)),
 			},
 		},
 	}

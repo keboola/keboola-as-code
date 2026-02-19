@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 )
 
 func TestStepsGroup_AreStepsSelectable(t *testing.T) {
@@ -258,7 +257,7 @@ func TestSteps_MatchesAvailableBackend(t *testing.T) {
 				Icon:        "component:keboola.snowflake",
 				Name:        "input",
 				Description: "input description",
-				Backend:     ptr.Ptr(project.BackendSnowflake),
+				Backend:     new(project.BackendSnowflake),
 			},
 			args: args{
 				backends: []string{project.BackendSnowflake},
@@ -283,7 +282,7 @@ func TestSteps_MatchesAvailableBackend(t *testing.T) {
 				Icon:        "component:keboola.bigquery",
 				Name:        "input",
 				Description: "input description",
-				Backend:     ptr.Ptr(project.BackendBigQuery),
+				Backend:     new(project.BackendBigQuery),
 			},
 			args: args{
 				backends: []string{project.BackendSnowflake},

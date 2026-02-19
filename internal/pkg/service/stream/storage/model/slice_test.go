@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table"
@@ -241,7 +240,7 @@ func TestSlice_Validation(t *testing.T) {
 			Value: Slice{
 				SliceKey:  testSliceKey(),
 				State:     SliceClosing,
-				ClosingAt: ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				ClosingAt: new(utctime.MustParse("2006-01-02T15:04:05.000Z")),
 				Mapping: table.Mapping{
 					Columns: column.Columns{
 						column.UUID{Name: "uuid"},
@@ -259,8 +258,8 @@ func TestSlice_Validation(t *testing.T) {
 			Value: Slice{
 				SliceKey:    testSliceKey(),
 				State:       SliceUploading,
-				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				UploadingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				ClosingAt:   new(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				UploadingAt: new(utctime.MustParse("2006-01-02T16:04:05.000Z")),
 				Mapping: table.Mapping{
 					Columns: column.Columns{
 						column.UUID{Name: "uuid"},
@@ -278,9 +277,9 @@ func TestSlice_Validation(t *testing.T) {
 			Value: Slice{
 				SliceKey:    testSliceKey(),
 				State:       SliceUploaded,
-				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				UploadingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
-				UploadedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
+				ClosingAt:   new(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				UploadingAt: new(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				UploadedAt:  new(utctime.MustParse("2006-01-02T17:04:05.000Z")),
 				Mapping: table.Mapping{
 					Columns: column.Columns{
 						column.UUID{Name: "uuid"},
@@ -298,10 +297,10 @@ func TestSlice_Validation(t *testing.T) {
 			Value: Slice{
 				SliceKey:    testSliceKey(),
 				State:       SliceImported,
-				ClosingAt:   ptr.Ptr(utctime.MustParse("2006-01-02T15:04:05.000Z")),
-				UploadingAt: ptr.Ptr(utctime.MustParse("2006-01-02T16:04:05.000Z")),
-				UploadedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T17:04:05.000Z")),
-				ImportedAt:  ptr.Ptr(utctime.MustParse("2006-01-02T18:04:05.000Z")),
+				ClosingAt:   new(utctime.MustParse("2006-01-02T15:04:05.000Z")),
+				UploadingAt: new(utctime.MustParse("2006-01-02T16:04:05.000Z")),
+				UploadedAt:  new(utctime.MustParse("2006-01-02T17:04:05.000Z")),
+				ImportedAt:  new(utctime.MustParse("2006-01-02T18:04:05.000Z")),
 				Mapping: table.Mapping{
 					Columns: column.Columns{
 						column.UUID{Name: "uuid"},

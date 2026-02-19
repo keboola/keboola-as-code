@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
@@ -150,7 +149,7 @@ func TestAskCreate(t *testing.T) {
 								Type:     "VARCHAR",
 								Nullable: false,
 							},
-							BaseType: ptr.Ptr(keboola.TypeString),
+							BaseType: new(keboola.TypeString),
 						},
 						{
 							Name: "name",
@@ -158,7 +157,7 @@ func TestAskCreate(t *testing.T) {
 								Type:     "VARCHAR",
 								Nullable: false,
 							},
-							BaseType: ptr.Ptr(keboola.TypeString),
+							BaseType: new(keboola.TypeString),
 						},
 					},
 				},
@@ -317,7 +316,7 @@ func TestAskCreate(t *testing.T) {
 								Type:     "INT",
 								Nullable: false,
 							},
-							BaseType: ptr.Ptr(keboola.TypeNumeric),
+							BaseType: new(keboola.TypeNumeric),
 						},
 						{
 							Name: "name",
@@ -325,7 +324,7 @@ func TestAskCreate(t *testing.T) {
 								Type:     "STRING",
 								Nullable: false,
 							},
-							BaseType: ptr.Ptr(keboola.TypeString),
+							BaseType: new(keboola.TypeString),
 						},
 					},
 				},
@@ -456,14 +455,14 @@ func TestParseJsonInput(t *testing.T) {
 			Definition: &keboola.ColumnDefinition{
 				Type: "INT",
 			},
-			BaseType: ptr.Ptr(keboola.TypeNumeric),
+			BaseType: new(keboola.TypeNumeric),
 		},
 		{
 			Name: "name",
 			Definition: &keboola.ColumnDefinition{
 				Type: "STRING",
 			},
-			BaseType: ptr.Ptr(keboola.TypeString),
+			BaseType: new(keboola.TypeString),
 		},
 	}, res)
 }
@@ -485,7 +484,7 @@ func TestPossiblePrimaryKeys(t *testing.T) {
 						Type:     "STRING",
 						Nullable: false,
 					},
-					BaseType: ptr.Ptr(keboola.TypeString),
+					BaseType: new(keboola.TypeString),
 				},
 				{
 					Name: "age",
@@ -493,7 +492,7 @@ func TestPossiblePrimaryKeys(t *testing.T) {
 						Type:     "NUMERIC",
 						Nullable: true,
 					},
-					BaseType: ptr.Ptr(keboola.TypeNumeric),
+					BaseType: new(keboola.TypeNumeric),
 				},
 			},
 		},

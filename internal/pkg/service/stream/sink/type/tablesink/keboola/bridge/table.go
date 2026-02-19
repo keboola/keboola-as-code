@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -78,7 +77,7 @@ func (b *Bridge) createTable(ctx context.Context, api *keboola.AuthorizedAPI, ta
 			tableDef.Columns,
 			keboola.Column{
 				Name:     name,
-				BaseType: ptr.Ptr(keboola.TypeString),
+				BaseType: new(keboola.TypeString),
 			},
 		)
 	}

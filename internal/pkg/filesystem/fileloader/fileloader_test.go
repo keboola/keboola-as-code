@@ -59,8 +59,7 @@ func (tc *testCases) runTests(t *testing.T) {
 	// Call all Test* methods
 	tp := reflect.TypeFor[*testCases]()
 	prefix := `Test`
-	for i := range tp.NumMethod() {
-		method := tp.Method(i)
+	for method := range tp.Methods() {
 		if strings.HasPrefix(method.Name, prefix) {
 			fs, logger := tc.createFs()
 			testName := strings.TrimPrefix(method.Name, prefix)

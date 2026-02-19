@@ -47,7 +47,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
@@ -403,7 +402,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
-					EmailVerified: ptr.Ptr(true),
+					EmailVerified: new(true),
 					Groups:        []string{"admin"},
 				})
 
@@ -651,7 +650,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
-					EmailVerified: ptr.Ptr(false),
+					EmailVerified: new(false),
 					Groups:        []string{"admin"},
 				})
 
@@ -986,7 +985,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
-					EmailVerified: ptr.Ptr(false),
+					EmailVerified: new(false),
 					Groups:        []string{"admin"},
 				})
 
@@ -1208,7 +1207,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
-					EmailVerified: ptr.Ptr(true),
+					EmailVerified: new(true),
 					Groups:        []string{"admin"},
 				})
 
@@ -1286,7 +1285,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 
 				originalConfig := service.Apps["111"]
-				originalConfig.AppSlug = ptr.Ptr("p")
+				originalConfig.AppSlug = new("p")
 				service.Apps["111"] = originalConfig
 
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://p-111.hub.keboola.local/", nil)
@@ -1728,7 +1727,7 @@ func TestAppProxyRouter(t *testing.T) {
 					wg.Go(func() {
 						m[0].QueueUser(&mockoidc.MockUser{
 							Email:         "admin@keboola.com",
-							EmailVerified: ptr.Ptr(true),
+							EmailVerified: new(true),
 							Groups:        []string{"admin"},
 						})
 
@@ -2601,13 +2600,13 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 			ID:             "12345",
 			ProjectID:      "123",
 			Name:           "my-app-lowercase",
-			AppSlug:        ptr.Ptr("LOWERCASE"),
+			AppSlug:        new("LOWERCASE"),
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: ptr.Ptr(false),
+					AuthRequired: new(false),
 				},
 			},
 		},
@@ -2615,13 +2614,13 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 			ID:             "123",
 			ProjectID:      "123",
 			Name:           "my-app",
-			AppSlug:        ptr.Ptr("public"),
+			AppSlug:        new("public"),
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: ptr.Ptr(false),
+					AuthRequired: new(false),
 				},
 			},
 		},
@@ -2629,13 +2628,13 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 			ID:             "111",
 			ProjectID:      "12345",
 			Name:           "my-app-ws",
-			AppSlug:        ptr.Ptr("public"),
+			AppSlug:        new("public"),
 			UpstreamAppURL: upstream.String(),
 			AuthRules: []api.Rule{
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: ptr.Ptr(false),
+					AuthRequired: new(false),
 				},
 			},
 		},
@@ -2659,7 +2658,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: ptr.Ptr(true),
+					AuthRequired: new(true),
 					Auth:         []provider.ID{"test"},
 				},
 			},
@@ -2678,7 +2677,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: ptr.Ptr([]string{}),
+					AllowedRoles: new([]string{}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
@@ -2710,7 +2709,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: ptr.Ptr(false),
+					AuthRequired: new(false),
 					Auth:         []provider.ID{"test"},
 				},
 			},
@@ -2729,7 +2728,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: ptr.Ptr([]string{"admin"}),
+					AllowedRoles: new([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
@@ -2755,7 +2754,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: ptr.Ptr([]string{"manager"}),
+					AllowedRoles: new([]string{"manager"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 				provider.OIDC{
@@ -2767,7 +2766,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
-					AllowedRoles: ptr.Ptr([]string{"admin"}),
+					AllowedRoles: new([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
 				provider.OIDC{
@@ -2801,7 +2800,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     "",
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: ptr.Ptr([]string{"admin"}),
+					AllowedRoles: new([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 			},
@@ -2827,7 +2826,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
-					AllowedRoles: ptr.Ptr([]string{"admin"}),
+					AllowedRoles: new([]string{"admin"}),
 					IssuerURL:    m[0].Issuer(),
 				},
 				provider.OIDC{
@@ -2839,7 +2838,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					},
 					ClientID:     m[1].Config().ClientID,
 					ClientSecret: m[1].Config().ClientSecret,
-					AllowedRoles: ptr.Ptr([]string{"admin"}),
+					AllowedRoles: new([]string{"admin"}),
 					IssuerURL:    m[1].Issuer(),
 				},
 			},
@@ -2857,7 +2856,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/public",
-					AuthRequired: ptr.Ptr(false),
+					AuthRequired: new(false),
 				},
 			},
 		},
@@ -2865,7 +2864,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 			ID:             "auth",
 			ProjectID:      "123",
 			UpstreamAppURL: upstream.String(),
-			AppSlug:        ptr.Ptr("basic"), // basic-auth.hub.keboola.local
+			AppSlug:        new("basic"), // basic-auth.hub.keboola.local
 			AuthProviders: provider.Providers{
 				provider.Basic{
 					Base: provider.Base{

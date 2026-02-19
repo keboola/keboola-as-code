@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/table/column"
 )
@@ -254,7 +253,7 @@ func TestRenderer_Path_Json_UndefinedKey_DefaultValue(t *testing.T) {
 	renderer := column.NewRenderer()
 	c := column.Path{
 		Path:         "key1.invalid",
-		DefaultValue: ptr.Ptr("123"),
+		DefaultValue: new("123"),
 	}
 
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
@@ -273,7 +272,7 @@ func TestRenderer_Path_Json_UndefinedIndex_DefaultValue(t *testing.T) {
 	renderer := column.NewRenderer()
 	c := column.Path{
 		Path:         "key1[1]",
-		DefaultValue: ptr.Ptr("123"),
+		DefaultValue: new("123"),
 	}
 
 	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
@@ -292,7 +291,7 @@ func TestRenderer_Path_Json_UndefinedKey_DefaultValue_RawString(t *testing.T) {
 	renderer := column.NewRenderer()
 	c := column.Path{
 		Path:         "key1.invalid",
-		DefaultValue: ptr.Ptr("123"),
+		DefaultValue: new("123"),
 		RawString:    true,
 	}
 
@@ -465,7 +464,7 @@ func TestRenderer_Path_FormData_UndefinedKey_DefaultValue(t *testing.T) {
 	renderer := column.NewRenderer()
 	c := column.Path{
 		Path:         "key2",
-		DefaultValue: ptr.Ptr("123"),
+		DefaultValue: new("123"),
 	}
 
 	body := `key[0][x]=bar2&key[1][x]=bar3`
@@ -484,7 +483,7 @@ func TestRenderer_Path_FormData_UndefinedKey_DefaultValue_RawString(t *testing.T
 	renderer := column.NewRenderer()
 	c := column.Path{
 		Path:         "key2",
-		DefaultValue: ptr.Ptr("123"),
+		DefaultValue: new("123"),
 		RawString:    true,
 	}
 

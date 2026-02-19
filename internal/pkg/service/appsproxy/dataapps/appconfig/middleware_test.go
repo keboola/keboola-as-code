@@ -13,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -25,7 +24,7 @@ func (l *testLoader) GetConfig(ctx context.Context, appID api.AppID) (out api.Ap
 		return api.AppConfig{
 			ID:             "1",
 			Name:           "App 1",
-			AppSlug:        ptr.Ptr("app-1"),
+			AppSlug:        new("app-1"),
 			ProjectID:      "1",
 			UpstreamAppURL: "https://internal.app-1.example.com",
 		}, false, nil
@@ -33,7 +32,7 @@ func (l *testLoader) GetConfig(ctx context.Context, appID api.AppID) (out api.Ap
 		return api.AppConfig{
 			ID:             "2",
 			Name:           "App 2",
-			AppSlug:        ptr.Ptr("app-2"),
+			AppSlug:        new("app-2"),
 			ProjectID:      "2",
 			UpstreamAppURL: "https://internal.app-2.example.com",
 		}, true, nil

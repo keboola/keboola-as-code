@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/encryption"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
@@ -362,7 +361,7 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
 				Level: &level.ConfigPatch{
 					Local: &local.ConfigPatch{
 						Encoding: &encoding.ConfigPatch{
-							MaxChunkSize: ptr.Ptr(123 * datasize.KB),
+							MaxChunkSize: new(123 * datasize.KB),
 						},
 					},
 				},
@@ -666,7 +665,7 @@ func TestConfig_BindKVs_Ok(t *testing.T) {
 			Level: &level.ConfigPatch{
 				Local: &local.ConfigPatch{
 					Encoding: &encoding.ConfigPatch{
-						MaxChunkSize: ptr.Ptr(456 * datasize.KB),
+						MaxChunkSize: new(456 * datasize.KB),
 					},
 				},
 			},

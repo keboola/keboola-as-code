@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 )
@@ -135,7 +134,7 @@ func TestValue_With(t *testing.T) {
 				StagingSize:      1000,
 			},
 			addition: statistics.Value{
-				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+				ResetAt:          new(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     1,
 				SlicesCount:      1,
 				UncompressedSize: 1,
@@ -160,7 +159,7 @@ func TestValue_With(t *testing.T) {
 				StagingSize:      1,
 			},
 			addition: statistics.Value{
-				ResetAt:          ptr.Ptr(utctime.MustParse("2000-02-01T00:00:00.000Z")),
+				ResetAt:          new(utctime.MustParse("2000-02-01T00:00:00.000Z")),
 				RecordsCount:     100,
 				SlicesCount:      200,
 				UncompressedSize: 2000,

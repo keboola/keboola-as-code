@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
@@ -66,14 +65,14 @@ func TestAppProxyHandler(t *testing.T) {
 		{
 			ID:             "123",
 			Name:           "public",
-			AppSlug:        ptr.Ptr("PUBLIC"),
+			AppSlug:        new("PUBLIC"),
 			ProjectID:      "456",
 			UpstreamAppURL: appURL.String(),
 			AuthRules: []api.Rule{
 				{
 					Type:         api.RulePathPrefix,
 					Value:        "/",
-					AuthRequired: ptr.Ptr(false),
+					AuthRequired: new(false),
 				},
 			},
 		},
