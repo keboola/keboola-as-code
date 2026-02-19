@@ -13,7 +13,7 @@ import (
 )
 
 func (p *Dialogs) AskFile(allFiles []*keboola.File) (*keboola.File, error) {
-	selectOpts := make([]string, 0)
+	selectOpts := make([]string, 0, len(allFiles))
 	for _, w := range allFiles {
 		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%d)`, w.Name, w.FileID))
 	}

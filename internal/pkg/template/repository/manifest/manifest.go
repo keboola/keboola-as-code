@@ -94,7 +94,7 @@ func (m *Manifest) Persist(records ...TemplateRecord) {
 }
 
 func (m *Manifest) AllTemplates() []TemplateRecord {
-	out := make([]TemplateRecord, 0)
+	out := make([]TemplateRecord, 0, len(m.records))
 	for _, template := range m.records {
 		// Sort versions
 		template.Versions = template.AllVersions()

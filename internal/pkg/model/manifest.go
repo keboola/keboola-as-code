@@ -99,7 +99,7 @@ func (p *Paths) ClearRelatedPaths() {
 
 func (p *Paths) GetRelatedPaths() []string {
 	dir := p.Path()
-	out := make([]string, 0)
+	out := make([]string, 0, len(p.RelatedPaths))
 	for _, path := range p.RelatedPaths {
 		// Prefix by dir -> path will be relative to the project dir
 		out = append(out, filesystem.Join(dir, path))

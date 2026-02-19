@@ -63,7 +63,7 @@ func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
 	// Topological sort by dependencies
 	order, cycles := graph.Sort()
 	if len(cycles) > 0 {
-		var cyclesAsStr []string
+		cyclesAsStr := make([]string, 0, len(cycles))
 		for _, cycle := range cycles {
 			var items []string
 			for _, item := range cycle {

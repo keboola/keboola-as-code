@@ -416,7 +416,7 @@ func getExpectedKeys(allFiles []model.File, allSlices []model.Slice) []string {
 		}
 	}
 
-	var expectedKeys []string
+	expectedKeys := make([]string, 0, len(expectedLocalFileKeys)+len(expectedTargetFileKeys)+len(expectedLocalSliceKeys)+len(expectedTargetSliceKeys))
 
 	expectedKeys = append(expectedKeys, expectedLocalFileKeys...)
 	expectedKeys = append(expectedKeys, expectedTargetFileKeys...)

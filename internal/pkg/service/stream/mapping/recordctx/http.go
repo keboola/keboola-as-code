@@ -63,7 +63,7 @@ func (c *httpContext) HeadersString() string {
 	defer c.lock.Unlock()
 
 	if c.headersString == nil {
-		var lines []string
+		lines := make([]string, 0, len(c.req.Header))
 		for k, v := range c.req.Header {
 			lines = append(lines, http.CanonicalHeaderKey(k)+": "+v[0]+"\n")
 		}

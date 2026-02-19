@@ -152,7 +152,7 @@ func visitConfigAndPatch(configStruct, patchStruct reflect.Value, opts []Option,
 
 	// Check unexpected patch keys
 	if len(patchedValues) > 0 {
-		var unused []string
+		unused := make([]string, 0, len(patchedValues))
 		for keyPath := range patchedValues {
 			unused = append(unused, keyPath)
 		}

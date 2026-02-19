@@ -40,7 +40,7 @@ func TestWriter_Empty(t *testing.T) {
 func TestWriter_Ok(t *testing.T) {
 	t.Parallel()
 
-	var expectedChunks []string
+	expectedChunks := make([]string, 0, 8)
 
 	// Create writer
 	maxChunkSize := 10

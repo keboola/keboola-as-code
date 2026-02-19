@@ -583,7 +583,7 @@ func TestIterator_AllKeys(t *testing.T) {
 	logs.Reset()
 	actualKvs, err := prefix.GetAll(client, ops...).Do(ctx).All()
 	require.NoError(t, err)
-	actual := make([]result, 0)
+	actual := make([]result, 0, len(actualKvs))
 	for _, kv := range actualKvs {
 		actual = append(actual, result{key: string(kv.Key), value: string(kv.Value)})
 	}

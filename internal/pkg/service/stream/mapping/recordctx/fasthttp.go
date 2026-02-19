@@ -61,8 +61,9 @@ func (c *fastHTTPContext) HeadersString() string {
 	defer c.lock.Unlock()
 
 	if c.headersString == nil {
-		var lines []string
-		for _, k := range c.reqCtx.Request.Header.PeekKeys() {
+		headerKeys := c.reqCtx.Request.Header.PeekKeys()
+		lines := make([]string, 0, len(headerKeys))
+		for _, k := range headerKeys {
 			k := string(k)
 			lines = append(lines, http.CanonicalHeaderKey(k)+": "+string(c.reqCtx.Request.Header.Peek(k))+"\n")
 		}

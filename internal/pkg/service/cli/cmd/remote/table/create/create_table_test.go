@@ -81,7 +81,7 @@ func TestAskCreate(t *testing.T) {
 
 	args := []string{}
 
-	var buckets []*keboola.Bucket
+	buckets := make([]*keboola.Bucket, 0, 1)
 
 	branch, bucket := getBranchAndBucket()
 

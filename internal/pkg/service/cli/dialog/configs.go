@@ -90,7 +90,7 @@ func parseUserInput(all []*model.ConfigWithRows, configs configmap.Value[string]
 }
 
 func configsSelectOpts(all []*model.ConfigWithRows) []string {
-	selectOpts := make([]string, 0)
+	selectOpts := make([]string, 0, len(all))
 	for _, c := range all {
 		selectOpts = append(selectOpts, formatConfig(c))
 	}

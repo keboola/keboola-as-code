@@ -388,7 +388,7 @@ func (p *Project) createFiles(files []*fixtures.File) error {
 
 	for _, fixture := range files {
 		wg.Go(func() {
-			opts := make([]keboola.CreateFileOption, 0)
+			opts := make([]keboola.CreateFileOption, 0, 3)
 			opts = append(opts, keboola.WithIsPermanent(fixture.IsPermanent))
 			opts = append(opts, keboola.WithIsSliced(fixture.IsSliced))
 			opts = append(opts, keboola.WithTags(fixture.Tags...))

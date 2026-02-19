@@ -554,9 +554,10 @@ func InstanceResponse(ctx context.Context, d dependencies.ProjectRequestScope, p
 }
 
 func instanceConfigurations(prjState *project.State, branchKey model.BranchKey, instanceId string) []*Config {
-	out := make([]*Config, 0)
 	branchConfigs := prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey)
-	for _, cfg := range search.ConfigsForTemplateInstance(branchConfigs, instanceId) {
+	matchedConfigs := search.ConfigsForTemplateInstance(branchConfigs, instanceId)
+	out := make([]*Config, 0, len(matchedConfigs))
+	for _, cfg := range matchedConfigs {
 		out = append(out, &Config{
 			Name:        cfg.Name,
 			ConfigID:    string(cfg.ID),

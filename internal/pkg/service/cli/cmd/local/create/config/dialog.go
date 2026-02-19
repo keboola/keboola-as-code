@@ -55,8 +55,8 @@ func askComponentID(deps createDeps, d *dialog.Dialogs, compID configmap.Value[s
 		componentID = keboola.ComponentID(strings.TrimSpace(compID.Value))
 	} else {
 		// Make select
-		selectOpts := make([]string, 0)
 		possibleNewComponents := components.NewComponentList()
+		selectOpts := make([]string, 0, len(possibleNewComponents))
 		for _, c := range possibleNewComponents {
 			name := c.Name
 			if c.Type == `extractor` || c.Type == `writer` || c.Type == `transformation` {

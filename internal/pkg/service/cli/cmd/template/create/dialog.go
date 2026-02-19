@@ -147,7 +147,7 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 }
 
 func (d *createTmplDialog) askComponents(all []*keboola.Component) []string {
-	opts := make([]string, 0)
+	opts := make([]string, 0, len(all))
 	for _, c := range all {
 		opts = append(opts, fmt.Sprintf("%s (%s)", c.Name, c.ID))
 	}
@@ -158,7 +158,7 @@ func (d *createTmplDialog) askComponents(all []*keboola.Component) []string {
 		Options:     opts,
 	})
 
-	res := make([]string, 0)
+	res := make([]string, 0, len(selected))
 	for _, s := range selected {
 		res = append(res, all[s].ID.String())
 	}

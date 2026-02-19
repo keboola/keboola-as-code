@@ -110,7 +110,7 @@ func (g StepsGroupsExt) StepsMap() map[string]*StepExt {
 }
 
 func (s StepsExt) OptionsForSelectBox() []string {
-	res := make([]string, 0)
+	res := make([]string, 0, len(s))
 	for _, step := range s {
 		res = append(res, fmt.Sprintf("%s - %s", step.Name, step.Description))
 	}

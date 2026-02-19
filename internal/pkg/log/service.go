@@ -9,7 +9,7 @@ import (
 
 // NewServiceLogger new production zapLogger for an API or worker node.
 func NewServiceLogger(writer io.Writer, verbose bool) Logger {
-	var cores []zapcore.Core
+	cores := make([]zapcore.Core, 0, 1)
 
 	// Log to the standard logger
 	cores = append(cores, writerCore(writer, verbose))

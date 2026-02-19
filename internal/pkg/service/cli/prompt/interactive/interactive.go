@@ -235,7 +235,7 @@ func (p *Prompt) Editor(fileExt string, q *prompt.Question) (result string, ok b
 }
 
 func (p *Prompt) getOpts() []survey.AskOpt {
-	var opts []survey.AskOpt
+	opts := make([]survey.AskOpt, 0, 3)
 	opts = append(opts, survey.WithStdio(p.stdin, p.stdout, p.stderr))
 	opts = append(opts, survey.WithShowCursor(true))
 	opts = append(opts, survey.WithFilter(func(filter string, value string, index int) (include bool) {

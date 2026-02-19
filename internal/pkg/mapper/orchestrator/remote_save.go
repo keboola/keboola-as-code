@@ -28,7 +28,7 @@ func (m *orchestratorMapper) MapBeforeRemoteSave(ctx context.Context, recipe *mo
 }
 
 func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orchestration *model.Orchestration) {
-	phases := make([]any, 0)
+	phases := make([]any, 0, len(orchestration.Phases))
 	tasks := make([]any, 0)
 
 	// Map structs
