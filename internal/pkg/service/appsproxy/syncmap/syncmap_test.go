@@ -1,5 +1,3 @@
-//go:build goexperiment.synctest
-
 package syncmap_test
 
 import (
@@ -36,7 +34,7 @@ func TestSyncMap_GetOrInit_Race(t *testing.T) {
 
 	accessCounter := atomic.NewInt64(0)
 
-	synctest.Run(func() {
+	synctest.Test(t, func(t *testing.T) {
 		// Launch 10 concurrent goroutines within the bubble
 		for range 10 {
 			go func() {
