@@ -1,0 +1,36 @@
+{
+  "branches": [
+    {
+      "id": 123,
+      "name": "Main",
+      "isDefault": true
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 123,
+      "componentId": "keboola.orchestrator",
+      "id": "456",
+      "name": "My Orchestration",
+      "description": "Test config",
+      "configuration": {}
+    }
+  ],
+  "notificationSubscriptions": [
+    {
+      "id": "sub-123",
+      "event": "job-failed",
+      "recipient": {
+        "channel": "email",
+        "address": "test@example.com"
+      },
+      "filters": [
+        {
+          "field": "configId",
+          "operator": "eq",
+          "value": "456"
+        }
+      ]
+    }
+  ]
+}

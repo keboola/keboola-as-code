@@ -1,0 +1,14 @@
+{
+  "event": "job-failed",
+  "recipient": {
+    "channel": "email",
+    "address": "test@example.com"
+  },
+  "filters": [
+    {
+      "field": "configId",
+      "operator": "eq",
+      "value": "456"
+    }
+  ]
+}
