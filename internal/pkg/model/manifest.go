@@ -77,8 +77,9 @@ type ConfigManifest struct {
 	RecordState `json:"-"`
 	ConfigKey
 	Paths
-	Relations Relations              `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables definition
-	Metadata  *orderedmap.OrderedMap `json:"metadata,omitempty"`
+	Relations     Relations                  `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables definition
+	Metadata      *orderedmap.OrderedMap     `json:"metadata,omitempty"`
+	Notifications []*NotificationManifest `json:"notifications,omitempty"`
 }
 
 type ConfigRowManifest struct {
