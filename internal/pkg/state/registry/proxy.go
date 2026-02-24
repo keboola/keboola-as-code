@@ -91,3 +91,13 @@ func (f *Proxy) ConfigRowsFrom(config model.ConfigKey) (rows []*model.ConfigRow)
 	}
 	return out
 }
+
+func (f *Proxy) NotificationsFrom(config model.ConfigKey) (notifications []*model.Notification) {
+	var out []*model.Notification
+	for _, notification := range f.registry.NotificationsFrom(config) {
+		if notification.HasState(f.stateType) {
+			out = append(out, notification.GetState(f.stateType).(*model.Notification))
+		}
+	}
+	return out
+}

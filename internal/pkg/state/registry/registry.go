@@ -231,6 +231,27 @@ func (s *Registry) ConfigRowsFrom(config model.ConfigKey) (rows []*model.ConfigR
 	return rows
 }
 
+func (s *Registry) Notifications() (notifications []*model.NotificationState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*model.NotificationState); ok {
+			notifications = append(notifications, v)
+		}
+	}
+	return notifications
+}
+
+func (s *Registry) NotificationsFrom(config model.ConfigKey) (notifications []*model.NotificationState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*model.NotificationState); ok {
+			if v.BranchID != config.BranchID || v.ComponentID != config.ComponentID || v.ConfigID != config.ID {
+				continue
+			}
+			notifications = append(notifications, v)
+		}
+	}
+	return notifications
+}
+
 func (s *Registry) GetPath(key model.Key) (model.AbsPath, bool) {
 	objectState, found := s.Get(key)
 	if !found {
