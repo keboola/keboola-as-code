@@ -150,6 +150,19 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 						return nil
 					}),
 				)
+
+				// Load notifications for branch configs
+				wg.Send(u.keboolaProjectAPI.
+					ListNotificationSubscriptionsRequest().
+					WithOnSuccess(func(_ context.Context, subscriptions *[]*keboola.NotificationSubscription) error {
+						for _, apiSub := range *subscriptions {
+							// Note: SDK doesn't return branch/component/config info, skip for now
+							// Notifications will be loaded via local state or future SDK updates
+							_ = apiSub
+						}
+						return nil
+					}),
+				)
 			}
 
 			// Wait for sub-requests
