@@ -8,11 +8,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-// loadNotifications loads notification subscriptions for configs.
-// NOTE: Currently limited by SDK - NotificationSubscription doesn't include
-// BranchID, ComponentID, or ConfigID in the API response.
-// This will be enabled once the SDK is updated to include parent config info.
-func (u *UnitOfWork) loadNotifications(ctx context.Context, configKey model.ConfigKey) error {
+// loadNotifications loads notification subscriptions using manifest to determine parent config.
+// The manifest tracks which config owns each notification, so we match by subscription ID.
+func (u *UnitOfWork) loadNotifications(ctx context.Context) error {
+	// Load all notification subscriptions from API
 	subscriptions, err := u.keboolaProjectAPI.
 		ListNotificationSubscriptionsRequest().
 		Send(ctx)
@@ -20,25 +19,42 @@ func (u *UnitOfWork) loadNotifications(ctx context.Context, configKey model.Conf
 		return err
 	}
 
-	// TODO: Once SDK includes config reference in subscription response:
-	// for _, apiSub := range *subscriptions {
-	//     if apiSub.ConfigID == configKey.ID {
-	//         notification := model.NewNotification(apiSub)
-	//         notification.BranchID = configKey.BranchID
-	//         notification.ComponentID = configKey.ComponentID
-	//         notification.ConfigID = configKey.ID
-	//         if err := u.loadObject(notification); err != nil {
-	//             return err
-	//         }
-	//     }
-	// }
+	// Create map for quick lookup
+	subsByID := make(map[keboola.NotificationSubscriptionID]*keboola.NotificationSubscription)
+	for _, sub := range *subscriptions {
+		subsByID[sub.ID] = sub
+	}
 
-	_ = subscriptions
+	// Iterate through manifest to find notifications
+	for _, record := range u.Manifest().All() {
+		configManifest, ok := record.(*model.ConfigManifest)
+		if !ok {
+			continue
+		}
+
+		// Check if this config has notifications in manifest
+		for _, notificationManifest := range configManifest.Notifications {
+			// Find matching subscription from API
+			if apiSub, found := subsByID[notificationManifest.ID]; found {
+				// Create notification with parent config info from manifest
+				notification := model.NewNotification(apiSub)
+				notification.BranchID = configManifest.BranchID
+				notification.ComponentID = configManifest.ComponentID
+				notification.ConfigID = configManifest.ID
+
+				// Load into state
+				if err := u.loadObject(notification); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
-// createNotification creates a new notification subscription via API.
-func (u *UnitOfWork) createNotification(notification *model.Notification) error {
+// createNotificationRequest builds an API request to create a notification subscription.
+func (u *UnitOfWork) createNotificationRequest(notification *model.Notification) *keboola.CreateNotificationSubscriptionRequestBuilder {
 	req := u.keboolaProjectAPI.
 		NewCreateNotificationSubscriptionRequest(
 			notification.Event,
@@ -57,8 +73,7 @@ func (u *UnitOfWork) createNotification(notification *model.Notification) error 
 	// TODO: Add config reference once SDK supports it
 	// req = req.WithConfig(notification.BranchID, notification.ComponentID, notification.ConfigID)
 
-	_, err := req.Send(u.ctx)
-	return err
+	return req
 }
 
 // deleteNotification deletes a notification subscription via API.

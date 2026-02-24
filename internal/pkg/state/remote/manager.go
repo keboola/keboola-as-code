@@ -151,18 +151,6 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 					}),
 				)
 
-				// Load notifications for branch configs
-				wg.Send(u.keboolaProjectAPI.
-					ListNotificationSubscriptionsRequest().
-					WithOnSuccess(func(_ context.Context, subscriptions *[]*keboola.NotificationSubscription) error {
-						for _, apiSub := range *subscriptions {
-							// Note: SDK doesn't return branch/component/config info, skip for now
-							// Notifications will be loaded via local state or future SDK updates
-							_ = apiSub
-						}
-						return nil
-					}),
-				)
 			}
 
 			// Wait for sub-requests
@@ -200,6 +188,12 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 					}
 				}
 			}
+
+			// Load notifications using manifest to determine parent configs
+			if err := u.loadNotifications(ctx); err != nil {
+				errs.Append(err)
+			}
+
 			return errs.ErrorOrNil()
 		})
 
@@ -247,6 +241,28 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 		return
 	}
 
+	// Special handling for notifications (no update API, only create/delete)
+	if notificationState, ok := objectState.(*model.NotificationState); ok {
+		if notificationState.HasRemoteState() && !changedFields.IsEmpty() {
+			// Modification detected: delete old + create new
+			u.delete(notificationState)
+		}
+		if !notificationState.HasRemoteState() || !changedFields.IsEmpty() {
+			// Create new notification
+			notification := object.(*model.Notification)
+			req := u.createNotificationRequest(notification).Build().
+				WithOnSuccess(func(_ context.Context, created *keboola.NotificationSubscription) error {
+					notification.ID = created.ID
+					notification.CreatedAt = created.CreatedAt
+					notificationState.SetRemoteState(notification)
+					u.changes.AddCreated(notificationState)
+					return nil
+				})
+			u.runGroupFor(object.Level()).Add(req)
+		}
+		return
+	}
+
 	// Invoke mapper
 	apiObject := deepcopy.Copy(object).(model.Object)
 	recipe := model.NewRemoteSaveRecipe(objectState.Manifest(), apiObject, changedFields)
@@ -267,6 +283,22 @@ func (u *UnitOfWork) DeleteObject(objectState model.ObjectState) {
 			return
 		}
 	}
+
+	// Special handling for notifications
+	if notificationState, ok := objectState.(*model.NotificationState); ok {
+		if notificationState.HasRemoteState() {
+			notification := notificationState.RemoteState().(*model.Notification)
+			req := u.keboolaProjectAPI.
+				DeleteNotificationSubscriptionRequest(keboola.NotificationSubscriptionKey{ID: notification.ID}).
+				WithOnSuccess(func(_ context.Context, _ request.NoResult) error {
+					u.changes.AddDeleted(notificationState)
+					return nil
+				})
+			u.runGroupFor(objectState.Level()).Add(req)
+		}
+		return
+	}
+
 	u.delete(objectState)
 }
 
