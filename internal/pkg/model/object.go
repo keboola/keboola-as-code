@@ -362,7 +362,7 @@ func (m BranchMetadata) ToOrderedMap() *orderedmap.OrderedMap {
 	return res
 }
 
-// Branch https://keboola.docs.apiary.io/#reference/development-branches/branches/list-branches
+// Branch represents a development branch
 type Branch struct {
 	BranchKey
 	Name        string         `json:"name" validate:"required" diff:"true" metaFile:"true"`
@@ -473,7 +473,7 @@ func (m ConfigMetadata) InstanceID() string {
 	return m[instanceIDMetadataKey]
 }
 
-// Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
+// Config represents a component configuration
 type Config struct {
 	ConfigKey
 	Name           string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
@@ -528,7 +528,7 @@ func (c *ConfigWithRows) ToAPIObject(changeDescription string, changedFields Cha
 	return out, append(changedFields.Slice(), "changeDescription")
 }
 
-// ConfigRow https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
+// ConfigRow represents a configuration row
 type ConfigRow struct {
 	ConfigRowKey
 	Name        string                 `json:"name" diff:"true" metaFile:"true"`
