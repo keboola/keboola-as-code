@@ -32,7 +32,7 @@ func (options Options) ContainsID(id string) bool {
 }
 
 func (options Options) Names() []string {
-	out := make([]string, 0)
+	out := make([]string, 0, len(options))
 	for _, o := range options {
 		out = append(out, o.Label)
 	}

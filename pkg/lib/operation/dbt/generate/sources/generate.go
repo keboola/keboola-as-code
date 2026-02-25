@@ -8,7 +8,7 @@ import (
 )
 
 func generateSourcesDefinition(bucket listbuckets.Bucket) dbt.SourceFile {
-	sourceTables := make([]dbt.SourceTable, 0)
+	sourceTables := make([]dbt.SourceTable, 0, len(bucket.Tables))
 	for _, table := range bucket.Tables {
 		sourceTable := dbt.SourceTable{
 			Name: table.Name,
@@ -19,7 +19,7 @@ func generateSourcesDefinition(bucket listbuckets.Bucket) dbt.SourceFile {
 			},
 		}
 		if len(table.PrimaryKey) > 0 {
-			sourceColumns := make([]dbt.SourceTableColumn, 0)
+			sourceColumns := make([]dbt.SourceTableColumn, 0, len(table.PrimaryKey))
 			for _, primaryKey := range table.PrimaryKey {
 				sourceColumns = append(sourceColumns, dbt.SourceTableColumn{
 					Name:  fmt.Sprintf(`"%s"`, primaryKey),

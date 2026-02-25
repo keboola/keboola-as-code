@@ -74,7 +74,7 @@ func ReplacePlaceholders(node *ast.LiteralString) ast.Node {
 	// Replace placeholders with function call
 	replaceCallback := func(funcName string, args []any) ast.Node {
 		// Arguments definition, map args -> funcArgs
-		var funcArgs []ast.CommaSeparatedExpr
+		funcArgs := make([]ast.CommaSeparatedExpr, 0, len(args))
 		for _, value := range args {
 			funcArgs = append(funcArgs, ast.CommaSeparatedExpr{
 				Expr: ValueToLiteral(value),

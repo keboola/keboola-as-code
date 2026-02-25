@@ -273,7 +273,7 @@ func expectObserver(t *testing.T, writer io.Writer) expect.ExpectObserver {
 	return func(matchers []expect.Matcher, buf string, err error) {
 		t.Helper()
 		if err != nil {
-			var criteria []any
+			criteria := make([]any, 0, len(matchers))
 			for _, m := range matchers {
 				criteria = append(criteria, m.Criteria())
 			}

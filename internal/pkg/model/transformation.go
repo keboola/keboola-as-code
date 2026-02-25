@@ -177,7 +177,7 @@ func ScriptsFromStr(content string, componentID keboola.ComponentID) Scripts {
 		items = []string{content}
 	}
 
-	scripts := make(Scripts, 0)
+	scripts := make(Scripts, 0, len(items))
 	for _, item := range items {
 		scripts = append(scripts, StaticScript{Value: item})
 	}

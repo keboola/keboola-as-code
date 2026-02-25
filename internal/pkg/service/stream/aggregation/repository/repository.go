@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -123,13 +122,13 @@ func (r *Repository) addStatisticsToAggregationResponse(ctx context.Context, res
 
 			txn.Merge(r.statistics.AggregateIn(sinkKey).OnResult(func(result *op.TxnResult[statistics.Aggregated]) {
 				sink.Statistics = &SinkStatistics{
-					Total: ptr.Ptr(result.Result()),
+					Total: new(result.Result()),
 				}
 			}))
 
 			txn.Merge(r.storage.File().ListIn(sinkKey, iterator.WithSort(etcd.SortDescend)).ForEach(func(value model.File, header *iterator.Header) error {
 				sink.Statistics.Files = append(sink.Statistics.Files, &FileWithStatistics{
-					File: ptr.Ptr(value),
+					File: new(value),
 				})
 				return nil
 			}))

@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 )
 
 type ConfigPatchTextUnmarshaller struct {
@@ -39,7 +38,7 @@ func TestBindKVs_One(t *testing.T) {
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
 	assert.Equal(t, ConfigPatch{
-		Key3: &ConfigNested1Patch{Key5: ptr.Ptr(789)},
+		Key3: &ConfigNested1Patch{Key5: new(789)},
 	}, patch)
 }
 
@@ -53,7 +52,7 @@ func TestBindKVs_DeepNested(t *testing.T) {
 	assert.Equal(t, ConfigPatch{
 		Key3: &ConfigNested1Patch{
 			Key6: &ConfigNested2Patch{
-				Key8: ptr.Ptr(false),
+				Key8: new(false),
 			},
 		},
 	}, patch)
@@ -68,8 +67,8 @@ func TestBindKVs_Multiple(t *testing.T) {
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
 	assert.Equal(t, ConfigPatch{
-		Key1: ptr.Ptr([]string{"bar1"}),
-		Key3: &ConfigNested1Patch{Key5: ptr.Ptr(789)},
+		Key1: new([]string{"bar1"}),
+		Key3: &ConfigNested1Patch{Key5: new(789)},
 	}, patch)
 }
 
@@ -81,7 +80,7 @@ func TestBindKVs_UnmarshalText_Ok(t *testing.T) {
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
 	assert.Equal(t, ConfigPatchTextUnmarshaller{
-		Duration: ptr.Ptr(time.Hour + 20*time.Minute),
+		Duration: new(time.Hour + 20*time.Minute),
 	}, patch)
 }
 
@@ -104,7 +103,7 @@ func TestBindKVs_CompatibleType(t *testing.T) {
 	}
 	require.NoError(t, configpatch.BindKVs(&patch, kvs))
 	assert.Equal(t, ConfigPatch{
-		Key3: &ConfigNested1Patch{Key5: ptr.Ptr(789)},
+		Key3: &ConfigNested1Patch{Key5: new(789)},
 	}, patch)
 }
 

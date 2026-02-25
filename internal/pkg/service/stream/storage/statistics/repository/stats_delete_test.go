@@ -487,7 +487,7 @@ func TestRepository_RollupStatisticsOnFileDelete_NearTxnLimit(t *testing.T) {
 
 	// Create records
 	nodeID := "test-node"
-	stats := []statistics.PerSlice{}
+	stats := make([]statistics.PerSlice, 0, len(sliceKeys))
 	for _, sliceKey := range sliceKeys {
 		stats = append(stats, statistics.PerSlice{
 			SliceKey:         sliceKey,
@@ -626,7 +626,7 @@ func TestRepository_RollupStatisticsOnFileDelete_AboveTxnLimit(t *testing.T) {
 
 	// Create records
 	nodeID := "test-node"
-	stats := []statistics.PerSlice{}
+	stats := make([]statistics.PerSlice, 0, len(sliceKeys))
 	for _, sliceKey := range sliceKeys {
 		stats = append(stats, statistics.PerSlice{
 			SliceKey:         sliceKey,

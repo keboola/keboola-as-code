@@ -259,7 +259,7 @@ Preview of steps and groups you created:
 
 		// Default
 		if slice, ok := i.Default.([]any); ok && i.Kind == input.KindMultiSelect {
-			var items []string
+			items := make([]string, 0, len(slice))
 			for _, item := range slice {
 				items = append(items, item.(string))
 			}

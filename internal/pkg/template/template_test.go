@@ -88,7 +88,7 @@ func TestTemplate_Tests(t *testing.T) {
 	tests, err := tmpl.Tests(ctx)
 	require.NoError(t, err)
 
-	testNames := make([]string, 0)
+	testNames := make([]string, 0, len(tests))
 	for _, test := range tests {
 		testNames = append(testNames, test.Name())
 	}

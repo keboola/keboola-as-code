@@ -11,7 +11,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
@@ -111,7 +110,7 @@ func (b *Bridge) createStagingFile(ctx context.Context, api *keboola.AuthorizedA
 		Columns:               sink.Table.Mapping.Columns.Names(),
 		FileID:                &stagingFile.FileID,
 		FileName:              &stagingFile.Name,
-		CredentialsExpiration: ptr.Ptr(utctime.From(stagingFile.CredentialsExpiration())),
+		CredentialsExpiration: new(utctime.From(stagingFile.CredentialsExpiration())),
 	}
 	if b.credentialsEncryptor != nil {
 		// Encrypt credentials

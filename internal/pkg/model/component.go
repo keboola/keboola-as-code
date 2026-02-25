@@ -134,7 +134,7 @@ func (m ComponentsMap) GetOrErr(id keboola.ComponentID) (*keboola.Component, err
 }
 
 func (m ComponentsMap) Used() keboola.Components {
-	out := make(keboola.Components, 0)
+	out := make(keboola.Components, 0, len(m.used))
 	for id := range m.used {
 		component, _ := m.Get(id)
 		out = append(out, component)

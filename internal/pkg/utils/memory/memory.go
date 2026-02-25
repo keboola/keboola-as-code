@@ -46,8 +46,8 @@ func calculateSize(v reflect.Value, visited map[uintptr]bool) uintptr {
 	case reflect.Struct:
 		// Sum all fields, including unexported ones
 		sum := uintptr(0)
-		for i := range v.NumField() {
-			sum += calculateSize(v.Field(i), visited)
+		for _, field := range v.Fields() {
+			sum += calculateSize(field, visited)
 		}
 		return sum
 

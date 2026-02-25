@@ -1,7 +1,6 @@
 package mapper
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/api/gen/stream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -38,9 +37,9 @@ func (m *Mapper) NewSinkFile(file model.File) *stream.SinkFile {
 	}
 
 	if file.RetryAttempt > 0 {
-		sinkFile.RetryAttempt = ptr.Ptr(file.RetryAttempt)
-		sinkFile.RetryReason = ptr.Ptr(file.RetryReason)
-		sinkFile.RetryAfter = ptr.Ptr(file.RetryAfter.String())
+		sinkFile.RetryAttempt = new(file.RetryAttempt)
+		sinkFile.RetryReason = new(file.RetryReason)
+		sinkFile.RetryAfter = new(file.RetryAfter.String())
 	}
 
 	return sinkFile
@@ -76,5 +75,5 @@ func timeToStringPointer(time *utctime.UTCTime) *string {
 		return nil
 	}
 
-	return ptr.Ptr(time.String())
+	return new(time.String())
 }

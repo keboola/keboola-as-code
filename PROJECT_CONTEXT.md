@@ -36,7 +36,7 @@ The project uses ETCD for distributed storage and synchronization, with a custom
 
 ### Docker Setup
 - Docker and Docker Compose
-- Go 1.25+
+- Go 1.26+
 - Task
 
 For Docker-based development, see [Development Guide](docs/development.md).

@@ -23,7 +23,6 @@ import (
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository/sink"
@@ -1387,7 +1386,7 @@ var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
 		column.IP{Name: "ip-col"},
 		column.Headers{Name: "headers-col"},
 		column.Body{Name: "body-col"},
-		column.Path{Name: "path-col", Path: `foo.bar[0]`, DefaultValue: ptr.Ptr(""), RawString: true},
+		column.Path{Name: "path-col", Path: `foo.bar[0]`, DefaultValue: new(""), RawString: true},
 		column.Template{Name: "template-col", Template: column.TemplateConfig{Language: "jsonnet", Content: `body.foo + "-" + body.bar`}},
 	})
 })

@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configpatch"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ptr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level"
@@ -27,19 +26,19 @@ func StorageConfigPatch() configpatch.PatchKVs {
 					Local: &local.ConfigPatch{
 						Encoding: &encoding.ConfigPatch{
 							Sync: &writesync.ConfigPatch{
-								Mode:                     ptr.Ptr(writesync.ModeDisk),
-								Wait:                     ptr.Ptr(false),
-								CheckInterval:            ptr.Ptr(duration.From(1 * time.Millisecond)),
-								CountTrigger:             ptr.Ptr(uint(100)),
-								UncompressedBytesTrigger: ptr.Ptr(200 * datasize.KB),
-								CompressedBytesTrigger:   ptr.Ptr(100 * datasize.KB),
-								IntervalTrigger:          ptr.Ptr(duration.From(100 * time.Millisecond)),
+								Mode:                     new(writesync.ModeDisk),
+								Wait:                     new(false),
+								CheckInterval:            new(duration.From(1 * time.Millisecond)),
+								CountTrigger:             new(uint(100)),
+								UncompressedBytesTrigger: new(200 * datasize.KB),
+								CompressedBytesTrigger:   new(100 * datasize.KB),
+								IntervalTrigger:          new(duration.From(100 * time.Millisecond)),
 							},
 						},
 						Volume: &volume.ConfigPatch{
 							Assignment: &assignment.ConfigPatch{
-								Count:          ptr.Ptr(1),
-								PreferredTypes: ptr.Ptr([]string{"default"}),
+								Count:          new(1),
+								PreferredTypes: new([]string{"default"}),
 							},
 						},
 					},
@@ -59,8 +58,8 @@ func LocalVolumeConfig(count int, preferred []string) configpatch.PatchKVs {
 					Local: &local.ConfigPatch{
 						Volume: &volume.ConfigPatch{
 							Assignment: &assignment.ConfigPatch{
-								Count:          ptr.Ptr(count),
-								PreferredTypes: ptr.Ptr(preferred),
+								Count:          new(count),
+								PreferredTypes: new(preferred),
 							},
 						},
 					},

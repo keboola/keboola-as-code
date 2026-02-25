@@ -104,7 +104,7 @@ func (r *Reporter) relationsDiff(remoteValue, localValue reflect.Value) ([]strin
 	relationsType := reflect.TypeFor[model.Relations]()
 	if remoteValue.IsValid() && localValue.IsValid() && remoteValue.Type().ConvertibleTo(relationsType) && localValue.Type().ConvertibleTo(relationsType) {
 		onlyInRemote, onlyInLocal := remoteValue.Interface().(model.Relations).Diff(localValue.Interface().(model.Relations))
-		var out []string
+		out := make([]string, 0, len(onlyInRemote)+len(onlyInLocal))
 		for _, v := range onlyInRemote {
 			out = append(out, fmt.Sprintf("%s %s", OnlyInRemoteMark, r.relationToString(v, r.remoteObject, r.objects.RemoteObjects())))
 		}

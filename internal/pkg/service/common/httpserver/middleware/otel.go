@@ -91,7 +91,7 @@ func spanRequestAttrs(cfg *Config, req *http.Request) (out []attribute.KeyValue)
 
 	// Query params
 	{
-		var attrs []attribute.KeyValue
+		attrs := make([]attribute.KeyValue, 0, len(req.URL.Query()))
 		for key, values := range req.URL.Query() {
 			value := strings.Join(values, ";")
 			if _, found := cfg.redactedQueryParams[strings.ToLower(key)]; found {
@@ -107,7 +107,7 @@ func spanRequestAttrs(cfg *Config, req *http.Request) (out []attribute.KeyValue)
 
 	// Headers
 	{
-		var attrs []attribute.KeyValue
+		attrs := make([]attribute.KeyValue, 0, len(req.Header))
 		for key, values := range req.Header {
 			key = strings.ToLower(key)
 			value := strings.Join(values, ";")
@@ -132,7 +132,7 @@ func spanRequestAttrs(cfg *Config, req *http.Request) (out []attribute.KeyValue)
 func spanResponseAttrs(cfg *Config, header http.Header) (out []attribute.KeyValue) {
 	// Headers
 	{
-		var attrs []attribute.KeyValue
+		attrs := make([]attribute.KeyValue, 0, len(header))
 		for key, values := range header {
 			key = strings.ToLower(key)
 			value := strings.Join(values, ";")

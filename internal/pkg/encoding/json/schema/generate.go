@@ -111,7 +111,7 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) any {
 func buildOrderedMap(schema *jsonschema.Schema, level int) any {
 	values := orderedmap.New()
 	if schema.Properties != nil {
-		props := make([]*jsonschema.Schema, 0)
+		props := make([]*jsonschema.Schema, 0, len(schema.Properties))
 		keys := make(map[string]string)
 		for key, prop := range schema.Properties {
 			props = append(props, prop)

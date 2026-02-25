@@ -259,7 +259,7 @@ func TestValidateInputs(t *testing.T) {
 					{
 						ID:    "g01",
 						Valid: false,
-						Error: strPtr("At least one step must be selected."), // <<<<<<<<<<<<<<<<<<<
+						Error: new("At least one step must be selected."), // <<<<<<<<<<<<<<<<<<<
 						Steps: []*StepValidationResult{
 							{
 								ID:         "g01-s01",
@@ -309,7 +309,7 @@ func TestValidateInputs(t *testing.T) {
 									{
 										ID:      "foo",
 										Visible: true,
-										Error:   strPtr("Foo Name is a required field."), // <<<<<<<<<<<<<<<<<<<
+										Error:   new("Foo Name is a required field."), // <<<<<<<<<<<<<<<<<<<
 									},
 								},
 							},
@@ -334,8 +334,4 @@ func TestValidateInputs(t *testing.T) {
 			assert.Equal(t, c.err, err.Error(), desc)
 		}
 	}
-}
-
-func strPtr(str string) *string {
-	return &str
 }
