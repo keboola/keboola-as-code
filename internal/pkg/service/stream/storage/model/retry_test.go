@@ -239,3 +239,99 @@ func TestRetryBackoff_RetryAt_Random(t *testing.T) {
 		now = retryAt
 	}
 }
+
+func TestRetryable_IncrementNonRetryableAttempt(t *testing.T) {
+	t.Parallel()
+
+	fixedInterval := 2 * time.Hour
+	v := Retryable{}
+
+	// First attempt
+	v.IncrementNonRetryableAttempt(utctime.MustParse("2000-01-01T00:00:00.000Z").Time(), "credential expired", fixedInterval)
+	assert.Equal(t, Retryable{
+		RetryAttempt:  1,
+		RetryReason:   "credential expired",
+		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
+		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
+		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")), // +2 hours
+	}, v)
+
+	// Second attempt - FirstFailedAt should remain unchanged
+	v.IncrementNonRetryableAttempt(utctime.MustParse("2000-01-01T02:00:00.000Z").Time(), "credential expired", fixedInterval)
+	assert.Equal(t, Retryable{
+		RetryAttempt:  2,
+		RetryReason:   "credential expired",
+		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")), // unchanged
+		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
+		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T04:00:00.000Z")), // +2 hours (fixed)
+	}, v)
+
+	// Third attempt - still fixed interval
+	v.IncrementNonRetryableAttempt(utctime.MustParse("2000-01-01T04:00:00.000Z").Time(), "credential expired", fixedInterval)
+	assert.Equal(t, Retryable{
+		RetryAttempt:  3,
+		RetryReason:   "credential expired",
+		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")), // unchanged
+		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T04:00:00.000Z")),
+		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T06:00:00.000Z")), // +2 hours (fixed)
+	}, v)
+}
+
+func TestRetryable_IncrementNonRetryableAttempt_VsExponential(t *testing.T) {
+	t.Parallel()
+
+	// This test demonstrates the difference between exponential backoff (IncrementRetryAttempt)
+	// and fixed interval (IncrementNonRetryableAttempt)
+
+	backoff := NoRandomizationBackoff()
+	fixedInterval := 2 * time.Hour
+
+	exponential := Retryable{}
+	fixed := Retryable{}
+
+	baseTime := utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
+
+	// First attempt - both use their base interval
+	exponential.IncrementRetryAttempt(backoff, baseTime, "retryable error")
+	fixed.IncrementNonRetryableAttempt(baseTime, "non-retryable error", fixedInterval)
+
+	assert.Equal(t, "2000-01-01T00:02:00.000Z", exponential.RetryAfter.String()) // +2 min (exponential base)
+	assert.Equal(t, "2000-01-01T02:00:00.000Z", fixed.RetryAfter.String())       // +2 hours (fixed)
+
+	// Second attempt - exponential increases, fixed stays same
+	exponential.IncrementRetryAttempt(backoff, baseTime.Add(2*time.Minute), "retryable error")
+	fixed.IncrementNonRetryableAttempt(baseTime.Add(2*time.Hour), "non-retryable error", fixedInterval)
+
+	assert.Equal(t, "2000-01-01T00:10:00.000Z", exponential.RetryAfter.String()) // +8 min (exponential x4)
+	assert.Equal(t, "2000-01-01T04:00:00.000Z", fixed.RetryAfter.String())       // +2 hours (fixed)
+
+	// Third attempt - exponential continues to grow, fixed stays same
+	exponential.IncrementRetryAttempt(backoff, baseTime.Add(10*time.Minute), "retryable error")
+	fixed.IncrementNonRetryableAttempt(baseTime.Add(4*time.Hour), "non-retryable error", fixedInterval)
+
+	assert.Equal(t, "2000-01-01T00:42:00.000Z", exponential.RetryAfter.String()) // +32 min (exponential x4)
+	assert.Equal(t, "2000-01-01T06:00:00.000Z", fixed.RetryAfter.String())       // +2 hours (fixed)
+
+	// Verify FirstFailedAt remains unchanged for both
+	assert.Equal(t, baseTime, exponential.FirstFailedAt.Time())
+	assert.Equal(t, baseTime, fixed.FirstFailedAt.Time())
+}
+
+func TestRetryable_IncrementNonRetryableAttempt_TerminalInterval(t *testing.T) {
+	t.Parallel()
+
+	// Test with a very long "terminal" interval (simulating max attempts reached)
+	terminalInterval := 10 * 365 * 24 * time.Hour // ~10 years
+	v := Retryable{}
+
+	baseTime := utctime.MustParse("2000-01-01T00:00:00.000Z").Time()
+	v.IncrementNonRetryableAttempt(baseTime, "max attempts reached", terminalInterval)
+
+	// Verify far-future retry time (should be at least 9 years in the future)
+	expectedRetryAfter := utctime.From(baseTime.Add(terminalInterval))
+	assert.Equal(t, expectedRetryAfter.String(), v.RetryAfter.String())
+
+	// Verify it's far in the future (more than 9 years)
+	nineYearsLater := baseTime.Add(9 * 365 * 24 * time.Hour)
+	assert.True(t, v.RetryAfter.Time().After(nineYearsLater), "RetryAfter should be more than 9 years in the future")
+}

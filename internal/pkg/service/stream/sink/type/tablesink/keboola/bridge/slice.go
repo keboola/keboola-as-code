@@ -27,7 +27,7 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 		return nil
 	}
 
-	start := time.Now()
+	start := b.clock.Now()
 
 	reader, err := volume.OpenReader(slice.SliceKey, slice.LocalStorage, slice.EncodingCompression, slice.StagingStorage.Compression)
 	if err != nil {
@@ -39,6 +39,23 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	existingToken, err := b.schema.Token().ForSink(slice.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
 		return err
+	}
+
+	// Get file details to check expiration before decryption
+	keboolaFile, err := b.schema.File().ForFile(slice.FileKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
+	if err != nil {
+		return err
+	}
+
+	// Check credential expiration before decryption to avoid unnecessary crypto/KMS operations.
+	// Expired credentials will never succeed, so we fail fast with a non-retryable error
+	// to avoid wasting API calls and generating excessive error logs.
+	expiration := keboolaFile.Expiration()
+	if !expiration.IsZero() && b.clock.Now().After(expiration.Time()) {
+		return model.NewNonRetryableError(errors.Errorf(
+			"%w: credentials for file %s expired at %s",
+			ErrCredentialsExpired, slice.FileKey.String(), expiration.String(),
+		))
 	}
 
 	// Prepare encryption metadata
@@ -75,12 +92,6 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 		}
 	}()
 
-	// Get file details
-	keboolaFile, err := b.schema.File().ForFile(slice.FileKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
-	if err != nil {
-		return err
-	}
-
 	// Decrypt file upload credentials
 	var credentials keboola.FileUploadCredentials
 	if keboolaFile.EncryptedCredentials != "" {
@@ -95,17 +106,6 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 		}
 	} else {
 		credentials = *keboolaFile.UploadCredentials
-	}
-
-	// Check credential expiration before attempting upload.
-	// Expired credentials will never succeed, so we fail fast with a non-retryable error
-	// to avoid wasting API calls and generating excessive error logs.
-	expiration := keboolaFile.Expiration()
-	if !expiration.IsZero() && time.Now().After(expiration.Time()) {
-		return model.NewNonRetryableError(errors.Errorf(
-			"%w: credentials for file %s expired at %s",
-			ErrCredentialsExpired, slice.FileKey.String(), expiration.String(),
-		))
 	}
 
 	// Upload slice
