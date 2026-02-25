@@ -362,7 +362,7 @@ func (m BranchMetadata) ToOrderedMap() *orderedmap.OrderedMap {
 	return res
 }
 
-// Branch represents a development branch
+// Branch represents a development branch.
 type Branch struct {
 	BranchKey
 	Name        string         `json:"name" validate:"required" diff:"true" metaFile:"true"`
@@ -473,7 +473,7 @@ func (m ConfigMetadata) InstanceID() string {
 	return m[instanceIDMetadataKey]
 }
 
-// Config represents a component configuration
+// Config represents a component configuration.
 type Config struct {
 	ConfigKey
 	Name           string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
@@ -528,7 +528,7 @@ func (c *ConfigWithRows) ToAPIObject(changeDescription string, changedFields Cha
 	return out, append(changedFields.Slice(), "changeDescription")
 }
 
-// ConfigRow represents a configuration row
+// ConfigRow represents a configuration row.
 type ConfigRow struct {
 	ConfigRowKey
 	Name        string                 `json:"name" diff:"true" metaFile:"true"`
