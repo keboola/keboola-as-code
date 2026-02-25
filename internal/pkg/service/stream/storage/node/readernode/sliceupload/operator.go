@@ -337,14 +337,16 @@ func (o *operator) handleUploadError(ctx context.Context, slice *sliceData, err 
 		dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("terminal retry update timeout"))
 		defer dbCancel()
 
-		_, rErr := o.storage.Slice().IncrementNonRetryableAttempt(slice.SliceKey, o.clock.Now(), err.Error(), terminalRetryInterval).Do(dbCtx).ResultOrErr()
+		// Capture the timestamp once to ensure consistency between etcd update and log message
+		now := o.clock.Now()
+		_, rErr := o.storage.Slice().IncrementNonRetryableAttempt(slice.SliceKey, now, err.Error(), terminalRetryInterval).Do(dbCtx).ResultOrErr()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot update slice with terminal retry interval: %s", rErr)
 			return
 		}
 
 		o.logger.Infof(ctx, "slice retry disabled until %s, requires manual intervention",
-			o.clock.Now().Add(terminalRetryInterval).Format(time.RFC3339))
+			now.Add(terminalRetryInterval).Format(time.RFC3339))
 		return
 	}
 

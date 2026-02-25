@@ -35,6 +35,16 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 		return err
 	}
 
+	// Error when closing the reader is not a fatal error
+	// Register this defer immediately after opening to prevent resource leaks on early returns
+	defer func() {
+		err := reader.Close(ctx)
+		if err != nil {
+			b.logger.Warnf(ctx, "unable to close reader: %v", err)
+			return
+		}
+	}()
+
 	// Get authorization token
 	existingToken, err := b.schema.Token().ForSink(slice.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
@@ -79,15 +89,6 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 		cancel()
 		if uErr != nil {
 			b.logger.Warnf(ctx, "unable to send slice upload event: %v", uErr)
-			return
-		}
-	}()
-
-	// Error when closing the reader is not a fatal error
-	defer func() {
-		err := reader.Close(ctx)
-		if err != nil {
-			b.logger.Warnf(ctx, "unable to close reader: %v", err)
 			return
 		}
 	}()
