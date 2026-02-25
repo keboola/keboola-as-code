@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
+	pullop "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 )
 
 type Options struct {
@@ -74,6 +75,9 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		if err = file.IgnoreConfigsOrRows(); err != nil {
 			return err
 		}
+
+		// Also propagate ignore to orchestrators referencing ignored configs
+		pullop.IgnoreConfigsAndRows(projectState)
 	}
 
 	// Diff
