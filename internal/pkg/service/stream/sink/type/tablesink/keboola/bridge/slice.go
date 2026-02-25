@@ -15,6 +15,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// ErrCredentialsExpired is returned when the upload credentials for a file have expired.
+// This is a non-retryable error because the credentials will never become valid again without external intervention.
+var ErrCredentialsExpired = errors.New("upload credentials have expired")
+
 func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, slice plugin.Slice, stats statistics.Value) error {
 	// Skip upload if the slice is empty.
 	// The state is anyway switched to the SliceUploaded by the operator.
@@ -91,6 +95,17 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 		}
 	} else {
 		credentials = *keboolaFile.UploadCredentials
+	}
+
+	// Check credential expiration before attempting upload.
+	// Expired credentials will never succeed, so we fail fast with a non-retryable error
+	// to avoid wasting API calls and generating excessive error logs.
+	expiration := keboolaFile.Expiration()
+	if !expiration.IsZero() && time.Now().After(expiration.Time()) {
+		return model.NewNonRetryableError(errors.Errorf(
+			"%w: credentials for file %s expired at %s",
+			ErrCredentialsExpired, slice.FileKey.String(), expiration.String(),
+		))
 	}
 
 	// Upload slice

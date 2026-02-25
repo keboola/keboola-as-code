@@ -93,6 +93,23 @@ func (v *Retryable) IncrementRetryAttempt(backoff RetryBackoff, failedAt time.Ti
 	v.RetryAfter = &retryAfterUTC
 }
 
+// IncrementNonRetryableAttempt increments the retry attempt counter using a fixed interval
+// instead of exponential backoff. This is used for errors that will never succeed (e.g., expired credentials)
+// but should still be periodically reported in logs.
+func (v *Retryable) IncrementNonRetryableAttempt(failedAt time.Time, reason string, fixedInterval time.Duration) {
+	v.RetryAttempt += 1
+	v.RetryReason = reason
+
+	failedAtUTC := utctime.From(failedAt)
+	if v.FirstFailedAt == nil {
+		v.FirstFailedAt = &failedAtUTC
+	}
+	v.LastFailedAt = &failedAtUTC
+
+	retryAfterUTC := utctime.From(failedAt.Add(fixedInterval))
+	v.RetryAfter = &retryAfterUTC
+}
+
 func (v *Retryable) ResetRetry() {
 	v.RetryAttempt = 0
 	v.RetryReason = ""

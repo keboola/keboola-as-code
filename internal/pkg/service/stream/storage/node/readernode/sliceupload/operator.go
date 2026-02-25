@@ -35,6 +35,17 @@ import (
 
 const dbOperationTimeout = 30 * time.Second
 
+// nonRetryableRetryInterval is the interval between retries for non-retryable errors.
+// Non-retryable errors (e.g., expired credentials) will never succeed, but we still
+// periodically report them so they remain visible in logs. With a 2-hour interval,
+// a stuck slice generates ~12 log entries/day instead of ~91/hour.
+const nonRetryableRetryInterval = 2 * time.Hour
+
+// maxNonRetryableAttempts limits the number of retry reports for non-retryable errors.
+// After this many attempts, the slice stops being retried. With a 2-hour interval,
+// 50 attempts span ~4 days, giving operators enough time to intervene.
+const maxNonRetryableAttempts = 50
+
 type operator struct {
 	config     stagingConfig.OperatorConfig
 	clock      clockwork.Clock
@@ -266,20 +277,45 @@ func (o *operator) uploadSlice(ctx context.Context, slice *sliceData) {
 	// Upload slice
 	stats, err := o.doUploadSlice(ctx, volume, slice)
 	if err != nil {
+		// Check if the error is non-retryable (e.g., expired credentials).
+		// Non-retryable errors will never succeed, so we use a longer retry interval
+		// to reduce log noise while still periodically reporting the issue.
+		var nonRetryableErr *model.NonRetryableError
+		isNonRetryable := errors.As(err, &nonRetryableErr)
+
+		if isNonRetryable && slice.Retry.RetryAttempt >= maxNonRetryableAttempts {
+			o.logger.Errorf(ctx, "slice upload permanently failed after %d attempts: %s", slice.Retry.RetryAttempt, err.Error())
+			// Still mark as processed to avoid tight loop, but don't increment retry anymore.
+			// The slice stays in uploading state — it requires manual intervention.
+			slice.Processed = true
+			return
+		}
+
 		o.logger.Error(ctx, err.Error())
 
 		// Update the entity, the ctx may be cancelled
 		dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("retry increment timeout"))
 		defer dbCancel()
 
-		// If there is an error, increment retry delay
-		sliceEntity, rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(dbCtx).ResultOrErr()
-		if rErr != nil {
-			o.logger.Errorf(ctx, "cannot increment file import retry: %s", rErr)
-			return
+		if isNonRetryable {
+			// For non-retryable errors, use a fixed long interval instead of exponential backoff.
+			// This keeps the error visible in logs without generating excessive noise.
+			sliceEntity, rErr := o.storage.Slice().IncrementNonRetryableAttempt(slice.SliceKey, o.clock.Now(), err.Error(), nonRetryableRetryInterval).Do(dbCtx).ResultOrErr()
+			if rErr != nil {
+				o.logger.Errorf(ctx, "cannot increment file import retry: %s", rErr)
+				return
+			}
+			o.logger.Warnf(ctx, "slice upload failed with non-retryable error (attempt %d/%d), will report again after %s",
+				sliceEntity.RetryAttempt, maxNonRetryableAttempts, nonRetryableRetryInterval.String())
+		} else {
+			// If there is an error, increment retry delay
+			sliceEntity, rErr := o.storage.Slice().IncrementRetryAttempt(slice.SliceKey, o.clock.Now(), err.Error()).Do(dbCtx).ResultOrErr()
+			if rErr != nil {
+				o.logger.Errorf(ctx, "cannot increment file import retry: %s", rErr)
+				return
+			}
+			o.logger.Infof(ctx, "slice upload will be retried after %q", sliceEntity.RetryAfter.String())
 		}
-
-		o.logger.Infof(ctx, "slice upload will be retried after %q", sliceEntity.RetryAfter.String())
 	}
 
 	// Prevents other processing, if the entity has been modified.
