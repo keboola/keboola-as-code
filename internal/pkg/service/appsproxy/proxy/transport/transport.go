@@ -102,7 +102,6 @@ func NewWithDNSServer(d dependencies, dnsServerAddress string) (http.RoundTrippe
 		// For external hostnames (e.g. E2B apps), skip straight to the standard recursive
 		// resolver; the wakeup/spinner flow does not apply to externally hosted apps.
 		var ip string
-		var err error
 		if strings.HasSuffix(host, ".cluster.local") {
 			ip, err = dnsClient.Resolve(resolveCtx, host) //nolint:contextcheck
 		} else {
