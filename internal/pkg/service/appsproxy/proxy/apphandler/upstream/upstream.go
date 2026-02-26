@@ -143,6 +143,11 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
 	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app, &u.restartDisabled)
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		u.manager.logger.Infof(req.Context(), "forwarding request: method=%s url=%s host=%s headers=%v", req.Method, req.URL.String(), req.Host, req.Header)
+	}
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -162,6 +167,11 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
 	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app, &u.restartDisabled)
+	originalWsDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalWsDirector(req)
+		u.manager.logger.Infof(req.Context(), "forwarding websocket request: method=%s url=%s host=%s headers=%v", req.Method, req.URL.String(), req.Host, req.Header)
+	}
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
