@@ -72,12 +72,7 @@ func (l *loader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppCon
 	item.lock.Lock()
 	defer item.lock.Unlock()
 
-	// Return config from cache if it is still valid.
-	// At first, the item.expiresAt is zero, so the condition is skipped.
 	now := l.clock.Now()
-	if now.Before(item.expiresAt) {
-		return item.config, false, nil
-	}
 
 	// Send API request with cached eTag.
 	// At first, the item.config.ETag() is empty string.
