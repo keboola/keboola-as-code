@@ -152,6 +152,15 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 		u.manager.logger.Infof(req.Context(), "forwarding request: method=%s url=%s host=%s headers=%v", req.Method, req.URL.String(), req.Host, req.Header)
 	}
 
+	if strings.HasSuffix(u.target.Hostname(), ".e2b.app") {
+		proxy.ModifyResponse = func(resp *http.Response) error {
+			if resp.StatusCode == http.StatusBadGateway {
+				return pagewriter.ErrUpstreamUnavailable
+			}
+			return nil
+		}
+	}
+
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, false))

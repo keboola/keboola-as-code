@@ -19,6 +19,10 @@ const (
 	ExceptionIDPrefix = "keboola-appsproxy-"
 )
 
+// ErrUpstreamUnavailable is returned by ModifyResponse when the upstream returns a 502,
+// indicating the app is temporarily unavailable (e.g. E2B sandbox not running).
+var ErrUpstreamUnavailable = errors.New("upstream returned 502: app unavailable")
+
 type errorPageData struct {
 	App         *AppData
 	Status      int
@@ -44,6 +48,12 @@ func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, ap
 	var dnsError *net.DNSError
 	if errors.As(err, &dnsError) {
 		pw.logger.Info(req.Context(), "app is not running, rendering spinner page")
+		pw.WriteSpinnerPage(w, req, app)
+		return
+	}
+
+	if errors.Is(err, ErrUpstreamUnavailable) {
+		pw.logger.Info(req.Context(), "upstream returned 502, app is unavailable, rendering spinner page")
 		pw.WriteSpinnerPage(w, req, app)
 		return
 	}
