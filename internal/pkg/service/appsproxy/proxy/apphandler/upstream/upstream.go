@@ -146,6 +146,9 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
+		// Clear Host so the HTTP client uses req.URL.Host as the Host header,
+		// otherwise the original incoming Host header is forwarded to the upstream.
+		req.Host = ""
 		u.manager.logger.Infof(req.Context(), "forwarding request: method=%s url=%s host=%s headers=%v", req.Method, req.URL.String(), req.Host, req.Header)
 	}
 
@@ -170,6 +173,9 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	originalWsDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		originalWsDirector(req)
+		// Clear Host so the HTTP client uses req.URL.Host as the Host header,
+		// otherwise the original incoming Host header is forwarded to the upstream.
+		req.Host = ""
 		u.manager.logger.Infof(req.Context(), "forwarding websocket request: method=%s url=%s host=%s headers=%v", req.Method, req.URL.String(), req.Host, req.Header)
 	}
 
@@ -202,12 +208,18 @@ func (u *AppUpstream) trace() chain.Middleware {
 			// Trace connection events
 			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
+					u.manager.logger.Infof(ctx, "upstream connection: addr=%s reused=%v wasIdle=%v", connInfo.Conn.RemoteAddr(), connInfo.Reused, connInfo.WasIdle)
 					u.notify(ctx)
+				},
+				DNSStart: func(info httptrace.DNSStartInfo) {
+					u.manager.logger.Infof(ctx, "DNS lookup start: host=%s", info.Host)
 				},
 				DNSDone: func(info httptrace.DNSDoneInfo) {
 					if info.Err != nil {
+						u.manager.logger.Errorf(ctx, "DNS lookup failed: err=%s", info.Err)
 						u.wakeup(ctx, info.Err)
 					} else {
+						u.manager.logger.Infof(ctx, "DNS lookup done: addrs=%v coalesced=%v", info.Addrs, info.Coalesced)
 						u.restartDisabled.Store(false)
 					}
 				},
