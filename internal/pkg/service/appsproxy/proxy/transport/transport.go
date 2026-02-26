@@ -99,8 +99,20 @@ func NewWithDNSServer(d dependencies, dnsServerAddress string) (http.RoundTrippe
 		// We are using custom DNS resolving to detect if the target host - data app, is running.
 		// The DNS query is not recursive and not cached, see "dns" package for details.
 		ip, err := dnsClient.Resolve(resolveCtx, host) //nolint:contextcheck
+		if err != nil {
+			// Fall back to standard recursive DNS for external hostnames not answered by the
+			// cluster DNS (e.g. E2B apps). If the fallback also fails, the original non-recursive
+			// error is propagated to trigger the wakeup/spinner flow for in-cluster apps.
+			fallbackAddrs, fallbackErr := net.DefaultResolver.LookupHost(resolveCtx, host) //nolint:contextcheck
+			if fallbackErr == nil && len(fallbackAddrs) > 0 {
+				ip = fallbackAddrs[0]
+				dnsSpan.SetAttributes(attribute.Bool("transport.dns.resolve.fallback", true))
+				err = nil
+			}
+		}
 
-		// Trace DNSDone
+		// Trace DNSDone - a non-nil error triggers wakeup for in-cluster apps.
+		// It is only set when both the non-recursive and the fallback DNS queries fail.
 		if trace != nil && trace.DNSDone != nil {
 			trace.DNSDone(httptrace.DNSDoneInfo{
 				Addrs: []net.IPAddr{{IP: net.ParseIP(ip)}},
