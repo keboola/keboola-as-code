@@ -144,7 +144,7 @@ func (b *Bridge) deleteCredentialsOnFileDelete() {
 }
 
 func (b *Bridge) importFile(ctx context.Context, file plugin.File, stats statistics.Value) error {
-	start := time.Now()
+	start := b.clock.Now()
 
 	// Get authorization token
 	existingToken, err := b.schema.Token().ForSink(file.SinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()

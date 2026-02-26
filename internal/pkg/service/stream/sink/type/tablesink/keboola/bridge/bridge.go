@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -45,6 +46,7 @@ const (
 
 type Bridge struct {
 	logger                  log.Logger
+	clock                   clockwork.Clock
 	config                  keboolasink.Config
 	client                  etcd.KV
 	schema                  schema.Schema
@@ -68,6 +70,7 @@ type jobData struct {
 
 type dependencies interface {
 	Logger() log.Logger
+	Clock() clockwork.Clock
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	Process() *servicectx.Process
@@ -105,6 +108,7 @@ func New(d dependencies, apiProvider apiProvider, config keboolasink.Config) (*B
 
 	b := &Bridge{
 		logger:                  d.Logger().WithComponent("keboola.bridge"),
+		clock:                   d.Clock(),
 		config:                  config,
 		client:                  d.EtcdClient(),
 		schema:                  schema.New(d.EtcdSerde()),

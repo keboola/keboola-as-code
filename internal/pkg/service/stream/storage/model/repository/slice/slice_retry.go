@@ -15,3 +15,13 @@ func (r *Repository) IncrementRetryAttempt(sliceKey model.SliceKey, now time.Tim
 		return slice, nil
 	})
 }
+
+// IncrementNonRetryableAttempt increments retry attempt with a fixed interval instead of exponential backoff.
+// This is used for errors that will never succeed (e.g., expired credentials) but should still be
+// periodically reported in logs to keep the issue visible.
+func (r *Repository) IncrementNonRetryableAttempt(sliceKey model.SliceKey, now time.Time, reason string, fixedInterval time.Duration) *op.AtomicOp[model.Slice] {
+	return r.update(sliceKey, now, func(slice model.Slice) (model.Slice, error) {
+		slice.IncrementNonRetryableAttempt(now, reason, fixedInterval)
+		return slice, nil
+	})
+}

@@ -157,7 +157,6 @@ GET /v2/storage?exclude=componentDetails
 ```
 
 ### Documentation
-- **API Docs:** https://keboola.docs.apiary.io/
 - **Developer Docs:** https://developers.keboola.com/
 - **User Docs:** https://help.keboola.com/
 

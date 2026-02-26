@@ -228,7 +228,7 @@ This is a Keboola project containing [X] transformations, [Y] tables, and [Z] da
 ### Storage API
 - **Base URL:** https://connection.keboola.com
 - **Authentication:** X-StorageApi-Token header
-- **Docs:** https://keboola.docs.apiary.io/
+- **Docs:** https://developers.keboola.com/
 
 ### Common Operations
 [Examples of API calls]
