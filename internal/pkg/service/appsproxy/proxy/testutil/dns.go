@@ -31,7 +31,7 @@ func AddAppDNSRecord(t *testing.T, appServer *AppServer, dnsServer *dnsmock.Serv
 	ip, _, err := net.SplitHostPort(tsURL.Host)
 	require.NoError(t, err)
 
-	appHost := "app.local"
+	appHost := "app.cluster.local"
 	var derr *dnsmock.DNSRecordError
 	err = dnsServer.AddAOrAAAARecord(dns.Fqdn(appHost), net.ParseIP(ip))
 	if err != nil && errors.As(err, &derr) {

@@ -1755,7 +1755,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "public-app-wakeup",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+				dnsServer.RemoveARecords(dns.Fqdn("app.cluster.local"))
 
 				// Request to public app - fails because the app doesn't have a DNS record
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
@@ -1764,7 +1764,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 
-				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+				dnsServer.AddARecord(dns.Fqdn("app.cluster.local"), net.ParseIP("127.0.0.1"))
 
 				// Request to public app
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
@@ -1786,7 +1786,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "public-app-wakeup-only",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+				dnsServer.RemoveARecords(dns.Fqdn("app.cluster.local"))
 
 				// Request to public app - fails because the app doesn't have a DNS record
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
@@ -1808,7 +1808,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "restart-disabled",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+				dnsServer.RemoveARecords(dns.Fqdn("app.cluster.local"))
 
 				service.WakeUpOverrides["123"] = func(w http.ResponseWriter, req *http.Request) {
 					w.Header().Set("Content-Type", "application/json")
@@ -1858,7 +1858,7 @@ func TestAppProxyRouter(t *testing.T) {
 			name: "restart-disabled-flag-reset-on-dns-success",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
 				// Phase 1: Set restart disabled state
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+				dnsServer.RemoveARecords(dns.Fqdn("app.cluster.local"))
 
 				service.WakeUpOverrides["123"] = func(w http.ResponseWriter, req *http.Request) {
 					w.Header().Set("Content-Type", "application/json")
@@ -1895,7 +1895,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Phase 2: Simulate app becoming available (restart enabled)
 				// Add DNS record back and remove wakeup override
-				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+				dnsServer.AddARecord(dns.Fqdn("app.cluster.local"), net.ParseIP("127.0.0.1"))
 
 				// Wait for DNS to be fully propagated before removing override
 				assert.Eventually(t, func() bool {
@@ -1949,7 +1949,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-wakeup",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+				dnsServer.RemoveARecords(dns.Fqdn("app.cluster.local"))
 
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
@@ -2004,7 +2004,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 
-				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+				dnsServer.AddARecord(dns.Fqdn("app.cluster.local"), net.ParseIP("127.0.0.1"))
 
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
@@ -2023,7 +2023,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-wakeup-only",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+				dnsServer.RemoveARecords(dns.Fqdn("app.cluster.local"))
 
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
@@ -2091,7 +2091,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-no-wakeup",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
+				dnsServer.RemoveARecords(dns.Fqdn("app.cluster.local"))
 
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",

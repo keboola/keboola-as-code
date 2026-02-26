@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptrace"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -96,23 +97,23 @@ func NewWithDNSServer(d dependencies, dnsServerAddress string) (http.RoundTrippe
 		resolveCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), DNSResolveTimeout, errors.New("DNS resolve timeout"))
 		defer cancel()
 
-		// We are using custom DNS resolving to detect if the target host - data app, is running.
-		// The DNS query is not recursive and not cached, see "dns" package for details.
-		ip, err := dnsClient.Resolve(resolveCtx, host) //nolint:contextcheck
-		if err != nil {
-			// Fall back to standard recursive DNS for external hostnames not answered by the
-			// cluster DNS (e.g. E2B apps). If the fallback also fails, the original non-recursive
-			// error is propagated to trigger the wakeup/spinner flow for in-cluster apps.
-			fallbackAddrs, fallbackErr := net.DefaultResolver.LookupHost(resolveCtx, host) //nolint:contextcheck
-			if fallbackErr == nil && len(fallbackAddrs) > 0 {
-				ip = fallbackAddrs[0]
-				dnsSpan.SetAttributes(attribute.Bool("transport.dns.resolve.fallback", true))
-				err = nil
+		// For in-cluster hostnames (*.cluster.local), use the non-recursive DNS query to
+		// detect whether the target pod is running — a missing record means the pod is down.
+		// For external hostnames (e.g. E2B apps), skip straight to the standard recursive
+		// resolver; the wakeup/spinner flow does not apply to externally hosted apps.
+		var ip string
+		var err error
+		if strings.HasSuffix(host, ".cluster.local") {
+			ip, err = dnsClient.Resolve(resolveCtx, host) //nolint:contextcheck
+		} else {
+			var addrs []string
+			addrs, err = net.DefaultResolver.LookupHost(resolveCtx, host) //nolint:contextcheck
+			if err == nil && len(addrs) > 0 {
+				ip = addrs[0]
 			}
 		}
 
-		// Trace DNSDone - a non-nil error triggers wakeup for in-cluster apps.
-		// It is only set when both the non-recursive and the fallback DNS queries fail.
+		// Trace DNSDone - a non-nil error triggers wakeup only for in-cluster hostnames.
 		if trace != nil && trace.DNSDone != nil {
 			trace.DNSDone(httptrace.DNSDoneInfo{
 				Addrs: []net.IPAddr{{IP: net.ParseIP(ip)}},
