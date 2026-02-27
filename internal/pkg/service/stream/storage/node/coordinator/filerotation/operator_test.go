@@ -33,6 +33,8 @@ import (
 // fileExpirationDiff defines the time between file opening and file import trigger.
 const fileExpirationDiff = time.Minute
 
+const shortFileCloseTimeout = 10 * time.Second
+
 func TestFileRotation(t *testing.T) {
 	t.Parallel()
 
@@ -182,6 +184,71 @@ func TestFileRotation(t *testing.T) {
 	ts.logger.AssertNoErrorMessage(t)
 }
 
+// TestCloseFile_LockAcquisitionAfterWaitTimeout is a regression test for PSGO-184: when
+// waitForFileClosing exhausts the FileCloseTimeout, the subsequent lock acquisition must use
+// its own fresh context, not the expired one, so IncrementRetryAttempt can still be called.
+func TestCloseFile_LockAcquisitionAfterWaitTimeout(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+
+	ts := setupWithCloseTimeout(t, ctx, shortFileCloseTimeout)
+	defer ts.teardown(t)
+	ts.prepareFixtures(t, ctx)
+
+	// Trigger file rotation to put the old file into FileClosing state.
+	ts.clk.Advance(fileExpirationDiff)
+	ts.triggerCheck(t, true, `
+{"level":"info","message":"rotating file, import conditions met: expiration threshold met, expiration: 2000-01-01T00:31:00.000Z, remains: %s, threshold: 30m0s","file.id":"%s","component":"storage.node.operator.file.rotation"}
+`)
+
+	files, err := ts.dependencies.StorageRepository().File().ListIn(ts.sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Len(t, files, 2)
+	require.Equal(t, model.FileClosing, files[0].State)
+	require.Equal(t, model.FileWriting, files[1].State)
+
+	slices, err := ts.dependencies.StorageRepository().Slice().ListIn(ts.sink.SinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Len(t, slices, 4)
+	// ListIn returns slices in lexicographic order by etcd key (oldest file first).
+	require.Equal(t, files[0].FileKey, slices[0].FileKey)
+	require.Equal(t, model.SliceClosing, slices[0].State)
+	require.Equal(t, files[0].FileKey, slices[1].FileKey)
+	require.Equal(t, model.SliceClosing, slices[1].State)
+	require.Equal(t, files[1].FileKey, slices[2].FileKey)
+	require.Equal(t, model.SliceWriting, slices[2].State)
+	require.Equal(t, files[1].FileKey, slices[3].FileKey)
+	require.Equal(t, model.SliceWriting, slices[3].State)
+
+	closingFileKey := files[0].FileKey
+	ts.logger.Truncate()
+
+	// Trigger a close attempt; waitForFileClosing will block until FileCloseTimeout (10s) expires.
+	// Afterwards, lock acquisition and IncrementRetryAttempt must still succeed.
+	// Uses real wall-clock time - the 10s timeout cannot be faked with clockwork.FakeClock.
+	ts.clk.Advance(ts.interval)
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		ts.logger.AssertJSONMessages(c, `
+{"level":"error","message":"error when waiting for file slices upload:\n- context deadline exceeded","component":"storage.node.operator.file.rotation"}
+{"level":"info","message":"file closing will be retried after %s","component":"storage.node.operator.file.rotation"}
+`)
+	}, 15*time.Second, 100*time.Millisecond)
+
+	file, err := ts.dependencies.StorageRepository().File().Get(closingFileKey).Do(ctx).ResultOrErr()
+	require.NoError(t, err)
+	require.Equal(t, model.FileClosing, file.State)
+	require.Positive(t, file.RetryAttempt, "retry attempt should be incremented, proving lock was acquired after waitForFileClosing timeout")
+
+	warnAndErrorLogs := ts.logger.WarnAndErrorMessages()
+	assert.NotContains(t, warnAndErrorLogs, "cannot acquire lock", "lock acquisition should not fail when using a dedicated context")
+
+	ts.dependencies.Process().Shutdown(ctx, errors.New("bye bye"))
+	ts.dependencies.Process().WaitForShutdown()
+}
+
 type testState struct {
 	interval      time.Duration
 	importTrigger targetConfig.ImportTrigger
@@ -195,6 +262,11 @@ type testState struct {
 }
 
 func setup(t *testing.T, ctx context.Context) *testState {
+	t.Helper()
+	return setupWithCloseTimeout(t, ctx, 0)
+}
+
+func setupWithCloseTimeout(t *testing.T, ctx context.Context, closeTimeout time.Duration) *testState {
 	t.Helper()
 
 	importTrigger := targetConfig.ImportTrigger{
@@ -219,6 +291,9 @@ func setup(t *testing.T, ctx context.Context) *testState {
 			Trigger:     importTrigger,
 		}
 		cfg.Storage.Level.Target.Operator.FileRotationCheckInterval = duration.From(conditionsCheckInterval)
+		if closeTimeout > 0 {
+			cfg.Storage.Level.Target.Operator.FileCloseTimeout = duration.From(closeTimeout)
+		}
 	}, commonDeps.WithClock(clk))
 	client := mock.TestEtcdClient()
 
