@@ -155,6 +155,7 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	if strings.HasSuffix(u.target.Hostname(), ".e2b.app") {
 		proxy.ModifyResponse = func(resp *http.Response) error {
 			if resp.StatusCode == http.StatusBadGateway {
+				u.wakeup(resp.Request.Context(), errors.New("upstream returned 502"))
 				return pagewriter.ErrUpstreamUnavailable
 			}
 			return nil
