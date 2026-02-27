@@ -77,10 +77,10 @@ func (l *loader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppCon
 	// Send API request with cached eTag.
 	// At first, the item.config.ETag() is empty string.
 	requestETag := item.config.ETag()
-	l.logger.Debugf(ctx, `loading config for app "%s": upstreamURL=%q eTag=%q`, appID, item.config.UpstreamAppURL, requestETag)
+	l.logger.Infof(ctx, `loading config for app "%s": upstreamURL=%q eTag=%q`, appID, item.config.UpstreamAppURL, requestETag)
 	newConfig, err := l.api.GetAppConfig(appID, requestETag).Send(ctx)
 	if err == nil {
-		l.logger.Debugf(ctx, `loaded config for app "%s": upstreamURL=%q eTag=%q`, appID, newConfig.UpstreamAppURL, newConfig.ETag())
+		l.logger.Infof(ctx, `loaded config for app "%s": upstreamURL=%q eTag=%q`, appID, newConfig.UpstreamAppURL, newConfig.ETag())
 		// Cache the loaded configuration
 		item.config = *newConfig
 		item.ExtendExpiration(now, item.config.MaxAge())
@@ -90,7 +90,7 @@ func (l *loader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppCon
 	// The config hasn't been modified, extend expiration, return cached version
 	notModifierErr := api.NotModifiedError{}
 	if errors.As(err, &notModifierErr) {
-		l.logger.Debugf(ctx, `config not modified for app "%s": upstreamURL=%q eTag=%q`, appID, item.config.UpstreamAppURL, requestETag)
+		l.logger.Infof(ctx, `config not modified for app "%s": upstreamURL=%q eTag=%q`, appID, item.config.UpstreamAppURL, requestETag)
 		item.ExtendExpiration(now, notModifierErr.MaxAge)
 		return item.config, false, nil
 	}
