@@ -476,8 +476,12 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 	dbCtx, dbCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("switch to importing timeout"))
 	defer dbCancel()
 
-	// Lock all file operations
-	lock, unlock, lockErr := clusterlock.LockFile(ctx, o.locks, o.logger, file.FileKey)
+	// Lock all file operations.
+	// Use a fresh context - waitForFileClosing may have consumed the FileCloseTimeout budget.
+	lockCtx, lockCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("file close lock acquisition timeout"))
+	defer lockCancel()
+
+	lock, unlock, lockErr := clusterlock.LockFile(lockCtx, o.locks, o.logger, file.FileKey)
 	if lockErr != nil {
 		o.logger.Errorf(ctx, `file close error: %s`, lockErr)
 		return
@@ -507,8 +511,12 @@ func (o *operator) closeFile(ctx context.Context, file *fileData) {
 
 	// If there is an error, increment retry delay
 	if err != nil {
-		o.logger.Error(dbCtx, err.Error())
-		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(dbCtx).ResultOrErr()
+		retryCtx, retryCancel := context.WithTimeoutCause(context.WithoutCancel(ctx), dbOperationTimeout, errors.New("retry increment timeout"))
+		defer retryCancel()
+
+		o.logger.Error(ctx, err.Error())
+
+		fileEntity, rErr := o.storage.File().IncrementRetryAttempt(file.FileKey, o.clock.Now(), err.Error()).RequireLock(lock).Do(retryCtx).ResultOrErr()
 		if rErr != nil {
 			o.logger.Errorf(ctx, "cannot increment file close retry: %s", rErr)
 			return
