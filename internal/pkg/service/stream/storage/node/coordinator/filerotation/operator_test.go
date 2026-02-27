@@ -364,4 +364,5 @@ func (ts *testState) prepareFixtures(t *testing.T, ctx context.Context) {
 	require.NoError(t, ts.dependencies.DefinitionRepository().Source().Create(&source, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
 	require.NoError(t, ts.dependencies.DefinitionRepository().Sink().Create(&ts.sink, ts.clk.Now(), test.ByUser(), "create").Do(ctx).Err())
 	ts.waitForFilesSync(t)
+	ts.logger.Truncate()
 }
