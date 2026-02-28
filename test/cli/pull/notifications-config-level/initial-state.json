@@ -1,0 +1,41 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "empty"
+      ]
+    }
+  ],
+  "notificationSubscriptions": [
+    {
+      "id": "sub-123",
+      "event": "job-failed",
+      "recipient": {
+        "channel": "email",
+        "address": "test@example.com"
+      },
+      "filters": [
+        {
+          "field": "branch.id",
+          "operator": "==",
+          "value": "%%TEST_BRANCH_MAIN_ID%%"
+        },
+        {
+          "field": "job.component.id",
+          "operator": "==",
+          "value": "ex-generic-v2"
+        },
+        {
+          "field": "job.configuration.id",
+          "operator": "==",
+          "value": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%"
+        }
+      ]
+    }
+  ]
+}
