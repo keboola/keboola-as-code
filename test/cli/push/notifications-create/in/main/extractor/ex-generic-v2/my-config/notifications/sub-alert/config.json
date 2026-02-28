@@ -1,0 +1,7 @@
+{
+  "event": "job-failed",
+  "recipient": {
+    "channel": "email",
+    "address": "alerts@example.com"
+  }
+}
