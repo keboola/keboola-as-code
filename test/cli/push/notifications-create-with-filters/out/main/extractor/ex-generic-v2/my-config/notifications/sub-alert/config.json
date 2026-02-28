@@ -15,10 +15,15 @@
       "field": "job.configuration.id",
       "value": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%",
       "operator": "=="
+    },
+    {
+      "field": "job.token.id",
+      "value": "123",
+      "operator": "=="
     }
   ],
   "recipient": {
     "channel": "email",
-    "address": "new@example.com"
+    "address": "alerts@example.com"
   }
 }

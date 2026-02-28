@@ -1,0 +1,14 @@
+{
+  "event": "job-failed",
+  "filters": [
+    {
+      "field": "job.token.id",
+      "value": "123",
+      "operator": "=="
+    }
+  ],
+  "recipient": {
+    "channel": "email",
+    "address": "alerts@example.com"
+  }
+}

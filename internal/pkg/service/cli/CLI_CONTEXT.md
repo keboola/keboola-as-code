@@ -18,7 +18,6 @@ The CLI supports managing notification subscriptions for configurations. Notific
 - `push`: Create/delete notifications (no update API - delete + create)
 - Manifest tracks subscription IDs for sync
 
-See [docs/notifications.md](docs/notifications.md) for detailed documentation.
 
 ## Overview
 

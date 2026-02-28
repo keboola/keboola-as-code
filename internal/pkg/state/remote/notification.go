@@ -158,9 +158,13 @@ func (u *UnitOfWork) buildNotificationCreateRequest(
 			remoteNotification.ComponentID = notification.ComponentID
 			remoteNotification.ConfigID = notification.ConfigID
 
-			// Update local notification with assigned ID
+			// Update local notification with API-assigned ID and auto-populated filters
 			notification.ID = created.ID
 			notification.CreatedAt = created.CreatedAt
+			notification.Filters = created.Filters
+
+			// Update manifest ID so it is persisted correctly after push
+			notificationState.NotificationManifest.ID = created.ID
 
 			notificationState.SetRemoteState(remoteNotification)
 			u.changes.AddCreated(notificationState)

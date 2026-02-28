@@ -44,8 +44,8 @@
       "rows": [],
       "notifications": [
         {
-          "id": "%A",
-          "path": "notifications/sub-123"
+          "id": "",
+          "path": "notifications/sub-alert"
         }
       ]
     }

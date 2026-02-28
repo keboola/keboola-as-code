@@ -334,6 +334,21 @@ func (u *UnitOfWork) Invoke() error {
 		u.errors.Append(err)
 	}
 
+	// Write auto-filters back to local notification files after create/update.
+	// The API response includes all filters (auto-populated + user-defined),
+	// which were stored in notification.Filters during the WithOnSuccess callback.
+	localWork := u.localManager.NewUnitOfWork(u.ctx)
+	for _, objectState := range u.changes.Created() {
+		if notificationState, ok := objectState.(*model.NotificationState); ok {
+			if notificationState.HasLocalState() {
+				localWork.SaveObject(notificationState, notificationState.LocalState(), model.NewChangedFields("filters"))
+			}
+		}
+	}
+	if err := localWork.Invoke(); err != nil {
+		u.errors.Append(err)
+	}
+
 	u.invoked = true
 	return u.errors.ErrorOrNil()
 }

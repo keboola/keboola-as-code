@@ -350,39 +350,6 @@ u.changes.AddCreated(notificationState)
 // IDs in manifest.json are updated for new notifications via manifest.Save()
 ```
 
-### Auto-Filter Behavior
-
-Users write only `event` + `recipient` (and optionally custom `filters`) in `config.json`. During push, three standard filters are **auto-populated** by `createNotificationRequest()`:
-
-- `branch.id` — from the notification's `BranchID`
-- `job.component.id` — from the notification's `ComponentID`
-- `job.configuration.id` — from the notification's `ConfigID`
-
-These filters are required by the API to scope the notification to a specific config. They are appended before any user-defined filters.
-
-The API returns all filters (auto + user) in the response, so after a `pull`, `config.json` contains all three auto-filters plus any user-defined ones.
-
-**Consequence:** On a repeated `push` without `pull`:
-- Local `config.json` has no auto-filters (they were never written locally)
-- Remote notification has all three auto-filters
-- Diff engine shows `changed: filters`
-- This is **expected behavior**, not a bug
-
-### Delete-Then-Create for Updates
-
-The notifications API has no update endpoint. Changes are implemented as:
-1. Delete the old notification subscription
-2. Create a new one with the changed values
-
-This is implemented via `WithOnSuccess` callback chaining in `UnitOfWork.SaveObject`:
-```go
-// Pseudocode in remote/manager.go
-deleteReq.WithOnSuccess(func(...) {
-    // On successful delete, create the new one
-    return createReq.Send(ctx)
-})
-```
-
 ---
 
 ## Common Pitfalls
