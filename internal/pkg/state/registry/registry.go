@@ -231,6 +231,27 @@ func (s *Registry) ConfigRowsFrom(config model.ConfigKey) (rows []*model.ConfigR
 	return rows
 }
 
+func (s *Registry) Notifications() (notifications []*model.NotificationState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*model.NotificationState); ok {
+			notifications = append(notifications, v)
+		}
+	}
+	return notifications
+}
+
+func (s *Registry) NotificationsFrom(config model.ConfigKey) (notifications []*model.NotificationState) {
+	for _, object := range s.All() {
+		if v, ok := object.(*model.NotificationState); ok {
+			if v.BranchID != config.BranchID || v.ComponentID != config.ComponentID || v.ConfigID != config.ID {
+				continue
+			}
+			notifications = append(notifications, v)
+		}
+	}
+	return notifications
+}
+
 func (s *Registry) GetPath(key model.Key) (model.AbsPath, bool) {
 	objectState, found := s.Get(key)
 	if !found {
@@ -275,6 +296,16 @@ func (s *Registry) CreateFrom(manifest model.ObjectManifest) (model.ObjectState,
 	return objectState, s.Set(objectState)
 }
 
+// Set adds a NEW object to the registry.
+// CRITICAL: This method ONLY works for NEW objects. If the object already exists, it returns an error.
+//
+// To update an existing object:
+//
+//	existingState, _ := registry.Get(key)
+//	existingState.Local = newValue  // Just assign - no Set() call needed
+//
+// Common mistake: Calling Set() after updating an existing object's fields.
+// See docs/CLI_OBJECT_LIFECYCLE.md for details.
 func (s *Registry) Set(objectState model.ObjectState) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()

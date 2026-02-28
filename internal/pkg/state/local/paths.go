@@ -140,6 +140,9 @@ func (g *PathsGenerator) regeneratePath(objectState model.ObjectState, object mo
 		} else {
 			return err
 		}
+	case *model.NotificationState:
+		notification := object.(*model.Notification)
+		v.AbsPath = g.NamingGenerator().NotificationPath(v.GetParentPath(), notification)
 	default:
 		panic(errors.Errorf(`unexpect type "%T"`, objectState))
 	}

@@ -52,6 +52,8 @@ func (m *ignoreMapper) isIgnored(ctx context.Context, object model.Object) bool 
 			return m.isIgnoredConfig(ctx, configState.RemoteState().(*model.Config))
 		}
 		return false
+	case *model.Notification:
+		return false
 	default:
 		panic(errors.Errorf(`unexpected object type: %T`, object))
 	}

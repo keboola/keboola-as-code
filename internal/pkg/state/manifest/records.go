@@ -149,6 +149,8 @@ func (r *Records) CreateOrGetRecord(key model.Key) (manifest model.ObjectManifes
 		manifest = &model.ConfigManifest{ConfigKey: v}
 	case model.ConfigRowKey:
 		manifest = &model.ConfigRowManifest{ConfigRowKey: v}
+	case model.NotificationKey:
+		manifest = &model.NotificationManifest{NotificationKey: v}
 	default:
 		panic(errors.Errorf("unexpected type \"%s\"", key))
 	}
