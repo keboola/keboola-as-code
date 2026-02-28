@@ -10,6 +10,20 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+func TestNotificationPath(t *testing.T) {
+	t.Parallel()
+	g := NewGenerator(TemplateWithIds(), NewRegistry())
+	notification := &Notification{
+		NotificationKey: NotificationKey{
+			BranchID:    123,
+			ComponentID: "ex-generic-v2",
+			ConfigID:    "my-config",
+			ID:          "abc123",
+		},
+	}
+	assert.Equal(t, "my-config-path/notifications/sub-abc123", g.NotificationPath("my-config-path", notification).Path())
+}
+
 func TestUniquePathSameObjectType(t *testing.T) {
 	t.Parallel()
 	g := NewGenerator(TemplateWithIds(), NewRegistry())
