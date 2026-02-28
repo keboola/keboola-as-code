@@ -4,6 +4,11 @@ FROM golang:1.26-alpine AS build
 # Install necessary packages for building
 RUN apk add --no-cache git
 
+# Prevent Go from attempting toolchain auto-switching (GOTOOLCHAIN=auto default in 1.21+)
+# and skip GOSUM database lookups which can fail in Docker network environments
+ENV GOTOOLCHAIN=local
+ENV GONOSUMDB=*
+
 # Install xk6
 RUN go install go.k6.io/xk6/cmd/xk6@latest
 
