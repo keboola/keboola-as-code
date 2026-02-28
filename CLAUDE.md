@@ -2,15 +2,32 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Important: Read PROJECT_CONTEXT.md First
+## Important: Read These Documents First
 
-**Before working on this codebase, read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)** for:
-- Project overview and directory structure
-- Local development setup (Docker and non-Docker)
-- Service URLs, ports, and deployment information
-- CI/CD pipeline and infrastructure requirements
+**Before working on this codebase, read these documents in order:**
 
-This file (CLAUDE.md) contains **additional** architecture patterns, coding conventions, and development practices specific to this codebase that are not covered in PROJECT_CONTEXT.md.
+1. **[PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)** - Project overview, setup, deployment
+   - Directory structure and service architecture
+   - Local development setup (Docker and non-Docker)
+   - Service URLs, ports, and deployment information
+   - CI/CD pipeline and infrastructure requirements
+
+2. **[docs/CLI_OBJECT_LIFECYCLE.md](docs/CLI_OBJECT_LIFECYCLE.md)** - **CRITICAL for CLI work**
+   - How objects (configs, rows, notifications) are created, loaded, and saved
+   - State vs Manifest distinction
+   - Registry.Set() rules (ONLY for new objects!)
+   - Mapper timing and execution order
+   - Pull/Push operation flows
+   - Common pitfalls and how to avoid them
+
+**When to read CLI_OBJECT_LIFECYCLE.md:**
+- Working on mappers (`internal/pkg/mapper/*/`)
+- Working on state management (`internal/pkg/state/`)
+- Adding new object types (configs, rows, notifications, etc.)
+- Debugging "already exists" errors
+- Debugging validation errors during pull/push
+
+This file (CLAUDE.md) contains **additional** architecture patterns, coding conventions, and development practices specific to this codebase that are not covered in the documents above.
 
 ## Architecture Patterns
 
@@ -76,14 +93,23 @@ task tests
 
 ### Testing (Run Specific Tests)
 
-**Run specific test** (recommended approach for local development):
+**CRITICAL: E2E tests MUST be run in Docker Compose dev container**
+
+E2E tests require a complete environment with etcd, dependencies, and proper tooling. Always run them inside the Docker Compose dev container:
+
+```bash
+# Start dev container
+docker compose run --rm -u "$UID:$GID" --service-ports dev bash
+
+# Inside container, run E2E tests
+task e2e -- test/cli/path/to/test
+```
+
+**Run specific unit test** (can run locally or in Docker):
 ```bash
 # Run specific test by name
 go test -race -v ./path/to/pkg... -run TestName
 go test -race -v ./path/to/pkg... -run TestName/SubTest
-
-# Run specific E2E test
-task e2e -- test/cli/path/to/test
 ```
 
 **Verbose testing** (shows HTTP requests, ENVs, etcd operations):
