@@ -163,11 +163,6 @@ func (p *Project) Clean() error {
 	ctx, cancel := context.WithTimeoutCause(context.Background(), 5*time.Minute, errors.New("project clean timeout"))
 	defer cancel()
 
-	// Clean notification subscriptions first
-	if err := p.cleanNotificationSubscriptions(ctx); err != nil {
-		return errors.Errorf(`cannot clean notification subscriptions in project "%d": %w`, p.ID(), err)
-	}
-
 	// Clean whole project - configs, buckets, schedules, sandbox instances, etc.
 	if err := keboola.CleanProject(ctx, p.keboolaProjectAPI); err != nil {
 		return errors.Errorf(`cannot clean project "%d": %w`, p.ID(), err)
@@ -188,49 +183,6 @@ func (p *Project) Clean() error {
 	return nil
 }
 
-func (p *Project) cleanNotificationSubscriptions(ctx context.Context) error {
-	// List all existing notification subscriptions and delete them all.
-	// This ensures a clean state regardless of what previous tests may have left behind.
-	subs, err := p.keboolaProjectAPI.ListNotificationSubscriptionsRequest().Send(ctx)
-	if err != nil {
-		// Silently skip if notification service is not available
-		return nil //nolint:nilerr
-	}
-
-	allIDs := make([]keboola.NotificationSubscriptionID, 0, len(*subs))
-	for _, sub := range *subs {
-		allIDs = append(allIDs, sub.ID)
-	}
-
-	if len(allIDs) == 0 {
-		return nil
-	}
-
-	p.logf("▶ Cleaning %d notification subscription(s)...", len(allIDs))
-
-	wg := &sync.WaitGroup{}
-	errs := errors.NewMultiError()
-
-	for _, notificationID := range allIDs {
-		id := notificationID
-		wg.Go(func() {
-			key := keboola.NotificationSubscriptionKey{ID: id}
-			if _, err := p.keboolaProjectAPI.DeleteNotificationSubscriptionRequest(key).Send(ctx); err != nil {
-				errs.Append(errors.Errorf("could not delete notification subscription \"%s\": %w", id, err))
-			} else {
-				p.logf("✔️ Deleted notification subscription \"%s\".", id)
-			}
-		})
-	}
-
-	wg.Wait()
-	if errs.Len() > 0 {
-		return errs
-	}
-
-	p.logf("✔️ Cleaned %d notification subscription(s).", len(allIDs))
-	return nil
-}
 
 func (p *Project) SetState(ctx context.Context, fs filesystem.Fs, projectStateFile string) error {
 	if p.stateFilePath != "" {
