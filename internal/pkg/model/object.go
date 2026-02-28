@@ -86,6 +86,8 @@ type ObjectStates interface {
 	ConfigsFrom(branch BranchKey) (configs []*ConfigState)
 	ConfigRows() []*ConfigRowState
 	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState)
+	Notifications() []*NotificationState
+	NotificationsFrom(config ConfigKey) (notifications []*NotificationState)
 	Get(key Key) (ObjectState, bool)
 	GetOrNil(key Key) ObjectState
 	MustGet(key Key) ObjectState
@@ -105,6 +107,7 @@ type Objects interface {
 	ConfigsFrom(branch BranchKey) (configs []*Config)
 	ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWithRows)
 	ConfigRowsFrom(config ConfigKey) (rows []*ConfigRow)
+	NotificationsFrom(config ConfigKey) (notifications []*Notification)
 }
 
 // Kind - type of the object, branch, config ...
