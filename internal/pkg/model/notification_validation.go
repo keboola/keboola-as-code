@@ -9,31 +9,33 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Valid notification filter field names as per the API specification.
-var validFilterFields = []string{
-	"branch.id",
-	"job.id",
-	"job.component.id",
-	"job.configuration.id",
-	"job.token.id",
-	"project.id",
-	"eventType",
+func validNotificationFilterFields() []string {
+	return []string{
+		"branch.id",
+		"job.id",
+		"job.component.id",
+		"job.configuration.id",
+		"job.token.id",
+		"project.id",
+		"eventType",
+	}
 }
 
-// Map of deprecated field names to their correct equivalents.
-var deprecatedFieldNames = map[string]string{
-	"configId":      "job.configuration.id",
-	"componentId":   "job.component.id",
-	"branchId":      "branch.id",
-	"jobId":         "job.id",
-	"tokenId":       "job.token.id",
-	"projectId":     "project.id",
-	"configuration": "job.configuration.id",
-	"component":     "job.component.id",
-	"branch":        "branch.id",
-	"job":           "job.id",
-	"token":         "job.token.id",
-	"project":       "project.id",
+func deprecatedNotificationFilterFieldNames() map[string]string {
+	return map[string]string{
+		"configId":      "job.configuration.id",
+		"componentId":   "job.component.id",
+		"branchId":      "branch.id",
+		"jobId":         "job.id",
+		"tokenId":       "job.token.id",
+		"projectId":     "project.id",
+		"configuration": "job.configuration.id",
+		"component":     "job.component.id",
+		"branch":        "branch.id",
+		"job":           "job.id",
+		"token":         "job.token.id",
+		"project":       "project.id",
+	}
 }
 
 // ValidateNotificationFilters validates that all filter field names are valid.
@@ -48,13 +50,16 @@ func ValidateNotificationFilters(filters []keboola.NotificationFilter) error {
 }
 
 func validateFilterField(fieldName string, index int) error {
+	validFields := validNotificationFilterFields()
+	deprecatedFields := deprecatedNotificationFilterFieldNames()
+
 	// Check if field is valid
-	if slices.Contains(validFilterFields, fieldName) {
+	if slices.Contains(validFields, fieldName) {
 		return nil
 	}
 
 	// Check if it's a deprecated field name
-	if correctName, ok := deprecatedFieldNames[fieldName]; ok {
+	if correctName, ok := deprecatedFields[fieldName]; ok {
 		return errors.Errorf(
 			`filter[%d] uses deprecated field name "%s". Use "%s" instead`,
 			index,
@@ -78,16 +83,19 @@ func validateFilterField(fieldName string, index int) error {
 		`filter[%d] has invalid field name "%s". Valid field names are: %s`,
 		index,
 		fieldName,
-		strings.Join(validFilterFields, ", "),
+		strings.Join(validFields, ", "),
 	)
 }
 
 func findSimilarFieldNames(input string) []string {
+	validFields := validNotificationFilterFields()
+	deprecatedFields := deprecatedNotificationFilterFieldNames()
+
 	var suggestions []string
 	lowerInput := strings.ToLower(input)
 
 	// Check if input contains any part of valid field names
-	for _, validField := range validFilterFields {
+	for _, validField := range validFields {
 		lowerValid := strings.ToLower(validField)
 		// If input contains part of valid field, or valid field contains part of input
 		if strings.Contains(lowerValid, lowerInput) || strings.Contains(lowerInput, lowerValid) {
@@ -96,7 +104,7 @@ func findSimilarFieldNames(input string) []string {
 	}
 
 	// Also check deprecated names that contain the input
-	for deprecatedName, correctName := range deprecatedFieldNames {
+	for deprecatedName, correctName := range deprecatedFields {
 		if strings.Contains(strings.ToLower(deprecatedName), lowerInput) {
 			if !slices.Contains(suggestions, correctName) {
 				suggestions = append(suggestions, correctName)

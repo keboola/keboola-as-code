@@ -11,7 +11,7 @@
           "componentId": "ex-generic-v2",
           "name": "empty",
           "description": "",
-          "changeDescription": "",
+          "changeDescription": "%A",
           "configuration": {},
           "rows": [],
           "isDisabled": false
@@ -22,7 +22,7 @@
   "notificationSubscriptions": [
     {
       "id": "%A",
-      "event": "job-failed",
+      "event": "job-processing-long",
       "filters": [
         {
           "field": "branch.id",
@@ -40,9 +40,9 @@
           "operator": "=="
         },
         {
-          "field": "job.token.id",
-          "value": "123",
-          "operator": "=="
+          "field": "durationOvertimePercentage",
+          "value": "0.75",
+          "operator": ">="
         }
       ],
       "recipient": {

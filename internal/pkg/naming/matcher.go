@@ -1,6 +1,8 @@
 package naming
 
 import (
+	"strings"
+
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -54,6 +56,11 @@ func (m PathMatcher) MatchConfigPath(parentKey model.Key, path model.AbsPath) (c
 	}
 
 	return "", nil
+}
+
+// MatchNotificationPath returns true if the path is a notification directory.
+func (m PathMatcher) MatchNotificationPath(path model.AbsPath) bool {
+	return strings.HasPrefix(path.GetRelativePath(), "notifications/")
 }
 
 func (m PathMatcher) MatchConfigRowPath(component *keboola.Component, path model.AbsPath) bool {

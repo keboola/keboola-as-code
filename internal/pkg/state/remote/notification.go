@@ -163,6 +163,11 @@ func (u *UnitOfWork) buildNotificationCreateRequest(
 			notification.CreatedAt = created.CreatedAt
 			notification.Filters = created.Filters
 
+			// Before updating the manifest ID, detach the old key (with empty ID) from the naming
+			// registry. Without this, the subsequent PersistRecord call would fail because the path
+			// is still registered under the old key, causing a path collision with the new key.
+			u.Manifest().NamingRegistry().Detach(notificationState.NotificationManifest.Key())
+
 			// Update manifest ID so it is persisted correctly after push
 			notificationState.NotificationManifest.ID = created.ID
 

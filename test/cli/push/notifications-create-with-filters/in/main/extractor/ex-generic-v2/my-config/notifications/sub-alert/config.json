@@ -1,10 +1,10 @@
 {
-  "event": "job-failed",
+  "event": "job-processing-long",
   "filters": [
     {
-      "field": "job.token.id",
-      "value": "123",
-      "operator": "=="
+      "field": "durationOvertimePercentage",
+      "operator": ">=",
+      "value": "0.75"
     }
   ],
   "recipient": {

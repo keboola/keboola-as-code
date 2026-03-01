@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project/ignore"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
+	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
 )
@@ -105,6 +106,11 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 		// Invoke
 		if err := plan.Invoke(logger, ctx, projectState.LocalManager(), projectState.RemoteManager(), o.ChangeDescription); err != nil {
+			return err
+		}
+
+		// Save manifest (e.g., notification IDs assigned by API after create)
+		if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 			return err
 		}
 

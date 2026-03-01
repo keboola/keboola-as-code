@@ -84,6 +84,9 @@ func (b *persistPlanBuilder) tryAdd(ctx context.Context, fullPath string, parent
 			return true
 		}
 	case *model.ConfigState:
+		if b.tryAddNotification(ctx, path, parent.ConfigKey) != nil {
+			return true
+		}
 		if b.tryAddConfigRow(ctx, path, parent.ConfigKey) != nil {
 			return true
 		}
@@ -146,6 +149,21 @@ func (b *persistPlanBuilder) tryAddConfig(ctx context.Context, path model.AbsPat
 	// Create action
 	action := &newObjectAction{AbsPath: path, Key: configKey, ParentKey: parentKey}
 
+	b.addAction(ctx, action)
+	return action
+}
+
+func (b *persistPlanBuilder) tryAddNotification(ctx context.Context, path model.AbsPath, parentKey model.ConfigKey) *newObjectAction {
+	if !b.PathMatcher().MatchNotificationPath(path) {
+		return nil
+	}
+
+	notificationKey := model.NotificationKey{
+		BranchID:    parentKey.BranchID,
+		ComponentID: parentKey.ComponentID,
+		ConfigID:    parentKey.ID,
+	}
+	action := &newObjectAction{AbsPath: path, Key: notificationKey, ParentKey: parentKey}
 	b.addAction(ctx, action)
 	return action
 }

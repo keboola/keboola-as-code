@@ -68,6 +68,9 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 	case model.ConfigRowKey:
 		k.ID = keboola.RowID(newID)
 		key = k
+	case model.NotificationKey:
+		// Notification ID is assigned by the API on push; leave empty here.
+		key = k
 	default:
 		panic(errors.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))
 	}

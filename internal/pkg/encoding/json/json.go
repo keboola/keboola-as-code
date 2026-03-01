@@ -10,18 +10,22 @@ import (
 type RawMessage = json.RawMessage
 
 func Encode(v any, pretty bool) ([]byte, error) {
-	var data []byte
-	var err error
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
 	if pretty {
-		data, err = json.MarshalIndent(v, "", "  ")
-		data = append(data, '\n')
-	} else {
-		data, err = json.Marshal(v)
+		enc.SetIndent("", "  ")
 	}
-	if err != nil {
+	if err := enc.Encode(v); err != nil {
 		return nil, processJSONEncodeError(err)
 	}
-	return data, nil
+	data := buf.Bytes()
+	if pretty {
+		// json.Encoder always appends a newline, which matches the previous behavior for pretty output.
+		return data, nil
+	}
+	// For non-pretty output, strip the trailing newline appended by json.Encoder.
+	return bytes.TrimRight(data, "\n"), nil
 }
 
 func MustEncode(v any, pretty bool) []byte {
