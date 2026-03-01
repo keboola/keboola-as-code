@@ -18,8 +18,6 @@ func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadR
 	errs := errors.NewMultiError()
 	if err := m.loadConfigFile(ctx, recipe, notification); err != nil {
 		errs.Append(err)
-	} else if err := model.ValidateNotificationFilters(notification.Filters); err != nil {
-		errs.Append(err)
 	}
 	if err := m.loadMetaFile(ctx, recipe); err != nil {
 		errs.Append(err)
