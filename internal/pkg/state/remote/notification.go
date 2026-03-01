@@ -2,7 +2,6 @@ package remote
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -36,8 +35,8 @@ func (u *UnitOfWork) loadNotifications(ctx context.Context) error {
 		// Find which config this notification belongs to by checking filters
 		var parentConfig *model.ConfigManifest
 		for _, filter := range apiSub.Filters {
-			if filter.Field == "job.configuration.id" {
-				// Found the config ID filter - look up the config
+			if filter.Field == "job.configuration.id" && filter.Operator == keboola.NotificationFilterOperatorEquals {
+				// Found the config ID equality filter - look up the config
 				configID := keboola.ConfigID(filter.Value)
 				if cfg, found := configsByID[configID]; found {
 					parentConfig = cfg
@@ -143,8 +142,8 @@ func (u *UnitOfWork) buildNotificationCreateRequest(
 ) request.APIRequest[*keboola.NotificationSubscription] {
 	return u.createNotificationRequest(notification).Build().
 		WithOnError(func(_ context.Context, err error) error {
-			errMsg := err.Error()
-			if strings.Contains(errMsg, "400") || strings.Contains(errMsg, "Bad Request") {
+			var notifErr *keboola.NotificationError
+			if errors.As(err, &notifErr) && notifErr.StatusCode() == 400 {
 				return errors.Errorf(
 					`failed to create notification "%s": %w. `+
 						`This may be caused by invalid filter field names. `+

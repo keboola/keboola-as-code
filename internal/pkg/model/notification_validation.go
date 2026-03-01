@@ -2,6 +2,7 @@ package model
 
 import (
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -110,5 +111,6 @@ func findSimilarFieldNames(input string) []string {
 		}
 	}
 
+	sort.Strings(suggestions)
 	return suggestions
 }
