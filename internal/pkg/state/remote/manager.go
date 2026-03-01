@@ -192,7 +192,6 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 			if err := u.loadNotifications(ctx); err != nil {
 				errs.Append(err)
 			}
-
 			return errs.ErrorOrNil()
 		})
 

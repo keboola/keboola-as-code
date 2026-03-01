@@ -3,6 +3,7 @@ package remote
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
@@ -120,6 +121,15 @@ func (u *UnitOfWork) createNotificationRequest(notification *model.Notification)
 
 	if len(autoFilters) > 0 {
 		req = req.WithFilters(autoFilters)
+	}
+
+	if notification.ExpiresAt != nil {
+		expiresAtStr := notification.ExpiresAt.String()
+		if t, err := time.Parse(time.RFC3339, expiresAtStr); err == nil {
+			req = req.WithAbsoluteExpiration(t)
+		} else {
+			req = req.WithRelativeExpiration(expiresAtStr)
+		}
 	}
 
 	return req
