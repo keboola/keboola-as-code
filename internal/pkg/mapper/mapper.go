@@ -12,9 +12,9 @@ import (
 // LocalSaveMapper is intended to modify how the object will be saved in the filesystem.
 // If you need a list of all saved objects, when they are already saved, use the AfterLocalOperationListener instead.
 //
-// IMPORTANT for parent-child relationships (e.g., Config → Notifications):
-// MapBeforeLocalSave is where you should populate parent manifest relationships like ConfigManifest.Notifications.
-// Do NOT populate these in remote load - let the mapper control how objects are grouped and saved.
+// Note: parent-child manifest relationships (e.g., ConfigManifest.Notifications) are populated
+// automatically by setRecords() during manifest loading, not by this mapper.
+// MapBeforeLocalSave is used to write object files (config.json, meta.json, etc.) to the filesystem.
 // See docs/CLI_OBJECT_LIFECYCLE.md for the complete flow.
 type LocalSaveMapper interface {
 	MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error

@@ -51,6 +51,9 @@ func parentExists(objectState model.ObjectState, objects model.ObjectStates) boo
 		branch, branchFound := objects.Get(row.BranchKey())
 		return configFound && config.HasLocalState() && branchFound && branch.HasLocalState()
 	case *model.NotificationState:
+		if v.Remote == nil {
+			return false
+		}
 		notification := v.Remote
 		config, configFound := objects.Get(notification.ConfigKey())
 		branch, branchFound := objects.Get(notification.ConfigKey().BranchKey())

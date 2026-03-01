@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -22,27 +23,40 @@ func (u *UnitOfWork) loadNotifications(ctx context.Context) error {
 		return err
 	}
 
-	// Build map of config ID -> config manifest for quick lookup
-	configsByID := make(map[keboola.ConfigID]*model.ConfigManifest)
+	// Build map of "branchID/configID" -> config manifest for collision-safe lookup
+	configsByKey := make(map[string]*model.ConfigManifest)
 	for _, record := range u.Manifest().All() {
 		if configManifest, ok := record.(*model.ConfigManifest); ok {
-			configsByID[configManifest.ID] = configManifest
+			key := fmt.Sprintf("%d/%s", configManifest.BranchID, configManifest.ID)
+			configsByKey[key] = configManifest
 		}
 	}
 
 	// Load each notification from API
 	for _, apiSub := range *subscriptions {
-		// Find which config this notification belongs to by checking filters
-		var parentConfig *model.ConfigManifest
+		// Collect branch.id and job.configuration.id from equality filters
+		var branchIDStr, configIDStr string
 		for _, filter := range apiSub.Filters {
-			if filter.Field == "job.configuration.id" && filter.Operator == keboola.NotificationFilterOperatorEquals {
-				// Found the config ID equality filter - look up the config
-				configID := keboola.ConfigID(filter.Value)
-				if cfg, found := configsByID[configID]; found {
-					parentConfig = cfg
-					break
-				}
+			if filter.Operator != keboola.NotificationFilterOperatorEquals {
+				continue
 			}
+			switch filter.Field {
+			case "branch.id":
+				branchIDStr = filter.Value
+			case "job.configuration.id":
+				configIDStr = filter.Value
+			}
+		}
+
+		// Skip if no config ID filter present
+		if configIDStr == "" {
+			continue
+		}
+
+		// Look up config using composite key to avoid branch collisions
+		var parentConfig *model.ConfigManifest
+		if branchIDStr != "" {
+			parentConfig = configsByKey[branchIDStr+"/"+configIDStr]
 		}
 
 		// Skip if we don't have this config locally

@@ -4,13 +4,13 @@ This document provides architectural context for the Keboola CLI service (`kbc`)
 
 ## Notification Subscriptions
 
-The CLI supports managing notification subscriptions for configurations. Notifications are stored in `{config}/notifications/{subscription-id}/meta.json` files and tracked in the manifest.
+The CLI supports managing notification subscriptions for configurations. Notifications are stored in `{config}/notifications/{subscription-id}/config.json` files and tracked in the manifest.
 
 **Key Features:**
 - Config-level notifications (branch-level not yet supported)
 - Events: job-failed, job-succeeded, job-warning, job-processing-long
 - Channels: email or webhook
-- Filters: Fine-grained control with operators (eq, ne, gt, lt, ge, le)
+- Filters: Fine-grained control with operators (==, !=, >, <, >=, <=)
 - Full pull/push/sync support
 
 **Operations:**

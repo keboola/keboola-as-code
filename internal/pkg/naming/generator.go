@@ -188,7 +188,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *keboola.Component
 
 func (g Generator) NotificationPath(parentPath string, notification *model.Notification) model.AbsPath {
 	if len(parentPath) == 0 {
-		panic(errors.Errorf(`notification "%s" parent path cannot be empty"`, notification))
+		panic(errors.Errorf(`notification "%s" parent path cannot be empty`, notification))
 	}
 
 	p := model.AbsPath{}
