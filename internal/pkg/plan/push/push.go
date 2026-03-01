@@ -52,8 +52,8 @@ func parentExists(objectState model.ObjectState, objects model.ObjectStates) boo
 		return configFound && config.HasLocalState() && branchFound && branch.HasLocalState()
 	case *model.NotificationState:
 		notification := v.Remote
-		config, configFound := objects.Get(notification.NotificationKey.ConfigKey())
-		branch, branchFound := objects.Get(notification.NotificationKey.ConfigKey().BranchKey())
+		config, configFound := objects.Get(notification.ConfigKey())
+		branch, branchFound := objects.Get(notification.ConfigKey().BranchKey())
 		return configFound && config.HasLocalState() && branchFound && branch.HasLocalState()
 	default:
 		panic(errors.Errorf(`unexpected type "%T"`, objectState))

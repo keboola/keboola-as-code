@@ -17,7 +17,9 @@
     "variablesValuesRow": "values/{config_row_name}",
     "dataAppConfig": "app/{component_id}/{config_name}"
   },
-  "allowedBranches": ["__all__"],
+  "allowedBranches": [
+    "__all__"
+  ],
   "ignoredComponents": [],
   "templates": {
     "repositories": [
@@ -44,7 +46,7 @@
       "rows": [],
       "notifications": [
         {
-          "id": "%%TEST_NOTIFICATION_EXISTING_SUB_123_ID%%",
+          "id": "%A",
           "path": "notifications/sub-123"
         }
       ]

@@ -109,6 +109,12 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 		}
 	}
 
+	// Notifications use user-defined folder names; never auto-rename them.
+	if _, ok := objectState.(*model.NotificationState); ok && objectState.GetRelativePath() != "" {
+		g.processed[objectState.Key().String()] = true
+		return nil
+	}
+
 	// Re-generate object path IF rename is enabled OR path is not set
 	if objectState.GetRelativePath() == "" || g.rename {
 		if err := g.regeneratePath(objectState, object, oldPath, renameFrom); err != nil {

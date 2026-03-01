@@ -116,18 +116,11 @@ func (u *UnitOfWork) createNotificationRequest(notification *model.Notification)
 	}
 
 	// Merge auto-populated filters with user-specified filters
-	allFilters := append(autoFilters, notification.Filters...)
+	autoFilters = append(autoFilters, notification.Filters...)
 
-	if len(allFilters) > 0 {
-		req = req.WithFilters(allFilters)
+	if len(autoFilters) > 0 {
+		req = req.WithFilters(autoFilters)
 	}
-
-	//nolint:godox // TODO: Handle expiration - NotificationExpiration doesn't expose fields
-	// Need SDK update to support passing expiration directly
-	_ = notification.ExpiresAt
-
-	//nolint:godox // TODO: Add config reference once SDK supports it
-	// req = req.WithConfig(notification.BranchID, notification.ComponentID, notification.ConfigID)
 
 	return req
 }
@@ -158,9 +151,18 @@ func (u *UnitOfWork) buildNotificationCreateRequest(
 			remoteNotification.ComponentID = notification.ComponentID
 			remoteNotification.ConfigID = notification.ConfigID
 
-			// Update local notification with assigned ID
+			// Update local notification with API-assigned ID and auto-populated filters
 			notification.ID = created.ID
 			notification.CreatedAt = created.CreatedAt
+			notification.Filters = created.Filters
+
+			// Before updating the manifest ID, detach the old key (with empty ID) from the naming
+			// registry. Without this, the subsequent PersistRecord call would fail because the path
+			// is still registered under the old key, causing a path collision with the new key.
+			u.Manifest().NamingRegistry().Detach(notificationState.Key())
+
+			// Update manifest ID so it is persisted correctly after push
+			notificationState.ID = created.ID
 
 			notificationState.SetRemoteState(remoteNotification)
 			u.changes.AddCreated(notificationState)

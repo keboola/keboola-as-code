@@ -11,7 +11,7 @@
           "componentId": "ex-generic-v2",
           "name": "empty",
           "description": "",
-          "changeDescription": "",
+          "changeDescription": "%A",
           "configuration": {},
           "rows": [],
           "isDisabled": false

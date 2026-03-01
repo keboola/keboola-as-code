@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateNotificationFilters_ValidFields(t *testing.T) {
@@ -49,7 +50,7 @@ func TestValidateNotificationFilters_DeprecatedFields(t *testing.T) {
 			}
 
 			err := ValidateNotificationFilters(filters)
-			assert.Error(t, err, "deprecated field should return error")
+			require.Error(t, err, "deprecated field should return error")
 			assert.Contains(t, err.Error(), "deprecated field name")
 			assert.Contains(t, err.Error(), tt.field)
 			assert.Contains(t, err.Error(), tt.correctField)
@@ -77,7 +78,7 @@ func TestValidateNotificationFilters_InvalidFields(t *testing.T) {
 			}
 
 			err := ValidateNotificationFilters(filters)
-			assert.Error(t, err, "invalid field should return error")
+			require.Error(t, err, "invalid field should return error")
 			assert.Contains(t, err.Error(), "invalid field name")
 			assert.Contains(t, err.Error(), tt.field)
 		})
@@ -101,7 +102,7 @@ func TestValidateNotificationFilters_MultipleFilters(t *testing.T) {
 	}
 
 	err := ValidateNotificationFilters(filters)
-	assert.Error(t, err, "should fail on first invalid filter")
+	require.Error(t, err, "should fail on first invalid filter")
 	assert.Contains(t, err.Error(), "filter[1]")
 	assert.Contains(t, err.Error(), "configId")
 }

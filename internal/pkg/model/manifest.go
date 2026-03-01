@@ -1,11 +1,9 @@
 package model
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -79,9 +77,8 @@ type ConfigManifest struct {
 	RecordState `json:"-"`
 	ConfigKey
 	Paths
-	Relations     Relations               `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables definition
-	Metadata      *orderedmap.OrderedMap  `json:"metadata,omitempty"`
-	Notifications []*NotificationManifest `json:"notifications,omitempty"`
+	Relations Relations              `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables definition
+	Metadata  *orderedmap.OrderedMap `json:"metadata,omitempty"`
 }
 
 type ConfigRowManifest struct {
@@ -91,42 +88,10 @@ type ConfigRowManifest struct {
 	Relations Relations `json:"relations,omitempty" validate:"dive"` // relations with other objects, for example variables values definition
 }
 
-type NotificationManifestRef struct {
-	ID   keboola.NotificationSubscriptionID `json:"id"`
-	Path string                             `json:"path,omitempty"`
-}
-
 type ConfigManifestWithRows struct {
 	ConfigManifest
-	Rows []*ConfigRowManifest `json:"rows"`
-}
-
-// MarshalJSON implements custom JSON marshaling to simplify notifications to just IDs.
-func (c *ConfigManifestWithRows) MarshalJSON() ([]byte, error) {
-	// Convert notifications to simplified refs
-	notificationRefs := make([]*NotificationManifestRef, 0, len(c.Notifications))
-	for _, n := range c.Notifications {
-		if n != nil {
-			notificationRefs = append(notificationRefs, &NotificationManifestRef{ID: n.ID, Path: n.GetRelativePath()})
-		}
-	}
-
-	// Create a copy with simplified notifications
-	return json.Marshal(&struct {
-		ConfigKey
-		Paths
-		Relations     Relations                  `json:"relations,omitempty"`
-		Metadata      *orderedmap.OrderedMap     `json:"metadata,omitempty"`
-		Rows          []*ConfigRowManifest       `json:"rows"`
-		Notifications []*NotificationManifestRef `json:"notifications,omitempty"`
-	}{
-		ConfigKey:     c.ConfigKey,
-		Paths:         c.Paths,
-		Relations:     c.Relations,
-		Metadata:      c.Metadata,
-		Rows:          c.Rows,
-		Notifications: notificationRefs,
-	})
+	Rows          []*ConfigRowManifest    `json:"rows"`
+	Notifications []*NotificationManifest `json:"notifications,omitempty"`
 }
 
 func (p *Paths) ClearRelatedPaths() {

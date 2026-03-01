@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -67,6 +68,11 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		key = k
 	case model.ConfigRowKey:
 		k.ID = keboola.RowID(newID)
+		key = k
+	case model.NotificationKey:
+		// Assign a short random local ID to ensure unique manifest key.
+		// The real ID is assigned by the API on push (see buildNotificationCreateRequest success callback).
+		k.ID = keboola.NotificationSubscriptionID(idgenerator.Random(6))
 		key = k
 	default:
 		panic(errors.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))

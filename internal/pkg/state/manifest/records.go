@@ -197,7 +197,18 @@ func (r *Records) PersistRecord(record model.ObjectManifest) error {
 	// Mark persisted -> will be saved to manifest.json
 	record.State().SetPersisted()
 
-	r.all.Set(record.Key().String(), record)
+	// Remove any stale entry stored under a different key that points to the same record.
+	// This handles re-keying: when a manifest's ID changes (e.g., a notification gets its
+	// API-assigned ID after push), the old entry must be removed before adding the new one.
+	newKeyStr := record.Key().String()
+	for _, k := range r.all.Keys() {
+		if v, _ := r.all.Get(k); v == record && k != newKeyStr {
+			r.all.Delete(k)
+			break
+		}
+	}
+
+	r.all.Set(newKeyStr, record)
 	r.changed = true
 	return nil
 }

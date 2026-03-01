@@ -1,7 +1,10 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 )
 
 // NotificationManifest represents a notification manifest record.
@@ -10,6 +13,18 @@ type NotificationManifest struct {
 	NotificationKey
 	Paths
 	Relations Relations `json:"relations,omitempty" validate:"dive"`
+}
+
+// MarshalJSON serializes only the ID and path, omitting the embedded NotificationKey fields
+// (branchId, componentId, configId) which would otherwise appear in the manifest JSON.
+func (n *NotificationManifest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		ID   keboola.NotificationSubscriptionID `json:"id"`
+		Path string                             `json:"path,omitempty"`
+	}{
+		ID:   n.ID,
+		Path: n.GetRelativePath(),
+	})
 }
 
 // NewEmptyObject creates an empty Notification object with the key from this manifest.
