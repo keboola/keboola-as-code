@@ -44,8 +44,8 @@ type Upstream struct {
 }
 
 type K8s struct {
-	Namespace  string `configKey:"namespace" configUsage:"Kubernetes namespace containing App CRDs." validate:"required"`
-	Kubeconfig string `configKey:"kubeconfig" configUsage:"Path to kubeconfig file. Uses in-cluster config if empty."`
+	AppsNamespace string `configKey:"appsNamespace" configUsage:"Kubernetes namespace where apps (App CRDs) run." validate:"required"`
+	Kubeconfig    string `configKey:"kubeconfig" configUsage:"Path to kubeconfig file. Uses in-cluster config if empty."`
 }
 
 func New() Config {
