@@ -3,6 +3,8 @@ package k8sapp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"sync"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,13 +27,15 @@ type entry struct {
 	k8sName            string
 	state              AppActualState
 	autoRestartEnabled bool
+	upstreamTarget     *url.URL // pre-parsed; nil when appsProxyServiceRef absent/invalid
 }
 
 // StateWatcher watches App CRDs in Kubernetes and provides a local cache of app states.
 type StateWatcher struct {
-	client    dynamic.Interface
-	namespace string
-	logger    log.Logger
+	client             dynamic.Interface
+	namespace          string
+	logger             log.Logger
+	serviceURLBuilder  func(name string) string
 	// byName: K8s object name → AppID
 	byName sync.Map
 	// byAppID: AppID → entry{k8sName, state}
@@ -66,6 +70,9 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		client:    client,
 		namespace: namespace,
 		logger:    d.Logger().WithComponent("k8sapp.watcher"),
+		serviceURLBuilder: func(name string) string {
+			return fmt.Sprintf("http://%s.%s.svc.cluster.local:8888", name, namespace)
+		},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -124,7 +131,17 @@ func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
 		return AppInfo{}, false
 	}
 	e := v.(entry)
-	return AppInfo{ActualState: e.state, AutoRestartEnabled: e.autoRestartEnabled}, true
+	return AppInfo{
+		ActualState:        e.state,
+		AutoRestartEnabled: e.autoRestartEnabled,
+		UpstreamTarget:     e.upstreamTarget,
+	}, true
+}
+
+// SetServiceURLBuilder overrides the function used to construct the upstream URL from a service name.
+// It is intended for use in tests only, to point the proxy at a local test server.
+func (w *StateWatcher) SetServiceURLBuilder(f func(name string) string) {
+	w.serviceURLBuilder = f
 }
 
 // SetDesiredRunning patches .spec.state = "Running" on the App CRD for the given appID.
@@ -184,10 +201,25 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		autoRestartEnabled = *appObj.Spec.AutoRestartEnabled
 	}
 
+	var upstreamTarget *url.URL
+	if name := appObj.Status.AppsProxyServiceRef.Name; name != "" {
+		rawURL := w.serviceURLBuilder(name)
+		if t, err := url.Parse(rawURL); err == nil {
+			upstreamTarget = t
+		} else {
+			w.logger.Warnf(ctx, "App CRD %q (appID=%s) invalid upstream URL %q for appsProxyServiceRef %q: %s", k8sName, appObj.Spec.AppID, rawURL, name, err)
+		}
+	}
+
 	appID := api.AppID(appObj.Spec.AppID)
 	w.byName.Store(k8sName, appID)
-	w.byAppID.Store(appID, entry{k8sName: k8sName, state: appObj.Status.CurrentState, autoRestartEnabled: autoRestartEnabled})
-	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled)
+	w.byAppID.Store(appID, entry{
+		k8sName:            k8sName,
+		state:              appObj.Status.CurrentState,
+		autoRestartEnabled: autoRestartEnabled,
+		upstreamTarget:     upstreamTarget,
+	})
+	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v upstreamTarget=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled, upstreamTarget != nil)
 }
 
 func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
