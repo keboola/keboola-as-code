@@ -198,18 +198,16 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.appConfigLoader = appconfig.NewLoader(d)
 	d.notifyManager = notify.NewManager(d)
 
-	if cfg.K8s.AppsNamespace != "" {
-		var k8sClient dynamic.Interface
-		if provider, ok := parentScp.(k8sClientProvider); ok {
-			k8sClient = provider.K8sDynamicClient()
-		} else {
-			k8sClient, err = k8sapp.NewDynamicClient(cfg.K8s.Kubeconfig)
-			if err != nil {
-				return nil, err
-			}
+	var k8sClient dynamic.Interface
+	if provider, ok := parentScp.(k8sClientProvider); ok {
+		k8sClient = provider.K8sDynamicClient()
+	} else {
+		k8sClient, err = k8sapp.NewDynamicClient(cfg.K8s.Kubeconfig)
+		if err != nil {
+			return nil, err
 		}
-		d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.AppsNamespace)
 	}
+	d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.AppsNamespace)
 
 	d.wakeupManager = wakeup.NewManager(d)
 	d.authProxyManager = authproxy.NewManager(d)
