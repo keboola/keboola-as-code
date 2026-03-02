@@ -38,6 +38,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -2186,26 +2187,11 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "restart-disabled",
 			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				autoRestartEnabled := false
-				appObj := &unstructured.Unstructured{
-					Object: map[string]any{
-						"apiVersion": k8sapp.Group + "/" + k8sapp.Version,
-						"kind":       "App",
-						"metadata": map[string]any{
-							"name":      "app-123",
-							"namespace": "keboola",
-						},
-						"spec": map[string]any{
-							"appId":              "123",
-							"autoRestartEnabled": autoRestartEnabled,
-						},
-						"status": map[string]any{
-							"currentState": string(k8sapp.AppActualStateStopped),
-						},
-					},
-				}
-				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Create(
-					t.Context(), appObj, metav1.CreateOptions{},
+				// The default setup already created app "123" as Running.
+				// Patch it to Stopped + autoRestartEnabled=false.
+				patch := []byte(`{"spec":{"autoRestartEnabled":false},"status":{"currentState":"Stopped"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
 				)
 				require.NoError(t, err)
 
@@ -2398,7 +2384,8 @@ func TestAppProxyRouter(t *testing.T) {
 
 			// Register data apps
 			appURL := testutil.AddAppDNSRecord(t, appServer, dnsServer)
-			appsAPI.Register(testDataApps(appURL, providers))
+			apps := testDataApps(appURL, providers)
+			appsAPI.Register(apps)
 
 			// Create proxy handler
 			handler := createProxyHandler(ctx, d)
@@ -2426,6 +2413,8 @@ func TestAppProxyRouter(t *testing.T) {
 
 			client := createHTTPClient(t, proxyURL)
 
+			// Default K8s setup: register all test apps as Running with appsProxyServiceRef.
+			registerDefaultK8sApps(t, apps, mocked.TestFakeK8sClient(), d.AppStateWatcher(), appURL.String())
 			if tc.setupK8s != nil {
 				tc.setupK8s(t, mocked.TestFakeK8sClient(), d.AppStateWatcher())
 			}
@@ -2829,4 +2818,49 @@ func extractMetaRefreshTag(t *testing.T, body []byte) string {
 
 func htmlLinkTo(url string) string {
 	return fmt.Sprintf(`<a href="%s"`, html.EscapeString(url))
+}
+
+// registerDefaultK8sApps creates Running App CRD objects in the fake K8s client for all test apps
+// and waits for the StateWatcher to sync them. The proxy reads appsProxyServiceRef from the CRD
+// to get the upstream URL, so this is required for requests to route to the upstream.
+// Must be called before tc.setupK8s so per-test overrides (Patch) can override specific apps.
+func registerDefaultK8sApps(t *testing.T, apps []api.AppConfig, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher, serviceURL string) {
+	t.Helper()
+	// Override URL builder so requests route to the test server instead of a real K8s service.
+	watcher.SetServiceURLBuilder(func(_ string) string { return serviceURL })
+	for _, app := range apps {
+		obj := &unstructured.Unstructured{
+			Object: map[string]any{
+				"apiVersion": k8sapp.Group + "/" + k8sapp.Version,
+				"kind":       "App",
+				"metadata": map[string]any{
+					"name":      "app-" + string(app.ID),
+					"namespace": "keboola",
+				},
+				"spec": map[string]any{
+					"appId": string(app.ID),
+				},
+				"status": map[string]any{
+					"currentState": string(k8sapp.AppActualStateRunning),
+					"appsProxyServiceRef": map[string]any{
+						"name": "app-" + string(app.ID),
+					},
+				},
+			},
+		}
+		_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Create(
+			context.Background(), obj, metav1.CreateOptions{},
+		)
+		require.NoError(t, err)
+	}
+	// Wait for the watcher to sync all apps.
+	require.Eventually(t, func() bool {
+		for _, app := range apps {
+			info, ok := watcher.GetState(app.ID)
+			if !ok || info.UpstreamTarget == nil {
+				return false
+			}
+		}
+		return true
+	}, 5*time.Second, 50*time.Millisecond)
 }
