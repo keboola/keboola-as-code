@@ -99,7 +99,7 @@ func (pw *pageWriter) WriteErrorPage(w http.ResponseWriter, req *http.Request, o
 }
 
 func (pw *pageWriter) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, err error) {
-	pw.pageWriter.ProxyErrorHandler(w, req, pw.app, nil, err)
+	pw.pageWriter.ProxyErrorHandler(w, req, pw.app, err)
 }
 
 func (pw *pageWriter) WriteRobotsTxt(w http.ResponseWriter, req *http.Request) {

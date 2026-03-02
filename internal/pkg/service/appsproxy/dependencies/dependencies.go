@@ -20,11 +20,14 @@ import (
 	"net/http"
 
 	"github.com/jonboulle/clockwork"
+	"k8s.io/client-go/dynamic"
+	k8sfake "k8s.io/client-go/dynamic/fake"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler"
@@ -79,12 +82,14 @@ type ServiceScope interface {
 	PageWriter() *pagewriter.Writer
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
+	AppStateWatcher() *k8sapp.StateWatcher
 }
 
 type Mocked interface {
 	dependencies.Mocked
 	TestConfig() config.Config
 	TestDNSServer() *dnsmock.Server
+	TestFakeK8sClient() *k8sfake.FakeDynamicClient
 }
 
 // serviceScope implements APIScope interface.
@@ -100,10 +105,17 @@ type serviceScope struct {
 	appConfigLoader   appconfig.Loader
 	notifyManager     *notify.Manager
 	wakeupManager     *wakeup.Manager
+	appStateWatcher   *k8sapp.StateWatcher
 }
 
 type parentScopes interface {
 	dependencies.BaseScope
+}
+
+// k8sClientProvider is optionally implemented by parentScopes to supply an already-constructed
+// dynamic client (used in tests to inject a fake client without real kubeconfig).
+type k8sClientProvider interface {
+	K8sDynamicClient() dynamic.Interface
 }
 
 type parentScopesImpl struct {
@@ -185,6 +197,20 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.appsAPI = api.New(d.HTTPClient(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
 	d.appConfigLoader = appconfig.NewLoader(d)
 	d.notifyManager = notify.NewManager(d)
+
+	if cfg.K8s.Namespace != "" {
+		var k8sClient dynamic.Interface
+		if provider, ok := parentScp.(k8sClientProvider); ok {
+			k8sClient = provider.K8sDynamicClient()
+		} else {
+			k8sClient, err = k8sapp.NewDynamicClient(cfg.K8s.Kubeconfig)
+			if err != nil {
+				return nil, err
+			}
+		}
+		d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.Namespace)
+	}
+
 	d.wakeupManager = wakeup.NewManager(d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
@@ -231,4 +257,8 @@ func (v *serviceScope) NotifyManager() *notify.Manager {
 
 func (v *serviceScope) WakeupManager() *wakeup.Manager {
 	return v.wakeupManager
+}
+
+func (v *serviceScope) AppStateWatcher() *k8sapp.StateWatcher {
+	return v.appStateWatcher
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
@@ -45,18 +46,18 @@ type Manager struct {
 	configLoader appconfig.Loader
 	notify       *notify.Manager
 	wakeup       *wakeup.Manager
+	stateWatcher *k8sapp.StateWatcher
 	config       config.Config
 }
 
 type AppUpstream struct {
-	manager         *Manager
-	app             api.AppConfig
-	target          *url.URL
-	handler         *chain.Chain
-	wsHandler       *chain.Chain
-	cancelWs        context.CancelCauseFunc
-	activeWsCount   atomic.Int64
-	restartDisabled atomic.Bool
+	manager       *Manager
+	app           api.AppConfig
+	target        *url.URL
+	handler       *chain.Chain
+	wsHandler     *chain.Chain
+	cancelWs      context.CancelCauseFunc
+	activeWsCount atomic.Int64
 }
 
 type dependencies interface {
@@ -68,6 +69,7 @@ type dependencies interface {
 	AppConfigLoader() appconfig.Loader
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
+	AppStateWatcher() *k8sapp.StateWatcher
 	Config() config.Config
 }
 
@@ -81,6 +83,7 @@ func NewManager(d dependencies) *Manager {
 		configLoader: d.AppConfigLoader(),
 		notify:       d.NotifyManager(),
 		wakeup:       d.WakeupManager(),
+		stateWatcher: d.AppStateWatcher(),
 		config:       d.Config(),
 	}
 
@@ -132,6 +135,20 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 }
 
 func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request) error {
+	// K8s state pre-check: if we know the app is not running, handle it synchronously
+	// without attempting DNS/upstream. Falls through if state is unknown or Running.
+	if u.manager.stateWatcher != nil {
+		if appInfo, ok := u.manager.stateWatcher.GetState(u.app.ID); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
+			if !appInfo.AutoRestartEnabled {
+				u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
+				return nil
+			}
+			u.wakeup(req.Context(), errors.Errorf("app state is %s", appInfo.ActualState))
+			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
+			return nil
+		}
+	}
+
 	// Difference between regular and websocket request
 	if strings.EqualFold(req.Header.Get("Connection"), "upgrade") && req.Header.Get("Upgrade") == "websocket" {
 		return u.wsHandler.ServeHTTPOrError(rw, req)
@@ -142,7 +159,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app, &u.restartDisabled)
+	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -161,7 +178,7 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app, &u.restartDisabled)
+	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -197,8 +214,6 @@ func (u *AppUpstream) trace() chain.Middleware {
 				DNSDone: func(info httptrace.DNSDoneInfo) {
 					if info.Err != nil {
 						u.wakeup(ctx, info.Err)
-					} else {
-						u.restartDisabled.Store(false)
 					}
 				},
 			})
@@ -235,13 +250,6 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 
 		// Error is already logged by the Wakeup method itself.
 		err := u.manager.wakeup.Wakeup(wakeupCtx, u.app.ID) //nolint:contextcheck
-
-		// Check for restart disabled error
-		var apiErr *api.Error
-		if errors.As(err, &apiErr) && apiErr.HasRestartDisabled() {
-			u.restartDisabled.Store(true)
-		}
-
 		span.End(&err)
 	})
 }

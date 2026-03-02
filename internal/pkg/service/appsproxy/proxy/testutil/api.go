@@ -21,20 +21,16 @@ import (
 
 type DataAppsAPI struct {
 	*httptest.Server
-	Apps            map[api.AppID]api.AppConfig
-	Notifications   map[string]int
-	WakeUps         map[string]int
-	WakeUpOverrides map[string]http.HandlerFunc
+	Apps          map[api.AppID]api.AppConfig
+	Notifications map[string]int
 }
 
 func StartDataAppsAPI(t *testing.T, pm server.PortManager) *DataAppsAPI {
 	t.Helper()
 
 	service := &DataAppsAPI{
-		Apps:            make(map[api.AppID]api.AppConfig),
-		Notifications:   make(map[string]int),
-		WakeUps:         make(map[string]int),
-		WakeUpOverrides: make(map[string]http.HandlerFunc),
+		Apps:          make(map[api.AppID]api.AppConfig),
+		Notifications: make(map[string]int),
 	}
 
 	mux := http.NewServeMux()
@@ -78,13 +74,6 @@ func StartDataAppsAPI(t *testing.T, pm server.PortManager) *DataAppsAPI {
 
 		if _, ok := data["lastRequestTimestamp"]; ok {
 			service.Notifications[appID] += 1
-		}
-		if _, ok := data["desiredState"]; ok {
-			if override, ok := service.WakeUpOverrides[appID]; ok {
-				override(w, req)
-				return
-			}
-			service.WakeUps[appID] += 1
 		}
 	})
 
