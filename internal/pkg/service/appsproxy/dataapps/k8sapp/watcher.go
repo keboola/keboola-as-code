@@ -3,6 +3,7 @@ package k8sapp
 import (
 	"context"
 	"encoding/json"
+	"net/url"
 	"sync"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +26,7 @@ type entry struct {
 	k8sName            string
 	state              AppActualState
 	autoRestartEnabled bool
+	upstreamTarget     *url.URL // pre-parsed; nil when appsProxyServiceRef absent/invalid
 }
 
 // StateWatcher watches App CRDs in Kubernetes and provides a local cache of app states.
@@ -124,7 +126,11 @@ func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
 		return AppInfo{}, false
 	}
 	e := v.(entry)
-	return AppInfo{ActualState: e.state, AutoRestartEnabled: e.autoRestartEnabled}, true
+	return AppInfo{
+		ActualState:        e.state,
+		AutoRestartEnabled: e.autoRestartEnabled,
+		UpstreamTarget:     e.upstreamTarget,
+	}, true
 }
 
 // SetDesiredRunning patches .spec.state = "Running" on the App CRD for the given appID.
@@ -184,10 +190,24 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		autoRestartEnabled = *appObj.Spec.AutoRestartEnabled
 	}
 
+	var upstreamTarget *url.URL
+	if ref := appObj.Status.AppsProxyServiceRef; ref != "" {
+		if t, err := url.Parse(ref); err == nil {
+			upstreamTarget = t
+		} else {
+			w.logger.Warnf(ctx, "App CRD %q (appID=%s) invalid appsProxyServiceRef %q: %s", k8sName, appObj.Spec.AppID, ref, err)
+		}
+	}
+
 	appID := api.AppID(appObj.Spec.AppID)
 	w.byName.Store(k8sName, appID)
-	w.byAppID.Store(appID, entry{k8sName: k8sName, state: appObj.Status.CurrentState, autoRestartEnabled: autoRestartEnabled})
-	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled)
+	w.byAppID.Store(appID, entry{
+		k8sName:            k8sName,
+		state:              appObj.Status.CurrentState,
+		autoRestartEnabled: autoRestartEnabled,
+		upstreamTarget:     upstreamTarget,
+	})
+	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v upstreamTarget=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled, upstreamTarget != nil)
 }
 
 func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {

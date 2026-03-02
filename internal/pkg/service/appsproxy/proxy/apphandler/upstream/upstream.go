@@ -24,7 +24,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
-	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -53,7 +52,7 @@ type Manager struct {
 type AppUpstream struct {
 	manager       *Manager
 	app           api.AppConfig
-	target        *url.URL
+	target        *url.URL // parsed from appsProxyServiceRef at creation; nil when absent
 	handler       *chain.Chain
 	wsHandler     *chain.Chain
 	cancelWs      context.CancelCauseFunc
@@ -99,16 +98,24 @@ func (m *Manager) Shutdown(ctx context.Context) {
 	m.wg.Wait()
 }
 
+// CurrentServiceRef returns the raw appsProxyServiceRef string for appID from the K8s cache.
+// Returns "" when the app is not cached or the field is absent/invalid.
+func (m *Manager) CurrentServiceRef(appID api.AppID) string {
+	info, ok := m.stateWatcher.GetState(appID)
+	if !ok || info.UpstreamTarget == nil {
+		return ""
+	}
+	return info.UpstreamTarget.String()
+}
+
 func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream *AppUpstream, err error) {
 	_, span := m.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.NewUpstream")
 	defer span.End(&err)
 
-	// Parse target
-	target, err := url.Parse(app.UpstreamAppURL)
-	if err != nil {
-		return nil, svcErrors.NewServiceUnavailableError(errors.PrefixErrorf(err,
-			`unable to parse upstream url for app "%s"`, app.IdAndName(),
-		))
+	// Resolve target URL at creation time; immutable after this point.
+	var target *url.URL
+	if info, ok := m.stateWatcher.GetState(app.ID); ok {
+		target = info.UpstreamTarget // pre-parsed by watcher on CRD event; may be nil
 	}
 
 	// Create reverse proxy
@@ -158,6 +165,13 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 		}
 		u.manager.logger.Debugf(ctx, "app %q is not running, triggering wakeup and serving spinner page", u.app.ID)
 		u.wakeup(ctx, errors.Errorf("app state is %s", appInfo.ActualState))
+		u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
+		return nil
+	}
+
+	// Target set at creation time; nil means appsProxyServiceRef was absent.
+	if u.target == nil {
+		u.manager.logger.Debugf(ctx, "app %q has no appsProxyServiceRef, serving spinner page", u.app.ID)
 		u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		return nil
 	}
