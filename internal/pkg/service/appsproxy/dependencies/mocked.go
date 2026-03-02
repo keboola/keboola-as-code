@@ -68,8 +68,8 @@ func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	if cfg.SandboxesAPI.Token == "" {
 		cfg.SandboxesAPI.Token = "my-token"
 	}
-	if cfg.K8s.Namespace == "" {
-		cfg.K8s.Namespace = "keboola"
+	if cfg.K8s.AppsNamespace == "" {
+		cfg.K8s.AppsNamespace = "keboola"
 	}
 
 	var dnsServer *dnsmock.Server
