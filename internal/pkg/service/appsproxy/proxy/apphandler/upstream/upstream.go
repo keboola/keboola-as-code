@@ -147,6 +147,11 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 			u.manager.logger.Debugf(ctx, "app %q state check: not in cache, forwarding to upstream", u.app.ID)
 		}
 		if ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
+			if appInfo.ActualState == k8sapp.AppActualStateStarting {
+				u.manager.logger.Debugf(ctx, "app %q is starting, serving spinner page", u.app.ID)
+				u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
+				return nil
+			}
 			if !appInfo.AutoRestartEnabled {
 				u.manager.logger.Debugf(ctx, "app %q is not running and restart is disabled, serving restart-disabled page", u.app.ID)
 				u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
