@@ -1,7 +1,11 @@
 // Package k8sapp provides watching and patching of App CRDs in Kubernetes.
 package k8sapp
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
+import (
+	"net/url"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
 
 const (
 	Group    = "apps.keboola.com"
@@ -37,8 +41,12 @@ type appSpec struct {
 type AppInfo struct {
 	ActualState        AppActualState
 	AutoRestartEnabled bool
+	// UpstreamTarget is the pre-parsed URL from .status.appsProxyServiceRef.
+	// Nil when the field is absent or unparseable.
+	UpstreamTarget *url.URL
 }
 
 type appStatus struct {
-	CurrentState AppActualState `json:"currentState"`
+	CurrentState        AppActualState `json:"currentState"`
+	AppsProxyServiceRef string         `json:"appsProxyServiceRef,omitempty"`
 }
