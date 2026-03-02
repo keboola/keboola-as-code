@@ -250,9 +250,9 @@ func TestRetryable_IncrementNonRetryableAttempt(t *testing.T) {
 	assert.Equal(t, Retryable{
 		RetryAttempt:  1,
 		RetryReason:   "credential expired",
-		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
-		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")),
-		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")), // +2 hours
+		FirstFailedAt: new(utctime.MustParse("2000-01-01T00:00:00.000Z")),
+		LastFailedAt:  new(utctime.MustParse("2000-01-01T00:00:00.000Z")),
+		RetryAfter:    new(utctime.MustParse("2000-01-01T02:00:00.000Z")), // +2 hours
 	}, v)
 
 	// Second attempt - FirstFailedAt should remain unchanged
@@ -260,9 +260,9 @@ func TestRetryable_IncrementNonRetryableAttempt(t *testing.T) {
 	assert.Equal(t, Retryable{
 		RetryAttempt:  2,
 		RetryReason:   "credential expired",
-		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")), // unchanged
-		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T02:00:00.000Z")),
-		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T04:00:00.000Z")), // +2 hours (fixed)
+		FirstFailedAt: new(utctime.MustParse("2000-01-01T00:00:00.000Z")), // unchanged
+		LastFailedAt:  new(utctime.MustParse("2000-01-01T02:00:00.000Z")),
+		RetryAfter:    new(utctime.MustParse("2000-01-01T04:00:00.000Z")), // +2 hours (fixed)
 	}, v)
 
 	// Third attempt - still fixed interval
@@ -270,9 +270,9 @@ func TestRetryable_IncrementNonRetryableAttempt(t *testing.T) {
 	assert.Equal(t, Retryable{
 		RetryAttempt:  3,
 		RetryReason:   "credential expired",
-		FirstFailedAt: ptr.Ptr(utctime.MustParse("2000-01-01T00:00:00.000Z")), // unchanged
-		LastFailedAt:  ptr.Ptr(utctime.MustParse("2000-01-01T04:00:00.000Z")),
-		RetryAfter:    ptr.Ptr(utctime.MustParse("2000-01-01T06:00:00.000Z")), // +2 hours (fixed)
+		FirstFailedAt: new(utctime.MustParse("2000-01-01T00:00:00.000Z")), // unchanged
+		LastFailedAt:  new(utctime.MustParse("2000-01-01T04:00:00.000Z")),
+		RetryAfter:    new(utctime.MustParse("2000-01-01T06:00:00.000Z")), // +2 hours (fixed)
 	}, v)
 }
 
