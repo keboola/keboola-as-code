@@ -187,6 +187,7 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 	appID := api.AppID(appObj.Spec.AppID)
 	w.byName.Store(k8sName, appID)
 	w.byAppID.Store(appID, entry{k8sName: k8sName, state: appObj.Status.CurrentState, autoRestartEnabled: autoRestartEnabled})
+	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled)
 }
 
 func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {

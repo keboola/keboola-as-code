@@ -135,15 +135,24 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 }
 
 func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request) error {
+	ctx := req.Context()
+
 	// K8s state pre-check: if we know the app is not running, handle it synchronously
 	// without attempting DNS/upstream. Falls through if state is unknown or Running.
 	appInfo, ok := u.manager.stateWatcher.GetState(u.app.ID)
+	if ok {
+		u.manager.logger.Debugf(ctx, "app %q state check: actualState=%q autoRestartEnabled=%v", u.app.ID, appInfo.ActualState, appInfo.AutoRestartEnabled)
+	} else {
+		u.manager.logger.Debugf(ctx, "app %q state check: not in cache, forwarding to upstream", u.app.ID)
+	}
 	if ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
 		if !appInfo.AutoRestartEnabled {
+			u.manager.logger.Debugf(ctx, "app %q is not running and restart is disabled, serving restart-disabled page", u.app.ID)
 			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
 			return nil
 		}
-		u.wakeup(req.Context(), errors.Errorf("app state is %s", appInfo.ActualState))
+		u.manager.logger.Debugf(ctx, "app %q is not running, triggering wakeup and serving spinner page", u.app.ID)
+		u.wakeup(ctx, errors.Errorf("app state is %s", appInfo.ActualState))
 		u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		return nil
 	}
