@@ -137,16 +137,15 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request) error {
 	// K8s state pre-check: if we know the app is not running, handle it synchronously
 	// without attempting DNS/upstream. Falls through if state is unknown or Running.
-	if u.manager.stateWatcher != nil {
-		if appInfo, ok := u.manager.stateWatcher.GetState(u.app.ID); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
-			if !appInfo.AutoRestartEnabled {
-				u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
-				return nil
-			}
-			u.wakeup(req.Context(), errors.Errorf("app state is %s", appInfo.ActualState))
-			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
+	appInfo, ok := u.manager.stateWatcher.GetState(u.app.ID)
+	if ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
+		if !appInfo.AutoRestartEnabled {
+			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
 			return nil
 		}
+		u.wakeup(req.Context(), errors.Errorf("app state is %s", appInfo.ActualState))
+		u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
+		return nil
 	}
 
 	// Difference between regular and websocket request
