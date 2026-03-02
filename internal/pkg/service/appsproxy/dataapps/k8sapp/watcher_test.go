@@ -71,6 +71,13 @@ func newAppObject(k8sName, appID string, state k8sapp.AppActualState) *unstructu
 	}
 }
 
+// newAppObjectWithServiceRef creates an unstructured App CRD object with appsProxyServiceRef set.
+func newAppObjectWithServiceRef(k8sName, appID string, state k8sapp.AppActualState, serviceName string) *unstructured.Unstructured {
+	obj := newAppObject(k8sName, appID, state)
+	obj.Object["status"].(map[string]any)["appsProxyServiceRef"] = map[string]any{"name": serviceName}
+	return obj
+}
+
 func TestStateWatcher_GetState_UnknownWhenEmpty(t *testing.T) {
 	t.Parallel()
 
@@ -152,4 +159,55 @@ func TestStateWatcher_SetDesiredRunning_NoOpWhenUnknown(t *testing.T) {
 	for _, a := range fakeClient.Actions() {
 		assert.NotEqual(t, "patch", a.GetVerb(), "unexpected PATCH for unknown app")
 	}
+}
+
+func TestStateWatcher_GetState_UpstreamTarget(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := newFakeClient()
+	d := newTestDeps(t)
+
+	appObj := newAppObjectWithServiceRef("my-app-k8s", "app-123", k8sapp.AppActualStateRunning, "svc-name")
+	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
+		t.Context(), appObj, metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
+
+	var info k8sapp.AppInfo
+	assert.Eventually(t, func() bool {
+		var ok bool
+		info, ok = watcher.GetState(api.AppID("app-123"))
+		return ok && info.UpstreamTarget != nil
+	}, 5*time.Second, 50*time.Millisecond)
+
+	require.NotNil(t, info.UpstreamTarget)
+	assert.Equal(t, "http", info.UpstreamTarget.Scheme)
+	assert.Equal(t, "svc-name.keboola.svc.cluster.local:8888", info.UpstreamTarget.Host)
+}
+
+func TestStateWatcher_GetState_UpstreamTarget_AbsentWhenMissing(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := newFakeClient()
+	d := newTestDeps(t)
+
+	// App CRD without appsProxyServiceRef.
+	appObj := newAppObject("my-app-k8s", "app-123", k8sapp.AppActualStateRunning)
+	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
+		t.Context(), appObj, metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
+
+	assert.Eventually(t, func() bool {
+		_, ok := watcher.GetState(api.AppID("app-123"))
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
+
+	info, ok := watcher.GetState(api.AppID("app-123"))
+	require.True(t, ok)
+	assert.Nil(t, info.UpstreamTarget)
 }
