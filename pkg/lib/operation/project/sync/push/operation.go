@@ -76,18 +76,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Make ignored branches invisible to the push diff.
-		for _, branch := range projectState.IgnoredBranches() {
-			branch.SetLocalState(nil)
-			branch.SetRemoteState(nil)
-			for _, config := range projectState.ConfigsFrom(branch.BranchKey) {
-				config.SetLocalState(nil)
-				config.SetRemoteState(nil)
-				for _, row := range projectState.ConfigRowsFrom(config.ConfigKey) {
-					row.SetLocalState(nil)
-					row.SetRemoteState(nil)
-				}
-			}
-		}
+		projectState.NullIgnoredBranchStates()
 	}
 
 	// Diff

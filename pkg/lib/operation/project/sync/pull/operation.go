@@ -166,16 +166,5 @@ func ignoreBranchesConfigsAndRows(projectState *project.State) {
 	}
 
 	// Null both states for ignored branches so they are invisible to the diff.
-	for _, branch := range projectState.IgnoredBranches() {
-		branch.SetLocalState(nil)
-		branch.SetRemoteState(nil)
-		for _, config := range projectState.ConfigsFrom(branch.BranchKey) {
-			config.SetLocalState(nil)
-			config.SetRemoteState(nil)
-			for _, row := range projectState.ConfigRowsFrom(config.ConfigKey) {
-				row.SetLocalState(nil)
-				row.SetRemoteState(nil)
-			}
-		}
-	}
+	projectState.NullIgnoredBranchStates()
 }

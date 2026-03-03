@@ -50,6 +50,27 @@ func TestFile_IgnoreConfigsOrRows_Branch(t *testing.T) {
 	assert.Equal(t, "123", ignored[0].ID.String())
 }
 
+func TestFile_IgnoreConfigsOrRows_BranchWithSlashInName(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	r := newTestRegistryWithSlashBranch(t)
+	fs := aferofs.NewMemoryFs()
+
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, "branch/feature/foo")))
+
+	file, err := LoadFile(ctx, fs, r, "foo/bar1")
+	require.NoError(t, err)
+
+	require.NoError(t, file.IgnoreConfigsOrRows())
+
+	// Branch "feature/foo" should be ignored, not misidentified as a config-row pattern.
+	ignored := r.IgnoredBranches()
+	require.Len(t, ignored, 1)
+	assert.Equal(t, "789", ignored[0].ID.String())
+	assert.Empty(t, r.IgnoredConfigRows())
+}
+
 func Test_applyIgnoredPatterns(t *testing.T) {
 	t.Parallel()
 	projectState := newTestRegistry(t)
@@ -106,6 +127,13 @@ func Test_applyIgnoredPatterns(t *testing.T) {
 			name: "branch pattern",
 			args: args{
 				pattern: "branch/Main",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "branch pattern with slash in name",
+			args: args{
+				pattern: "branch/feature/foo",
 			},
 			wantErr: assert.NoError,
 		},

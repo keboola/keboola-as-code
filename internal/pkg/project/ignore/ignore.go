@@ -36,18 +36,19 @@ func (f *File) parseIgnoredPatterns() []string {
 
 // applyIgnorePattern applies a single ignore pattern, marking the appropriate config or row as ignored.
 func (f *File) applyIgnorePattern(ignoreConfig string) error {
-	parts := strings.Split(ignoreConfig, "/")
+	// Branch pattern: "branch/<name>" — name may itself contain "/".
+	if strings.HasPrefix(ignoreConfig, "branch/") {
+		branchName := strings.TrimPrefix(ignoreConfig, "branch/")
+		f.state.IgnoreBranch(branchName)
+		return nil
+	}
 
+	parts := strings.Split(ignoreConfig, "/")
 	switch len(parts) {
 	case 2:
-		if parts[0] == "branch" {
-			// Ignore entire branch by name.
-			f.state.IgnoreBranch(parts[1])
-		} else {
-			// Ignore config by componentID/configID.
-			configID, componentID := parts[1], parts[0]
-			f.state.IgnoreConfig(configID, componentID)
-		}
+		// Ignore config by componentID/configID.
+		configID, componentID := parts[1], parts[0]
+		f.state.IgnoreConfig(configID, componentID)
 	case 3:
 		// Ignore specific config row.
 		configID, rowID := parts[1], parts[2]

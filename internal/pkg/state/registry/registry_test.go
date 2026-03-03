@@ -228,6 +228,25 @@ func TestRegistry_GetByPath(t *testing.T) {
 	assert.True(t, found)
 }
 
+func TestNullIgnoredBranchStates(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t, knownpaths.NewNop(t.Context()))
+
+	// Initially all 6 objects (2 branches, 2 configs, 2 rows) are present.
+	assert.Len(t, s.All(), 6)
+
+	// Ignore the "Main" branch (ID 123).
+	s.IgnoreBranch("Main")
+	s.NullIgnoredBranchStates()
+
+	// Branch 123, its 2 configs, and 2 config rows are now invisible (both states nil).
+	// Only branch 567 remains.
+	assert.Len(t, s.All(), 1)
+	assert.Equal(t, BranchKey{ID: 567}, s.Branches()[0].BranchKey)
+	assert.Empty(t, s.Configs())
+	assert.Empty(t, s.ConfigRows())
+}
+
 func TestIgnoreBranch(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t, knownpaths.NewNop(t.Context()))
