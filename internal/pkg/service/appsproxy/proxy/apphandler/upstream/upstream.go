@@ -183,10 +183,25 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 	return u.handler.ServeHTTPOrError(rw, req)
 }
 
-func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
+func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 	proxy := httputil.NewSingleHostReverseProxy(u.target)
 	proxy.Transport = u.manager.transport
 	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
+
+	// Clear req.Host so Go's HTTP client derives the Host header from req.URL.Host.
+	// httputil.NewSingleHostReverseProxy rewrites req.URL.Host but leaves req.Host
+	// (the actual Host header) set to the original incoming value, which causes
+	// upstreams that route by Host to return wrong responses.
+	origDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		origDirector(req)
+		req.Host = ""
+	}
+	return proxy
+}
+
+func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
+	proxy := u.newReverseProxy()
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -203,9 +218,7 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 }
 
 func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
-	proxy := httputil.NewSingleHostReverseProxy(u.target)
-	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
+	proxy := u.newReverseProxy()
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
