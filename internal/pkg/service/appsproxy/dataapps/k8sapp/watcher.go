@@ -32,10 +32,11 @@ type entry struct {
 
 // StateWatcher watches App CRDs in Kubernetes and provides a local cache of app states.
 type StateWatcher struct {
-	client             dynamic.Interface
-	namespace          string
-	logger             log.Logger
-	serviceURLBuilder  func(name string) string
+	client            dynamic.Interface
+	namespace         string
+	logger            log.Logger
+	serviceURLBuilder func(name string) string
+	hasSynced         cache.InformerSynced
 	// byName: K8s object name → AppID
 	byName sync.Map
 	// byAppID: AppID → entry{k8sName, state}
@@ -73,6 +74,7 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		serviceURLBuilder: func(name string) string {
 			return fmt.Sprintf("http://%s.%s.svc.cluster.local:8888", name, namespace)
 		},
+		hasSynced: func() bool { return false },
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -112,6 +114,8 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		w.logger.Errorf(ctx, "failed to add event handler to App informer: %s", err)
 	}
 
+	w.hasSynced = informer.HasSynced
+
 	go informer.Run(ctx.Done())
 
 	// Log when the cache has synced so operators know the watcher is ready.
@@ -142,6 +146,13 @@ func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
 // It is intended for use in tests only, to point the proxy at a local test server.
 func (w *StateWatcher) SetServiceURLBuilder(f func(name string) string) {
 	w.serviceURLBuilder = f
+}
+
+// WaitForCacheSync blocks until the informer cache has completed its initial list,
+// the stopCh is closed, or the context is cancelled.
+// Intended for use in tests to ensure the watch is established before creating objects.
+func (w *StateWatcher) WaitForCacheSync(ctx context.Context) bool {
+	return cache.WaitForCacheSync(ctx.Done(), w.hasSynced)
 }
 
 // SetDesiredRunning patches .spec.state = "Running" on the App CRD for the given appID.
