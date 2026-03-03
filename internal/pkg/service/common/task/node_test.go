@@ -940,9 +940,6 @@ task/123/my-receiver/my-export/some.task/%s
 {"level":"info","message":"closing etcd session: context canceled","component":"task.etcd.session","node":"node1"}
 {"level":"info","message":"closed etcd session","component":"task.etcd.session","node":"node1"}
 {"level":"info","message":"shutdown done","component":"task","node":"node1"}
-{"level":"info","message":"closing etcd connection","component":"etcd.client"}
-{"level":"info","message":"closed etcd connection","component":"etcd.client"}
-{"level":"info","message":"exited"}
 `, logs.String())
 }
 

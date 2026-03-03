@@ -1,6 +1,7 @@
 package transport_test
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network"
@@ -15,5 +16,8 @@ func TestTransport_SmallData_KCP(t *testing.T) {
 
 func TestTransportBiggerData_KCP(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("skipped on Windows")
+	}
 	testTransportBiggerData(t, func(cfg network.Config) transport.Protocol { return kcp.New(cfg) })
 }
