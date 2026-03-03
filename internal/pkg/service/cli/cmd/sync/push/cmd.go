@@ -16,6 +16,7 @@ type Flags struct {
 	Force           configmap.Value[bool]   `configKey:"force" configUsage:"enable deleting of remote objects"`
 	DryRun          configmap.Value[bool]   `configKey:"dry-run" configUsage:"print what needs to be done"`
 	Encrypt         configmap.Value[bool]   `configKey:"encrypt" configUsage:"encrypt unencrypted values before push"`
+	SkipValidation  configmap.Value[bool]   `configKey:"skip-validation" configUsage:"skip local schema validation of configurations before push"`
 }
 
 func DefaultFlags() Flags {
@@ -67,6 +68,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			options := push.Options{
 				Encrypt:           f.Encrypt.Value,
 				DryRun:            f.DryRun.Value,
+				SkipValidation:    f.SkipValidation.Value,
 				AllowRemoteDelete: f.Force.Value,
 				LogUntrackedPaths: true,
 				ChangeDescription: changeDescription,
