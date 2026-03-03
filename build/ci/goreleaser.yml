@@ -9,6 +9,11 @@ builds:
     goos: ["linux", "darwin", "windows"]
     goarch: ["amd64", "arm", "arm64"]
     goarm: ["6"]
+    ignore:
+      - goos: windows
+        goarch: arm
+      - goos: darwin
+        goarch: arm
     env:
       - CGO_ENABLED=0
     ldflags:

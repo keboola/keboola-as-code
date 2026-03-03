@@ -173,7 +173,6 @@ jobs:
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_armv6.zip" "keboola-cli_${{ env.VERSION }}_linux_armv6.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "armv6"
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_arm64.zip" "keboola-cli_${{ env.VERSION }}_linux_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "arm64"
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_linux_amd64.zip" "keboola-cli_${{ env.VERSION }}_linux_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "linux" "amd64"
-          ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_armv6.zip" "keboola-cli_${{ env.VERSION }}_windows_armv6.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "armv6"
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli_${{ env.VERSION }}_windows_arm64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "arm64"
           ./build/package/s3/publish.sh "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli_${{ env.VERSION }}_windows_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "windows" "amd64"
           ./build/package/s3/publish.sh "keboola-cli_darwin_amd64_v1/kbc.zip" "keboola-cli_${{ env.VERSION }}_darwin_amd64.zip" "keboola-cli" "${{ env.VERSION }}" "darwin" "amd64"
@@ -228,7 +227,6 @@ jobs:
           curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_linux_armv6.zip"
           curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_amd64.zip"
           curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_arm64.zip"
-          curl --output /dev/null --silent --head --fail "https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/keboola-cli_${{ env.VERSION }}_windows_armv6.zip"
 
   update-repositories-homebrew:
     needs:

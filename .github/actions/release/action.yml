@@ -65,7 +65,6 @@ runs:
           target/keboola-cli_${{ inputs.version }}_linux_armv6.zip
           target/keboola-cli_${{ inputs.version }}_linux_amd64.zip
           target/keboola-cli_${{ inputs.version }}_linux_arm64.zip
-          target/keboola-cli_${{ inputs.version }}_windows_armv6.zip
           target/keboola-cli_${{ inputs.version }}_windows_amd64.zip
           target/keboola-cli_${{ inputs.version }}_windows_arm64.zip
           target/keboola-cli_darwin_amd64_v1/kbc.zip
