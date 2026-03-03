@@ -23,7 +23,6 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/miekg/dns"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +50,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oauthproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -61,7 +59,7 @@ import (
 type testCase struct {
 	name                  string
 	setupK8s              func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher)
-	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server)
+	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher)
 	expectedNotifications map[string]int
 	expectedSpans         tracetest.SpanStubs
 }
@@ -72,7 +70,7 @@ func TestAppProxyRouter(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "health-check",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to health-check endpoint
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://hub.keboola.local/health-check", nil)
 				require.NoError(t, err)
@@ -87,7 +85,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "missing-app-id",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request without app id
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -102,7 +100,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "unknown-app-id",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to unknown app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://unknown.hub.keboola.local/health-check", nil)
 				require.NoError(t, err)
@@ -117,7 +115,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "broken-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to broken app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://broken.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -221,7 +219,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "no-rule-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to app with no path rules
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://norule.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -237,7 +235,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "wrong-rule-type-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://invalid1.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -253,7 +251,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "missing-referenced-provider",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://invalid2.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -269,7 +267,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "empty-allowed-roles-array-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://invalid3.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -285,7 +283,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "unknown-provider-app",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to app with unknown provider
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://invalid4.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -301,7 +299,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "not-empty-providers-auth-required-false",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to app with invalid rule type
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://invalid5.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -317,7 +315,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "redirect-to-canonical-host",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Redirect to the canonical URL (match cookies domain)
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://foo-bar-123.hub.keboola.local/some/data/app/url?foo=bar", nil)
 				require.NoError(t, err)
@@ -331,7 +329,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "redirect-to-host-lowercase",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://foo-12345.hub.keboola.local/some/data/app/url?foo=bar", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
@@ -344,7 +342,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-app-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				appServer.Close()
 
 				// Request to public app
@@ -361,7 +359,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-app-sub-url",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to public app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/some/data/app/url?foo=bar", nil)
 				request.Header.Set("User-Agent", "Internet Exploder")
@@ -391,7 +389,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-verified-email",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: new(true),
@@ -477,7 +475,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-unauthorized",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to private app (unauthorized)
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -511,7 +509,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-missing-csrf-token",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -581,7 +579,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-group-mismatch",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "manager@keboola.com",
 					Groups: []string{"manager"},
@@ -635,7 +633,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-unverified-email",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: new(false),
@@ -687,7 +685,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-oidc-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to private app (unauthorized)
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -738,7 +736,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				appServer.Close()
 
 				m[0].QueueUser(&mockoidc.MockUser{
@@ -829,7 +827,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-basic-flow",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin", "manager"},
@@ -934,7 +932,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-redirect-to-selection-page",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -965,7 +963,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-unverified-email",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: new(false),
@@ -1033,7 +1031,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-down",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				appServer.Close()
 
 				m[1].QueueUser(&mockoidc.MockUser{
@@ -1110,7 +1108,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-broken-provider",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				appServer.Close()
 
 				// Provider selection
@@ -1137,7 +1135,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-app-websocket",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
 				defer cancel()
 
@@ -1164,7 +1162,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-websocket-unauthorized",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
 				defer cancel()
 
@@ -1182,7 +1180,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-websocket",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: new(true),
@@ -1254,7 +1252,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "websocket-connection-check",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 				defer cancel()
 
@@ -1284,7 +1282,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "multi-app-websocket",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1376,7 +1374,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "prefix-app-no-auth",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to public part of the app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://prefix.hub.keboola.local/public", nil)
 				require.NoError(t, err)
@@ -1411,7 +1409,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "prefix-app-api-auth",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1473,7 +1471,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "prefix-app-web-auth",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1554,7 +1552,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "shared-provider",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1641,7 +1639,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "configuration-change",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to public app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -1687,7 +1685,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "concurrency-test",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 				defer cancel()
 
@@ -1723,17 +1721,35 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-app-wakeup",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
-
-				// Request to public app - fails because the app doesn't have a DNS record
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(api.AppID("123"))
+					return ok && info.ActualState == k8sapp.AppActualStateStopped
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				// Request to public app - fails because the app is Stopped
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 
-				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+				// Patch app back to Running
+				patch := []byte(`{"status":{"currentState":"Running"}}`)
+				_, err = fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(api.AppID("123"))
+					return ok && info.ActualState == k8sapp.AppActualStateRunning
+				}, 5*time.Second, 50*time.Millisecond)
 
 				// Request to public app
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
@@ -1751,10 +1767,19 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-app-wakeup-only",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
-
-				// Request to public app - fails because the app doesn't have a DNS record
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(api.AppID("123"))
+					return ok && info.ActualState == k8sapp.AppActualStateStopped
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				// Request to public app - fails because the app is Stopped, triggers wakeup
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
@@ -1771,7 +1796,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 		{
 			name: "private-one-provider-selector",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request provider selector page - no auth provider
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/_proxy/selection", nil)
 				require.NoError(t, err)
@@ -1786,9 +1811,18 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-wakeup",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
-
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+					t.Context(), "app-oidc", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(api.AppID("oidc"))
+					return ok && info.ActualState == k8sapp.AppActualStateStopped
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1835,14 +1869,23 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
-				// Request to private app (authorized but missing dns, triggers wakeup)
+				// Request to private app (authorized but app is Stopped, triggers wakeup)
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 
-				dnsServer.AddARecord(dns.Fqdn("app.local"), net.ParseIP("127.0.0.1"))
+				// Patch app back to Running
+				patch := []byte(`{"status":{"currentState":"Running"}}`)
+				_, err = fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+					t.Context(), "app-oidc", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(api.AppID("oidc"))
+					return ok && info.ActualState == k8sapp.AppActualStateRunning
+				}, 5*time.Second, 50*time.Millisecond)
 
 				// Request to private app (authorized)
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
@@ -1857,9 +1900,18 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-wakeup-only",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
-
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+					t.Context(), "app-oidc", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(api.AppID("oidc"))
+					return ok && info.ActualState == k8sapp.AppActualStateStopped
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1906,7 +1958,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 
-				// Request to private app (authorized but missing dns, triggers wakeup)
+				// Request to private app (authorized but app is Stopped, triggers wakeup)
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err = client.Do(request)
@@ -1922,9 +1974,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "private-app-no-wakeup",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
-				dnsServer.RemoveARecords(dns.Fqdn("app.local"))
-
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -1977,7 +2027,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-basic-auth-wrong-login-no-password",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request public basic auth app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://basic-auth.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -2003,7 +2053,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-basic-auth-wrong-login",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request public basic auth app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://basic-auth.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -2029,7 +2079,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-basic-auth-correct-app-url",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request public basic auth app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://basic-auth.hub.keboola.local/app/url", nil)
 				require.NoError(t, err)
@@ -2076,7 +2126,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-basic-auth-correct-login",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request public basic auth app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://basic-auth.hub.keboola.local/_proxy/form", nil)
 				require.NoError(t, err)
@@ -2126,7 +2176,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-basic-auth-wrong-cookie",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Access with cookie
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/", nil)
 				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015a"})
@@ -2142,7 +2192,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-basic-auth-cookie",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Access with cookie
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/", nil)
 				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "$2a$10$65mF6LI2F0Nm9PkQk8DlJu.C5jD.fseeXWn9CCGmDxLPomikYWtte"})
@@ -2161,7 +2211,7 @@ func TestAppProxyRouter(t *testing.T) {
 		},
 		{
 			name: "public-basic-auth-sign-out",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Access with cookie
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/_proxy/sign_out", nil)
 				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"})
@@ -2200,7 +2250,7 @@ func TestAppProxyRouter(t *testing.T) {
 					return ok && !info.AutoRestartEnabled
 				}, 5*time.Second, 50*time.Millisecond)
 			},
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Use canonical slug-based URL to bypass the slug redirect.
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -2218,7 +2268,7 @@ func TestAppProxyRouter(t *testing.T) {
 	publicAppTestCaseFactory := func(method string) testCase {
 		return testCase{
 			name: "public-app-" + method,
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to public app
 				request, err := http.NewRequestWithContext(t.Context(), method, "https://public-123.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -2247,7 +2297,7 @@ func TestAppProxyRouter(t *testing.T) {
 	privateAppTestCaseFactory := func(method string) testCase {
 		return testCase{
 			name: "private-app-oidc-" + method,
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, dnsServer *dnsmock.Server) {
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
@@ -2377,13 +2427,11 @@ func TestAppProxyRouter(t *testing.T) {
 				mocked.TestTelemetry().AssertSpans(t, tc.expectedSpans, opts...)
 			}
 
-			dnsServer := mocked.TestDNSServer()
-
 			// Create test OIDC providers
 			providers := testAuthProviders(t, pm)
 
 			// Register data apps
-			appURL := testutil.AddAppDNSRecord(t, appServer, dnsServer)
+			appURL := testutil.AppServerURL(t, appServer)
 			apps := testDataApps(appURL, providers)
 			appsAPI.Register(apps)
 
@@ -2419,7 +2467,7 @@ func TestAppProxyRouter(t *testing.T) {
 				tc.setupK8s(t, mocked.TestFakeK8sClient(), d.AppStateWatcher())
 			}
 
-			tc.run(t, client, providers, appServer, appsAPI, dnsServer)
+			tc.run(t, client, providers, appServer, appsAPI, mocked.TestFakeK8sClient(), d.AppStateWatcher())
 
 			d.Process().Shutdown(t.Context(), errors.New("bye bye"))
 			d.Process().WaitForShutdown()
@@ -2760,8 +2808,7 @@ func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL strin
 	cfg.CookieSecretSalt = string(secret)
 	cfg.CsrfTokenSalt = string(csrfSecret)
 	cfg.SandboxesAPI.URL = sandboxesAPIURL
-	port := pm.GetFreePort()
-	return proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient(), dependencies.WithMockedDNSPort(port))
+	return proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 }
 
 func createProxyHandler(ctx context.Context, d proxyDependencies.ServiceScope) http.Handler {

@@ -238,11 +238,6 @@ func (u *AppUpstream) trace() chain.Middleware {
 				GotConn: func(connInfo httptrace.GotConnInfo) {
 					u.notify(ctx)
 				},
-				DNSDone: func(info httptrace.DNSDoneInfo) {
-					if info.Err != nil {
-						u.wakeup(ctx, info.Err)
-					}
-				},
 			})
 
 			return next.ServeHTTPOrError(w, req.WithContext(reqCtx))

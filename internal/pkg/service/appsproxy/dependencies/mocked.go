@@ -13,7 +13,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
@@ -22,16 +21,11 @@ import (
 type mocked struct {
 	dependencies.Mocked
 	config        config.Config
-	dnsServer     *dnsmock.Server
 	fakeK8sClient *k8sfake.FakeDynamicClient
 }
 
 func (v *mocked) TestConfig() config.Config {
 	return v.config
-}
-
-func (v *mocked) TestDNSServer() *dnsmock.Server {
-	return v.dnsServer
 }
 
 // TestFakeK8sClient returns the fake Kubernetes dynamic client used by this mock.
@@ -72,17 +66,6 @@ func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 		cfg.K8s.AppsNamespace = "keboola"
 	}
 
-	var dnsServer *dnsmock.Server
-	if cfg.DNSServer == "" {
-		dnsServer = dnsmock.New(commonMock.MockedDNSPort())
-		require.NoError(tb, dnsServer.Start())
-		tb.Cleanup(func() {
-			_ = dnsServer.Shutdown()
-		})
-
-		cfg.DNSServer = dnsServer.Addr()
-	}
-
 	// Create fake K8s dynamic client. The App list kind is registered so the informer can list CRDs.
 	scheme := runtime.NewScheme()
 	fakeClient := k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
@@ -92,7 +75,7 @@ func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	// Validate config
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
-	mock := &mocked{Mocked: commonMock, config: cfg, dnsServer: dnsServer, fakeK8sClient: fakeClient}
+	mock := &mocked{Mocked: commonMock, config: cfg, fakeK8sClient: fakeClient}
 
 	scope, err := newServiceScope(ctx, mock, cfg)
 	require.NoError(tb, err)

@@ -19,7 +19,6 @@ type Config struct {
 	PProf            pprof.Config      `configKey:"pprof"`
 	Datadog          datadog.Config    `configKey:"datadog"`
 	Metrics          prometheus.Config `configKey:"metrics"`
-	DNSServer        string            `configKey:"dnsServer" configUsage:"DNS server for proxy. If empty, the /etc/resolv.conf is used."`
 	API              API               `configKey:"api"`
 	CookieSecretSalt string            `configKey:"cookieSecretSalt" configUsage:"Cookie secret needed by OAuth 2 Proxy." validate:"required" sensitive:"true"`
 	Upstream         Upstream          `configKey:"-" configUsage:"Configuration options for upstream"`
