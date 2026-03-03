@@ -42,7 +42,7 @@
         {
           "field": "durationOvertimePercentage",
           "value": "0.75",
-          "operator": ">="
+          "operator": "\u003e="
         }
       ],
       "recipient": {

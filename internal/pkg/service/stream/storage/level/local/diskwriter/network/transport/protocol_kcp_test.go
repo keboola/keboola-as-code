@@ -17,7 +17,7 @@ func TestTransport_SmallData_KCP(t *testing.T) {
 func TestTransportBiggerData_KCP(t *testing.T) {
 	t.Parallel()
 	if runtime.GOOS == "windows" {
-		t.Skip("skipped on Windows")
+		t.Skip("unstable on Windows: KCP data corruption under high UDP throughput")
 	}
 	testTransportBiggerData(t, func(cfg network.Config) transport.Protocol { return kcp.New(cfg) })
 }
