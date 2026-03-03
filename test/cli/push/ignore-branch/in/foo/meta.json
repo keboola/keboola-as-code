@@ -1,5 +1,4 @@
 {
   "name": "foo",
-  "isDefault": false,
-  "description": "foo description that must not be pushed"
+  "isDefault": false
 }
