@@ -2875,6 +2875,8 @@ func registerDefaultK8sApps(t *testing.T, apps []api.AppConfig, fakeClient *k8sf
 	t.Helper()
 	// Override URL builder so requests route to the test server instead of a real K8s service.
 	watcher.SetServiceURLBuilder(func(_ string) string { return serviceURL })
+	// Wait for the informer to complete its initial list so the watch is established before we create objects.
+	require.True(t, watcher.WaitForCacheSync(t.Context()), "App CRD informer cache sync timed out")
 	for _, app := range apps {
 		obj := &unstructured.Unstructured{
 			Object: map[string]any{
