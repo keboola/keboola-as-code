@@ -41,16 +41,16 @@ type appSpec struct {
 type AppInfo struct {
 	ActualState        AppActualState
 	AutoRestartEnabled bool
-	// UpstreamTarget is the pre-parsed URL from .status.appsProxyServiceRef.
+	// UpstreamTarget is the pre-parsed URL from .status.appsProxy.upstreamUrl.
 	// Nil when the field is absent or unparseable.
 	UpstreamTarget *url.URL
 }
 
 type appStatus struct {
-	CurrentState        AppActualState       `json:"currentState"`
-	AppsProxyServiceRef appsProxyServiceRef  `json:"appsProxyServiceRef,omitempty"`
+	CurrentState AppActualState `json:"currentState"`
+	AppsProxy    appsProxy      `json:"appsProxy,omitempty"`
 }
 
-type appsProxyServiceRef struct {
-	Name string `json:"name,omitempty"`
+type appsProxy struct {
+	UpstreamURL string `json:"upstreamUrl,omitempty"`
 }

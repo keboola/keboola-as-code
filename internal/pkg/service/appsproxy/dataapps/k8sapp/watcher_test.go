@@ -71,10 +71,10 @@ func newAppObject(k8sName, appID string, state k8sapp.AppActualState) *unstructu
 	}
 }
 
-// newAppObjectWithServiceRef creates an unstructured App CRD object with appsProxyServiceRef set.
-func newAppObjectWithServiceRef(k8sName, appID string, state k8sapp.AppActualState, serviceName string) *unstructured.Unstructured {
+// newAppObjectWithUpstreamURL creates an unstructured App CRD object with appsProxy.upstreamUrl set.
+func newAppObjectWithUpstreamURL(k8sName, appID string, state k8sapp.AppActualState, upstreamURL string) *unstructured.Unstructured {
 	obj := newAppObject(k8sName, appID, state)
-	obj.Object["status"].(map[string]any)["appsProxyServiceRef"] = map[string]any{"name": serviceName}
+	obj.Object["status"].(map[string]any)["appsProxy"] = map[string]any{"upstreamUrl": upstreamURL}
 	return obj
 }
 
@@ -167,7 +167,7 @@ func TestStateWatcher_GetState_UpstreamTarget(t *testing.T) {
 	fakeClient := newFakeClient()
 	d := newTestDeps(t)
 
-	appObj := newAppObjectWithServiceRef("my-app-k8s", "app-123", k8sapp.AppActualStateRunning, "svc-name")
+	appObj := newAppObjectWithUpstreamURL("my-app-k8s", "app-123", k8sapp.AppActualStateRunning, "http://my-svc.keboola.svc.cluster.local:8888")
 	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
 		t.Context(), appObj, metav1.CreateOptions{},
 	)
@@ -184,7 +184,7 @@ func TestStateWatcher_GetState_UpstreamTarget(t *testing.T) {
 
 	require.NotNil(t, info.UpstreamTarget)
 	assert.Equal(t, "http", info.UpstreamTarget.Scheme)
-	assert.Equal(t, "svc-name.keboola.svc.cluster.local:8888", info.UpstreamTarget.Host)
+	assert.Equal(t, "my-svc.keboola.svc.cluster.local:8888", info.UpstreamTarget.Host)
 }
 
 func TestStateWatcher_GetState_UpstreamTarget_AbsentWhenMissing(t *testing.T) {
@@ -193,7 +193,7 @@ func TestStateWatcher_GetState_UpstreamTarget_AbsentWhenMissing(t *testing.T) {
 	fakeClient := newFakeClient()
 	d := newTestDeps(t)
 
-	// App CRD without appsProxyServiceRef.
+	// App CRD without appsProxy.upstreamUrl.
 	appObj := newAppObject("my-app-k8s", "app-123", k8sapp.AppActualStateRunning)
 	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
 		t.Context(), appObj, metav1.CreateOptions{},

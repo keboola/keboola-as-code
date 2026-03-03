@@ -3,7 +3,6 @@ package k8sapp
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"sync"
 
@@ -27,16 +26,15 @@ type entry struct {
 	k8sName            string
 	state              AppActualState
 	autoRestartEnabled bool
-	upstreamTarget     *url.URL // pre-parsed; nil when appsProxyServiceRef absent/invalid
+	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
 }
 
 // StateWatcher watches App CRDs in Kubernetes and provides a local cache of app states.
 type StateWatcher struct {
-	client            dynamic.Interface
-	namespace         string
-	logger            log.Logger
-	serviceURLBuilder func(name string) string
-	hasSynced         cache.InformerSynced
+	client    dynamic.Interface
+	namespace string
+	logger    log.Logger
+	hasSynced cache.InformerSynced
 	// byName: K8s object name → AppID
 	byName sync.Map
 	// byAppID: AppID → entry{k8sName, state}
@@ -71,9 +69,6 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		client:    client,
 		namespace: namespace,
 		logger:    d.Logger().WithComponent("k8sapp.watcher"),
-		serviceURLBuilder: func(name string) string {
-			return fmt.Sprintf("http://%s.%s.svc.cluster.local:8888", name, namespace)
-		},
 		hasSynced: func() bool { return false },
 	}
 
@@ -142,12 +137,6 @@ func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
 	}, true
 }
 
-// SetServiceURLBuilder overrides the function used to construct the upstream URL from a service name.
-// It is intended for use in tests only, to point the proxy at a local test server.
-func (w *StateWatcher) SetServiceURLBuilder(f func(name string) string) {
-	w.serviceURLBuilder = f
-}
-
 // WaitForCacheSync blocks until the informer cache has completed its initial list,
 // the stopCh is closed, or the context is cancelled.
 // Intended for use in tests to ensure the watch is established before creating objects.
@@ -213,12 +202,11 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 	}
 
 	var upstreamTarget *url.URL
-	if name := appObj.Status.AppsProxyServiceRef.Name; name != "" {
-		rawURL := w.serviceURLBuilder(name)
+	if rawURL := appObj.Status.AppsProxy.UpstreamURL; rawURL != "" {
 		if t, err := url.Parse(rawURL); err == nil {
 			upstreamTarget = t
 		} else {
-			w.logger.Warnf(ctx, "App CRD %q (appID=%s) invalid upstream URL %q for appsProxyServiceRef %q: %s", k8sName, appObj.Spec.AppID, rawURL, name, err)
+			w.logger.Warnf(ctx, "App CRD %q (appID=%s) invalid upstream URL %q from appsProxy.upstreamUrl: %s", k8sName, appObj.Spec.AppID, rawURL, err)
 		}
 	}
 
