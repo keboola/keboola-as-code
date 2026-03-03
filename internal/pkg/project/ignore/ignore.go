@@ -40,9 +40,14 @@ func (f *File) applyIgnorePattern(ignoreConfig string) error {
 
 	switch len(parts) {
 	case 2:
-		// Ignore config by ID and name.
-		configID, componentID := parts[1], parts[0]
-		f.state.IgnoreConfig(configID, componentID)
+		if parts[0] == "branch" {
+			// Ignore entire branch by name.
+			f.state.IgnoreBranch(parts[1])
+		} else {
+			// Ignore config by componentID/configID.
+			configID, componentID := parts[1], parts[0]
+			f.state.IgnoreConfig(configID, componentID)
+		}
 	case 3:
 		// Ignore specific config row.
 		configID, rowID := parts[1], parts[2]

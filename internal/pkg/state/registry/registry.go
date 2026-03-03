@@ -150,6 +150,23 @@ func (s *Registry) Configs() (configs []*model.ConfigState) {
 	return configs
 }
 
+func (s *Registry) IgnoreBranch(branchName string) {
+	for _, branch := range s.Branches() {
+		if branch.LocalOrRemoteState().(*model.Branch).Name == branchName {
+			branch.Ignore = true
+		}
+	}
+}
+
+func (s *Registry) IgnoredBranches() (branches []*model.BranchState) {
+	for _, branch := range s.Branches() {
+		if branch.Ignore {
+			branches = append(branches, branch)
+		}
+	}
+	return branches
+}
+
 func (s *Registry) IgnoreConfig(ignoreID string, componentID string) {
 	for _, object := range s.All() {
 		if v, ok := object.(*model.ConfigState); ok {

@@ -31,6 +31,25 @@ func TestFile_IgnoreConfigsOrRows(t *testing.T) {
 	assert.Equal(t, "345", registry.IgnoredConfigs()[0].ID.String())
 }
 
+func TestFile_IgnoreConfigsOrRows_Branch(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	r := newTestRegistry(t)
+	fs := aferofs.NewMemoryFs()
+
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, "branch/Main")))
+
+	file, err := LoadFile(ctx, fs, r, "foo/bar1")
+	require.NoError(t, err)
+
+	require.NoError(t, file.IgnoreConfigsOrRows())
+
+	ignored := r.IgnoredBranches()
+	require.Len(t, ignored, 1)
+	assert.Equal(t, "123", ignored[0].ID.String())
+}
+
 func Test_applyIgnoredPatterns(t *testing.T) {
 	t.Parallel()
 	projectState := newTestRegistry(t)
@@ -80,6 +99,13 @@ func Test_applyIgnoredPatterns(t *testing.T) {
 			name: "correct pattern",
 			args: args{
 				pattern: "keboola.bar/687",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "branch pattern",
+			args: args{
+				pattern: "branch/Main",
 			},
 			wantErr: assert.NoError,
 		},

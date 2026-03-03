@@ -228,6 +228,31 @@ func TestRegistry_GetByPath(t *testing.T) {
 	assert.True(t, found)
 }
 
+func TestIgnoreBranch(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t, knownpaths.NewNop(t.Context()))
+
+	// Before ignoring, no branches are ignored.
+	assert.Empty(t, s.IgnoredBranches())
+
+	// Ignore branch "Main" (ID 123).
+	s.IgnoreBranch("Main")
+
+	// Only the "Main" branch is ignored.
+	ignored := s.IgnoredBranches()
+	require.Len(t, ignored, 1)
+	assert.Equal(t, BranchKey{ID: 123}, ignored[0].BranchKey)
+
+	// "Foo Bar Branch" (ID 567) is not affected.
+	allBranches := s.Branches()
+	require.Len(t, allBranches, 2)
+	for _, b := range allBranches {
+		if b.ID == 567 {
+			assert.False(t, b.Ignore)
+		}
+	}
+}
+
 func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	t.Helper()
 	registry := New(paths, naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
