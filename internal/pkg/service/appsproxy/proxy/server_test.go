@@ -60,7 +60,7 @@ func TestAppProxyHandler(t *testing.T) {
 	d, mocked := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 
 	// Register apps
-	appURL := testutil.AddAppDNSRecord(t, appServer, mocked.TestDNSServer())
+	appURL := testutil.AppServerURL(t, appServer)
 	apps := []api.AppConfig{
 		{
 			ID:             "123",

@@ -35,7 +35,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport/dns/dnsmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -88,7 +87,6 @@ type ServiceScope interface {
 type Mocked interface {
 	dependencies.Mocked
 	TestConfig() config.Config
-	TestDNSServer() *dnsmock.Server
 	TestFakeK8sClient() *k8sfake.FakeDynamicClient
 }
 
@@ -184,7 +182,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.parentScopes = parentScp
 	d.config = cfg
 
-	d.upstreamTransport, err = transport.New(d, cfg.DNSServer)
+	d.upstreamTransport, err = transport.New(d)
 	if err != nil {
 		return nil, err
 	}
