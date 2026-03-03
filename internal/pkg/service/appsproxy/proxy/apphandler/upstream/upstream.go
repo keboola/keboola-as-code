@@ -176,6 +176,9 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 		return nil
 	}
 
+	// Log forwarded request headers for routing debugging.
+	u.manager.logger.Infof(ctx, "forwarding request: app=%q method=%s url=%s target=%s headers=%v", u.app.ID, req.Method, req.URL, u.target, req.Header)
+
 	// Difference between regular and websocket request
 	if strings.EqualFold(req.Header.Get("Connection"), "upgrade") && req.Header.Get("Upgrade") == "websocket" {
 		return u.wsHandler.ServeHTTPOrError(rw, req)
