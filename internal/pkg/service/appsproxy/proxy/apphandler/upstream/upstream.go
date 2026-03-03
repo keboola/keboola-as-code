@@ -52,7 +52,7 @@ type Manager struct {
 type AppUpstream struct {
 	manager       *Manager
 	app           api.AppConfig
-	target        *url.URL // parsed from appsProxyServiceRef at creation; nil when absent
+	target        *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
 	handler       *chain.Chain
 	wsHandler     *chain.Chain
 	cancelWs      context.CancelCauseFunc
@@ -98,7 +98,7 @@ func (m *Manager) Shutdown(ctx context.Context) {
 	m.wg.Wait()
 }
 
-// CurrentServiceRef returns the upstream URL string for appID from the K8s cache.
+// CurrentServiceRef returns the appsProxy.upstreamUrl string for appID from the K8s cache.
 // Returns "" when the app is not cached or the field is absent/invalid.
 func (m *Manager) CurrentServiceRef(appID api.AppID) string {
 	info, ok := m.stateWatcher.GetState(appID)
@@ -169,9 +169,9 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 		return nil
 	}
 
-	// Target set at creation time; nil means appsProxyServiceRef was absent.
+	// Target set at creation time; nil means appsProxy.upstreamUrl was absent.
 	if u.target == nil {
-		u.manager.logger.Debugf(ctx, "app %q has no appsProxyServiceRef, serving spinner page", u.app.ID)
+		u.manager.logger.Debugf(ctx, "app %q has no appsProxy.upstreamUrl, serving spinner page", u.app.ID)
 		u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		return nil
 	}

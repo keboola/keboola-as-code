@@ -2461,7 +2461,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 			client := createHTTPClient(t, proxyURL)
 
-			// Default K8s setup: register all test apps as Running with appsProxyServiceRef.
+			// Default K8s setup: register all test apps as Running with appsProxy.upstreamUrl.
 			registerDefaultK8sApps(t, apps, mocked.TestFakeK8sClient(), d.AppStateWatcher(), appURL.String())
 			if tc.setupK8s != nil {
 				tc.setupK8s(t, mocked.TestFakeK8sClient(), d.AppStateWatcher())
@@ -2868,13 +2868,11 @@ func htmlLinkTo(url string) string {
 }
 
 // registerDefaultK8sApps creates Running App CRD objects in the fake K8s client for all test apps
-// and waits for the StateWatcher to sync them. The proxy reads appsProxyServiceRef from the CRD
+// and waits for the StateWatcher to sync them. The proxy reads appsProxy.upstreamUrl from the CRD
 // to get the upstream URL, so this is required for requests to route to the upstream.
 // Must be called before tc.setupK8s so per-test overrides (Patch) can override specific apps.
 func registerDefaultK8sApps(t *testing.T, apps []api.AppConfig, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher, serviceURL string) {
 	t.Helper()
-	// Override URL builder so requests route to the test server instead of a real K8s service.
-	watcher.SetServiceURLBuilder(func(_ string) string { return serviceURL })
 	// Wait for the informer to complete its initial list so the watch is established before we create objects.
 	require.True(t, watcher.WaitForCacheSync(t.Context()), "App CRD informer cache sync timed out")
 	for _, app := range apps {
@@ -2891,8 +2889,8 @@ func registerDefaultK8sApps(t *testing.T, apps []api.AppConfig, fakeClient *k8sf
 				},
 				"status": map[string]any{
 					"currentState": string(k8sapp.AppActualStateRunning),
-					"appsProxyServiceRef": map[string]any{
-						"name": "app-" + string(app.ID),
+					"appsProxy": map[string]any{
+						"upstreamUrl": serviceURL,
 					},
 				},
 			},
