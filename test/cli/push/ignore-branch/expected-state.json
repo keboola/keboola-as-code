@@ -1,0 +1,50 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "main branch description",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "without-rows",
+          "description": "test fixture",
+          "configuration": {
+            "parameters": {
+              "api": {
+                "baseUrl": "https://jsonplaceholder.typicode.com"
+              }
+            }
+          },
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    },
+    {
+      "branch": {
+        "name": "foo",
+        "description": "",
+        "isDefault": false
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "without-rows",
+          "description": "test fixture",
+          "configuration": {
+            "parameters": {
+              "api": {
+                "baseUrl": "https://jsonplaceholder.typicode.com"
+              }
+            }
+          },
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}
