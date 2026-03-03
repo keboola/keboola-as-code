@@ -5,4 +5,4 @@ Warning:
 
 The project has been pulled, but it is not in a valid state.
 Please correct the problems listed above.
-Push operation is only possible when project is valid.
+Push will proceed with warnings for configs already accepted by the server.
