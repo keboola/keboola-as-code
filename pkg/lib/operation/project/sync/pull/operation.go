@@ -143,7 +143,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		logger.Warn(ctx, "")
 		logger.Warn(ctx, `The project has been pulled, but it is not in a valid state.`)
 		logger.Warn(ctx, `Please correct the problems listed above.`)
-		logger.Warn(ctx, `Push operation is only possible when project is valid.`)
+		logger.Warn(ctx, `Push will proceed with warnings for configs already accepted by the server.`)
 	}
 
 	// Log untracked paths

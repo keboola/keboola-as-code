@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/ignore"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
@@ -60,7 +61,10 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			ValidateJSONSchema: true,
 		}
 		if err := validate.Run(ctx, projectState, validateOptions, d); err != nil {
-			return err
+			logger.Warn(ctx, errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+			logger.Warn(ctx, "")
+			logger.Warn(ctx, "Validation warnings found, proceeding with push.")
+			logger.Warn(ctx, "The configs already exist on the server; the server is the source of truth.")
 		}
 	}
 
