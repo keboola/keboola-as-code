@@ -63,7 +63,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			return err
 		}
 
-		ignoreConfigsAndRows(projectState)
+		ignoreBranchesConfigsAndRows(projectState)
 	}
 
 	// Diff
@@ -156,7 +156,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	return nil
 }
 
-func ignoreConfigsAndRows(projectState *project.State) {
+func ignoreBranchesConfigsAndRows(projectState *project.State) {
 	for _, v := range projectState.IgnoredConfigRows() {
 		v.SetRemoteState(nil)
 	}
@@ -164,4 +164,7 @@ func ignoreConfigsAndRows(projectState *project.State) {
 	for _, v := range projectState.IgnoredConfigs() {
 		v.SetRemoteState(nil)
 	}
+
+	// Null both states for ignored branches so they are invisible to the diff.
+	projectState.NullIgnoredBranchStates()
 }

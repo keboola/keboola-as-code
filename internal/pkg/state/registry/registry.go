@@ -150,6 +150,59 @@ func (s *Registry) Configs() (configs []*model.ConfigState) {
 	return configs
 }
 
+func (s *Registry) IgnoreBranch(branchName string) {
+	for _, branch := range s.Branches() {
+		if branch.LocalOrRemoteState().(*model.Branch).Name == branchName {
+			branch.Ignore = true
+		}
+	}
+}
+
+func (s *Registry) IgnoredBranches() (branches []*model.BranchState) {
+	for _, branch := range s.Branches() {
+		if branch.Ignore {
+			branches = append(branches, branch)
+		}
+	}
+	return branches
+}
+
+// NullIgnoredBranchStates nulls local+remote state for every ignored branch and for all
+// configs/rows belonging to those branches, using a single pass over All() to avoid
+// repeated sorts.
+func (s *Registry) NullIgnoredBranchStates() {
+	ignored := s.IgnoredBranches()
+	if len(ignored) == 0 {
+		return
+	}
+
+	// Build set of ignored branch keys for O(1) lookup.
+	ignoredKeys := make(map[model.BranchKey]struct{}, len(ignored))
+	for _, b := range ignored {
+		ignoredKeys[b.BranchKey] = struct{}{}
+	}
+
+	for _, obj := range s.All() {
+		switch v := obj.(type) {
+		case *model.BranchState:
+			if _, ok := ignoredKeys[v.BranchKey]; ok {
+				v.SetLocalState(nil)
+				v.SetRemoteState(nil)
+			}
+		case *model.ConfigState:
+			if _, ok := ignoredKeys[model.BranchKey{ID: v.BranchID}]; ok {
+				v.SetLocalState(nil)
+				v.SetRemoteState(nil)
+			}
+		case *model.ConfigRowState:
+			if _, ok := ignoredKeys[model.BranchKey{ID: v.BranchID}]; ok {
+				v.SetLocalState(nil)
+				v.SetRemoteState(nil)
+			}
+		}
+	}
+}
+
 func (s *Registry) IgnoreConfig(ignoreID string, componentID string) {
 	for _, object := range s.All() {
 		if v, ok := object.(*model.ConfigState); ok {

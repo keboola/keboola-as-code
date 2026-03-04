@@ -1,0 +1,23 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "without-rows"
+      ]
+    },
+    {
+      "branch": {
+        "name": "foo",
+        "isDefault": false
+      },
+      "configs": [
+        "without-rows"
+      ]
+    }
+  ]
+}

@@ -29,6 +29,16 @@ func Test_loadFile(t *testing.T) {
 	assert.Equal(t, "keboola.bar/678/34\nkeboola.foo/345", file.rawStringPattern)
 }
 
+func newTestRegistryWithSlashBranch(t *testing.T) *registry.Registry {
+	t.Helper()
+	r := registry.New(knownpaths.NewNop(t.Context()), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
+	require.NoError(t, r.Set(&model.BranchState{
+		BranchManifest: &model.BranchManifest{BranchKey: model.BranchKey{ID: 789}},
+		Local:          &model.Branch{Name: "feature/foo"},
+	}))
+	return r
+}
+
 func newTestRegistry(t *testing.T) *registry.Registry {
 	t.Helper()
 

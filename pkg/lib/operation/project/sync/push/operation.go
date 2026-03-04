@@ -78,6 +78,9 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		if err = file.IgnoreConfigsOrRows(); err != nil {
 			return err
 		}
+
+		// Make ignored branches invisible to the push diff.
+		projectState.NullIgnoredBranchStates()
 	}
 
 	// Diff
