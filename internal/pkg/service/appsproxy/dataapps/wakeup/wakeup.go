@@ -11,21 +11,18 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Interval sets how often the proxy sends wakeup request to sandboxes service.
-// If the last notification for the app was less than this Interval ago then the notification is skipped.
-const (
-	Interval               = time.Second
-	wakeupErrorToBeSkipped = `can't have desired state "running". Currently is in state: "stopping", desired state: "stopped"`
-)
+// Interval sets how often the proxy sends a wakeup request.
+// If the last wakeup for the app was less than this Interval ago then the wakeup is skipped.
+const Interval = time.Second
 
 type Manager struct {
 	clock    clockwork.Clock
 	logger   log.Logger
-	api      *api.API
+	watcher  *k8sapp.StateWatcher
 	stateMap *syncmap.SyncMap[api.AppID, state]
 }
 
@@ -37,14 +34,14 @@ type state struct {
 type dependencies interface {
 	Clock() clockwork.Clock
 	Logger() log.Logger
-	AppsAPI() *api.API
+	AppStateWatcher() *k8sapp.StateWatcher
 }
 
 func NewManager(d dependencies) *Manager {
 	return &Manager{
-		clock:  d.Clock(),
-		logger: d.Logger(),
-		api:    d.AppsAPI(),
+		clock:   d.Clock(),
+		logger:  d.Logger(),
+		watcher: d.AppStateWatcher(),
 		stateMap: syncmap.New[api.AppID, state](func(api.AppID) *state {
 			return &state{lock: &sync.Mutex{}}
 		}),
@@ -55,38 +52,22 @@ func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
 	// Get cache item or init an empty item
 	item := l.stateMap.GetOrInit(appID)
 
-	// Only one notification runs in parallel.
+	// Only one wakeup runs in parallel.
 	// If there is an in-flight update, we are waiting for its results.
 	item.lock.Lock()
 	defer item.lock.Unlock()
 
-	// Return config from cache if still valid
 	now := l.clock.Now()
-
 	if now.Before(item.nextRequestAfter) {
-		// Skip if a notification was sent less than Interval ago
+		// Skip if a wakeup was sent less than Interval ago
 		return nil
 	}
 
 	// Update nextRequestAfter time
 	item.nextRequestAfter = now.Add(Interval)
 
-	// Send the notification
-	_, err := l.api.WakeupApp(appID).Send(ctx)
-
-	// Check if it's a restart disabled error via context code
-	var apiErr *api.Error
-	if errors.As(err, &apiErr) && apiErr.HasRestartDisabled() {
-		// This is expected for apps with restart disabled, don't log as error
-		l.logger.Infof(ctx, `app "%s" has restart disabled`, appID)
-		return err // Still return the error so it can be handled by the proxy
-	}
-
-	// If it does not succeed but app is currently stopping do not log it as error, log only other errors
-	// Instead of implementing state machine as in sandboxes service, we want to skip valid state that the
-	// pod is deallocating, and we want to wait till pod is `stopped` and we can `start` the pod again.
-	if err != nil && err.Error() != wakeupErrorToBeSkipped {
-		l.logger.Errorf(ctx, `failed sending wakeup request to Sandboxes Service about for app "%s": %s`, appID, err.Error())
+	if err := l.watcher.SetDesiredRunning(ctx, appID); err != nil {
+		l.logger.Errorf(ctx, `failed setting desired state "Running" for app "%s": %s`, appID, err)
 		return err
 	}
 	return nil

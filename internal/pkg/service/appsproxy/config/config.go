@@ -19,12 +19,12 @@ type Config struct {
 	PProf            pprof.Config      `configKey:"pprof"`
 	Datadog          datadog.Config    `configKey:"datadog"`
 	Metrics          prometheus.Config `configKey:"metrics"`
-	DNSServer        string            `configKey:"dnsServer" configUsage:"DNS server for proxy. If empty, the /etc/resolv.conf is used."`
 	API              API               `configKey:"api"`
 	CookieSecretSalt string            `configKey:"cookieSecretSalt" configUsage:"Cookie secret needed by OAuth 2 Proxy." validate:"required" sensitive:"true"`
 	Upstream         Upstream          `configKey:"-" configUsage:"Configuration options for upstream"`
 	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
+	K8s              K8s               `configKey:"k8s"`
 }
 
 type API struct {
@@ -40,6 +40,11 @@ type SandboxesAPI struct {
 type Upstream struct {
 	HTTPTimeout time.Duration `configKey:"httpTimeout" configUsage:"Timeout for HTTP request on upstream"`
 	WsTimeout   time.Duration `configKey:"wsTimeout" configUsage:"Timeout for websocket request on upstream"`
+}
+
+type K8s struct {
+	AppsNamespace string `configKey:"appsNamespace" configUsage:"Kubernetes namespace where apps (App CRDs) run." validate:"required"`
+	Kubeconfig    string `configKey:"kubeconfig" configUsage:"Path to kubeconfig file. Uses in-cluster config if empty."`
 }
 
 func New() Config {
