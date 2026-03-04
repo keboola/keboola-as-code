@@ -147,7 +147,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, osEnvs 
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Completion commands don't need the full dependency stack.
 		// __complete is the hidden command invoked by the shell on every TAB press.
-		if cmd.Name() == "completion" || cmd.Name() == "__complete" {
+		if cmd.Name() == "__complete" || strings.HasPrefix(cmd.CommandPath(), "kbc completion") {
 			return nil
 		}
 
