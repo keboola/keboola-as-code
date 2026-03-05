@@ -109,5 +109,13 @@ func newTestRegistry(t *testing.T) *registry.Registry {
 	}
 	assert.NoError(t, r.Set(row2))
 
+	// Notification 1 (under config 345, component keboola.foo)
+	notification1Key := model.NotificationKey{BranchID: 123, ComponentID: "keboola.foo", ConfigID: `345`, ID: `sub-001`}
+	notification1 := &model.NotificationState{
+		NotificationManifest: &model.NotificationManifest{NotificationKey: notification1Key},
+		Local:                &model.Notification{NotificationKey: notification1Key},
+	}
+	assert.NoError(t, r.Set(notification1))
+
 	return r
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 )
 
-func TestFile_IgnoreConfigsOrRows(t *testing.T) {
+func TestFile_IgnoreObjects(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
@@ -23,7 +23,7 @@ func TestFile_IgnoreConfigsOrRows(t *testing.T) {
 	file, err := LoadFile(ctx, fs, registry, "foo/bar1")
 	require.NoError(t, err)
 
-	require.NoError(t, file.IgnoreConfigsOrRows())
+	require.NoError(t, file.IgnoreObjects())
 
 	assert.Len(t, registry.IgnoredConfigRows(), 1)
 	assert.Len(t, registry.IgnoredConfigs(), 1)
@@ -31,7 +31,45 @@ func TestFile_IgnoreConfigsOrRows(t *testing.T) {
 	assert.Equal(t, "345", registry.IgnoredConfigs()[0].ID.String())
 }
 
-func TestFile_IgnoreConfigsOrRows_Branch(t *testing.T) {
+func TestFile_IgnoreObjects_AllNotificationsForConfig(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	r := newTestRegistry(t)
+	fs := aferofs.NewMemoryFs()
+
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, "keboola.foo/345/notifications")))
+
+	file, err := LoadFile(ctx, fs, r, "foo/bar1")
+	require.NoError(t, err)
+
+	require.NoError(t, file.IgnoreObjects())
+
+	ignored := r.IgnoredNotifications()
+	require.Len(t, ignored, 1)
+	assert.Equal(t, "sub-001", string(ignored[0].ID))
+}
+
+func TestFile_IgnoreObjects_SpecificNotification(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	r := newTestRegistry(t)
+	fs := aferofs.NewMemoryFs()
+
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, "keboola.foo/345/notifications/sub-001")))
+
+	file, err := LoadFile(ctx, fs, r, "foo/bar1")
+	require.NoError(t, err)
+
+	require.NoError(t, file.IgnoreObjects())
+
+	ignored := r.IgnoredNotifications()
+	require.Len(t, ignored, 1)
+	assert.Equal(t, "sub-001", string(ignored[0].ID))
+}
+
+func TestFile_IgnoreObjects_Branch(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
@@ -43,14 +81,14 @@ func TestFile_IgnoreConfigsOrRows_Branch(t *testing.T) {
 	file, err := LoadFile(ctx, fs, r, "foo/bar1")
 	require.NoError(t, err)
 
-	require.NoError(t, file.IgnoreConfigsOrRows())
+	require.NoError(t, file.IgnoreObjects())
 
 	ignored := r.IgnoredBranches()
 	require.Len(t, ignored, 1)
 	assert.Equal(t, "123", ignored[0].ID.String())
 }
 
-func TestFile_IgnoreConfigsOrRows_BranchWithSlashInName(t *testing.T) {
+func TestFile_IgnoreObjects_BranchWithSlashInName(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
@@ -62,7 +100,7 @@ func TestFile_IgnoreConfigsOrRows_BranchWithSlashInName(t *testing.T) {
 	file, err := LoadFile(ctx, fs, r, "foo/bar1")
 	require.NoError(t, err)
 
-	require.NoError(t, file.IgnoreConfigsOrRows())
+	require.NoError(t, file.IgnoreObjects())
 
 	// Branch "feature/foo" should be ignored, not misidentified as a config-row pattern.
 	ignored := r.IgnoredBranches()
@@ -106,6 +144,27 @@ func Test_applyIgnoredPatterns(t *testing.T) {
 			name: "too long pattern",
 			args: args{
 				pattern: "keboola.bar/687/1234/1234",
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "notifications all pattern",
+			args: args{
+				pattern: "keboola.foo/345/notifications",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "notifications specific pattern",
+			args: args{
+				pattern: "keboola.foo/345/notifications/sub-001",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "notifications too long pattern",
+			args: args{
+				pattern: "keboola.foo/345/notifications/sub-001/extra",
 			},
 			wantErr: assert.Error,
 		},

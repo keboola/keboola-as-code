@@ -59,11 +59,11 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			return err
 		}
 
-		if err = file.IgnoreConfigsOrRows(); err != nil {
+		if err = file.IgnoreObjects(); err != nil {
 			return err
 		}
 
-		ignoreBranchesConfigsAndRows(projectState)
+		ignoreObjects(projectState)
 	}
 
 	// Diff
@@ -156,12 +156,16 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	return nil
 }
 
-func ignoreBranchesConfigsAndRows(projectState *project.State) {
+func ignoreObjects(projectState *project.State) {
 	for _, v := range projectState.IgnoredConfigRows() {
 		v.SetRemoteState(nil)
 	}
 
 	for _, v := range projectState.IgnoredConfigs() {
+		v.SetRemoteState(nil)
+	}
+
+	for _, v := range projectState.IgnoredNotifications() {
 		v.SetRemoteState(nil)
 	}
 
