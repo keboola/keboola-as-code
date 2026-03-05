@@ -247,6 +247,73 @@ func TestNullIgnoredBranchStates(t *testing.T) {
 	assert.Empty(t, s.ConfigRows())
 }
 
+func TestNullIgnoredBranchStates_WithNotification(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t, knownpaths.NewNop(t.Context()))
+
+	// Add a notification under branch 123 / config 345.
+	notifKey := NotificationKey{BranchID: 123, ComponentID: "keboola.foo", ConfigID: `345`, ID: `sub-001`}
+	notif := &NotificationState{
+		NotificationManifest: &NotificationManifest{NotificationKey: notifKey},
+		Local:                &Notification{NotificationKey: notifKey},
+	}
+	require.NoError(t, s.Set(notif))
+
+	// 7 objects now.
+	assert.Len(t, s.All(), 7)
+
+	s.IgnoreBranch("Main")
+	s.NullIgnoredBranchStates()
+
+	// The notification under branch 123 must also be nulled.
+	assert.Len(t, s.All(), 1)
+	assert.Empty(t, s.Notifications())
+}
+
+func TestIgnoreNotificationsForConfig(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t, knownpaths.NewNop(t.Context()))
+
+	notifKey := NotificationKey{BranchID: 123, ComponentID: "keboola.foo", ConfigID: `345`, ID: `sub-001`}
+	notif := &NotificationState{
+		NotificationManifest: &NotificationManifest{NotificationKey: notifKey},
+		Local:                &Notification{NotificationKey: notifKey},
+	}
+	require.NoError(t, s.Set(notif))
+
+	assert.Empty(t, s.IgnoredNotifications())
+
+	s.IgnoreNotificationsForConfig("345", "keboola.foo")
+
+	ignored := s.IgnoredNotifications()
+	require.Len(t, ignored, 1)
+	assert.Equal(t, `sub-001`, string(ignored[0].ID))
+}
+
+func TestIgnoreNotification(t *testing.T) {
+	t.Parallel()
+	s := newTestState(t, knownpaths.NewNop(t.Context()))
+
+	notifKey := NotificationKey{BranchID: 123, ComponentID: "keboola.foo", ConfigID: `345`, ID: `sub-001`}
+	notif := &NotificationState{
+		NotificationManifest: &NotificationManifest{NotificationKey: notifKey},
+		Local:                &Notification{NotificationKey: notifKey},
+	}
+	require.NoError(t, s.Set(notif))
+
+	assert.Empty(t, s.IgnoredNotifications())
+
+	// Wrong notification ID — should not match.
+	s.IgnoreNotification("345", "keboola.foo", "sub-999")
+	assert.Empty(t, s.IgnoredNotifications())
+
+	// Correct ID — should match.
+	s.IgnoreNotification("345", "keboola.foo", "sub-001")
+	ignored := s.IgnoredNotifications()
+	require.Len(t, ignored, 1)
+	assert.Equal(t, `sub-001`, string(ignored[0].ID))
+}
+
 func TestIgnoreBranch(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t, knownpaths.NewNop(t.Context()))

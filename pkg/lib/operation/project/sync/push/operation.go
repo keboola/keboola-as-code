@@ -76,8 +76,14 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			return err
 		}
 
-		if err = file.IgnoreConfigsOrRows(); err != nil {
+		if err = file.IgnoreObjects(); err != nil {
 			return err
+		}
+
+		// Null both states for directly-ignored notifications.
+		for _, v := range projectState.IgnoredNotifications() {
+			v.SetLocalState(nil)
+			v.SetRemoteState(nil)
 		}
 
 		// Make ignored branches invisible to the push diff.

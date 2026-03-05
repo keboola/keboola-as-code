@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (f *File) IgnoreConfigsOrRows() error {
+func (f *File) IgnoreObjects() error {
 	return f.applyIgnoredPatterns()
 }
 
@@ -44,13 +44,21 @@ func (f *File) applyIgnorePattern(ignoreConfig string) error {
 	}
 
 	parts := strings.Split(ignoreConfig, "/")
-	switch len(parts) {
-	case 2:
+	switch {
+	case len(parts) == 2:
 		// Ignore config by componentID/configID.
 		configID, componentID := parts[1], parts[0]
 		f.state.IgnoreConfig(configID, componentID)
-	case 3:
-		// Ignore specific config row.
+	case len(parts) == 3 && parts[2] == "notifications":
+		// Ignore all notifications for a config: componentID/configID/notifications.
+		componentID, configID := parts[0], parts[1]
+		f.state.IgnoreNotificationsForConfig(configID, componentID)
+	case len(parts) == 4 && parts[2] == "notifications":
+		// Ignore a specific notification: componentID/configID/notifications/notificationID.
+		componentID, configID, notificationID := parts[0], parts[1], parts[3]
+		f.state.IgnoreNotification(configID, componentID, notificationID)
+	case len(parts) == 3:
+		// Ignore specific config row: componentID/configID/rowID.
 		configID, rowID := parts[1], parts[2]
 		f.state.IgnoreConfigRow(configID, rowID)
 	default:

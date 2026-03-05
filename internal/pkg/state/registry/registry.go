@@ -199,6 +199,11 @@ func (s *Registry) NullIgnoredBranchStates() {
 				v.SetLocalState(nil)
 				v.SetRemoteState(nil)
 			}
+		case *model.NotificationState:
+			if _, ok := ignoredKeys[model.BranchKey{ID: v.BranchID}]; ok {
+				v.SetLocalState(nil)
+				v.SetRemoteState(nil)
+			}
 		}
 	}
 }
@@ -288,6 +293,37 @@ func (s *Registry) Notifications() (notifications []*model.NotificationState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*model.NotificationState); ok {
 			notifications = append(notifications, v)
+		}
+	}
+	return notifications
+}
+
+func (s *Registry) IgnoreNotificationsForConfig(configID, componentID string) {
+	for _, obj := range s.All() {
+		if v, ok := obj.(*model.NotificationState); ok {
+			if v.ConfigID.String() == configID && v.ComponentID.String() == componentID {
+				v.Ignore = true
+			}
+		}
+	}
+}
+
+func (s *Registry) IgnoreNotification(configID, componentID, notificationID string) {
+	for _, obj := range s.All() {
+		if v, ok := obj.(*model.NotificationState); ok {
+			if v.ConfigID.String() == configID && v.ComponentID.String() == componentID && string(v.ID) == notificationID {
+				v.Ignore = true
+			}
+		}
+	}
+}
+
+func (s *Registry) IgnoredNotifications() (notifications []*model.NotificationState) {
+	for _, obj := range s.All() {
+		if v, ok := obj.(*model.NotificationState); ok {
+			if v.Ignore {
+				notifications = append(notifications, v)
+			}
 		}
 	}
 	return notifications
