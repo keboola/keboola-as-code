@@ -42,6 +42,7 @@ type Project struct {
 	stateFilePath     string
 	branchesByID      map[keboola.BranchID]*keboola.Branch
 	branchesByName    map[string]*keboola.Branch
+	notificationIDs   []keboola.NotificationSubscriptionID
 	logFn             func(format string, a ...any)
 }
 
@@ -176,6 +177,7 @@ func (p *Project) Clean() error {
 	p.defaultBranch = defaultBranch
 	p.branchesByID = make(map[keboola.BranchID]*keboola.Branch)
 	p.branchesByName = make(map[string]*keboola.Branch)
+	p.notificationIDs = nil
 
 	p.logf("■ Cleanup done.")
 	return nil
@@ -252,6 +254,12 @@ func (p *Project) SetState(ctx context.Context, fs filesystem.Fs, projectStateFi
 	if !p.IsGuest() {
 		// Create sandboxes in default branch
 		err = p.createSandboxes(p.defaultBranch.ID, stateFile.Sandboxes)
+		if err != nil {
+			return err
+		}
+
+		// Create notification subscriptions
+		err = p.createNotificationSubscriptions(stateFile.NotificationSubscriptions)
 		if err != nil {
 			return err
 		}
@@ -483,6 +491,71 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 			if len(privateKeyPEM) > 0 {
 				p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", fixture.Name), privateKeyPEM)
 			}
+		})
+	}
+
+	wg.Wait()
+	if errs.Len() > 0 {
+		return errs
+	}
+
+	return nil
+}
+
+func (p *Project) createNotificationSubscriptions(subscriptions []*keboola.NotificationSubscription) error {
+	if len(subscriptions) == 0 {
+		return nil
+	}
+
+	// Check if notification service is available
+	index, err := p.keboolaProjectAPI.IndexRequest().Send(context.Background())
+	if err != nil {
+		return errors.Errorf("cannot get Storage API index: %w", err)
+	}
+
+	servicesMap := index.Services.ToMap()
+	if _, found := servicesMap.URLByID("notification"); !found {
+		p.logf("⚠️  Notification service not available, skipping %d notification subscription(s)...", len(subscriptions))
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeoutCause(context.Background(), 5*time.Minute, errors.New("notification subscriptions creation timeout"))
+	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	errs := errors.NewMultiError()
+
+	for _, subscription := range subscriptions {
+		sub := subscription
+		wg.Go(func() {
+			p.logf("▶ Notification subscription \"%s\"...", sub.ID)
+
+			// Process filter values - replace environment variable placeholders
+			processedFilters := make([]keboola.NotificationFilter, len(sub.Filters))
+			for i, filter := range sub.Filters {
+				processedFilters[i] = keboola.NotificationFilter{
+					Field:    filter.Field,
+					Operator: filter.Operator,
+					Value:    testhelper.MustReplaceEnvsString(filter.Value, p.envs),
+				}
+			}
+
+			req := p.keboolaProjectAPI.
+				NewCreateNotificationSubscriptionRequest(sub.Event, sub.Recipient.Channel, sub.Recipient.Address).
+				WithFilters(processedFilters)
+
+			created, err := req.Send(ctx)
+			if err != nil {
+				errs.Append(errors.Errorf("could not create notification subscription \"%s\": %w", sub.ID, err))
+				return
+			}
+			p.logf("✔️ Notification subscription \"%s\".", created.ID)
+			p.setEnv(fmt.Sprintf("TEST_NOTIFICATION_%s_ID", sub.ID), string(created.ID))
+
+			// Track notification ID for cleanup
+			p.mapsLock.Lock()
+			p.notificationIDs = append(p.notificationIDs, created.ID)
+			p.mapsLock.Unlock()
 		})
 	}
 

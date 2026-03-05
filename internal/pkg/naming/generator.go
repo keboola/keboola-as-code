@@ -186,6 +186,17 @@ func (g Generator) ConfigRowPath(parentPath string, component *keboola.Component
 	return g.registry.ensureUniquePath(row.Key(), p)
 }
 
+func (g Generator) NotificationPath(parentPath string, notification *model.Notification) model.AbsPath {
+	if len(parentPath) == 0 {
+		panic(errors.Errorf(`notification "%s" parent path cannot be empty`, notification))
+	}
+
+	p := model.AbsPath{}
+	p.SetParentPath(parentPath)
+	p.SetRelativePath(fmt.Sprintf("notifications/sub-%s", notification.ID))
+	return g.registry.ensureUniquePath(notification.Key(), p)
+}
+
 func (g Generator) BlocksDir(configDir string) string {
 	return filesystem.Join(configDir, blocksDir)
 }

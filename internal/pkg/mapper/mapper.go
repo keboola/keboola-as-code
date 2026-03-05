@@ -11,6 +11,11 @@ import (
 
 // LocalSaveMapper is intended to modify how the object will be saved in the filesystem.
 // If you need a list of all saved objects, when they are already saved, use the AfterLocalOperationListener instead.
+//
+// Note: parent-child manifest relationships (e.g., ConfigManifest.Notifications) are populated
+// automatically by setRecords() during manifest loading, not by this mapper.
+// MapBeforeLocalSave is used to write object files (config.json, meta.json, etc.) to the filesystem.
+// See docs/CLI_OBJECT_LIFECYCLE.md for the complete flow.
 type LocalSaveMapper interface {
 	MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error
 }
@@ -19,6 +24,12 @@ type LocalSaveMapper interface {
 // If you need a list of all loaded objects use AfterLocalOperationListener instead.
 // Important: do not rely on other objects in the LocalLoadMapper, they may not be loaded yet.
 // If you need to work with multiple objects (and relationships between them), use the AfterLocalOperationListener instead.
+//
+// CRITICAL: When loading objects that may already exist in state (e.g., from manifest load):
+// - Use registry.Get() to check if state exists
+// - If exists: Update state.Local field directly - do NOT call registry.Set()
+// - If new: Create state and call registry.Set()
+// See docs/CLI_OBJECT_LIFECYCLE.md for examples.
 type LocalLoadMapper interface {
 	MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error
 }

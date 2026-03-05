@@ -1,0 +1,24 @@
+{
+  "event": "job-failed",
+  "filters": [
+    {
+      "field": "branch.id",
+      "value": "%%TEST_BRANCH_MAIN_ID%%",
+      "operator": "=="
+    },
+    {
+      "field": "job.component.id",
+      "value": "ex-generic-v2",
+      "operator": "=="
+    },
+    {
+      "field": "job.configuration.id",
+      "value": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%",
+      "operator": "=="
+    }
+  ],
+  "recipient": {
+    "channel": "email",
+    "address": "alerts@example.com"
+  }
+}

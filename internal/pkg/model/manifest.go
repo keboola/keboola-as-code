@@ -90,7 +90,8 @@ type ConfigRowManifest struct {
 
 type ConfigManifestWithRows struct {
 	ConfigManifest
-	Rows []*ConfigRowManifest `json:"rows"`
+	Rows          []*ConfigRowManifest    `json:"rows"`
+	Notifications []*NotificationManifest `json:"notifications,omitempty"`
 }
 
 func (p *Paths) ClearRelatedPaths() {

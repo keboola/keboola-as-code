@@ -8,21 +8,23 @@ import (
 )
 
 const (
-	BranchKind    = "branch"
-	ComponentKind = "component"
-	ConfigKind    = "config"
-	ConfigRowKind = "config row"
-	BlockKind     = "block"
-	CodeKind      = "code"
-	PhaseKind     = "phase"
-	TaskKind      = "task"
-	BranchAbbr    = "B"
-	ConfigAbbr    = "C"
-	RowAbbr       = "R"
-	BlockAbbr     = "b"
-	CodeAbbr      = "c"
-	PhaseAbbr     = "p"
-	TaskAbbr      = "t"
+	BranchKind       = "branch"
+	ComponentKind    = "component"
+	ConfigKind       = "config"
+	ConfigRowKind    = "config row"
+	BlockKind        = "block"
+	CodeKind         = "code"
+	PhaseKind        = "phase"
+	TaskKind         = "task"
+	NotificationKind = "notification"
+	BranchAbbr       = "B"
+	ConfigAbbr       = "C"
+	RowAbbr          = "R"
+	BlockAbbr        = "b"
+	CodeAbbr         = "c"
+	PhaseAbbr        = "p"
+	TaskAbbr         = "t"
+	NotificationAbbr = "N"
 )
 
 type Key interface {
@@ -82,6 +84,13 @@ type TaskKey struct {
 	Index    int `json:"-" validate:"min=0"`
 }
 
+type NotificationKey struct {
+	BranchID    keboola.BranchID                   `json:"branchId,omitempty"`
+	ComponentID keboola.ComponentID                `json:"componentId,omitempty"`
+	ConfigID    keboola.ConfigID                   `json:"configId,omitempty"`
+	ID          keboola.NotificationSubscriptionID `json:"id,omitempty" validate:"omitempty"`
+}
+
 func (k BranchKey) Kind() Kind {
 	return Kind{Name: BranchKind, Abbr: BranchAbbr}
 }
@@ -108,6 +117,10 @@ func (k PhaseKey) Kind() Kind {
 
 func (k TaskKey) Kind() Kind {
 	return Kind{Name: TaskKind, Abbr: TaskAbbr}
+}
+
+func (k NotificationKey) Kind() Kind {
+	return Kind{Name: NotificationKind, Abbr: NotificationAbbr}
 }
 
 func (k BranchKey) ObjectID() string {
@@ -138,6 +151,10 @@ func (k TaskKey) ObjectID() string {
 	return cast.ToString(k.Index)
 }
 
+func (k NotificationKey) ObjectID() string {
+	return string(k.ID)
+}
+
 func (k BranchKey) Level() int {
 	return 1
 }
@@ -166,6 +183,10 @@ func (k TaskKey) Level() int {
 	return 6
 }
 
+func (k NotificationKey) Level() int {
+	return 4
+}
+
 func (k BranchKey) Key() Key {
 	return k
 }
@@ -187,6 +208,10 @@ func (k PhaseKey) Key() Key {
 }
 
 func (k TaskKey) Key() Key {
+	return k
+}
+
+func (k NotificationKey) Key() Key {
 	return k
 }
 
@@ -263,6 +288,10 @@ func (k TaskKey) Desc() string {
 	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d/task:%d"`, k.Kind().Name, k.BranchID, k.ComponentID, k.ConfigID, k.PhaseKey.Index, k.Index)
 }
 
+func (k NotificationKey) Desc() string {
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/notification:%s"`, k.Kind().Name, k.BranchID, k.ComponentID, k.ConfigID, k.ID)
+}
+
 func (k BranchKey) String() string {
 	return fmt.Sprintf("%02d_%d_branch", k.Level(), k.ID)
 }
@@ -293,6 +322,10 @@ func (k PhaseKey) String() string {
 
 func (k TaskKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_task", k.Level(), k.BranchID, k.ComponentID, k.ConfigID, k.PhaseKey.Index, k.Index)
+}
+
+func (k NotificationKey) String() string {
+	return fmt.Sprintf("%02d_%d_%s_%s_%s_notification", k.Level(), k.BranchID, k.ComponentID, k.ConfigID, k.ID)
 }
 
 func (k ConfigKey) BranchKey() BranchKey {
@@ -345,6 +378,18 @@ func (k TaskKey) ConfigKey() ConfigKey {
 
 func (k TaskKey) ParentKey() (Key, error) {
 	return k.PhaseKey, nil
+}
+
+func (k NotificationKey) ConfigKey() ConfigKey {
+	return ConfigKey{
+		BranchID:    k.BranchID,
+		ComponentID: k.ComponentID,
+		ID:          k.ConfigID,
+	}
+}
+
+func (k NotificationKey) ParentKey() (Key, error) {
+	return k.ConfigKey(), nil
 }
 
 type ConfigIDMetadata struct {

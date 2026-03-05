@@ -1,0 +1,29 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": ["empty"]
+    }
+  ],
+  "notificationSubscriptions": [
+    {
+      "id": "existing-sub-123",
+      "event": "job-failed",
+      "recipient": {
+        "channel": "email",
+        "address": "test@example.com"
+      },
+      "filters": [
+        {
+          "field": "job.configuration.id",
+          "operator": "==",
+          "value": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%"
+        }
+      ]
+    }
+  ]
+}

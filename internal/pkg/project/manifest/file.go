@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
@@ -116,6 +117,18 @@ func (c *file) records() []model.ObjectManifest {
 			row.ConfigID = config.ID
 			out = append(out, row)
 		}
+		for _, notification := range config.Notifications {
+			if notification != nil {
+				notification.BranchID = config.BranchID
+				notification.ComponentID = config.ComponentID
+				notification.ConfigID = config.ID
+				// Set path from ID if not stored in manifest (backwards compatibility)
+				if notification.GetRelativePath() == "" && notification.ID != "" {
+					notification.SetRelativePath(fmt.Sprintf("notifications/sub-%s", notification.ID))
+				}
+				out = append(out, notification)
+			}
+		}
 	}
 	return out
 }
@@ -150,6 +163,8 @@ func (c *file) setRecords(records []model.ObjectManifest) {
 					ConfigManifest: *v,
 					Rows:           make([]*model.ConfigRowManifest, 0),
 				}
+				// Reset notifications - they are populated below when NotificationManifest records are processed
+				config.Notifications = make([]*model.NotificationManifest, 0)
 				configsMap[config.String()] = config
 				c.Configs = append(c.Configs, config)
 			}
@@ -157,6 +172,11 @@ func (c *file) setRecords(records []model.ObjectManifest) {
 			config, found := configsMap[v.ConfigKey().String()]
 			if found {
 				config.Rows = append(config.Rows, v)
+			}
+		case *model.NotificationManifest:
+			config, found := configsMap[v.ConfigKey().String()]
+			if found {
+				config.Notifications = append(config.Notifications, v)
 			}
 		default:
 			panic(errors.Errorf(`unexpected type "%T"`, manifest))

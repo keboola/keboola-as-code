@@ -19,11 +19,12 @@ import (
 )
 
 type ProjectSnapshot struct {
-	Branches  []*BranchWithConfigs `json:"branches"`
-	Schedules []*Schedule          `json:"schedules,omitempty"`
-	Sandboxes []*Sandbox           `json:"sandboxes,omitempty"`
-	Buckets   []*Bucket            `json:"buckets,omitempty"`
-	Files     []*File              `json:"files,omitempty"`
+	Branches                  []*BranchWithConfigs                `json:"branches"`
+	Schedules                 []*Schedule                         `json:"schedules,omitempty"`
+	Sandboxes                 []*Sandbox                          `json:"sandboxes,omitempty"`
+	Buckets                   []*Bucket                           `json:"buckets,omitempty"`
+	Files                     []*File                             `json:"files,omitempty"`
+	NotificationSubscriptions []*keboola.NotificationSubscription `json:"notificationSubscriptions,omitempty"`
 }
 
 type Branch struct {
@@ -113,14 +114,15 @@ type BackendDefinition struct {
 }
 
 type StateFile struct {
-	Backend              *BackendDefinition `json:"backend,omitempty"`
-	LegacyTransformation bool               `json:"legacyTransformation,omitempty"`
-	AllBranchesConfigs   []string           `json:"allBranchesConfigs" validate:"required"`
-	Branches             []*BranchState     `json:"branches" validate:"required"`
-	Buckets              []*Bucket          `json:"buckets,omitempty"`
-	Sandboxes            []*Sandbox         `json:"sandboxes,omitempty"`
-	Files                []*File            `json:"files,omitempty"`
-	Envs                 map[string]string  `json:"envs,omitempty"` // additional ENVs
+	Backend                   *BackendDefinition                  `json:"backend,omitempty"`
+	LegacyTransformation      bool                                `json:"legacyTransformation,omitempty"`
+	AllBranchesConfigs        []string                            `json:"allBranchesConfigs" validate:"required"`
+	Branches                  []*BranchState                      `json:"branches" validate:"required"`
+	Buckets                   []*Bucket                           `json:"buckets,omitempty"`
+	Sandboxes                 []*Sandbox                          `json:"sandboxes,omitempty"`
+	Files                     []*File                             `json:"files,omitempty"`
+	NotificationSubscriptions []*keboola.NotificationSubscription `json:"notificationSubscriptions,omitempty"`
+	Envs                      map[string]string                   `json:"envs,omitempty"` // additional ENVs
 }
 
 // ToAPI maps fixture to model.Branch.
