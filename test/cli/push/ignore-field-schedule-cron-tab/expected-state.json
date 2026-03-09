@@ -8,17 +8,9 @@
       },
       "configs": [
         {
-          "componentId": "ex-generic-v2",
-          "name": "empty",
-          "description": "",
-          "configuration": {},
-          "rows": [],
-          "isDisabled": false
-        },
-        {
           "componentId": "keboola.scheduler",
           "name": "Scheduler",
-          "description": "",
+          "description": "test fixture",
           "changeDescription": "Updated from #KeboolaCLI",
           "configuration": {
             "schedule": {
@@ -32,6 +24,14 @@
               "mode": "run"
             }
           },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "test fixture",
+          "configuration": {},
           "rows": [],
           "isDisabled": false
         }
