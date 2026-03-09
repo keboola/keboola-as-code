@@ -88,6 +88,7 @@ jobs:
           acrPassword: ${{ secrets.APPS_PROXY_ACR_PASSWORD }}
 
       - name: Trigger image tag update
+        if: ${{ !startsWith(github.ref_name, 'dev-') }}
         uses: ./.github/actions/trigger-image-tag-update
         with:
           helm-chart: "apps-proxy"
