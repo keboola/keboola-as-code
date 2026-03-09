@@ -52,8 +52,7 @@ func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
 	// Get cache item or init an empty item
 	item := l.stateMap.GetOrInit(appID)
 
-	// Only one wakeup runs in parallel.
-	// If there is an in-flight update, we are waiting for its results.
+	// Serialize per-app wakeups to make the rate-limit check atomic.
 	item.lock.Lock()
 	defer item.lock.Unlock()
 
