@@ -137,6 +137,34 @@ func Test_applyIgnoredPatterns(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "field-level ignore: isDisabled",
+			args: args{
+				pattern: "keboola.foo/345:isDisabled",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "field-level ignore: content key",
+			args: args{
+				pattern: "keboola.foo/345:schedule",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "field-level ignore: nested content key",
+			args: args{
+				pattern: "keboola.foo/345:schedule.cronTab",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "field-level ignore: invalid format (no config ID)",
+			args: args{
+				pattern: "keboola.foo:isDisabled",
+			},
+			wantErr: assert.Error,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -144,6 +172,33 @@ func Test_applyIgnoredPatterns(t *testing.T) {
 			tt.wantErr(t, file.applyIgnorePattern(tt.args.pattern), fmt.Sprintf("applyIgnoredPatterns(%v)", tt.args.pattern))
 		})
 	}
+}
+
+func TestFile_IgnoreConfigsOrRows_FieldLevel(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	r := newTestRegistry(t)
+	fs := aferofs.NewMemoryFs()
+
+	// Pattern with field-level ignore
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, "keboola.foo/345:isDisabled")))
+
+	file, err := LoadFile(ctx, fs, r, "foo/bar1")
+	require.NoError(t, err)
+
+	require.NoError(t, file.IgnoreConfigsOrRows())
+
+	// Object-level ignore should not be triggered
+	assert.Empty(t, r.IgnoredConfigs())
+	assert.Empty(t, r.IgnoredConfigRows())
+
+	// Field-level ignore should be registered
+	ignoredFields := r.IgnoredFields()
+	require.Len(t, ignoredFields, 1)
+	assert.Equal(t, "keboola.foo", ignoredFields[0].ComponentID)
+	assert.Equal(t, "345", ignoredFields[0].ConfigID)
+	assert.Equal(t, "isDisabled", ignoredFields[0].FieldName)
 }
 
 func Test_parseIgnoredPatterns(t *testing.T) {

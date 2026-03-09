@@ -43,6 +43,19 @@ func (f *File) applyIgnorePattern(ignoreConfig string) error {
 		return nil
 	}
 
+	// Field-level ignore: "componentID/configID:fieldName"
+	if colonIdx := strings.Index(ignoreConfig, ":"); colonIdx != -1 {
+		objectPath := ignoreConfig[:colonIdx]
+		fieldName := ignoreConfig[colonIdx+1:]
+		parts := strings.Split(objectPath, "/")
+		if len(parts) == 2 {
+			configID, componentID := parts[1], parts[0]
+			f.state.IgnoreConfigField(configID, componentID, fieldName)
+			return nil
+		}
+		return errors.Errorf("invalid field-ignore format: %s", ignoreConfig)
+	}
+
 	parts := strings.Split(ignoreConfig, "/")
 	switch len(parts) {
 	case 2:
