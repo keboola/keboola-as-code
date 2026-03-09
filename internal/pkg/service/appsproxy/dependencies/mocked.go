@@ -39,7 +39,20 @@ func (v *mocked) K8sDynamicClient() dynamic.Interface {
 	return v.fakeK8sClient
 }
 
+// NewMockedServiceScope creates a mocked ServiceScope for tests.
 func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	return newMockedServiceScope(tb, ctx, cfg, nil, opts...)
+}
+
+// NewMockedServiceScopeWithK8sObjects creates a mocked ServiceScope with the fake Kubernetes client
+// pre-populated with the given objects. The objects are available during the informer's initial list,
+// which avoids the race between "initial list done" and "watch channel established" that would cause
+// objects created via Create() immediately after WaitForCacheSync() to be silently dropped.
+func NewMockedServiceScopeWithK8sObjects(tb testing.TB, ctx context.Context, cfg config.Config, initialK8sObjects []runtime.Object, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	return newMockedServiceScope(tb, ctx, cfg, initialK8sObjects, opts...)
+}
+
+func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config, initialK8sObjects []runtime.Object, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
 	tb.Helper()
 
 	commonMock := dependencies.NewMocked(tb, ctx, opts...)
@@ -67,10 +80,12 @@ func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	}
 
 	// Create fake K8s dynamic client. The App list kind is registered so the informer can list CRDs.
+	// Pre-populated objects are included so the informer picks them up during the initial list,
+	// avoiding a race with the watch channel setup.
 	scheme := runtime.NewScheme()
 	fakeClient := k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
 		k8sapp.AppGVR: "AppList",
-	})
+	}, initialK8sObjects...)
 
 	// Validate config
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))

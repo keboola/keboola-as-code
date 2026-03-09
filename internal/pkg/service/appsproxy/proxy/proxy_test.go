@@ -37,6 +37,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 
@@ -2418,22 +2419,26 @@ func TestAppProxyRouter(t *testing.T) {
 				appServer.Close()
 			})
 
-			// Create dependencies
-			d, mocked := createDependencies(t, ctx, appsAPI.URL, pm)
+			// Create OIDC providers and data apps before creating dependencies so that the
+			// fake K8s client can be pre-populated with App CRD objects. This avoids a race
+			// between the informer's initial list completing (HasSynced=true) and the watch
+			// channel being established: objects created in that window are silently dropped
+			// by the fake client, causing WaitForCacheSync to succeed but GetState to never
+			// return the expected state.
+			providers := testAuthProviders(t, pm)
+			appURL := testutil.AppServerURL(t, appServer)
+			apps := testDataApps(appURL, providers)
+			appsAPI.Register(apps)
+
+			// Create dependencies with K8s App CRD objects pre-populated in the fake client.
+			// The informer picks them up during the initial list — no watch event needed.
+			d, mocked := createDependencies(t, ctx, appsAPI.URL, pm, makeDefaultK8sObjects(apps, appURL.String())...)
 
 			// Test generated spans
 			if tc.expectedSpans != nil {
 				var opts []telemetry.TestSpanOption
 				mocked.TestTelemetry().AssertSpans(t, tc.expectedSpans, opts...)
 			}
-
-			// Create test OIDC providers
-			providers := testAuthProviders(t, pm)
-
-			// Register data apps
-			appURL := testutil.AppServerURL(t, appServer)
-			apps := testDataApps(appURL, providers)
-			appsAPI.Register(apps)
 
 			// Create proxy handler
 			handler := createProxyHandler(ctx, d)
@@ -2461,8 +2466,10 @@ func TestAppProxyRouter(t *testing.T) {
 
 			client := createHTTPClient(t, proxyURL)
 
-			// Default K8s setup: register all test apps as Running with appsProxy.upstreamUrl.
-			registerDefaultK8sApps(t, apps, mocked.TestFakeK8sClient(), d.AppStateWatcher(), appURL.String())
+			// Wait for the informer to complete its initial list. Objects are already in the
+			// fake client from pre-population above, so they are available immediately after sync.
+			// Must be called before tc.setupK8s so per-test overrides (Patch) can override specific apps.
+			registerDefaultK8sApps(t, d.AppStateWatcher())
 			if tc.setupK8s != nil {
 				tc.setupK8s(t, mocked.TestFakeK8sClient(), d.AppStateWatcher())
 			}
@@ -2792,7 +2799,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 	}
 }
 
-func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL string, pm server.PortManager) (proxyDependencies.ServiceScope, proxyDependencies.Mocked) {
+func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL string, pm server.PortManager, initialK8sObjects ...runtime.Object) (proxyDependencies.ServiceScope, proxyDependencies.Mocked) {
 	t.Helper()
 
 	secret := make([]byte, 32)
@@ -2808,7 +2815,7 @@ func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL strin
 	cfg.CookieSecretSalt = string(secret)
 	cfg.CsrfTokenSalt = string(csrfSecret)
 	cfg.SandboxesAPI.URL = sandboxesAPIURL
-	return proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
+	return proxyDependencies.NewMockedServiceScopeWithK8sObjects(t, ctx, cfg, initialK8sObjects, dependencies.WithRealHTTPClient())
 }
 
 func createProxyHandler(ctx context.Context, d proxyDependencies.ServiceScope) http.Handler {
@@ -2871,12 +2878,25 @@ func htmlLinkTo(url string) string {
 // and waits for the StateWatcher to sync them. The proxy reads appsProxy.upstreamUrl from the CRD
 // to get the upstream URL, so this is required for requests to route to the upstream.
 // Must be called before tc.setupK8s so per-test overrides (Patch) can override specific apps.
-func registerDefaultK8sApps(t *testing.T, apps []api.AppConfig, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher, serviceURL string) {
+// registerDefaultK8sApps waits for the K8s informer cache to sync after the fake client has been
+// pre-populated with App CRD objects via makeDefaultK8sObjects. Because the objects already exist
+// in the fake client at informer startup, they are picked up during the initial list phase rather
+// than relying on watch events. This avoids the race between HasSynced becoming true and the watch
+// channel being established, which caused the fake client to silently drop creation events.
+//
+// Must be called before tc.setupK8s so per-test overrides (Patch) can override specific apps.
+func registerDefaultK8sApps(t *testing.T, watcher *k8sapp.StateWatcher) {
 	t.Helper()
-	// Wait for the informer to complete its initial list so the watch is established before we create objects.
 	require.True(t, watcher.WaitForCacheSync(t.Context()), "App CRD informer cache sync timed out")
+}
+
+// makeDefaultK8sObjects converts a slice of app configs into K8s unstructured App CRD objects
+// with Running state and the given upstream URL. Pass the result to NewMockedServiceScopeWithK8sObjects
+// so the fake client is pre-populated before the informer starts.
+func makeDefaultK8sObjects(apps []api.AppConfig, serviceURL string) []runtime.Object {
+	objects := make([]runtime.Object, 0, len(apps))
 	for _, app := range apps {
-		obj := &unstructured.Unstructured{
+		objects = append(objects, &unstructured.Unstructured{
 			Object: map[string]any{
 				"apiVersion": k8sapp.Group + "/" + k8sapp.Version,
 				"kind":       "App",
@@ -2894,20 +2914,7 @@ func registerDefaultK8sApps(t *testing.T, apps []api.AppConfig, fakeClient *k8sf
 					},
 				},
 			},
-		}
-		_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Create(
-			context.Background(), obj, metav1.CreateOptions{},
-		)
-		require.NoError(t, err)
+		})
 	}
-	// Wait for the watcher to sync all apps.
-	require.Eventually(t, func() bool {
-		for _, app := range apps {
-			info, ok := watcher.GetState(app.ID)
-			if !ok || info.UpstreamTarget == nil {
-				return false
-			}
-		}
-		return true
-	}, 5*time.Second, 50*time.Millisecond)
+	return objects
 }
