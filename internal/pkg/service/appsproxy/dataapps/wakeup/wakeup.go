@@ -49,7 +49,6 @@ func NewManager(d dependencies) *Manager {
 }
 
 func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
-	// Get cache item or init an empty item
 	item := l.stateMap.GetOrInit(appID)
 
 	// Serialize per-app wakeups to make the rate-limit check atomic.
@@ -58,11 +57,9 @@ func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
 
 	now := l.clock.Now()
 	if now.Before(item.nextRequestAfter) {
-		// Skip if a wakeup was sent less than Interval ago
 		return nil
 	}
 
-	// Update nextRequestAfter time
 	item.nextRequestAfter = now.Add(Interval)
 
 	if err := l.watcher.SetDesiredRunning(ctx, appID); err != nil {
