@@ -9,8 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -35,10 +35,8 @@ type StateWatcher struct {
 	namespace string
 	logger    log.Logger
 	hasSynced cache.InformerSynced
-	// byName: K8s object name → AppID
-	byName sync.Map
-	// byAppID: AppID → entry{k8sName, state}
-	byAppID sync.Map
+	// apps: AppID → entry
+	apps sync.Map
 }
 
 type dependencies interface {
@@ -113,19 +111,12 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 
 	go informer.Run(ctx.Done())
 
-	// Log when the cache has synced so operators know the watcher is ready.
-	go func() {
-		if cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
-			w.logger.Infof(ctx, "App CRD cache synced for namespace %q", namespace)
-		}
-	}()
-
 	return w
 }
 
 // GetState returns the cached AppInfo for the app. Returns (AppInfo{}, false) if not yet cached.
 func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
-	v, ok := w.byAppID.Load(appID)
+	v, ok := w.apps.Load(appID)
 	if !ok {
 		return AppInfo{}, false
 	}
@@ -147,7 +138,7 @@ func (w *StateWatcher) WaitForCacheSync(ctx context.Context) bool {
 // SetDesiredRunning patches .spec.state = "Running" on the App CRD for the given appID.
 // If the appID is not yet in the cache, no patch is sent.
 func (w *StateWatcher) SetDesiredRunning(ctx context.Context, appID api.AppID) error {
-	v, ok := w.byAppID.Load(appID)
+	v, ok := w.apps.Load(appID)
 	if !ok {
 		return nil
 	}
@@ -155,7 +146,7 @@ func (w *StateWatcher) SetDesiredRunning(ctx context.Context, appID api.AppID) e
 
 	patch, err := json.Marshal(map[string]any{
 		"spec": map[string]any{
-			"state": "Running",
+			"state": AppActualStateRunning,
 		},
 	})
 	if err != nil {
@@ -179,15 +170,9 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 	}
 	k8sName := u.GetName()
 
-	data, err := u.MarshalJSON()
-	if err != nil {
-		w.logger.Errorf(ctx, "failed to marshal App CRD %q: %s", k8sName, err)
-		return
-	}
-
 	var appObj appObject
-	if err = json.Unmarshal(data, &appObj); err != nil {
-		w.logger.Errorf(ctx, "failed to unmarshal App CRD %q: %s", k8sName, err)
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, &appObj); err != nil {
+		w.logger.Errorf(ctx, "failed to convert App CRD %q: %s", k8sName, err)
 		return
 	}
 
@@ -211,8 +196,7 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 	}
 
 	appID := api.AppID(appObj.Spec.AppID)
-	w.byName.Store(k8sName, appID)
-	w.byAppID.Store(appID, entry{
+	w.apps.Store(appID, entry{
 		k8sName:            k8sName,
 		state:              appObj.Status.CurrentState,
 		autoRestartEnabled: autoRestartEnabled,
@@ -225,8 +209,8 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 	u, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		// Handle tombstone objects from the cache.
-		tombstone, ok2 := obj.(cache.DeletedFinalStateUnknown)
-		if !ok2 {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
 			return
 		}
 		u, ok = tombstone.Obj.(*unstructured.Unstructured)
@@ -236,11 +220,12 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 	}
 	k8sName := u.GetName()
 
-	v, loaded := w.byName.LoadAndDelete(k8sName)
-	if !loaded {
-		return
-	}
-	appID := v.(api.AppID)
-	w.byAppID.Delete(appID)
-	w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, appID)
+	w.apps.Range(func(key, val any) bool {
+		if val.(entry).k8sName == k8sName {
+			w.apps.Delete(key)
+			w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, key)
+			return false
+		}
+		return true
+	})
 }
