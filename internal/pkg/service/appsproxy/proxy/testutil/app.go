@@ -32,6 +32,10 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		lock.Lock()
+		requests = append(requests, r)
+		lock.Unlock()
+
 		c, err := websocket.Accept(w, r, nil)
 		require.NoError(t, err)
 
