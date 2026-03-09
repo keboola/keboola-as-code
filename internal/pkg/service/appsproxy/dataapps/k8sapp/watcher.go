@@ -70,9 +70,9 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		hasSynced: func() bool { return false },
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(context.Context) {
-		cancel()
+		cancel(nil)
 	})
 
 	lw := &cache.ListWatch{

@@ -40,15 +40,15 @@ func newTestDeps(t *testing.T) *watcherDeps {
 	return &watcherDeps{logger: logger, proc: proc}
 }
 
-func (d *watcherDeps) Logger() log.Logger          { return d.logger }
+func (d *watcherDeps) Logger() log.Logger           { return d.logger }
 func (d *watcherDeps) Process() *servicectx.Process { return d.proc }
 
 // newFakeClient creates a fake dynamic client with the App list kind registered.
-func newFakeClient(objects ...runtime.Object) *k8sfake.FakeDynamicClient {
+func newFakeClient() *k8sfake.FakeDynamicClient {
 	scheme := runtime.NewScheme()
 	return k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
 		k8sapp.AppGVR: "AppList",
-	}, objects...)
+	})
 }
 
 // newAppObject creates an unstructured App CRD object.

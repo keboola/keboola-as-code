@@ -41,6 +41,7 @@ func (v *mocked) K8sDynamicClient() dynamic.Interface {
 
 // NewMockedServiceScope creates a mocked ServiceScope for tests.
 func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	tb.Helper()
 	return newMockedServiceScope(tb, ctx, cfg, nil, opts...)
 }
 
@@ -49,6 +50,7 @@ func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 // which avoids the race between "initial list done" and "watch channel established" that would cause
 // objects created via Create() immediately after WaitForCacheSync() to be silently dropped.
 func NewMockedServiceScopeWithK8sObjects(tb testing.TB, ctx context.Context, cfg config.Config, initialK8sObjects []runtime.Object, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	tb.Helper()
 	return newMockedServiceScope(tb, ctx, cfg, initialK8sObjects, opts...)
 }
 
