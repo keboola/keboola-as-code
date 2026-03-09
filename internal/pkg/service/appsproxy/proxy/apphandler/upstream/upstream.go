@@ -98,9 +98,9 @@ func (m *Manager) Shutdown(ctx context.Context) {
 	m.wg.Wait()
 }
 
-// CurrentServiceRef returns the appsProxy.upstreamUrl string for appID from the K8s cache.
+// UpstreamURL returns the appsProxy.upstreamUrl string for appID from the K8s cache.
 // Returns "" when the app is not cached or the field is absent/invalid.
-func (m *Manager) CurrentServiceRef(appID api.AppID) string {
+func (m *Manager) UpstreamURL(appID api.AppID) string {
 	info, ok := m.stateWatcher.GetState(appID)
 	if !ok || info.UpstreamTarget == nil {
 		return ""
