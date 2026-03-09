@@ -32,7 +32,7 @@ type appHandlerWrapper struct {
 	lock       *sync.Mutex
 	handler    http.Handler
 	cancel     context.CancelCauseFunc
-	serviceRef string // appsProxy.upstreamUrl in effect when this handler was created
+	upstreamURL string // appsProxy.upstreamUrl in effect when this handler was created
 }
 
 type dependencies interface {
@@ -72,13 +72,13 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 	}
 
 	// Create a new handler, if needed (config changed or appsProxy.upstreamUrl changed)
-	currentRef := m.upstreamManager.CurrentServiceRef(result.AppID)
-	if wrapper.handler == nil || result.Modified || wrapper.serviceRef != currentRef {
+	currentURL := m.upstreamManager.UpstreamURL(result.AppID)
+	if wrapper.handler == nil || result.Modified || wrapper.upstreamURL != currentURL {
 		if wrapper.cancel != nil {
 			wrapper.cancel(errors.New("configuration changed"))
 		}
 		wrapper.handler, wrapper.cancel = m.newHandler(ctx, result.AppConfig)
-		wrapper.serviceRef = currentRef
+		wrapper.upstreamURL = currentURL
 	}
 
 	return wrapper.handler
