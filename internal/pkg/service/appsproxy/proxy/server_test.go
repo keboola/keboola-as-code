@@ -60,8 +60,8 @@ func TestAppProxyHandler(t *testing.T) {
 	d, mocked := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 
 	// Register apps
-	appURL := testutil.AddAppDNSRecord(t, appServer, mocked.TestDNSServer())
-	appsAPI.Register([]api.AppConfig{
+	appURL := testutil.AppServerURL(t, appServer)
+	apps := []api.AppConfig{
 		{
 			ID:             "123",
 			Name:           "public",
@@ -76,7 +76,9 @@ func TestAppProxyHandler(t *testing.T) {
 				},
 			},
 		},
-	})
+	}
+	appsAPI.Register(apps)
+	registerDefaultK8sApps(t, apps, mocked.TestFakeK8sClient(), d.AppStateWatcher(), appURL.String())
 
 	// Create proxy handler
 	handler := proxy.NewHandler(ctx, d)

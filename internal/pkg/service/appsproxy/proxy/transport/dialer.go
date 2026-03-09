@@ -11,7 +11,7 @@ const DialTimeout = 2 * time.Second
 // KeepAlive specifies the default interval between keep-alive probes.
 const KeepAlive = 15 * time.Second
 
-// newDialer creates dialer for DNS resolving and the HTTP transport.
+// newDialer creates dialer for the HTTP transport.
 func newDialer() *net.Dialer {
 	return &net.Dialer{
 		Timeout:   DialTimeout,
