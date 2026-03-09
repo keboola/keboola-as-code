@@ -44,6 +44,7 @@ jobs:
           args: |
             './**/*.md'
             --verbose
+            --accept 429
             --exclude-path 'vendor'
             --exclude-path 'test'
             --exclude '^http://localhost.*'
