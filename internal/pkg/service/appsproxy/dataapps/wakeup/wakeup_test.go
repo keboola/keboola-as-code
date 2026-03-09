@@ -63,7 +63,7 @@ func TestManager_Wakeup(t *testing.T) {
 	appID := api.AppID("app")
 	fakeClient := mock.TestFakeK8sClient()
 
-	// Register app in fake K8s so SetDesiredRunning has a target.
+	// Register app in fake K8s so WakeupApp has a target.
 	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
 		ctx, newTestApp(string(appID)), metav1.CreateOptions{},
 	)
