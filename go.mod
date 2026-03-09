@@ -50,7 +50,6 @@ require (
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
 	github.com/lestrrat-go/strftime v1.1.1
 	github.com/mattn/go-sqlite3 v1.14.33
-	github.com/miekg/dns v1.1.72
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/oauth2-proxy/mockoidc v0.0.0-20240214162133-caebfff84d25
 	github.com/oauth2-proxy/oauth2-proxy/v7 v7.13.0
@@ -147,7 +146,6 @@ require (
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 )
 
 require (
