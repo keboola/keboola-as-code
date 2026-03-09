@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -2432,7 +2431,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 			// Create dependencies with K8s App CRD objects pre-populated in the fake client.
 			// The informer picks them up during the initial list — no watch event needed.
-			d, mocked := createDependencies(t, ctx, appsAPI.URL, pm, makeDefaultK8sObjects(apps, appURL.String())...)
+			d, mocked := createDependencies(t, ctx, appsAPI.URL, makeDefaultK8sObjects(apps, appURL.String())...)
 
 			// Test generated spans
 			if tc.expectedSpans != nil {
@@ -2799,7 +2798,7 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 	}
 }
 
-func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL string, pm server.PortManager, initialK8sObjects ...runtime.Object) (proxyDependencies.ServiceScope, proxyDependencies.Mocked) {
+func createDependencies(t *testing.T, ctx context.Context, sandboxesAPIURL string, initialK8sObjects ...runtime.Object) (proxyDependencies.ServiceScope, proxyDependencies.Mocked) {
 	t.Helper()
 
 	secret := make([]byte, 32)

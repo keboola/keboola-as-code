@@ -29,9 +29,9 @@ type Manager struct {
 }
 
 type appHandlerWrapper struct {
-	lock       *sync.Mutex
-	handler    http.Handler
-	cancel     context.CancelCauseFunc
+	lock        *sync.Mutex
+	handler     http.Handler
+	cancel      context.CancelCauseFunc
 	upstreamURL string // appsProxy.upstreamUrl in effect when this handler was created
 }
 
