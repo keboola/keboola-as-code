@@ -27,7 +27,7 @@ type Manager struct {
 }
 
 type state struct {
-	lock             *sync.Mutex
+	lock             sync.Mutex
 	nextRequestAfter time.Time
 }
 
@@ -43,7 +43,7 @@ func NewManager(d dependencies) *Manager {
 		logger:  d.Logger(),
 		watcher: d.AppStateWatcher(),
 		stateMap: syncmap.New[api.AppID, state](func(api.AppID) *state {
-			return &state{lock: &sync.Mutex{}}
+			return &state{}
 		}),
 	}
 }
