@@ -71,6 +71,22 @@ func TestFile_IgnoreConfigsOrRows_BranchWithSlashInName(t *testing.T) {
 	assert.Empty(t, r.IgnoredConfigRows())
 }
 
+func TestFile_IgnoreConfigsOrRows_InvalidPatternReturnsError(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	r := newTestRegistry(t)
+	fs := aferofs.NewMemoryFs()
+
+	// File with a valid pattern followed by an invalid one — error must be returned, not silently skipped.
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile(`foo/bar1`, "keboola.foo/345\nwrong pattern")))
+
+	file, err := LoadFile(ctx, fs, r, "foo/bar1")
+	require.NoError(t, err)
+
+	assert.Error(t, file.IgnoreConfigsOrRows())
+}
+
 func Test_applyIgnoredPatterns(t *testing.T) {
 	t.Parallel()
 	projectState := newTestRegistry(t)
@@ -162,6 +178,13 @@ func Test_applyIgnoredPatterns(t *testing.T) {
 			name: "field-level ignore: invalid format (no config ID)",
 			args: args{
 				pattern: "keboola.foo:isDisabled",
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "field-level ignore: empty field name",
+			args: args{
+				pattern: "keboola.foo/345:",
 			},
 			wantErr: assert.Error,
 		},

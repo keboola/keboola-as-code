@@ -14,7 +14,7 @@ func (f *File) IgnoreConfigsOrRows() error {
 func (f *File) applyIgnoredPatterns() error {
 	for _, pattern := range f.parseIgnoredPatterns() {
 		if err := f.applyIgnorePattern(pattern); err != nil {
-			continue
+			return err
 		}
 	}
 	return nil
@@ -47,13 +47,16 @@ func (f *File) applyIgnorePattern(ignoreConfig string) error {
 	if colonIdx := strings.Index(ignoreConfig, ":"); colonIdx != -1 {
 		objectPath := ignoreConfig[:colonIdx]
 		fieldName := ignoreConfig[colonIdx+1:]
+		if fieldName == "" {
+			return errors.Errorf("invalid field-ignore format %q, expected componentID/configID:fieldName", ignoreConfig)
+		}
 		parts := strings.Split(objectPath, "/")
 		if len(parts) == 2 {
-			configID, componentID := parts[1], parts[0]
-			f.state.IgnoreConfigField(configID, componentID, fieldName)
+			componentID, configID := parts[0], parts[1]
+			f.state.IgnoreConfigField(componentID, configID, fieldName)
 			return nil
 		}
-		return errors.Errorf("invalid field-ignore format: %s", ignoreConfig)
+		return errors.Errorf("invalid field-ignore format %q, expected componentID/configID:fieldName", ignoreConfig)
 	}
 
 	parts := strings.Split(ignoreConfig, "/")

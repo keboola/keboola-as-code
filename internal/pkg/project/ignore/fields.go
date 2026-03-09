@@ -28,17 +28,19 @@ func (f *File) IgnoreFields(direction SyncDirection) error {
 			if configState.ID.String() != ignored.ConfigID {
 				continue
 			}
-			applyFieldOverride(configState, ignored.FieldName, direction)
+			if err := applyFieldOverride(configState, ignored.FieldName, direction); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func applyFieldOverride(config *model.ConfigState, fieldName string, direction SyncDirection) {
+func applyFieldOverride(config *model.ConfigState, fieldName string, direction SyncDirection) error {
 	local := config.Local
 	remote := config.Remote
 	if local == nil || remote == nil {
-		return
+		return nil
 	}
 	switch fieldName {
 	case "isDisabled":
@@ -47,29 +49,35 @@ func applyFieldOverride(config *model.ConfigState, fieldName string, direction S
 		} else {
 			remote.IsDisabled = local.IsDisabled
 		}
+		return nil
 	default:
 		// Treat as dot-notation content key.
-		applyContentKeyOverride(local.Content, remote.Content, fieldName, direction)
+		return applyContentKeyOverride(local.Content, remote.Content, fieldName, direction)
 	}
 }
 
-func applyContentKeyOverride(localContent, remoteContent *orderedmap.OrderedMap, fieldPath string, direction SyncDirection) {
+func applyContentKeyOverride(localContent, remoteContent *orderedmap.OrderedMap, fieldPath string, direction SyncDirection) error {
 	if localContent == nil || remoteContent == nil {
-		return
+		return nil
 	}
 	if direction == SyncDirectionPush {
 		// Keep remote: copy remote value → local.
-		value, found, _ := remoteContent.GetNested(fieldPath)
-		if !found {
-			return
+		value, found, err := remoteContent.GetNested(fieldPath)
+		if err != nil {
+			return err
 		}
-		_ = localContent.SetNested(fieldPath, value)
-	} else {
-		// Keep local: copy local value → remote.
-		value, found, _ := localContent.GetNested(fieldPath)
 		if !found {
-			return
+			return nil
 		}
-		_ = remoteContent.SetNested(fieldPath, value)
+		return localContent.SetNested(fieldPath, value)
 	}
+	// Keep local: copy local value → remote.
+	value, found, err := localContent.GetNested(fieldPath)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return nil
+	}
+	return remoteContent.SetNested(fieldPath, value)
 }
