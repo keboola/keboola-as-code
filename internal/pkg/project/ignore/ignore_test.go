@@ -188,6 +188,27 @@ func Test_applyIgnoredPatterns(t *testing.T) {
 			},
 			wantErr: assert.Error,
 		},
+		{
+			name: "field-level ignore: leading dot in field name",
+			args: args{
+				pattern: "keboola.foo/345:.schedule",
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "field-level ignore: trailing dot in field name",
+			args: args{
+				pattern: "keboola.foo/345:schedule.",
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "field-level ignore: extra path segment (3 parts before colon)",
+			args: args{
+				pattern: "keboola.foo/345/extra:isDisabled",
+			},
+			wantErr: assert.Error,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

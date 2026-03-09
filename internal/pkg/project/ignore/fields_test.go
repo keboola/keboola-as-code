@@ -152,6 +152,36 @@ func TestIgnoreFields_ContentKey_Pull(t *testing.T) {
 	assert.Equal(t, "*/5 * * * *", remoteCronTab)
 }
 
+func TestIgnoreFields_NestedContentKey_Push(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	r := newTestRegistryWithScheduler(t)
+	fs := aferofs.NewMemoryFs()
+
+	// Only ignore the nested leaf "schedule.cronTab", not the whole "schedule" object.
+	require.NoError(t, fs.WriteFile(ctx, filesystem.NewRawFile("kbcignore", "keboola.scheduler/456:schedule.cronTab")))
+
+	file, err := LoadFile(ctx, fs, r, "kbcignore")
+	require.NoError(t, err)
+	require.NoError(t, file.IgnoreConfigsOrRows())
+
+	// Push: copy remote cronTab → local cronTab; timezone must remain unchanged.
+	require.NoError(t, file.IgnoreFields(SyncDirectionPush))
+
+	c := findSchedulerConfig(t, r)
+	// Local cronTab should match remote ("*/10 * * * *").
+	localCronTab, found, err := c.Local.Content.GetNested("schedule.cronTab")
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, "*/10 * * * *", localCronTab)
+	// Local timezone must be untouched (still "UTC").
+	localTZ, found, err := c.Local.Content.GetNested("schedule.timezone")
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, "UTC", localTZ)
+}
+
 func TestIgnoreFields_NoMatchingConfig(t *testing.T) {
 	t.Parallel()
 

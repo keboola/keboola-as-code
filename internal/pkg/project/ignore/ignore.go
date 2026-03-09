@@ -47,7 +47,7 @@ func (f *File) applyIgnorePattern(ignoreConfig string) error {
 	if colonIdx := strings.Index(ignoreConfig, ":"); colonIdx != -1 {
 		objectPath := ignoreConfig[:colonIdx]
 		fieldName := ignoreConfig[colonIdx+1:]
-		if fieldName == "" {
+		if fieldName == "" || strings.HasPrefix(fieldName, ".") || strings.HasSuffix(fieldName, ".") {
 			return errors.Errorf("invalid field-ignore format %q, expected componentID/configID:fieldName", ignoreConfig)
 		}
 		parts := strings.Split(objectPath, "/")

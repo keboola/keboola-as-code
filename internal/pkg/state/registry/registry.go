@@ -372,6 +372,8 @@ func (s *Registry) GetOrCreateFrom(manifest model.ObjectManifest) (model.ObjectS
 }
 
 func (s *Registry) IgnoreConfigField(componentID, configID, fieldName string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.ignoredFields = append(s.ignoredFields, IgnoredField{
 		ComponentID: componentID,
 		ConfigID:    configID,
@@ -380,5 +382,7 @@ func (s *Registry) IgnoreConfigField(componentID, configID, fieldName string) {
 }
 
 func (s *Registry) IgnoredFields() []IgnoredField {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	return append([]IgnoredField(nil), s.ignoredFields...)
 }
