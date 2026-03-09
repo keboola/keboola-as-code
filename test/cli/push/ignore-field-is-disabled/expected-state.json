@@ -1,0 +1,28 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "without-rows",
+          "description": "my description",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "parameters": {
+              "api": {
+                "baseUrl": "https://jsonplaceholder.typicode.com"
+              }
+            }
+          },
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}
