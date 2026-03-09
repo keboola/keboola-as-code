@@ -135,9 +135,9 @@ func (w *StateWatcher) WaitForCacheSync(ctx context.Context) bool {
 	return cache.WaitForCacheSync(ctx.Done(), w.hasSynced)
 }
 
-// SetDesiredRunning patches .spec.state = "Running" on the App CRD for the given appID.
+// WakeupApp patches spec.state = "Running" on the App CRD for the given appID.
 // If the appID is not yet in the cache, no patch is sent.
-func (w *StateWatcher) SetDesiredRunning(ctx context.Context, appID api.AppID) error {
+func (w *StateWatcher) WakeupApp(ctx context.Context, appID api.AppID) error {
 	v, ok := w.apps.Load(appID)
 	if !ok {
 		return nil

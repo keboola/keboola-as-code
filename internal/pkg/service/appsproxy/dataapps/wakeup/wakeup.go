@@ -62,8 +62,8 @@ func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
 
 	item.nextRequestAfter = now.Add(Interval)
 
-	if err := l.watcher.SetDesiredRunning(ctx, appID); err != nil {
-		l.logger.Errorf(ctx, `failed setting desired state "Running" for app "%s": %s`, appID, err)
+	if err := l.watcher.WakeupApp(ctx, appID); err != nil {
+		l.logger.Errorf(ctx, `wakeup failed for app "%s": %s`, appID, err)
 		return err
 	}
 	return nil

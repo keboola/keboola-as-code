@@ -110,7 +110,7 @@ func TestStateWatcher_GetState_AfterCacheSync(t *testing.T) {
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
-func TestStateWatcher_SetDesiredRunning(t *testing.T) {
+func TestStateWatcher_WakeupApp(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -133,7 +133,7 @@ func TestStateWatcher_SetDesiredRunning(t *testing.T) {
 	// Clear prior actions (list/watch from informer startup).
 	fakeClient.ClearActions()
 
-	err = watcher.SetDesiredRunning(t.Context(), api.AppID("app-123"))
+	err = watcher.WakeupApp(t.Context(), api.AppID("app-123"))
 	require.NoError(t, err)
 
 	// Verify that a merge-patch action targeting App CRDs was recorded.
@@ -146,14 +146,14 @@ func TestStateWatcher_SetDesiredRunning(t *testing.T) {
 	assert.Contains(t, string(pa.GetPatch()), `"state":"Running"`)
 }
 
-func TestStateWatcher_SetDesiredRunning_NoOpWhenUnknown(t *testing.T) {
+func TestStateWatcher_WakeupApp_NoOpWhenUnknown(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
 
-	// App not in K8s cache — SetDesiredRunning should be a no-op.
-	err := watcher.SetDesiredRunning(t.Context(), api.AppID("app-unknown"))
+	// App not in K8s cache — WakeupApp should be a no-op.
+	err := watcher.WakeupApp(t.Context(), api.AppID("app-unknown"))
 	require.NoError(t, err)
 
 	for _, a := range fakeClient.Actions() {
