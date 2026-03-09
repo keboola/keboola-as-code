@@ -388,6 +388,74 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
+			name: "forwarded-headers-http",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				require.Len(t, *appServer.Requests, 1)
+				appRequest := (*appServer.Requests)[0]
+
+				// Host header is rewritten to upstream hostname (for LB routing).
+				assert.Equal(t, appRequest.Host, appServer.Listener.Addr().String())
+
+				// X-Forwarded-Host preserves the original client-facing hostname.
+				assert.Equal(t, "public-123.hub.keboola.local", appRequest.Header.Get("X-Forwarded-Host"))
+
+				// X-Forwarded-Proto preserves the original scheme.
+				assert.Equal(t, "https", appRequest.Header.Get("X-Forwarded-Proto"))
+
+				// X-Forwarded-For contains the client IP.
+				assert.NotEmpty(t, appRequest.Header.Get("X-Forwarded-For"))
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
+			},
+		},
+		{
+			name: "forwarded-headers-websocket",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+				defer cancel()
+
+				c, _, err := websocket.Dial(
+					ctx,
+					"wss://public-123.hub.keboola.local/ws",
+					&websocket.DialOptions{
+						HTTPClient: client,
+					},
+				)
+				require.NoError(t, err)
+
+				var v any
+				err = wsjson.Read(ctx, c, &v)
+				require.NoError(t, err)
+				assert.Equal(t, "Hello websocket", v)
+				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
+
+				require.Len(t, *appServer.Requests, 1)
+				appRequest := (*appServer.Requests)[0]
+
+				// Host header is rewritten to upstream hostname (for LB routing).
+				assert.Equal(t, appRequest.Host, appServer.Listener.Addr().String())
+
+				// X-Forwarded-Host preserves the original client-facing hostname.
+				assert.Equal(t, "public-123.hub.keboola.local", appRequest.Header.Get("X-Forwarded-Host"))
+
+				// X-Forwarded-Proto preserves the original scheme.
+				assert.Equal(t, "https", appRequest.Header.Get("X-Forwarded-Proto"))
+
+				// X-Forwarded-For contains the client IP.
+				assert.NotEmpty(t, appRequest.Header.Get("X-Forwarded-For"))
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
+			},
+		},
+		{
 			name: "private-app-verified-email",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{

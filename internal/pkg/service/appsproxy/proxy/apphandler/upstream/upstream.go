@@ -173,10 +173,36 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 	return u.handler.ServeHTTPOrError(rw, req)
 }
 
+func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
+	return &httputil.ReverseProxy{
+		Rewrite: func(r *httputil.ProxyRequest) {
+			r.SetURL(u.target)
+			r.Out.URL.RawQuery = r.In.URL.RawQuery
+
+			// Rewrite strips all X-Forwarded-* headers before calling us.
+			// Restore incoming X-Forwarded-For so SetXForwarded can append
+			// this hop's IP to the existing chain (it only appends to For).
+			r.Out.Header["X-Forwarded-For"] = r.In.Header["X-Forwarded-For"]
+			r.SetXForwarded()
+
+			// SetXForwarded overwrites Host and Proto with values derived
+			// from r.In (this hop). If an upstream proxy (e.g. a
+			// TLS-terminating LB) already set them, restore those values
+			// since they reflect the original client request more accurately.
+			if h := r.In.Header["X-Forwarded-Host"]; len(h) > 0 {
+				r.Out.Header["X-Forwarded-Host"] = h
+			}
+			if p := r.In.Header["X-Forwarded-Proto"]; len(p) > 0 {
+				r.Out.Header["X-Forwarded-Proto"] = p
+			}
+		},
+		Transport:    u.manager.transport,
+		ErrorHandler: u.manager.pageWriter.ProxyErrorHandlerFor(u.app),
+	}
+}
+
 func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
-	proxy := httputil.NewSingleHostReverseProxy(u.target)
-	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
+	proxy := u.newReverseProxy()
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -193,9 +219,7 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 }
 
 func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
-	proxy := httputil.NewSingleHostReverseProxy(u.target)
-	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app)
+	proxy := u.newReverseProxy()
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
