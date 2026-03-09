@@ -146,32 +146,22 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 
 	// K8s state pre-check: if we know the app is not running, handle it synchronously
 	// without attempting DNS/upstream. Falls through if state is unknown or Running.
-	appInfo, ok := u.manager.stateWatcher.GetState(u.app.ID)
-	if ok {
-		u.manager.logger.Debugf(ctx, "app %q state check: actualState=%q autoRestartEnabled=%v", u.app.ID, appInfo.ActualState, appInfo.AutoRestartEnabled)
-	} else {
-		u.manager.logger.Debugf(ctx, "app %q state check: not in cache, forwarding to upstream", u.app.ID)
-	}
-	if ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
-		if appInfo.ActualState == k8sapp.AppActualStateStarting {
-			u.manager.logger.Debugf(ctx, "app %q is starting, serving spinner page", u.app.ID)
+	if appInfo, ok := u.manager.stateWatcher.GetState(u.app.ID); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
+		switch {
+		case appInfo.ActualState == k8sapp.AppActualStateStarting:
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
-			return nil
-		}
-		if !appInfo.AutoRestartEnabled {
-			u.manager.logger.Debugf(ctx, "app %q is not running and restart is disabled, serving restart-disabled page", u.app.ID)
+		case !appInfo.AutoRestartEnabled:
 			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
-			return nil
+		default:
+			u.wakeup(ctx, errors.Errorf("app state is %s", appInfo.ActualState))
+			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		}
-		u.manager.logger.Debugf(ctx, "app %q is not running, triggering wakeup and serving spinner page", u.app.ID)
-		u.wakeup(ctx, errors.Errorf("app state is %s", appInfo.ActualState))
-		u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		return nil
 	}
 
 	// Target set at creation time; nil means appsProxy.upstreamUrl was absent.
 	if u.target == nil {
-		u.manager.logger.Debugf(ctx, "app %q has no appsProxy.upstreamUrl, serving spinner page", u.app.ID)
+		u.manager.logger.Infof(ctx, "app %q has no upstream URL, serving spinner page", u.app.ID)
 		u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		return nil
 	}
