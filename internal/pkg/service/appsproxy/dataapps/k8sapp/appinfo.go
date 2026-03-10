@@ -13,8 +13,10 @@ const (
 	Resource = "apps"
 )
 
-// AppGVR is the GroupVersionResource for the App CRD.
-var AppGVR = schema.GroupVersionResource{Group: Group, Version: Version, Resource: Resource} //nolint:gochecknoglobals
+// AppGVR returns the GroupVersionResource for the App CRD.
+func AppGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: Group, Version: Version, Resource: Resource}
+}
 
 // AppActualState is the observed state of the app, read from .status.currentState.
 type AppActualState string

@@ -47,7 +47,7 @@ func (d *watcherDeps) Process() *servicectx.Process { return d.proc }
 func newFakeClient() *k8sfake.FakeDynamicClient {
 	scheme := runtime.NewScheme()
 	return k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
-		k8sapp.AppGVR: "AppList",
+		k8sapp.AppGVR(): "AppList",
 	})
 }
 
@@ -97,7 +97,7 @@ func TestStateWatcher_GetState_AfterCacheSync(t *testing.T) {
 
 	// Add the App CRD object to the fake tracker before the watcher starts.
 	appObj := newAppObject("my-app-k8s", "app-123", k8sapp.AppActualStateStopped)
-	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
 		t.Context(), appObj, metav1.CreateOptions{},
 	)
 	require.NoError(t, err)
@@ -117,7 +117,7 @@ func TestStateWatcher_WakeupApp(t *testing.T) {
 	d := newTestDeps(t)
 
 	appObj := newAppObject("my-app-k8s", "app-123", k8sapp.AppActualStateStopped)
-	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
 		t.Context(), appObj, metav1.CreateOptions{},
 	)
 	require.NoError(t, err)
@@ -168,7 +168,7 @@ func TestStateWatcher_GetState_UpstreamTarget(t *testing.T) {
 	d := newTestDeps(t)
 
 	appObj := newAppObjectWithUpstreamURL("my-app-k8s", "app-123", k8sapp.AppActualStateRunning, "http://my-svc.keboola.svc.cluster.local:8888")
-	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
 		t.Context(), appObj, metav1.CreateOptions{},
 	)
 	require.NoError(t, err)
@@ -195,7 +195,7 @@ func TestStateWatcher_GetState_UpstreamTarget_AbsentWhenMissing(t *testing.T) {
 
 	// App CRD without appsProxy.upstreamUrl.
 	appObj := newAppObject("my-app-k8s", "app-123", k8sapp.AppActualStateRunning)
-	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
 		t.Context(), appObj, metav1.CreateOptions{},
 	)
 	require.NoError(t, err)

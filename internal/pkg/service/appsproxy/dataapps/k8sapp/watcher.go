@@ -77,10 +77,10 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 
 	lw := &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return client.Resource(AppGVR).Namespace(namespace).List(ctx, opts)
+			return client.Resource(AppGVR()).Namespace(namespace).List(ctx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return client.Resource(AppGVR).Namespace(namespace).Watch(ctx, opts)
+			return client.Resource(AppGVR()).Namespace(namespace).Watch(ctx, opts)
 		},
 	}
 
@@ -153,7 +153,7 @@ func (w *StateWatcher) WakeupApp(ctx context.Context, appID api.AppID) error {
 		return err
 	}
 
-	_, err = w.client.Resource(AppGVR).Namespace(w.namespace).Patch(
+	_, err = w.client.Resource(AppGVR()).Namespace(w.namespace).Patch(
 		ctx,
 		e.k8sName,
 		k8stypes.MergePatchType,

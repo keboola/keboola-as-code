@@ -1857,7 +1857,7 @@ func TestAppProxyRouter(t *testing.T) {
 			name: "public-app-wakeup",
 			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
-				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
 					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
 				)
 				require.NoError(t, err)
@@ -1876,7 +1876,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Patch app back to Running
 				patch := []byte(`{"status":{"currentState":"Running"}}`)
-				_, err = fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+				_, err = fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
 					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
 				)
 				require.NoError(t, err)
@@ -1903,7 +1903,7 @@ func TestAppProxyRouter(t *testing.T) {
 			name: "public-app-wakeup-only",
 			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
-				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
 					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
 				)
 				require.NoError(t, err)
@@ -1947,7 +1947,7 @@ func TestAppProxyRouter(t *testing.T) {
 			name: "private-app-wakeup",
 			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
-				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
 					t.Context(), "app-oidc", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
 				)
 				require.NoError(t, err)
@@ -2012,7 +2012,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Patch app back to Running
 				patch := []byte(`{"status":{"currentState":"Running"}}`)
-				_, err = fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+				_, err = fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
 					t.Context(), "app-oidc", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
 				)
 				require.NoError(t, err)
@@ -2036,7 +2036,7 @@ func TestAppProxyRouter(t *testing.T) {
 			name: "private-app-wakeup-only",
 			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
-				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
 					t.Context(), "app-oidc", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
 				)
 				require.NoError(t, err)
@@ -2374,7 +2374,7 @@ func TestAppProxyRouter(t *testing.T) {
 				// The default setup already created app "123" as Running.
 				// Patch it to Stopped + autoRestartEnabled=false.
 				patch := []byte(`{"spec":{"autoRestartEnabled":false},"status":{"currentState":"Stopped"}}`)
-				_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace("keboola").Patch(
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
 					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
 				)
 				require.NoError(t, err)

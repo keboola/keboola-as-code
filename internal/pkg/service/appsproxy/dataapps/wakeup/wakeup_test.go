@@ -64,7 +64,7 @@ func TestManager_Wakeup(t *testing.T) {
 	fakeClient := mock.TestFakeK8sClient()
 
 	// Register app in fake K8s so WakeupApp has a target.
-	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
 		ctx, newTestApp(string(appID)), metav1.CreateOptions{},
 	)
 	require.NoError(t, err)
@@ -112,7 +112,7 @@ func TestManager_Wakeup_Race(t *testing.T) {
 	fakeClient := mock.TestFakeK8sClient()
 
 	// Register app in fake K8s.
-	_, err := fakeClient.Resource(k8sapp.AppGVR).Namespace(testNamespace).Create(
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
 		ctx, newTestApp(string(appID)), metav1.CreateOptions{},
 	)
 	require.NoError(t, err)
