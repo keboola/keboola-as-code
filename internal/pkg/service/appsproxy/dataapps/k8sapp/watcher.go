@@ -63,13 +63,6 @@ func NewDynamicClient(kubeconfigPath string) (dynamic.Interface, error) {
 // NewStateWatcher creates and starts a StateWatcher that watches App CRDs in the given namespace.
 // It registers the informer lifecycle with the process.
 func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string) *StateWatcher {
-	w := &StateWatcher{
-		client:    client,
-		namespace: namespace,
-		logger:    d.Logger().WithComponent("k8sapp.watcher"),
-		hasSynced: func() bool { return false },
-	}
-
 	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(context.Context) {
 		cancel(nil)
@@ -87,10 +80,16 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 	informer := cache.NewSharedIndexInformer(
 		lw,
 		&unstructured.Unstructured{},
-		// No resync — rely on watch events only.
-		0,
+		0, // No resync — rely on watch events only.
 		cache.Indexers{},
 	)
+
+	w := &StateWatcher{
+		client:    client,
+		namespace: namespace,
+		logger:    d.Logger().WithComponent("k8sapp.watcher"),
+		hasSynced: informer.HasSynced,
+	}
 
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
@@ -106,8 +105,6 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 	if err != nil {
 		w.logger.Errorf(ctx, "failed to add event handler to App informer: %s", err)
 	}
-
-	w.hasSynced = informer.HasSynced
 
 	go informer.Run(ctx.Done())
 
