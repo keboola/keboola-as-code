@@ -1,12 +1,10 @@
 {
   "schedule": {
     "cronTab": "*/5 * * * *",
-    "timezone": "UTC",
+    "timezone": "Europe/Prague",
     "state": "disabled"
   },
   "target": {
-    "componentId": "ex-generic-v2",
-    "configurationId": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%",
     "mode": "run"
   }
 }
