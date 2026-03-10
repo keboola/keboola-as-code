@@ -226,6 +226,27 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	proxy := u.newReverseProxy()
 
+	// ******************************************************************************
+	// TEMPORARY WORKAROUND — remove once Streamlit apps are configured with
+	// STREAMLIT_BROWSER_SERVER_ADDRESS / STREAMLIT_BROWSER_SERVER_PORT env vars.
+	//
+	// Streamlit (Tornado) checks WebSocket origin by comparing the Origin header
+	// against the Host header. Since apps-proxy rewrites Host to the upstream
+	// hostname (required for LB routing), Origin (the public domain set by the
+	// browser) no longer matches and Tornado rejects the connection with 403.
+	//
+	// Rewriting Origin to the upstream hostname makes the request look like a
+	// direct browser connection, which is what every framework expects.
+	// ******************************************************************************
+	if u.target != nil {
+		upstreamOrigin := u.target.Scheme + "://" + u.target.Host
+		origRewrite := proxy.Rewrite
+		proxy.Rewrite = func(r *httputil.ProxyRequest) {
+			origRewrite(r)
+			r.Out.Header.Set("Origin", upstreamOrigin)
+		}
+	}
+
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, true))
