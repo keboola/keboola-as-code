@@ -14,6 +14,13 @@ import (
 
 type pathsRO = knownpaths.PathsReadOnly
 
+// IgnoredField represents a field-level ignore rule for a specific config.
+type IgnoredField struct {
+	ComponentID string
+	ConfigID    string
+	FieldName   string // "isDisabled" or dot-notation content key like "schedule"
+}
+
 type Registry struct {
 	*pathsRO
 	paths          *knownpaths.Paths
@@ -22,6 +29,7 @@ type Registry struct {
 	namingRegistry *naming.Registry
 	components     *model.ComponentsMap
 	objects        *orderedmap.OrderedMap
+	ignoredFields  []IgnoredField
 }
 
 func New(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *model.ComponentsMap, sortBy string) *Registry {
@@ -361,4 +369,20 @@ func (s *Registry) GetOrCreateFrom(manifest model.ObjectManifest) (model.ObjectS
 	}
 
 	return s.CreateFrom(manifest)
+}
+
+func (s *Registry) IgnoreConfigField(componentID, configID, fieldName string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.ignoredFields = append(s.ignoredFields, IgnoredField{
+		ComponentID: componentID,
+		ConfigID:    configID,
+		FieldName:   fieldName,
+	})
+}
+
+func (s *Registry) IgnoredFields() []IgnoredField {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	return append([]IgnoredField(nil), s.ignoredFields...)
 }

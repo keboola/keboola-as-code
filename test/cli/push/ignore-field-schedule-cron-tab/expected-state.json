@@ -1,0 +1,46 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "keboola.scheduler",
+          "name": "Scheduler",
+          "description": "test fixture",
+          "changeDescription": "Updated from #KeboolaCLI",
+          "configuration": {
+            "schedule": {
+              "cronTab": "*/10 * * * *",
+              "timezone": "Europe/Prague",
+              "state": "disabled"
+            },
+            "target": {
+              "componentId": "ex-generic-v2",
+              "configurationId": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%",
+              "mode": "run"
+            }
+          },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "test fixture",
+          "configuration": {},
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ],
+  "schedules": [
+    {
+      "name": "Scheduler"
+    }
+  ]
+}

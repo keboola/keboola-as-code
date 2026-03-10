@@ -79,6 +79,10 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 			return err
 		}
 
+		if err = file.IgnoreFields(ignore.SyncDirectionPush); err != nil {
+			return err
+		}
+
 		// Make ignored branches invisible to the push diff.
 		projectState.NullIgnoredBranchStates()
 	}
