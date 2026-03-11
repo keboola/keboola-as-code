@@ -18,12 +18,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
-	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -45,18 +45,18 @@ type Manager struct {
 	configLoader appconfig.Loader
 	notify       *notify.Manager
 	wakeup       *wakeup.Manager
+	stateWatcher *k8sapp.StateWatcher
 	config       config.Config
 }
 
 type AppUpstream struct {
-	manager         *Manager
-	app             api.AppConfig
-	target          *url.URL
-	handler         *chain.Chain
-	wsHandler       *chain.Chain
-	cancelWs        context.CancelCauseFunc
-	activeWsCount   atomic.Int64
-	restartDisabled atomic.Bool
+	manager       *Manager
+	app           api.AppConfig
+	target        *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
+	handler       *chain.Chain
+	wsHandler     *chain.Chain
+	cancelWs      context.CancelCauseFunc
+	activeWsCount atomic.Int64
 }
 
 type dependencies interface {
@@ -68,6 +68,7 @@ type dependencies interface {
 	AppConfigLoader() appconfig.Loader
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
+	AppStateWatcher() *k8sapp.StateWatcher
 	Config() config.Config
 }
 
@@ -81,6 +82,7 @@ func NewManager(d dependencies) *Manager {
 		configLoader: d.AppConfigLoader(),
 		notify:       d.NotifyManager(),
 		wakeup:       d.WakeupManager(),
+		stateWatcher: d.AppStateWatcher(),
 		config:       d.Config(),
 	}
 
@@ -96,16 +98,24 @@ func (m *Manager) Shutdown(ctx context.Context) {
 	m.wg.Wait()
 }
 
+// UpstreamURL returns the appsProxy.upstreamUrl string for appID from the K8s cache.
+// Returns "" when the app is not cached or the field is absent/invalid.
+func (m *Manager) UpstreamURL(appID api.AppID) string {
+	info, ok := m.stateWatcher.GetState(appID)
+	if !ok || info.UpstreamTarget == nil {
+		return ""
+	}
+	return info.UpstreamTarget.String()
+}
+
 func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream *AppUpstream, err error) {
 	_, span := m.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.NewUpstream")
 	defer span.End(&err)
 
-	// Parse target
-	target, err := url.Parse(app.UpstreamAppURL)
-	if err != nil {
-		return nil, svcErrors.NewServiceUnavailableError(errors.PrefixErrorf(err,
-			`unable to parse upstream url for app "%s"`, app.IdAndName(),
-		))
+	// Resolve target URL at creation time; immutable after this point.
+	var target *url.URL
+	if info, ok := m.stateWatcher.GetState(app.ID); ok {
+		target = info.UpstreamTarget // pre-parsed by watcher on CRD event; may be nil
 	}
 
 	// Create reverse proxy
@@ -132,6 +142,30 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 }
 
 func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request) error {
+	ctx := req.Context()
+
+	// K8s state pre-check: if we know the app is not running, handle it synchronously
+	// without attempting DNS/upstream. Falls through if state is unknown or Running.
+	if appInfo, ok := u.manager.stateWatcher.GetState(u.app.ID); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
+		switch {
+		case appInfo.ActualState == k8sapp.AppActualStateStarting:
+			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
+		case !appInfo.AutoRestartEnabled:
+			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
+		default:
+			u.wakeup(ctx, errors.Errorf("app state is %s", appInfo.ActualState))
+			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
+		}
+		return nil
+	}
+
+	// Target set at creation time; nil means appsProxy.upstreamUrl was absent.
+	if u.target == nil {
+		u.manager.logger.Infof(ctx, "app %q has no upstream URL, serving spinner page", u.app.ID)
+		u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
+		return nil
+	}
+
 	// Difference between regular and websocket request
 	if strings.EqualFold(req.Header.Get("Connection"), "upgrade") && req.Header.Get("Upgrade") == "websocket" {
 		return u.wsHandler.ServeHTTPOrError(rw, req)
@@ -139,10 +173,41 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 	return u.handler.ServeHTTPOrError(rw, req)
 }
 
+func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
+	return &httputil.ReverseProxy{
+		Rewrite: func(r *httputil.ProxyRequest) {
+			r.SetURL(u.target)
+			r.Out.URL.RawQuery = r.In.URL.RawQuery
+
+			// Rewrite strips all X-Forwarded-* headers before calling us.
+			// Restore incoming X-Forwarded-For so SetXForwarded can append
+			// this hop's IP to the existing chain (it only appends to For).
+			r.Out.Header["X-Forwarded-For"] = r.In.Header["X-Forwarded-For"]
+			r.SetXForwarded()
+
+			// SetXForwarded overwrites Host and Proto with values derived
+			// from r.In (this hop). If an upstream proxy (e.g. a
+			// TLS-terminating LB) already set them, restore those values
+			// since they reflect the original client request more accurately.
+			if h := r.In.Header["X-Forwarded-Host"]; len(h) > 0 {
+				r.Out.Header["X-Forwarded-Host"] = h
+			}
+			// Some ingress controllers (e.g. Nginx Ingress on GKE) set
+			// X-Forwarded-Scheme instead of X-Forwarded-Proto. Fall back to
+			// it so the upstream sees the correct original scheme.
+			if p := r.In.Header.Get("X-Forwarded-Proto"); p != "" {
+				r.Out.Header.Set("X-Forwarded-Proto", p)
+			} else if s := r.In.Header.Get("X-Forwarded-Scheme"); s != "" {
+				r.Out.Header.Set("X-Forwarded-Proto", s)
+			}
+		},
+		Transport:    u.manager.transport,
+		ErrorHandler: u.manager.pageWriter.ProxyErrorHandlerFor(u.app),
+	}
+}
+
 func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
-	proxy := httputil.NewSingleHostReverseProxy(u.target)
-	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app, &u.restartDisabled)
+	proxy := u.newReverseProxy()
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -159,9 +224,28 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 }
 
 func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
-	proxy := httputil.NewSingleHostReverseProxy(u.target)
-	proxy.Transport = u.manager.transport
-	proxy.ErrorHandler = u.manager.pageWriter.ProxyErrorHandlerFor(u.app, &u.restartDisabled)
+	proxy := u.newReverseProxy()
+
+	// ******************************************************************************
+	// TEMPORARY WORKAROUND — remove once Streamlit apps are configured with
+	// STREAMLIT_BROWSER_SERVER_ADDRESS / STREAMLIT_BROWSER_SERVER_PORT env vars.
+	//
+	// Streamlit (Tornado) checks WebSocket origin by comparing the Origin header
+	// against the Host header. Since apps-proxy rewrites Host to the upstream
+	// hostname (required for LB routing), Origin (the public domain set by the
+	// browser) no longer matches and Tornado rejects the connection with 403.
+	//
+	// Rewriting Origin to the upstream hostname makes the request look like a
+	// direct browser connection, which is what every framework expects.
+	// ******************************************************************************
+	if u.target != nil {
+		upstreamOrigin := u.target.Scheme + "://" + u.target.Host
+		origRewrite := proxy.Rewrite
+		proxy.Rewrite = func(r *httputil.ProxyRequest) {
+			origRewrite(r)
+			r.Out.Header.Set("Origin", upstreamOrigin)
+		}
+	}
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -193,13 +277,6 @@ func (u *AppUpstream) trace() chain.Middleware {
 			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
 					u.notify(ctx)
-				},
-				DNSDone: func(info httptrace.DNSDoneInfo) {
-					if info.Err != nil {
-						u.wakeup(ctx, info.Err)
-					} else {
-						u.restartDisabled.Store(false)
-					}
 				},
 			})
 
@@ -235,13 +312,6 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 
 		// Error is already logged by the Wakeup method itself.
 		err := u.manager.wakeup.Wakeup(wakeupCtx, u.app.ID) //nolint:contextcheck
-
-		// Check for restart disabled error
-		var apiErr *api.Error
-		if errors.As(err, &apiErr) && apiErr.HasRestartDisabled() {
-			u.restartDisabled.Store(true)
-		}
-
 		span.End(&err)
 	})
 }

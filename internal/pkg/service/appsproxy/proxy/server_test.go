@@ -56,12 +56,10 @@ func TestAppProxyHandler(t *testing.T) {
 	cfg.SandboxesAPI.URL = appsAPI.URL
 	cfg.CsrfTokenSalt = "abc"
 
-	// Create dependencies
-	d, mocked := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
-
-	// Register apps
-	appURL := testutil.AddAppDNSRecord(t, appServer, mocked.TestDNSServer())
-	appsAPI.Register([]api.AppConfig{
+	// Define apps before creating dependencies so App CRD objects can be pre-populated
+	// in the fake K8s client. See makeDefaultK8sObjects for explanation.
+	appURL := testutil.AppServerURL(t, appServer)
+	apps := []api.AppConfig{
 		{
 			ID:             "123",
 			Name:           "public",
@@ -76,7 +74,12 @@ func TestAppProxyHandler(t *testing.T) {
 				},
 			},
 		},
-	})
+	}
+	appsAPI.Register(apps)
+
+	// Create dependencies with K8s App CRD objects pre-populated in the fake client.
+	d, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(t, ctx, cfg, makeDefaultK8sObjects(apps, appURL.String()), dependencies.WithRealHTTPClient())
+	registerDefaultK8sApps(t, d.AppStateWatcher())
 
 	// Create proxy handler
 	handler := proxy.NewHandler(ctx, d)

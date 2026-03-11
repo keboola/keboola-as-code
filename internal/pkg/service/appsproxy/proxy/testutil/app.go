@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -32,6 +33,10 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		lock.Lock()
+		requests = append(requests, r)
+		lock.Unlock()
+
 		c, err := websocket.Accept(w, r, nil)
 		require.NoError(t, err)
 
@@ -90,4 +95,13 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 	ts.Start()
 
 	return &AppServer{ts, &requests}
+}
+
+// AppServerURL returns the URL of the app server for use as the upstream target.
+func AppServerURL(t *testing.T, appServer *AppServer) *url.URL {
+	t.Helper()
+
+	u, err := url.Parse(appServer.URL)
+	require.NoError(t, err)
+	return u
 }

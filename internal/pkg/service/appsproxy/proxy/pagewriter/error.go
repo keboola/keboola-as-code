@@ -1,10 +1,8 @@
 package pagewriter
 
 import (
-	"net"
 	"net/http"
 	"strings"
-	"sync/atomic"
 
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
@@ -27,27 +25,13 @@ type errorPageData struct {
 	ExceptionID string
 }
 
-func (pw *Writer) ProxyErrorHandlerFor(app api.AppConfig, restartDisabled *atomic.Bool) func(w http.ResponseWriter, req *http.Request, err error) {
+func (pw *Writer) ProxyErrorHandlerFor(app api.AppConfig) func(w http.ResponseWriter, req *http.Request, err error) {
 	return func(w http.ResponseWriter, req *http.Request, err error) {
-		pw.ProxyErrorHandler(w, req, app, restartDisabled, err)
+		pw.ProxyErrorHandler(w, req, app, err)
 	}
 }
 
-func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, app api.AppConfig, restartDisabled *atomic.Bool, err error) {
-	// Check for restart disabled error
-	if restartDisabled.Load() {
-		pw.logger.Info(req.Context(), "app has restart disabled, rendering restart disabled page")
-		pw.WriteRestartDisabledPage(w, req, app)
-		return
-	}
-
-	var dnsError *net.DNSError
-	if errors.As(err, &dnsError) {
-		pw.logger.Info(req.Context(), "app is not running, rendering spinner page")
-		pw.WriteSpinnerPage(w, req, app)
-		return
-	}
-
+func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, app api.AppConfig, err error) {
 	pw.WriteError(w, req, &app, svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed."))
 }
 
