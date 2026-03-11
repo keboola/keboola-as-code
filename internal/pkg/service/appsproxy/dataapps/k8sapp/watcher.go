@@ -220,7 +220,8 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 	k8sName := u.GetName()
 
 	w.apps.Range(func(key, val any) bool {
-		if val.(entry).k8sName == k8sName {
+		e, ok := val.(entry)
+		if ok && e.k8sName == k8sName {
 			w.apps.Delete(key)
 			w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, key)
 			return false
