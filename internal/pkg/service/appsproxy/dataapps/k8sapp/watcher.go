@@ -102,6 +102,8 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 			w.handleDelete(ctx, obj)
 		},
 	})
+	// AddEventHandler only errors if the informer is already stopped.
+	// Since Run has not been called yet, this error is unreachable here.
 	if err != nil {
 		w.logger.Errorf(ctx, "failed to add event handler to App informer: %s", err)
 	}
