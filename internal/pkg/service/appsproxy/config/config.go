@@ -24,7 +24,7 @@ type Config struct {
 	Upstream         Upstream          `configKey:"-" configUsage:"Configuration options for upstream"`
 	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
-	K8s              K8s               `configKey:"k8s"`
+	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 }
 
 type API struct {
