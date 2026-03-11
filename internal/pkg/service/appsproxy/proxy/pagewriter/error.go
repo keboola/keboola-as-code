@@ -1,7 +1,6 @@
 package pagewriter
 
 import (
-	"net"
 	"net/http"
 	"strings"
 
@@ -33,13 +32,6 @@ func (pw *Writer) ProxyErrorHandlerFor(app api.AppConfig) func(w http.ResponseWr
 }
 
 func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, app api.AppConfig, err error) {
-	var dnsError *net.DNSError
-	if errors.As(err, &dnsError) {
-		pw.logger.Info(req.Context(), "app is not running, rendering spinner page")
-		pw.WriteSpinnerPage(w, req, app)
-		return
-	}
-
 	pw.WriteError(w, req, &app, svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed."))
 }
 
