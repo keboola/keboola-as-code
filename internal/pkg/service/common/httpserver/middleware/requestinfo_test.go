@@ -29,7 +29,7 @@ func TestMetaMiddleware(t *testing.T) {
 
 	// Send request
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	handler.ServeHTTP(rec, req)
 
 	// Assert

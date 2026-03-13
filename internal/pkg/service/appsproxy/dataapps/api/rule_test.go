@@ -129,7 +129,7 @@ func TestRule_Match(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		matched, err := tc.Rule.Match(httptest.NewRequest(http.MethodGet, tc.URL, nil))
+		matched, err := tc.Rule.Match(httptest.NewRequestWithContext(t.Context(), http.MethodGet, tc.URL, nil))
 		assert.Equal(t, tc.ExpectedMatch, matched, tc.Description)
 		if tc.ExpectedErr == "" {
 			require.NoError(t, err, tc.Description)

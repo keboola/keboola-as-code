@@ -48,7 +48,7 @@ func TestAppConfigMiddleware(t *testing.T) {
 
 	// Send logged request
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "https://app-1.example.com/api/action", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://app-1.example.com/api/action", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
