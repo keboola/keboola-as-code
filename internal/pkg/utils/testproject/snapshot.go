@@ -194,6 +194,18 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return req.SendOrErr(ctx)
 	})
 
+	// Notification subscriptions
+	var notifications []*keboola.NotificationSubscription
+	grp.Go(func() error {
+		subs, err := p.keboolaProjectAPI.ListNotificationSubscriptionsRequest().Send(ctx)
+		if err != nil {
+			// Silently skip if notification service is not available
+			return nil //nolint:nilerr
+		}
+		notifications = *subs
+		return nil
+	})
+
 	// Storage Files
 	var files []*keboola.File
 	grp.Go(func() error {
@@ -298,6 +310,12 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 			}
 		}
 	}
+
+	// Notification subscriptions
+	sort.Slice(notifications, func(i, j int) bool {
+		return string(notifications[i].ID) < string(notifications[j].ID)
+	})
+	snapshot.NotificationSubscriptions = notifications
 
 	// Sort by name
 	reflecthelper.SortByName(snapshot.Branches)

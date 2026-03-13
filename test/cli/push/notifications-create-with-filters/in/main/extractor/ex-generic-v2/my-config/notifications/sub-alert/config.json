@@ -1,0 +1,14 @@
+{
+  "event": "job-processing-long",
+  "filters": [
+    {
+      "field": "durationOvertimePercentage",
+      "operator": ">=",
+      "value": "0.75"
+    }
+  ],
+  "recipient": {
+    "channel": "email",
+    "address": "alerts@example.com"
+  }
+}

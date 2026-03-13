@@ -468,10 +468,17 @@ func newTestRemoteUOW(t *testing.T, mappers ...any) (*remote.UnitOfWork, *httpmo
 	t.Helper()
 	c, httpTransport := client.NewMockedClient()
 	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
-		httpmock.NewStringResponder(200, `{
-			"services": [],
-			"features": []
-		}`),
+		httpmock.NewJsonResponderOrPanic(200, &keboola.Index{
+			Services: keboola.Services{
+				{ID: "notification", URL: "https://notification.mocked.transport.http"},
+			},
+			Features: keboola.Features{},
+		}),
+	)
+	httpTransport.RegisterResponder(
+		resty.MethodGet,
+		`https://notification.mocked.transport.http/project-subscriptions`,
+		httpmock.NewJsonResponderOrPanic(200, []*keboola.NotificationSubscription{}),
 	)
 
 	api, err := keboola.NewAuthorizedAPI(t.Context(), "https://connection.keboola.com", "my-token", keboola.WithClient(&c))

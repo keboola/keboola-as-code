@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/defaultbucket"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/description"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/ignore"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/notification"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/relations"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/scheduler"
@@ -48,5 +49,7 @@ func MappersFor(s *state.State, d dependencies) (mapper.Mappers, error) {
 		branchmetadata.NewMapper(s, d),
 		// Configurations metadata
 		configmetadata.NewMapper(s, d),
+		// Notifications
+		notification.NewMapper(s),
 	}, nil
 }

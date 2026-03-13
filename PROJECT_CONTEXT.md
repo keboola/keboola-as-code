@@ -41,6 +41,12 @@ The project uses ETCD for distributed storage and synchronization, with a custom
 
 For Docker-based development, see [Development Guide](docs/development.md).
 
+**Important**: E2E tests MUST be run inside the Docker Compose dev container:
+```bash
+docker compose run --rm -u "$UID:$GID" --service-ports dev bash
+# Then run: task e2e -- test/cli/path/to/test
+```
+
 ### Local Machine Setup
 For development directly on your local machine without Docker, see [Local Development Guide](docs/local_development.md).
 
@@ -80,9 +86,9 @@ docker-compose up -d
 ## CI/CD Pipeline
 
 ### Testing
-- Unit tests: `task tests`
-- Integration tests: `task tests`
-- E2E tests: `task tests-cli`
+- Unit tests: `task tests` (can run locally or in Docker)
+- Integration tests: `task tests` (can run locally or in Docker)
+- E2E tests: `task tests-cli` or `task e2e -- test/cli/path/to/test` (MUST run in Docker Compose dev container)
 
 ### Build Process
 1. Code validation
