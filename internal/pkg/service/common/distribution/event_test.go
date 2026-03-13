@@ -9,7 +9,7 @@ import (
 func TestEvents_Messages(t *testing.T) {
 	t.Parallel()
 
-	v := Events{}
+	v := make(Events, 0, 2)
 
 	v = append(v, Event{Type: EventNodeAdded, NodeID: "node-1", Message: `found a new node "node-1"`})
 	assert.Equal(t, `found a new node "node-1"`, v.Messages())

@@ -231,9 +231,9 @@ Preview of steps and groups you created:
 `)
 	var defaultStepID string
 	for _, group := range d.stepsGroups {
-		fileHeader.WriteString(fmt.Sprintf("- Group %d: %s\n", group.GroupIndex+1, group.Description))
+		fmt.Fprintf(&fileHeader, "- Group %d: %s\n", group.GroupIndex+1, group.Description)
 		for _, step := range group.Steps {
-			fileHeader.WriteString(fmt.Sprintf("  - Step \"%s\": %s - %s\n", step.ID, step.Name, step.Description))
+			fmt.Fprintf(&fileHeader, "  - Step \"%s\": %s - %s\n", step.ID, step.Name, step.Description)
 			if step.GroupIndex == 0 && step.StepIndex == 0 {
 				defaultStepID = step.ID
 			}
@@ -250,12 +250,12 @@ Preview of steps and groups you created:
 	lines.WriteString(fileHeader.String())
 	for _, inputID := range d.inputs.Ids() {
 		i, _ := d.inputs.Get(inputID)
-		lines.WriteString(fmt.Sprintf("## Input \"%s\" (%s)\n", i.ID, i.Type))
-		lines.WriteString(fmt.Sprintf("name: %s\n", i.Name))
-		lines.WriteString(fmt.Sprintf("description: %s\n", i.Description))
-		lines.WriteString(fmt.Sprintf("kind: %s\n", i.Kind))
-		lines.WriteString(fmt.Sprintf("rules: %s\n", i.Rules))
-		lines.WriteString(fmt.Sprintf("showIf: %s\n", i.If))
+		fmt.Fprintf(&lines, "## Input \"%s\" (%s)\n", i.ID, i.Type)
+		fmt.Fprintf(&lines, "name: %s\n", i.Name)
+		fmt.Fprintf(&lines, "description: %s\n", i.Description)
+		fmt.Fprintf(&lines, "kind: %s\n", i.Kind)
+		fmt.Fprintf(&lines, "rules: %s\n", i.Rules)
+		fmt.Fprintf(&lines, "showIf: %s\n", i.If)
 
 		// Default
 		if slice, ok := i.Default.([]any); ok && i.Kind == input.KindMultiSelect {
@@ -263,17 +263,17 @@ Preview of steps and groups you created:
 			for _, item := range slice {
 				items = append(items, item.(string))
 			}
-			lines.WriteString(fmt.Sprintf("default: %s\n", strings.Join(items, ", ")))
+			fmt.Fprintf(&lines, "default: %s\n", strings.Join(items, ", "))
 		} else {
-			lines.WriteString(fmt.Sprintf("default: %s\n", cast.ToString(i.Default)))
+			fmt.Fprintf(&lines, "default: %s\n", cast.ToString(i.Default))
 		}
 
 		// Options
 		if i.Options != nil {
-			lines.WriteString(fmt.Sprintf("options: %s\n", json.MustEncode(i.Options.Map(), false)))
+			fmt.Fprintf(&lines, "options: %s\n", json.MustEncode(i.Options.Map(), false))
 		}
 
-		lines.WriteString(fmt.Sprintf("step: %s\n", defaultStepID))
+		fmt.Fprintf(&lines, "step: %s\n", defaultStepID)
 
 		lines.WriteString("\n")
 	}

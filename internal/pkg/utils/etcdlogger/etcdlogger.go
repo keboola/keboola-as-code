@@ -186,7 +186,7 @@ func (v *kvWrapper) writePair(op *etcd.Op, key, value string, out *strings.Build
 func (v *kvWrapper) start(op *etcd.Op, opName, key, value string) string {
 	var out strings.Builder
 
-	out.WriteString(fmt.Sprintf("➡️  %s", opName))
+	fmt.Fprintf(&out, "➡️  %s", opName)
 
 	if key != "" {
 		v.writePair(op, key, value, &out)
@@ -219,7 +219,7 @@ func (v *kvWrapper) start(op *etcd.Op, opName, key, value string) string {
 			default:
 				panic(errors.Errorf(`unexpected type "%T"`, item.TargetUnion))
 			}
-			out.WriteString(fmt.Sprintf("  %03d %s %s %v %s", i+1, keyToStr(item.Key, item.RangeEnd), item.Target, item.Result, expectedResult))
+			fmt.Fprintf(&out, "  %03d %s %s %v %s", i+1, keyToStr(item.Key, item.RangeEnd), item.Target, item.Result, expectedResult)
 		}
 	}
 

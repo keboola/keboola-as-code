@@ -203,7 +203,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 		// Config
 		fields := d.objectFields[c.ConfigKey]
 		if len(fields) > 0 {
-			lines.WriteString(fmt.Sprintf("## Config \"%s\" %s:%s\n", c.Name, c.ComponentID, c.ID))
+			fmt.Fprintf(&lines, "## Config \"%s\" %s:%s\n", c.Name, c.ComponentID, c.ID)
 			fields.Write(&lines)
 			lines.WriteString("\n")
 		}
@@ -212,7 +212,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 		for _, r := range c.Rows {
 			fields := d.objectFields[r.ConfigRowKey]
 			if len(fields) > 0 {
-				lines.WriteString(fmt.Sprintf("### Row \"%s\" %s:%s:%s\n", r.Name, r.ComponentID, r.ConfigID, r.ID))
+				fmt.Fprintf(&lines, "### Row \"%s\" %s:%s:%s\n", r.Name, r.ComponentID, r.ConfigID, r.ID)
 				fields.Write(&lines)
 				lines.WriteString("\n")
 			}

@@ -139,7 +139,7 @@ func getColumns(o Options) (keboola.Columns, error) {
 
 // convertHeadersToColumns converts array string to keboola.Columns.
 func convertHeadersToColumns(headers []string) keboola.Columns {
-	var columns keboola.Columns
+	columns := make(keboola.Columns, 0, len(headers))
 	for _, header := range headers {
 		columns = append(columns, keboola.Column{Name: header})
 	}

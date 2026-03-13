@@ -474,9 +474,9 @@ func TestAtomicUpdate(t *testing.T) {
 	})
 	atomicOp.AddProcessor(func(ctx context.Context, result *op.Result[string]) {
 		if err := result.Err(); err == nil {
-			_, _ = logger.WriteString(fmt.Sprintf("atomic operation succeeded: %s\n", result.Result()))
+			_, _ = fmt.Fprintf(&logger, "atomic operation succeeded: %s\n", result.Result())
 		} else {
-			_, _ = logger.WriteString(fmt.Sprintf("atomic operation failed: %s\n", err))
+			_, _ = fmt.Fprintf(&logger, "atomic operation failed: %s\n", err)
 		}
 	})
 
