@@ -37,16 +37,16 @@ func (f *File) parseIgnoredPatterns() []string {
 // applyIgnorePattern applies a single ignore pattern, marking the appropriate config or row as ignored.
 func (f *File) applyIgnorePattern(ignoreConfig string) error {
 	// Branch pattern: "branch/<name>" — name may itself contain "/".
-	if strings.HasPrefix(ignoreConfig, "branch/") {
-		branchName := strings.TrimPrefix(ignoreConfig, "branch/")
+	if after, ok := strings.CutPrefix(ignoreConfig, "branch/"); ok {
+		branchName := after
 		f.state.IgnoreBranch(branchName)
 		return nil
 	}
 
 	// Field-level ignore: "componentID/configID:fieldName"
-	if colonIdx := strings.Index(ignoreConfig, ":"); colonIdx != -1 {
-		objectPath := ignoreConfig[:colonIdx]
-		fieldName := ignoreConfig[colonIdx+1:]
+	if before, after, ok := strings.Cut(ignoreConfig, ":"); ok {
+		objectPath := before
+		fieldName := after
 		if fieldName == "" || strings.HasPrefix(fieldName, ".") || strings.HasSuffix(fieldName, ".") {
 			return errors.Errorf("invalid field-ignore format %q, expected componentID/configID:fieldName", ignoreConfig)
 		}

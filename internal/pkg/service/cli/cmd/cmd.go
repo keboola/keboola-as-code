@@ -293,7 +293,7 @@ func (root *RootCommand) listAliases() string {
 	var out strings.Builder
 	for i, cmd := range root.aliases.Keys() {
 		tmpl := fmt.Sprintf("  %%-%ds  %%s\n", maxLength)
-		out.WriteString(fmt.Sprintf(tmpl, cmd, lines[i]))
+		fmt.Fprintf(&out, tmpl, cmd, lines[i])
 	}
 	return strings.TrimRight(out.String(), "\n")
 }

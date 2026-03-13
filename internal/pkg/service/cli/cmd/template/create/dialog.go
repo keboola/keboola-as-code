@@ -360,9 +360,9 @@ Do not edit lines starting with "#"!
 	var lines strings.Builder
 	lines.WriteString(fileHeader)
 	for _, c := range d.configs {
-		lines.WriteString(fmt.Sprintf("## Config \"%s\" %s:%s\n%s\n\n", c.Name, c.ComponentID, c.ID, idByKey[c.Key().String()]))
+		fmt.Fprintf(&lines, "## Config \"%s\" %s:%s\n%s\n\n", c.Name, c.ComponentID, c.ID, idByKey[c.Key().String()])
 		for _, r := range c.Rows {
-			lines.WriteString(fmt.Sprintf("### Row \"%s\" %s:%s:%s\n%s\n\n", r.Name, r.ComponentID, r.ConfigID, r.ID, idByKey[r.Key().String()]))
+			fmt.Fprintf(&lines, "### Row \"%s\" %s:%s:%s\n%s\n\n", r.Name, r.ComponentID, r.ConfigID, r.ID, idByKey[r.Key().String()])
 		}
 	}
 
