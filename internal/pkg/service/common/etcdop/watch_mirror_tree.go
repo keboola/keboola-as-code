@@ -303,12 +303,14 @@ func (m *MirrorTree[T, V]) recordMemoryTelemetry(ctx context.Context, tel teleme
 	var memoryConsumed int64
 
 	// Measure base memory usage of the tree structure
+	//nolint:gosec // G115: Sizeof returns memory size in bytes, always fits in int64
 	memoryConsumed += int64(unsafe.Sizeof(*m))
 
 	// Measure size of the tree nodes and their elements
 	m.tree.AtomicReadOnly(func(t prefixtree.TreeReadOnly[V]) {
 		t.WalkAll(func(key string, value V) (stop bool) {
-			memoryConsumed += int64(len(key))           // Account for key size
+			memoryConsumed += int64(len(key)) // Account for key size
+			//nolint:gosec // G115: memory.Size returns memory size in bytes, always fits in int64
 			memoryConsumed += int64(memory.Size(value)) // Account for value size
 			return false
 		})

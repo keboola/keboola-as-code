@@ -17,8 +17,13 @@ func (a DefaultAllocator) Allocate(f File, size datasize.ByteSize) (bool, error)
 		return false, err
 	}
 
+	fd, err := safecast.Convert[int](f.Fd())
+	if err != nil {
+		return false, err
+	}
+
 	// Allocate space using the "fallocate" sys call, Linux only.
-	err = unix.Fallocate(int(f.Fd()), unix.FALLOC_FL_KEEP_SIZE, 0, bytes)
+	err = unix.Fallocate(fd, unix.FALLOC_FL_KEEP_SIZE, 0, bytes)
 	if err != nil {
 		return false, err
 	}
@@ -39,7 +44,7 @@ func Allocated(path string) (datasize.ByteSize, error) {
 	// Notes:
 	// 1. "/ 8": Blksize is in bits not bytes
 	// 2. The type of fields can vary depending on the architecture (int32/int64), so retyping it to int64 is necessary.
-	size, err := safecast.Convert[uint64]((int64(sysStat.Blksize / 8)) * int64(sysStat.Blocks)) // nolint:unconvert
+	size, err := safecast.Convert[uint64](sysStat.Blksize / 8 * sysStat.Blocks)
 	if err != nil {
 		return 0, err
 	}

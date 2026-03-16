@@ -101,6 +101,8 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		return nil
 	}
 
+	// Limit request body size to prevent memory exhaustion attacks
+	req.Body = http.MaxBytesReader(w, req.Body, 1<<20) // 1MB limit
 	if err := req.ParseForm(); err != nil {
 		return err
 	}
