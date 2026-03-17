@@ -50,13 +50,14 @@ type Manager struct {
 }
 
 type AppUpstream struct {
-	manager       *Manager
-	app           api.AppConfig
-	target        *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
-	handler       *chain.Chain
-	wsHandler     *chain.Chain
-	cancelWs      context.CancelCauseFunc
-	activeWsCount atomic.Int64
+	manager        *Manager
+	app            api.AppConfig
+	target         *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
+	e2bAccessToken string   // E2B access token; empty for non-E2B apps
+	handler        *chain.Chain
+	wsHandler      *chain.Chain
+	cancelWs       context.CancelCauseFunc
+	activeWsCount  atomic.Int64
 }
 
 type dependencies interface {
@@ -108,18 +109,30 @@ func (m *Manager) UpstreamURL(appID api.AppID) string {
 	return info.UpstreamTarget.String()
 }
 
+// E2BAccessToken returns the E2B access token for appID from the K8s cache.
+// Returns "" when the app is not cached or is not an E2B sandbox.
+func (m *Manager) E2BAccessToken(appID api.AppID) string {
+	info, ok := m.stateWatcher.GetState(appID)
+	if !ok {
+		return ""
+	}
+	return info.E2BAccessToken
+}
+
 func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream *AppUpstream, err error) {
 	_, span := m.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.NewUpstream")
 	defer span.End(&err)
 
-	// Resolve target URL at creation time; immutable after this point.
+	// Resolve target URL and E2B token at creation time; immutable after this point.
 	var target *url.URL
+	var e2bAccessToken string
 	if info, ok := m.stateWatcher.GetState(app.ID); ok {
 		target = info.UpstreamTarget // pre-parsed by watcher on CRD event; may be nil
+		e2bAccessToken = info.E2BAccessToken
 	}
 
 	// Create reverse proxy
-	upstream = &AppUpstream{manager: m, app: app, target: target}
+	upstream = &AppUpstream{manager: m, app: app, target: target, e2bAccessToken: e2bAccessToken}
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
 
@@ -199,6 +212,11 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 				r.Out.Header.Set("X-Forwarded-Proto", p)
 			} else if s := r.In.Header.Get("X-Forwarded-Scheme"); s != "" {
 				r.Out.Header.Set("X-Forwarded-Proto", s)
+			}
+
+			// Inject E2B access token for E2B sandbox apps.
+			if u.e2bAccessToken != "" {
+				r.Out.Header.Set("e2b-traffic-access-token", u.e2bAccessToken)
 			}
 		},
 		Transport:    u.manager.transport,

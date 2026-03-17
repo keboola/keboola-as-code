@@ -2,6 +2,7 @@ package k8sapp
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/url"
 	"sync"
@@ -19,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // entry stores the K8s object name and last observed state for an app.
@@ -27,6 +29,7 @@ type entry struct {
 	state              AppActualState
 	autoRestartEnabled bool
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
+	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 }
 
 // StateWatcher watches App CRDs in Kubernetes and provides a local cache of app states.
@@ -124,6 +127,7 @@ func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
 		ActualState:        e.state,
 		AutoRestartEnabled: e.autoRestartEnabled,
 		UpstreamTarget:     e.upstreamTarget,
+		E2BAccessToken:     e.e2bAccessToken,
 	}, true
 }
 
@@ -194,12 +198,25 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		}
 	}
 
+	var e2bAccessToken string
+	if appObj.Spec.Runtime.Backend.Type == BackendTypeE2BSandbox {
+		if secretName := appObj.Status.E2BSandbox.AccessTokenSecretName; secretName != "" {
+			token, err := w.loadSecretToken(ctx, secretName)
+			if err != nil {
+				w.logger.Warnf(ctx, "App CRD %q (appID=%s): failed to load E2B access token from secret %q: %s", k8sName, appObj.Spec.AppID, secretName, err)
+			} else {
+				e2bAccessToken = token
+			}
+		}
+	}
+
 	appID := api.AppID(appObj.Spec.AppID)
 	w.apps.Store(appID, entry{
 		k8sName:            k8sName,
 		state:              appObj.Status.CurrentState,
 		autoRestartEnabled: autoRestartEnabled,
 		upstreamTarget:     upstreamTarget,
+		e2bAccessToken:     e2bAccessToken,
 	})
 	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v upstreamTarget=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled, upstreamTarget != nil)
 }
@@ -228,4 +245,33 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 		}
 		return true
 	})
+}
+
+// loadSecretToken fetches a K8s Secret by name and returns the value of the "token" key.
+// The dynamic client returns Secret data values as base64-encoded strings.
+func (w *StateWatcher) loadSecretToken(ctx context.Context, secretName string) (string, error) {
+	obj, err := w.client.Resource(SecretGVR()).Namespace(w.namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	data, found, err := unstructured.NestedMap(obj.Object, "data")
+	if err != nil {
+		return "", errors.Errorf("secret %q: failed to read data field: %s", secretName, err)
+	}
+	if !found {
+		return "", errors.Errorf("secret %q has no data field", secretName)
+	}
+
+	token, ok := data["token"].(string)
+	if !ok || token == "" {
+		return "", errors.Errorf("secret %q has no \"token\" key in data", secretName)
+	}
+
+	tokenBytes, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return "", errors.Errorf("secret %q: failed to base64-decode token: %s", secretName, err)
+	}
+
+	return string(tokenBytes), nil
 }
